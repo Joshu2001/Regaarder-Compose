@@ -69219,7 +69219,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="w-[220px] sm:w-[240px] bg-slate-50/70 dark:bg-zinc-950/70 border-r border-slate-200/60 dark:border-zinc-800 p-6 flex flex-col shrink-0">
               <div className="flex items-center gap-2 mb-8 px-2">
                 <Settings size={18} className="text-slate-700 dark:text-zinc-300" />
-                <span className="font-bold text-slate-800 dark:text-zinc-100 tracking-tight">Settings</span>
+                <span className="font-bold text-slate-800 dark:text-zinc-100 tracking-tight">{t('settings.title')}</span>
               </div>
               <div className="flex flex-col gap-1.5 flex-1">
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
@@ -69633,44 +69633,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.uiLanguageDesc')}</p>
                       </div>
                       <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                          className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                        <select
+                          value={uiLanguage}
+                          onChange={(e) => {
+                            const selectedCode = e.target.value;
+                            setUiLanguage(selectedCode);
+                            const langObj = supportedLanguages.find(l => l.code === selectedCode);
+                            showToast(`Language: ${langObj?.nativeName || selectedCode}`);
+                          }}
+                          className="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
                         >
-                          {supportedLanguages.find(l => l.code === uiLanguage)?.nativeName || 'English'}
-                          <ChevronDown size={14} className="text-slate-400" />
-                        </button>
-                        
-                        {languageMenuOpen && (
-                          <>
-                            <div className="fixed inset-0 z-[100]" onClick={() => setLanguageMenuOpen(false)}></div>
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200 max-h-72 overflow-y-auto thin-scrollbar">
-                              <div className="p-1">
-                                {supportedLanguages.map((lang) => (
-                                  <button
-                                    key={lang.code}
-                                    type="button"
-                                    onClick={() => {
-                                      setUiLanguage(lang.code);
-                                      setLanguageMenuOpen(false);
-                                      showToast(`Language set to ${lang.nativeName}`);
-                                    }}
-                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group cursor-pointer"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className={`font-medium ${uiLanguage === lang.code ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
-                                        {lang.nativeName}
-                                      </span>
-                                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">{lang.name}</span>
-                                    </div>
-                                    {uiLanguage === lang.code && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
+                          {supportedLanguages.map(l => (
+                            <option key={l.code} value={l.code}>
+                              {l.nativeName} ({l.name})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -73337,7 +73315,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setIsDocumentSubToolbarCollapsed(false);
                     }
                     setDocToolbarTab(tab);
-                    showToast?.(`${tab} tools ready`);
+                    showToast?.(`${tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab} tools ready`);
                   }}
                   className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
                     docToolbarTab === tab
@@ -73345,7 +73323,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
                   }`}
                 >
-                  {tab}
+                  {tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab}
                 </button>
               ))}
             </div>
@@ -73357,7 +73335,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
               title={isDocumentSubToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
             >
-              <span>{isDocumentSubToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
+              <span>{isDocumentSubToolbarCollapsed ? t('common.expand') : t('common.collapse')}</span>
               <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isDocumentSubToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
             </button>
           </div>
@@ -83801,44 +83779,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">{t('settings.uiLanguageDesc')}</p>
                       </div>
                       <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                          className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                        <select
+                          value={uiLanguage}
+                          onChange={(e) => {
+                            const selectedCode = e.target.value;
+                            setUiLanguage(selectedCode);
+                            const langObj = supportedLanguages.find(l => l.code === selectedCode);
+                            showToast(`Language: ${langObj?.nativeName || selectedCode}`);
+                          }}
+                          className="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-700 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
                         >
-                          {supportedLanguages.find(l => l.code === uiLanguage)?.nativeName || 'English'}
-                          <ChevronDown size={14} className="text-slate-400" />
-                        </button>
-                        
-                        {languageMenuOpen && (
-                          <>
-                            <div className="fixed inset-0 z-[100]" onClick={() => setLanguageMenuOpen(false)}></div>
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200 max-h-72 overflow-y-auto thin-scrollbar">
-                              <div className="p-1">
-                                {supportedLanguages.map((lang) => (
-                                  <button
-                                    key={lang.code}
-                                    type="button"
-                                    onClick={() => {
-                                      setUiLanguage(lang.code);
-                                      setLanguageMenuOpen(false);
-                                      showToast(`Language set to ${lang.nativeName}`);
-                                    }}
-                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group cursor-pointer"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className={`font-medium ${uiLanguage === lang.code ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
-                                        {lang.nativeName}
-                                      </span>
-                                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">{lang.name}</span>
-                                    </div>
-                                    {uiLanguage === lang.code && <Check size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
+                          {supportedLanguages.map(l => (
+                            <option key={l.code} value={l.code}>
+                              {l.nativeName} ({l.name})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
