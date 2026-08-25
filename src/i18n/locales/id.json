@@ -28,7 +28,15 @@
     "words": "kata",
     "characters": "karakter",
     "focusMode": "Mode Fokus",
-    "exitFocusMode": "Keluar Mode Fokus"
+    "exitFocusMode": "Keluar Mode Fokus",
+    "tab": "Tab",
+    "untitledDoc": "Dokumen Tanpa Judul",
+    "untitledWhiteboard": "Papan Tulis Tanpa Judul",
+    "whiteboard": "Papan Tulis",
+    "rename": "Ganti Nama",
+    "duplicate": "Duplikat",
+    "pin": "Sematkan",
+    "unpin": "Lepas Sematan"
   },
   "nav": {
     "docs": "Dokumen",
@@ -81,7 +89,26 @@
     "blocks": "Blok",
     "callout": "Kutipan / Sorotan",
     "codeBlock": "Blok Kode",
-    "divider": "Pemisah"
+    "divider": "Pemisah",
+    "heading4": "Judul 4",
+    "showPageNumbers": "Tampilkan nomor halaman",
+    "hidePageNumbers": "Sembunyikan nomor halaman",
+    "showOnFirstPage": "Tampilkan di halaman pertama",
+    "hideOnFirstPage": "Sembunyikan di halaman pertama",
+    "position": "Posisi",
+    "left": "Kiri",
+    "center": "Tengah",
+    "right": "Kanan",
+    "searchFont": "Cari font",
+    "searchHeading": "Cari gaya judul",
+    "listStyles": "Gaya Daftar",
+    "alignLeft": "Rata Kiri (Ctrl+Shift+L)",
+    "alignCenter": "Rata Tengah (Ctrl+Shift+E)",
+    "alignRight": "Rata Kanan (Ctrl+Shift+R)",
+    "fullscreen": "Layar Penuh",
+    "documentView": "Tampilan dokumen",
+    "textStyle": "Opsi gaya teks",
+    "toggleRightPanel": "Beralih panel samping"
   },
   "search": {
     "title": "Pencarian Ruang Kerja",
@@ -208,7 +235,12 @@
     "archived": "Diarsipkan",
     "autoDetect": "Deteksi otomatis",
     "fullscreenDisabled": "Mode layar penuh dinonaktifkan.",
-    "fullscreenEnabled": "Mode layar penuh diaktifkan."
+    "fullscreenEnabled": "Mode layar penuh diaktifkan.",
+    "documentState": "Status Dokumen",
+    "draftDesc": "Sedang ditulis secara aktif",
+    "readyDesc": "Selesai dan siap digunakan",
+    "reviewDesc": "Menunggu masukan",
+    "archivedDesc": "Disimpan dan tidak aktif"
   },
   "notifications": {
     "title": "Notifikasi",
@@ -224,9 +256,19 @@
     "listenToDraft": "Dengarkan draf",
     "textToSpeech": "Pemutar teks ke suara",
     "play": "Putar",
-    "pause": "Jeda"
+    "pause": "Jeda",
+    "readAloud": "Bacakan dokumen dengan suara"
   },
   "footer": {
     "stats": "{{words}} kata - {{characters}} karakter"
+  },
+  "export": {
+    "exportAsFile": "Ekspor sebagai Berkas",
+    "convertTo": "Konversi ke",
+    "composeDoc": "Dokumen Compose",
+    "wordDoc": "Microsoft Word",
+    "googleDocs": "Google Docs Cloud",
+    "pdfDoc": "Dokumen PDF",
+    "markdownDoc": "Berkas Markdown"
   }
 }

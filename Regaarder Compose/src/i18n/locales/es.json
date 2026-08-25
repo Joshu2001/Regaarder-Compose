@@ -28,7 +28,15 @@
     "words": "palabras",
     "characters": "caracteres",
     "focusMode": "Modo Enfoque",
-    "exitFocusMode": "Salir del modo Enfoque"
+    "exitFocusMode": "Salir del modo Enfoque",
+    "tab": "Pestaña",
+    "untitledDoc": "Documento sin título",
+    "untitledWhiteboard": "Pizarra sin título",
+    "whiteboard": "Pizarra",
+    "rename": "Renombrar",
+    "duplicate": "Duplicar",
+    "pin": "Fijar",
+    "unpin": "Desfijar"
   },
   "nav": {
     "docs": "Docs",
@@ -81,7 +89,26 @@
     "blocks": "Bloques",
     "callout": "Cita / Destacado",
     "codeBlock": "Bloque de código",
-    "divider": "Separador"
+    "divider": "Separador",
+    "heading4": "Encabezado 4",
+    "showPageNumbers": "Mostrar números de página",
+    "hidePageNumbers": "Ocultar números de página",
+    "showOnFirstPage": "Mostrar en primera página",
+    "hideOnFirstPage": "Ocultar en primera página",
+    "position": "Posición",
+    "left": "Izquierda",
+    "center": "Centro",
+    "right": "Derecha",
+    "searchFont": "Buscar fuente",
+    "searchHeading": "Buscar estilo de encabezado",
+    "listStyles": "Estilos de lista",
+    "alignLeft": "Alinear a la izquierda (Ctrl+Shift+L)",
+    "alignCenter": "Centrar (Ctrl+Shift+E)",
+    "alignRight": "Alinear a la derecha (Ctrl+Shift+R)",
+    "fullscreen": "Pantalla completa",
+    "documentView": "Vista de documento",
+    "textStyle": "Opciones de estilo de texto",
+    "toggleRightPanel": "Alternar panel lateral"
   },
   "search": {
     "title": "Buscar en el espacio",
@@ -208,7 +235,12 @@
     "archived": "Archivado",
     "autoDetect": "Detección automática",
     "fullscreenDisabled": "Modo pantalla completa desactivado.",
-    "fullscreenEnabled": "Modo pantalla completa activado."
+    "fullscreenEnabled": "Modo pantalla completa activado.",
+    "documentState": "Estado del documento",
+    "draftDesc": "En redacción activa",
+    "readyDesc": "Completado y listo para usar",
+    "reviewDesc": "Esperando comentarios",
+    "archivedDesc": "Almacenado e inactivo"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -224,9 +256,19 @@
     "listenToDraft": "Escuchar borrador",
     "textToSpeech": "Lector de voz de texto",
     "play": "Reproducir",
-    "pause": "Pausar"
+    "pause": "Pausar",
+    "readAloud": "Leer documento en voz alta"
   },
   "footer": {
     "stats": "{{words}} palabras - {{characters}} caracteres"
+  },
+  "export": {
+    "exportAsFile": "Exportar como archivo",
+    "convertTo": "Convertir a",
+    "composeDoc": "Documento Compose",
+    "wordDoc": "Microsoft Word",
+    "googleDocs": "Google Docs Cloud",
+    "pdfDoc": "Documento PDF",
+    "markdownDoc": "Archivo Markdown"
   }
 }

@@ -28,7 +28,15 @@
     "words": "كلمات",
     "characters": "حروف",
     "focusMode": "وضع التركيز",
-    "exitFocusMode": "إنهاء وضع التركيز"
+    "exitFocusMode": "إنهاء وضع التركيز",
+    "tab": "علامة تبويب",
+    "untitledDoc": "مستند بدون عنوان",
+    "untitledWhiteboard": "لوحة بدون عنوان",
+    "whiteboard": "اللوحة البيضاء",
+    "rename": "إعادة تسمية",
+    "duplicate": "تكرار",
+    "pin": "تثبيت",
+    "unpin": "إلغاء التثبيت"
   },
   "nav": {
     "docs": "المستندات",
@@ -81,7 +89,26 @@
     "blocks": "كتل",
     "callout": "اقتباس / تنبيه",
     "codeBlock": "كتلة برمجية",
-    "divider": "فاصل"
+    "divider": "فاصل",
+    "heading4": "عنوان 4",
+    "showPageNumbers": "إظهار أرقام الصفحات",
+    "hidePageNumbers": "إخفاء أرقام الصفحات",
+    "showOnFirstPage": "إظهار في الصفحة الأولى",
+    "hideOnFirstPage": "إخفاء في الصفحة الأولى",
+    "position": "الموضع",
+    "left": "يسار",
+    "center": "وسط",
+    "right": "يمين",
+    "searchFont": "البحث عن خط",
+    "searchHeading": "البحث عن نمط العنوان",
+    "listStyles": "أنماط القوائم",
+    "alignLeft": "محاذاة لليسار (Ctrl+Shift+L)",
+    "alignCenter": "محاذاة للوسط (Ctrl+Shift+E)",
+    "alignRight": "محاذاة لليمين (Ctrl+Shift+R)",
+    "fullscreen": "ملء الشاشة",
+    "documentView": "عرض المستند",
+    "textStyle": "خيارات تنسيق النص",
+    "toggleRightPanel": "تبديل اللوحة الجانبية"
   },
   "search": {
     "title": "البحث في مساحة العمل",
@@ -208,7 +235,12 @@
     "archived": "مؤرشف",
     "autoDetect": "كشف تلقائي",
     "fullscreenDisabled": "تم تعطيل وضع ملء الشاشة.",
-    "fullscreenEnabled": "تم تفعيل وضع ملء الشاشة."
+    "fullscreenEnabled": "تم تفعيل وضع ملء الشاشة.",
+    "documentState": "حالة المستند",
+    "draftDesc": "قيد الكتابة والتحرير",
+    "readyDesc": "مكتمل وجاهز للاستخدام",
+    "reviewDesc": "بانتظار المراجعة والتعليقات",
+    "archivedDesc": "مؤرشف وغير نشط"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -224,9 +256,19 @@
     "listenToDraft": "الاستماع إلى المسودة",
     "textToSpeech": "قارئ النصوص الصوتي",
     "play": "تشغيل",
-    "pause": "إيقاف مؤقت"
+    "pause": "إيقاف مؤقت",
+    "readAloud": "قراءة المستند صوتيًا"
   },
   "footer": {
     "stats": "{{words}} كلمة - {{characters}} حرف"
+  },
+  "export": {
+    "exportAsFile": "تصدير كملف",
+    "convertTo": "تحويل إلى",
+    "composeDoc": "مستند Compose",
+    "wordDoc": "مستند Microsoft Word",
+    "googleDocs": "مستند Google Docs السحابي",
+    "pdfDoc": "مستند PDF",
+    "markdownDoc": "ملف Markdown"
   }
 }

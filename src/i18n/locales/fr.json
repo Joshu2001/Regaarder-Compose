@@ -28,7 +28,15 @@
     "words": "mots",
     "characters": "caractères",
     "focusMode": "Mode Focus",
-    "exitFocusMode": "Quitter le mode Focus"
+    "exitFocusMode": "Quitter le mode Focus",
+    "tab": "Onglet",
+    "untitledDoc": "Document sans titre",
+    "untitledWhiteboard": "Tableau sans titre",
+    "whiteboard": "Tableau blanc",
+    "rename": "Renommer",
+    "duplicate": "Dupliquer",
+    "pin": "Épingler",
+    "unpin": "Détacher"
   },
   "nav": {
     "docs": "Docs",
@@ -81,7 +89,26 @@
     "blocks": "Blocs",
     "callout": "Encadré / Citation",
     "codeBlock": "Bloc de code",
-    "divider": "Séparateur"
+    "divider": "Séparateur",
+    "heading4": "Titre 4",
+    "showPageNumbers": "Afficher les numéros de page",
+    "hidePageNumbers": "Masquer les numéros de page",
+    "showOnFirstPage": "Afficher sur la première page",
+    "hideOnFirstPage": "Masquer sur la première page",
+    "position": "Position",
+    "left": "Gauche",
+    "center": "Centre",
+    "right": "Droite",
+    "searchFont": "Rechercher une police",
+    "searchHeading": "Rechercher un style",
+    "listStyles": "Styles de liste",
+    "alignLeft": "Aligner à gauche (Ctrl+Shift+L)",
+    "alignCenter": "Centrer (Ctrl+Shift+E)",
+    "alignRight": "Aligner à droite (Ctrl+Shift+R)",
+    "fullscreen": "Plein écran",
+    "documentView": "Vue document",
+    "textStyle": "Styles de texte",
+    "toggleRightPanel": "Afficher le panneau latéral"
   },
   "search": {
     "title": "Recherche dans l'espace",
@@ -208,7 +235,12 @@
     "archived": "Archivé",
     "autoDetect": "Détection auto",
     "fullscreenDisabled": "Mode plein écran désactivé.",
-    "fullscreenEnabled": "Mode plein écran activé."
+    "fullscreenEnabled": "Mode plein écran activé.",
+    "documentState": "État du document",
+    "draftDesc": "En cours de rédaction",
+    "readyDesc": "Terminé et prêt à l'emploi",
+    "reviewDesc": "En attente de relecture",
+    "archivedDesc": "Archivé et inactif"
   },
   "notifications": {
     "title": "Notifications",
@@ -224,9 +256,19 @@
     "listenToDraft": "Écouter votre brouillon",
     "textToSpeech": "Lecteur audio de document",
     "play": "Lire",
-    "pause": "Pause"
+    "pause": "Pause",
+    "readAloud": "Lire le document à voix haute"
   },
   "footer": {
     "stats": "{{words}} mots - {{characters}} caractères"
+  },
+  "export": {
+    "exportAsFile": "Exporter sous forme de fichier",
+    "convertTo": "Convertir vers",
+    "composeDoc": "Document Compose",
+    "wordDoc": "Microsoft Word",
+    "googleDocs": "Google Docs Cloud",
+    "pdfDoc": "Document PDF",
+    "markdownDoc": "Fichier Markdown"
   }
 }

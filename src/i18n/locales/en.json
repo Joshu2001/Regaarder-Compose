@@ -28,7 +28,15 @@
     "words": "words",
     "characters": "characters",
     "focusMode": "Focus Mode",
-    "exitFocusMode": "Exit Focus Mode"
+    "exitFocusMode": "Exit Focus Mode",
+    "tab": "Tab",
+    "untitledDoc": "Untitled Document",
+    "untitledWhiteboard": "Untitled Whiteboard",
+    "whiteboard": "Whiteboard",
+    "rename": "Rename",
+    "duplicate": "Duplicate",
+    "pin": "Pin",
+    "unpin": "Unpin"
   },
   "nav": {
     "docs": "Docs",
@@ -81,7 +89,26 @@
     "blocks": "Blocks",
     "callout": "Callout / Quote",
     "codeBlock": "Code Block",
-    "divider": "Divider"
+    "divider": "Divider",
+    "heading4": "Heading 4",
+    "showPageNumbers": "Show page numbers",
+    "hidePageNumbers": "Hide page numbers",
+    "showOnFirstPage": "Show on first page",
+    "hideOnFirstPage": "Hide on first page",
+    "position": "Position",
+    "left": "Left",
+    "center": "Center",
+    "right": "Right",
+    "searchFont": "Search font",
+    "searchHeading": "Search heading",
+    "listStyles": "List Styles",
+    "alignLeft": "Align Left (Ctrl+Shift+L)",
+    "alignCenter": "Align Center (Ctrl+Shift+E)",
+    "alignRight": "Align Right (Ctrl+Shift+R)",
+    "fullscreen": "Fullscreen",
+    "documentView": "Document view",
+    "textStyle": "Text style options",
+    "toggleRightPanel": "Toggle right panel"
   },
   "search": {
     "title": "Workspace Search",
@@ -208,7 +235,12 @@
     "archived": "Archived",
     "autoDetect": "Auto detect",
     "fullscreenDisabled": "Fullscreen mode disabled.",
-    "fullscreenEnabled": "Fullscreen mode enabled."
+    "fullscreenEnabled": "Fullscreen mode enabled.",
+    "documentState": "Document State",
+    "draftDesc": "Actively being written",
+    "readyDesc": "Completed and ready for use",
+    "reviewDesc": "Awaiting feedback",
+    "archivedDesc": "Stored and inactive"
   },
   "notifications": {
     "title": "Notifications",
@@ -224,9 +256,19 @@
     "listenToDraft": "Listen to your draft",
     "textToSpeech": "Text-to-speech audio reader",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "readAloud": "Read document out loud"
   },
   "footer": {
     "stats": "{{words}} words - {{characters}} characters"
+  },
+  "export": {
+    "exportAsFile": "Export as File",
+    "convertTo": "Convert to",
+    "composeDoc": "Compose Document",
+    "wordDoc": "Microsoft Word",
+    "googleDocs": "Google Docs Cloud",
+    "pdfDoc": "PDF Document",
+    "markdownDoc": "Markdown File"
   }
 }

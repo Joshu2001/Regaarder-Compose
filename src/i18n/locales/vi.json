@@ -28,7 +28,15 @@
     "words": "từ",
     "characters": "ký tự",
     "focusMode": "Chế độ Tập trung",
-    "exitFocusMode": "Thoát chế độ Tập trung"
+    "exitFocusMode": "Thoát chế độ Tập trung",
+    "tab": "Thẻ",
+    "untitledDoc": "Tài liệu chưa có tiêu đề",
+    "untitledWhiteboard": "Bảng trắng chưa có tiêu đề",
+    "whiteboard": "Bảng trắng",
+    "rename": "Đổi tên",
+    "duplicate": "Tạo bản sao",
+    "pin": "Ghim",
+    "unpin": "Bỏ ghim"
   },
   "nav": {
     "docs": "Tài liệu",
@@ -81,7 +89,26 @@
     "blocks": "Khối nội dung",
     "callout": "Hộp chú thích",
     "codeBlock": "Khối mã",
-    "divider": "Đường phân cách"
+    "divider": "Đường phân cách",
+    "heading4": "Tiêu đề 4",
+    "showPageNumbers": "Hiển thị số trang",
+    "hidePageNumbers": "Ẩn số trang",
+    "showOnFirstPage": "Hiển thị trên trang đầu",
+    "hideOnFirstPage": "Ẩn trên trang đầu",
+    "position": "Vị trí",
+    "left": "Trái",
+    "center": "Giữa",
+    "right": "Phải",
+    "searchFont": "Tìm kiếm phông chữ",
+    "searchHeading": "Tìm kiếm kiểu tiêu đề",
+    "listStyles": "Kiểu danh sách",
+    "alignLeft": "Căn trái (Ctrl+Shift+L)",
+    "alignCenter": "Căn giữa (Ctrl+Shift+E)",
+    "alignRight": "Căn phải (Ctrl+Shift+R)",
+    "fullscreen": "Toàn màn hình",
+    "documentView": "Xem tài liệu",
+    "textStyle": "Tùy chọn kiểu văn bản",
+    "toggleRightPanel": "Bật/tắt bảng điều khiển bên phải"
   },
   "search": {
     "title": "Tìm kiếm không gian làm việc",
@@ -208,7 +235,12 @@
     "archived": "Đã lưu trữ",
     "autoDetect": "Tự động phát hiện",
     "fullscreenDisabled": "Đã tắt chế độ toàn màn hình.",
-    "fullscreenEnabled": "Đã bật chế độ toàn màn hình."
+    "fullscreenEnabled": "Đã bật chế độ toàn màn hình.",
+    "documentState": "Trạng thái tài liệu",
+    "draftDesc": "Đang được biên soạn",
+    "readyDesc": "Đã hoàn thành và sẵn sàng sử dụng",
+    "reviewDesc": "Đang chờ ý kiến đánh giá",
+    "archivedDesc": "Đã lưu trữ và không hoạt động"
   },
   "notifications": {
     "title": "Thông báo",
@@ -224,9 +256,19 @@
     "listenToDraft": "Nghe bản nháp",
     "textToSpeech": "Trình đọc văn bản âm thanh",
     "play": "Phát",
-    "pause": "Tạm dừng"
+    "pause": "Tạm dừng",
+    "readAloud": "Đọc to tài liệu"
   },
   "footer": {
     "stats": "{{words}} từ - {{characters}} ký tự"
+  },
+  "export": {
+    "exportAsFile": "Xuất dưới dạng tệp",
+    "convertTo": "Chuyển đổi sang",
+    "composeDoc": "Tài liệu Compose",
+    "wordDoc": "Microsoft Word",
+    "googleDocs": "Google Docs Cloud",
+    "pdfDoc": "Tài liệu PDF",
+    "markdownDoc": "Tệp Markdown"
   }
 }

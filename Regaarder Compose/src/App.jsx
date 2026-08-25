@@ -5648,7 +5648,7 @@ const FullPageTemplateGallery = ({
                         className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
                       >
                         <Copy size={13} />
-                        <span>Duplicate</span>
+                        <span>{t('common.duplicate') || 'Duplicate'}</span>
                       </button>
                       <button
                         type="button"
@@ -20194,7 +20194,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             setIsDocumentImmersive(false);
             setIsFocusMode(false);
             setPulseCycleActive(true);
-            showToast('Fullscreen mode disabled.');
+            showToast(t('status.fullscreenDisabled') || 'Fullscreen mode disabled.');
             // Always close the citation popover on immersive exit — its anchor
             // rect is stale once the layout collapses back to windowed mode.
             closeCitationPopover();
@@ -31508,7 +31508,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
           console.log('Native browser window fullscreen omitted or denied in Chrome; CSS Immersive Mode active:', fsError);
         });
       }
-      showToast('Fullscreen mode enabled');
+      showToast(t('status.fullscreenEnabled') || 'Fullscreen mode enabled.');
     } else {
       wasNativeFullscreenRef.current = false;
       if (document.fullscreenElement) {
@@ -48183,7 +48183,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
                             >
                               <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span>Rename</span>
+                              <span>{t('common.rename') || 'Rename'}</span>
                             </button>
                             <button
                               type="button"
@@ -71727,7 +71727,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Export Options"
                 >
                   <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
-                  <span>Export</span>
+                  <span>{t('common.export') || 'Export'}</span>
                   {(composeExportMenuOpen || whiteboardExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
                 </button>
                 {composeExportMenuOpen && productMode === 'compose' && (
@@ -71738,7 +71738,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     />
                     <div className="absolute top-11 right-0 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
                       <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">{t('export.exportAsFile') || 'Export as File'}</span>
                         {[
                           { format: 'Compose', label: 'Compose Document', desc: '.compose' },
                           { format: 'Word', label: 'Microsoft Word', desc: '.docx' },
@@ -71810,7 +71810,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                       <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
                       <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Convert to</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">{t('export.convertTo') || 'Convert to'}</span>
                         {[
                           { target: 'Compose', icon: ComposeIcon, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
                           { target: 'Deck', icon: DeckIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
@@ -73113,7 +73113,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {orderedDocuments.map((doc, docIndex) => {
               const rawTitle = doc.title?.trim();
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
-              const label = rawTitle || (isWbDoc ? (docIndex === 0 ? 'Untitled Whiteboard' : `Whiteboard ${docIndex + 1}`) : `Tab ${docIndex + 1}`);
+              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : rawTitle) : (isWbDoc ? (docIndex === 0 ? (t('common.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
               const isActive = activeDocId === doc.id;
 
               return (
@@ -73453,7 +73453,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }}
                               className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
                             >
-                              <span className={headingMeta[option]?.previewClass || 'text-xs'}>{option}</span>
+                              <span className={headingMeta[option]?.previewClass || 'text-xs'}>{option === 'Heading 1' ? (t('toolbar.heading1') || 'Heading 1') : option === 'Heading 2' ? (t('toolbar.heading2') || 'Heading 2') : option === 'Heading 3' ? (t('toolbar.heading3') || 'Heading 3') : option === 'Paragraph' ? (t('toolbar.bodyText') || 'Paragraph') : option === 'Title' ? (t('toolbar.title') || 'Title') : option}</span>
                             </button>
                           ))}
                       </div>
@@ -73497,17 +73497,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onClick={() => setShowPageNumbers((prev) => !prev)}
                         className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
                       >
-                        {showPageNumbers ? 'Hide page numbers' : 'Show page numbers'}
+                        {showPageNumbers ? (t('toolbar.hidePageNumbers') || 'Hide page numbers') : (t('toolbar.showPageNumbers') || 'Show page numbers')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowPageNumberOnFirstPage((prev) => !prev)}
                         className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
                       >
-                        {showPageNumberOnFirstPage ? 'Hide on first page' : 'Show on first page'}
+                        {showPageNumberOnFirstPage ? (t('toolbar.hideOnFirstPage') || 'Hide on first page') : (t('toolbar.showOnFirstPage') || 'Show on first page')}
                       </button>
                       <div className="border-t border-gray-100 pt-1">
-                        <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-gray-400">Position</div>
+                        <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-gray-400">{t('toolbar.position') || 'Position'}</div>
                         <div className="grid grid-cols-3 gap-1 px-1 pb-1">
                           {['left', 'center', 'right'].map((position) => (
                             <button
@@ -84164,12 +84164,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             left: docStateAnchorRect.left,
           }}
         >
-          <div className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-500 dark:text-zinc-400 font-[system-ui]">Document State</div>
+          <div className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-500 dark:text-zinc-400 font-[system-ui]">{t('status.documentState') || 'Document State'}</div>
           {[
-            { key: 'draft',    label: 'Draft',     desc: 'Actively being written',       icon: <FileEdit    size={12} className="stroke-[2] text-violet-500"  /> },
-            { key: 'ready',    label: 'Ready',     desc: 'Completed and ready for use',  icon: <CheckCircle2 size={12} className="stroke-[2] text-emerald-500" /> },
-            { key: 'review',   label: 'In Review', desc: 'Awaiting feedback',             icon: <Users2      size={12} className="stroke-[2] text-blue-500"    /> },
-            { key: 'archived', label: 'Archived',  desc: 'Stored and inactive',          icon: <Archive     size={12} className="stroke-[2] text-slate-400"   /> },
+            { key: 'draft',    label: t('status.draft') || 'Draft',     desc: t('status.draftDesc') || 'Actively being written',       icon: <FileEdit    size={12} className="stroke-[2] text-violet-500"  /> },
+            { key: 'ready',    label: t('status.ready') || 'Ready',     desc: t('status.readyDesc') || 'Completed and ready for use',  icon: <CheckCircle2 size={12} className="stroke-[2] text-emerald-500" /> },
+            { key: 'review',   label: t('status.review') || 'In Review', desc: t('status.reviewDesc') || 'Awaiting feedback',             icon: <Users2      size={12} className="stroke-[2] text-blue-500"    /> },
+            { key: 'archived', label: t('status.archived') || 'Archived',  desc: t('status.archivedDesc') || 'Stored and inactive',          icon: <Archive     size={12} className="stroke-[2] text-slate-400"   /> },
           ].map((item) => (
             <button
               key={item.key}

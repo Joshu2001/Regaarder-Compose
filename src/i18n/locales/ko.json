@@ -28,7 +28,15 @@
     "words": "단어",
     "characters": "자",
     "focusMode": "몰입 모드",
-    "exitFocusMode": "몰입 모드 종료"
+    "exitFocusMode": "몰입 모드 종료",
+    "tab": "탭",
+    "untitledDoc": "제목 없는 문서",
+    "untitledWhiteboard": "제목 없는 화이트보드",
+    "whiteboard": "화이트보드",
+    "rename": "이름 바꾸기",
+    "duplicate": "복제",
+    "pin": "고정",
+    "unpin": "고정 해제"
   },
   "nav": {
     "docs": "문서",
@@ -81,7 +89,26 @@
     "blocks": "블록",
     "callout": "인용구 / 콜아웃",
     "codeBlock": "코드 블록",
-    "divider": "구분선"
+    "divider": "구분선",
+    "heading4": "제목 4",
+    "showPageNumbers": "페이지 번호 표시",
+    "hidePageNumbers": "페이지 번호 숨기기",
+    "showOnFirstPage": "첫 페이지에 표시",
+    "hideOnFirstPage": "첫 페이지 숨기기",
+    "position": "위치",
+    "left": "왼쪽",
+    "center": "가운데",
+    "right": "오른쪽",
+    "searchFont": "글꼴 검색",
+    "searchHeading": "제목 스타일 검색",
+    "listStyles": "목록 스타일",
+    "alignLeft": "왼쪽 맞춤 (Ctrl+Shift+L)",
+    "alignCenter": "가운데 맞춤 (Ctrl+Shift+E)",
+    "alignRight": "오른쪽 맞춤 (Ctrl+Shift+R)",
+    "fullscreen": "전체 화면",
+    "documentView": "문서 보기",
+    "textStyle": "텍스트 스타일",
+    "toggleRightPanel": "우측 패널 전환"
   },
   "search": {
     "title": "워크스페이스 검색",
@@ -208,7 +235,12 @@
     "archived": "보관됨",
     "autoDetect": "자동 감지",
     "fullscreenDisabled": "전체화면 모드가 비활성화되었습니다.",
-    "fullscreenEnabled": "전체화면 모드가 활성화되었습니다."
+    "fullscreenEnabled": "전체화면 모드가 활성화되었습니다.",
+    "documentState": "문서 상태",
+    "draftDesc": "작성 및 편집 중",
+    "readyDesc": "완료되어 사용 가능",
+    "reviewDesc": "검토 의견 대기 중",
+    "archivedDesc": "보관되어 비활성 상태"
   },
   "notifications": {
     "title": "알림",
@@ -224,9 +256,19 @@
     "listenToDraft": "초안 듣기",
     "textToSpeech": "음성 낭독 플레이어",
     "play": "재생",
-    "pause": "일시정지"
+    "pause": "일시정지",
+    "readAloud": "문서 음성 낭독"
   },
   "footer": {
     "stats": "{{words}} 단어 - {{characters}} 자"
+  },
+  "export": {
+    "exportAsFile": "파일로 내보내기",
+    "convertTo": "다른 형식으로 변환",
+    "composeDoc": "Compose 문서",
+    "wordDoc": "Microsoft Word 문서",
+    "googleDocs": "Google Docs 클라우드",
+    "pdfDoc": "PDF 문서",
+    "markdownDoc": "Markdown 파일"
   }
 }
