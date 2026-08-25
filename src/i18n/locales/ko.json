@@ -387,10 +387,125 @@
     "understand": "심층 이해",
     "decide": "AI 의사결정",
     "searchPlaceholder": "Orb에 질문하거나 워크스페이스를 검색하세요...",
-    "active": "Orb 활성 상태",
-    "entities": "개 개체",
-    "relationships": "개 관계",
-    "modes": "모드"
+    "active": "Orb Active",
+    "entities": "entities",
+    "relationships": "relationships",
+    "modes": "Modes",
+    "intelligenceLayer": "INTELLIGENCE LAYER",
+    "buildIntelligence": "Build Intelligence →",
+    "lenses": "Lenses:",
+    "semanticLinkages": "Semantic Linkages",
+    "semanticLinkagesDesc": "Provenance & epistemic status supporting cross-workspace links.",
+    "noSemanticLinkages": "No Semantic Linkages",
+    "noSemanticLinkagesDesc": "Linkages and evidence will appear as workspace artifacts reference each other.",
+    "noSemanticLinkagesDetected": "No Semantic Linkages Detected Yet",
+    "noSemanticLinkagesDetectedDesc": "Orb autonomously uncovers provenance linkages when documents, spreadsheets, and tasks share quantified metrics, formulas, or deliverables.",
+    "openDocs": "Open Docs →",
+    "openSheets": "Open Sheets →",
+    "lens": {
+      "timeline": "Timeline",
+      "dependencies": "Dependencies",
+      "decisions": "Decisions",
+      "projects": "Projects",
+      "people": "People",
+      "financial": "Financial",
+      "knowledge": "Knowledge",
+      "causal": "Causal",
+      "ai": "AI Inferences"
+    },
+    "lensDesc": {
+      "timeline": "Chronological progression",
+      "dependencies": "Prerequisites & blocking links",
+      "decisions": "Strategic choices & resolutions",
+      "projects": "Initiatives & clusters",
+      "people": "Stakeholders & collaborators",
+      "financial": "Spreadsheet models & formulas",
+      "knowledge": "Shared concepts & taxonomy",
+      "causal": "Cause-and-effect risk chains",
+      "ai": "Latent patterns & anomalies"
+    },
+    "empty": {
+      "timeline": {
+        "title": "No Timeline Events Yet",
+        "desc": "Chronological progression from assumptions to decisions and milestones will appear as dated artifacts and meetings are indexed."
+      },
+      "dependencies": {
+        "title": "No Dependencies Connected Yet",
+        "desc": "Upstream prerequisites, blocking deliverables, and formula dependencies between documents and models will be mapped here."
+      },
+      "decisions": {
+        "title": "No Decisions Documented Yet",
+        "desc": "Strategic choices, board resolutions, and rationale memos across your workspace will cluster here."
+      },
+      "projects": {
+        "title": "No Projects Clustered Yet",
+        "desc": "Artifacts grouped by initiative, workstream, or tag will organize into visual project clusters."
+      },
+      "people": {
+        "title": "No Stakeholder Mappings Yet",
+        "desc": "Document authors, assignees, meeting speakers, and collaborators will be mapped around their deliverables."
+      },
+      "financial": {
+        "title": "No Financial Models Connected Yet",
+        "desc": "Spreadsheet models, cell formulas, capex breakdowns, and revenue models will connect here."
+      },
+      "knowledge": {
+        "title": "No Knowledge Clusters Yet",
+        "desc": "Shared concepts, recurring themes, and cross-workspace terminology will emerge as you add content."
+      },
+      "causal": {
+        "title": "No Causal Risk Chains Yet",
+        "desc": "Cause-and-effect pathways, supply chain dependencies, and sensitivity triggers will be traced here."
+      },
+      "ai": {
+        "title": "No AI Inferences Discovered Yet",
+        "desc": "Orb automatically surfaces latent relationships and anomaly patterns between your workspace artifacts."
+      }
+    },
+    "searchEmpty": {
+      "all": {
+        "title": "No workspace items indexed yet",
+        "desc": "Create or edit documents, spreadsheets, and tasks to build your live workspace intelligence."
+      },
+      "compose": {
+        "title": "No documents yet to link",
+        "desc": "Create or edit a document in Compose to index its text, headings, and key insights."
+      },
+      "sheets": {
+        "title": "No spreadsheets yet to link",
+        "desc": "Create or import a spreadsheet to index numerical data grids and calculation formulas."
+      },
+      "deck": {
+        "title": "No presentation decks yet to link",
+        "desc": "Create presentation slides to index executive summaries, outlines, and metrics."
+      },
+      "room": {
+        "title": "No meeting transcripts yet",
+        "desc": "Recorded discussions and live transcripts from Room will appear here automatically."
+      },
+      "tasks": {
+        "title": "No tasks or action items yet",
+        "desc": "Create tasks and assign deliverables to map action item dependencies."
+      },
+      "schedule": {
+        "title": "No calendar events yet",
+        "desc": "Add scheduled events and agenda milestones to track timeline relationships."
+      },
+      "browser": {
+        "title": "No research notes yet",
+        "desc": "Save web research and verified sources from the browser to connect external intelligence."
+      }
+    },
+    "workspaceLabels": {
+      "all": "All Intelligence",
+      "compose": "Docs",
+      "sheets": "Sheets",
+      "deck": "Decks",
+      "room": "Room / Meetings",
+      "tasks": "Tasks",
+      "schedule": "Schedule",
+      "browser": "Research"
+    }
   },
   "quickActions": {
     "title": "빠른 실행",
