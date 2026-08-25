@@ -505,7 +505,12 @@
       "tasks": "タスク",
       "schedule": "スケジュール",
       "browser": "研究ノート"
-    }
+    },
+    "describeWrite": "書きたい内容を入力してください...",
+    "askAboutSelection": "選択したテキストについて質問...",
+    "noResultsFor": "「{{query}}」の検索結果はありません",
+    "noMatchingFound": "一致するドキュメントや数式、タスクが見つかりません。",
+    "createWorkspace": "{{name}} を作成"
   },
   "quickActions": {
     "title": "クイックアクション",
@@ -531,5 +536,10 @@
     "notesDesc": "Webソースを閲覧して引用をノートに保存します。",
     "peopleTitle": "登録されたメンバーはいません",
     "peopleDesc": "チームメンバーを招待して役割を割り当てます。"
+  },
+  "auth": {
+    "guestMode": "ゲストモード",
+    "guestModeDesc": "サインインして作業を同期し、コラボレーションとAIツールを利用します。",
+    "signIn": "サインイン"
   }
 }

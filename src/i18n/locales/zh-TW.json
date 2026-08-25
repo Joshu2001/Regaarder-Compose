@@ -505,7 +505,12 @@
       "tasks": "任務",
       "schedule": "日程",
       "browser": "研究筆記"
-    }
+    },
+    "describeWrite": "描述您想要撰寫或生成的內容...",
+    "askAboutSelection": "針對選取的內容提問或要求優化...",
+    "noResultsFor": "找不到與「{{query}}」相關的結果",
+    "noMatchingFound": "在此工作區中找不到相符的文件、公式或任務。",
+    "createWorkspace": "新增 {{name}}"
   },
   "quickActions": {
     "title": "常用快捷動作",
@@ -531,5 +536,10 @@
     "notesDesc": "瀏覽網路即時資料並將引用文獻儲存至筆記。",
     "peopleTitle": "尚無協作成員資料",
     "peopleDesc": "邀請團隊成員並指派工作區專案角色。"
+  },
+  "auth": {
+    "guestMode": "訪客模式",
+    "guestModeDesc": "登入以同步工作進度、進行團隊協作並存取進階 AI 工具。",
+    "signIn": "登入帳號"
   }
 }

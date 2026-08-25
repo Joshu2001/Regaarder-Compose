@@ -391,7 +391,7 @@
     "entities": "entities",
     "relationships": "relationships",
     "modes": "Modes",
-    "intelligenceLayer": "INTELLIGENCE LAYER",
+    "intelligenceLayer": "Lớp trí tuệ",
     "buildIntelligence": "Build Intelligence →",
     "lenses": "Lenses:",
     "semanticLinkages": "Semantic Linkages",
@@ -505,7 +505,12 @@
       "tasks": "Tasks",
       "schedule": "Schedule",
       "browser": "Research"
-    }
+    },
+    "describeWrite": "Mô tả nội dung bạn muốn viết...",
+    "askAboutSelection": "Hỏi bất cứ điều gì về phần đã chọn...",
+    "noResultsFor": "Không tìm thấy kết quả cho \"{{query}}\"",
+    "noMatchingFound": "Không tìm thấy tài liệu hoặc tác vụ phù hợp.",
+    "createWorkspace": "Tạo {{name}}"
   },
   "quickActions": {
     "title": "THAO TÁC NHANH",
@@ -531,5 +536,10 @@
     "notesDesc": "Duyệt web và lưu trích dẫn vào ghi chú.",
     "peopleTitle": "Chưa có thành viên",
     "peopleDesc": "Mời đồng đội và phân quyền dự án."
+  },
+  "auth": {
+    "guestMode": "Chế độ khách",
+    "guestModeDesc": "Đăng nhập để đồng bộ công việc và sử dụng công cụ AI nâng cao.",
+    "signIn": "Đăng nhập"
   }
 }
