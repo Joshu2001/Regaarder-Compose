@@ -13,7 +13,7 @@
     "refresh": "更新",
     "back": "戻る",
     "loading": "読み込み中...",
-    "untitled": "名称未設定",
+    "untitled": "無題のドキュメント",
     "collapse": "折りたたむ",
     "expand": "展開",
     "insert": "挿入",
@@ -22,25 +22,32 @@
     "items": "件",
     "item": "件",
     "all": "すべて",
-    "none": "なし"
+    "none": "なし",
+    "savedDrafts": "下書き一覧",
+    "unsavedDraft": "未保存の下書き",
+    "words": "語",
+    "characters": "文字",
+    "focusMode": "フォーカスモード",
+    "exitFocusMode": "フォーカスモードを終了"
   },
   "nav": {
     "docs": "ドキュメント",
     "sheets": "スプレッドシート",
-    "deck": "プレゼンテーション",
+    "deck": "スライド",
     "whiteboard": "ホワイトボード",
     "room": "ルーム",
     "memory": "メモリ",
     "schedule": "スケジュール",
     "tasks": "タスク",
     "chat": "チャット",
-    "settings": "設定"
+    "settings": "設定",
+    "savedDrafts": "下書き一覧"
   },
   "toolbar": {
     "context": "コンテキスト",
     "templates": "テンプレート",
     "write": "執筆",
-    "review": "校正",
+    "review": "校閲",
     "view": "表示",
     "heading1": "見出し 1",
     "heading2": "見出し 2",
@@ -52,13 +59,29 @@
     "chart": "グラフ",
     "equation": "数式",
     "symbol": "記号",
-    "askAi": "AI に質問...",
+    "askAi": "AIに質問...",
     "dictate": "音声入力",
-    "proofread": "校閲",
+    "proofread": "文章校正",
     "readability": "読みやすさ",
-    "citations": "引用",
+    "citations": "引用文献",
     "redact": "墨消し",
-    "history": "履歴"
+    "history": "変更履歴",
+    "heading": "見出し",
+    "title": "タイトル",
+    "pageNumber": "ページ番号",
+    "bulletList": "箇条書き",
+    "numberedList": "番号付きリスト",
+    "multilevelList": "階層リスト",
+    "checklist": "チェックリスト",
+    "insert": "挿入",
+    "media": "メディア",
+    "mediaSubtitle": "画像／動画／ファイル",
+    "specialCharacters": "特殊文字",
+    "emoji": "絵文字",
+    "blocks": "ブロック",
+    "callout": "引用・コールアウト",
+    "codeBlock": "コードブロック",
+    "divider": "区切り線"
   },
   "search": {
     "title": "ワークスペース検索",
@@ -151,20 +174,20 @@
     "appearance": "外観",
     "light": "ライト",
     "dark": "ダーク",
-    "system": "システムに同期",
+    "system": "システム設定に同期",
     "primaryAccentColor": "アクセントカラー",
     "customAccentColor": "カスタムアクセント",
-    "uiLanguage": "表示言語",
-    "uiLanguageDesc": "メニューやボタンに適用する言語を選択します。",
-    "aiLanguage": "AI / Orb 応答言語",
-    "aiLanguageDesc": "Orb の応答言語を設定します。「自動」でプロンプトに合わせます。",
+    "uiLanguage": "インターフェース言語",
+    "uiLanguageDesc": "ボタン、メニュー、ワークスペースの表示言語を設定します。",
+    "aiLanguage": "AI & Orb 応答言語",
+    "aiLanguageDesc": "Orb の応答言語を設定します。「自動」でプロンプト言語に一致します。",
     "aiLanguageAuto": "自動（プロンプト言語に合わせる）",
     "regionalFormatting": "地域とフォーマット",
     "regionalFormattingDesc": "日付、数値、通貨、表の表示形式を設定します。",
     "autoDetectLanguage": "言語の自動検出",
-    "autoDetectDesc": "入力テキストの言語を自動認識します。",
+    "autoDetectDesc": "スペルチェックおよび入力言語を自動検出します。",
     "analytics": "診断データ",
-    "analyticsDesc": "安定性向上のため匿名の診断情報を共有します。"
+    "analyticsDesc": "品質向上のため匿名の利用データを送信します。"
   },
   "ai": {
     "askPromptPlaceholder": "書きたい内容を入力するか Orb に質問...",
@@ -177,5 +200,33 @@
     "generateOutline": "アウトラインを生成",
     "improveTone": "表現を改善",
     "translateTo": "翻訳..."
+  },
+  "status": {
+    "draft": "下書き",
+    "ready": "完了",
+    "review": "レビュー中",
+    "archived": "アーカイブ済み",
+    "autoDetect": "自動検出",
+    "fullscreenDisabled": "全画面モードを解除しました。",
+    "fullscreenEnabled": "全画面モードを開始しました。"
+  },
+  "notifications": {
+    "title": "通知",
+    "unread": "未読",
+    "markAllRead": "すべて既読にする",
+    "clear": "クリア",
+    "clearAll": "すべてクリア",
+    "allCaughtUp": "新しい通知はありません",
+    "notification": "件の通知",
+    "notifications": "件の通知"
+  },
+  "tts": {
+    "listenToDraft": "下書きを音声で聴く",
+    "textToSpeech": "音声読み上げ機能",
+    "play": "再生",
+    "pause": "一時停止"
+  },
+  "footer": {
+    "stats": "{{words}} 語 - {{characters}} 文字"
   }
 }

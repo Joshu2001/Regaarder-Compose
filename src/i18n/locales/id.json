@@ -9,11 +9,11 @@
     "export": "Ekspor",
     "share": "Bagikan",
     "copy": "Salin",
-    "copied": "Disalin!",
+    "copied": "Tersalin!",
     "refresh": "Segarkan",
     "back": "Kembali",
     "loading": "Memuat...",
-    "untitled": "Tanpa judul",
+    "untitled": "Dokumen Tanpa Judul",
     "collapse": "Ciutkan",
     "expand": "Perluas",
     "insert": "Sisipkan",
@@ -22,19 +22,26 @@
     "items": "item",
     "item": "item",
     "all": "Semua",
-    "none": "Tidak ada"
+    "none": "Tidak ada",
+    "savedDrafts": "Draf Tersimpan",
+    "unsavedDraft": "Draf Belum Disimpan",
+    "words": "kata",
+    "characters": "karakter",
+    "focusMode": "Mode Fokus",
+    "exitFocusMode": "Keluar Mode Fokus"
   },
   "nav": {
     "docs": "Dokumen",
-    "sheets": "Lembar Kerja",
+    "sheets": "Spreadsheet",
     "deck": "Presentasi",
     "whiteboard": "Papan Tulis",
-    "room": "Ruang Kolaborasi",
+    "room": "Ruang",
     "memory": "Memori",
     "schedule": "Jadwal",
     "tasks": "Tugas",
     "chat": "Obrolan",
-    "settings": "Pengaturan"
+    "settings": "Pengaturan",
+    "savedDrafts": "Draf Tersimpan"
   },
   "toolbar": {
     "context": "Konteks",
@@ -45,7 +52,7 @@
     "heading1": "Judul 1",
     "heading2": "Judul 2",
     "heading3": "Judul 3",
-    "bodyText": "Teks Isi",
+    "bodyText": "Paragraf",
     "insertMedia": "Sisipkan Media",
     "lists": "Daftar",
     "table": "Tabel",
@@ -53,12 +60,28 @@
     "equation": "Persamaan",
     "symbol": "Simbol",
     "askAi": "Tanya AI...",
-    "dictate": "Dikte Suara",
+    "dictate": "Dikte",
     "proofread": "Koreksi",
     "readability": "Keterbacaan",
     "citations": "Kutipan",
     "redact": "Sensor",
-    "history": "Riwayat Versi"
+    "history": "Riwayat Versi",
+    "heading": "Judul",
+    "title": "Judul Utama",
+    "pageNumber": "Nomor Halaman",
+    "bulletList": "Daftar Poin",
+    "numberedList": "Daftar Bernomor",
+    "multilevelList": "Daftar Bertingkat",
+    "checklist": "Daftar Periksa",
+    "insert": "Sisipkan",
+    "media": "Media",
+    "mediaSubtitle": "Gambar / Video / Berkas",
+    "specialCharacters": "Karakter Khusus",
+    "emoji": "Emoji",
+    "blocks": "Blok",
+    "callout": "Kutipan / Sorotan",
+    "codeBlock": "Blok Kode",
+    "divider": "Pemisah"
   },
   "search": {
     "title": "Pencarian Ruang Kerja",
@@ -151,20 +174,20 @@
     "appearance": "Tampilan",
     "light": "Terang",
     "dark": "Gelap",
-    "system": "Sesuai Sistem",
+    "system": "Sistem",
     "primaryAccentColor": "Warna Aksen Utama",
-    "customAccentColor": "Warna Kustom",
+    "customAccentColor": "Warna Aksen Kustom",
     "uiLanguage": "Bahasa Antarmuka",
-    "uiLanguageDesc": "Pilih bahasa untuk tombol, menu, dan kontrol ruang kerja.",
+    "uiLanguageDesc": "Pilih bahasa untuk tombol, menu, dan navigasi.",
     "aiLanguage": "Bahasa AI & Orb",
-    "aiLanguageDesc": "Bahasa yang digunakan Orb saat menjawab. Atur Otomatis untuk mencocokkan prompt.",
+    "aiLanguageDesc": "Pilih bahasa respons Orb. 'Otomatis' akan mencocokkan teks.",
     "aiLanguageAuto": "Otomatis (Cocokkan Bahasa Prompt)",
     "regionalFormatting": "Format Wilayah & Lokal",
     "regionalFormattingDesc": "Format tanggal, angka, mata uang, dan lembar kerja.",
-    "autoDetectLanguage": "Deteksi Bahasa Otomatis",
-    "autoDetectDesc": "Mendeteksi bahasa input teks secara otomatis.",
+    "autoDetectLanguage": "Deteksi Otomatis",
+    "autoDetectDesc": "Mendeteksi ejaan dan bahasa input secara otomatis.",
     "analytics": "Diagnostik Anonim",
-    "analyticsDesc": "Bagikan data telemetri anonim untuk meningkatkan stabilitas ruang kerja."
+    "analyticsDesc": "Bagikan data anonim untuk meningkatkan stabilitas."
   },
   "ai": {
     "askPromptPlaceholder": "Jelaskan apa yang ingin Anda tulis atau tanyakan pada Orb...",
@@ -177,5 +200,33 @@
     "generateOutline": "Buat Kerangka",
     "improveTone": "Perbaiki Nada & Gaya",
     "translateTo": "Terjemahkan ke..."
+  },
+  "status": {
+    "draft": "Draf",
+    "ready": "Selesai",
+    "review": "Ditinjau",
+    "archived": "Diarsipkan",
+    "autoDetect": "Deteksi otomatis",
+    "fullscreenDisabled": "Mode layar penuh dinonaktifkan.",
+    "fullscreenEnabled": "Mode layar penuh diaktifkan."
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "unread": "belum dibaca",
+    "markAllRead": "Tandai semua telah dibaca",
+    "clear": "Hapus",
+    "clearAll": "Hapus semua",
+    "allCaughtUp": "Semua notifikasi telah dibaca",
+    "notification": "notifikasi",
+    "notifications": "notifikasi"
+  },
+  "tts": {
+    "listenToDraft": "Dengarkan draf",
+    "textToSpeech": "Pemutar teks ke suara",
+    "play": "Putar",
+    "pause": "Jeda"
+  },
+  "footer": {
+    "stats": "{{words}} kata - {{characters}} karakter"
   }
 }

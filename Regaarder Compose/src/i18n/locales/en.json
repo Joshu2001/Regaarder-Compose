@@ -13,7 +13,7 @@
     "refresh": "Refresh",
     "back": "Back",
     "loading": "Loading...",
-    "untitled": "Untitled",
+    "untitled": "Untitled Document",
     "collapse": "Collapse",
     "expand": "Expand",
     "insert": "Insert",
@@ -22,7 +22,13 @@
     "items": "items",
     "item": "item",
     "all": "All",
-    "none": "None"
+    "none": "None",
+    "savedDrafts": "Saved Drafts",
+    "unsavedDraft": "Unsaved Draft",
+    "words": "words",
+    "characters": "characters",
+    "focusMode": "Focus Mode",
+    "exitFocusMode": "Exit Focus Mode"
   },
   "nav": {
     "docs": "Docs",
@@ -34,7 +40,8 @@
     "schedule": "Schedule",
     "tasks": "Tasks",
     "chat": "Chat",
-    "settings": "Settings"
+    "settings": "Settings",
+    "savedDrafts": "Saved Drafts"
   },
   "toolbar": {
     "context": "Context",
@@ -45,20 +52,36 @@
     "heading1": "Heading 1",
     "heading2": "Heading 2",
     "heading3": "Heading 3",
-    "bodyText": "Body Text",
+    "bodyText": "Paragraph",
     "insertMedia": "Insert Media",
     "lists": "Lists",
     "table": "Table",
     "chart": "Chart",
-    "equation": "Equation",
-    "symbol": "Symbol",
+    "equation": "Equations",
+    "symbol": "Symbols",
     "askAi": "Ask AI...",
     "dictate": "Dictate",
     "proofread": "Proofread",
     "readability": "Readability",
     "citations": "Citations",
     "redact": "Redact",
-    "history": "History"
+    "history": "Version History",
+    "heading": "Heading",
+    "title": "Title",
+    "pageNumber": "Page #",
+    "bulletList": "Bullet List",
+    "numberedList": "Numbered List",
+    "multilevelList": "Multilevel List",
+    "checklist": "Checklist",
+    "insert": "Insert",
+    "media": "Media",
+    "mediaSubtitle": "Images / Videos / Files",
+    "specialCharacters": "Special Characters",
+    "emoji": "Emoji",
+    "blocks": "Blocks",
+    "callout": "Callout / Quote",
+    "codeBlock": "Code Block",
+    "divider": "Divider"
   },
   "search": {
     "title": "Workspace Search",
@@ -162,7 +185,7 @@
     "regionalFormatting": "Regional Formatting & Locale",
     "regionalFormattingDesc": "Controls dates, numbers, currency symbols, and spreadsheet formatting.",
     "autoDetectLanguage": "Auto-detect Language",
-    "autoDetectDesc": "Automatically detect spelling and document input languages.",
+    "autoDetectDesc": "Automatically detect spelling and document input language.",
     "analytics": "Anonymous Diagnostics",
     "analyticsDesc": "Help improve workspace stability with anonymous telemetry."
   },
@@ -177,5 +200,33 @@
     "generateOutline": "Generate Outline",
     "improveTone": "Improve Tone & Flow",
     "translateTo": "Translate to..."
+  },
+  "status": {
+    "draft": "Draft",
+    "ready": "Ready",
+    "review": "In Review",
+    "archived": "Archived",
+    "autoDetect": "Auto detect",
+    "fullscreenDisabled": "Fullscreen mode disabled.",
+    "fullscreenEnabled": "Fullscreen mode enabled."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "unread",
+    "markAllRead": "Mark all read",
+    "clear": "Clear",
+    "clearAll": "Clear all",
+    "allCaughtUp": "You're all caught up",
+    "notification": "notification",
+    "notifications": "notifications"
+  },
+  "tts": {
+    "listenToDraft": "Listen to your draft",
+    "textToSpeech": "Text-to-speech audio reader",
+    "play": "Play",
+    "pause": "Pause"
+  },
+  "footer": {
+    "stats": "{{words}} words - {{characters}} characters"
   }
 }
