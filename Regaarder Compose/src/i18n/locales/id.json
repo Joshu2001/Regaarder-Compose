@@ -40,7 +40,12 @@
     "on": "Aktif",
     "off": "Nonaktif",
     "mode": "Mode",
-    "chars": "karakter"
+    "chars": "karakter",
+    "terms": "Ketentuan Layanan",
+    "privacy": "Kebijakan Privasi",
+    "legal": "Hukum",
+    "updated": "Diperbarui",
+    "version": "Versi"
   },
   "nav": {
     "docs": "Dokumen",
@@ -369,7 +374,8 @@
     "stepOf": "Langkah {{current}} dari {{total}}",
     "noHistory": "Belum ada riwayat editan",
     "speed": "Kecepatan",
-    "linking": "Membuat tautan..."
+    "linking": "Membuat tautan...",
+    "genesis": "awal"
   },
   "workspaceDesc": {
     "orb": "Lapisan Intelijen Terpadu",
@@ -510,7 +516,13 @@
     "askAboutSelection": "Tanyakan apa saja tentang pilihan ini...",
     "noResultsFor": "Tidak ada hasil untuk \"{{query}}\"",
     "noMatchingFound": "Tidak ditemukan dokumen atau tugas yang cocok.",
-    "createWorkspace": "Buat {{name}}"
+    "createWorkspace": "Buat {{name}}",
+    "decidePlaceholder": "Ajukan pertanyaan eksekutif atau evaluasi strategi...",
+    "inquiries": "Pertanyaan saran:",
+    "strategicReasoning": "Sistem Penalaran Strategis",
+    "strategicReasoningDesc": "Jawaban prosa langsung, rekonsiliasi kontradiksi dokumen, dan kesimpulan operasional yang dapat ditindaklanjuti.",
+    "inquiryContradictions": "Kontradiksi apa yang ada di antara memo strategi dan spreadsheet aktif?",
+    "inquiryGrowth": "Uji strategi pertumbuhan kami dan uji asumsi konversi yang diperlukan"
   },
   "quickActions": {
     "title": "TINDAKAN CEPAT",
@@ -541,5 +553,17 @@
     "guestMode": "Mode Tamu",
     "guestModeDesc": "Masuk untuk menyinkronkan pekerjaan dan mengakses alat AI premium.",
     "signIn": "Masuk"
+  },
+  "landing": {
+    "headline": "Satu ruang kerja untuk semua kebutuhan kantor Anda.",
+    "subheadline": "Pilih produk untuk mulai membuat.",
+    "compose": "Docs Dokumen",
+    "deck": "Deck Presentasi",
+    "sheet": "Sheet Spreadsheet",
+    "room": "Room Ruang",
+    "whiteboard": "Whiteboard Papan Tulis",
+    "schedule": "Schedule Jadwal",
+    "memory": "Memory Memori",
+    "tasks": "Tasks Tugas"
   }
 }

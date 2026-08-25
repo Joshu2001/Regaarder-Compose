@@ -40,7 +40,12 @@
     "on": "Activado",
     "off": "Desactivado",
     "mode": "Modo",
-    "chars": "caracteres"
+    "chars": "caracteres",
+    "terms": "Términos de servicio",
+    "privacy": "Política de privacidad",
+    "legal": "Aviso legal",
+    "updated": "Actualizado",
+    "version": "Versión"
   },
   "nav": {
     "docs": "Docs",
@@ -369,7 +374,8 @@
     "stepOf": "Paso {{current}} de {{total}}",
     "noHistory": "Sin historial de edición aún",
     "speed": "Velocidad",
-    "linking": "Enlace..."
+    "linking": "Enlace...",
+    "genesis": "génesis"
   },
   "workspaceDesc": {
     "orb": "Capa de Inteligencia Unificada",
@@ -510,7 +516,13 @@
     "askAboutSelection": "Pregunta sobre esta selección...",
     "noResultsFor": "No hay resultados para \"{{query}}\"",
     "noMatchingFound": "No se encontraron documentos o tareas coincidentes.",
-    "createWorkspace": "Crear {{name}}"
+    "createWorkspace": "Crear {{name}}",
+    "decidePlaceholder": "Haz una pregunta ejecutiva o evalúa una estrategia...",
+    "inquiries": "Preguntas sugeridas:",
+    "strategicReasoning": "Sistema de Razonamiento Estratégico",
+    "strategicReasoningDesc": "Respuestas directas, reconciliación de contradicciones, análisis de supuestos y conclusiones operativas accionables.",
+    "inquiryContradictions": "¿Qué contradicciones existen entre los memorandos de estrategia y las hojas de cálculo?",
+    "inquiryGrowth": "Desafía nuestra estrategia de crecimiento y prueba los supuestos de conversión"
   },
   "quickActions": {
     "title": "ACCIONES RÁPIDAS",
@@ -541,5 +553,17 @@
     "guestMode": "Modo invitado",
     "guestModeDesc": "Inicia sesión para sincronizar tu trabajo y acceder a herramientas de IA.",
     "signIn": "Iniciar sesión"
+  },
+  "landing": {
+    "headline": "Un espacio de trabajo para todas tus necesidades de oficina.",
+    "subheadline": "Elige un producto para empezar a crear.",
+    "compose": "Docs",
+    "deck": "Deck",
+    "sheet": "Sheet",
+    "room": "Room",
+    "whiteboard": "Whiteboard",
+    "schedule": "Schedule",
+    "memory": "Memory",
+    "tasks": "Tasks"
   }
 }

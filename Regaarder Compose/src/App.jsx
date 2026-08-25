@@ -43695,10 +43695,10 @@ Respond with a JSON array of slide objects matching the schema.`;
               {replayTimeline.length > 0 && (
                 <div className="flex items-center justify-between text-[10px] font-medium tracking-tight pt-1 border-t border-slate-100/30 text-slate-400/40">
                   <span>
-                    Updated {new Date(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {t('common.updated') || 'Updated'} {new Date(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <span>
-                    Version {replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.id?.slice(0,8) || 'genesis'}
+                    {t('common.version') || 'Version'} {replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.id?.slice(0,8) || (t('replay.genesis') || 'genesis')}
                   </span>
                 </div>
               )}

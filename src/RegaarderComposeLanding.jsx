@@ -1,3 +1,4 @@
+import { useTranslation } from './i18n';
 import React, { useState } from "react";
 import {
   ChevronRight,
@@ -30,6 +31,7 @@ const products = [
 ];
 
 export default function RegaarderComposeLanding({ onLaunch }) {
+  const { t } = useTranslation();
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [legalModalTab, setLegalModalTab] = useState(null);
@@ -60,10 +62,10 @@ export default function RegaarderComposeLanding({ onLaunch }) {
               <RegaarderBrandIcon size={48} className="hover:scale-105 transition-transform duration-300" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-4">
-              One workspace for all your office needs.
+              {t('landing.headline') || 'One workspace for all your office needs.'}
             </h1>
             <p className="text-[15px] text-slate-600 font-medium max-w-lg mx-auto">
-              Choose a product to start creating.
+              {t('landing.subheadline') || 'Choose a product to start creating.'}
             </p>
           </div>
 
@@ -79,7 +81,7 @@ export default function RegaarderComposeLanding({ onLaunch }) {
                 <div className="text-slate-600 group-hover:text-violet-600 transition-colors">
                   <product.icon size={26} strokeWidth={1.5} />
                 </div>
-                <span className="text-sm font-semibold text-slate-800">{product.title}</span>
+                <span className="text-sm font-semibold text-slate-800">{t('landing.' + product.title.toLowerCase()) || product.title}</span>
               </button>
             ))}
           </div>
@@ -121,7 +123,7 @@ export default function RegaarderComposeLanding({ onLaunch }) {
               onClick={() => setLegalModalTab("terms")}
               className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
             >
-              Terms of Service
+              {t('common.terms') || 'Terms of Service'}
             </button>
             <span className="w-1 h-1 rounded-full bg-slate-300" />
             <button
@@ -129,7 +131,7 @@ export default function RegaarderComposeLanding({ onLaunch }) {
               onClick={() => setLegalModalTab("privacy")}
               className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
             >
-              Privacy Policy
+              {t('common.privacy') || 'Privacy Policy'}
             </button>
             <span className="w-1 h-1 rounded-full bg-slate-300" />
             <button
@@ -137,7 +139,7 @@ export default function RegaarderComposeLanding({ onLaunch }) {
               onClick={() => setLegalModalTab("legal")}
               className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
             >
-              Legal
+              {t('common.legal') || 'Legal'}
             </button>
           </div>
 

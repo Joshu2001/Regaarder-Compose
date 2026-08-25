@@ -40,7 +40,12 @@
     "on": "Bật",
     "off": "Tắt",
     "mode": "Chế độ",
-    "chars": "ký tự"
+    "chars": "ký tự",
+    "terms": "Điều khoản dịch vụ",
+    "privacy": "Chính sách bảo mật",
+    "legal": "Pháp lý",
+    "updated": "Đã cập nhật",
+    "version": "Phiên bản"
   },
   "nav": {
     "docs": "Tài liệu",
@@ -369,7 +374,8 @@
     "stepOf": "Bước {{current}} trên {{total}}",
     "noHistory": "Chưa có lịch sử chỉnh sửa",
     "speed": "Tốc độ",
-    "linking": "Đang tạo liên kết..."
+    "linking": "Đang tạo liên kết...",
+    "genesis": "khởi nguyên"
   },
   "workspaceDesc": {
     "orb": "Lớp trí tuệ nhân tạo hợp nhất",
@@ -510,7 +516,13 @@
     "askAboutSelection": "Hỏi bất cứ điều gì về phần đã chọn...",
     "noResultsFor": "Không tìm thấy kết quả cho \"{{query}}\"",
     "noMatchingFound": "Không tìm thấy tài liệu hoặc tác vụ phù hợp.",
-    "createWorkspace": "Tạo {{name}}"
+    "createWorkspace": "Tạo {{name}}",
+    "decidePlaceholder": "Đặt câu hỏi điều hành hoặc đánh giá chiến lược...",
+    "inquiries": "Câu hỏi gợi ý:",
+    "strategicReasoning": "Hệ thống lập luận chiến lược",
+    "strategicReasoningDesc": "Câu trả lời trực tiếp, giải quyết mâu thuẫn giữa các tài liệu và kết luận vận hành có thể hành động.",
+    "inquiryContradictions": "Những mâu thuẫn nào tồn tại giữa các bản ghi nhớ chiến lược và bảng tính?",
+    "inquiryGrowth": "Thử thách chiến lược tăng trưởng và kiểm tra các giả định chuyển đổi"
   },
   "quickActions": {
     "title": "THAO TÁC NHANH",
@@ -541,5 +553,17 @@
     "guestMode": "Chế độ khách",
     "guestModeDesc": "Đăng nhập để đồng bộ công việc và sử dụng công cụ AI nâng cao.",
     "signIn": "Đăng nhập"
+  },
+  "landing": {
+    "headline": "Một không gian làm việc cho mọi nhu cầu văn phòng của bạn.",
+    "subheadline": "Chọn một sản phẩm để bắt đầu tạo.",
+    "compose": "Docs Tài liệu",
+    "deck": "Deck Bản trình bày",
+    "sheet": "Sheet Bảng tính",
+    "room": "Room Phòng họp",
+    "whiteboard": "Whiteboard Bảng trắng",
+    "schedule": "Schedule Lịch trình",
+    "memory": "Memory Bộ nhớ",
+    "tasks": "Tasks Tác vụ"
   }
 }

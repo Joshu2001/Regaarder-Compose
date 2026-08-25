@@ -40,7 +40,12 @@
     "on": "On",
     "off": "Off",
     "mode": "Mode",
-    "chars": "chars"
+    "chars": "chars",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "legal": "Legal",
+    "updated": "Updated",
+    "version": "Version"
   },
   "nav": {
     "docs": "Docs",
@@ -369,7 +374,8 @@
     "stepOf": "Step {{current}} of {{total}}",
     "noHistory": "No edit history yet",
     "speed": "Speed",
-    "linking": "Link..."
+    "linking": "Link...",
+    "genesis": "genesis"
   },
   "workspaceDesc": {
     "orb": "Unified Intelligence Layer",
@@ -510,7 +516,13 @@
     "askAboutSelection": "Ask anything about this selection...",
     "noResultsFor": "No results for \"{{query}}\"",
     "noMatchingFound": "No matching documents, formulas, or tasks found in this workspace.",
-    "createWorkspace": "Create {{name}}"
+    "createWorkspace": "Create {{name}}",
+    "decidePlaceholder": "Ask an executive question or evaluate strategy...",
+    "inquiries": "Inquiries:",
+    "strategicReasoning": "Strategic Reasoning System",
+    "strategicReasoningDesc": "Direct prose answers, cross-document contradiction reconciliation, missing assumption analysis, counterargument stress tests, and actionable operational conclusions.",
+    "inquiryContradictions": "What cross-workspace contradictions exist across active strategy memos and sheets?",
+    "inquiryGrowth": "Challenge our growth strategy and stress-test required conversion assumptions"
   },
   "quickActions": {
     "title": "QUICK ACTIONS",
@@ -541,5 +553,17 @@
     "guestMode": "Guest Mode",
     "guestModeDesc": "Sign in to sync your work, collaborate, and access premium AI tools.",
     "signIn": "Sign In"
+  },
+  "landing": {
+    "headline": "One workspace for all your office needs.",
+    "subheadline": "Choose a product to start creating.",
+    "compose": "Docs",
+    "deck": "Deck",
+    "sheet": "Sheet",
+    "room": "Room",
+    "whiteboard": "Whiteboard",
+    "schedule": "Schedule",
+    "memory": "Memory",
+    "tasks": "Tasks"
   }
 }

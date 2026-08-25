@@ -109,9 +109,9 @@ export default function OrbUnderstandPanel({
           {edges.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400 dark:text-zinc-500 h-full min-h-[220px]">
               <Layers size={22} className="mb-2 opacity-40 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">No Semantic Linkages</span>
+              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{t('orb.noSemanticLinkages') || 'No Semantic Linkages'}</span>
               <span className="text-[11px] mt-1 text-slate-500 dark:text-zinc-400 max-w-[200px] leading-relaxed">
-                Linkages and evidence will appear as workspace artifacts reference each other.
+                {t('orb.noSemanticLinkagesDesc') || 'Linkages and evidence will appear as workspace artifacts reference each other.'}
               </span>
             </div>
           ) : (
@@ -194,7 +194,7 @@ export default function OrbUnderstandPanel({
             <h4 className={`text-base font-semibold mb-1.5 ${
               highContrast ? 'text-black dark:text-white font-extrabold' : 'text-slate-900 dark:text-zinc-100'
             }`}>
-              No Semantic Linkages Detected Yet
+              {t('orb.noSemanticLinkagesDetected') || 'No Semantic Linkages Detected Yet'}
             </h4>
             <p className={`text-xs leading-relaxed max-w-sm mb-6 ${
               highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
@@ -208,7 +208,7 @@ export default function OrbUnderstandPanel({
                   onClick={() => onNavigateToWorkspace({ workspace: 'compose' })}
                   className="px-3.5 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                 >
-                  <span>Open Docs</span>
+                  <span>{t('orb.openDocs') || 'Open Docs'}</span>
                   <ArrowRight size={12} />
                 </button>
                 <button
@@ -216,7 +216,7 @@ export default function OrbUnderstandPanel({
                   onClick={() => onNavigateToWorkspace({ workspace: 'sheets' })}
                   className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span>Open Sheets</span>
+                  <span>{t('orb.openSheets') || 'Open Sheets'}</span>
                   <ArrowRight size={12} />
                 </button>
               </div>

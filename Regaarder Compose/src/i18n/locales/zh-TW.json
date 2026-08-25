@@ -40,7 +40,12 @@
     "on": "開啟",
     "off": "關閉",
     "mode": "模式",
-    "chars": "字元"
+    "chars": "字元",
+    "terms": "服務條款",
+    "privacy": "隱私政策",
+    "legal": "法律條款",
+    "updated": "更新於",
+    "version": "版本"
   },
   "nav": {
     "docs": "文件",
@@ -369,7 +374,8 @@
     "stepOf": "第 {{current}} 步 / 共 {{total}} 步",
     "noHistory": "目前尚無編輯記錄",
     "speed": "播放速度",
-    "linking": "建立連結中..."
+    "linking": "建立連結中...",
+    "genesis": "初始版本"
   },
   "workspaceDesc": {
     "orb": "全方位統一智慧核心",
@@ -510,7 +516,13 @@
     "askAboutSelection": "針對選取的內容提問或要求優化...",
     "noResultsFor": "找不到與「{{query}}」相關的結果",
     "noMatchingFound": "在此工作區中找不到相符的文件、公式或任務。",
-    "createWorkspace": "新增 {{name}}"
+    "createWorkspace": "新增 {{name}}",
+    "decidePlaceholder": "提出決策評估問題或推演策略...",
+    "inquiries": "探索問題：",
+    "strategicReasoning": "戰略推理與決策系統",
+    "strategicReasoningDesc": "提供直接文字解答、跨文件矛盾調和、遺漏假設分析、反方論點壓力測試與可執行的營運決策。",
+    "inquiryContradictions": "目前各策略備忘錄與試算表之間存在哪些跨工作區矛盾？",
+    "inquiryGrowth": "檢驗我們的成長策略，並針對必要的轉換率假設進行壓力測試"
   },
   "quickActions": {
     "title": "常用快捷動作",
@@ -541,5 +553,17 @@
     "guestMode": "訪客模式",
     "guestModeDesc": "登入以同步工作進度、進行團隊協作並存取進階 AI 工具。",
     "signIn": "登入帳號"
+  },
+  "landing": {
+    "headline": "滿足您所有辦公需求的全方位工作區。",
+    "subheadline": "選擇一項產品開始您的創作。",
+    "compose": "Docs 文件",
+    "deck": "Deck 簡報",
+    "sheet": "Sheet 試算表",
+    "room": "Room 協作室",
+    "whiteboard": "Whiteboard 白板",
+    "schedule": "Schedule 日程",
+    "memory": "Memory 記憶庫",
+    "tasks": "Tasks 任務"
   }
 }

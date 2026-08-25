@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
@@ -20,6 +21,7 @@ import {
 } from '../../services/orbAiService';
 
 export default function OrbDecideSynthesizer({
+
   initialQuestion = '',
   entities = [],
   edges = [],
@@ -27,6 +29,7 @@ export default function OrbDecideSynthesizer({
   onNavigateToWorkspace,
   onAddActionToTasks
 }) {
+  const { t } = useTranslation();
   const [question, setQuestion] = useState(initialQuestion || '');
   const [activeQuery, setActiveQuery] = useState(initialQuestion || '');
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -170,8 +173,8 @@ export default function OrbDecideSynthesizer({
 
     if (inquiries.length < 4) {
       inquiries.push(
-        'What cross-workspace contradictions exist across active strategy memos and sheets?',
-        'Challenge our growth strategy and stress-test required conversion assumptions'
+        (t('orb.inquiryContradictions') || 'What cross-workspace contradictions exist across active strategy memos and sheets?'),
+        (t('orb.inquiryGrowth') || 'Challenge our growth strategy and stress-test required conversion assumptions')
       );
     }
 
@@ -218,7 +221,7 @@ export default function OrbDecideSynthesizer({
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask an executive question or evaluate strategy..."
+              placeholder={t('orb.decidePlaceholder') || "Ask an executive question or evaluate strategy..."}
               className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
             />
           </div>
@@ -353,7 +356,7 @@ export default function OrbDecideSynthesizer({
               </>
             ) : (
               <>
-                <span>Synthesize</span>
+                <span>{t('toolbar.synthesize') || 'Synthesize'}</span>
                 <ArrowRight size={12} />
               </>
             )}
@@ -414,10 +417,10 @@ export default function OrbDecideSynthesizer({
                 <Compass size={22} strokeWidth={1.8} />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100 mb-1">
-                Strategic Reasoning System
+                {t('orb.strategicReasoning') || 'Strategic Reasoning System'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md leading-relaxed mb-6">
-                Direct prose answers, cross-document contradiction reconciliation, missing assumption analysis, counterargument stress tests, and actionable operational conclusions.
+                {t('orb.strategicReasoningDesc') || 'Direct prose answers, cross-document contradiction reconciliation, missing assumption analysis, counterargument stress tests, and actionable operational conclusions.'}
               </p>
 
               <div className="w-full max-w-md space-y-2 text-left">

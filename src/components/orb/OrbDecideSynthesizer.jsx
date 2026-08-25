@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
@@ -21,6 +22,7 @@ import {
 } from '../../services/orbAiService';
 
 export default function OrbDecideSynthesizer({
+
   initialQuestion = '',
   entities = [],
   edges = [],
@@ -28,6 +30,7 @@ export default function OrbDecideSynthesizer({
   onNavigateToWorkspace,
   onAddActionToTasks
 }) {
+  const { t } = useTranslation();
   const [question, setQuestion] = useState(initialQuestion || '');
   const [activeQuery, setActiveQuery] = useState(initialQuestion || '');
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -280,8 +283,8 @@ export default function OrbDecideSynthesizer({
 
     if (inquiries.length < 4) {
       inquiries.push(
-        'What cross-workspace contradictions exist across active strategy memos and sheets?',
-        'Challenge our growth strategy and stress-test required conversion assumptions'
+        (t('orb.inquiryContradictions') || 'What cross-workspace contradictions exist across active strategy memos and sheets?'),
+        (t('orb.inquiryGrowth') || 'Challenge our growth strategy and stress-test required conversion assumptions')
       );
     }
 
@@ -491,7 +494,7 @@ export default function OrbDecideSynthesizer({
               </>
             ) : (
               <>
-                <span>Synthesize</span>
+                <span>{t('toolbar.synthesize') || 'Synthesize'}</span>
                 <ArrowRight size={12} />
               </>
             )}
@@ -502,7 +505,7 @@ export default function OrbDecideSynthesizer({
         {/* Quick Sample Prompts: Multi-line Wrapping to Prevent Truncation */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2.5 max-w-4xl mx-auto">
           <span className="text-[10.5px] uppercase tracking-widest font-bold text-slate-700 dark:text-zinc-200 shrink-0 mr-1.5 select-none">
-            Inquiries:
+            {t('orb.inquiries') || 'Inquiries:'}
           </span>
           {liveInquiries.map((prompt, idx) => (
             <button
@@ -553,10 +556,10 @@ export default function OrbDecideSynthesizer({
                 <OrbIcon size={20} />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100 mb-1">
-                Strategic Reasoning System
+                {t('orb.strategicReasoning') || 'Strategic Reasoning System'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md leading-relaxed mb-6">
-                Direct prose answers, cross-document contradiction reconciliation, missing assumption analysis, counterargument stress tests, and actionable operational conclusions.
+                {t('orb.strategicReasoningDesc') || 'Direct prose answers, cross-document contradiction reconciliation, missing assumption analysis, counterargument stress tests, and actionable operational conclusions.'}
               </p>
 
               <div className="w-full max-w-md space-y-2 text-left">

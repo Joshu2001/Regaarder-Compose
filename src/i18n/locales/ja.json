@@ -40,7 +40,12 @@
     "on": "オン",
     "off": "オフ",
     "mode": "モード",
-    "chars": "文字"
+    "chars": "文字",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "legal": "法的通知",
+    "updated": "更新",
+    "version": "バージョン"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -369,7 +374,8 @@
     "stepOf": "ステップ {{current}} / {{total}}",
     "noHistory": "編集履歴がありません",
     "speed": "再生速度",
-    "linking": "リンク生成中..."
+    "linking": "リンク生成中...",
+    "genesis": "初期バージョン"
   },
   "workspaceDesc": {
     "orb": "統合インテリジェンス層",
@@ -510,7 +516,13 @@
     "askAboutSelection": "選択したテキストについて質問...",
     "noResultsFor": "「{{query}}」の検索結果はありません",
     "noMatchingFound": "一致するドキュメントや数式、タスクが見つかりません。",
-    "createWorkspace": "{{name}} を作成"
+    "createWorkspace": "{{name}} を作成",
+    "decidePlaceholder": "意思決定に関する質問や戦略を入力...",
+    "inquiries": "提案された質問：",
+    "strategicReasoning": "戦略的意思決定システム",
+    "strategicReasoningDesc": "直接的な回答、ドキュメント間の矛盾解消、仮説検証、ストレステストを提供します。",
+    "inquiryContradictions": "戦略メモとスプレッドシートの間にどのような矛盾が存在しますか？",
+    "inquiryGrowth": "成長戦略を検証し、コンバージョン仮説をストレステストしてください"
   },
   "quickActions": {
     "title": "クイックアクション",
@@ -541,5 +553,17 @@
     "guestMode": "ゲストモード",
     "guestModeDesc": "サインインして作業を同期し、コラボレーションとAIツールを利用します。",
     "signIn": "サインイン"
+  },
+  "landing": {
+    "headline": "あらゆるオフィスニーズに応える統合ワークスペース。",
+    "subheadline": "作成を開始するプロダクトを選択してください。",
+    "compose": "Docs ドキュメント",
+    "deck": "Deck スライド",
+    "sheet": "Sheet シート",
+    "room": "Room 会議室",
+    "whiteboard": "Whiteboard ホワイトボード",
+    "schedule": "Schedule スケジュール",
+    "memory": "Memory メモリ",
+    "tasks": "Tasks タスク"
   }
 }
