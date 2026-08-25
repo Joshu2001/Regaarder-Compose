@@ -53,7 +53,11 @@
     "tasks": "Công việc",
     "chat": "Trò chuyện",
     "settings": "Cài đặt",
-    "savedDrafts": "Bản nháp đã lưu"
+    "savedDrafts": "Bản nháp đã lưu",
+    "compose": "Tài liệu",
+    "browser": "Ghi chú",
+    "people": "Thành viên",
+    "notes": "Ghi chú"
   },
   "toolbar": {
     "context": "Ngữ cảnh",
@@ -152,7 +156,11 @@
     "recentSearches": "Tìm kiếm gần đây",
     "noResults": "Không tìm thấy kết quả",
     "noResultsSub": "Hãy thử tìm kiếm theo tiêu đề tài liệu hoặc từ khóa.",
-    "shortcutHint": "Dùng ↑↓ để điều hướng, Enter để mở, Esc để đóng"
+    "shortcutHint": "Dùng ↑↓ để điều hướng, Enter để mở, Esc để đóng",
+    "searchAnything": "Tìm kiếm mọi thứ trong không gian làm việc...",
+    "navigate": "Điều hướng",
+    "open": "Mở",
+    "footerBrand": "Regaarder Tìm kiếm ngữ cảnh"
   },
   "memory": {
     "title": "Bộ nhớ không gian & Sơ đồ tri thức",
@@ -378,6 +386,35 @@
     "map": "Bản đồ tri thức",
     "understand": "Thấu hiểu ngữ cảnh",
     "decide": "Hỗ trợ quyết định",
-    "searchPlaceholder": "Hỏi Orb hoặc tìm kiếm trong không gian làm việc..."
+    "searchPlaceholder": "Hỏi Orb hoặc tìm kiếm trong không gian làm việc...",
+    "active": "Orb Đang hoạt động",
+    "entities": "thực thể",
+    "relationships": "mối quan hệ",
+    "modes": "Chế độ"
+  },
+  "quickActions": {
+    "title": "THAO TÁC NHANH",
+    "newDoc": "Tạo tài liệu mới",
+    "newSheet": "Tạo bảng tính mới",
+    "newDeck": "Tạo bản trình bày mới",
+    "startRoom": "Bắt đầu phòng họp"
+  },
+  "emptyState": {
+    "allTitle": "Chưa có mục gần đây",
+    "allDesc": "Tạo tài liệu, bảng tính, bản trình bày hoặc tác vụ để xem tại đây.",
+    "docsTitle": "Chưa có tài liệu nào",
+    "docsDesc": "Soạn thảo văn bản trong Compose để xem trong bộ nhớ.",
+    "sheetsTitle": "Chưa có bảng tính nào",
+    "sheetsDesc": "Tạo mô hình tính toán trong Sheets.",
+    "deckTitle": "Chưa có bản trình bày nào",
+    "deckDesc": "Thiết kế các trang trình chiếu trong Deck.",
+    "tasksTitle": "Không có nhiệm vụ",
+    "tasksDesc": "Thêm các mục tiêu dự án để theo dõi tiến độ.",
+    "roomTitle": "Không có phòng họp hoạt động",
+    "roomDesc": "Bắt đầu cuộc gọi video để lưu lịch sử cuộc họp.",
+    "notesTitle": "Chưa có ghi chú nào",
+    "notesDesc": "Duyệt web và lưu trích dẫn vào ghi chú.",
+    "peopleTitle": "Chưa có thành viên",
+    "peopleDesc": "Mời đồng đội và phân quyền dự án."
   }
 }

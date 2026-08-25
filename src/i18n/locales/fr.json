@@ -53,7 +53,11 @@
     "tasks": "Tâches",
     "chat": "Chat",
     "settings": "Paramètres",
-    "savedDrafts": "Brouillons enregistrés"
+    "savedDrafts": "Brouillons enregistrés",
+    "compose": "Docs",
+    "browser": "Notes",
+    "people": "Membres",
+    "notes": "Notes"
   },
   "toolbar": {
     "context": "Contexte",
@@ -152,7 +156,11 @@
     "recentSearches": "Recherches récentes",
     "noResults": "Aucun résultat trouvé",
     "noResultsSub": "Essayez de rechercher par titre de document ou mot-clé.",
-    "shortcutHint": "Utilisez ↑↓ pour naviguer, Entrée pour ouvrir, Échap pour fermer"
+    "shortcutHint": "Utilisez ↑↓ pour naviguer, Entrée pour ouvrir, Échap pour fermer",
+    "searchAnything": "Rechercher dans tout l'espace de travail...",
+    "navigate": "Naviguer",
+    "open": "Ouvrir",
+    "footerBrand": "Regaarder Recherche contextuelle"
   },
   "memory": {
     "title": "Mémoire de l'espace & Graphe de connaissances",
@@ -378,6 +386,35 @@
     "map": "Carte de connaissances",
     "understand": "Comprendre",
     "decide": "Décider",
-    "searchPlaceholder": "Demandez à Orb ou recherchez dans le workspace..."
+    "searchPlaceholder": "Demandez à Orb ou recherchez dans le workspace...",
+    "active": "Orb Actif",
+    "entities": "entités",
+    "relationships": "relations",
+    "modes": "Modes"
+  },
+  "quickActions": {
+    "title": "ACTIONS RAPIDES",
+    "newDoc": "Nouveau document",
+    "newSheet": "Nouvelle feuille",
+    "newDeck": "Nouvelle présentation",
+    "startRoom": "Démarrer un salon"
+  },
+  "emptyState": {
+    "allTitle": "Aucun élément récent",
+    "allDesc": "Créez un document, une feuille, une présentation ou une tâche pour les voir ici.",
+    "docsTitle": "Aucun document indexé",
+    "docsDesc": "Rédigez des documents dans Compose pour les afficher dans la mémoire.",
+    "sheetsTitle": "Aucune feuille indexée",
+    "sheetsDesc": "Créez des modèles de calcul dans Sheets.",
+    "deckTitle": "Aucune présentation indexée",
+    "deckDesc": "Concevez des diapositives dans Deck.",
+    "tasksTitle": "Aucune tâche",
+    "tasksDesc": "Ajoutez des livrables de projet pour suivre la progression.",
+    "roomTitle": "Aucun salon actif",
+    "roomDesc": "Démarrez un appel vidéo pour générer des enregistrements.",
+    "notesTitle": "Aucune note enregistrée",
+    "notesDesc": "Parcourez des sources web et enregistrez des citations.",
+    "peopleTitle": "Aucun collaborateur",
+    "peopleDesc": "Invitez des coéquipiers et attribuez des rôles."
   }
 }

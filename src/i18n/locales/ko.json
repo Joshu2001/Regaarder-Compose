@@ -53,7 +53,11 @@
     "tasks": "작업",
     "chat": "대화",
     "settings": "설정",
-    "savedDrafts": "저장된 초안"
+    "savedDrafts": "저장된 초안",
+    "compose": "문서",
+    "browser": "노트",
+    "people": "멤버",
+    "notes": "노트"
   },
   "toolbar": {
     "context": "컨텍스트",
@@ -152,7 +156,11 @@
     "recentSearches": "최근 검색",
     "noResults": "검색 결과가 없습니다",
     "noResultsSub": "문서 제목이나 키워드로 다시 검색해 보세요.",
-    "shortcutHint": "↑↓ 이동, Enter 열기, Esc 닫기"
+    "shortcutHint": "↑↓ 이동, Enter 열기, Esc 닫기",
+    "searchAnything": "워크스페이스의 모든 내용 검색...",
+    "navigate": "이동",
+    "open": "열기",
+    "footerBrand": "Regaarder 컨텍스트 검색"
   },
   "memory": {
     "title": "워크스페이스 메모리 및 지식 그래프",
@@ -378,6 +386,35 @@
     "map": "지식 맵",
     "understand": "심층 이해",
     "decide": "AI 의사결정",
-    "searchPlaceholder": "Orb에 질문하거나 워크스페이스를 검색하세요..."
+    "searchPlaceholder": "Orb에 질문하거나 워크스페이스를 검색하세요...",
+    "active": "Orb 활성 상태",
+    "entities": "개 개체",
+    "relationships": "개 관계",
+    "modes": "모드"
+  },
+  "quickActions": {
+    "title": "빠른 실행",
+    "newDoc": "새 문서",
+    "newSheet": "새 스프레드시트",
+    "newDeck": "새 프레젠테이션",
+    "startRoom": "회의실 시작"
+  },
+  "emptyState": {
+    "allTitle": "워크스페이스에 최근 항목이 없습니다",
+    "allDesc": "문서, 시트, 프레젠테이션 또는 작업을 생성하면 여기에 표시됩니다.",
+    "docsTitle": "인덱싱된 문서가 없습니다",
+    "docsDesc": "Compose에서 문서를 작성하고 정리하세요.",
+    "sheetsTitle": "인덱싱된 스프레드시트가 없습니다",
+    "sheetsDesc": "Sheets에서 데이터 모델을 구축하세요.",
+    "deckTitle": "인덱싱된 프레젠테이션이 없습니다",
+    "deckDesc": "Deck에서 슬라이드를 디자인하세요.",
+    "tasksTitle": "작업이 없습니다",
+    "tasksDesc": "프로젝트 결과물과 작업 항목을 추가하세요.",
+    "roomTitle": "활성 회의실이 없습니다",
+    "roomDesc": "화상 회의를 시작하여 회의 기록을 생성하세요.",
+    "notesTitle": "저장된 연구 노트가 없습니다",
+    "notesDesc": "웹 소스를 탐색하고 인용구를 노트에 저장하세요.",
+    "peopleTitle": "등록된 공동 작업자가 없습니다",
+    "peopleDesc": "팀원을 초대하고 역할을 할당하세요."
   }
 }

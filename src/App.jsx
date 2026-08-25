@@ -54716,7 +54716,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     onClick={() => setIsDarkMode((prev) => !prev)}
                                     className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 hover:bg-slate-200/60 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
                                   >
-                                    {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? (t('settings.light') || 'Light') : (t('settings.dark') || 'Dark')} {t('common.mode') || 'Mode'}
+                                    {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? (t('settings.light') || 'Light Mode') : (t('settings.dark') || 'Dark Mode')}
                                   </button>
 
                                   {/* Focus Mode / Zen Mode Toggle */}
@@ -74586,7 +74586,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={() => setIsDarkMode((prev) => !prev)}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
                 >
-                  {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? 'Light' : 'Dark'} Mode
+                  {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? (t('settings.light') || 'Light Mode') : (t('settings.dark') || 'Dark Mode')}
                 </button>
               </div>
 
@@ -74602,7 +74602,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }}
                   className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 shrink-0 transition-colors cursor-pointer"
                 >
-                  Watermark
+                  {t('toolbar.watermark') || 'Watermark'}
                 </button>
               </div>
             </div>
