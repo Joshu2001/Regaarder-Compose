@@ -1243,3 +1243,141 @@ input[type=number] {
   opacity: 1;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   DYNAMIC BRAND ACCENT COLOR SYSTEM (Driven by Settings Accent Color)
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --brand-color: #7c3aed;
+  --secondary-color: #6366f1;
+  --accent-primary: #7c3aed;
+  --accent-50: #f5f3ff;
+  --accent-100: #ede9fe;
+  --accent-200: #ddd6fe;
+  --accent-300: #c4b5fd;
+  --accent-400: #a78bfa;
+  --accent-500: #7c3aed;
+  --accent-600: #6d28d9;
+  --accent-700: #5b21b6;
+  --accent-800: #4c1d95;
+  --accent-900: #3b0764;
+  --accent-950: #2e1065;
+}
+
+/* Primary Button Backgrounds & Accent Fills (Share button, Primary CTA, Active Tabs) */
+.bg-violet-600,
+.bg-violet-500,
+.bg-purple-600,
+button.bg-violet-600,
+[class*="bg-[#7C3AED]"],
+[class*="bg-[#7c3aed]"],
+[class*="bg-[#6D28D9]"],
+[class*="bg-[#6d28d9]"] {
+  background-color: var(--brand-color, #7c3aed) !important;
+}
+
+/* Hover States for Primary Buttons */
+.hover\:bg-violet-700:hover,
+.hover\:bg-violet-600:hover,
+.hover\:bg-purple-700:hover {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 82%, black) !important;
+}
+
+/* Text Accents & Icons */
+.text-violet-600,
+.text-violet-700,
+.text-violet-500,
+.text-purple-600,
+[class*="text-[#7C3AED]"],
+[class*="text-[#7c3aed]"] {
+  color: var(--brand-color, #7c3aed) !important;
+}
+
+.hover\:text-violet-600:hover,
+.hover\:text-violet-700:hover {
+  color: color-mix(in srgb, var(--brand-color, #7c3aed) 82%, black) !important;
+}
+
+/* Accent Borders */
+.border-violet-600,
+.border-violet-500,
+.border-purple-600,
+[class*="border-[#7C3AED]"],
+[class*="border-[#7c3aed]"] {
+  border-color: var(--brand-color, #7c3aed) !important;
+}
+
+/* Soft Tint Backgrounds (Badges, Active Tab Backgrounds, Light Highlights) */
+.bg-violet-50,
+.bg-violet-50\/50,
+.bg-violet-50\/60,
+.bg-violet-50\/80,
+.bg-violet-50\/95,
+.bg-violet-100,
+.bg-violet-100\/80,
+.bg-purple-50,
+.bg-purple-100 {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 12%, transparent) !important;
+}
+
+.hover\:bg-violet-50:hover,
+.hover\:bg-violet-100:hover {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 20%, transparent) !important;
+}
+
+/* Soft Tint Borders */
+.border-violet-100,
+.border-violet-200,
+.border-violet-200\/50,
+.border-violet-200\/60,
+.border-violet-200\/80,
+.border-violet-200\/90,
+.border-violet-300 {
+  border-color: color-mix(in srgb, var(--brand-color, #7c3aed) 28%, transparent) !important;
+}
+
+/* Focus & Active Rings */
+.ring-violet-500,
+.ring-violet-400,
+.ring-violet-500\/10,
+.ring-violet-500\/20,
+.ring-violet-500\/30,
+.ring-violet-500\/40 {
+  --tw-ring-color: color-mix(in srgb, var(--brand-color, #7c3aed) 50%, transparent) !important;
+}
+
+/* Input Focus Borders */
+.focus\:border-violet-300:focus,
+.focus\:border-violet-400:focus,
+.focus\:border-violet-500:focus,
+.focus-within\:border-violet-300:focus-within,
+.focus-within\:border-violet-500:focus-within {
+  border-color: var(--brand-color, #7c3aed) !important;
+}
+
+/* Dark Mode Dynamic Accents */
+.dark .text-violet-400,
+.dark .text-violet-300 {
+  color: color-mix(in srgb, var(--brand-color, #7c3aed) 80%, white) !important;
+}
+
+.dark .bg-violet-950,
+.dark .bg-violet-950\/40,
+.dark .bg-violet-950\/50,
+.dark .bg-violet-950\/60,
+.dark .bg-violet-950\/80,
+.dark .bg-violet-900,
+.dark .bg-violet-900\/90 {
+  background-color: color-mix(in srgb, var(--brand-color, #7c3aed) 25%, #09090b) !important;
+}
+
+.dark .border-violet-800,
+.dark .border-violet-800\/50,
+.dark .border-violet-800\/60,
+.dark .border-violet-700,
+.dark .border-violet-900\/40 {
+  border-color: color-mix(in srgb, var(--brand-color, #7c3aed) 40%, transparent) !important;
+}
+
+.halo-glow-violet {
+  box-shadow: 0 0 60px color-mix(in srgb, var(--brand-color, #7c3aed) 30%, transparent) !important;
+}
