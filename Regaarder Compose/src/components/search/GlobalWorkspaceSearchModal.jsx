@@ -341,13 +341,11 @@ export default function GlobalWorkspaceSearchModal({
   // Surface and backdrop styles based on workspace mode:
   // - Deck Mode: Atmospheric dark blur with presentation-style contrast & AI workspace synthesis
   // - All Other Modes (Docs, Sheets, Tasks, Rooms, Notes, People): Theme-aware warm/neutral solid surface (~97% opacity)
-  const backdropClasses = isDeck
-    ? 'bg-slate-950/40 dark:bg-black/50 backdrop-blur-[14px] backdrop-saturate-[0.4] backdrop-contrast-[1.05]'
-    : 'bg-slate-950/20 dark:bg-black/45 backdrop-blur-[8px]';
+  const backdropClasses = 'bg-slate-900/35 dark:bg-black/55 backdrop-blur-[28px]';
 
   const surfaceClasses = isDeck
-    ? 'bg-white dark:bg-[#161618] rounded-[14px] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.8)] border border-slate-200/90 dark:border-zinc-800/90'
-    : 'bg-white/[0.97] dark:bg-[#161618]/[0.97] backdrop-blur-[12px] rounded-[14px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] border border-slate-200/90 dark:border-zinc-800/90';
+    ? 'bg-white/[0.94] dark:bg-[#12141a]/[0.94] backdrop-blur-2xl rounded-2xl shadow-[0_24px_70px_rgba(0,0,0,0.18)] border border-black/[0.08] dark:border-white/[0.08]'
+    : 'bg-white/[0.92] dark:bg-[#12141a]/[0.92] backdrop-blur-2xl rounded-2xl shadow-[0_24px_70px_rgba(0,0,0,0.14)] border border-black/[0.08] dark:border-white/[0.08]';
 
   const categoryBarClasses = 'bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-200/60 dark:border-zinc-800/60';
   const footerClasses = 'bg-slate-50/80 dark:bg-zinc-900/70 border-t border-slate-200/60 dark:border-zinc-800/60';
