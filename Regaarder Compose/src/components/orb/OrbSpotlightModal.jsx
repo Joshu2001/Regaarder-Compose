@@ -1,8 +1,11 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Sparkles, X, ArrowRight, Loader2 } from "lucide-react";
 import { OrbIcon } from "../RegaarderProductIcons";
 
 export default function OrbSpotlightModal({
+  // Hook
+
   isOpen,
   onClose,
   initialQuery = "",

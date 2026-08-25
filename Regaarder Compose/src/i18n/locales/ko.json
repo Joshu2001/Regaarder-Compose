@@ -36,7 +36,11 @@
     "rename": "이름 바꾸기",
     "duplicate": "복제",
     "pin": "고정",
-    "unpin": "고정 해제"
+    "unpin": "고정 해제",
+    "on": "켜짐",
+    "off": "꺼짐",
+    "mode": "모드",
+    "chars": "자"
   },
   "nav": {
     "docs": "문서",
@@ -121,7 +125,15 @@
     "redactSelection": "선택 항목 비식별화",
     "portrait": "세로 방향",
     "landscape": "가로 방향",
-    "outline": "개요 탐색"
+    "outline": "개요 탐색",
+    "marginsNormal": "기본 여백 (1.0 in)",
+    "marginsNarrow": "좁은 여백 (0.5 in)",
+    "marginsWide": "넓은 여백 (1.5 in)",
+    "pageSizeLetter": "Letter (8.5 x 11 in)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "Legal (8.5 x 14 in)",
+    "watermark": "워터마크",
+    "editReplay": "편집 리플레이 열기"
   },
   "search": {
     "title": "워크스페이스 검색",
@@ -327,5 +339,45 @@
     "readingLevel": "권장 독서 수준:",
     "suggestions": "개선 제안",
     "reanalyze": "재분석"
+  },
+  "templates": {
+    "wf-meeting-notes": "회의록",
+    "wf-project-plan": "프로젝트 계획서",
+    "wf-financial-model": "재무 모델",
+    "wf-budget": "예산 계획",
+    "wf-runway-burn": "런웨이 및 자금 소진율",
+    "wf-business-plan": "사업 계획서",
+    "wf-gtm-plan": "GTM 시장 진출 전략",
+    "meetingnotes": "회의록",
+    "projectplan": "프로젝트 계획서",
+    "financialmodel": "재무 모델",
+    "budget": "예산 계획",
+    "runwayburn": "런웨이 및 자금 소진율",
+    "businessplan": "사업 계획서",
+    "gtmplan": "GTM 시장 진출 전략"
+  },
+  "replay": {
+    "title": "편집 리플레이",
+    "stepOf": "단계 {{current}} / {{total}}",
+    "noHistory": "편집 기록이 없습니다",
+    "speed": "재생 속도",
+    "linking": "링크 생성 중..."
+  },
+  "workspaceDesc": {
+    "orb": "통합 인텔리전스 레이어",
+    "compose": "AI 문서 작성 에디터",
+    "sheets": "스프레드시트 및 데이터 분석",
+    "deck": "슬라이드 및 프레젠테이션",
+    "whiteboard": "비주얼 캔버스 및 다이어그램",
+    "room": "팀 화상 회의실",
+    "browser": "AI 지식 브라우저"
+  },
+  "orb": {
+    "title": "인텔리전스 레이어",
+    "search": "지능형 검색",
+    "map": "지식 맵",
+    "understand": "심층 이해",
+    "decide": "AI 의사결정",
+    "searchPlaceholder": "Orb에 질문하거나 워크스페이스를 검색하세요..."
   }
 }

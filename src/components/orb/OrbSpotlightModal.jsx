@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Search, Network, Layers, X, Maximize2, Minimize2,
@@ -25,6 +26,8 @@ export const ORB_MODES = [
 ];
 
 export default function OrbSpotlightModal({
+  // Hook
+
   isOpen,
   onClose,
   initialQuery = '',
@@ -33,6 +36,7 @@ export default function OrbSpotlightModal({
   onNavigateToEntity,
   onAddTask
 }) {
+  const { t } = useTranslation();
   const [isHighContrast, toggleHighContrast] = useHighContrast();
   const [query, setQuery] = useState(initialQuery);
   const [activeMode, setActiveMode] = useState(initialMode);
@@ -234,7 +238,7 @@ export default function OrbSpotlightModal({
                     }`}
                   >
                     <IconComponent size={13} className={isActive ? 'text-slate-900 dark:text-zinc-100' : 'text-slate-400'} />
-                    <span>{mode.label}</span>
+                    <span>{t('orb.' + mode.id) || mode.label}</span>
                     <span className="text-[10px] text-slate-400/80 hidden sm:inline font-mono">
                       {mode.shortcut}
                     </span>
@@ -287,7 +291,7 @@ export default function OrbSpotlightModal({
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search across documents, spreadsheets, slides, and tasks..."
+                  placeholder={t('orb.searchPlaceholder') || "Search across documents, spreadsheets, slides, and tasks..."}
                   className={`w-full pl-9 pr-8 py-2 rounded-xl text-[13.5px] focus:outline-none transition-all ${
                     isHighContrast
                       ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 focus:border-slate-600 text-black dark:text-white font-bold'

@@ -36,7 +36,11 @@
     "rename": "Renommer",
     "duplicate": "Dupliquer",
     "pin": "Épingler",
-    "unpin": "Détacher"
+    "unpin": "Détacher",
+    "on": "Activé",
+    "off": "Désactivé",
+    "mode": "Mode",
+    "chars": "caractères"
   },
   "nav": {
     "docs": "Docs",
@@ -121,7 +125,15 @@
     "redactSelection": "Masquer la sélection",
     "portrait": "Portrait",
     "landscape": "Paysage",
-    "outline": "Plan"
+    "outline": "Plan",
+    "marginsNormal": "Marges normales (1.0 po)",
+    "marginsNarrow": "Marges étroites (0.5 po)",
+    "marginsWide": "Marges larges (1.5 po)",
+    "pageSizeLetter": "Lettre (8.5 x 11 po)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "Légal (8.5 x 14 po)",
+    "watermark": "Filigrane",
+    "editReplay": "Ouvrir le replay d'édition"
   },
   "search": {
     "title": "Recherche dans l'espace",
@@ -327,5 +339,45 @@
     "readingLevel": "Niveau de lecture :",
     "suggestions": "Suggestions",
     "reanalyze": "Ré-analyser"
+  },
+  "templates": {
+    "wf-meeting-notes": "Compte-rendu de réunion",
+    "wf-project-plan": "Plan de projet",
+    "wf-financial-model": "Modèle financier",
+    "wf-budget": "Budget prévisionnel",
+    "wf-runway-burn": "Runway & Burn rate",
+    "wf-business-plan": "Business Plan",
+    "wf-gtm-plan": "Plan Go-to-Market",
+    "meetingnotes": "Compte-rendu de réunion",
+    "projectplan": "Plan de projet",
+    "financialmodel": "Modèle financier",
+    "budget": "Budget prévisionnel",
+    "runwayburn": "Runway & Burn rate",
+    "businessplan": "Business Plan",
+    "gtmplan": "Plan Go-to-Market"
+  },
+  "replay": {
+    "title": "Replay d'édition",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "noHistory": "Aucun historique d'édition",
+    "speed": "Vitesse",
+    "linking": "Lien..."
+  },
+  "workspaceDesc": {
+    "orb": "Couche d'intelligence unifiée",
+    "compose": "Éditeur de documents IA",
+    "sheets": "Tableur & Analyse de données",
+    "deck": "Présentations & Diapositives",
+    "whiteboard": "Tableau blanc visuel",
+    "room": "Visioconférence & Réunions",
+    "browser": "Navigateur de connaissances IA"
+  },
+  "orb": {
+    "title": "Couche d'intelligence",
+    "search": "Recherche intelligente",
+    "map": "Carte de connaissances",
+    "understand": "Comprendre",
+    "decide": "Décider",
+    "searchPlaceholder": "Demandez à Orb ou recherchez dans le workspace..."
   }
 }

@@ -15540,13 +15540,13 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col gap-1">
               {[
-                { mode: 'orb', label: 'Orb', desc: 'Unified Intelligence Layer', icon: OrbIcon },
-                { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
-                { mode: 'sheets', label: 'Sheets', desc: 'Grid & Data Analysis', icon: SheetIcon },
-                { mode: 'deck', label: 'Decks', desc: 'Slide & Presentation', icon: DeckIcon },
-                { mode: 'whiteboard', label: 'Whiteboard', desc: 'Visual Canvas & Diagrams', icon: WhiteboardIcon },
-                { mode: 'room', label: 'Room', desc: 'Team Video & Meetings', icon: RoomIcon },
-                { mode: 'browser', label: 'Research', desc: 'AI Knowledge Browser', icon: BrowserIcon }
+                { mode: 'orb', label: t('nav.orb') || 'Orb', desc: t('workspaceDesc.orb') || 'Unified Intelligence Layer', icon: OrbIcon },
+                { mode: 'compose', label: t('nav.docs') || 'Docs', desc: t('workspaceDesc.compose') || 'AI Document Editor', icon: ComposeIcon },
+                { mode: 'sheets', label: t('nav.sheets') || 'Sheets', desc: t('workspaceDesc.sheets') || 'Grid & Data Analysis', icon: SheetIcon },
+                { mode: 'deck', label: t('nav.deck') || 'Decks', desc: t('workspaceDesc.deck') || 'Slide & Presentation', icon: DeckIcon },
+                { mode: 'whiteboard', label: t('nav.whiteboard') || 'Whiteboard', desc: t('workspaceDesc.whiteboard') || 'Visual Canvas & Diagrams', icon: WhiteboardIcon },
+                { mode: 'room', label: t('nav.room') || 'Room', desc: t('workspaceDesc.room') || 'Team Video & Meetings', icon: RoomIcon },
+                { mode: 'browser', label: t('nav.browser') || 'Research', desc: t('workspaceDesc.browser') || 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isCurrent = productMode === item.mode;
@@ -43571,11 +43571,11 @@ Respond with a JSON array of slide objects matching the schema.`;
           >
             {/* Header Section: Title, and lightweight step information */}
             <div className="flex flex-col gap-1 mb-6 text-center">
-              <h4 className="text-[14px] font-bold text-slate-800 tracking-tight">Edit Replay</h4>
+              <h4 className="text-[14px] font-bold text-slate-800 tracking-tight">{t('replay.title') || 'Edit Replay'}</h4>
               <p className="text-[11px] font-semibold text-slate-400">
                 {replayTimeline.length
-                  ? `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`
-                  : 'No edit history yet'}
+                  ? (t('replay.stepOf', { current: replayIndex === null ? replayTimeline.length : replayIndex + 1, total: replayTimeline.length }) || `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`)
+                  : (t('replay.noHistory') || 'No edit history yet')}
               </p>
             </div>
 
@@ -43656,7 +43656,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 transition-colors tracking-tight"
                     title="Playback speed"
                   >
-                    <span>Speed · {replaySpeed}×</span>
+                    <span>{(t('replay.speed') || 'Speed')} · {replaySpeed}×</span>
                     <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${replaySpeedMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {replaySpeedMenuOpen && (
@@ -43688,7 +43688,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   title="Copy a replay link that other users can open and play"
                 >
                   <LinkIcon size={12} strokeWidth={2.5} className="text-slate-500" />
-                  <span>{replaySharing ? 'Link...' : 'Share'}</span>
+                  <span>{replaySharing ? (t('replay.linking') || 'Link...') : (t('common.share') || 'Share')}</span>
                 </button>
               </div>
 
@@ -47783,7 +47783,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   onClick={openReplayPanel}
                   className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                  title="Open edit replay"
+                  title={t('toolbar.editReplay') || "Open edit replay"}
                 >
                   <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
                 </button>
@@ -47928,7 +47928,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <ShareModal
                       isOpen={shareModalOpen}
                       onClose={() => setShareModalOpen(false)}
-                      shareTargetDocTitle={shareTargetDocTitle}
+                      shareTargetDocTitle={shareTargetDocTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (shareTargetDocTitle || (t('common.untitledDoc') || 'Untitled Document'))}
                       shareDestination={shareDestination}
                       setShareDestination={setShareDestination}
                       shareAccess={shareAccess}
@@ -54716,7 +54716,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     onClick={() => setIsDarkMode((prev) => !prev)}
                                     className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 hover:bg-slate-200/60 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
                                   >
-                                    {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? 'Light' : 'Dark'} Mode
+                                    {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? (t('settings.light') || 'Light') : (t('settings.dark') || 'Dark')} {t('common.mode') || 'Mode'}
                                   </button>
 
                                   {/* Focus Mode / Zen Mode Toggle */}
@@ -71857,7 +71857,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
                 style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
               >
-                <Users size={13} strokeWidth={1.5} /> Share
+                <Users size={13} strokeWidth={1.5} /> {t('common.share') || 'Share'}
               </button>
               {shareModalOpen && (
                 <ShareModal
@@ -74144,7 +74144,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       title={wf.desc}
                     >
                       <Icon className="w-4 h-4 stroke-slate-500 dark:stroke-zinc-400 group-hover:stroke-purple-600 dark:group-hover:stroke-purple-400 transition-colors" />
-                      <span className="font-semibold">{wf.title}</span>
+                      <span className="font-semibold">{t('templates.' + wf.id) || t('templates.' + wf.title.toLowerCase().replace(/[^a-z0-9]/g, '')) || wf.title}</span>
                     </button>
                   );
                 })}
@@ -74481,7 +74481,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               </div>
               <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 shrink-0 border-l border-slate-200/50 dark:border-zinc-800 pl-3 pr-1 whitespace-nowrap tabular-nums">
-                {documentStats.words} words · {documentStats.characters} chars
+                {documentStats.words} {t('common.words')} · {documentStats.characters} {t('common.chars') || t('common.characters')}
               </div>
             </div>
           )}
@@ -74550,9 +74550,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <AppleToolbarDropdown
                   value={docMargins}
                   options={[
-                    { id: 'normal', label: 'Normal Margins (1.0 in)' },
-                    { id: 'narrow', label: 'Narrow Margins (0.5 in)' },
-                    { id: 'wide',   label: 'Wide Margins (1.5 in)'   },
+                    { id: 'normal', label: t('toolbar.marginsNormal') || 'Normal Margins (1.0 in)' },
+                    { id: 'narrow', label: t('toolbar.marginsNarrow') || 'Narrow Margins (0.5 in)' },
+                    { id: 'wide',   label: t('toolbar.marginsWide') || 'Wide Margins (1.5 in)'   },
                   ]}
                   onChange={(id) => setDocMargins(id)}
                   width="w-52"
@@ -74562,9 +74562,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <AppleToolbarDropdown
                   value={docPageSize}
                   options={[
-                    { id: 'letter', label: 'Letter (8.5 x 11 in)' },
-                    { id: 'a4',     label: 'A4 (210 x 297 mm)'    },
-                    { id: 'legal',  label: 'Legal (8.5 x 14 in)'  },
+                    { id: 'letter', label: t('toolbar.pageSizeLetter') || 'Letter (8.5 x 11 in)' },
+                    { id: 'a4',     label: t('toolbar.pageSizeA4') || 'A4 (210 x 297 mm)'    },
+                    { id: 'legal',  label: t('toolbar.pageSizeLegal') || 'Legal (8.5 x 14 in)'  },
                   ]}
                   onChange={(id) => setDocPageSize(id)}
                   width="w-48"

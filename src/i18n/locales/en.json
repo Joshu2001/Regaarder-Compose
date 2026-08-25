@@ -36,7 +36,11 @@
     "rename": "Rename",
     "duplicate": "Duplicate",
     "pin": "Pin",
-    "unpin": "Unpin"
+    "unpin": "Unpin",
+    "on": "On",
+    "off": "Off",
+    "mode": "Mode",
+    "chars": "chars"
   },
   "nav": {
     "docs": "Docs",
@@ -121,7 +125,15 @@
     "redactSelection": "Redact Selection",
     "portrait": "Portrait",
     "landscape": "Landscape",
-    "outline": "Outline"
+    "outline": "Outline",
+    "marginsNormal": "Normal Margins (1.0 in)",
+    "marginsNarrow": "Narrow Margins (0.5 in)",
+    "marginsWide": "Wide Margins (1.5 in)",
+    "pageSizeLetter": "Letter (8.5 x 11 in)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "Legal (8.5 x 14 in)",
+    "watermark": "Watermark",
+    "editReplay": "Open edit replay"
   },
   "search": {
     "title": "Workspace Search",
@@ -327,5 +339,45 @@
     "readingLevel": "Reading level:",
     "suggestions": "Suggestions",
     "reanalyze": "Re-analyze"
+  },
+  "templates": {
+    "wf-meeting-notes": "Meeting Notes",
+    "wf-project-plan": "Project Plan",
+    "wf-financial-model": "Financial Model",
+    "wf-budget": "Budget",
+    "wf-runway-burn": "Runway & Burn",
+    "wf-business-plan": "Business Plan",
+    "wf-gtm-plan": "GTM Plan",
+    "meetingnotes": "Meeting Notes",
+    "projectplan": "Project Plan",
+    "financialmodel": "Financial Model",
+    "budget": "Budget",
+    "runwayburn": "Runway & Burn",
+    "businessplan": "Business Plan",
+    "gtmplan": "GTM Plan"
+  },
+  "replay": {
+    "title": "Edit Replay",
+    "stepOf": "Step {{current}} of {{total}}",
+    "noHistory": "No edit history yet",
+    "speed": "Speed",
+    "linking": "Link..."
+  },
+  "workspaceDesc": {
+    "orb": "Unified Intelligence Layer",
+    "compose": "AI Document Editor",
+    "sheets": "Grid & Data Analysis",
+    "deck": "Slide & Presentation",
+    "whiteboard": "Visual Canvas & Diagrams",
+    "room": "Team Video & Meetings",
+    "browser": "AI Knowledge Browser"
+  },
+  "orb": {
+    "title": "Intelligence Layer",
+    "search": "Intelligence Search",
+    "map": "Map (Graph)",
+    "understand": "Understand",
+    "decide": "Decide",
+    "searchPlaceholder": "Ask Orb anything or search workspace intelligence..."
   }
 }

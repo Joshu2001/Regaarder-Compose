@@ -36,7 +36,11 @@
     "rename": "名前を変更",
     "duplicate": "複製",
     "pin": "固定",
-    "unpin": "固定解除"
+    "unpin": "固定解除",
+    "on": "オン",
+    "off": "オフ",
+    "mode": "モード",
+    "chars": "文字"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -121,7 +125,15 @@
     "redactSelection": "選択範囲を墨消し",
     "portrait": "縦向き",
     "landscape": "横向き",
-    "outline": "アウトライン"
+    "outline": "アウトライン",
+    "marginsNormal": "標準余白 (1.0 インチ)",
+    "marginsNarrow": "狭い余白 (0.5 インチ)",
+    "marginsWide": "広い余白 (1.5 インチ)",
+    "pageSizeLetter": "レター (8.5 x 11 インチ)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "リーガル (8.5 x 14 インチ)",
+    "watermark": "透かし",
+    "editReplay": "編集リプレイを開く"
   },
   "search": {
     "title": "ワークスペース検索",
@@ -327,5 +339,45 @@
     "readingLevel": "推奨読解レベル:",
     "suggestions": "改善の提案",
     "reanalyze": "再分析"
+  },
+  "templates": {
+    "wf-meeting-notes": "議事録",
+    "wf-project-plan": "プロジェクト計画",
+    "wf-financial-model": "財務モデル",
+    "wf-budget": "予算管理",
+    "wf-runway-burn": "ランウェイ・資金予測",
+    "wf-business-plan": "事業計画書",
+    "wf-gtm-plan": "市場投入計画",
+    "meetingnotes": "議事録",
+    "projectplan": "プロジェクト計画",
+    "financialmodel": "財務モデル",
+    "budget": "予算管理",
+    "runwayburn": "ランウェイ・資金予測",
+    "businessplan": "事業計画書",
+    "gtmplan": "市場投入計画"
+  },
+  "replay": {
+    "title": "編集リプレイ",
+    "stepOf": "ステップ {{current}} / {{total}}",
+    "noHistory": "編集履歴がありません",
+    "speed": "再生速度",
+    "linking": "リンク生成中..."
+  },
+  "workspaceDesc": {
+    "orb": "統合インテリジェンス層",
+    "compose": "AI ドキュメントエディタ",
+    "sheets": "スプレッドシート・データ分析",
+    "deck": "スライド・プレゼンテーション",
+    "whiteboard": "ビジュアルキャンバス",
+    "room": "ビデオ会議・ミーティング",
+    "browser": "AI ナレッジブラウザ"
+  },
+  "orb": {
+    "title": "インテリジェンス層",
+    "search": "ナレッジ検索",
+    "map": "ナレッジマップ",
+    "understand": "コンテキスト理解",
+    "decide": "AI 意思決定",
+    "searchPlaceholder": "Orbに質問するかワークスペース内を検索..."
   }
 }

@@ -36,7 +36,11 @@
     "rename": "Renombrar",
     "duplicate": "Duplicar",
     "pin": "Fijar",
-    "unpin": "Desfijar"
+    "unpin": "Desfijar",
+    "on": "Activado",
+    "off": "Desactivado",
+    "mode": "Modo",
+    "chars": "caracteres"
   },
   "nav": {
     "docs": "Docs",
@@ -121,7 +125,15 @@
     "redactSelection": "Ocultar selección",
     "portrait": "Vertical",
     "landscape": "Horizontal",
-    "outline": "Esquema"
+    "outline": "Esquema",
+    "marginsNormal": "Márgenes normales (1.0 pulg)",
+    "marginsNarrow": "Márgenes estrechos (0.5 pulg)",
+    "marginsWide": "Márgenes anchos (1.5 pulg)",
+    "pageSizeLetter": "Carta (8.5 x 11 pulg)",
+    "pageSizeA4": "A4 (210 x 297 mm)",
+    "pageSizeLegal": "Oficio (8.5 x 14 pulg)",
+    "watermark": "Marca de agua",
+    "editReplay": "Abrir reproducción de edición"
   },
   "search": {
     "title": "Buscar en el espacio",
@@ -327,5 +339,45 @@
     "readingLevel": "Nivel de lectura:",
     "suggestions": "Sugerencias",
     "reanalyze": "Re-analizar"
+  },
+  "templates": {
+    "wf-meeting-notes": "Actas de reunión",
+    "wf-project-plan": "Plan de proyecto",
+    "wf-financial-model": "Modelo financiero",
+    "wf-budget": "Presupuesto",
+    "wf-runway-burn": "Runway y gasto de capital",
+    "wf-business-plan": "Plan de negocio",
+    "wf-gtm-plan": "Plan Go-to-Market",
+    "meetingnotes": "Actas de reunión",
+    "projectplan": "Plan de proyecto",
+    "financialmodel": "Modelo financiero",
+    "budget": "Presupuesto",
+    "runwayburn": "Runway y gasto de capital",
+    "businessplan": "Plan de negocio",
+    "gtmplan": "Plan Go-to-Market"
+  },
+  "replay": {
+    "title": "Reproducción de edición",
+    "stepOf": "Paso {{current}} de {{total}}",
+    "noHistory": "Sin historial de edición aún",
+    "speed": "Velocidad",
+    "linking": "Enlace..."
+  },
+  "workspaceDesc": {
+    "orb": "Capa de Inteligencia Unificada",
+    "compose": "Editor de Documentos IA",
+    "sheets": "Hojas y Análisis de Datos",
+    "deck": "Diapositivas y Presentaciones",
+    "whiteboard": "Pizarra Visual y Diagramas",
+    "room": "Videollamadas y Reuniones",
+    "browser": "Navegador de Conocimiento IA"
+  },
+  "orb": {
+    "title": "Capa de Inteligencia",
+    "search": "Búsqueda de inteligencia",
+    "map": "Mapa de conocimiento",
+    "understand": "Entender",
+    "decide": "Decidir",
+    "searchPlaceholder": "Pregunta a Orb o busca en el espacio de trabajo..."
   }
 }

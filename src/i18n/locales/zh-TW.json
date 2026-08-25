@@ -36,7 +36,11 @@
     "rename": "重新命名",
     "duplicate": "建立副本",
     "pin": "固定",
-    "unpin": "取消固定"
+    "unpin": "取消固定",
+    "on": "開啟",
+    "off": "關閉",
+    "mode": "模式",
+    "chars": "字元"
   },
   "nav": {
     "docs": "文件",
@@ -121,7 +125,15 @@
     "redactSelection": "遮蔽選取內容",
     "portrait": "直向",
     "landscape": "橫向",
-    "outline": "大綱導覽"
+    "outline": "大綱導覽",
+    "marginsNormal": "標準邊界 (1.0 吋)",
+    "marginsNarrow": "窄邊界 (0.5 吋)",
+    "marginsWide": "寬邊界 (1.5 吋)",
+    "pageSizeLetter": "Letter (8.5 x 11 吋)",
+    "pageSizeA4": "A4 (210 x 297 公釐)",
+    "pageSizeLegal": "Legal (8.5 x 14 吋)",
+    "watermark": "防偽浮水印",
+    "editReplay": "開啟編輯歷程重播"
   },
   "search": {
     "title": "工作區搜尋",
@@ -327,5 +339,45 @@
     "readingLevel": "建議閱讀程度：",
     "suggestions": "優化建議",
     "reanalyze": "重新分析"
+  },
+  "templates": {
+    "wf-meeting-notes": "會議記錄",
+    "wf-project-plan": "專案企劃",
+    "wf-financial-model": "財務模型",
+    "wf-budget": "預算編列",
+    "wf-runway-burn": "資金消耗與週期",
+    "wf-business-plan": "商業營運計畫",
+    "wf-gtm-plan": "市場推廣計畫",
+    "meetingnotes": "會議記錄",
+    "projectplan": "專案企劃",
+    "financialmodel": "財務模型",
+    "budget": "預算編列",
+    "runwayburn": "資金消耗與週期",
+    "businessplan": "商業營運計畫",
+    "gtmplan": "市場推廣計畫"
+  },
+  "replay": {
+    "title": "編輯歷程重播",
+    "stepOf": "第 {{current}} 步 / 共 {{total}} 步",
+    "noHistory": "目前尚無編輯記錄",
+    "speed": "播放速度",
+    "linking": "建立連結中..."
+  },
+  "workspaceDesc": {
+    "orb": "全方位統一智慧核心",
+    "compose": "AI 智慧文件編輯器",
+    "sheets": "試算表與數據分析",
+    "deck": "視覺化簡報與投影片",
+    "whiteboard": "無限畫布與心智圖",
+    "room": "即時視訊會議協作",
+    "browser": "AI 知識庫搜尋引擎"
+  },
+  "orb": {
+    "title": "Orb 智慧核心",
+    "search": "全域智慧搜尋",
+    "map": "知識圖譜關聯",
+    "understand": "語義理解分析",
+    "decide": "AI 智慧決策助理",
+    "searchPlaceholder": "向 Orb 提問或搜尋工作區全域智慧內容..."
   }
 }
