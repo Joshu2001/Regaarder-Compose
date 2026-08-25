@@ -501,7 +501,7 @@ export default function OrbDecideSynthesizer({
 
         {/* Quick Sample Prompts: Multi-line Wrapping to Prevent Truncation */}
         <div className="flex flex-wrap items-center gap-1.5 mt-2.5 max-w-4xl mx-auto">
-          <span className="text-[10.5px] uppercase tracking-wider font-semibold text-slate-500 dark:text-zinc-400 shrink-0 mr-1">
+          <span className="text-[10.5px] uppercase tracking-widest font-bold text-slate-700 dark:text-zinc-200 shrink-0 mr-1.5 select-none">
             Inquiries:
           </span>
           {liveInquiries.map((prompt, idx) => (

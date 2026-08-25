@@ -312,8 +312,8 @@ export default function OrbMapCanvas({
         }`}
       >
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
-          <span className={`text-[11px] font-bold mr-1.5 uppercase tracking-wider ${
-            highContrast ? 'text-black dark:text-white' : 'text-slate-500 dark:text-zinc-400'
+          <span className={`text-[11px] uppercase tracking-widest mr-2 select-none ${
+            highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-700 dark:text-zinc-200'
           }`}>
             Lenses:
           </span>
