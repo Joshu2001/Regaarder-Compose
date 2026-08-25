@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState } from 'react';
 import { 
   Layers, ArrowRight, ExternalLink, Link2, 
@@ -65,6 +66,7 @@ export default function OrbUnderstandPanel({
   onSelectEntity,
   onNavigateToWorkspace
 }) {
+  const { t } = useTranslation();
   // Find active edge or fallback to first connected edge
   const activeEdge = selectedEdge || (selectedEntity 
     ? edges.find(e => e.sourceId === selectedEntity.id || e.targetId === selectedEntity.id)
@@ -94,12 +96,12 @@ export default function OrbUnderstandPanel({
             highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-800 dark:text-zinc-200'
           }`}>
             <Layers size={14} className="text-slate-700 dark:text-zinc-300" />
-            <span>Semantic Linkages</span>
+            <span>{t('orb.semanticLinkages') || 'Semantic Linkages'}</span>
           </div>
           <p className={`text-[11px] mt-1 ${
             highContrast ? 'font-bold text-slate-800 dark:text-zinc-300' : 'font-normal text-slate-500 dark:text-zinc-400'
           }`}>
-            Provenance & epistemic status supporting cross-workspace links.
+            {t('orb.semanticLinkagesDesc') || 'Provenance & epistemic status supporting cross-workspace links.'}
           </p>
         </div>
 
@@ -197,7 +199,7 @@ export default function OrbUnderstandPanel({
             <p className={`text-xs leading-relaxed max-w-sm mb-6 ${
               highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
             }`}>
-              Orb autonomously uncovers provenance linkages when documents, spreadsheets, and tasks share quantified metrics, formulas, or deliverables.
+              {t('orb.noSemanticLinkagesDetectedDesc') || 'Orb autonomously uncovers provenance linkages when documents, spreadsheets, and tasks share quantified metrics, formulas, or deliverables.'}
             </p>
             {onNavigateToWorkspace && (
               <div className="flex items-center gap-2">

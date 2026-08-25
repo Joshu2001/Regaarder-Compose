@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   ZoomIn, ZoomOut, Maximize2, RefreshCw, Filter, 
@@ -58,6 +59,7 @@ export default function OrbMapCanvas({
   onSelectEdge,
   onNavigateToWorkspace
 }) {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 920, height: 560 });
   const [zoom, setZoom] = useState(1);
@@ -315,7 +317,7 @@ export default function OrbMapCanvas({
           <span className={`text-[11px] uppercase tracking-widest mr-2 select-none ${
             highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-700 dark:text-zinc-200'
           }`}>
-            Lenses:
+            {t('orb.lenses') || 'Lenses:'}
           </span>
           {ORB_LENSES.map(lens => {
             const isActive = activeLens === lens.id;
@@ -335,7 +337,7 @@ export default function OrbMapCanvas({
                 }`}
                 title={lens.desc}
               >
-                {lens.label}
+                {t('orb.lens.' + lens.id) || lens.label}
               </button>
             );
           })}
@@ -377,7 +379,7 @@ export default function OrbMapCanvas({
       <div className="absolute top-16 left-7 z-10 pointer-events-none">
         <div className="px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-black/[0.04] dark:border-white/[0.06] shadow-2xs text-xs flex items-center gap-2 w-fit">
           <span className="w-1.5 h-1.5 rounded-full bg-[#7C5ACF]" />
-          <span className="font-semibold text-slate-900 dark:text-zinc-100">{activeLensMeta.label}</span>
+          <span className="font-semibold text-slate-900 dark:text-zinc-100">{t('orb.lens.' + activeLensMeta.id) || activeLensMeta.label}</span>
           <span className="text-slate-400 dark:text-zinc-500">·</span>
           <span className="text-slate-600 dark:text-zinc-300 font-normal">{activeLensMeta.id === 'timeline' ? 'Chronological progression' : activeLensMeta.desc}</span>
         </div>

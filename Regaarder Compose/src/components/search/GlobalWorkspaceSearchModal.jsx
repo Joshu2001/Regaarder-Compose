@@ -383,11 +383,7 @@ export default function GlobalWorkspaceSearchModal({
                 setAiResponse(null);
               }
             }}
-            placeholder={
-              mode === 'ai'
-                ? "Ask anything across workspace memory…"
-                : "Search anything in your workspace…"
-            }
+            placeholder={mode === 'ai' ? (t('search.askAnything') || 'Ask anything across workspace memory…') : (t('search.searchAnything') || 'Search anything in your workspace…')}
             className="flex-1 bg-transparent border-none outline-none text-[15px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
           />
 
@@ -599,7 +595,7 @@ export default function GlobalWorkspaceSearchModal({
               <div>
                 <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
                   <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
-                  <span>Quick Actions</span>
+                  <span>{t('quickActions.title') || 'Quick Actions'}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {COMPACT_QUICK_ACTIONS.map((action, idx) => {
@@ -630,7 +626,7 @@ export default function GlobalWorkspaceSearchModal({
                           <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${badgeClass}`}>
                             <ActionIcon size={12} strokeWidth={1.8} />
                           </div>
-                          <span className="text-[12px] font-medium tracking-tight truncate">{action.title}</span>
+                          <span className="text-[12px] font-medium tracking-tight truncate">{t('quickActions.' + (action.id === 'action-new-doc' ? 'newDoc' : action.id === 'action-new-sheet' ? 'newSheet' : action.id === 'action-new-deck' ? 'newDeck' : 'startRoom')) || action.title}</span>
                         </div>
                         <kbd className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05] ml-1 shrink-0">
                           {action.shortcut}
@@ -710,10 +706,10 @@ export default function GlobalWorkspaceSearchModal({
                     <EmptyIcon size={16} strokeWidth={1.6} />
                   </div>
                   <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200 mb-1">
-                    {currentEmptyState.title}
+                    {t('emptyState.' + (activeFilter === 'all' ? 'allTitle' : activeFilter === 'compose' ? 'docsTitle' : activeFilter === 'sheets' ? 'sheetsTitle' : activeFilter === 'deck' ? 'deckTitle' : activeFilter === 'tasks' ? 'tasksTitle' : activeFilter === 'room' ? 'roomTitle' : activeFilter === 'browser' ? 'notesTitle' : 'peopleTitle')) || currentEmptyState.title}
                   </h4>
                   <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 max-w-xs leading-relaxed">
-                    {currentEmptyState.description}
+                    {t('emptyState.' + (activeFilter === 'all' ? 'allDesc' : activeFilter === 'compose' ? 'docsDesc' : activeFilter === 'sheets' ? 'sheetsDesc' : activeFilter === 'deck' ? 'deckDesc' : activeFilter === 'tasks' ? 'tasksDesc' : activeFilter === 'room' ? 'roomDesc' : activeFilter === 'browser' ? 'notesDesc' : 'peopleDesc')) || currentEmptyState.description}
                   </p>
                 </div>
               )}

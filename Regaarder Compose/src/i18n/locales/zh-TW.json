@@ -390,7 +390,122 @@
     "active": "Orb 運行中",
     "entities": "個實體",
     "relationships": "個關聯",
-    "modes": "切換模式"
+    "modes": "切換模式",
+    "intelligenceLayer": "全域智慧核心層",
+    "buildIntelligence": "開始建立智慧索引 →",
+    "lenses": "檢視透鏡：",
+    "semanticLinkages": "語義關聯拓撲",
+    "semanticLinkagesDesc": "跨工作區脈絡實體溯源與知識確定性分析。",
+    "noSemanticLinkages": "尚無語義關聯",
+    "noSemanticLinkagesDesc": "當工作區各文件與數據互相引用時，關聯與佐證將呈現於此。",
+    "noSemanticLinkagesDetected": "尚未偵測到語義關聯",
+    "noSemanticLinkagesDetectedDesc": "當文件、試算表與任務共用量化指標、計算公式或成果時，Orb 將自動建立脈絡關聯。",
+    "openDocs": "開啟文件 →",
+    "openSheets": "開啟試算表 →",
+    "lens": {
+      "timeline": "時間軸進程",
+      "dependencies": "依賴相依性",
+      "decisions": "關鍵決策",
+      "projects": "專案群組",
+      "people": "團隊成員",
+      "financial": "財務模型",
+      "knowledge": "知識領域",
+      "causal": "因果風險",
+      "ai": "AI 智慧推論"
+    },
+    "lensDesc": {
+      "timeline": "時間推進與里程碑演進",
+      "dependencies": "前置條件與阻塞關聯",
+      "decisions": "策略選擇與決策備忘錄",
+      "projects": "專案工作流與標籤聚合",
+      "people": "利害關係人與協作者",
+      "financial": "試算表模型與公式連結",
+      "knowledge": "共用概念與專有名詞",
+      "causal": "因果影響路徑與敏感性觸發",
+      "ai": "潛在關聯模式與異常偵測"
+    },
+    "empty": {
+      "timeline": {
+        "title": "目前尚無時間軸事件",
+        "desc": "從假設到決策與里程碑的時間演進，將在建立文件與會議記錄後呈現於此。"
+      },
+      "dependencies": {
+        "title": "目前尚無相依性連結",
+        "desc": "文件與數據模型之間的前置要件、阻塞交付項目及公式依賴將在此繪製。"
+      },
+      "decisions": {
+        "title": "目前尚無記錄的決策",
+        "desc": "工作區中的戰略選擇、董事會決議與決策備忘錄將匯聚於此。"
+      },
+      "projects": {
+        "title": "目前尚無專案群組",
+        "desc": "依專案計畫或標籤分組的成果將自動組織成視覺化專案群。"
+      },
+      "people": {
+        "title": "目前尚無成員對應資料",
+        "desc": "文件作者、負責人、會議發言人與協作者將圍繞其工作成果呈現。"
+      },
+      "financial": {
+        "title": "目前尚無財務模型連結",
+        "desc": "試算表模型、單元格公式、資本支出與營收模型將在此互相連結。"
+      },
+      "knowledge": {
+        "title": "目前尚無知識領域群組",
+        "desc": "隨著您新增內容，共用概念與跨工作區專業詞彙將自然浮現。"
+      },
+      "causal": {
+        "title": "目前尚無因果風險鏈",
+        "desc": "因果路徑、供應鏈依賴關係與敏感度觸發點將在此完整追蹤。"
+      },
+      "ai": {
+        "title": "目前尚未發現 AI 推論關聯",
+        "desc": "Orb 將自動發掘工作區內容之間的潛在關聯與異常規律。"
+      }
+    },
+    "searchEmpty": {
+      "all": {
+        "title": "尚未建立工作區智慧索引",
+        "desc": "建立或編輯文件、試算表與任務，以自動建構即時工作區智慧核心。"
+      },
+      "compose": {
+        "title": "尚無可關聯的文件",
+        "desc": "在 Compose 中建立或編輯文件，以索引其內文、標題與核心見解。"
+      },
+      "sheets": {
+        "title": "尚無可關聯的試算表",
+        "desc": "建立或匯入試算表，以索引數值資料網格與計算公式。"
+      },
+      "deck": {
+        "title": "尚無可關聯的簡報",
+        "desc": "建立簡報投影片，以索引執行摘要、大綱與關鍵指標。"
+      },
+      "room": {
+        "title": "尚無會議記錄與逐字稿",
+        "desc": "Room 視訊會議的討論記錄與即時逐字稿將自動呈現於此。"
+      },
+      "tasks": {
+        "title": "尚無任務或待辦項目",
+        "desc": "建立任務並指派交付事項，以建立任務之間的依賴關聯。"
+      },
+      "schedule": {
+        "title": "尚無日程事件",
+        "desc": "新增排定事件與里程碑，以追蹤時間軸前後關聯。"
+      },
+      "browser": {
+        "title": "尚無研究筆記資料",
+        "desc": "儲存網路研究資料與引文來源，以連結外部智慧脈絡。"
+      }
+    },
+    "workspaceLabels": {
+      "all": "所有智慧內容",
+      "compose": "文件",
+      "sheets": "試算表",
+      "deck": "簡報",
+      "room": "會議室 / 視訊",
+      "tasks": "任務",
+      "schedule": "日程",
+      "browser": "研究筆記"
+    }
   },
   "quickActions": {
     "title": "常用快捷動作",

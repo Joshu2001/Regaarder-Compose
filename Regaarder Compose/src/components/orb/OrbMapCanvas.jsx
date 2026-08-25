@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   ZoomIn, ZoomOut, Maximize2, RefreshCw, Filter, 
@@ -58,6 +59,7 @@ export default function OrbMapCanvas({
   onSelectEdge,
   onNavigateToWorkspace
 }) {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 920, height: 560 });
   const [zoom, setZoom] = useState(1);
@@ -315,7 +317,7 @@ export default function OrbMapCanvas({
           <span className={`text-[11px] font-bold mr-2 uppercase tracking-wider ${
             highContrast ? 'text-black dark:text-white' : 'text-slate-500 dark:text-zinc-400'
           }`}>
-            Lenses:
+            {t('orb.lenses') || 'Lenses:'}
           </span>
           {ORB_LENSES.map(lens => {
             const isActive = activeLens === lens.id;
@@ -335,7 +337,7 @@ export default function OrbMapCanvas({
                 }`}
                 title={lens.desc}
               >
-                {lens.label}
+                {t('orb.lens.' + lens.id) || lens.label}
               </button>
             );
           })}

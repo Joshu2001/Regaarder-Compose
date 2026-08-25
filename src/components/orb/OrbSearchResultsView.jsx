@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import React from 'react';
 import { 
   ArrowRight, ExternalLink, Network, FileText, 
@@ -53,6 +54,7 @@ export const FILTER_EMPTY_STATES = {
 };
 
 export default function OrbSearchResultsView({
+
   query,
   results = [],
   suggestedQuestions = [],
@@ -67,6 +69,7 @@ export default function OrbSearchResultsView({
   onSwitchToDecide,
   onNavigateToWorkspace
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col h-full overflow-hidden bg-transparent">
       {/* ── Sub-header with Flattened Workspace Filters ── */}
@@ -93,7 +96,7 @@ export default function OrbSearchResultsView({
                     : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                 }`}
               >
-                {label}
+                {t('orb.workspaceLabels.' + key) || label}
               </button>
             );
           })}

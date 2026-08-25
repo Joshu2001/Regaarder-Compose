@@ -390,7 +390,122 @@
     "active": "Orb 稼働中",
     "entities": "件のエンティティ",
     "relationships": "件のリレーション",
-    "modes": "モード切替"
+    "modes": "モード切替",
+    "intelligenceLayer": "インテリジェンス層",
+    "buildIntelligence": "インテリジェンスを構築 →",
+    "lenses": "レンズ：",
+    "semanticLinkages": "セマンティックリンケージ",
+    "semanticLinkagesDesc": "クロスワークスペースの証跡と知識の確実性分析。",
+    "noSemanticLinkages": "リンケージがありません",
+    "noSemanticLinkagesDesc": "ドキュメントやデータが相互参照されるとここに表示されます。",
+    "noSemanticLinkagesDetected": "セマンティックリンケージが未検出です",
+    "noSemanticLinkagesDetectedDesc": "ドキュメントやシート、タスクが指標や数式を共有すると自動的に関連付けられます。",
+    "openDocs": "ドキュメントを開く →",
+    "openSheets": "スプレッドシートを開く →",
+    "lens": {
+      "timeline": "タイムライン",
+      "dependencies": "依存関係",
+      "decisions": "意思決定",
+      "projects": "プロジェクト",
+      "people": "メンバー",
+      "financial": "財務モデル",
+      "knowledge": "ナレッジ",
+      "causal": "因果関係",
+      "ai": "AI 推論"
+    },
+    "lensDesc": {
+      "timeline": "時系列の進捗とマイルストーン",
+      "dependencies": "前提条件とブロッキングリンク",
+      "decisions": "戦略的決定と決議メモ",
+      "projects": "イニシアチブとクラスタ",
+      "people": "ステークホルダーと協力者",
+      "financial": "計算モデルと数式リンク",
+      "knowledge": "共有概念と用語体系",
+      "causal": "原因と結果のリスクチェーン",
+      "ai": "潜在パターンと異常検知"
+    },
+    "empty": {
+      "timeline": {
+        "title": "タイムラインイベントはありません",
+        "desc": "ドキュメントや会議がインデックスされると表示されます。"
+      },
+      "dependencies": {
+        "title": "接続された依存関係はありません",
+        "desc": "前提条件や数式の依存関係がここにマッピングされます。"
+      },
+      "decisions": {
+        "title": "記録された意思決定はありません",
+        "desc": "戦略的選択や決議メモがここに集約されます。"
+      },
+      "projects": {
+        "title": "プロジェクトクラスタはありません",
+        "desc": "成果物がプロジェクトごとに整理されます。"
+      },
+      "people": {
+        "title": "メンバーのマッピングはありません",
+        "desc": "作成者や担当者が成果物の周囲にマッピングされます。"
+      },
+      "financial": {
+        "title": "財務モデルの接続はありません",
+        "desc": "シートの数式や収益モデルがここに接続されます。"
+      },
+      "knowledge": {
+        "title": "ナレッジクラスタはありません",
+        "desc": "共有概念や用語が自然に出現します。"
+      },
+      "causal": {
+        "title": "因果リスクチェーンはありません",
+        "desc": "因果関係と感度トリガーが追跡されます。"
+      },
+      "ai": {
+        "title": "AI推論は未検出です",
+        "desc": "コンテンツ間の潜在的な関係性が自動検出されます。"
+      }
+    },
+    "searchEmpty": {
+      "all": {
+        "title": "インデックスされたアイテムはありません",
+        "desc": "コンテンツを作成してインテリジェンスを構築します。"
+      },
+      "compose": {
+        "title": "リンク可能なドキュメントはありません",
+        "desc": "Composeでドキュメントを作成します。"
+      },
+      "sheets": {
+        "title": "リンク可能なシートはありません",
+        "desc": "Sheetsでデータモデルを作成します。"
+      },
+      "deck": {
+        "title": "リンク可能なスライドはありません",
+        "desc": "Deckでプレゼンテーションを作成します。"
+      },
+      "room": {
+        "title": "会議記録はありません",
+        "desc": "Roomの通話記録がここに表示されます。"
+      },
+      "tasks": {
+        "title": "タスクはありません",
+        "desc": "タスクを追加して依存関係をマップします。"
+      },
+      "schedule": {
+        "title": "予定はありません",
+        "desc": "スケジュールを追加してタイムラインを追跡します。"
+      },
+      "browser": {
+        "title": "研究ノートはありません",
+        "desc": "Web調査を保存して外部ナレッジを接続します。"
+      }
+    },
+    "workspaceLabels": {
+      "all": "すべてのインテリジェンス",
+      "compose": "ドキュメント",
+      "sheets": "シート",
+      "deck": "スライド",
+      "room": "ミーティング",
+      "tasks": "タスク",
+      "schedule": "スケジュール",
+      "browser": "研究ノート"
+    }
   },
   "quickActions": {
     "title": "クイックアクション",
