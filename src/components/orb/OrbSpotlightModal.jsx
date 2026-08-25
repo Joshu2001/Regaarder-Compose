@@ -41,7 +41,7 @@ export default function OrbSpotlightModal({
   const [selectedEntityId, setSelectedEntityId] = useState(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const searchInputRef = useRef(null);
 
   // Sync initial props
@@ -177,21 +177,21 @@ export default function OrbSpotlightModal({
 
       {/* Main Orb Container: Soft Apple-tier Glass & Surface Shell */}
       <div 
-        className={`relative flex flex-col backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.12)] rounded-3xl overflow-hidden transition-all duration-200 z-10 ${
+        className={`relative flex flex-col backdrop-blur-3xl shadow-2xl rounded-2xl overflow-hidden transition-all duration-200 z-10 ${
           isHighContrast
             ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-500 ring-slate-400'
-            : 'bg-[#F8F9FA]/95 dark:bg-[#12141a]/95 border border-black/[0.05] dark:border-white/[0.08]'
+            : 'bg-white/65 dark:bg-[#12141a]/65 border border-white/60 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.14)]'
         } ${
           isFullscreen 
-            ? 'w-full h-full max-w-none rounded-none' 
-            : 'w-full max-w-5xl h-[88vh] max-h-[820px]'
+            ? 'w-[98vw] h-[96vh] max-w-none' 
+            : 'w-[96vw] max-w-7xl h-[90vh] max-h-[880px]'
         }`}
       >
         {/* ── Top Header Bar: Clean, Airy & Ambient ── */}
-        <div className={`flex flex-col border-b backdrop-blur-xl shrink-0 ${
+        <div className={`flex flex-col border-b backdrop-blur-md shrink-0 ${
           isHighContrast
             ? 'border-b-2 border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-            : 'border-b border-black/[0.04] dark:border-white/[0.06] bg-white/70 dark:bg-zinc-950/60'
+            : 'border-b border-black/[0.04] dark:border-white/[0.06] bg-white/30 dark:bg-zinc-950/30'
         }`}>
           <div className="flex items-center justify-between px-7 pt-4 pb-3">
             {/* Orb Brand Mark */}
@@ -303,7 +303,7 @@ export default function OrbSpotlightModal({
                   className={`w-full pl-12 pr-24 py-3.5 rounded-2xl text-[15.5px] focus:outline-none transition-all ${
                     isHighContrast
                       ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 focus:border-slate-600 text-black dark:text-white font-bold'
-                      : 'bg-slate-100/80 dark:bg-zinc-900 border border-transparent focus:border-slate-200 dark:focus:border-zinc-700 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400/90 shadow-none'
+                      : 'bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06] focus:border-slate-300 dark:focus:border-zinc-600 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400/90 shadow-none'
                   }`}
                 />
                 {query && (
@@ -400,7 +400,7 @@ export default function OrbSpotlightModal({
         </div>
 
         {/* ── Bottom Status Bar with Apple-style Keyboard Traversal Guidance ── */}
-        <div className="flex items-center justify-between px-7 py-2.5 border-t border-black/[0.04] dark:border-white/[0.05] bg-white/60 dark:bg-zinc-900/60 text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">
+        <div className="flex items-center justify-between px-7 py-2.5 border-t border-black/[0.04] dark:border-white/[0.05] bg-white/30 dark:bg-zinc-900/30 backdrop-blur-md text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">

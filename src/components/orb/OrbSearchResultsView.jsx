@@ -68,12 +68,12 @@ export default function OrbSearchResultsView({
   onNavigateToWorkspace
 }) {
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#F7F8FA] dark:bg-[#0E1015]">
+    <div className="flex flex-col h-full overflow-hidden bg-transparent">
       {/* ── Sub-header with Workspace Filters ── */}
       <div className={`flex items-center justify-between px-7 py-3 border-b shrink-0 ${
         highContrast
           ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-          : 'border-black/[0.04] dark:border-white/[0.05] bg-white/60 dark:bg-zinc-950/40 backdrop-blur-md'
+          : 'border-black/[0.04] dark:border-white/[0.05] bg-white/20 dark:bg-zinc-950/20 backdrop-blur-md'
       }`}>
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
           {Object.entries(WORKSPACE_LABELS).map(([key, label]) => {
@@ -87,10 +87,10 @@ export default function OrbSearchResultsView({
                   isActive
                     ? highContrast
                       ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                      : 'border border-slate-300/90 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
+                      : 'border border-slate-300/80 dark:border-zinc-600 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
                     : highContrast
                     ? 'border-2 border-transparent bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
-                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/80 dark:hover:bg-zinc-800/50 font-medium'
+                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/40 dark:hover:bg-zinc-800/40 font-medium'
                 }`}
               >
                 {label}
@@ -113,7 +113,7 @@ export default function OrbSearchResultsView({
               <div className={`p-6 rounded-[24px] border text-center select-none ${
                 highContrast
                   ? 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-black dark:text-white'
-                  : 'border-slate-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 shadow-[0_2px_12px_rgba(0,0,0,0.02)]'
+                  : 'border-black/[0.05] dark:border-white/[0.06] bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md text-slate-500 dark:text-zinc-400 shadow-none'
               }`}>
                 <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-0.5">
                   <RegaarderAiIcon size={13} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
@@ -132,7 +132,7 @@ export default function OrbSearchResultsView({
             <div className={`p-6 rounded-[24px] ${
               highContrast
                 ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/50 dark:border-zinc-800/80'
+                : 'bg-white/45 dark:bg-zinc-900/45 backdrop-blur-md shadow-xs border border-black/[0.05] dark:border-white/[0.06]'
             }`}>
               <div className={`flex items-center gap-2 mb-3.5 text-[13.5px] ${
                 highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
@@ -198,7 +198,7 @@ export default function OrbSearchResultsView({
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
                 highContrast
                   ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-400 text-black dark:text-white'
-                  : 'bg-white dark:bg-zinc-800/80 border border-slate-200/60 text-slate-500 dark:text-zinc-400 shadow-xs'
+                  : 'bg-white/50 dark:bg-zinc-800/50 border border-black/[0.05] dark:border-white/[0.06] text-slate-500 dark:text-zinc-400 shadow-xs backdrop-blur-xs'
               }`}>
                 {workspaceFilter !== 'all' ? (
                   <RegaarderProductIcon name={workspaceFilter} size={24} />
@@ -222,7 +222,7 @@ export default function OrbSearchResultsView({
                 <button
                   type="button"
                   onClick={() => onNavigateToWorkspace({ workspace: targetWorkspace })}
-                  className="px-4 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-violet-50/80 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-200/60 dark:border-violet-900/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                 >
                   <span>Open {WORKSPACE_LABELS[workspaceFilter] || 'Workspace'}</span>
                   <ArrowRight size={12} />
@@ -244,10 +244,10 @@ export default function OrbSearchResultsView({
                   isSelected
                     ? highContrast
                       ? 'bg-white dark:bg-zinc-950 border-2 border-black dark:border-white ring-2 ring-black dark:ring-white shadow-md -translate-y-0.5'
-                      : 'bg-white dark:bg-zinc-900 ring-2 ring-[#7C5ACF]/40 dark:ring-[#a78bfa]/50 shadow-[0_12px_36px_rgba(0,0,0,0.08)] -translate-y-0.5 border border-transparent'
+                      : 'bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md ring-2 ring-[#7C5ACF]/40 dark:ring-[#a78bfa]/50 shadow-[0_12px_36px_rgba(0,0,0,0.08)] -translate-y-0.5 border border-black/[0.04] dark:border-white/[0.06]'
                     : highContrast
                     ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                    : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(0,0,0,0.06)] border border-slate-200/50 dark:border-zinc-800/80'
+                    : 'bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-xs hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(0,0,0,0.06)] border border-black/[0.05] dark:border-white/[0.06]'
                 }`}
               >
                 {/* Header Row: Neutral Product Icon + Title + Workspace Badge */}

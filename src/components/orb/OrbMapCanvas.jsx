@@ -308,7 +308,7 @@ export default function OrbMapCanvas({
         className={`flex items-center justify-between px-7 py-3 border-b z-20 shrink-0 ${
           highContrast
             ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-            : 'border-black/[0.04] dark:border-white/[0.06] bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl'
+            : 'border-black/[0.04] dark:border-white/[0.06] bg-white/35 dark:bg-zinc-950/35 backdrop-blur-md'
         }`}
       >
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">

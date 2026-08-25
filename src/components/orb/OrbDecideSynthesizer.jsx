@@ -317,9 +317,9 @@ export default function OrbDecideSynthesizer({
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-[#FAFAFC] dark:bg-[#0C0D11]">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
       {/* ── Query Bar Header: Airy & Floating with Model Selector ── */}
-      <div className="px-7 py-3.5 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0 relative z-30">
+      <div className="px-7 py-3.5 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/35 dark:bg-zinc-950/35 backdrop-blur-md shrink-0 relative z-30">
         <form onSubmit={handleQuerySubmit} className="flex flex-col gap-2 max-w-4xl mx-auto">
           {/* Active Quoted Selection Context Pill */}
           {activeQuoteContext && (

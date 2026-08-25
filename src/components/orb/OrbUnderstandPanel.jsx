@@ -79,13 +79,13 @@ export default function OrbUnderstandPanel({
 
   return (
     <div className={`flex h-full w-full overflow-hidden ${
-      highContrast ? 'bg-slate-200/50 dark:bg-zinc-950' : 'bg-[#F7F8FA] dark:bg-[#0E1015]'
+      highContrast ? 'bg-slate-200/50 dark:bg-zinc-950' : 'bg-transparent'
     }`}>
       {/* ── Left Rail: List of Connected Semantic Relationships ── */}
       <div className={`w-[320px] flex flex-col shrink-0 ${
         highContrast
           ? 'border-r-2 border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950'
-          : 'border-r border-black/[0.04] dark:border-white/[0.06] bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md'
+          : 'border-r border-black/[0.04] dark:border-white/[0.06] bg-white/35 dark:bg-zinc-900/35 backdrop-blur-md'
       }`}>
         <div className={`p-4 border-b ${
           highContrast ? 'border-slate-300 dark:border-zinc-700' : 'border-black/[0.04] dark:border-zinc-800/60'
