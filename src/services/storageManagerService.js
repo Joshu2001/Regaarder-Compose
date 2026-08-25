@@ -32,7 +32,7 @@ export const STORAGE_CATEGORIES = [
     id: 'profile',
     name: 'Personal Info & Profile Data',
     description: 'User account details, authentication tokens, team profiles, and collaborative identity.',
-    emptyText: 'No profile data stored on this device.',
+    emptyText: 'No profile data stored on this device — your account information will display here.',
     icon: 'User',
     color: '#ec4899'
   },
@@ -40,7 +40,7 @@ export const STORAGE_CATEGORIES = [
     id: 'api_keys',
     name: 'AI Keys & Integration Secrets',
     description: 'Custom Google Gemini, Anthropic Claude, and third-party API credentials stored in your browser.',
-    emptyText: 'No custom API keys stored on this device.',
+    emptyText: 'No custom API keys stored on this device — your saved integration keys will display here.',
     icon: 'Key',
     color: '#f59e0b'
   },
@@ -48,7 +48,7 @@ export const STORAGE_CATEGORIES = [
     id: 'cache',
     name: 'Local Presets & Saved Assets',
     description: 'Saved emoji presets, custom chart presets, and user dropdown templates.',
-    emptyText: 'No custom presets or saved assets found.',
+    emptyText: 'No custom presets or saved assets found — your saved presets will display here.',
     icon: 'Layers',
     color: '#64748b'
   }
@@ -64,7 +64,7 @@ export function formatBytes(bytes, decimals = 1) {
 }
 
 /**
- * Parses value and checks if it contains genuine user content (not empty defaults or system flags)
+ * Evaluates whether a localStorage key represents genuine user content
  */
 function evaluateUserData(key, rawVal) {
   if (!rawVal || typeof rawVal !== 'string') return null;
@@ -80,11 +80,12 @@ function evaluateUserData(key, rawVal) {
     parsed = trimmed;
   }
 
-  // 1. Documents & Workspaces
+  // 1. Documents & Workspace Data
   if (key.startsWith('rc.savedDoc.') || key === 'rc.documents' || key === 'regaarder_documents') {
     if (typeof parsed === 'object' && parsed !== null) {
       if (Array.isArray(parsed)) {
-        const validDocs = parsed.filter(d => d && (d.title || d.content || d.bodyHtml));
+        // Exclude system samples
+        const validDocs = parsed.filter(d => d && (d.title || d.content || d.bodyHtml) && !d.isSample && d.id !== 'sample-doc');
         if (validDocs.length > 0) return { catId: 'documents', itemCount: validDocs.length };
       } else {
         const keys = Object.keys(parsed);
@@ -154,7 +155,7 @@ function evaluateUserData(key, rawVal) {
     return null;
   }
 
-  // 4. Personal Info & User Profile
+  // 4. Personal Info & Profile
   if (key === 'rc.user' || key === 'regaarder_user_profile') {
     if (typeof parsed === 'object' && parsed !== null && (parsed.email || parsed.name || parsed.id)) {
       return { catId: 'profile', itemCount: 1 };
@@ -254,6 +255,23 @@ export function getStorageBreakdown() {
   result.formattedTotalBytes = formatBytes(result.totalBytes);
 
   return result;
+}
+
+/**
+ * Clear all storage keys across categories
+ */
+export function clearAllStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return { success: false, deletedCount: 0, freedBytes: 0 };
+  }
+
+  try {
+    const breakdown = getStorageBreakdown();
+    const allCategoryIds = STORAGE_CATEGORIES.map(c => c.id);
+    return deleteStorageCategories(allCategoryIds);
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
 /**
