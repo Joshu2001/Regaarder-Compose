@@ -565,5 +565,17 @@
     "schedule": "Schedule スケジュール",
     "memory": "Memory メモリ",
     "tasks": "Tasks タスク"
+  },
+  "editor": {
+    "table": "表",
+    "hoverPickSize": "ホバーしてサイズを選択"
+  },
+  "outline": {
+    "title": "ドキュメントのアウトライン",
+    "structure": "構造",
+    "section": "セクション",
+    "sections": "セクション",
+    "minRead": "分で読了",
+    "words": "文字"
   }
 }

@@ -565,5 +565,17 @@
     "schedule": "Schedule 일정",
     "memory": "Memory 메모리",
     "tasks": "Tasks 작업"
+  },
+  "editor": {
+    "table": "표",
+    "hoverPickSize": "마우스를 올려 크기 선택"
+  },
+  "outline": {
+    "title": "문서 개요",
+    "structure": "구조",
+    "section": "개 섹션",
+    "sections": "개 섹션",
+    "minRead": "분 소요",
+    "words": "단어"
   }
 }

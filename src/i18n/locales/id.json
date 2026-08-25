@@ -565,5 +565,17 @@
     "schedule": "Schedule Jadwal",
     "memory": "Memory Memori",
     "tasks": "Tasks Tugas"
+  },
+  "editor": {
+    "table": "Tabel",
+    "hoverPickSize": "Arahkan kursor untuk memilih ukuran"
+  },
+  "outline": {
+    "title": "Kerangka Dokumen",
+    "structure": "Struktur",
+    "section": "Bagian",
+    "sections": "Bagian",
+    "minRead": "menit baca",
+    "words": "kata"
   }
 }
