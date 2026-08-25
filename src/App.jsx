@@ -19076,25 +19076,18 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     if (isDarkMode) {
       document.documentElement.classList.add('app-dark', 'dark');
       document.body.classList.add('app-dark', 'dark');
-      const violetFallback = {
-        50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa',
-        500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065'
-      };
-      [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
-        root.style.setProperty(`--accent-${weight}`, violetFallback[weight]);
-      });
-      root.style.setProperty('--accent-primary', '#7c3aed');
-      root.style.setProperty('--accent-dark', '#6d28d9');
-      root.style.setProperty('--accent-hover', '#8b5cf6');
     } else {
       document.documentElement.classList.remove('app-dark', 'dark');
       document.body.classList.remove('app-dark', 'dark');
-      const primaryShades = generateColorShades(brandColor);
-      [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
-        root.style.setProperty(`--accent-${weight}`, primaryShades[weight]);
-      });
-      root.style.setProperty('--accent-primary', brandColor);
     }
+    const primaryShades = generateColorShades(brandColor);
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
+      root.style.setProperty(`--accent-${weight}`, primaryShades[weight]);
+    });
+    root.style.setProperty('--brand-color', brandColor);
+    root.style.setProperty('--accent-primary', brandColor);
+    root.style.setProperty('--accent-dark', primaryShades[700] || brandColor);
+    root.style.setProperty('--accent-hover', primaryShades[400] || brandColor);
   }, [isDarkMode, brandColor]);
 
   useEffect(() => {
