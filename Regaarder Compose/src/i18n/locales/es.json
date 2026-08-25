@@ -53,7 +53,11 @@
     "tasks": "Tareas",
     "chat": "Chat",
     "settings": "Ajustes",
-    "savedDrafts": "Borradores guardados"
+    "savedDrafts": "Borradores guardados",
+    "compose": "Docs",
+    "browser": "Notas",
+    "people": "Personas",
+    "notes": "Notas"
   },
   "toolbar": {
     "context": "Contexto",
@@ -152,7 +156,11 @@
     "recentSearches": "Búsquedas recientes",
     "noResults": "No se encontraron resultados",
     "noResultsSub": "Prueba buscando por título de documento o palabra clave.",
-    "shortcutHint": "Usa ↑↓ para navegar, Enter para abrir, Esc para cerrar"
+    "shortcutHint": "Usa ↑↓ para navegar, Enter para abrir, Esc para cerrar",
+    "searchAnything": "Buscar en todo el espacio de trabajo...",
+    "navigate": "Navegar",
+    "open": "Abrir",
+    "footerBrand": "Regaarder Búsqueda de Contexto"
   },
   "memory": {
     "title": "Memoria del espacio & Grafo de conocimiento",
@@ -378,6 +386,35 @@
     "map": "Mapa de conocimiento",
     "understand": "Entender",
     "decide": "Decidir",
-    "searchPlaceholder": "Pregunta a Orb o busca en el espacio de trabajo..."
+    "searchPlaceholder": "Pregunta a Orb o busca en el espacio de trabajo...",
+    "active": "Orb Activo",
+    "entities": "entidades",
+    "relationships": "relaciones",
+    "modes": "Modos"
+  },
+  "quickActions": {
+    "title": "ACCIONES RÁPIDAS",
+    "newDoc": "Nuevo documento",
+    "newSheet": "Nueva hoja",
+    "newDeck": "Nueva presentación",
+    "startRoom": "Iniciar sala"
+  },
+  "emptyState": {
+    "allTitle": "No hay elementos recientes",
+    "allDesc": "Crea un documento, hoja, presentación o tarea para verlos aquí.",
+    "docsTitle": "No hay documentos indexados",
+    "docsDesc": "Redacta y organiza documentos en Compose para verlos aquí.",
+    "sheetsTitle": "No hay hojas indexadas",
+    "sheetsDesc": "Crea modelos de cálculo en Sheets.",
+    "deckTitle": "No hay presentaciones indexadas",
+    "deckDesc": "Diseña diapositivas en Deck.",
+    "tasksTitle": "No hay tareas",
+    "tasksDesc": "Añade entregables de proyecto para seguir el progreso.",
+    "roomTitle": "No hay salas activas",
+    "roomDesc": "Inicia una videollamada para generar registros de reunión.",
+    "notesTitle": "No hay notas guardadas",
+    "notesDesc": "Explora fuentes web y guarda citas en tus notas.",
+    "peopleTitle": "No hay colaboradores",
+    "peopleDesc": "Invita a miembros de equipo y asigna roles."
   }
 }

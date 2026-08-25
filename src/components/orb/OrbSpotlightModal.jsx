@@ -396,12 +396,12 @@ export default function OrbSpotlightModal({
           <div className="flex items-center gap-2.5">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="font-semibold text-slate-700 dark:text-zinc-300">Orb Active</span>
+              <span className="font-semibold text-slate-700 dark:text-zinc-300">{t('orb.active') || 'Orb Active'}</span>
             </span>
             <span>•</span>
-            <span>{allEntities.length} entities</span>
+            <span>{allEntities.length} {t('orb.entities') || 'entities'}</span>
             <span>•</span>
-            <span>{allEdges.length} relationships</span>
+            <span>{allEdges.length} {t('orb.relationships') || 'relationships'}</span>
           </div>
 
           <div className="flex items-center gap-3 font-mono text-[11px]">
@@ -409,22 +409,22 @@ export default function OrbSpotlightModal({
               <>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">↑↓</kbd>
-                  <span>Navigate</span>
+                  <span>{t('search.navigate') || 'Navigate'}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">↵</kbd>
-                  <span>Open</span>
+                  <span>{t('search.open') || 'Open'}</span>
                 </span>
                 <span>•</span>
               </>
             )}
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">⌘1-4</kbd>
-              <span>Modes</span>
+              <span>{t('orb.modes') || 'Modes'}</span>
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-zinc-300 font-semibold border border-black/[0.04] dark:border-white/[0.06]">Esc</kbd>
-              <span>Close</span>
+              <span>{t('common.close') || 'Close'}</span>
             </span>
           </div>
         </div>

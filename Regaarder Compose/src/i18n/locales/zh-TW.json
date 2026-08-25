@@ -53,7 +53,11 @@
     "tasks": "任務",
     "chat": "對話",
     "settings": "設定",
-    "savedDrafts": "已儲存草稿"
+    "savedDrafts": "已儲存草稿",
+    "compose": "文件",
+    "browser": "筆記",
+    "people": "成員",
+    "notes": "筆記"
   },
   "toolbar": {
     "context": "情境",
@@ -152,7 +156,11 @@
     "recentSearches": "最近搜尋",
     "noResults": "未找到符合的工作區項目",
     "noResultsSub": "請嘗試搜尋文件標題、決策記錄或關鍵字。",
-    "shortcutHint": "使用 ↑↓ 鍵巡覽，Enter 開啟，Esc 關閉"
+    "shortcutHint": "使用 ↑↓ 鍵巡覽，Enter 開啟，Esc 關閉",
+    "searchAnything": "搜尋工作區中的任何內容...",
+    "navigate": "導覽",
+    "open": "開啟",
+    "footerBrand": "Regaarder 脈絡智慧搜尋"
   },
   "memory": {
     "title": "工作區記憶與知識圖譜",
@@ -378,6 +386,35 @@
     "map": "知識圖譜關聯",
     "understand": "語義理解分析",
     "decide": "AI 智慧決策助理",
-    "searchPlaceholder": "向 Orb 提問或搜尋工作區全域智慧內容..."
+    "searchPlaceholder": "向 Orb 提問或搜尋工作區全域智慧內容...",
+    "active": "Orb 運行中",
+    "entities": "個實體",
+    "relationships": "個關聯",
+    "modes": "切換模式"
+  },
+  "quickActions": {
+    "title": "常用快捷動作",
+    "newDoc": "新增文件",
+    "newSheet": "新增試算表",
+    "newDeck": "新增簡報",
+    "startRoom": "建立協作室"
+  },
+  "emptyState": {
+    "allTitle": "工作區尚無最近項目",
+    "allDesc": "在此建立文件、試算表、簡報或任務以查看相關內容。",
+    "docsTitle": "尚無已索引的文件",
+    "docsDesc": "在 Compose 撰寫與整理文件以在記憶庫中查看。",
+    "sheetsTitle": "尚無已索引的試算表",
+    "sheetsDesc": "在 Sheets 中建立計算模型與資料網格。",
+    "deckTitle": "尚無已索引的簡報",
+    "deckDesc": "在 Deck 中設計投影片與業務簡報。",
+    "tasksTitle": "尚無任務或待辦事項",
+    "tasksDesc": "新增專案交付項目以在工作區中追蹤進度。",
+    "roomTitle": "目前沒有進行中的會議室",
+    "roomDesc": "發起視訊通話以產生會議歷程記錄。",
+    "notesTitle": "尚未儲存任何研究筆記",
+    "notesDesc": "瀏覽網路即時資料並將引用文獻儲存至筆記。",
+    "peopleTitle": "尚無協作成員資料",
+    "peopleDesc": "邀請團隊成員並指派工作區專案角色。"
   }
 }

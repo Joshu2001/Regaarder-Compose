@@ -53,7 +53,11 @@
     "tasks": "タスク",
     "chat": "チャット",
     "settings": "設定",
-    "savedDrafts": "下書き一覧"
+    "savedDrafts": "下書き一覧",
+    "compose": "ドキュメント",
+    "browser": "ノート",
+    "people": "メンバー",
+    "notes": "ノート"
   },
   "toolbar": {
     "context": "コンテキスト",
@@ -152,7 +156,11 @@
     "recentSearches": "最近の検索",
     "noResults": "検索結果が見つかりません",
     "noResultsSub": "ドキュメント名やキーワードで再検索してください。",
-    "shortcutHint": "↑↓ で移動、Enter で開く、Esc で閉じる"
+    "shortcutHint": "↑↓ で移動、Enter で開く、Esc で閉じる",
+    "searchAnything": "ワークスペース全体を検索...",
+    "navigate": "移動",
+    "open": "開く",
+    "footerBrand": "Regaarder コンテキスト検索"
   },
   "memory": {
     "title": "ワークスペースメモリとナレッジグラフ",
@@ -378,6 +386,35 @@
     "map": "ナレッジマップ",
     "understand": "コンテキスト理解",
     "decide": "AI 意思決定",
-    "searchPlaceholder": "Orbに質問するかワークスペース内を検索..."
+    "searchPlaceholder": "Orbに質問するかワークスペース内を検索...",
+    "active": "Orb 稼働中",
+    "entities": "件のエンティティ",
+    "relationships": "件のリレーション",
+    "modes": "モード切替"
+  },
+  "quickActions": {
+    "title": "クイックアクション",
+    "newDoc": "新規ドキュメント",
+    "newSheet": "新規スプレッドシート",
+    "newDeck": "新規プレゼンテーション",
+    "startRoom": "ルームを開始"
+  },
+  "emptyState": {
+    "allTitle": "最近のアイテムはありません",
+    "allDesc": "ドキュメント、シート、スライド、タスクを作成するとここに表示されます。",
+    "docsTitle": "インデックスされたドキュメントはありません",
+    "docsDesc": "Composeでドキュメントを作成して整理します。",
+    "sheetsTitle": "インデックスされたシートはありません",
+    "sheetsDesc": "Sheetsでデータモデルとスプレッドシートを作成します。",
+    "deckTitle": "インデックスされたスライドはありません",
+    "deckDesc": "Deckでスライドを作成します。",
+    "tasksTitle": "タスクがありません",
+    "tasksDesc": "プロジェクトの成果物を追加して進捗を追跡します。",
+    "roomTitle": "アクティブなミーティングルームはありません",
+    "roomDesc": "ビデオ通話を開始してミーティング記録を作成します。",
+    "notesTitle": "保存されたノートはありません",
+    "notesDesc": "Webソースを閲覧して引用をノートに保存します。",
+    "peopleTitle": "登録されたメンバーはいません",
+    "peopleDesc": "チームメンバーを招待して役割を割り当てます。"
   }
 }

@@ -53,7 +53,11 @@
     "tasks": "Tugas",
     "chat": "Obrolan",
     "settings": "Pengaturan",
-    "savedDrafts": "Draf Tersimpan"
+    "savedDrafts": "Draf Tersimpan",
+    "compose": "Dokumen",
+    "browser": "Catatan",
+    "people": "Anggota",
+    "notes": "Catatan"
   },
   "toolbar": {
     "context": "Konteks",
@@ -152,7 +156,11 @@
     "recentSearches": "Pencarian Terbaru",
     "noResults": "Hasil tidak ditemukan",
     "noResultsSub": "Coba cari berdasarkan judul dokumen atau kata kunci.",
-    "shortcutHint": "Gunakan ↑↓ untuk navigasi, Enter untuk buka, Esc untuk tutup"
+    "shortcutHint": "Gunakan ↑↓ untuk navigasi, Enter untuk buka, Esc untuk tutup",
+    "searchAnything": "Cari apa saja di ruang kerja...",
+    "navigate": "Navigasi",
+    "open": "Buka",
+    "footerBrand": "Regaarder Pencarian Konteks"
   },
   "memory": {
     "title": "Memori Ruang Kerja & Graf Pengetahuan",
@@ -378,6 +386,35 @@
     "map": "Peta Pengetahuan",
     "understand": "Pahami",
     "decide": "Putuskan",
-    "searchPlaceholder": "Tanyakan apa saja ke Orb atau cari di ruang kerja..."
+    "searchPlaceholder": "Tanyakan apa saja ke Orb atau cari di ruang kerja...",
+    "active": "Orb Aktif",
+    "entities": "entitas",
+    "relationships": "relasi",
+    "modes": "Mode"
+  },
+  "quickActions": {
+    "title": "TINDAKAN CEPAT",
+    "newDoc": "Dokumen Baru",
+    "newSheet": "Spreadsheet Baru",
+    "newDeck": "Presentasi Baru",
+    "startRoom": "Mulai Ruang"
+  },
+  "emptyState": {
+    "allTitle": "Belum ada item terbaru",
+    "allDesc": "Buat dokumen, spreadsheet, presentasi, atau tugas untuk melihatnya di sini.",
+    "docsTitle": "Belum ada dokumen yang diindeks",
+    "docsDesc": "Buat dokumen di Compose untuk melihatnya di memori ruang kerja.",
+    "sheetsTitle": "Belum ada spreadsheet yang diindeks",
+    "sheetsDesc": "Bangun model data dan rumus di Sheets.",
+    "deckTitle": "Belum ada presentasi yang diindeks",
+    "deckDesc": "Rancang slide di Deck.",
+    "tasksTitle": "Belum ada tugas",
+    "tasksDesc": "Tambahkan tugas proyek untuk melacak kemajuan.",
+    "roomTitle": "Tidak ada ruang rapat aktif",
+    "roomDesc": "Mulai panggilan video untuk membuat rekaman rapat.",
+    "notesTitle": "Belum ada catatan riset",
+    "notesDesc": "Jelajahi sumber web dan simpan kutipan ke catatan.",
+    "peopleTitle": "Belum ada kolaborator",
+    "peopleDesc": "Undang rekan tim dan tetapkan peran."
   }
 }

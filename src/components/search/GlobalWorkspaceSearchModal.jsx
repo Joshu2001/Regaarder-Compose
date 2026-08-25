@@ -457,7 +457,7 @@ export default function GlobalWorkspaceSearchModal({
                   }`}
                 >
                   <Icon size={13} strokeWidth={1.7} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
-                  <span>{tab.id === 'all' ? (t('common.all') || tab.label) : (t('nav.' + tab.id) || tab.label)}</span>
+                  <span>{tab.id === 'all' ? (t('common.all') || 'All') : (tab.id === 'compose' ? (t('nav.docs') || t('nav.compose') || 'Docs') : (tab.id === 'browser' ? (t('nav.notes') || t('nav.browser') || 'Notes') : (t('nav.' + tab.id) || tab.label)))}</span>
                 </button>
               );
             })}
@@ -855,20 +855,20 @@ export default function GlobalWorkspaceSearchModal({
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">↑↓</kbd>
-              <span>Navigate</span>
+              <span>{t('search.navigate') || 'Navigate'}</span>
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">↵</kbd>
-              <span>Open</span>
+              <span>{t('search.open') || 'Open'}</span>
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">Esc</kbd>
-              <span>Close</span>
+              <span>{t('common.close') || 'Close'}</span>
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
-            <span>Regaarder Context Search</span>
+            <span>{t('search.footerBrand') || 'Regaarder Context Search'}</span>
           </div>
         </div>
       </div>

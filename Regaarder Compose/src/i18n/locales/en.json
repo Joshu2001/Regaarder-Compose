@@ -53,7 +53,11 @@
     "tasks": "Tasks",
     "chat": "Chat",
     "settings": "Settings",
-    "savedDrafts": "Saved Drafts"
+    "savedDrafts": "Saved Drafts",
+    "compose": "Docs",
+    "browser": "Notes",
+    "people": "People",
+    "notes": "Notes"
   },
   "toolbar": {
     "context": "Context",
@@ -152,7 +156,11 @@
     "recentSearches": "Recent Searches",
     "noResults": "No workspace results found",
     "noResultsSub": "Try searching for document titles, memory decisions, or keywords.",
-    "shortcutHint": "Use ↑↓ to navigate, Enter to open, Esc to close"
+    "shortcutHint": "Use ↑↓ to navigate, Enter to open, Esc to close",
+    "searchAnything": "Search anything in your workspace...",
+    "navigate": "Navigate",
+    "open": "Open",
+    "footerBrand": "Regaarder Context Search"
   },
   "memory": {
     "title": "Workspace Memory & Knowledge Graph",
@@ -378,6 +386,35 @@
     "map": "Map (Graph)",
     "understand": "Understand",
     "decide": "Decide",
-    "searchPlaceholder": "Ask Orb anything or search workspace intelligence..."
+    "searchPlaceholder": "Ask Orb anything or search workspace intelligence...",
+    "active": "Orb Active",
+    "entities": "entities",
+    "relationships": "relationships",
+    "modes": "Modes"
+  },
+  "quickActions": {
+    "title": "QUICK ACTIONS",
+    "newDoc": "New Document",
+    "newSheet": "New Spreadsheet",
+    "newDeck": "New Presentation",
+    "startRoom": "Start Room"
+  },
+  "emptyState": {
+    "allTitle": "No recent items in workspace",
+    "allDesc": "Create a document, spreadsheet, presentation, or task to see contextual items here.",
+    "docsTitle": "No documents indexed yet",
+    "docsDesc": "Draft and organize rich documents in Compose to view them in workspace memory.",
+    "sheetsTitle": "No spreadsheets indexed yet",
+    "sheetsDesc": "Build calculation models and formula data grids in Sheets.",
+    "deckTitle": "No presentations indexed yet",
+    "deckDesc": "Design slides and executive decks to view them here.",
+    "tasksTitle": "No tasks or initiatives",
+    "tasksDesc": "Add project deliverables and action items to track progress across memory.",
+    "roomTitle": "No meeting rooms active",
+    "roomDesc": "Start a video call or ambient room to generate meeting memory records.",
+    "notesTitle": "No research notes saved",
+    "notesDesc": "Browse live web sources and save citations to your knowledge notes.",
+    "peopleTitle": "No collaborators indexed",
+    "peopleDesc": "Invite teammates and assign roles across workspace projects."
   }
 }
