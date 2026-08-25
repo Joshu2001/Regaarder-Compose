@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   HardDrive, FileText, MessageSquare, Brain, User, Key, Layers, 
   Trash2, Download, ShieldCheck, Check, AlertTriangle, RefreshCw, 
-  CheckSquare, Square, Inbox, Database
+  CheckSquare, Square, Inbox
 } from 'lucide-react';
 import { 
   STORAGE_CATEGORIES, 
   getStorageBreakdown, 
   deleteStorageCategories, 
+  clearAllStorage,
   exportUserDataArchive, 
   formatBytes 
 } from '../services/storageManagerService';
@@ -44,7 +45,6 @@ export default function StorageDataManagement({ showToast = () => {} }) {
     return () => window.removeEventListener('regaarder:storage-cleared', handleStorageCleared);
   }, []);
 
-  // Categories that actually contain real stored items
   const categoriesWithData = useMemo(() => {
     return STORAGE_CATEGORIES.filter(cat => {
       const data = breakdown.categories[cat.id];
@@ -59,7 +59,7 @@ export default function StorageDataManagement({ showToast = () => {} }) {
 
   const toggleCategory = (id) => {
     const data = breakdown.categories[id];
-    if (!data || data.itemCount === 0) return; // Do not select empty categories
+    if (!data || data.itemCount === 0) return;
     setSelectedCategoryIds(prev => 
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
     );
@@ -111,6 +111,25 @@ export default function StorageDataManagement({ showToast = () => {} }) {
     }
   };
 
+  const handleClearAllStorage = () => {
+    setIsDeleting(true);
+    try {
+      const result = clearAllStorage();
+      if (result.success) {
+        showToast('Storage reset: all items erased and empty state restored');
+        setSelectedCategoryIds([]);
+        setConfirmModalOpen(false);
+        refreshMetrics();
+      } else {
+        showToast('Error resetting storage: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('Reset failed: ' + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleExportData = () => {
     setIsExporting(true);
     try {
@@ -156,21 +175,34 @@ export default function StorageDataManagement({ showToast = () => {} }) {
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Device Storage Used</span>
             <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mt-0.5">
-              {breakdown.formattedTotalBytes}
+              {hasAnyStoredData ? breakdown.formattedTotalBytes : '0 B'}
               <span className="text-xs font-normal text-slate-500 dark:text-zinc-400 ml-2">
-                across {breakdown.totalItems} stored {breakdown.totalItems === 1 ? 'item' : 'items'}
+                across {hasAnyStoredData ? breakdown.totalItems : 0} stored {breakdown.totalItems === 1 ? 'item' : 'items'}
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleExportData}
-            disabled={isExporting || breakdown.totalItems === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-          >
-            <Download size={13} />
-            {isExporting ? 'Exporting...' : 'Export Archive (.json)'}
-          </button>
+          <div className="flex items-center gap-2">
+            {hasAnyStoredData && (
+              <button
+                type="button"
+                onClick={handleClearAllStorage}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/60 bg-red-50/70 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 text-xs font-semibold transition-all cursor-pointer"
+                title="Purge all stored workspace data and restore empty state"
+              >
+                <Trash2 size={12} />
+                Purge All
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleExportData}
+              disabled={isExporting || !hasAnyStoredData}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/80 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <Download size={13} />
+              {isExporting ? 'Exporting...' : 'Export Archive (.json)'}
+            </button>
+          </div>
         </div>
 
         {/* Segmented Progress Bar */}
@@ -246,7 +278,7 @@ export default function StorageDataManagement({ showToast = () => {} }) {
         </button>
       </div>
 
-      {/* All Categories List with Clean Empty States for Zero-Data Categories */}
+      {/* All Categories List with Clean Contextual Empty States for Zero-Data Categories */}
       <div className="space-y-2.5 mb-6">
         {STORAGE_CATEGORIES.map(cat => {
           const data = breakdown.categories[cat.id] || { bytes: 0, itemCount: 0, formattedBytes: '0 B' };
@@ -293,7 +325,7 @@ export default function StorageDataManagement({ showToast = () => {} }) {
                   <IconComponent size={15} />
                 </div>
 
-                {/* Category Details & Empty State Message */}
+                {/* Category Details & Contextual Empty Message */}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className={`text-xs font-bold truncate ${hasData ? 'text-slate-800 dark:text-zinc-200' : 'text-slate-600 dark:text-zinc-400'}`}>
