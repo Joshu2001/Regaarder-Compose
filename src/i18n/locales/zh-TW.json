@@ -28,7 +28,15 @@
     "words": "字",
     "characters": "字元",
     "focusMode": "專注模式",
-    "exitFocusMode": "結束專注模式"
+    "exitFocusMode": "結束專注模式",
+    "tab": "標籤頁",
+    "untitledDoc": "未命名文件",
+    "untitledWhiteboard": "未命名白板",
+    "whiteboard": "白板",
+    "rename": "重新命名",
+    "duplicate": "建立副本",
+    "pin": "固定",
+    "unpin": "取消固定"
   },
   "nav": {
     "docs": "文件",
@@ -81,7 +89,26 @@
     "blocks": "區塊排版",
     "callout": "引言／重點框",
     "codeBlock": "程式碼區塊",
-    "divider": "水平分隔線"
+    "divider": "水平分隔線",
+    "heading4": "標題 4",
+    "showPageNumbers": "顯示頁碼",
+    "hidePageNumbers": "隱藏頁碼",
+    "showOnFirstPage": "首頁顯示頁碼",
+    "hideOnFirstPage": "首頁不顯示頁碼",
+    "position": "位置設定",
+    "left": "靠左",
+    "center": "置中",
+    "right": "靠右",
+    "searchFont": "搜尋字體",
+    "searchHeading": "搜尋標題樣式",
+    "listStyles": "清單樣式",
+    "alignLeft": "靠左對齊 (Ctrl+Shift+L)",
+    "alignCenter": "置中對齊 (Ctrl+Shift+E)",
+    "alignRight": "靠右對齊 (Ctrl+Shift+R)",
+    "fullscreen": "全螢幕模式",
+    "documentView": "文件檢視模式",
+    "textStyle": "文字排版樣式",
+    "toggleRightPanel": "切換側邊輔助面板"
   },
   "search": {
     "title": "工作區搜尋",
@@ -208,7 +235,12 @@
     "archived": "已封存",
     "autoDetect": "自動偵測",
     "fullscreenDisabled": "全螢幕模式已關閉。",
-    "fullscreenEnabled": "已開啟全螢幕模式。"
+    "fullscreenEnabled": "已開啟全螢幕模式。",
+    "documentState": "文件狀態",
+    "draftDesc": "正在編輯撰寫中",
+    "readyDesc": "已完成可直接使用",
+    "reviewDesc": "等待團隊審核意見",
+    "archivedDesc": "已封存且處於唯讀狀態"
   },
   "notifications": {
     "title": "通知中心",
@@ -224,9 +256,19 @@
     "listenToDraft": "朗讀草稿內容",
     "textToSpeech": "語音朗讀播放器",
     "play": "播放",
-    "pause": "暫停"
+    "pause": "暫停",
+    "readAloud": "語音朗讀文件內容"
   },
   "footer": {
     "stats": "{{words}} 字 - {{characters}} 字元"
+  },
+  "export": {
+    "exportAsFile": "匯出為檔案格式",
+    "convertTo": "轉換至其他格式",
+    "composeDoc": "Compose 文件格式",
+    "wordDoc": "Microsoft Word 文件",
+    "googleDocs": "Google Docs 雲端格式",
+    "pdfDoc": "PDF 列印文件",
+    "markdownDoc": "Markdown 標記文件"
   }
 }

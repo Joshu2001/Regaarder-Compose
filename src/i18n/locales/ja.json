@@ -28,7 +28,15 @@
     "words": "語",
     "characters": "文字",
     "focusMode": "フォーカスモード",
-    "exitFocusMode": "フォーカスモードを終了"
+    "exitFocusMode": "フォーカスモードを終了",
+    "tab": "タブ",
+    "untitledDoc": "無題のドキュメント",
+    "untitledWhiteboard": "無題のホワイトボード",
+    "whiteboard": "ホワイトボード",
+    "rename": "名前を変更",
+    "duplicate": "複製",
+    "pin": "固定",
+    "unpin": "固定解除"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -81,7 +89,26 @@
     "blocks": "ブロック",
     "callout": "引用・コールアウト",
     "codeBlock": "コードブロック",
-    "divider": "区切り線"
+    "divider": "区切り線",
+    "heading4": "見出し 4",
+    "showPageNumbers": "ページ番号を表示",
+    "hidePageNumbers": "ページ番号を非表示",
+    "showOnFirstPage": "最初のページに表示",
+    "hideOnFirstPage": "最初のページは非表示",
+    "position": "配置",
+    "left": "左揃え",
+    "center": "中央揃え",
+    "right": "右揃え",
+    "searchFont": "フォントを検索",
+    "searchHeading": "見出しを検索",
+    "listStyles": "リストスタイル",
+    "alignLeft": "左揃え (Ctrl+Shift+L)",
+    "alignCenter": "中央揃え (Ctrl+Shift+E)",
+    "alignRight": "右揃え (Ctrl+Shift+R)",
+    "fullscreen": "全画面表示",
+    "documentView": "ドキュメント表示",
+    "textStyle": "テキストスタイル",
+    "toggleRightPanel": "サイドパネル切り替え"
   },
   "search": {
     "title": "ワークスペース検索",
@@ -208,7 +235,12 @@
     "archived": "アーカイブ済み",
     "autoDetect": "自動検出",
     "fullscreenDisabled": "全画面モードを解除しました。",
-    "fullscreenEnabled": "全画面モードを開始しました。"
+    "fullscreenEnabled": "全画面モードを開始しました。",
+    "documentState": "ドキュメントステータス",
+    "draftDesc": "執筆・編集中",
+    "readyDesc": "完了済み、利用可能",
+    "reviewDesc": "フィードバック待ち",
+    "archivedDesc": "アーカイブ済み"
   },
   "notifications": {
     "title": "通知",
@@ -224,9 +256,19 @@
     "listenToDraft": "下書きを音声で聴く",
     "textToSpeech": "音声読み上げ機能",
     "play": "再生",
-    "pause": "一時停止"
+    "pause": "一時停止",
+    "readAloud": "ドキュメントを音声で読み上げ"
   },
   "footer": {
     "stats": "{{words}} 語 - {{characters}} 文字"
+  },
+  "export": {
+    "exportAsFile": "ファイルとしてエクスポート",
+    "convertTo": "別の形式に変換",
+    "composeDoc": "Compose ドキュメント",
+    "wordDoc": "Microsoft Word",
+    "googleDocs": "Google Docs クラウド",
+    "pdfDoc": "PDF ドキュメント",
+    "markdownDoc": "Markdown ファイル"
   }
 }
