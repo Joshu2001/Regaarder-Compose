@@ -22,7 +22,13 @@
     "items": "個項目",
     "item": "個項目",
     "all": "全部",
-    "none": "無"
+    "none": "無",
+    "savedDrafts": "已儲存草稿",
+    "unsavedDraft": "未儲存草稿",
+    "words": "字",
+    "characters": "字元",
+    "focusMode": "專注模式",
+    "exitFocusMode": "結束專注模式"
   },
   "nav": {
     "docs": "文件",
@@ -34,7 +40,8 @@
     "schedule": "排程",
     "tasks": "任務",
     "chat": "對話",
-    "settings": "設定"
+    "settings": "設定",
+    "savedDrafts": "已儲存草稿"
   },
   "toolbar": {
     "context": "情境",
@@ -45,20 +52,36 @@
     "heading1": "標題 1",
     "heading2": "標題 2",
     "heading3": "標題 3",
-    "bodyText": "內文",
+    "bodyText": "內文段落",
     "insertMedia": "插入媒體",
     "lists": "清單",
-    "table": "表格",
+    "table": "資料表格",
     "chart": "圖表",
-    "equation": "方程式",
-    "symbol": "符號",
+    "equation": "數學公式",
+    "symbol": "標點與符號",
     "askAi": "詢問 AI...",
     "dictate": "語音聽寫",
-    "proofread": "校對",
-    "readability": "可讀性",
+    "proofread": "校對文字",
+    "readability": "可讀性分析",
     "citations": "引文引用",
-    "redact": "遮蔽",
-    "history": "版本記錄"
+    "redact": "遮蔽機密",
+    "history": "版本記錄",
+    "heading": "標題樣式",
+    "title": "主標題",
+    "pageNumber": "頁碼",
+    "bulletList": "項目符號清單",
+    "numberedList": "編號清單",
+    "multilevelList": "階層式清單",
+    "checklist": "待辦核取清單",
+    "insert": "插入",
+    "media": "媒體素材",
+    "mediaSubtitle": "圖片／影片／檔案",
+    "specialCharacters": "特殊符號",
+    "emoji": "表情符號",
+    "blocks": "區塊排版",
+    "callout": "引言／重點框",
+    "codeBlock": "程式碼區塊",
+    "divider": "水平分隔線"
   },
   "search": {
     "title": "工作區搜尋",
@@ -177,5 +200,33 @@
     "generateOutline": "產生大綱",
     "improveTone": "潤飾語氣與行文",
     "translateTo": "翻譯為..."
+  },
+  "status": {
+    "draft": "草稿",
+    "ready": "完稿",
+    "review": "審閱中",
+    "archived": "已封存",
+    "autoDetect": "自動偵測",
+    "fullscreenDisabled": "全螢幕模式已關閉。",
+    "fullscreenEnabled": "已開啟全螢幕模式。"
+  },
+  "notifications": {
+    "title": "通知中心",
+    "unread": "未讀",
+    "markAllRead": "全部標示為已讀",
+    "clear": "清除",
+    "clearAll": "全部清除",
+    "allCaughtUp": "您已閱讀所有即時通知",
+    "notification": "則通知",
+    "notifications": "則通知"
+  },
+  "tts": {
+    "listenToDraft": "朗讀草稿內容",
+    "textToSpeech": "語音朗讀播放器",
+    "play": "播放",
+    "pause": "暫停"
+  },
+  "footer": {
+    "stats": "{{words}} 字 - {{characters}} 字元"
   }
 }

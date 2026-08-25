@@ -15370,7 +15370,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       <>
         {unreadCount > 0 && (
           <span className="px-2.5 py-0.5 text-[10.5px] font-semibold bg-violet-200/70 text-violet-800 dark:bg-violet-950/80 dark:text-violet-300 rounded-full tabular-nums shadow-2xs">
-            {unreadCount} unread
+            {unreadCount} {t('notifications.unread') || 'unread'}
           </span>
         )}
         {unreadCount > 0 && (
@@ -15379,7 +15379,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
             className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
-            Mark all read
+            {t('notifications.markAllRead') || 'Mark all read'}
           </button>
         )}
         {notifications.length > 0 && (
@@ -15388,7 +15388,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             onClick={() => setNotifications([])}
             className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 hover:text-rose-500 transition-colors"
           >
-            Clear
+            {t('notifications.clear') || 'Clear'}
           </button>
         )}
       </>
@@ -15406,7 +15406,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             onClick={() => setNotifications([])}
             className="text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 hover:text-rose-500 transition-colors"
           >
-            Clear all
+            {t('notifications.clearAll') || 'Clear all'}
           </button>
         )}
       </>
@@ -15416,7 +15416,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       <DropdownModalShell
         isOpen={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
-        title="Notifications"
+        title={t('notifications.title') || "Notifications"}
         headerExtra={headerExtra}
         width="w-[420px]"
         maxHeight="max-h-[395px]"
@@ -15428,7 +15428,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           <div className="py-14 flex flex-col items-center gap-2.5 text-center">
             <Bell size={24} strokeWidth={1.5} className="text-slate-300 dark:text-zinc-600" />
             <span className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-medium">
-              You're all caught up
+              {t('notifications.allCaughtUp') || "You're all caught up"}
             </span>
           </div>
         ) : (
@@ -37960,7 +37960,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
   const activeDraftDisplayTitle = (() => {
     const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
-    return rawTitle || (lastSavedAt ? SAVED_DRAFT_LABEL : 'Unsaved draft');
+    return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.unsavedDraft') || 'Unsaved draft'));
   })();
   const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
     && !String(docSubtitle || '').trim()
@@ -47819,7 +47819,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Export"
                 >
                   <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
-                  <span>Export</span>
+                  <span>{t('common.export') || 'Export'}</span>
                   {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
                 </button>
                 {isSheetsMode && sheetsExportMenuOpen && (
@@ -47922,7 +47922,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
                   style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
                 >
-                  <Users size={13} strokeWidth={1.5} /> Share
+                  <Users size={13} strokeWidth={1.5} /> {t('common.share') || 'Share'}
                 </button>
                   {shareModalOpen && (
                     <ShareModal
@@ -73367,7 +73367,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'heading' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                 >
-                  {editorHeading} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
+                  {(editorHeading === 'Heading 1' ? (t('toolbar.heading1') || 'Heading 1') : editorHeading === 'Heading 2' ? (t('toolbar.heading2') || 'Heading 2') : editorHeading === 'Heading 3' ? (t('toolbar.heading3') || 'Heading 3') : editorHeading === 'Paragraph' ? (t('toolbar.bodyText') || 'Paragraph') : editorHeading === 'Title' ? (t('toolbar.title') || 'Title') : editorHeading)} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
                 </button>
                 {openDropdown === 'heading' && (
                   <>
@@ -73482,7 +73482,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'page-number' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                   title="Page numbering"
                 >
-                  Page # <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
+                  {(t('toolbar.pageNumber') || 'Page #')} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
                 </button>
                 {openDropdown === 'page-number' && (
                   <>
@@ -73685,7 +73685,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Lists (Ctrl+Shift+8)"
                 >
                   <List size={14} strokeWidth={1.5} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
-                  <span>Lists</span>
+                  <span>{t('toolbar.lists') || 'Lists'}</span>
                   <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {listDropdownOpen && (
@@ -73694,10 +73694,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
                       <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
                       {[
-                        { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Standard bullet list', action: () => { applyFormatCommand('insertUnorderedList'); setListDropdownOpen(false); } },
-                        { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Standard numbered list', action: () => { applyFormatCommand('insertOrderedList'); setListDropdownOpen(false); } },
-                        { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
-                        { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
+                        { id: 'bullet', icon: <List size={14} />, label: t('toolbar.bulletList') || 'Bullet List', desc: 'Standard bullet list', action: () => { applyFormatCommand('insertUnorderedList'); setListDropdownOpen(false); } },
+                        { id: 'numbered', icon: <ListOrdered size={14} />, label: t('toolbar.numberedList') || 'Numbered List', desc: 'Standard numbered list', action: () => { applyFormatCommand('insertOrderedList'); setListDropdownOpen(false); } },
+                        { id: 'multilevel', icon: <ListTree size={14} />, label: t('toolbar.multilevelList') || 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
+                        { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: t('toolbar.checklist') || 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
                       ].map(item => (
                         <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                           <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
@@ -73721,65 +73721,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   title="Insert Elements (Ctrl+/ or type /)"
                 >
                   <Plus size={14} strokeWidth={1.5} className="text-slate-500" />
-                  <span>Insert</span>
+                  <span>{t('toolbar.insert') || 'Insert'}</span>
                   <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {insertDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} onClick={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
                     <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto thin-scrollbar" style={{ maxHeight: 'min(480px, calc(100vh - 120px))' }}>
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('toolbar.media') || 'Media'}</div>
                       <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <ImageIcon size={14} className="text-slate-500" />
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.mediaSubtitle') || 'Images / Videos / Files'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Upload, AI, Stock, URL</div>
                         </div>
                       </button>
                       <div className="h-px bg-slate-100 my-1" />
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('toolbar.specialCharacters') || 'Special Characters'}</div>
                       <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('emoji'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <SmilePlus size={14} className="text-slate-500" />
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.emoji') || 'Emoji'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
                         </div>
                       </button>
                       <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('symbol'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <Pi size={14} className="text-slate-500" />
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.symbol') || 'Symbols'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
                         </div>
                       </button>
                       <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <SigmaIcon size={14} className="text-slate-500" />
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.equation') || 'Equations'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Common math formulas</div>
                         </div>
                       </button>
                       <div className="h-px bg-slate-100 my-1" />
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('toolbar.blocks') || 'Blocks'}</div>
                       <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
                       <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <span className="text-slate-500 text-base leading-none font-bold">❝</span>
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.callout') || 'Callout / Quote'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
                         </div>
                       </button>
                       <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('code_block'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <FileText size={14} className="text-slate-500" />
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.codeBlock') || 'Code Block'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
                         </div>
                       </button>
                       <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('divider'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                         <Minus size={14} className="text-slate-500" />
                         <div>
-                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">{t('toolbar.divider') || 'Divider'}</div>
                           <div className="text-[11px] text-slate-400 leading-tight">Horizontal rule</div>
                         </div>
                       </button>
@@ -79294,7 +79294,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {docState === 'ready' && <CheckCircle2 size={13} className="stroke-[2] text-emerald-600 dark:text-emerald-400" />}
                     {docState === 'review' && <Users2 size={13} className="stroke-[2] text-blue-600 dark:text-blue-400" />}
                     {docState === 'archived' && <Archive size={13} className="stroke-[2] text-slate-500 dark:text-zinc-400" />}
-                    <span>{docState.charAt(0).toUpperCase() + docState.slice(1)}</span>
+                    <span>{t('status.' + docState) || (docState.charAt(0).toUpperCase() + docState.slice(1))}</span>
                   </button>
                 </div>
               </div>
@@ -80317,7 +80317,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 </div>
               ) : (
-                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-400 px-3 pr-4 pointer-events-none">Dictate</span>
+                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-400 px-3 pr-4 pointer-events-none">{t('toolbar.dictate') || 'Dictate'}</span>
               )}
             </div>
           </div>
@@ -80516,7 +80516,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
-            <span title="Real-time document stats">{documentStats.words} words - {documentStats.characters} characters</span>
+            <span title="Real-time document stats">{documentStats.words} {t('common.words') || 'words'} - {documentStats.characters} {t('common.characters') || 'characters'}</span>
             <div className="relative">
               <button
                 data-language-menu-root
@@ -80526,7 +80526,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 }}
                 className="flex items-center gap-1 cursor-pointer hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50"
               >
-                {getDisplayLanguageLabel()} <ChevronDown size={12} />
+                {supportedLanguages.find(l => l.code === uiLanguage)?.nativeName || getDisplayLanguageLabel()} <ChevronDown size={12} />
               </button>
               {languageMenuOpen && (
                 <div className="absolute left-0 bottom-full mb-1 z-40 w-40 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-language-menu-root>
@@ -80551,7 +80551,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`px-2 py-1 rounded transition-colors ${isFocusMode ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-50 hover:text-gray-700'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
               title="Toggle focus mode"
             >
-              {isFocusMode ? 'Exit Focus Mode' : 'Focus Mode'}
+              {isFocusMode ? (t('common.exitFocusMode') || 'Exit Focus Mode') : (t('common.focusMode') || 'Focus Mode')}
             </button>
           </div>
           <div className="flex items-center gap-4">
