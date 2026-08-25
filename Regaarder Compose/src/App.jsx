@@ -69720,7 +69720,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 </div>
-              )}`);
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Workspace Search Modal */}
+      <GlobalWorkspaceSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        onSelectEntity={(entity) => {
+          if (!entity) return;
+          if (entity.type === 'doc') {
+            setProductMode('compose');
+            handleOpenSavedDocument(entity.id || entity.title);
+            showToast(`Opened: ${entity.title}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
@@ -83873,8 +83888,113 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 </div>
-              )};
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
+
+      {/* Gesture visual cues */}
+      {gestureRipples.map(r => (
+        <div
+          key={r.id}
+          className="fixed pointer-events-none z-[99999] rounded-full border border-violet-500/30 bg-violet-500/10 animate-gesture-ripple"
+          style={{
+            left: r.x - 20,
+            top: r.y - 20,
+            width: 40,
+            height: 40,
+          }}
+        />
+      ))}
+
+      {gestureNotification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] pointer-events-none animate-gesture-pill-in">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/10">
+            <Sparkles size={14} className="text-violet-400 animate-pulse" />
+            <span>{gestureNotification.label}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Compose Pickers */}
+      <UnifiedMediaModal isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} mediaInsertionModal={mediaInsertionModal} setMediaInsertionModal={setMediaInsertionModal} />
+      <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
+      <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
+      <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
+      <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} focusedTableCell={focusedTableCell} setFocusedTableCell={setFocusedTableCell} isTableLocked={isTableLocked} setIsTableLocked={setIsTableLocked} />
+      <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
+      
+      {/* Root-level Add Source File Popover matching TableGridPickerModal */}
+      {isAddSourceMenuOpen && addSourceAnchorRect && (
+        <>
+          <div
+            className="fixed inset-0 z-[9998]"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsAddSourceMenuOpen(false);
+              setIsChooseRegaarderOpen(false);
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsAddSourceMenuOpen(false);
+              setIsChooseRegaarderOpen(false);
+            }}
+          />
+          <div
+            className="fixed z-[9999] w-64 rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 shadow-[0_12px_40px_rgb(0,0,0,0.14)] backdrop-blur-xl p-1.5 text-xs font-medium select-none animate-in fade-in zoom-in-95 duration-100"
+            style={{
+              top: 12,
+              left: 12
+            }}
+          >
+            <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+              Add source
+            </div>
+            
+            {/* Option 1: Upload file (Supports Batch Multi-File Upload) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.multiple = true;
+                input.onchange = (ev) => {
+                  const files = Array.from(ev.target.files || []);
+                  if (files.length > 0) {
+                    files.forEach((file, idx) => {
+                      const ext = file.name.split('.').pop().toLowerCase();
+                      let type = 'text';
+                      if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) type = 'excel';
+                      else if (['pptx', 'ppt', 'key'].includes(ext)) type = 'powerpoint';
+                      else if (['pdf'].includes(ext)) type = 'pdf';
+                      else if (['doc', 'docx'].includes(ext)) type = 'word';
+                      else if (['txt', 'md', 'json', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'csv'].includes(ext)) type = 'text';
+
+                      const isImage = file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp'].includes(ext);
+                      const fileObj = {
+                        id: String(Date.now() + idx),
+                        name: file.name,
+                        type,
+                        size: `${Math.round(file.size / 1024)} KB`,
+                        url: isImage ? URL.createObjectURL(file) : null
+                      };
+
+                      if (['txt', 'md', 'json', 'csv', 'js', 'jsx', 'ts', 'tsx', 'html', 'css'].includes(ext)) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          fileObj.content = e.target.result;
+                          setDocContextMaterials((prev) => [...prev, fileObj]);
+                        };
+                        reader.readAsText(file);
+                      } else {
+                        setDocContextMaterials((prev) => [...prev, fileObj]);
+                      }
+                    });
                     showToast(files.length === 1 ? `Added ${files[0].name} to AI Context` : `Added ${files.length} files to AI Context`);
                   }
                 };
