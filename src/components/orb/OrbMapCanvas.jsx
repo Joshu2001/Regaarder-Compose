@@ -381,7 +381,7 @@ export default function OrbMapCanvas({
           <span className="w-1.5 h-1.5 rounded-full bg-[#7C5ACF]" />
           <span className="font-semibold text-slate-900 dark:text-zinc-100">{t('orb.lens.' + activeLensMeta.id) || activeLensMeta.label}</span>
           <span className="text-slate-400 dark:text-zinc-500">·</span>
-          <span className="text-slate-600 dark:text-zinc-300 font-normal">{activeLensMeta.id === 'timeline' ? 'Chronological progression' : activeLensMeta.desc}</span>
+          <span className="text-slate-600 dark:text-zinc-300 font-normal">{t('orb.lensDesc.' + activeLensMeta.id) || activeLensMeta.desc}</span>
         </div>
       </div>
 
@@ -825,10 +825,10 @@ export default function OrbMapCanvas({
                 <Network size={20} strokeWidth={1.6} />
               </div>
               <h4 className={`text-sm mb-1 ${highContrast ? 'font-black text-white' : 'font-semibold text-white'}`}>
-                {LENS_EMPTY_STATES[activeLens]?.title || 'No Connected Relationships Yet'}
+                {t('orb.empty.' + activeLens + '.title') || LENS_EMPTY_STATES[activeLens]?.title || 'No Connected Relationships Yet'}
               </h4>
               <p className={`text-xs leading-relaxed max-w-xs ${highContrast ? 'font-medium text-slate-200' : 'text-slate-400'}`}>
-                {LENS_EMPTY_STATES[activeLens]?.desc || 'Relationships and linkages will appear as you cross-reference workspace artifacts.'}
+                {t('orb.empty.' + activeLens + '.desc') || LENS_EMPTY_STATES[activeLens]?.desc || 'Relationships and linkages will appear as you cross-reference workspace artifacts.'}
               </p>
             </div>
           </div>

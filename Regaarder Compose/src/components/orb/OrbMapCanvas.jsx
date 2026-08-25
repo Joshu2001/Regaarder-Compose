@@ -829,10 +829,10 @@ export default function OrbMapCanvas({
                 <Network size={22} strokeWidth={1.8} />
               </div>
               <h4 className={`text-sm mb-1 ${highContrast ? 'font-black text-white' : 'font-semibold text-white'}`}>
-                {LENS_EMPTY_STATES[activeLens]?.title || 'No Connected Relationships Yet'}
+                {t('orb.empty.' + activeLens + '.title') || LENS_EMPTY_STATES[activeLens]?.title || 'No Connected Relationships Yet'}
               </h4>
               <p className={`text-xs leading-relaxed max-w-xs ${highContrast ? 'font-medium text-slate-200' : 'text-slate-300'}`}>
-                {LENS_EMPTY_STATES[activeLens]?.desc || 'Relationships and linkages will appear as you cross-reference workspace artifacts.'}
+                {t('orb.empty.' + activeLens + '.desc') || LENS_EMPTY_STATES[activeLens]?.desc || 'Relationships and linkages will appear as you cross-reference workspace artifacts.'}
               </p>
             </div>
           </div>

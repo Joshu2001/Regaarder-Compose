@@ -190,14 +190,14 @@ export default function OrbSearchResultsView({
               <h3 className={`text-sm mb-1 ${
                 highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
               }`}>
-                {query ? `No results for "${query}"` : emptyInfo.title}
+                {query ? (t('orb.noResultsFor', { query }) || `No results for "${query}"`) : (t('orb.searchEmpty.' + workspaceFilter + '.title') || emptyInfo.title)}
               </h3>
               <p className={`text-xs leading-relaxed mb-4 ${
                 highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
               }`}>
                 {query
-                  ? 'No matching documents, formulas, or tasks found in this workspace.'
-                  : emptyInfo.desc}
+                  ? (t('orb.noMatchingFound') || 'No matching documents, formulas, or tasks found in this workspace.')
+                  : (t('orb.searchEmpty.' + workspaceFilter + '.desc') || emptyInfo.desc)}
               </p>
               {!query && onNavigateToWorkspace && (
                 <button
@@ -205,7 +205,7 @@ export default function OrbSearchResultsView({
                   onClick={() => onNavigateToWorkspace({ workspace: targetWorkspace })}
                   className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-zinc-100 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  <span>{workspaceFilter === 'all' ? 'Build Intelligence' : `Create ${WORKSPACE_LABELS[workspaceFilter] || 'Document'}`}</span>
+                  <span>{workspaceFilter === 'all' ? (t('orb.buildIntelligence') || 'Build Intelligence →') : (t('orb.createWorkspace', { name: t('orb.workspaceLabels.' + workspaceFilter) || WORKSPACE_LABELS[workspaceFilter] || 'Document' }) || `Create ${WORKSPACE_LABELS[workspaceFilter] || 'Document'}`)}</span>
                   <ArrowRight size={12} />
                 </button>
               )}

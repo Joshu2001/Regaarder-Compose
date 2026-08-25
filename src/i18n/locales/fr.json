@@ -391,7 +391,7 @@
     "entities": "entities",
     "relationships": "relationships",
     "modes": "Modes",
-    "intelligenceLayer": "INTELLIGENCE LAYER",
+    "intelligenceLayer": "Couche d'intelligence",
     "buildIntelligence": "Build Intelligence →",
     "lenses": "Lenses:",
     "semanticLinkages": "Semantic Linkages",
@@ -505,7 +505,12 @@
       "tasks": "Tasks",
       "schedule": "Schedule",
       "browser": "Research"
-    }
+    },
+    "describeWrite": "Décrivez ce que vous souhaitez écrire...",
+    "askAboutSelection": "Posez une question sur cette sélection...",
+    "noResultsFor": "Aucun résultat pour \"{{query}}\"",
+    "noMatchingFound": "Aucun document ou tâche correspondante trouvée.",
+    "createWorkspace": "Créer {{name}}"
   },
   "quickActions": {
     "title": "ACTIONS RAPIDES",
@@ -531,5 +536,10 @@
     "notesDesc": "Parcourez des sources web et enregistrez des citations.",
     "peopleTitle": "Aucun collaborateur",
     "peopleDesc": "Invitez des coéquipiers et attribuez des rôles."
+  },
+  "auth": {
+    "guestMode": "Mode invité",
+    "guestModeDesc": "Connectez-vous pour synchroniser votre travail et accéder aux outils IA.",
+    "signIn": "Se connecter"
   }
 }

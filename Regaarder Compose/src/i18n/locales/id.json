@@ -391,7 +391,7 @@
     "entities": "entities",
     "relationships": "relationships",
     "modes": "Modes",
-    "intelligenceLayer": "INTELLIGENCE LAYER",
+    "intelligenceLayer": "Lapisan Intelijen",
     "buildIntelligence": "Build Intelligence →",
     "lenses": "Lenses:",
     "semanticLinkages": "Semantic Linkages",
@@ -505,7 +505,12 @@
       "tasks": "Tasks",
       "schedule": "Schedule",
       "browser": "Research"
-    }
+    },
+    "describeWrite": "Jelaskan apa yang ingin Anda tulis...",
+    "askAboutSelection": "Tanyakan apa saja tentang pilihan ini...",
+    "noResultsFor": "Tidak ada hasil untuk \"{{query}}\"",
+    "noMatchingFound": "Tidak ditemukan dokumen atau tugas yang cocok.",
+    "createWorkspace": "Buat {{name}}"
   },
   "quickActions": {
     "title": "TINDAKAN CEPAT",
@@ -531,5 +536,10 @@
     "notesDesc": "Jelajahi sumber web dan simpan kutipan ke catatan.",
     "peopleTitle": "Belum ada kolaborator",
     "peopleDesc": "Undang rekan tim dan tetapkan peran."
+  },
+  "auth": {
+    "guestMode": "Mode Tamu",
+    "guestModeDesc": "Masuk untuk menyinkronkan pekerjaan dan mengakses alat AI premium.",
+    "signIn": "Masuk"
   }
 }

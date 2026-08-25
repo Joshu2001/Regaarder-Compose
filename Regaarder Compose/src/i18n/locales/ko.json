@@ -391,7 +391,7 @@
     "entities": "entities",
     "relationships": "relationships",
     "modes": "Modes",
-    "intelligenceLayer": "INTELLIGENCE LAYER",
+    "intelligenceLayer": "인텔리전스 레이어",
     "buildIntelligence": "Build Intelligence →",
     "lenses": "Lenses:",
     "semanticLinkages": "Semantic Linkages",
@@ -505,7 +505,12 @@
       "tasks": "Tasks",
       "schedule": "Schedule",
       "browser": "Research"
-    }
+    },
+    "describeWrite": "작성하고 싶은 내용을 입력하세요...",
+    "askAboutSelection": "선택한 항목에 대해 질문하기...",
+    "noResultsFor": "\"{{query}}\"에 대한 검색 결과가 없습니다",
+    "noMatchingFound": "일치하는 문서나 수식, 작업을 찾을 수 없습니다.",
+    "createWorkspace": "{{name}} 생성"
   },
   "quickActions": {
     "title": "빠른 실행",
@@ -531,5 +536,10 @@
     "notesDesc": "웹 소스를 탐색하고 인용구를 노트에 저장하세요.",
     "peopleTitle": "등록된 공동 작업자가 없습니다",
     "peopleDesc": "팀원을 초대하고 역할을 할당하세요."
+  },
+  "auth": {
+    "guestMode": "게스트 모드",
+    "guestModeDesc": "로그인하여 작업을 동기화하고 협업 및 고급 AI 기능을 사용하세요.",
+    "signIn": "로그인"
   }
 }

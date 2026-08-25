@@ -505,7 +505,12 @@
       "tasks": "Tasks",
       "schedule": "Schedule",
       "browser": "Research"
-    }
+    },
+    "describeWrite": "Describe what you'd like to write...",
+    "askAboutSelection": "Ask anything about this selection...",
+    "noResultsFor": "No results for \"{{query}}\"",
+    "noMatchingFound": "No matching documents, formulas, or tasks found in this workspace.",
+    "createWorkspace": "Create {{name}}"
   },
   "quickActions": {
     "title": "QUICK ACTIONS",
@@ -531,5 +536,10 @@
     "notesDesc": "Browse live web sources and save citations to your knowledge notes.",
     "peopleTitle": "No collaborators indexed",
     "peopleDesc": "Invite teammates and assign roles across workspace projects."
+  },
+  "auth": {
+    "guestMode": "Guest Mode",
+    "guestModeDesc": "Sign in to sync your work, collaborate, and access premium AI tools.",
+    "signIn": "Sign In"
   }
 }

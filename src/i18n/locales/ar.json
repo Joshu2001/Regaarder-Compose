@@ -391,7 +391,7 @@
     "entities": "entities",
     "relationships": "relationships",
     "modes": "Modes",
-    "intelligenceLayer": "INTELLIGENCE LAYER",
+    "intelligenceLayer": "طبقة الذكاء",
     "buildIntelligence": "Build Intelligence →",
     "lenses": "Lenses:",
     "semanticLinkages": "Semantic Linkages",
@@ -505,7 +505,12 @@
       "tasks": "Tasks",
       "schedule": "Schedule",
       "browser": "Research"
-    }
+    },
+    "describeWrite": "صف ما تود كتابته...",
+    "askAboutSelection": "اسأل أي شيء حول هذا التحديد...",
+    "noResultsFor": "لا توجد نتائج لـ \"{{query}}\"",
+    "noMatchingFound": "لم يتم العثور على مستندات أو مهام مطابقة.",
+    "createWorkspace": "إنشاء {{name}}"
   },
   "quickActions": {
     "title": "إجراءات سريعة",
@@ -531,5 +536,10 @@
     "notesDesc": "تصفح مصادر الويب واحفظ المراجع في ملاحظاتك.",
     "peopleTitle": "لا يوجد أعضاء مضافون",
     "peopleDesc": "ادعُ زملاء الفريق وحدد أدوارهم."
+  },
+  "auth": {
+    "guestMode": "وضع الضيف",
+    "guestModeDesc": "سجل الدخول لمزامنة أعمالك والوصول لأدوات الذكاء الاصطناعي.",
+    "signIn": "تسجيل الدخول"
   }
 }

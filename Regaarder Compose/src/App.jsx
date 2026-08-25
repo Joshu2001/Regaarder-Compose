@@ -48044,9 +48044,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                               </div>
                               <div className="flex flex-col items-center">
-                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">Guest Mode</span>
+                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">{t('auth.guestMode') || 'Guest Mode'}</span>
                                 <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
-                                  Sign in to sync your work, collaborate, and access premium AI tools.
+                                  {t('auth.guestModeDesc') || 'Sign in to sync your work, collaborate, and access premium AI tools.'}
                                 </p>
                               </div>
                               <button
@@ -48057,7 +48057,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }}
                                 className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
                               >
-                                Sign In
+                                {t('auth.signIn') || 'Sign In'}
                               </button>
                             </div>
                           )}
@@ -71999,9 +71999,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                       <div className="flex flex-col items-center">
-                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">Guest Mode</span>
+                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">{t('auth.guestMode') || 'Guest Mode'}</span>
                         <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
-                          Sign in to sync your work, collaborate, and access premium AI tools.
+                          {t('auth.guestModeDesc') || 'Sign in to sync your work, collaborate, and access premium AI tools.'}
                         </p>
                       </div>
                       <button
@@ -72012,7 +72012,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }}
                         className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
                       >
-                        Sign In
+                        {t('auth.signIn') || 'Sign In'}
                       </button>
                     </div>
                   )}
@@ -80227,7 +80227,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onChange={handleFloatingPromptChange}
                       onKeyDown={handleFloatingPromptKeyDown}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                      placeholder={Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) ? "Ask anything about this selection..." : "Describe what you'd like to write..."}
+                      placeholder={Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) ? (t('orb.askAboutSelection') || "Ask anything about this selection...") : (t('orb.describeWrite') || "Describe what you'd like to write...")}
                       rows={1}
                       style={{ textAlign: 'left' }}
                       className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-zinc-100 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal text-left"
