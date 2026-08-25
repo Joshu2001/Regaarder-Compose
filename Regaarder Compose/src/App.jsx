@@ -13844,7 +13844,7 @@ const DEFAULT_DECK_SLIDES = [
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
   const [selectionMenuPrompt, setSelectionMenuPrompt] = useState('');
   const [tonePickerState, setTonePickerState] = useState({ open: false, instruction: '', actionKey: '', selectionScoped: undefined });
-  const [isPromptMinimized, setIsPromptMinimized] = useState(false);
+  const [isPromptMinimized, setIsPromptMinimized] = useState(true);
   const [hasSeenAiOnboarding, setHasSeenAiOnboarding] = useState(() => {
     return typeof window !== 'undefined' && localStorage.getItem('rc.hasSeenAIAssistant') === 'true';
   });
@@ -69701,6 +69701,123 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Global Workspace Switcher Popover */}
       {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
 
+      
+      {/* ── Layer 6.7: Contextual Memory Intelligence Layer Modal (Deck & Sheets) ─────────────── */}
+      {isMemoryOpen && (
+        <div 
+          className="fixed inset-0 z-[999998] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-150"
+          style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+        >
+          {/* Translucent Backdrop Overlay */}
+          <div 
+            className="absolute inset-0 bg-slate-900/30 dark:bg-black/55 backdrop-blur-[28px] transition-opacity"
+            onClick={() => setIsMemoryOpen(false)}
+          />
+
+          {/* Main Memory Intelligence Container */}
+          <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
+            <MemoryDashboard 
+              onClose={() => setIsMemoryOpen(false)}
+              onNavigateToEntity={(entity) => {
+                setIsMemoryOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Layer 6.6: Global Workspace Search Modal (Memory Spotlight - Deck & Sheets) ─────────────── */}
+      <GlobalWorkspaceSearchModal
+        isOpen={isMemorySearchOpen}
+        onClose={() => setIsMemorySearchOpen(false)}
+        initialQuery={orbInitialQuery}
+        isDarkMode={isDarkMode}
+        productMode={productMode}
+        onCallAi={callGemini}
+        liveWorkspaceContext={{
+          documents,
+          activeDocId,
+          docTitle,
+          docSubtitle,
+          docBodyHtml,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          scheduleAgendaItems,
+          whiteboardWidgets,
+          whiteboardShapes
+        }}
+        onNavigateToEntity={(entity) => {
+          if (!entity) return;
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            if (entity.metadata?.docId) {
+              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || '');
+              }
+            }
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            showToast(`Navigated to Sheets: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Presentation: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Room: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast(`Navigated to Tasks: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'people') {
+            showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
+          } else {
+            showToast(`Opened: ${entity.title}`);
+          }
+        }}
+        onQuickAction={(action) => {
+          if (!action) return;
+          const ws = action.targetWorkspace;
+          if (ws === 'compose') {
+            setProductMode('compose');
+            if (action.actionType === 'new_doc') {
+              handleCreateNewDocument();
+            }
+          } else if (ws === 'sheets') {
+            setProductMode('sheets');
+            showToast('Created new spreadsheet');
+          } else if (ws === 'deck') {
+            setProductMode('deck');
+            showToast('Created new presentation');
+          } else if (ws === 'room') {
+            createRoomExperience();
+          } else if (ws === 'browser') {
+            setProductMode('browser');
+            showToast('Opened Web Research');
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+          }
+        }}
+      />
+
       </div>
     );
   }
@@ -84295,9 +84412,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           className="fixed inset-0 z-[999998] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-150"
           style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
         >
-          {/* Translucent Backdrop Overlay (28px blur) */}
+          {/* Translucent Backdrop Overlay (14px blur) */}
           <div 
-            className="absolute inset-0 bg-slate-900/35 dark:bg-black/55 backdrop-blur-[28px] transition-opacity"
+            className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-[14px] transition-opacity"
             onClick={() => setIsMemoryOpen(false)}
           />
 
