@@ -13225,6 +13225,74 @@ const DEFAULT_DECK_SLIDES = [
   const [isRoomModelDropdownOpen, setIsRoomModelDropdownOpen] = useState(false);
   const [isRoomAILoading, setIsRoomAILoading] = useState(false);
   const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
+  const [roomAiThread, setRoomAiThread] = useState([]);
+  const [roomAiFollowUpInput, setRoomAiFollowUpInput] = useState('');
+  const [isRoomAiExpanded, setIsRoomAiExpanded] = useState(false);
+  const [isRoomAiMinimized, setIsRoomAiMinimized] = useState(false);
+  const [roomAiAttachments, setRoomAiAttachments] = useState([]);
+  const [roomAiHistory, setRoomAiHistory] = useState([]);
+  const [isRoomAiAttachMenuOpen, setIsRoomAiAttachMenuOpen] = useState(false);
+  const [isRoomAiHistoryOpen, setIsRoomAiHistoryOpen] = useState(false);
+  const roomFileInputRef = useRef(null);
+
+  const handleRoomAiFollowUpSubmit = async (e) => {
+    e?.preventDefault();
+    if (!roomAiFollowUpInput.trim() || isRoomAILoading) return;
+    
+    const userFollowUpText = roomAiFollowUpInput.trim();
+    setRoomAiFollowUpInput('');
+    setIsRoomAILoading(true);
+
+    const updatedThread = [...roomAiThread, { role: 'user', content: userFollowUpText }];
+    setRoomAiThread(updatedThread);
+
+    try {
+      const currentChatContext = roomChatMessages?.length > 0
+        ? roomChatMessages.slice(-8).map(m => `${m.sender}: ${m.text}`).join('\n')
+        : 'No recent chat messages in this session.';
+      
+      const currentParticipantCount = (roomParticipants?.length || 0) + 1;
+      const sessionTitle = (typeof roomName !== 'undefined' && roomName) ? roomName : (t('room.productSync') || '產品同步會議');
+      
+      const conversationHistory = updatedThread.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Room AI'}: ${m.content}`).join('\n');
+
+      const systemPrompt = [
+        `You are the executive Regaarder Room AI meeting assistant for the active session: "${sessionTitle}".`,
+        `CURRENT MEETING CONTEXT:`,
+        `- Room Name: ${sessionTitle}`,
+        `- Participants: ${currentParticipantCount} active user(s)`,
+        `- Meeting Duration: ${meetingDurationLabel || 'In Progress'}`,
+        `- Recent Messages / Transcript:\n${currentChatContext}`,
+        `\nCONVERSATION HISTORY WITH USER:\n${conversationHistory}`,
+        `RULES & GUIDELINES:`,
+        `1. Answer directly, naturally, and concisely in the same language as the user's prompt (English, Traditional Chinese, etc.).`,
+        `2. Maintain context from previous turns in this conversation.`,
+        `3. NEVER output internal placeholders, template instructions, or brackets.`,
+        `4. Always output clean, final, executive-tier text.`
+      ].join('\n\n');
+
+      const aiResult = await callGemini({
+        userPrompt: userFollowUpText,
+        systemPrompt,
+        attachments: roomAiAttachments,
+        customModel: selectedRoomAiModel
+      });
+      setRoomAiAttachments([]);
+
+      const answerText = typeof aiResult === 'string' 
+        ? aiResult 
+        : (aiResult?.text || aiResult?.error || (aiResult?.parsed ? JSON.stringify(aiResult.parsed) : "Analysis complete."));
+
+      setRoomAiThread(prev => [...prev, { role: 'assistant', content: answerText }]);
+      setRoomAIModal(prev => ({ ...prev, answer: answerText }));
+    } catch (error) {
+      console.error('Room AI follow up error:', error);
+      const errMsg = error?.message ? `Unable to process follow-up: ${error.message}` : "Unable to process prompt.";
+      setRoomAiThread(prev => [...prev, { role: 'assistant', content: errMsg }]);
+    } finally {
+      setIsRoomAILoading(false);
+    }
+  };
 
   const handleRoomAISubmit = async (e) => {
     e?.preventDefault();
@@ -13259,13 +13327,20 @@ const DEFAULT_DECK_SLIDES = [
       const aiResult = await callGemini({
         userPrompt: userPromptText,
         systemPrompt,
+        attachments: roomAiAttachments,
         customModel: selectedRoomAiModel
       });
+      setRoomAiAttachments([]);
       
       const answerText = typeof aiResult === 'string' 
         ? aiResult 
         : (aiResult?.text || aiResult?.error || (aiResult?.parsed ? JSON.stringify(aiResult.parsed) : "Analysis complete."));
 
+      setRoomAiThread([
+        { role: 'user', content: userPromptText },
+        { role: 'assistant', content: answerText }
+      ]);
+      setIsRoomAiMinimized(false);
       setRoomAIModal({
         isOpen: true,
         prompt: userPromptText,
@@ -24119,31 +24194,47 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
               response_format: schema ? { type: 'json_object' } : undefined
             };
 
-        let localRes = await fetch(targetUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-          signal: localAbortController.signal
-        }).catch((e) => {
-          console.warn('Local primary fetch error:', e);
-          return null;
-        });
+        // Resilient probe across 127.0.0.1 and localhost loopbacks with auto-retry
+        const candidateHosts = [
+          baseEndpoint,
+          baseEndpoint.includes('127.0.0.1') ? baseEndpoint.replace('127.0.0.1', 'localhost') : baseEndpoint.replace('localhost', '127.0.0.1')
+        ];
 
-        // Fallback for Ollama /api/chat if /api/generate fails
+        let localRes = null;
+        for (const host of candidateHosts) {
+          try {
+            const endpointUrl = isOllama ? `${host}/api/generate` : `${host.endsWith('/v1') ? host : host + '/v1'}/chat/completions`;
+            localRes = await fetch(endpointUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody),
+              signal: localAbortController.signal
+            });
+            if (localRes && localRes.ok) break;
+          } catch (e) {
+            // Try alternate candidate host
+          }
+        }
+
+        // Fallback to Ollama /api/chat endpoint if needed
         if ((!localRes || !localRes.ok) && isOllama) {
-          const chatUrl = `${baseEndpoint}/api/chat`;
-          localRes = await fetch(chatUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: localTargetModel.id,
-              messages: [
-                { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
-              ],
-              stream: false
-            }),
-            signal: localAbortController.signal
-          }).catch(() => null);
+          for (const host of candidateHosts) {
+            try {
+              localRes = await fetch(`${host}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: localTargetModel.id,
+                  messages: [
+                    { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
+                  ],
+                  stream: false
+                }),
+                signal: localAbortController.signal
+              });
+              if (localRes && localRes.ok) break;
+            } catch (e) {}
+          }
         }
 
         clearTimeout(localTimeout);
@@ -80798,9 +80889,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Input form */}
                         <form onSubmit={handleRoomAISubmit} className="flex-1 flex items-center gap-3 bg-white/90 backdrop-blur-2xl rounded-[32px] px-6 py-3.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
-                          {roomAIModal.isOpen && (
+                          {roomAIModal.isOpen && !isRoomAiMinimized && (
                             <div 
-                              className="absolute bottom-[calc(100%+14px)] left-0 right-0 z-[100] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_24px_80px_rgba(0,0,0,0.18)] rounded-[32px] p-6 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text" 
+                              className={`absolute bottom-[calc(100%+14px)] z-[100] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_28px_90px_rgba(0,0,0,0.22)] rounded-[32px] p-5 md:p-6 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text resize overflow-auto thin-scrollbar ${
+                                isRoomAiExpanded 
+                                  ? 'left-[-120px] right-[-120px] min-h-[480px] max-h-[680px]' 
+                                  : 'left-0 right-0 min-h-[320px] max-h-[520px] min-w-[560px]'
+                              }`}
+                              style={{ resize: 'both', minWidth: '480px', minHeight: '280px' }}
                               onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex items-center justify-between gap-3 mb-4">
@@ -80818,59 +80914,254 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </p>
                                     </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setRoomAIModal({ isOpen: false, prompt: '', answer: '' })}
-                                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                  >
-                                    <X size={16} />
-                                  </button>
+                                  <div className="flex items-center gap-1">
+                                    {/* New Chat Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (roomAiThread.length > 0) {
+                                          setRoomAiHistory(prev => [{ id: Date.now(), title: roomAiThread[0]?.content?.slice(0, 30) || 'Session', thread: [...roomAiThread] }, ...prev]);
+                                        }
+                                        setRoomAiThread([]);
+                                        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+                                        showToast?.('Started fresh chat');
+                                      }}
+                                      title={t('room.newChat') || 'New Chat'}
+                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    >
+                                      <Plus size={15} />
+                                    </button>
+
+                                    {/* History Button */}
+                                    <div className="relative" ref={(node) => {
+                                      if (node && isRoomAiHistoryOpen) {
+                                        const handleOutsideHistory = (e) => {
+                                          if (!node.contains(e.target)) setIsRoomAiHistoryOpen(false);
+                                        };
+                                        document.addEventListener('pointerdown', handleOutsideHistory, { once: true });
+                                      }
+                                    }}>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setIsRoomAiHistoryOpen(prev => !prev);
+                                        }}
+                                        title={t('room.history') || 'Chat History'}
+                                        className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+                                          isRoomAiHistoryOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300' : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                        }`}
+                                      >
+                                        <Clock size={15} />
+                                      </button>
+                                      {isRoomAiHistoryOpen && (
+                                        <div className="absolute right-0 top-full mt-1.5 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-2 z-[200] animate-in fade-in zoom-in-95 font-sans">
+                                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
+                                            {t('room.history') || 'Past Threads'}
+                                          </div>
+                                          {roomAiHistory.length === 0 ? (
+                                            <div className="text-xs text-slate-400 px-2 py-3 text-center">No past threads yet</div>
+                                          ) : (
+                                            roomAiHistory.map(item => (
+                                              <button
+                                                key={item.id}
+                                                type="button"
+                                                onClick={() => {
+                                                  setRoomAiThread(item.thread);
+                                                  setRoomAIModal({ isOpen: true, prompt: item.thread[0]?.content, answer: item.thread.filter(m=>m.role==='assistant').pop()?.content || '' });
+                                                  setIsRoomAiHistoryOpen(false);
+                                                }}
+                                                className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 truncate"
+                                              >
+                                                {item.title}...
+                                              </button>
+                                            ))
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Copy Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const lastReply = roomAiThread.filter(m => m.role === 'assistant').pop()?.content || roomAIModal.answer;
+                                        if (lastReply) {
+                                          navigator.clipboard?.writeText(lastReply);
+                                          showToast?.(t('room.copied') || 'AI response copied to clipboard!');
+                                        }
+                                      }}
+                                      title={t('room.copyAnswer') || 'Copy Answer'}
+                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    >
+                                      <Copy size={15} />
+                                    </button>
+
+                                    {/* Enlarge / Restore Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsRoomAiExpanded(!isRoomAiExpanded)}
+                                      title={isRoomAiExpanded ? (t('room.collapseModal') || 'Restore window') : (t('room.expandModal') || 'Expand window')}
+                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    >
+                                      {isRoomAiExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                                    </button>
+
+                                    {/* Minimize Button (─) */}
+                                    <button
+                                      type="button"
+                                      onClick={() => { setIsRoomAiMinimized(true); }}
+                                      title={t('room.minimize') || 'Minimize Chat'}
+                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    >
+                                      <Minus size={15} strokeWidth={2.5} />
+                                    </button>
+                                  </div>
                                 </div>
 
-                                {roomAIModal.prompt && (
-                                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-700/80 mb-3 text-xs text-slate-700 dark:text-zinc-300 font-medium">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block mb-1">{t('room.yourQuestion') || 'Your Question'}</span>
-                                    "{roomAIModal.prompt}"
-                                  </div>
-                                )}
-
-                                <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 mb-4 min-h-[100px] max-h-[260px] overflow-y-auto thin-scrollbar">
-                                  {isRoomAILoading ? (
-                                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-violet-600 dark:text-violet-400">
-                                      <RegaarderAiIcon size={20} className="animate-spin" />
-                                      <span className="text-xs font-semibold">{t('room.aiAnalyzing') || 'Analyzing meeting context...'}</span>
+                                {/* Multi-turn Conversation Stream */}
+                                <div className="flex-1 overflow-y-auto thin-scrollbar mb-3 space-y-3 pr-1 max-h-[360px] min-h-[140px]">
+                                  {roomAiThread.map((msg, idx) => (
+                                    <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                      <div className={`max-w-[90%] p-3.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
+                                        msg.role === 'user'
+                                          ? 'bg-violet-600 text-white rounded-tr-xs font-medium shadow-xs'
+                                          : 'bg-violet-50/70 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 text-slate-800 dark:text-zinc-200 rounded-tl-xs'
+                                      }`}>
+                                        {msg.content}
+                                      </div>
                                     </div>
-                                  ) : (
-                                    <p className="text-xs text-slate-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                                      {roomAIModal.answer}
-                                    </p>
+                                  ))}
+
+                                  {isRoomAILoading && (
+                                    <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400 text-xs font-semibold w-fit">
+                                      <RegaarderAiIcon size={14} className="animate-spin" />
+                                      <span>{t('room.aiAnalyzing') || 'Thinking...'}</span>
+                                    </div>
                                   )}
                                 </div>
 
-                                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (roomAIModal.answer) {
-                                        navigator.clipboard?.writeText(roomAIModal.answer);
-                                        showToast?.(t('room.copied') || 'AI response copied to clipboard!');
-                                      }
-                                    }}
-                                    disabled={isRoomAILoading || !roomAIModal.answer}
-                                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40"
-                                  >
-                                    {t('room.copyAnswer') || 'Copy Answer'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setRoomAIModal({ isOpen: false, prompt: '', answer: '' })}
-                                    className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-                                  >
-                                    {t('room.done') || 'Done'}
-                                  </button>
+                                {/* Inline Follow-up Reply Input Bar */}
+                                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800">
+                                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl px-3.5 py-2 border border-slate-200/80 dark:border-zinc-700/80 focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:border-violet-300">
+                                    <input
+                                      type="text"
+                                      value={roomAiFollowUpInput}
+                                      onChange={(e) => setRoomAiFollowUpInput(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                          e.preventDefault();
+                                          handleRoomAiFollowUpSubmit();
+                                        }
+                                      }}
+                                      placeholder={t('room.replyPlaceholder') || 'Reply to Room AI or ask a follow-up...'}
+                                      className="flex-1 text-xs text-slate-700 dark:text-zinc-200 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={handleRoomAiFollowUpSubmit}
+                                      disabled={!roomAiFollowUpInput.trim() || isRoomAILoading}
+                                      className="w-7 h-7 rounded-xl bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-violet-600 cursor-pointer shrink-0 shadow-xs"
+                                    >
+                                      <Send size={12} />
+                                    </button>
+                                  </div>
                                 </div>
                             </div>
                           )}
+                          {/* Hidden File Input for Device Uploads */}
+                          <input
+                            type="file"
+                            ref={roomFileInputRef}
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (files.length > 0) {
+                                const newAtts = files.map(f => ({
+                                  name: f.name,
+                                  type: f.type,
+                                  isImage: f.type.startsWith('image/'),
+                                  file: f
+                                }));
+                                setRoomAiAttachments(prev => [...prev, ...newAtts]);
+                                showToast?.(`Attached ${files.length} file(s)`);
+                              }
+                            }}
+                          />
+
+                          {/* Plus (+) Context Menu Trigger */}
+                          <div className="relative" ref={(node) => {
+                            if (node && isRoomAiAttachMenuOpen) {
+                              const handleOutside = (e) => {
+                                if (!node.contains(e.target)) setIsRoomAiAttachMenuOpen(false);
+                              };
+                              document.addEventListener('pointerdown', handleOutside, { once: true });
+                            }
+                          }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsRoomAiAttachMenuOpen(prev => !prev);
+                              }}
+                              title={t('room.addContext') || 'Add Context'}
+                              className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                                isRoomAiAttachMenuOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300' : 'bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300'
+                              }`}
+                            >
+                              <Plus size={14} strokeWidth={2.5} className={`transition-transform duration-200 ${isRoomAiAttachMenuOpen ? 'rotate-45' : ''}`} />
+                            </button>
+
+                            {/* Attach Menu */}
+                            {isRoomAiAttachMenuOpen && (
+                              <div 
+                                className="absolute bottom-full left-0 mb-2 w-52 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 text-left font-sans"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    roomFileInputRef.current?.click();
+                                    setIsRoomAiAttachMenuOpen(false);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 transition-colors"
+                                >
+                                  <Upload size={14} className="text-violet-600 shrink-0" />
+                                  <span>{t('room.uploadFromDevice') || 'Upload Files / Images'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (docTitle) {
+                                      setRoomAiAttachments(prev => [...prev, { name: `Doc: ${docTitle}`, type: 'text/html', snippet: docBodyHtml?.slice(0, 3000) }]);
+                                      showToast?.(`Attached current document "${docTitle}"`);
+                                    } else {
+                                      showToast?.('No active document to attach');
+                                    }
+                                    setIsRoomAiAttachMenuOpen(false);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 transition-colors"
+                                >
+                                  <FileText size={14} className="text-violet-600 shrink-0" />
+                                  <span>{t('room.attachWorkspaceDoc') || 'Attach Active Doc'}</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Attached Chips */}
+                          {roomAiAttachments.length > 0 && (
+                            <div className="flex items-center gap-1 overflow-x-auto max-w-[140px] thin-scrollbar">
+                              {roomAiAttachments.map((att, idx) => (
+                                <span key={idx} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-700 text-[10px] font-semibold shrink-0 border border-violet-200/60">
+                                  <span className="truncate max-w-[60px]">{att.name}</span>
+                                  <button type="button" onClick={() => setRoomAiAttachments(prev => prev.filter((_, i) => i !== idx))} className="hover:text-red-500">×</button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
                           <input 
                             type="text"
                             value={roomAIPrompt}
@@ -80878,6 +81169,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             placeholder={t('room.askRoomAi') || 'Ask Room AI...'}
                             className="text-[13px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent border-none ring-0 focus:ring-0 p-0 m-0 outline-none placeholder:text-slate-400 pointer-events-auto"
                           />
+
+                          {/* Minimized Resume Badge */}
+                          {isRoomAiMinimized && roomAiThread.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setIsRoomAiMinimized(false)}
+                              title={t('room.restoreChat') || 'Resume active chat'}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 text-[11px] font-bold animate-pulse hover:bg-violet-200 transition-colors shrink-0 cursor-pointer"
+                            >
+                              <RegaarderAiIcon size={12} />
+                              <span>{roomAiThread.length} {t('room.conversationThread') || 'msgs'}</span>
+                            </button>
+                          )}
                           <button 
                             type="submit" 
                             disabled={!roomAIPrompt.trim() || isRoomAILoading}

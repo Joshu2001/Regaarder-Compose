@@ -1733,6 +1733,18 @@
     "decisions": "關鍵決策",
     "exportToCompose": "匯出至 Docs (Compose)",
     "transcriptCount": "對話段落",
-    "noTranscriptYet": "正在聆聽會議發言... 說話以即時產生摘要。"
+    "noTranscriptYet": "正在聆聽會議發言... 說話以即時產生摘要。",
+    "replyPlaceholder": "回覆 Room AI 或追問細節...",
+    "expandModal": "放大視窗",
+    "collapseModal": "還原視窗",
+    "conversationThread": "對話紀錄",
+    "minimize": "最小化對話",
+    "restoreChat": "展開進行中對話",
+    "newChat": "開啟新對話",
+    "history": "對話紀錄",
+    "addContext": "加入文件或圖片附件",
+    "uploadFromDevice": "從裝置上傳檔案/圖片",
+    "attachWorkspaceDoc": "附加工作區文檔",
+    "removeAttachment": "移除附件"
   }
 }
