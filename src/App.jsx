@@ -13217,7 +13217,9 @@ const DEFAULT_DECK_SLIDES = [
   const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(true);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
-  const [roomPresentedApp, setRoomPresentedApp] = useState(null); // 'docs' | 'sheets' | 'decks' | 'whiteboard' | 'screen' | null
+  const [roomPresentedApp, setRoomPresentedApp] = useState(null);
+  const [roomPresentAppSearch, setRoomPresentAppSearch] = useState('');
+  const [roomPresentViewMode, setRoomPresentViewMode] = useState('clean'); // 'clean' | 'full' // 'docs' | 'sheets' | 'decks' | 'whiteboard' | 'screen' | null
   const [isRoomPresentPickerOpen, setIsRoomPresentPickerOpen] = useState(false);
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
@@ -80439,26 +80441,48 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {roomPresentedApp ? (
-                  /* Interactive Workspace Presentation Stage */
-                  <div className="w-full max-w-[1040px] h-[520px] max-h-[65vh] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl rounded-[32px] border border-white/80 dark:border-zinc-800 shadow-[0_32px_120px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden pointer-events-auto z-10 select-text animate-in zoom-in-95 duration-200">
+                  /* Interactive Workspace Presentation Stage — Matches Video Canvas Boundaries Exactly */
+                  <div className={`w-full relative overflow-hidden bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl shadow-[0_32px_100px_rgba(0,0,0,0.14)] pointer-events-auto transition-all duration-500 border border-slate-200/80 dark:border-zinc-800 shrink flex-1 select-text flex flex-col z-10 ${
+                    isVideoExpanded 
+                      ? '!absolute !inset-0 !max-w-none !max-h-none z-20 rounded-none' 
+                      : 'max-w-[640px] max-h-[480px] min-h-[20vh] aspect-[4/3] rounded-[28px]'
+                  }`}>
                     {/* Presentation Control Banner */}
                     <div className="px-6 py-3 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs">
-                          {roomPresentedApp === 'docs' ? <ComposeIcon size={14} /> : roomPresentedApp === 'sheets' ? <SheetIcon size={14} /> : roomPresentedApp === 'decks' ? <DeckIcon size={14} /> : <WhiteboardIcon size={14} />}
+                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs">
+                          {roomPresentedApp === 'docs' ? <ComposeIcon size={16} /> : roomPresentedApp === 'sheets' ? <SheetIcon size={16} /> : roomPresentedApp === 'decks' ? <DeckIcon size={16} /> : roomPresentedApp === 'whiteboard' ? <WhiteboardIcon size={16} /> : roomPresentedApp === 'memory' ? <MemoryIcon size={16} /> : roomPresentedApp === 'tasks' ? <TasksIcon size={16} /> : roomPresentedApp === 'schedule' ? <ScheduleIcon size={16} /> : <BrowserIcon size={16} />}
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-800 dark:text-zinc-100 flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             <span>{t('room.currentlyPresenting') || 'Presenting:'} {roomPresentedApp.toUpperCase()}</span>
                           </div>
-                          <div className="text-[11px] text-slate-400 truncate max-w-[320px]">
-                            {roomPresentedApp === 'docs' ? (docTitle || 'Product Roadmap') : roomPresentedApp === 'sheets' ? (sheetsTitle || 'Workbook') : roomPresentedApp === 'decks' ? (deckTitle || 'Deck') : 'Whiteboard'}
+                          <div className="text-[11px] text-slate-400 truncate max-w-[280px]">
+                            {roomPresentedApp === 'docs' ? (docTitle || 'Untitled Document') : roomPresentedApp === 'sheets' ? (sheetsTitle || 'Untitled Sheet') : roomPresentedApp === 'decks' ? (deckTitle || 'Untitled Deck') : roomPresentedApp === 'whiteboard' ? 'Untitled Whiteboard' : roomPresentedApp}
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* Viewport Granularity Toggle (Clean Editor vs Full Workspace) */}
+                        <div className="flex items-center bg-slate-200/70 dark:bg-zinc-800 p-0.5 rounded-xl border border-slate-300/50 dark:border-zinc-700/50">
+                          <button
+                            type="button"
+                            onClick={() => setRoomPresentViewMode('clean')}
+                            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${roomPresentViewMode === 'clean' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            {t('room.cleanEditorView') || 'Clean Editor'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRoomPresentViewMode('full')}
+                            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${roomPresentViewMode === 'full' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            {t('room.fullAppView') || 'Full Workspace'}
+                          </button>
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -80470,6 +80494,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <ExternalLink size={12} />
                           <span>{t('room.openFullTab') || 'Open in Tab'}</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -80484,39 +80509,116 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    {/* Interactive Embedded Stage */}
-                    <div className="flex-1 overflow-auto p-6 bg-white dark:bg-zinc-900 thin-scrollbar">
+                    {/* Interactive Live Working App Stage */}
+                    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-zinc-950 thin-scrollbar relative flex flex-col">
                       {roomPresentedApp === 'docs' ? (
-                        <div className="max-w-2xl mx-auto space-y-4 font-sans text-left">
-                          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{docTitle || 'Product Roadmap'}</h1>
-                          <div 
-                            className="prose dark:prose-invert max-w-none text-sm leading-relaxed text-slate-700 dark:text-zinc-300"
-                            dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Welcome to the live interactive document presentation. All team members in the room can see real-time updates and collaborative notes.</p>' }}
-                          />
+                        <div className="flex-1 flex flex-col overflow-auto bg-[#F7F7F9] dark:bg-[#121214] p-4 md:p-6">
+                          <div className="max-w-3xl mx-auto w-full bg-white dark:bg-[#1C1C1E] shadow-sm rounded-2xl p-8 border border-slate-200/80 dark:border-zinc-800 min-h-[420px]">
+                            <input
+                              type="text"
+                              value={docTitle || ''}
+                              onChange={(e) => setDocTitle(e.target.value)}
+                              placeholder="Untitled Document"
+                              className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white w-full bg-transparent border-none outline-none mb-4"
+                            />
+                            <div 
+                              contentEditable
+                              suppressContentEditableWarning
+                              onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                              dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
+                              className="prose dark:prose-invert max-w-none text-sm leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[260px]"
+                            />
+                          </div>
+                        </div>
+                      ) : roomPresentedApp === 'whiteboard' ? (
+                        /* Live Interactive Whiteboard Stage */
+                        <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none flex flex-col justify-center items-center">
+                          <div className="absolute left-4 top-4 z-20 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-md p-1.5 flex gap-1">
+                            {[
+                              { key: 'select', label: 'Select', icon: MousePointer2 },
+                              { key: 'pen', label: 'Pen', icon: PenTool },
+                              { key: 'shapes', label: 'Shapes', icon: Shapes },
+                              { key: 'text', label: 'Text', icon: Type },
+                              { key: 'sticky', label: 'Sticky', icon: StickyNote },
+                              { key: 'eraser', label: 'Eraser', icon: Eraser }
+                            ].map((tool) => (
+                              <button
+                                key={tool.key}
+                                type="button"
+                                onClick={() => {
+                                  setWhiteboardTool(tool.key);
+                                  showToast?.(`${tool.label} active`);
+                                }}
+                                className={`h-8 w-8 rounded-xl flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700 dark:bg-violet-950 font-bold' : 'text-slate-600 hover:bg-slate-100'}`}
+                                title={tool.label}
+                              >
+                                <tool.icon size={15} />
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="text-center p-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-xl max-w-sm">
+                            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center mx-auto mb-3">
+                              <WhiteboardIcon size={24} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100 mb-1">Untitled Whiteboard Stage</h3>
+                            <p className="text-[11px] text-slate-500 mb-4">Active canvas synced live to all participants in the meeting.</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProductMode('whiteboard');
+                                showToast?.('Switched to full whiteboard');
+                              }}
+                              className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs cursor-pointer"
+                            >
+                              Expand Canvas
+                            </button>
+                          </div>
                         </div>
                       ) : roomPresentedApp === 'sheets' ? (
-                        <div className="h-full flex flex-col justify-center items-center text-center p-8">
-                          <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mb-3">
+                        <div className="flex-1 flex flex-col justify-center items-center p-8 bg-white dark:bg-zinc-900 text-center">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mb-3 shadow-xs">
                             <SheetIcon size={24} />
                           </div>
-                          <h3 className="text-base font-bold text-slate-800 dark:text-zinc-200 mb-1">{sheetsTitle || 'Active Financial Model'}</h3>
-                          <p className="text-xs text-slate-500 max-w-md">Streaming live spreadsheet formulas, charts, and financial projections to the room.</p>
+                          <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100 mb-1">{sheetsTitle || 'Untitled Sheet'}</h3>
+                          <p className="text-xs text-slate-500 max-w-md mb-4">Live spreadsheet model with formula calculation and real-time data sync.</p>
+                          <button
+                            type="button"
+                            onClick={() => setProductMode('sheets')}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                          >
+                            Open Active Spreadsheet
+                          </button>
                         </div>
                       ) : roomPresentedApp === 'decks' ? (
-                        <div className="h-full flex flex-col justify-center items-center text-center p-8">
-                          <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center mb-3">
+                        <div className="flex-1 flex flex-col justify-center items-center p-8 bg-white dark:bg-zinc-900 text-center">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center mb-3 shadow-xs">
                             <DeckIcon size={24} />
                           </div>
-                          <h3 className="text-base font-bold text-slate-800 dark:text-zinc-200 mb-1">{deckTitle || 'Quarterly Strategy Deck'}</h3>
-                          <p className="text-xs text-slate-500 max-w-md">Presenting keynote slides in synced high-resolution presentation mode.</p>
+                          <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100 mb-1">{deckTitle || 'Untitled Deck'}</h3>
+                          <p className="text-xs text-slate-500 max-w-md mb-4">Live synchronized presentation slides running in broadcast mode.</p>
+                          <button
+                            type="button"
+                            onClick={() => setProductMode('deck')}
+                            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs cursor-pointer"
+                          >
+                            Open Slide Presentation
+                          </button>
                         </div>
                       ) : (
-                        <div className="h-full flex flex-col justify-center items-center text-center p-8">
-                          <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center mb-3">
-                            <WhiteboardIcon size={24} />
+                        <div className="flex-1 flex flex-col justify-center items-center p-8 bg-white dark:bg-zinc-900 text-center">
+                          <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 flex items-center justify-center mb-3 shadow-xs">
+                            <ComposeIcon size={24} />
                           </div>
-                          <h3 className="text-base font-bold text-slate-800 dark:text-zinc-200 mb-1">Collaborative Whiteboard Stage</h3>
-                          <p className="text-xs text-slate-500 max-w-md">Infinite canvas active. Shapes, sticky notes, and sketches are synchronized across participants.</p>
+                          <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100 mb-1">{roomPresentedApp.toUpperCase()} Workspace</h3>
+                          <p className="text-xs text-slate-500 max-w-md mb-4">Workspace module active and broadcasting live to meeting participants.</p>
+                          <button
+                            type="button"
+                            onClick={() => setProductMode(roomPresentedApp)}
+                            className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                          >
+                            Open in Full Workspace
+                          </button>
                         </div>
                       )}
                     </div>
@@ -80856,89 +80958,66 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {/* Present Mode Selection Popover */}
                           {isRoomPresentPickerOpen && (
                             <div 
-                              className="absolute bottom-full mb-4 -left-20 w-72 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_24px_80px_rgba(0,0,0,0.18)] rounded-[28px] p-2.5 z-[1000] animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans text-left"
+                              className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 w-[340px] max-h-[460px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl border border-slate-200/80 dark:border-zinc-800 shadow-[0_28px_90px_rgba(0,0,0,0.25)] rounded-[32px] p-4 z-[99999] animate-in slide-in-from-bottom-3 fade-in duration-200 font-sans text-left flex flex-col pointer-events-auto"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-3 py-1.5">
-                                {t('room.presentWorkspaceApp') || 'Present Workspace App'}
+                              <div className="flex items-center justify-between px-2 mb-2">
+                                <span className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                  {t('room.presentWorkspaceApp') || 'Present Workspace App'}
+                                </span>
                               </div>
 
-                              {/* Workspace App Grid */}
-                              <div className="grid grid-cols-2 gap-1.5 mb-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRoomPresentedApp('docs');
-                                    setIsRoomPresentPickerOpen(false);
-                                    showToast?.(`Presenting Docs: ${docTitle || 'Untitled'}`);
-                                  }}
-                                  className="flex items-center gap-2 p-2 rounded-2xl hover:bg-violet-50 dark:hover:bg-violet-950/50 text-slate-700 dark:text-zinc-200 transition-colors text-left group cursor-pointer border border-slate-100 dark:border-zinc-800/80"
-                                >
-                                  <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-                                    <ComposeIcon size={16} />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold truncate">{t('room.presentDocs') || 'Docs'}</div>
-                                    <div className="text-[10px] text-slate-400 truncate">{docTitle || 'Active Doc'}</div>
-                                  </div>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRoomPresentedApp('sheets');
-                                    setIsRoomPresentPickerOpen(false);
-                                    showToast?.(`Presenting Sheets: ${sheetsTitle || 'Workbook'}`);
-                                  }}
-                                  className="flex items-center gap-2 p-2 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-slate-700 dark:text-zinc-200 transition-colors text-left group cursor-pointer border border-slate-100 dark:border-zinc-800/80"
-                                >
-                                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                    <SheetIcon size={16} />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold truncate">{t('room.presentSheets') || 'Sheets'}</div>
-                                    <div className="text-[10px] text-slate-400 truncate">{sheetsTitle || 'Active Sheet'}</div>
-                                  </div>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRoomPresentedApp('decks');
-                                    setIsRoomPresentPickerOpen(false);
-                                    showToast?.(`Presenting Decks: ${deckTitle || 'Slides'}`);
-                                  }}
-                                  className="flex items-center gap-2 p-2 rounded-2xl hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-700 dark:text-zinc-200 transition-colors text-left group cursor-pointer border border-slate-100 dark:border-zinc-800/80"
-                                >
-                                  <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                                    <DeckIcon size={16} />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold truncate">{t('room.presentDecks') || 'Decks'}</div>
-                                    <div className="text-[10px] text-slate-400 truncate">{deckTitle || 'Active Deck'}</div>
-                                  </div>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRoomPresentedApp('whiteboard');
-                                    setIsRoomPresentPickerOpen(false);
-                                    showToast?.('Presenting Whiteboard Canvas');
-                                  }}
-                                  className="flex items-center gap-2 p-2 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-700 dark:text-zinc-200 transition-colors text-left group cursor-pointer border border-slate-100 dark:border-zinc-800/80"
-                                >
-                                  <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                    <WhiteboardIcon size={16} />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold truncate">{t('room.presentWhiteboard') || 'Board'}</div>
-                                    <div className="text-[10px] text-slate-400 truncate">Infinite Canvas</div>
-                                  </div>
-                                </button>
+                              {/* Search Bar */}
+                              <div className="flex items-center gap-2 bg-slate-100/80 dark:bg-zinc-800/80 px-3 py-1.5 rounded-xl mb-3 border border-slate-200/60 dark:border-zinc-700/60">
+                                <Search size={13} className="text-slate-400" />
+                                <input
+                                  type="text"
+                                  value={roomPresentAppSearch}
+                                  onChange={(e) => setRoomPresentAppSearch(e.target.value)}
+                                  placeholder={t('room.searchWorkspaceApps') || 'Search apps & docs...'}
+                                  className="w-full text-xs bg-transparent border-none outline-none text-slate-700 dark:text-zinc-200 placeholder:text-slate-400"
+                                />
+                                {roomPresentAppSearch && (
+                                  <button type="button" onClick={() => setRoomPresentAppSearch('')} className="text-slate-400 hover:text-slate-600">×</button>
+                                )}
                               </div>
 
-                              <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-1.5" />
+                              {/* All Workspace Apps Grid */}
+                              <div className="grid grid-cols-2 gap-1.5 max-h-[260px] overflow-y-auto thin-scrollbar pr-0.5 mb-2">
+                                {[
+                                  { id: 'docs', name: t('room.presentDocs') || 'Docs', sub: docTitle || 'Active Document', icon: ComposeIcon, color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/70' },
+                                  { id: 'whiteboard', name: t('room.presentWhiteboard') || 'Whiteboard', sub: 'Infinite Canvas', icon: WhiteboardIcon, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/70' },
+                                  { id: 'sheets', name: t('room.presentSheets') || 'Sheets', sub: sheetsTitle || 'Active Workbook', icon: SheetIcon, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/70' },
+                                  { id: 'decks', name: t('room.presentDecks') || 'Decks', sub: deckTitle || 'Slide Presentation', icon: DeckIcon, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/70' },
+                                  { id: 'memory', name: 'Memory', sub: 'Knowledge Base', icon: MemoryIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/70' },
+                                  { id: 'tasks', name: 'Tasks', sub: 'Sprint Initiatives', icon: TasksIcon, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/70' },
+                                  { id: 'schedule', name: 'Schedule', sub: 'Calendar & Agenda', icon: ScheduleIcon, color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/70' },
+                                  { id: 'browser', name: 'Browser', sub: 'Web Agent Canvas', icon: BrowserIcon, color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/70' }
+                                ]
+                                .filter(item => !roomPresentAppSearch || item.name.toLowerCase().includes(roomPresentAppSearch.toLowerCase()) || item.sub.toLowerCase().includes(roomPresentAppSearch.toLowerCase()))
+                                .map((app) => (
+                                  <button
+                                    key={app.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setRoomPresentedApp(app.id);
+                                      setIsRoomPresentPickerOpen(false);
+                                      showToast?.(`Presenting ${app.name}`);
+                                    }}
+                                    className="flex items-center gap-2 p-2 rounded-2xl hover:bg-slate-100/90 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-all text-left group cursor-pointer border border-slate-100 dark:border-zinc-800/80 hover:border-slate-200 active:scale-98"
+                                  >
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${app.color}`}>
+                                      <app.icon size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold truncate leading-tight">{app.name}</div>
+                                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate leading-tight">{app.sub}</div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+
+                              <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-2" />
 
                               {/* Native Display Media Screen Sharing */}
                               <button
@@ -80947,7 +81026,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setIsRoomPresentPickerOpen(false);
                                   toggleScreenShare();
                                 }}
-                                className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
+                                className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer border border-dashed border-slate-200 dark:border-zinc-700"
                               >
                                 <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
                                   <MonitorPlay size={14} />

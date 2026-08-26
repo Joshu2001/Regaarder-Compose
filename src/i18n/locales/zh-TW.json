@@ -1754,6 +1754,10 @@
     "presentWhiteboard": "Whiteboard 白板",
     "stopPresenting": "停止展示",
     "currentlyPresenting": "正在向所有與會者展示：",
-    "openFullTab": "在新視窗開啟"
+    "openFullTab": "在新視窗開啟",
+    "searchWorkspaceApps": "搜尋工作區應用與文檔...",
+    "cleanEditorView": "精簡畫面",
+    "fullAppView": "完整工作區",
+    "interactiveMode": "即時協作互動中"
   }
 }

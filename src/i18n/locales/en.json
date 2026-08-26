@@ -1735,6 +1735,10 @@
     "presentWhiteboard": "Whiteboard Canvas",
     "stopPresenting": "Stop Presenting",
     "currentlyPresenting": "Currently presenting to everyone:",
-    "openFullTab": "Open in Tab"
+    "openFullTab": "Open in Tab",
+    "searchWorkspaceApps": "Search workspace apps & docs...",
+    "cleanEditorView": "Clean View",
+    "fullAppView": "Full Workspace",
+    "interactiveMode": "Live Collaborative Session"
   }
 }
