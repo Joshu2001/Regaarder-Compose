@@ -45,7 +45,10 @@
     "privacy": "Privacy Policy",
     "legal": "Legal",
     "updated": "Updated",
-    "version": "Version"
+    "version": "Version",
+    "tabIndex": "Tab {{index}}",
+    "searchFont": "Search font",
+    "pinned": "Pinned"
   },
   "nav": {
     "docs": "Docs",
@@ -634,7 +637,28 @@
     "cellsSelected": "cells selected",
     "sum": "Sum",
     "avg": "Avg",
-    "count": "Count"
+    "count": "Count",
+    "cellFillGradient": "Cell Fill & Gradient",
+    "clearFill": "Clear Fill",
+    "presetsShades": "Presets & Shades",
+    "gradients": "Gradients",
+    "customHex": "Custom Hex / CSS / Gradient",
+    "textColor": "Text Color",
+    "customTextHex": "Custom Text Hex",
+    "textHighlight": "Text Highlight",
+    "clearHighlight": "Clear Highlight",
+    "colOptions": "Column options",
+    "rowOptions": "Row options",
+    "selectCol": "Select column",
+    "selectRow": "Select row",
+    "insertColLeft": "Insert 1 column left",
+    "insertRowAbove": "Insert 1 row above",
+    "insertColRight": "Insert 1 column right",
+    "insertRowBelow": "Insert 1 row below",
+    "deleteCol": "Delete column",
+    "deleteRow": "Delete row",
+    "clearCol": "Clear column",
+    "clearRow": "Clear row"
   },
   "saved": {
     "notSaved": "Not saved yet",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "Launch Timeline",
     "intelligentSchedule": "Intelligent schedule"
+  },
+  "slash": {
+    "searchPlaceholder": "Search commands…",
+    "commands": "COMMANDS",
+    "noCommandsFound": "No commands found",
+    "tryDifferent": "Try a different search term",
+    "categories": {
+      "ai": "AI",
+      "insert": "Insert",
+      "format": "Format",
+      "data": "Data",
+      "analyze": "Analyze",
+      "transform": "Transform",
+      "security": "Security"
+    },
+    "items": {
+      "orb": {
+        "label": "Orb Intelligence",
+        "desc": "Cross-workspace RAG: cite Sheets, Decks & Tasks"
+      },
+      "table": {
+        "label": "Table (AI)",
+        "desc": "Generate an AI table from context"
+      },
+      "proofread": {
+        "label": "Proofread",
+        "desc": "Improve spelling & style"
+      },
+      "translate": {
+        "label": "Translate",
+        "desc": "Translate text to target language"
+      },
+      "schedule": {
+        "label": "Schedule",
+        "desc": "Create AI timeline or checklist"
+      },
+      "import_equation": {
+        "label": "Import Equation",
+        "desc": "AI Generate or Upload Math"
+      },
+      "insert_table": {
+        "label": "Table (Manual)",
+        "desc": "Pick table size and insert grid"
+      },
+      "bullets": {
+        "label": "Bullet points",
+        "desc": "Insert bulleted list"
+      },
+      "graph": {
+        "label": "Chart / Graph",
+        "desc": "Insert interactive SVG chart & grid"
+      },
+      "media": {
+        "label": "Media",
+        "desc": "Insert media, files, or images"
+      },
+      "shapes": {
+        "label": "Shapes",
+        "desc": "Insert interactive geometric shapes"
+      },
+      "icon": {
+        "label": "Icon",
+        "desc": "Insert an icon or symbol"
+      },
+      "emoji": {
+        "label": "Emoji",
+        "desc": "Browse and insert emoji"
+      },
+      "symbols": {
+        "label": "Symbols",
+        "desc": "Insert special characters & symbols"
+      },
+      "equations": {
+        "label": "Equation",
+        "desc": "Insert a LaTeX math equation"
+      },
+      "divider": {
+        "label": "Divider",
+        "desc": "Insert a horizontal rule"
+      },
+      "callout": {
+        "label": "Callout",
+        "desc": "Insert a styled quote block"
+      },
+      "code_block": {
+        "label": "Code Block",
+        "desc": "Insert a code container"
+      },
+      "hyperlink": {
+        "label": "Hyperlink",
+        "desc": "Add a link to selected text"
+      },
+      "bookmark": {
+        "label": "Bookmark",
+        "desc": "Add a bookmark or anchor"
+      },
+      "watermark": {
+        "label": "Watermark",
+        "desc": "Add text or image watermark"
+      },
+      "comment": {
+        "label": "Comment",
+        "desc": "Insert inline comment box"
+      },
+      "redact": {
+        "label": "Redact / Protect",
+        "desc": "Redact selection or current block"
+      },
+      "special_characters": {
+        "label": "Special Formatting",
+        "desc": "Currencies, math symbols & number formats"
+      },
+      "insert_date": {
+        "label": "Insert Date",
+        "desc": "Insert today's date or select from calendar"
+      },
+      "insert_chart": {
+        "label": "Insert Chart",
+        "desc": "Add a beautiful chart or graph"
+      },
+      "insert_shape": {
+        "label": "Insert Shape",
+        "desc": "Add a floating shape"
+      },
+      "insert_textbox": {
+        "label": "Insert Text Box",
+        "desc": "Add a floating text box"
+      },
+      "insert_comment": {
+        "label": "Insert Comment",
+        "desc": "Add a comment"
+      },
+      "format_cell": {
+        "label": "Format Cell",
+        "desc": "Open cell formatting options"
+      },
+      "copy_style": {
+        "label": "Copy Style",
+        "desc": "Copy cell formatting"
+      },
+      "paste_style": {
+        "label": "Paste Style",
+        "desc": "Apply copied cell formatting"
+      },
+      "merge_cells": {
+        "label": "Merge Cells",
+        "desc": "Merge selected cells"
+      },
+      "clear_format": {
+        "label": "Clear Formatting",
+        "desc": "Reset all cell styles"
+      },
+      "add_row": {
+        "label": "Add Row",
+        "desc": "Insert a new row below"
+      },
+      "add_column": {
+        "label": "Add Column",
+        "desc": "Insert a new column right"
+      },
+      "sort_asc": {
+        "label": "Sort A-Z",
+        "desc": "Sort selection alphabetically"
+      },
+      "filter": {
+        "label": "Filter",
+        "desc": "Enable filtering on selection"
+      },
+      "remove_dupes": {
+        "label": "Remove Duplicates",
+        "desc": "Keep only unique rows"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "Untitled Deck"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "Untitled Whiteboard"
   }
 }

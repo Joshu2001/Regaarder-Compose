@@ -45,7 +45,10 @@
     "privacy": "Kebijakan Privasi",
     "legal": "Hukum",
     "updated": "Diperbarui",
-    "version": "Versi"
+    "version": "Versi",
+    "tabIndex": "Tab {{index}}",
+    "searchFont": "Cari font",
+    "pinned": "Disematkan"
   },
   "nav": {
     "docs": "Dokumen",
@@ -634,7 +637,28 @@
     "cellsSelected": "sel dipilih",
     "sum": "Jumlah",
     "avg": "Rata-rata",
-    "count": "Jumlah item"
+    "count": "Jumlah item",
+    "cellFillGradient": "Isian Sel & Gradien",
+    "clearFill": "Hapus Isian",
+    "presetsShades": "Preset & Bayangan",
+    "gradients": "Gradien",
+    "customHex": "Warna Kustom / CSS / Gradien",
+    "textColor": "Warna Teks",
+    "customTextHex": "Warna Teks Kustom",
+    "textHighlight": "Sorotan Teks",
+    "clearHighlight": "Hapus Sorotan",
+    "colOptions": "Opsi kolom",
+    "rowOptions": "Opsi baris",
+    "selectCol": "Pilih kolom",
+    "selectRow": "Pilih baris",
+    "insertColLeft": "Sisipkan 1 kolom di kiri",
+    "insertRowAbove": "Sisipkan 1 baris di atas",
+    "insertColRight": "Sisipkan 1 kolom di kanan",
+    "insertRowBelow": "Sisipkan 1 baris di bawah",
+    "deleteCol": "Hapus kolom",
+    "deleteRow": "Hapus baris",
+    "clearCol": "Bersihkan isi kolom",
+    "clearRow": "Bersihkan isi baris"
   },
   "saved": {
     "notSaved": "Belum disimpan",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "Lini Masa Peluncuran",
     "intelligentSchedule": "Jadwal cerdas"
+  },
+  "slash": {
+    "searchPlaceholder": "Cari perintah…",
+    "commands": "PERINTAH",
+    "noCommandsFound": "Tidak ada perintah ditemukan",
+    "tryDifferent": "Coba istilah pencarian yang berbeda",
+    "categories": {
+      "ai": "AI",
+      "insert": "Sisipkan",
+      "format": "Format",
+      "data": "Data",
+      "analyze": "Analisis",
+      "transform": "Transformasikan",
+      "security": "Keamanan"
+    },
+    "items": {
+      "orb": {
+        "label": "Intelijen Orb",
+        "desc": "RAG lintas ruang kerja: kutip Sheets, Decks & Tasks"
+      },
+      "table": {
+        "label": "Tabel Pintar (AI)",
+        "desc": "Hasilkan tabel AI dari konteks"
+      },
+      "proofread": {
+        "label": "Koreksi & Poles",
+        "desc": "Tingkatkan ejaan & gaya penulisan"
+      },
+      "translate": {
+        "label": "Terjemahkan",
+        "desc": "Terjemahkan teks ke bahasa target"
+      },
+      "schedule": {
+        "label": "Jadwal",
+        "desc": "Buat linimasa atau daftar periksa AI"
+      },
+      "import_equation": {
+        "label": "Buat Rumus Matematika",
+        "desc": "Hasilkan atau unggah rumus LaTeX"
+      },
+      "insert_table": {
+        "label": "Tabel (Manual)",
+        "desc": "Pilih ukuran dan sisipkan kisi"
+      },
+      "bullets": {
+        "label": "Daftar Poin",
+        "desc": "Sisipkan daftar berpoin"
+      },
+      "graph": {
+        "label": "Bagan / Grafik",
+        "desc": "Sisipkan grafik SVG interaktif"
+      },
+      "media": {
+        "label": "Media",
+        "desc": "Sisipkan media, file, atau gambar"
+      },
+      "shapes": {
+        "label": "Bentuk",
+        "desc": "Sisipkan bentuk geometris interaktif"
+      },
+      "icon": {
+        "label": "Ikon",
+        "desc": "Sisipkan ikon atau simbol"
+      },
+      "emoji": {
+        "label": "Emoji",
+        "desc": "Jelajahi dan sisipkan emoji"
+      },
+      "symbols": {
+        "label": "Simbol Khusus",
+        "desc": "Sisipkan karakter khusus & simbol"
+      },
+      "equations": {
+        "label": "Rumus LaTeX",
+        "desc": "Sisipkan blok rumus matematika"
+      },
+      "divider": {
+        "label": "Pemisah",
+        "desc": "Sisipkan garis horizontal"
+      },
+      "callout": {
+        "label": "Kutipan Penting",
+        "desc": "Sisipkan blok kutipan bergaya"
+      },
+      "code_block": {
+        "label": "Blok Kode",
+        "desc": "Sisipkan wadah kode"
+      },
+      "hyperlink": {
+        "label": "Tautan",
+        "desc": "Tambahkan tautan ke teks yang dipilih"
+      },
+      "bookmark": {
+        "label": "Penanda",
+        "desc": "Tambahkan penanda atau jangkar"
+      },
+      "watermark": {
+        "label": "Tanda Air",
+        "desc": "Tambahkan tanda air teks atau gambar"
+      },
+      "comment": {
+        "label": "Komentar",
+        "desc": "Sisipkan kotak komentar dalam baris"
+      },
+      "redact": {
+        "label": "Samarkan / Lindungi",
+        "desc": "Samarkan pilihan atau blok saat ini"
+      },
+      "special_characters": {
+        "label": "Format Khusus",
+        "desc": "Mata uang, simbol matematika & angka"
+      },
+      "insert_date": {
+        "label": "Sisipkan Tanggal",
+        "desc": "Sisipkan tanggal hari ini"
+      },
+      "insert_chart": {
+        "label": "Sisipkan Bagan",
+        "desc": "Tambahkan bagan visual"
+      },
+      "insert_shape": {
+        "label": "Sisipkan Bentuk",
+        "desc": "Tambahkan bentuk melayang"
+      },
+      "insert_textbox": {
+        "label": "Kotak Teks",
+        "desc": "Tambahkan kotak teks melayang"
+      },
+      "insert_comment": {
+        "label": "Sisipkan Komentar",
+        "desc": "Tambahkan komentar ke sel"
+      },
+      "format_cell": {
+        "label": "Format Sel",
+        "desc": "Buka opsi format sel"
+      },
+      "copy_style": {
+        "label": "Salin Gaya",
+        "desc": "Salin pemformatan sel"
+      },
+      "paste_style": {
+        "label": "Tempel Gaya",
+        "desc": "Terapkan pemformatan sel yang disalin"
+      },
+      "merge_cells": {
+        "label": "Gabungkan Sel",
+        "desc": "Gabungkan sel yang dipilih"
+      },
+      "clear_format": {
+        "label": "Hapus Format",
+        "desc": "Setel ulang semua gaya sel"
+      },
+      "add_row": {
+        "label": "Tambah Baris",
+        "desc": "Sisipkan baris baru di bawah"
+      },
+      "add_column": {
+        "label": "Tambah Kolom",
+        "desc": "Sisipkan kolom baru di kanan"
+      },
+      "sort_asc": {
+        "label": "Urutkan A-Z",
+        "desc": "Urutkan secara alfabetis"
+      },
+      "filter": {
+        "label": "Filter",
+        "desc": "Aktifkan penyaringan pada pilihan"
+      },
+      "remove_dupes": {
+        "label": "Hapus Duplikat",
+        "desc": "Simpan hanya baris unik"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "Presentasi Tanpa Judul"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "Papan Tulis Tanpa Judul"
   }
 }

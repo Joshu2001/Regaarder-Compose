@@ -45,7 +45,10 @@
     "privacy": "Politique de confidentialité",
     "legal": "Mentions légales",
     "updated": "Mis à jour",
-    "version": "Version"
+    "version": "Version",
+    "tabIndex": "Onglet {{index}}",
+    "searchFont": "Rechercher une police",
+    "pinned": "Épinglé"
   },
   "nav": {
     "docs": "Docs",
@@ -634,7 +637,28 @@
     "cellsSelected": "cellules sélectionnées",
     "sum": "Somme",
     "avg": "Moyenne",
-    "count": "Nombre"
+    "count": "Nombre",
+    "cellFillGradient": "Remplissage et dégradé de cellule",
+    "clearFill": "Effacer le remplissage",
+    "presetsShades": "Nuances et présélections",
+    "gradients": "Dégradés",
+    "customHex": "Couleur personnalisée / CSS / Dégradé",
+    "textColor": "Couleur du texte",
+    "customTextHex": "Couleur de texte personnalisée",
+    "textHighlight": "Surlignage du texte",
+    "clearHighlight": "Effacer le surlignage",
+    "colOptions": "Options de colonne",
+    "rowOptions": "Options de ligne",
+    "selectCol": "Sélectionner la colonne",
+    "selectRow": "Sélectionner la ligne",
+    "insertColLeft": "Insérer 1 colonne à gauche",
+    "insertRowAbove": "Insérer 1 ligne au-dessus",
+    "insertColRight": "Insérer 1 colonne à droite",
+    "insertRowBelow": "Insérer 1 ligne en dessous",
+    "deleteCol": "Supprimer la colonne",
+    "deleteRow": "Supprimer la ligne",
+    "clearCol": "Effacer la colonne",
+    "clearRow": "Effacer la ligne"
   },
   "saved": {
     "notSaved": "Non enregistré",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "Planning de lancement",
     "intelligentSchedule": "Planning intelligent"
+  },
+  "slash": {
+    "searchPlaceholder": "Rechercher des commandes…",
+    "commands": "COMMANDES",
+    "noCommandsFound": "Aucune commande trouvée",
+    "tryDifferent": "Essayez un autre terme de recherche",
+    "categories": {
+      "ai": "IA",
+      "insert": "Insérer",
+      "format": "Format",
+      "data": "Données",
+      "analyze": "Analyser",
+      "transform": "Transformer",
+      "security": "Sécurité"
+    },
+    "items": {
+      "orb": {
+        "label": "Intelligence Orb",
+        "desc": "RAG transversal : citer Sheets, Decks & Tâches"
+      },
+      "table": {
+        "label": "Tableau (IA)",
+        "desc": "Générer un tableau IA à partir du contexte"
+      },
+      "proofread": {
+        "label": "Relecture",
+        "desc": "Améliorer l'orthographe et le style"
+      },
+      "translate": {
+        "label": "Traduire",
+        "desc": "Traduire le texte dans la langue cible"
+      },
+      "schedule": {
+        "label": "Planning",
+        "desc": "Créer un planning ou une liste de tâches IA"
+      },
+      "import_equation": {
+        "label": "Importer une équation",
+        "desc": "Générer ou importer des maths"
+      },
+      "insert_table": {
+        "label": "Tableau (Manuel)",
+        "desc": "Choisir la taille et insérer"
+      },
+      "bullets": {
+        "label": "Puces",
+        "desc": "Insérer une liste à puces"
+      },
+      "graph": {
+        "label": "Graphique",
+        "desc": "Insérer un graphique interactif"
+      },
+      "media": {
+        "label": "Médias",
+        "desc": "Insérer médias, fichiers ou images"
+      },
+      "shapes": {
+        "label": "Formes",
+        "desc": "Insérer des formes géométriques"
+      },
+      "icon": {
+        "label": "Icône",
+        "desc": "Insérer une icône ou un symbole"
+      },
+      "emoji": {
+        "label": "Émoji",
+        "desc": "Parcourir et insérer des émojis"
+      },
+      "symbols": {
+        "label": "Symboles",
+        "desc": "Insérer des symboles spéciaux"
+      },
+      "equations": {
+        "label": "Équation",
+        "desc": "Insérer une équation mathématique LaTeX"
+      },
+      "divider": {
+        "label": "Séparateur",
+        "desc": "Insérer une ligne horizontale"
+      },
+      "callout": {
+        "label": "Encadré",
+        "desc": "Insérer un bloc de citation stylisé"
+      },
+      "code_block": {
+        "label": "Bloc de code",
+        "desc": "Insérer un conteneur de code"
+      },
+      "hyperlink": {
+        "label": "Lien hypertexte",
+        "desc": "Ajouter un lien au texte sélectionné"
+      },
+      "bookmark": {
+        "label": "Signet",
+        "desc": "Ajouter un signet ou une ancre"
+      },
+      "watermark": {
+        "label": "Filigrane",
+        "desc": "Ajouter un filigrane texte ou image"
+      },
+      "comment": {
+        "label": "Commentaire",
+        "desc": "Insérer une boîte de commentaire"
+      },
+      "redact": {
+        "label": "Masquer / Protéger",
+        "desc": "Masquer la sélection"
+      },
+      "special_characters": {
+        "label": "Formatage spécial",
+        "desc": "Devises, symboles et formats"
+      },
+      "insert_date": {
+        "label": "Insérer la date",
+        "desc": "Insérer la date d'aujourd'hui"
+      },
+      "insert_chart": {
+        "label": "Insérer un graphique",
+        "desc": "Ajouter un graphique visuel"
+      },
+      "insert_shape": {
+        "label": "Insérer une forme",
+        "desc": "Ajouter une forme flottante"
+      },
+      "insert_textbox": {
+        "label": "Zone de texte",
+        "desc": "Ajouter une zone de texte"
+      },
+      "insert_comment": {
+        "label": "Insérer un commentaire",
+        "desc": "Ajouter un commentaire"
+      },
+      "format_cell": {
+        "label": "Formater la cellule",
+        "desc": "Ouvrir les options de formatage"
+      },
+      "copy_style": {
+        "label": "Copier le style",
+        "desc": "Copier le format de cellule"
+      },
+      "paste_style": {
+        "label": "Coller le style",
+        "desc": "Appliquer le format de cellule"
+      },
+      "merge_cells": {
+        "label": "Fusionner les cellules",
+        "desc": "Fusionner la sélection"
+      },
+      "clear_format": {
+        "label": "Effacer le format",
+        "desc": "Réinitialiser les styles"
+      },
+      "add_row": {
+        "label": "Ajouter une ligne",
+        "desc": "Insérer une ligne en dessous"
+      },
+      "add_column": {
+        "label": "Ajouter une colonne",
+        "desc": "Insérer une colonne à droite"
+      },
+      "sort_asc": {
+        "label": "Trier A-Z",
+        "desc": "Trier par ordre alphabétique"
+      },
+      "filter": {
+        "label": "Filtrer",
+        "desc": "Activer le filtrage"
+      },
+      "remove_dupes": {
+        "label": "Supprimer les doublons",
+        "desc": "Conserver les lignes uniques"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "Présentation sans titre"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "Tableau blanc sans titre"
   }
 }
