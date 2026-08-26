@@ -1646,7 +1646,7 @@
     "recording": "錄製中",
     "captions": "即時字幕",
     "disableCaptions": "關閉字幕",
-    "present": "螢幕分享",
+    "present": "分享展示",
     "notes": "會議筆記",
     "summary": "智慧摘要",
     "meetings": "會議排程",
@@ -1745,6 +1745,15 @@
     "addContext": "加入文件或圖片附件",
     "uploadFromDevice": "從裝置上傳檔案/圖片",
     "attachWorkspaceDoc": "附加工作區文檔",
-    "removeAttachment": "移除附件"
+    "removeAttachment": "移除附件",
+    "presentWorkspaceApp": "展示工作區應用",
+    "presentEntireScreen": "分享整個螢幕 / 視窗",
+    "presentDocs": "Docs 文件",
+    "presentSheets": "Sheets 試算表",
+    "presentDecks": "Decks 簡報",
+    "presentWhiteboard": "Whiteboard 白板",
+    "stopPresenting": "停止展示",
+    "currentlyPresenting": "正在向所有與會者展示：",
+    "openFullTab": "在新視窗開啟"
   }
 }

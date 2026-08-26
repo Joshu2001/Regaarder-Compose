@@ -1726,6 +1726,15 @@
     "addContext": "Add document or image context",
     "uploadFromDevice": "Upload from device",
     "attachWorkspaceDoc": "Attach workspace document",
-    "removeAttachment": "Remove attachment"
+    "removeAttachment": "Remove attachment",
+    "presentWorkspaceApp": "Present Workspace App",
+    "presentEntireScreen": "Share Entire Screen / Window",
+    "presentDocs": "Docs Document",
+    "presentSheets": "Sheets Spreadsheet",
+    "presentDecks": "Decks Presentation",
+    "presentWhiteboard": "Whiteboard Canvas",
+    "stopPresenting": "Stop Presenting",
+    "currentlyPresenting": "Currently presenting to everyone:",
+    "openFullTab": "Open in Tab"
   }
 }
