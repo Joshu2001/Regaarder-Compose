@@ -5512,7 +5512,7 @@ const FullPageTemplateGallery = ({
         {/* Header Bar */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-zinc-800">
           <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Templates
+            {t('templates.title') || 'Templates'}
           </h1>
           
           <button
@@ -5626,7 +5626,7 @@ const FullPageTemplateGallery = ({
                         className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-xl transition-colors font-semibold flex items-center gap-2 cursor-pointer"
                       >
                         <Check size={13} />
-                        <span>Use Template</span>
+                        <span>{t('templates.useTemplate') || 'Use Template'}</span>
                       </button>
                       <button
                         type="button"
@@ -5638,7 +5638,7 @@ const FullPageTemplateGallery = ({
                         className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
                       >
                         <Eye size={13} />
-                        <span>Preview</span>
+                        <span>{t('templates.preview') || 'Preview'}</span>
                       </button>
                       <button
                         type="button"
@@ -5662,7 +5662,7 @@ const FullPageTemplateGallery = ({
                         className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
                       >
                         <Share2 size={13} />
-                        <span>Share</span>
+                        <span>{t('templates.share') || 'Share'}</span>
                       </button>
                       {card.isCustom && (
                         <button
@@ -5692,7 +5692,7 @@ const FullPageTemplateGallery = ({
                     }}
                     className="pointer-events-auto px-4 py-2 bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.03] cursor-pointer flex items-center gap-1.5 select-none"
                   >
-                    <span>{card.id === 'blank' ? 'Start blank' : 'Use Template'}</span>
+                    <span>{card.id === 'blank' ? (t('templates.startBlank') || 'Start blank') : (t('templates.useTemplate') || 'Use Template')}</span>
                   </button>
                   {card.id !== 'blank' && (
                     <button
@@ -5713,7 +5713,7 @@ const FullPageTemplateGallery = ({
               {/* Bottom 20% Information Footer (Name + Subtle Category only, no metadata) */}
               <div className="h-[54px] shrink-0 w-full px-3.5 py-2 flex flex-col justify-center bg-white dark:bg-[#0d0e12]">
                 <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  {card.id === 'blank' ? (t('templates.startBlank') || card.title) : card.id === 'financial_model' ? (t('templates.financialModel') || card.title) : card.id === 'saas_metrics' ? (t('templates.saasMetrics') || card.title) : card.id === 'sales_crm' ? (t('templates.salesCrm') || card.title) : card.title}
+                  {card.id === 'blank' ? (t('templates.startBlank') || 'Start blank') : card.id === 'financial' ? (t('templates.financialModel') || 'Financial Model') : card.id === 'saas' ? (t('templates.saasMetrics') || 'SaaS Metrics') : card.id === 'crm' ? (t('templates.salesCrm') || 'Sales CRM') : card.id === 'cashflow' ? (t('templates.cashFlow') || 'Cash Flow') : card.id === 'kpi' ? (t('templates.kpiDashboard') || 'KPI Dashboard') : card.id === 'project' ? (t('templates.projectTracking') || 'Project Tracking') : card.title}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
                   {card.id === 'blank' ? (t('templates.startFromScratch') || card.category) : card.category === 'Finance & Growth' ? (t('templates.financeGrowth') || card.category) : card.category === 'Sales' ? (t('templates.sales') || card.category) : card.category === 'Operations' ? (t('templates.operations') || card.category) : card.category}
@@ -48398,7 +48398,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           <div className="flex items-center gap-2">
                             <Plus size={14} className="text-[#7C4DFF]" />
-                            <span>{isSheetsMode ? 'New Sheet' : 'New Slide'}</span>
+                            <span>{isSheetsMode ? (t('sheets.newSheet') || 'New Sheet') : (t('deck.newSlide') || 'New Slide')}</span>
                           </div>
                           <ChevronDown size={12} className="text-gray-400" />
                         </button>
@@ -48408,7 +48408,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-2.5 thin-scrollbar [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:rgba(148,163,184,0.35)_transparent] dark:hover:[scrollbar-color:rgba(113,113,122,0.35)_transparent]">
                         {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
                           <div className="rounded-xl border border-dashed border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-xs text-gray-500">
-                            {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
+                            {isSheetsMode ? (t('sheets.noWorksheets') || 'No worksheets yet. Create one to see a live preview.') : (t('deck.noSlides') || 'No slides yet.')}
                           </div>
                         )}
                         {(isSheetsMode ? sheetsData : deckSlides).map((item, index) => {
@@ -48455,7 +48455,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {item.hidden && (
                                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-xs text-amber-300 text-[8.5px] font-medium flex items-center gap-1">
                                     <EyeOff size={9} />
-                                    <span>Hidden</span>
+                                    <span>{t('deck.hidden') || 'Hidden'}</span>
                                   </div>
                                 )}
 
@@ -48502,7 +48502,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       onClick={() => { toggleHideDeckSlide(item.id); setDeckSlideMenuOpenId(null); }} 
                                       className="w-full text-left px-2 py-1 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-[#7C4DFF] rounded-lg flex items-center gap-1.5 cursor-pointer"
                                     >
-                                      <EyeOff size={12} /> {item.hidden ? 'Unhide' : 'Hide Slide'}
+                                      <EyeOff size={12} /> {item.hidden ? (t('deck.unhide') || 'Unhide') : (t('deck.hideSlide') || 'Hide Slide')}
                                     </button>
                                     <div className="h-px bg-slate-100 dark:bg-zinc-800 my-0.5" />
                                     <button 
@@ -70028,8 +70028,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="w-10 h-10 bg-slate-100/70 dark:bg-zinc-800/70 border border-slate-200/50 dark:border-zinc-700/50 rounded-2xl flex items-center justify-center mb-3">
               <Menu size={18} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500" />
             </div>
-            <p className="text-[13px] font-semibold text-slate-700 dark:text-zinc-200 mb-1">No sections created</p>
-            <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 mb-5 leading-relaxed max-w-[210px]">Paste content containing headings to auto-populate outline.</p>
+            <p className="text-[13px] font-semibold text-slate-700 dark:text-zinc-200 mb-1">{t('outline.noSections') || 'No sections created'}</p>
+            <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 mb-5 leading-relaxed max-w-[210px]">{t('outline.noSectionsDesc') || 'Paste content containing headings to auto-populate outline.'}</p>
             <button 
               type="button" 
               onClick={() => {

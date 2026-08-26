@@ -371,17 +371,24 @@
     "runwayburn": "ランウェイ・資金予測",
     "businessplan": "事業計画書",
     "gtmplan": "市場投入計画",
-    "createTemplate": "+ テンプレート作成",
+    "createTemplate": "+ テンプレートを作成",
     "allTemplates": "すべてのテンプレート",
     "financeGrowth": "財務と成長",
-    "sales": "営業・セールス",
-    "operations": "業務運用",
-    "myTemplates": "マイテンプレート",
-    "startBlank": "空白から開始",
-    "startFromScratch": "ゼロから作成",
+    "sales": "セールス",
+    "operations": "業務管理",
+    "myTemplates": "マイトランプレート",
+    "startBlank": "空白から始める",
+    "startFromScratch": "スクラッチから作成",
     "financialModel": "財務モデル",
-    "saasMetrics": "SaaS メトリクス",
-    "salesCrm": "営業 CRM"
+    "saasMetrics": "SaaS 指標",
+    "salesCrm": "セールス CRM",
+    "title": "テンプレートギャラリー",
+    "cashFlow": "キャッシュフロー",
+    "kpiDashboard": "KPI ダッシュボード",
+    "projectTracking": "プロジェクト追跡",
+    "useTemplate": "テンプレートを使用",
+    "preview": "プレビュー",
+    "share": "共有"
   },
   "replay": {
     "title": "編集リプレイ",
@@ -587,11 +594,14 @@
   },
   "outline": {
     "title": "ドキュメントのアウトライン",
-    "structure": "構造",
+    "structure": "構成",
     "section": "セクション",
     "sections": "セクション",
     "minRead": "分で読了",
-    "words": "文字"
+    "words": "文字",
+    "noSections": "セクションが作成されていません",
+    "noSectionsDesc": "見出しを含むコンテンツを貼り付けると、アウトラインが自動作成されます。",
+    "addSection": "+ セクションを追加"
   },
   "sheets": {
     "tabs": {
@@ -658,7 +668,9 @@
     "deleteCol": "列を削除",
     "deleteRow": "行を削除",
     "clearCol": "列をクリア",
-    "clearRow": "行をクリア"
+    "clearRow": "行をクリア",
+    "newSheet": "新しいシート",
+    "noWorksheets": "ワークシートがまだありません。作成してプレビューを表示します。"
   },
   "saved": {
     "notSaved": "未保存",
@@ -857,9 +869,218 @@
     }
   },
   "deck": {
-    "untitledDeck": "無題のプレゼンテーション"
+    "untitledDeck": "無題のプレゼンテーション",
+    "newSlide": "新しいスライド",
+    "noSlides": "スライドがまだありません。",
+    "hidden": "非表示",
+    "unhide": "再表示",
+    "hideSlide": "スライドを非表示"
   },
   "whiteboard": {
     "untitledWhiteboard": "無題のホワイトボード"
+  },
+  "analytics": {
+    "title": "ビジネス意思決定インテリジェンス",
+    "subtitle": "データ → 分析 → 説明 → 意思決定",
+    "askBusinessQuestion": "ビジネスに関する質問を入力…",
+    "entireActiveSheet": "アクティブなシート全体",
+    "askAiEngine": "AI エンジンに質問",
+    "try": "試してみる：",
+    "sampleForecast": "来期の売上を予測",
+    "sampleChurn": "解約率の要因を分析",
+    "sampleBreakEven": "損益分岐点を計算",
+    "specializedTools": "専門分析ツール：",
+    "executiveDecisionIntelligence": "6ステップのエグゼクティブ意思決定モデル",
+    "step1Title": "ステップ 1：データコンテキストと入力方法",
+    "sheetGridSearch": "シートデータ / 列検索",
+    "manualCustomEntry": "カスタム値の手動入力",
+    "searchColumns": "シートの列またはアップロードしたデータを検索…",
+    "primaryMetricCol": "主要指標列 (Y / シリーズ A)：",
+    "secondaryCol": "副指標列 (予算 / 予測 X / シリーズ B)：",
+    "typeCommaSeparated": "カンマ区切りの数値を入力または貼り付け：",
+    "step2Title": "ステップ 2：確定型計算エンジン",
+    "moduleInputParams": "モジュール入力パラメータ ({{module}})：",
+    "categories": {
+      "business": "ビジネス分析",
+      "customer_sales": "顧客と売上",
+      "financial": "財務分析",
+      "forecasting": "予測モデル",
+      "simulation": "シミュレーション",
+      "advanced_stats": "高度な統計"
+    },
+    "items": {
+      "kpi_analysis": {
+        "label": "KPI 分析",
+        "desc": "主要業績評価指標、目標達成率、CAGR、しきい値アラート。"
+      },
+      "trend_analysis": {
+        "label": "トレンド分析",
+        "desc": "成長の傾き、加速率、3期移動平均。"
+      },
+      "variance_analysis": {
+        "label": "差異分析",
+        "desc": "実績と予算の差異の内訳および有利/不利の判定。"
+      },
+      "growth_analysis": {
+        "label": "成長率分析",
+        "desc": "前月比/前年同期比の成長率、年平均成長率、総拡大規模。"
+      },
+      "profitability_analysis": {
+        "label": "収益性分析",
+        "desc": "売上総利益、EBITDA、営業利益率、純利益率。"
+      },
+      "pareto_analysis": {
+        "label": "パレート分析 (80/20)",
+        "desc": "売上・利益の80%を生み出す上位20%の項目を特定。"
+      },
+      "anomaly_detection": {
+        "label": "異常値検知",
+        "desc": "Zスコア統計により急増・急減の異常を検出。"
+      },
+      "cohort_analysis": {
+        "label": "コホート分析",
+        "desc": "期間ごとの顧客維持マトリックスとコホート減衰率。"
+      },
+      "retention_churn": {
+        "label": "維持と解約",
+        "desc": "純増ユーザー数、解約率、維持率、成長率。"
+      },
+      "clv_analysis": {
+        "label": "顧客生涯価値 (CLV)",
+        "desc": "単純および割引CLV、CAC回収期間、LTV:CAC比率。"
+      },
+      "sales_funnel": {
+        "label": "セールスファネル",
+        "desc": "各ステージ間のコンバージョン率とボトルネックの特定。"
+      },
+      "conversion_analysis": {
+        "label": "コンバージョン分析",
+        "desc": "訪問者から受注までの獲得速度と転換率。"
+      },
+      "customer_segmentation": {
+        "label": "顧客セグメンテーション",
+        "desc": "VIP、ロイヤル、リスク、解約に顧客を分類。"
+      },
+      "revenue_analysis": {
+        "label": "収益規模分析",
+        "desc": "総売上高、ランレート、CAGR、次期売上予測。"
+      },
+      "margin_analysis": {
+        "label": "利益率分析",
+        "desc": "売上総利益率、貢献利益率、営業利益率、純利益率の分解。"
+      },
+      "breakeven_analysis": {
+        "label": "損益分岐点分析",
+        "desc": "損益分岐販売数量、売上しきい値、営業レバレッジ。"
+      },
+      "unit_economics": {
+        "label": "ユニットエコノミクス",
+        "desc": "LTV、CAC、回収期間、1単位あたりの貢献利益の評価。"
+      },
+      "cash_flow_analysis": {
+        "label": "キャッシュフロー分析",
+        "desc": "営業・投資・財務キャッシュフロー、フリーCF、ランウェイ。"
+      },
+      "budget_vs_actual": {
+        "label": "予算実績比較",
+        "desc": "予算目標に対する詳細および集計ベースの財務差異。"
+      },
+      "financial_ratios": {
+        "label": "財務比率分析",
+        "desc": "流動比率、当座比率、負債資本比率、ROE、ROA、総資産回転率。"
+      },
+      "revenue_forecast": {
+        "label": "収益予測",
+        "desc": "指数平滑法を用いた将来の売上高予測。"
+      },
+      "sales_forecast": {
+        "label": "売上予測",
+        "desc": "95%信頼区間の上下限を含む線形トレンド売上予測。"
+      },
+      "demand_forecast": {
+        "label": "需要予測",
+        "desc": "3期移動平均需要予測モデル。"
+      },
+      "cashflow_forecast": {
+        "label": "キャッシュフロー予測",
+        "desc": "入出金予測と期末現金残高の推計。"
+      },
+      "churn_forecast": {
+        "label": "解約予測",
+        "desc": "顧客減少スケジュールと維持顧客数の予測。"
+      },
+      "timeseries_forecast": {
+        "label": "時系列エンジン",
+        "desc": "適合系列、予測期間、誤差指標の包括的分析。"
+      },
+      "monte_carlo": {
+        "label": "モンテカルロシミュレーション",
+        "desc": "P10/P50/P90の百分位限界を持つ複数経路確率シミュレーション。"
+      },
+      "what_if_analysis": {
+        "label": "What-If 分析",
+        "desc": "価格、数量、コスト変動下での純利益結果をシミュレート。"
+      },
+      "scenario_analysis": {
+        "label": "シナリオ分析",
+        "desc": "強気、標準、弱気の財務結果マトリックスを生成。"
+      },
+      "sensitivity_analysis": {
+        "label": "感応度分析",
+        "desc": "価格と数量の段階的変動に対する2D結果感応度マトリックス。"
+      },
+      "risk_analysis": {
+        "label": "リスク分析 (VaR)",
+        "desc": "シャープレシオ、バリューアットリスク(VaR)、過去の最大ドローダウン。"
+      },
+      "goal_seek": {
+        "label": "ゴールシークソルバー",
+        "desc": "目標利益を達成するために必要な販売数量や価格を逆算。"
+      },
+      "optimization_engine": {
+        "label": "最適化エンジン",
+        "desc": "収益を最大化するために限られた予算を配分。"
+      },
+      "descriptive_stats": {
+        "label": "記述統計",
+        "desc": "平均、中央値、標準偏差、分散、最小、最大、標準誤差。"
+      },
+      "correlation": {
+        "label": "ピアソン相関",
+        "desc": "線形相関係数 r および決定係数 r2 の測定。"
+      },
+      "regression": {
+        "label": "線形回帰",
+        "desc": "傾き、切片、残差、予測式のモデル化。"
+      },
+      "t_test": {
+        "label": "独立サンプル t 検定",
+        "desc": "2つの独立サンプルの平均値の差を検定。"
+      },
+      "paired_t_test": {
+        "label": "対応のある t 検定",
+        "desc": "同一対象の前後測定値の差を検定。"
+      },
+      "anova": {
+        "label": "一元配置分散分析",
+        "desc": "複数のカテゴリグループ間の分散分析 (ANOVA)。"
+      },
+      "chi_square": {
+        "label": "カイ二乗検定",
+        "desc": "カテゴリ変数間の独立性を検定。"
+      },
+      "confidence_intervals": {
+        "label": "信頼区間",
+        "desc": "90%、95%、または99%水準での誤差範囲の上下限。"
+      },
+      "probability_distributions": {
+        "label": "確率分布",
+        "desc": "正規確率密度関数および累積分布関数の計算。"
+      },
+      "data_sampling": {
+        "label": "データサンプリング",
+        "desc": "無作為または系統抽出により代表的なサブセットを抽出。"
+      }
+    }
   }
 }

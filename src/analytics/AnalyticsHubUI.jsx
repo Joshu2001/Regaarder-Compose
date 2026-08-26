@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   BarChart2, Search, History, FileText, ChevronDown, Check, Play,
@@ -114,6 +115,7 @@ function CustomSelect({ label, value, onChange, options, allowCustom = true, pla
 }
 
 export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateSheetCell, showToast }) {
+  const { t } = useTranslation();
   // Primary Navigation Category
   const [activeCategory, setActiveCategory] = useState('business');
   const [selectedAnalysis, setSelectedAnalysis] = useState('kpi_analysis');
@@ -1187,7 +1189,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Ask a business question..."
+              placeholder={t('analytics.askBusinessQuestion') || "Ask a business question..."}
               value={aiQuestionInput}
               onChange={(e) => setAiQuestionInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white/10 dark:bg-zinc-900/40 border border-white/15 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 font-medium"
@@ -1235,14 +1237,14 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             type="submit"
             className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer shadow-sm"
           >
-            Ask AI Engine
+            {t('analytics.askAiEngine') || 'Ask AI Engine'}
           </button>
         </form>
 
         {/* Default State: Quiet Text Link Suggestions (No chips, no borders, no background) */}
         {!aiQuestionResult && (
           <div className="text-[11px] flex flex-wrap items-center gap-2 pt-0.5">
-            <span className="text-slate-400 font-medium">Try:</span>
+            <span className="text-slate-400 font-medium">{t('analytics.try') || 'Try:'}</span>
             <button
               type="button"
               onPointerDown={(e) => {
@@ -1254,7 +1256,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               }}
               className="text-slate-300 dark:text-zinc-300 hover:text-white hover:underline transition-all cursor-pointer font-normal"
             >
-              Forecast revenue next quarter
+              {t('analytics.sampleForecast') || 'Forecast revenue next quarter'}
             </button>
             <span className="text-slate-600">·</span>
             <button
@@ -1268,7 +1270,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               }}
               className="text-slate-300 dark:text-zinc-300 hover:text-white hover:underline transition-all cursor-pointer font-normal"
             >
-              Explain churn
+              {t('analytics.sampleChurn') || 'Explain churn'}
             </button>
             <span className="text-slate-600">·</span>
             <button
@@ -1282,7 +1284,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               }}
               className="text-slate-300 dark:text-zinc-300 hover:text-white hover:underline transition-all cursor-pointer font-normal"
             >
-              Calculate break-even
+              {t('analytics.sampleBreakEven') || 'Calculate break-even'}
             </button>
           </div>
         )}
@@ -1357,7 +1359,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-750/70 border-0'
               }`}
             >
-              <span>{cat.label}</span>
+              <span>{t('analytics.categories.' + cat.id) || cat.label}</span>
             </button>
           );
         })}
@@ -1368,7 +1370,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
       {/* ---------------------------------------------------- */}
       <div className="flex items-center gap-2.5 overflow-x-auto py-1.5 scrollbar-none shrink-0 border-b border-slate-200/80 dark:border-zinc-800 pb-3">
         <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-zinc-500 shrink-0 mr-1">
-          SPECIALIZED TOOLS:
+          {t('analytics.specializedTools') || 'SPECIALIZED TOOLS:'}
         </span>
         {currentCategory.items.map((item) => {
           const isSelected = selectedAnalysis === item.id;
@@ -1387,7 +1389,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                     : 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
                 }`}
               >
-                <span>{item.label}</span>
+                <span>{t('analytics.items.' + item.id + '.label') || item.label}</span>
                 {isSelected && <Check size={13} className="text-white stroke-[2.5]" />}
               </button>
 
@@ -1398,7 +1400,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-1.5 py-0.5 rounded">EXECUTIVE TOOL</span>
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
-                  {item.desc}
+                  {t('analytics.items.' + item.id + '.desc') || item.desc}
                 </p>
                 <div className="text-[10px] text-blue-300/90 pt-1 font-semibold border-t border-slate-800/80 flex items-center gap-1">
                   <span>Click to launch simulation & output</span>
@@ -1418,9 +1420,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Activity size={18} className="text-violet-600" />
-            <span>Workflow: {activeModuleItem.label}</span>
+            <span>Workflow: {t('analytics.items.' + activeModuleItem.id + '.label') || activeModuleItem.label}</span>
           </h2>
-          <span className="text-xs text-slate-500 font-medium">6-Step Executive Decision Intelligence</span>
+          <span className="text-xs text-slate-500 font-medium">{t('analytics.executiveDecisionIntelligence') || '6-Step Executive Decision Intelligence'}</span>
         </div>
 
         {/* STEP 1: DYNAMIC DATA SOURCE, SEARCH & MANUAL INPUT MODE */}
@@ -1428,7 +1430,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold text-slate-700 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <Table size={14} className="text-violet-600" />
-              <span>Step 1: Data Context & Input Method</span>
+              <span>{t('analytics.step1Title') || 'Step 1: Data Context & Input Method'}</span>
             </span>
             
             {/* Input Mode Selector: Sheet Grid vs Manual Custom Data */}
@@ -1445,7 +1447,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800'
                 }`}
               >
-                Sheet Grid / Search
+                {t('analytics.sheetGridSearch') || 'Sheet Grid / Search'}
               </button>
               <button
                 type="button"
@@ -1459,7 +1461,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800'
                 }`}
               >
-                Manual Custom Entry
+                {t('analytics.manualCustomEntry') || 'Manual Custom Entry'}
               </button>
             </div>
           </div>

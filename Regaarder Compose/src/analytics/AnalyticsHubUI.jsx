@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, TrendingUp, Settings, ShieldAlert, Check, X, Play, FileSpreadsheet, 
@@ -7,6 +8,7 @@ import registry from './AnalyticsRegistry';
 import { parseGridData, getNumericalColumn } from './AnalyticsModules';
 
 export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateSheetCell, showToast }) {
+  const { t } = useTranslation();
   const [selectedModule, setSelectedModule] = useState('descriptive_stats');
   const [columnA, setColumnA] = useState(0); // Col 0 is 'A'
   const [columnB, setColumnB] = useState(1); // Col 1 is 'B'
