@@ -683,7 +683,26 @@
   "sidebar": {
     "composeAssistant": "Compose Assistant",
     "sheetsAssistant": "Sheets Assistant",
-    "deckAssistant": "Deck Assistant"
+    "deckAssistant": "Deck Assistant",
+    "assistant": "Assistant",
+    "history": "History",
+    "tasks": "Tasks",
+    "conversationHistory": "Conversation History",
+    "chat": "Chat",
+    "agents": "Agents",
+    "schedule": "Schedule",
+    "room": "Room",
+    "help": "Help",
+    "comments": "Comments",
+    "dm": "DMs",
+    "whiteboard": "Whiteboard",
+    "people": "People",
+    "memory": "Memory",
+    "orb": "Orb",
+    "manageen": "Manageen",
+    "files": "Files",
+    "home": "Home",
+    "createNew": "Create New"
   },
   "tasks": {
     "yourTasks": "Your Tasks",
@@ -874,7 +893,40 @@
     "noSlides": "No slides yet.",
     "hidden": "Hidden",
     "unhide": "Unhide",
-    "hideSlide": "Hide Slide"
+    "hideSlide": "Hide Slide",
+    "startFromTemplate": "Start from Template",
+    "startFromTemplateDesc": "Browse curated pitch decks, business plans, or use AI generation.",
+    "templateLibrary": "Template Library",
+    "blankCanvas": "Blank Canvas",
+    "blankCanvasDesc": "Start from a clean slate and author your slides from scratch.",
+    "cleanSlate": "Clean Slate",
+    "presentationTemplateLibrary": "Presentation Template Library",
+    "templateLibrarySubtitle": "Select a curated deck template with pre-configured Bento cards and styling",
+    "allLibrary": "All (Library)",
+    "aiGenerator": "AI Generator",
+    "storyStructure": "Story Structure",
+    "contentQuality": "Content Quality",
+    "visualHierarchy": "Visual Hierarchy",
+    "accessibility": "Accessibility",
+    "presentationPacing": "Presentation Pacing",
+    "aiDeckAudit": "AI Deck Audit",
+    "slideSorter": "Slide Sorter",
+    "guides": "Guides",
+    "inspector": "Inspector",
+    "synthesizingNarrative": "Synthesizing deck narrative & Bento grids...",
+    "draftingCopy": "Drafting copy, configuring typography scales, and formatting vectors",
+    "topicGoal": "Presentation Topic / Goal",
+    "slideCount": "Slide Count",
+    "tonePacing": "Tone & Pacing",
+    "themePreset": "Theme Preset",
+    "generatePresentation": "Generate Presentation",
+    "slideOf": "Slide {{current}} of {{total}}",
+    "resizePresentation": "Resize Presentation",
+    "categories": {
+      "pitch": "Pitch Decks",
+      "business": "Business Plans",
+      "product": "Product & Tech"
+    }
   },
   "whiteboard": {
     "untitledWhiteboard": "Untitled Whiteboard"
@@ -1081,6 +1133,10 @@
         "label": "Data Sampling",
         "desc": "Extracts representative subsets using random or systematic sampling."
       }
-    }
+    },
+    "range": "Range",
+    "colANumerical": "Column A (Numerical)",
+    "selectionRange": "Selection (A1:B50)",
+    "workflow": "Workflow"
   }
 }

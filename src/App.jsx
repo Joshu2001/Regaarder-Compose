@@ -38672,9 +38672,9 @@ Respond with a JSON array of slide objects matching the schema.`;
           >
             <div className="flex items-center w-full p-1 bg-slate-100/70 dark:bg-zinc-800/70 rounded-xl border border-slate-200/40 dark:border-zinc-700/40 gap-1">
               {[
-                { key: 'assistant', label: 'Assistant' },
-                { key: 'history', label: 'History' },
-                { key: 'tasks', label: 'Tasks' },
+                { key: 'assistant', label: t('sidebar.assistant') || 'Assistant' },
+                { key: 'history', label: t('sidebar.history') || 'History' },
+                { key: 'tasks', label: t('sidebar.tasks') || 'Tasks' },
               ].map((tab) => {
                 const isActive = activeRightTab === tab.key || (tab.key === 'assistant' && activeRightTab === 'chat');
                 return (
@@ -38717,7 +38717,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <Clock size={13} />
                   </div>
                   <div>
-                    <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">Conversation History</h3>
+                    <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-100">{t('sidebar.conversationHistory') || 'Conversation History'}</h3>
                     <p className="text-[10px] text-slate-400 dark:text-zinc-500">Chats, uploaded files & prompts</p>
                   </div>
                 </div>
@@ -43416,7 +43416,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 )}
               </div>
               <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
-                {label}
+                {t('sidebar.' + key) || label}
               </span>
             </div>
           );
@@ -54534,7 +54534,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     title="Browse Full Presentation Template Library"
                                   >
                                     <Layout size={12} className="text-cyan-500 shrink-0" />
-                                    <span>All (Library)</span>
+                                    <span>{t('deck.allLibrary') || 'All (Library)'}</span>
                                   </button>
                                 </div>
 
@@ -54545,7 +54545,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   title="Synthesize Full Presentation with LLM Intelligence"
                                 >
                                   <AgentsIcon size={14} className="text-purple-200" />
-                                  <span>AI Generator</span>
+                                  <span>{t('deck.aiGenerator') || 'AI Generator'}</span>
                                 </button>
                               </div>
                             )}
@@ -54564,7 +54564,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }`}
                                     title="Audit Narrative Arc & Slide Order"
                                   >
-                                    <Layers size={13} className="text-violet-500" /> <span>Story Structure</span>
+                                    <Layers size={13} className="text-violet-500" /> <span>{t('deck.storyStructure') || 'Story Structure'}</span>
                                   </button>
 
                                   <button
@@ -54577,7 +54577,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }`}
                                     title="Analyze Copywriting Clarity & Conciseness"
                                   >
-                                    <CheckCircle2 size={13} className="text-emerald-500" /> <span>Content Quality</span>
+                                    <CheckCircle2 size={13} className="text-emerald-500" /> <span>{t('deck.contentQuality') || 'Content Quality'}</span>
                                   </button>
 
                                   <button
@@ -54590,7 +54590,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }`}
                                     title="Evaluate Typography Scale & Canvas Balance"
                                   >
-                                    <Eye size={13} className="text-blue-500" /> <span>Visual Hierarchy</span>
+                                    <Eye size={13} className="text-blue-500" /> <span>{t('deck.visualHierarchy') || 'Visual Hierarchy'}</span>
                                   </button>
 
                                   <button
@@ -54603,7 +54603,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }`}
                                     title="Calculate Color Contrast & WCAG Compliance"
                                   >
-                                    <CheckCircle2 size={13} className="text-purple-500" /> <span>Accessibility</span>
+                                    <CheckCircle2 size={13} className="text-purple-500" /> <span>{t('deck.accessibility') || 'Accessibility'}</span>
                                   </button>
 
                                   <button
@@ -54616,7 +54616,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }`}
                                     title="Estimate Delivery Time & Word Density"
                                   >
-                                    <Clock size={13} className="text-amber-500" /> <span>Presentation Pacing</span>
+                                    <Clock size={13} className="text-amber-500" /> <span>{t('deck.presentationPacing') || 'Presentation Pacing'}</span>
                                   </button>
                                 </div>
 
@@ -54631,7 +54631,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   title="Run Comprehensive 5-Point AI Deck Audit"
                                 >
                                   <AgentsIcon size={14} className="text-violet-200" />
-                                  <span>AI Deck Audit</span>
+                                  <span>{t('deck.aiDeckAudit') || 'AI Deck Audit'}</span>
                                 </button>
                               </div>
                             )}
@@ -54651,7 +54651,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      }`}
                                      title="Toggle Slide Sorter Navigator"
                                    >
-                                     <LayoutGrid size={13} className={deckSlidesPanelOpen ? "text-[#7C4DFF]" : ""} /> <span>Slide Sorter</span>
+                                     <LayoutGrid size={13} className={deckSlidesPanelOpen ? "text-[#7C4DFF]" : ""} /> <span>{t('deck.slideSorter') || 'Slide Sorter'}</span>
                                    </button>
 
                                    {/* Alignment Guides & Snap Gridlines Toggle */}
@@ -54668,7 +54668,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      }`}
                                      title="Toggle Canvas Alignment Guides & Snap Grid"
                                    >
-                                     <Eye size={13} className={deckViewShowGuides ? "text-emerald-500" : ""} /> <span>Guides</span>
+                                     <Eye size={13} className={deckViewShowGuides ? "text-emerald-500" : ""} /> <span>{t('deck.guides') || 'Guides'}</span>
                                    </button>
 
                                    {/* Right Inspector Sidebar Toggle */}
@@ -54682,7 +54682,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      }`}
                                      title="Toggle Inspector Sidebar"
                                    >
-                                     <Sidebar size={13} className={rightSidebarOpen ? "text-[#7C4DFF]" : ""} /> <span>Inspector</span>
+                                     <Sidebar size={13} className={rightSidebarOpen ? "text-[#7C4DFF]" : ""} /> <span>{t('deck.inspector') || 'Inspector'}</span>
                                    </button>
 
                                   {/* Zoom Controls */}
@@ -67079,13 +67079,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="w-full flex flex-col items-center shrink-0 relative mt-2 gap-2 pb-1">
                           <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-1 border-t border-gray-150/50">
                             <div className="flex items-center gap-4">
-                              <span>Slide {deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of {deckSlides.length}</span>
+                              <span>{t('deck.slideOf', { current: deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1, total: deckSlides.length }) || `Slide ${deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of ${deckSlides.length}`}</span>
                               <button type="button" className="flex items-center gap-1 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors">
                                 <span>English (US)</span>
                                 <ChevronDown size={11} />
                               </button>
                               <span className="text-gray-300 dark:text-zinc-600">•</span>
-                              <span>All changes saved</span>
+                              <span>{t('saved.allSaved') || 'All changes saved'}</span>
                             </div>
 
                             <div className="flex items-center gap-3">

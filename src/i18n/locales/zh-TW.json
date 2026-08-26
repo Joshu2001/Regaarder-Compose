@@ -683,7 +683,26 @@
   "sidebar": {
     "composeAssistant": "Docs 智慧寫作助理",
     "sheetsAssistant": "Sheets 試算表運算助理",
-    "deckAssistant": "Decks 簡報設計助理"
+    "deckAssistant": "Decks 簡報設計助理",
+    "assistant": "智慧助理",
+    "history": "歷程記錄",
+    "tasks": "待辦任務",
+    "conversationHistory": "對話歷史記錄",
+    "chat": "即時交談",
+    "agents": "智慧代理",
+    "schedule": "時程規劃",
+    "room": "視訊空間",
+    "help": "使用說明",
+    "comments": "文件註解",
+    "dm": "私人訊息",
+    "whiteboard": "共用白板",
+    "people": "成員列表",
+    "memory": "核心記憶",
+    "orb": "全域智慧中心",
+    "manageen": "專案看板",
+    "files": "雲端檔案",
+    "home": "首頁",
+    "createNew": "快速建立"
   },
   "tasks": {
     "yourTasks": "您的個人任務",
@@ -874,7 +893,40 @@
     "noSlides": "尚無投影片。",
     "hidden": "已隱藏",
     "unhide": "取消隱藏",
-    "hideSlide": "隱藏投影片"
+    "hideSlide": "隱藏投影片",
+    "startFromTemplate": "從範本建立",
+    "startFromTemplateDesc": "瀏覽精選簡報、商業計畫範本，或使用 AI 智慧生成。",
+    "templateLibrary": "簡報範本庫",
+    "blankCanvas": "空白畫布",
+    "blankCanvasDesc": "從空白畫布開始，自由設計您的簡報投影片。",
+    "cleanSlate": "空白開展",
+    "presentationTemplateLibrary": "投影片範本庫",
+    "templateLibrarySubtitle": "選取具備預設 Bento 排版與視覺風格的精選簡報範本",
+    "allLibrary": "全部範本庫",
+    "aiGenerator": "AI 智慧生成",
+    "storyStructure": "敘事結構",
+    "contentQuality": "內容品質",
+    "visualHierarchy": "視覺層次",
+    "accessibility": "無障礙檢測",
+    "presentationPacing": "演講節奏",
+    "aiDeckAudit": "AI 簡報全方位健檢",
+    "slideSorter": "投影片總覽",
+    "guides": "對齊參考線",
+    "inspector": "屬性檢查器",
+    "synthesizingNarrative": "正在生成簡報架構與 Bento 佈局…",
+    "draftingCopy": "撰寫文案、配置字級比例並最佳化視覺元件",
+    "topicGoal": "簡報主題 / 目標",
+    "slideCount": "投影片頁數",
+    "tonePacing": "語氣與節奏",
+    "themePreset": "主題風格",
+    "generatePresentation": "生成簡報",
+    "slideOf": "第 {{current}} 頁 / 共 {{total}} 頁",
+    "resizePresentation": "調整簡報尺寸",
+    "categories": {
+      "pitch": "募資簡報",
+      "business": "商業企劃",
+      "product": "產品與技術"
+    }
   },
   "whiteboard": {
     "untitledWhiteboard": "未命名白板"
@@ -1081,6 +1133,10 @@
         "label": "資料抽樣工具",
         "desc": "透過隨機或系統抽樣提取具代表性之資料子集。"
       }
-    }
+    },
+    "range": "範圍",
+    "colANumerical": "A 欄 (數值)",
+    "selectionRange": "選取範圍 (A1:B50)",
+    "workflow": "分析工作流"
   }
 }
