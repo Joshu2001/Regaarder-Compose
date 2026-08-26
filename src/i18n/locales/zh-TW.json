@@ -234,7 +234,7 @@
     "emptyStateHeadline": "目前未佔用儲存空間 — 您的文件、對話與記憶將會在建立後顯示於此。"
   },
   "settings": {
-    "title": "設定",
+    "title": "偏好設定",
     "account": "帳號",
     "personalization": "個人化",
     "storageData": "儲存空間與資料",
@@ -371,17 +371,24 @@
     "runwayburn": "資金消耗與週期",
     "businessplan": "商業營運計畫",
     "gtmplan": "市場推廣計畫",
-    "createTemplate": "+ 建立新範本",
-    "allTemplates": "所有範本",
-    "financeGrowth": "財務與增長",
+    "createTemplate": "+ 建立範本",
+    "allTemplates": "全部範本",
+    "financeGrowth": "財務與成長",
     "sales": "業務銷售",
     "operations": "營運管理",
-    "myTemplates": "我的範本",
-    "startBlank": "空白試算表",
-    "startFromScratch": "從頭建立全新數據表",
-    "financialModel": "財務營收模型",
-    "saasMetrics": "SaaS 核心營運指標",
-    "salesCrm": "業務銷售 CRM 漏斗"
+    "myTemplates": "我的自訂範本",
+    "startBlank": "空白工作表",
+    "startFromScratch": "從空白開始",
+    "financialModel": "財務模型",
+    "saasMetrics": "SaaS 指標儀表板",
+    "salesCrm": "業務 CRM 管道",
+    "title": "範本庫",
+    "cashFlow": "現金流量表",
+    "kpiDashboard": "KPI 績效儀表板",
+    "projectTracking": "專案進度追蹤",
+    "useTemplate": "套用範本",
+    "preview": "預覽範本",
+    "share": "分享"
   },
   "replay": {
     "title": "編輯歷程重播",
@@ -587,11 +594,14 @@
   },
   "outline": {
     "title": "文件大綱",
-    "structure": "內容結構",
+    "structure": "結構階層",
     "section": "個章節",
     "sections": "個章節",
     "minRead": "分鐘閱讀",
-    "words": "字"
+    "words": "字",
+    "noSections": "尚未建立章節",
+    "noSectionsDesc": "貼上包含標題的內容以自動生成文件大綱結構。",
+    "addSection": "+ 新增章節"
   },
   "sheets": {
     "tabs": {
@@ -658,7 +668,9 @@
     "deleteCol": "刪除此欄",
     "deleteRow": "刪除此列",
     "clearCol": "清除此欄內容",
-    "clearRow": "清除此列內容"
+    "clearRow": "清除此列內容",
+    "newSheet": "新增工作表",
+    "noWorksheets": "尚無工作表。建立新工作表以查看即時預覽。"
   },
   "saved": {
     "notSaved": "尚未儲存",
@@ -857,9 +869,218 @@
     }
   },
   "deck": {
-    "untitledDeck": "未命名簡報"
+    "untitledDeck": "未命名簡報",
+    "newSlide": "新增投影片",
+    "noSlides": "尚無投影片。",
+    "hidden": "已隱藏",
+    "unhide": "取消隱藏",
+    "hideSlide": "隱藏投影片"
   },
   "whiteboard": {
     "untitledWhiteboard": "未命名白板"
+  },
+  "analytics": {
+    "title": "商業決策智慧中心",
+    "subtitle": "數據 → 分析 → 解讀 → 決策",
+    "askBusinessQuestion": "提出商業問題…",
+    "entireActiveSheet": "當前完整工作表",
+    "askAiEngine": "諮詢 AI 分析引擎",
+    "try": "試試看：",
+    "sampleForecast": "預測下一季度營收",
+    "sampleChurn": "分析客戶流失原因",
+    "sampleBreakEven": "計算損益兩平點",
+    "specializedTools": "專業分析工具：",
+    "executiveDecisionIntelligence": "六步驟高階決策智慧模型",
+    "step1Title": "步驟 1：數據上下文與輸入模式",
+    "sheetGridSearch": "表格數據 / 欄位搜尋",
+    "manualCustomEntry": "自訂數值手動輸入",
+    "searchColumns": "搜尋工作表欄位或已載入之資料集…",
+    "primaryMetricCol": "主要指標欄位 (Y / 序列 A)：",
+    "secondaryCol": "次要指標欄位 (預算 / 預測 X / 序列 B)：",
+    "typeCommaSeparated": "輸入或貼上以逗號分隔之數值：",
+    "step2Title": "步驟 2：確定性運算引擎",
+    "moduleInputParams": "模組輸入參數 ({{module}})：",
+    "categories": {
+      "business": "商業分析",
+      "customer_sales": "客戶與銷售",
+      "financial": "財務分析",
+      "forecasting": "預測模型",
+      "simulation": "情境模擬",
+      "advanced_stats": "進階統計"
+    },
+    "items": {
+      "kpi_analysis": {
+        "label": "KPI 關鍵績效分析",
+        "desc": "核心關鍵績效指標、目標達成率 %、複合成長率及閥值警示。"
+      },
+      "trend_analysis": {
+        "label": "趨勢動向分析",
+        "desc": "成長斜率、加速指標與三期移動平均。"
+      },
+      "variance_analysis": {
+        "label": "差異變異分析",
+        "desc": "實際 vs 預算差異拆解及有利/不利狀態評估。"
+      },
+      "growth_analysis": {
+        "label": "成長率分析",
+        "desc": "月增率/季增率、年均複合成長率與總體擴張規模。"
+      },
+      "profitability_analysis": {
+        "label": "獲利能力分析",
+        "desc": "毛利、EBITDA、營業利益率 % 及淨利率。"
+      },
+      "pareto_analysis": {
+        "label": "柏拉圖 80/20 分析",
+        "desc": "識別貢獻 80% 營收/利潤的前 20% 關鍵項目。"
+      },
+      "anomaly_detection": {
+        "label": "異常數據偵測",
+        "desc": "以 Z-score 統計掃描突波與異常下滑點。"
+      },
+      "cohort_analysis": {
+        "label": "世代同群分析",
+        "desc": "分期客戶留存矩陣與客戶衰退流失率。"
+      },
+      "retention_churn": {
+        "label": "留存與流失分析",
+        "desc": "淨增用戶數、客戶流失率 %、留存率 % 與成長速度。"
+      },
+      "clv_analysis": {
+        "label": "顧客終身價值 (CLV)",
+        "desc": "簡單與折現 CLV、CAC 回本週期與 LTV:CAC 比率。"
+      },
+      "sales_funnel": {
+        "label": "銷售漏斗分析",
+        "desc": "各階段轉換率與銷售瓶頸偵測。"
+      },
+      "conversion_analysis": {
+        "label": "轉換率分析",
+        "desc": "從訪客到成交客戶的各環節獲客流速。"
+      },
+      "customer_segmentation": {
+        "label": "客戶價值分群",
+        "desc": "將客戶分類為高價值、忠誠、流失邊緣與已流失。"
+      },
+      "revenue_analysis": {
+        "label": "營收規模分析",
+        "desc": "總營業額、營收運算率 (Run-rate)、CAGR 及下期營收預估。"
+      },
+      "margin_analysis": {
+        "label": "利潤率分析",
+        "desc": "拆解毛利率、貢獻毛利、營業利益率與淨利率。"
+      },
+      "breakeven_analysis": {
+        "label": "損益兩平分析",
+        "desc": "兩平銷量、營收門檻與營業槓桿程度。"
+      },
+      "unit_economics": {
+        "label": "單位經濟模型",
+        "desc": "評估 LTV、CAC、回本週期與每單位邊際貢獻。"
+      },
+      "cash_flow_analysis": {
+        "label": "現金流量分析",
+        "desc": "營運、投資、融資現金流、自由現金流 (FCF) 與資金跑道 (Runway)。"
+      },
+      "budget_vs_actual": {
+        "label": "預算與實際比較",
+        "desc": "明細與彙總財務數字與目標之差異比對。"
+      },
+      "financial_ratios": {
+        "label": "財務比率分析",
+        "desc": "流動比率、速動比率、負債權益比、ROE、ROA 與資產週轉率。"
+      },
+      "revenue_forecast": {
+        "label": "營收預測",
+        "desc": "運用指數平滑法預測未來各期營收走勢。"
+      },
+      "sales_forecast": {
+        "label": "銷售預測",
+        "desc": "線性趨勢銷售預測並附 95% 信賴區間上下限。"
+      },
+      "demand_forecast": {
+        "label": "需求預測",
+        "desc": "三期移動平均之需求預測模型。"
+      },
+      "cashflow_forecast": {
+        "label": "現金流預測",
+        "desc": "未來現金流入/流出預測與期末現金餘額預估。"
+      },
+      "churn_forecast": {
+        "label": "客戶流失預測",
+        "desc": "客戶減損時程與預期留存客戶數預測。"
+      },
+      "timeseries_forecast": {
+        "label": "時間序列引擎",
+        "desc": "完整擬合數列、預測期別及誤差評估指標。"
+      },
+      "monte_carlo": {
+        "label": "蒙地卡羅模擬",
+        "desc": "具備 P10/P50/P90 百分位數界限之多路徑隨機模擬。"
+      },
+      "what_if_analysis": {
+        "label": "What-If 假設分析",
+        "desc": "模擬價格、銷量與成本變動下的淨利結果。"
+      },
+      "scenario_analysis": {
+        "label": "情境分析",
+        "desc": "生成樂觀 (Bull)、基準 (Base) 與悲觀 (Bear) 財務矩陣。"
+      },
+      "sensitivity_analysis": {
+        "label": "敏感度分析",
+        "desc": "評估價格與銷量步階變動之 2D 敏感度矩陣。"
+      },
+      "risk_analysis": {
+        "label": "風險分析 (VaR)",
+        "desc": "計算夏普值 (Sharpe)、風險價值 (VaR) 與歷史回撤。"
+      },
+      "goal_seek": {
+        "label": "目標搜尋求解",
+        "desc": "精確反推達成目標利潤所需之銷量或定價。"
+      },
+      "optimization_engine": {
+        "label": "資源最佳化引擎",
+        "desc": "在有限預算下將資源配置於各行銷管道以達最大回報。"
+      },
+      "descriptive_stats": {
+        "label": "敘述統計",
+        "desc": "平均數、中位數、標準差、變異數、極值與標準誤。"
+      },
+      "correlation": {
+        "label": "皮爾森相關分析",
+        "desc": "測量線性相關係數 r 與判定係數 r2。"
+      },
+      "regression": {
+        "label": "線性迴歸模型",
+        "desc": "建模斜率、截距、殘差與預測公式。"
+      },
+      "t_test": {
+        "label": "獨立樣本 T 檢定",
+        "desc": "比較兩組獨立樣本分佈之平均數差異。"
+      },
+      "paired_t_test": {
+        "label": "成對樣本 T 檢定",
+        "desc": "比較同一樣本在實驗前後之測量值差異。"
+      },
+      "anova": {
+        "label": "單因子變異數分析",
+        "desc": "跨多個分類群組之變異數分析 (ANOVA)。"
+      },
+      "chi_square": {
+        "label": "卡方獨立性檢定",
+        "desc": "檢驗表格中類別變數間的獨立性。"
+      },
+      "confidence_intervals": {
+        "label": "信賴區間計算",
+        "desc": "計算 90%、95% 或 99% 水準之抽樣誤差界限。"
+      },
+      "probability_distributions": {
+        "label": "機率分佈模型",
+        "desc": "常態機率密度與累積質量函數計算。"
+      },
+      "data_sampling": {
+        "label": "資料抽樣工具",
+        "desc": "透過隨機或系統抽樣提取具代表性之資料子集。"
+      }
+    }
   }
 }

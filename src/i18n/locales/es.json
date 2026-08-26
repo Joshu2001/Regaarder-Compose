@@ -234,7 +234,7 @@
     "emptyStateHeadline": "No hay almacenamiento en uso — tus creaciones aparecerán aquí."
   },
   "settings": {
-    "title": "Ajustes",
+    "title": "Settings",
     "account": "Cuenta",
     "personalization": "Personalización",
     "storageData": "Almacenamiento y Datos",
@@ -371,17 +371,24 @@
     "runwayburn": "Runway y gasto de capital",
     "businessplan": "Plan de negocio",
     "gtmplan": "Plan Go-to-Market",
-    "createTemplate": "+ Crear plantilla",
-    "allTemplates": "Todas las plantillas",
-    "financeGrowth": "Finanzas y Crecimiento",
-    "sales": "Ventas",
-    "operations": "Operaciones",
-    "myTemplates": "Mis plantillas",
-    "startBlank": "Empezar en blanco",
-    "startFromScratch": "Crear desde cero",
-    "financialModel": "Modelo financiero",
-    "saasMetrics": "Métricas SaaS",
-    "salesCrm": "CRM de Ventas"
+    "createTemplate": "+ Create template",
+    "allTemplates": "All Templates",
+    "financeGrowth": "Finance & Growth",
+    "sales": "Sales",
+    "operations": "Operations",
+    "myTemplates": "My Templates",
+    "startBlank": "Start blank",
+    "startFromScratch": "Start from scratch",
+    "financialModel": "Financial Model",
+    "saasMetrics": "SaaS Metrics",
+    "salesCrm": "Sales CRM",
+    "title": "Templates",
+    "cashFlow": "Cash Flow",
+    "kpiDashboard": "KPI Dashboard",
+    "projectTracking": "Project Tracking",
+    "useTemplate": "Use Template",
+    "preview": "Preview",
+    "share": "Share"
   },
   "replay": {
     "title": "Reproducción de edición",
@@ -586,12 +593,15 @@
     "hoverPickSize": "Pasa el cursor para elegir tamaño"
   },
   "outline": {
-    "title": "Esquema del documento",
-    "structure": "Estructura",
-    "section": "Sección",
-    "sections": "Secciones",
-    "minRead": "min de lectura",
-    "words": "palabras"
+    "title": "Document Outline",
+    "structure": "Structure",
+    "section": "Section",
+    "sections": "Sections",
+    "minRead": "min read",
+    "words": "words",
+    "noSections": "No sections created",
+    "noSectionsDesc": "Paste content containing headings to auto-populate outline.",
+    "addSection": "+ Add section"
   },
   "sheets": {
     "tabs": {
@@ -658,7 +668,9 @@
     "deleteCol": "Eliminar columna",
     "deleteRow": "Eliminar fila",
     "clearCol": "Borrar columna",
-    "clearRow": "Borrar fila"
+    "clearRow": "Borrar fila",
+    "newSheet": "New Sheet",
+    "noWorksheets": "No worksheets yet. Create one to see a live preview."
   },
   "saved": {
     "notSaved": "Aún no guardado",
@@ -857,9 +869,218 @@
     }
   },
   "deck": {
-    "untitledDeck": "Presentación sin título"
+    "untitledDeck": "Untitled Deck",
+    "newSlide": "New Slide",
+    "noSlides": "No slides yet.",
+    "hidden": "Hidden",
+    "unhide": "Unhide",
+    "hideSlide": "Hide Slide"
   },
   "whiteboard": {
     "untitledWhiteboard": "Pizarra sin título"
+  },
+  "analytics": {
+    "title": "Business Decision Intelligence",
+    "subtitle": "Data → Analyze → Explain → Decide",
+    "askBusinessQuestion": "Ask a business question...",
+    "entireActiveSheet": "Entire Active Sheet",
+    "askAiEngine": "Ask AI Engine",
+    "try": "Try:",
+    "sampleForecast": "Forecast revenue next quarter",
+    "sampleChurn": "Explain churn",
+    "sampleBreakEven": "Calculate break-even",
+    "specializedTools": "SPECIALIZED TOOLS:",
+    "executiveDecisionIntelligence": "6-Step Executive Decision Intelligence",
+    "step1Title": "Step 1: Data Context & Input Method",
+    "sheetGridSearch": "Sheet Grid / Search",
+    "manualCustomEntry": "Manual Custom Entry",
+    "searchColumns": "Search sheet data columns or uploaded datasets...",
+    "primaryMetricCol": "Primary Metric Column (Y / Series A):",
+    "secondaryCol": "Secondary Column (Budget / Predictor X / Series B):",
+    "typeCommaSeparated": "Type or paste comma-separated test values:",
+    "step2Title": "Step 2: Deterministic Calculation Engine",
+    "moduleInputParams": "Module Input Parameters ({{module}}):",
+    "categories": {
+      "business": "Business",
+      "customer_sales": "Customers",
+      "financial": "Finance",
+      "forecasting": "Forecasting",
+      "simulation": "Simulation",
+      "advanced_stats": "Statistics"
+    },
+    "items": {
+      "kpi_analysis": {
+        "label": "KPI Analysis",
+        "desc": "Core KPIs, target attainment %, CAGR, and threshold alerts."
+      },
+      "trend_analysis": {
+        "label": "Trend Analysis",
+        "desc": "Growth slope, acceleration, and 3-period moving average."
+      },
+      "variance_analysis": {
+        "label": "Variance Analysis",
+        "desc": "Actual vs Budget variance breakdown and favorable/unfavorable status."
+      },
+      "growth_analysis": {
+        "label": "Growth Analysis",
+        "desc": "MoM/QoQ growth rates, compound annual growth, and total expansion."
+      },
+      "profitability_analysis": {
+        "label": "Profitability Analysis",
+        "desc": "Gross profit, EBITDA, operating margin %, and net profit margins."
+      },
+      "pareto_analysis": {
+        "label": "Pareto Analysis (80/20)",
+        "desc": "Identifies top 20% of items contributing to 80% of volume/profit."
+      },
+      "anomaly_detection": {
+        "label": "Anomaly Detection",
+        "desc": "Statistical Z-score scanning to highlight spikes and severe dips."
+      },
+      "cohort_analysis": {
+        "label": "Cohort Analysis",
+        "desc": "Period-by-period customer retention matrices and cohort decay rates."
+      },
+      "retention_churn": {
+        "label": "Retention & Churn",
+        "desc": "Net user additions, logo churn %, retention rate %, and growth rate."
+      },
+      "clv_analysis": {
+        "label": "Customer Lifetime Value",
+        "desc": "Simple & Discounted CLV, CAC Payback period, and LTV:CAC ratios."
+      },
+      "sales_funnel": {
+        "label": "Sales Funnel",
+        "desc": "Pipeline stage-to-stage conversion rates and bottleneck detection."
+      },
+      "conversion_analysis": {
+        "label": "Conversion Analysis",
+        "desc": "Acquisition conversion velocity from visitors down to closed wins."
+      },
+      "customer_segmentation": {
+        "label": "Customer Segmentation",
+        "desc": "Categorizes accounts into VIP Champions, Loyal, At-Risk, and Churned."
+      },
+      "revenue_analysis": {
+        "label": "Revenue Analysis",
+        "desc": "Total top-line revenue, run-rate, CAGR, and next period run-rate."
+      },
+      "margin_analysis": {
+        "label": "Margin Analysis",
+        "desc": "Decomposes Gross, Contribution, Operating, and Net margins."
+      },
+      "breakeven_analysis": {
+        "label": "Break-Even Analysis",
+        "desc": "Break-even unit volume, revenue threshold, and operating leverage."
+      },
+      "unit_economics": {
+        "label": "Unit Economics",
+        "desc": "Evaluates LTV, CAC, payback period, and unit contribution margin."
+      },
+      "cash_flow_analysis": {
+        "label": "Cash Flow Analysis",
+        "desc": "Operating, Investing, Financing cash flows, Free Cash Flow, and Runway."
+      },
+      "budget_vs_actual": {
+        "label": "Budget vs Actual",
+        "desc": "Itemized and aggregated financial variance against budgeted targets."
+      },
+      "financial_ratios": {
+        "label": "Financial Ratios",
+        "desc": "Current Ratio, Quick Ratio, Debt-to-Equity, ROE, ROA, and Asset Turnover."
+      },
+      "revenue_forecast": {
+        "label": "Revenue Forecast",
+        "desc": "Exponential smoothing revenue projection over future periods."
+      },
+      "sales_forecast": {
+        "label": "Sales Forecast",
+        "desc": "Linear trend sales projection with 95% confidence upper/lower bounds."
+      },
+      "demand_forecast": {
+        "label": "Demand Forecast",
+        "desc": "3-period moving average demand forecasting model."
+      },
+      "cashflow_forecast": {
+        "label": "Cash Flow Forecast",
+        "desc": "Inflow/outflow forecasting and projected ending cash balances."
+      },
+      "churn_forecast": {
+        "label": "Churn Forecast",
+        "desc": "Customer attrition schedule and retained customer projections."
+      },
+      "timeseries_forecast": {
+        "label": "Time-Series Engine",
+        "desc": "Comprehensive fitted series, forecast periods, and error metrics."
+      },
+      "monte_carlo": {
+        "label": "Monte Carlo Simulation",
+        "desc": "Multi-path stochastic simulation with P10/P50/P90 percentile limits."
+      },
+      "what_if_analysis": {
+        "label": "What-If Analysis",
+        "desc": "Simulates net income outcomes under price, volume, and cost deltas."
+      },
+      "scenario_analysis": {
+        "label": "Scenario Analysis",
+        "desc": "Generates Bull, Base, and Bear financial outcome matrices."
+      },
+      "sensitivity_analysis": {
+        "label": "Sensitivity Analysis",
+        "desc": "2D matrix evaluating outcome sensitivity across price and volume steps."
+      },
+      "risk_analysis": {
+        "label": "Risk Analysis (VaR)",
+        "desc": "Calculates Sharpe Ratio, Value at Risk (VaR), and historical drawdowns."
+      },
+      "goal_seek": {
+        "label": "Goal Seek Solver",
+        "desc": "Solves for exact required unit sales or price to achieve target profit."
+      },
+      "optimization_engine": {
+        "label": "Optimization Engine",
+        "desc": "Allocates limited budget across marketing channels to maximize return."
+      },
+      "descriptive_stats": {
+        "label": "Descriptive Statistics",
+        "desc": "Mean, median, std dev, variance, min, max, and standard error."
+      },
+      "correlation": {
+        "label": "Pearson Correlation",
+        "desc": "Measures linear correlation coefficient r and determination r2."
+      },
+      "regression": {
+        "label": "Linear Regression",
+        "desc": "Models slope, intercept, residuals, and prediction formulas."
+      },
+      "t_test": {
+        "label": "Independent T-Test",
+        "desc": "Compares means between two independent sample distributions."
+      },
+      "paired_t_test": {
+        "label": "Paired T-Test",
+        "desc": "Compares paired before/after measurements on identical subjects."
+      },
+      "anova": {
+        "label": "One-Way ANOVA",
+        "desc": "Analysis of Variance across multiple categorical groupings."
+      },
+      "chi_square": {
+        "label": "Chi-Square Test",
+        "desc": "Tests independence between categorical variables in a grid."
+      },
+      "confidence_intervals": {
+        "label": "Confidence Intervals",
+        "desc": "Upper and lower margin of error bounds at 90%, 95%, or 99% levels."
+      },
+      "probability_distributions": {
+        "label": "Probability Distributions",
+        "desc": "Normal probability density and mass functions."
+      },
+      "data_sampling": {
+        "label": "Data Sampling",
+        "desc": "Extracts representative subsets using random or systematic sampling."
+      }
+    }
   }
 }
