@@ -5,6 +5,7 @@ import {
   Maximize2, Minimize2, Share2, PhoneOff, Search, Sparkles
 } from "lucide-react";
 import { useTranslation } from "./i18n";
+import { CLOUD_AI_MODELS } from "./services/orbAiService";
 import { RoomIcon, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 
@@ -20,7 +21,7 @@ import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EET
  * - Preserves Header, People panel, Chat panel, Call controls, and AI prompt bar
  * - Smooth transition from lobby into active meeting workspace
  */
-export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMode, onOpenWorkspaceSwitcher }) {
+export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMode, onOpenWorkspaceSwitcher, onCallAi }) {
   const { t } = useTranslation();
   // Lobby State
   const [isLobby, setIsLobby] = useState(true);
@@ -141,6 +142,10 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
   const [aiPrompt, setAiPrompt] = useState("");
   const [roomAIResponse, setRoomAIResponse] = useState(null);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isAILoading, setIsAILoading] = useState(false);
+  const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const modelMenuRef = useRef(null);
 
   // Modals & Popovers
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -155,6 +160,9 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
   // Handle outside clicks
   useEffect(() => {
     function handleClickOutside(e) {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target)) {
+        setIsModelDropdownOpen(false);
+      }
       if (roomNameRef.current && !roomNameRef.current.contains(e.target)) {
         setIsRoomNameMenuOpen(false);
       }
@@ -211,15 +219,62 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
     setChatMessage("");
   };
 
-  const handleAISubmit = (e) => {
+  const handleAISubmit = async (e) => {
     e.preventDefault();
-    if (!aiPrompt.trim()) return;
-    setRoomAIResponse({
-      prompt: aiPrompt,
-      answer: "Meeting AI analysis synchronized. Audio stream transcribed with zero latency."
-    });
-    setIsAIModalOpen(true);
+    if (!aiPrompt.trim() || isAILoading) return;
+    const promptText = aiPrompt.trim();
     setAiPrompt("");
+    setIsAILoading(true);
+    setIsAIModalOpen(true);
+    setRoomAIResponse({
+      prompt: promptText,
+      answer: ""
+    });
+
+    try {
+      if (onCallAi) {
+        const currentChatContext = chatMessages?.length > 0
+          ? chatMessages.slice(-8).map(m => `${m.sender}: ${m.text}`).join('\n')
+          : 'No recent chat messages in this session.';
+        
+        const systemPrompt = [
+          `You are the executive Regaarder Room AI meeting assistant for the active session: "${roomName}".`,
+          `CURRENT MEETING CONTEXT:`,
+          `- Room Name: ${roomName}`,
+          `- Recent Messages / Transcript:\n${currentChatContext}`,
+          `RULES & GUIDELINES:`,
+          `1. Answer directly, naturally, and concisely in the same language as the user's prompt (English, Traditional Chinese, etc.).`,
+          `2. If the user asks general questions or greetings (e.g. "hello", "how can you help me"), warmly explain your role (providing live summaries, tracking action items, taking meeting notes, and answering questions) without inventing or hallucinating fake meeting topics.`,
+          `3. NEVER output internal placeholders, template instructions, or brackets like [mention the meeting topic if known] or [insert topic].`,
+          `4. Always output clean, final, executive-tier text.`
+        ].join('\n\n');
+
+        const aiResult = await onCallAi({
+          userPrompt: promptText,
+          customModel: selectedAiModel,
+          systemPrompt
+        });
+        const answerText = typeof aiResult === 'string'
+          ? aiResult
+          : (aiResult?.text || aiResult?.error || (aiResult?.parsed ? JSON.stringify(aiResult.parsed) : "Analysis complete."));
+        setRoomAIResponse({
+          prompt: promptText,
+          answer: answerText
+        });
+      } else {
+        setRoomAIResponse({
+          prompt: promptText,
+          answer: `Meeting AI processed "${promptText}". Ready for team action items.`
+        });
+      }
+    } catch (err) {
+      setRoomAIResponse({
+        prompt: promptText,
+        answer: "Failed to generate AI response. Please check your network or API connection."
+      });
+    } finally {
+      setIsAILoading(false);
+    }
   };
 
   return (
@@ -744,27 +799,95 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                     </button>
                   </div>
 
-                  {/* Ask Room AI Bar */}
-                  <form onSubmit={handleAISubmit} className="w-full max-w-[480px] relative">
-                    <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800 rounded-full px-4 py-1.5 flex items-center justify-between shadow-xs">
-                      <div className="flex items-center gap-2 flex-1">
-                        <RegaarderAiIcon size={15} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                        <input 
-                          type="text"
-                          value={aiPrompt}
-                          onChange={(e) => setAiPrompt(e.target.value)}
-                          placeholder={t('room.askRoomAi') || 'Ask Room AI...'}
-                          className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 dark:placeholder:zinc-500 focus:outline-none"
-                        />
-                      </div>
-                      <button 
-                        type="submit"
-                        className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center hover:bg-violet-200 transition-colors shrink-0"
+                  {/* Ask Room AI Bar with Regaarder AI Signature Icon & Model Selector */}
+                  <div className="w-full max-w-[560px] flex items-center gap-2 relative">
+                    {/* Model Selection Dropdown Trigger */}
+                    <div className="relative" ref={modelMenuRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-300 cursor-pointer shrink-0"
                       >
-                        <Send size={11} />
+                        <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                        <span className="truncate max-w-[100px] text-[11.5px]">
+                          {(CLOUD_AI_MODELS?.find(m => m.id === selectedAiModel)?.name) || 'Gemini 2.0 Flash'}
+                        </span>
+                        <ChevronDown size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
                       </button>
+
+                      {/* Dropdown Menu */}
+                      {isModelDropdownOpen && (
+                        <div 
+                          className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1.5">
+                            {t('room.selectModel') || 'Select AI Model'}
+                          </div>
+                          {(CLOUD_AI_MODELS || [
+                            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', providerName: 'Google AI', tier: 'Fast & Smart' },
+                            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', providerName: 'Google AI', tier: 'Deep Reasoning' },
+                            { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', providerName: 'Anthropic', tier: 'Elite Synthesis' },
+                            { id: 'gpt-4o', name: 'GPT-4o', providerName: 'OpenAI', tier: 'Omni Intelligence' },
+                            { id: 'deepseek-chat', name: 'DeepSeek V3', providerName: 'DeepSeek', tier: 'High Efficiency' }
+                          ]).map((model) => {
+                            const isSelected = selectedAiModel === model.id;
+                            return (
+                              <button
+                                key={model.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAiModel(model.id);
+                                  setIsModelDropdownOpen(false);
+                                  showToast?.(`Model set to ${model.name}`);
+                                }}
+                                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
+                                  isSelected 
+                                    ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' 
+                                    : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-5 h-5 rounded-lg bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                                    <RegaarderAiIcon size={12} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-bold truncate leading-tight">{model.name}</div>
+                                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{model.providerName || model.tier}</div>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </form>
+
+                    {/* AI Prompt Input Bar */}
+                    <form onSubmit={handleAISubmit} className="flex-1 relative">
+                      <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800 rounded-full px-4 py-1.5 flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-2 flex-1">
+                          <input 
+                            type="text"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder={t('room.askRoomAi') || 'Ask Room AI (summary, actions, analysis)...'}
+                            className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 dark:placeholder:zinc-500 focus:outline-none"
+                          />
+                        </div>
+                        <button 
+                          type="submit"
+                          disabled={!aiPrompt.trim() || isAILoading}
+                          className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center hover:bg-violet-200 disabled:opacity-30 transition-colors shrink-0 cursor-pointer"
+                        >
+                          <Send size={11} />
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </main>
 
@@ -1670,6 +1793,93 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
       </div>
 
       {/* ========================================================================= */}
+      {/* ROOM AI ASSISTANT MODAL (Live API Connected)                             */}
+      {/* ========================================================================= */}
+      {isAIModalOpen && (
+        <div 
+          className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl animate-in fade-in duration-150 select-none"
+          onClick={() => setIsAIModalOpen(false)}
+        >
+          <div 
+            className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-white/10 shadow-[0_32px_120px_rgba(0,0,0,0.25)] rounded-[32px] max-w-[520px] w-full p-6 text-left animate-in fade-in zoom-in-95 duration-150 font-sans flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+                  <RegaarderAiIcon size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                    Room AI Intelligence
+                  </h3>
+                  <p className="text-[11px] text-violet-600 dark:text-violet-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                    {roomName} Session Analysis
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAIModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Prompt Display */}
+            {roomAIResponse?.prompt && (
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-700/80 mb-3 text-xs text-slate-700 dark:text-zinc-300 font-medium">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block mb-1">Your Question</span>
+                "{roomAIResponse.prompt}"
+              </div>
+            )}
+
+            {/* Response Area */}
+            <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 mb-4 min-h-[100px] max-h-[260px] overflow-y-auto thin-scrollbar">
+              {isAILoading ? (
+                <div className="flex flex-col items-center justify-center py-6 gap-2 text-violet-600 dark:text-violet-400">
+                  <RegaarderAiIcon size={20} className="animate-spin" />
+                  <span className="text-xs font-semibold">Analyzing meeting context...</span>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                  {roomAIResponse?.answer || "No response available."}
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={() => {
+                  if (roomAIResponse?.answer) {
+                    navigator.clipboard?.writeText(roomAIResponse.answer);
+                    showToast?.("AI response copied to clipboard!");
+                  }
+                }}
+                disabled={isAILoading || !roomAIResponse?.answer}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40"
+              >
+                Copy Answer
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAIModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* ========================================================================= */}
       {/* E2EE CRYPTOGRAPHIC VERIFICATION MODAL                                    */}
       {/* ========================================================================= */}
       {isE2EEVerifiedModalOpen && (

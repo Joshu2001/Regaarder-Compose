@@ -6178,135 +6178,134 @@ suppressContentEditableWarning
   );
 };
 
-const SummaryModal = ({ isOpen, onClose }) => {
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isLangOpen, setIsLangOpen] = useState(false);
-  const [lang, setLang] = useState('EN');
+const SummaryModal = ({ 
+  isOpen, 
+  onClose, 
+  liveTranscript = [], 
+  onGenerateAiSummary, 
+  onExportToCompose,
+  showToast 
+}) => {
+  const { t } = useTranslation();
+  const [summaryData, setSummaryData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && !summaryData && liveTranscript.length > 0) {
+      handleGenerate();
+    }
+  }, [isOpen]);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      if (onGenerateAiSummary) {
+        const res = await onGenerateAiSummary();
+        setSummaryData(res);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  const getTranslatedText = (key) => {
-    if (lang === 'ES') {
-      return {
-        title: "Sincronización en vivo",
-        status: "Resumiendo activamente",
-        point1: "Estrategia de campaña del tercer trimestre finalizada; alineando métricas.",
-        point2: "Acción: Sarah finalizará la presentación de mañana.",
-        point3: "Bloqueo: El despliegue de la API retrasa a ingeniería."
-      }[key] || key;
-    }
-    if (lang === 'FR') {
-      return {
-        title: "Synchronisation en direct",
-        status: "Résumé actif",
-        point1: "Stratégie de campagne T3 finalisée ; alignement des métriques.",
-        point2: "Action : Sarah finalise la présentation de demain.",
-        point3: "Blocage : Le déploiement de l'API retarde l'ingénierie."
-      }[key] || key;
-    }
-    return {
-      title: "Live Sync",
-      status: "Actively summarizing",
-      point1: "Finalized Q3 campaign strategy; aligning on next-step metrics.",
-      point2: "Action: Sarah to finalize all-hands deck by tomorrow.",
-      point3: "Blocker: Backend API deployment holding up engineering."
-    }[key] || key;
-  };
-
   return (
-    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="bg-white/[93%] backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]" onClick={e => {
-        e.stopPropagation();
-        if (isExportOpen) setIsExportOpen(false);
-        if (isLangOpen) setIsLangOpen(false);
-      }}>
-        <div className="flex items-center justify-between px-7 py-6 border-b border-white/40 shrink-0">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
-              <div className="relative flex h-3 w-3 items-center justify-center">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_32px_120px_rgba(0,0,0,0.25)] rounded-[32px] w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] text-left select-text" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+              <RegaarderAiIcon size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                {t('room.liveSummary') || 'Live Meeting Summary'}
+              </h2>
+              <div className="flex items-center gap-1.5 text-[11px] text-violet-600 dark:text-violet-400 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                <span>{liveTranscript.length} {t('room.transcriptCount') || 'Transcript Chunks'}</span>
               </div>
-              {getTranslatedText('title')}
-            </h2>
-            <span className="text-[11px] font-medium text-violet-600 bg-violet-100/40 px-2.5 py-1 rounded-full uppercase tracking-wider">{getTranslatedText('status')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <button 
-                onClick={(e) => { e.stopPropagation(); setIsLangOpen(!isLangOpen); setIsExportOpen(false); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-xl transition-colors"
-              >
-                <Globe size={14} /> {lang}
-              </button>
-              {isLangOpen && (
-                <div className="absolute top-full right-0 mt-2 w-32 bg-white/[93%] backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50 p-1">
-                  {['EN', 'ES', 'FR'].map(l => (
-                    <button key={l} onClick={() => { setLang(l); setIsLangOpen(false); }} className={`w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition-colors ${lang === l ? 'bg-violet-50 text-violet-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                      {l === 'EN' ? 'English' : l === 'ES' ? 'Español' : 'Français'}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
-        </div>
-        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1">
-          <ul className="space-y-5">
-            <li className="flex gap-3 items-start">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-2 shrink-0"></div>
-              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
-                {lang === 'EN' ? (
-                  <>Finalized Q3 campaign strategy; aligning on next-step metrics.</>
-                ) : (
-                  <>{getTranslatedText('point1')}</>
-                )}
-              </p>
-            </li>
-            <li className="flex gap-3 items-start">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-2 shrink-0"></div>
-              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
-                {lang === 'EN' ? (
-                  <><span className="text-gray-900 font-semibold">Action:</span> Sarah to finalize all-hands deck by tomorrow.</>
-                ) : (
-                  <>{getTranslatedText('point2')}</>
-                )}
-              </p>
-            </li>
-            <li className="flex gap-3 items-start">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"></div>
-              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
-                {lang === 'EN' ? (
-                  <><span className="text-gray-900 font-semibold">Blocker:</span> Backend API deployment holding up engineering.</>
-                ) : (
-                  <>{getTranslatedText('point3')}</>
-                )}
-              </p>
-            </li>
-          </ul>
-        </div>
-        <div className="px-7 py-5 bg-gray-50/50 border-t border-white/40 flex items-center justify-end gap-3 shrink-0">
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-white/80 rounded-xl transition-colors border border-transparent hover:border-gray-200">
-            Copy to Clipboard
-          </button>
-          <div className="relative">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsExportOpen(!isExportOpen); setIsLangOpen(false); }}
-              className="px-4 py-2 text-sm font-medium text-white bg-violet-500 hover:bg-violet-600 rounded-xl transition-colors shadow-sm flex items-center gap-2"
+          
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/50 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 text-xs font-semibold transition-all cursor-pointer disabled:opacity-40"
             >
-              Export <ChevronDown size={16} className={`transition-transform ${isExportOpen ? 'rotate-180' : ''}`} />
+              <RegaarderAiIcon size={13} className={isGenerating ? "animate-spin" : ""} />
+              <span>{isGenerating ? (t('room.summaryGenerating') || 'Summarizing...') : (t('room.generateSummary') || 'Refresh')}</span>
             </button>
-            {isExportOpen && (
-              <div className="absolute bottom-full right-0 mb-2 w-48 bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50 p-1">
-                <button className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-600 rounded-xl transition-colors">
-                  Export to Compose
-                </button>
-                <button className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-600 rounded-xl transition-colors">
-                  Download as JSON
-                </button>
-              </div>
-            )}
+            <button 
+              onClick={onClose} 
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <X size={16} />
+            </button>
           </div>
+        </div>
+
+        {/* Body Content */}
+        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1 space-y-4 font-sans">
+          {isGenerating ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-violet-600 dark:text-violet-400">
+              <RegaarderAiIcon size={28} className="animate-spin" />
+              <p className="text-xs font-semibold">{t('room.summaryGenerating') || 'Synthesizing meeting transcript...'}</p>
+            </div>
+          ) : summaryData ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 text-xs text-slate-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                {summaryData}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 px-4">
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                <Mic size={18} />
+              </div>
+              <p className="text-xs font-medium text-slate-600 dark:text-zinc-400">
+                {t('room.noTranscriptYet') || 'Start speaking to record audio and generate live summaries.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-7 py-4 bg-slate-50/80 dark:bg-zinc-850/80 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+          <button 
+            type="button"
+            onClick={() => {
+              if (summaryData) {
+                navigator.clipboard?.writeText(summaryData);
+                showToast?.(t('room.copied') || 'Summary copied to clipboard!');
+              }
+            }}
+            disabled={!summaryData}
+            className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-700 rounded-xl transition-colors cursor-pointer disabled:opacity-40"
+          >
+            {t('room.copyAnswer') || 'Copy Summary'}
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => {
+              if (summaryData && onExportToCompose) {
+                onExportToCompose(summaryData);
+                onClose();
+              }
+            }}
+            disabled={!summaryData}
+            className="px-5 py-2 text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+          >
+            <ComposeIcon size={14} />
+            <span>{t('room.exportToCompose') || 'Export to Docs'}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -13162,13 +13161,14 @@ const DEFAULT_DECK_SLIDES = [
   const startRoomRecording = async () => {
     try {
       let captureStream = null;
-      if (screenShareStream) {
-        captureStream = screenShareStream;
-      } else if (localStream) {
-        captureStream = localStream;
-      } else {
-         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-         captureStream = stream;
+      try {
+        captureStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: true });
+      } catch (err) {
+        if (screenShareStream) {
+          captureStream = screenShareStream;
+        } else if (localStream) {
+          captureStream = localStream;
+        }
       }
       
       if (!captureStream) return;
@@ -13221,6 +13221,8 @@ const DEFAULT_DECK_SLIDES = [
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
 
   const [roomAIPrompt, setRoomAIPrompt] = useState('');
+  const [selectedRoomAiModel, setSelectedRoomAiModel] = useState('gemini-2.0-flash');
+  const [isRoomModelDropdownOpen, setIsRoomModelDropdownOpen] = useState(false);
   const [isRoomAILoading, setIsRoomAILoading] = useState(false);
   const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
 
@@ -13229,38 +13231,52 @@ const DEFAULT_DECK_SLIDES = [
     if (!roomAIPrompt.trim() || isRoomAILoading) return;
     
     setIsRoomAILoading(true);
-    const userPromptText = roomAIPrompt;
-    setRoomAIPrompt(''); // Clear input early for better perceived performance
+    const userPromptText = roomAIPrompt.trim();
+    setRoomAIPrompt('');
     
     try {
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task: 'chat',
-          userPrompt: userPromptText,
-          systemPrompt: 'You are an expert AI meeting assistant in a live virtual room. Provide concise, helpful answers (1-3 sentences) based on general meeting context. Be polite and professional.'
-        })
+      const currentChatContext = roomChatMessages?.length > 0
+        ? roomChatMessages.slice(-8).map(m => `${m.sender}: ${m.text}`).join('\n')
+        : 'No recent chat messages in this session.';
+      
+      const currentParticipantCount = (roomParticipants?.length || 0) + 1;
+      const sessionTitle = (typeof roomName !== 'undefined' && roomName) ? roomName : (t('room.productSync') || '產品同步會議');
+      
+      const systemPrompt = [
+        `You are the executive Regaarder Room AI meeting assistant for the active session: "${sessionTitle}".`,
+        `CURRENT MEETING CONTEXT:`,
+        `- Room Name: ${sessionTitle}`,
+        `- Participants: ${currentParticipantCount} active user(s)`,
+        `- Meeting Duration: ${meetingDurationLabel || 'In Progress'}`,
+        `- Recent Messages / Transcript:\n${currentChatContext}`,
+        `RULES & GUIDELINES:`,
+        `1. Answer directly, naturally, and concisely in the same language as the user's prompt (English, Traditional Chinese, etc.).`,
+        `2. If the user asks general questions or greetings (e.g. "hello", "how can you help me"), warmly explain your role (providing live summaries, tracking action items, taking meeting notes, and answering questions) without inventing or hallucinating fake meeting topics.`,
+        `3. NEVER output internal placeholders, template instructions, or brackets like [mention the meeting topic if known] or [insert topic].`,
+        `4. Always output clean, final, executive-tier text.`
+      ].join('\n\n');
+
+      const aiResult = await callGemini({
+        userPrompt: userPromptText,
+        systemPrompt,
+        customModel: selectedRoomAiModel
       });
       
-      const result = await response.json();
-      
-      if (result.ok && result.text) {
-        setRoomAIModal({
-          isOpen: true,
-          prompt: userPromptText,
-          answer: result.text.trim()
-        });
-      } else {
-        throw new Error(result.error || 'Failed to get a valid response from AI');
-      }
-    } catch (error) {
-      console.error('Room AI error:', error);
-      // Show the panel with an error response instead of just a toast
+      const answerText = typeof aiResult === 'string' 
+        ? aiResult 
+        : (aiResult?.text || aiResult?.error || (aiResult?.parsed ? JSON.stringify(aiResult.parsed) : "Analysis complete."));
+
       setRoomAIModal({
         isOpen: true,
         prompt: userPromptText,
-        answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
+        answer: answerText
+      });
+    } catch (error) {
+      console.error('Room AI error:', error);
+      setRoomAIModal({
+        isOpen: true,
+        prompt: userPromptText,
+        answer: error?.message ? `Unable to process prompt: ${error.message}` : "Unable to process prompt. Please verify that your local model (Ollama) is running or check your API key in Settings."
       });
     } finally {
       setIsRoomAILoading(false);
@@ -24056,7 +24072,21 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     const fullSystemPrompt = (systemPrompt ? `${systemPrompt}\n\n` : '') + (orbContext ? `${orbContext}\n\n` : '') + `CURRENT DATE CONTEXT: Today is ${todayDateString}. All current-event research, dates, and sports transfer updates must reflect the current year 2026.`;
 
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
-    if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
+    let localTargetModel = (customModel && composeDetectedModels?.find(m => m.id === customModel || m.name === customModel))
+      || (composeSelectedModel?.isLocal ? composeSelectedModel : null);
+
+    // Fallback: If customModel contains colon (like gemma3:1b, llama3:8b) or was found in probe, treat as Ollama
+    if (!localTargetModel && customModel && (customModel.includes(':') || customModel.startsWith('local-') || customModel.includes('gguf'))) {
+      localTargetModel = {
+        id: customModel,
+        name: customModel,
+        provider: 'Ollama',
+        endpoint: 'http://127.0.0.1:11434',
+        isLocal: true
+      };
+    }
+
+    if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
       const localTimeout = setTimeout(() => localAbortController.abort(), 35000);
       if (aiAbortControllerRef.current?.signal) {
@@ -24066,21 +24096,21 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       }
 
       try {
-        const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
-        const baseEndpoint = composeSelectedModel.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
+        const isOllama = localTargetModel.provider === 'Ollama' || localTargetModel.endpoint.includes('11434');
+        const baseEndpoint = localTargetModel.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
           ? `${baseEndpoint}/api/generate`
-          : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
+          : `${localTargetModel.endpoint.endsWith('/v1') ? localTargetModel.endpoint : localTargetModel.endpoint + '/v1'}/chat/completions`;
 
         const requestBody = isOllama
           ? {
-              model: composeSelectedModel.id,
+              model: localTargetModel.id,
               prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
               format: schema ? 'json' : undefined,
               stream: false,
             }
           : {
-              model: composeSelectedModel.id || 'default',
+              model: localTargetModel.id || 'default',
               messages: [
                 ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
                 { role: 'user', content: userPrompt }
@@ -24106,7 +24136,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: composeSelectedModel.id,
+              model: localTargetModel.id,
               messages: [
                 { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
               ],
@@ -24143,14 +24173,14 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
             return {
               text,
               parsed,
-              modelName: composeSelectedModel.name
+              modelName: localTargetModel.name
             };
           }
         } else {
           const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
           return {
-            text: `⚠️ Unable to reach local inference model (${composeSelectedModel.name}) at ${composeSelectedModel.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
-            modelName: composeSelectedModel.name
+            text: `⚠️ Unable to reach local inference model (${localTargetModel.name}) at ${localTargetModel.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            modelName: localTargetModel.name
           };
         }
       } catch (localErr) {
@@ -24158,7 +24188,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         console.warn('Local LLM call failed:', localErr);
         return {
           text: `⚠️ Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
-          modelName: composeSelectedModel.name
+          modelName: localTargetModel.name
         };
       }
     }
@@ -39662,7 +39692,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                              <span className="max-w-[120px] truncate">{composeSelectedModel.name}</span>
+                              <span className="max-w-[120px] truncate">{localTargetModel.name}</span>
                               <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                             </button>
                             <button
@@ -40429,7 +40459,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                             title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                            <span className="max-w-[130px] truncate">{composeSelectedModel.name}</span>
+                            <span className="max-w-[130px] truncate">{localTargetModel.name}</span>
                             <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                           </button>
 
@@ -40478,7 +40508,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                         key={idx}
                                         type="button"
                                         onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
-                                        className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
+                                        className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${localTargetModel.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
                                       >
                                         <div className="min-w-0 pr-1 space-y-0.5">
                                           <div className="flex items-center gap-1.5">
@@ -40489,7 +40519,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                           </div>
                                           {m.sizeGB && <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-normal">{m.sizeGB} GB active</span>}
                                         </div>
-                                        {composeSelectedModel.id === m.id && <Check size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                                        {localTargetModel.id === m.id && <Check size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />}
                                       </button>
                                     ))}
                                   </div>
@@ -40552,7 +40582,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                     key={cIdx}
                                     type="button"
                                     onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Active model: ${cM.name}`); }}
-                                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
+                                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${localTargetModel.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
                                   >
                                     <span className="font-semibold">{cM.name}</span>
                                     <span className="text-[9px] text-violet-600 dark:text-cyan-400 font-mono">{cM.provider}</span>
@@ -44294,7 +44324,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
 
       const tempAssistantId = `dm-ai-assistant-loading-${now}`;
-      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: `Thinking with ${composeSelectedModel.name}...` };
+      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: `Thinking with ${localTargetModel.name}...` };
       
       setDmAgentHistories((prev) => ({
         ...prev,
@@ -44344,15 +44374,15 @@ If requested to draw a chart or graph, append a structured action JSON block:
         let replyText = '';
 
         // Check if user selected a Local LLM (Ollama / LM Studio / llama.cpp)
-        if (composeSelectedModel.isLocal && composeSelectedModel.endpoint) {
-          const isOllama = composeSelectedModel.provider === 'Ollama' || composeSelectedModel.endpoint.includes('11434');
+        if (composeSelectedModel.isLocal && localTargetModel.endpoint) {
+          const isOllama = localTargetModel.provider === 'Ollama' || localTargetModel.endpoint.includes('11434');
           const targetUrl = isOllama
-            ? `${composeSelectedModel.endpoint.replace(/\/v1$/, '')}/api/chat`
-            : `${composeSelectedModel.endpoint.endsWith('/v1') ? composeSelectedModel.endpoint : composeSelectedModel.endpoint + '/v1'}/chat/completions`;
+            ? `${localTargetModel.endpoint.replace(/\/v1$/, '')}/api/chat`
+            : `${localTargetModel.endpoint.endsWith('/v1') ? localTargetModel.endpoint : localTargetModel.endpoint + '/v1'}/chat/completions`;
 
           const requestBody = isOllama
             ? {
-                model: composeSelectedModel.id,
+                model: localTargetModel.id,
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
@@ -44360,7 +44390,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 stream: false
               }
             : {
-                model: composeSelectedModel.id || 'default',
+                model: localTargetModel.id || 'default',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
@@ -44414,12 +44444,12 @@ If requested to draw a chart or graph, append a structured action JSON block:
           const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
           return {
             ...prev,
-            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: composeSelectedModel.name }]
+            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: localTargetModel.name }]
           };
         });
 
         addWorkspaceMemory(
-          `Orb (${composeSelectedModel.name}) processed: "${text.substring(0, 30)}..."`,
+          `Orb (${localTargetModel.name}) processed: "${text.substring(0, 30)}..."`,
           routedAgent !== 'Orb (AI Assistant)' ? `Orb ??${routedAgent.split(' ')[0]}` : 'Orb Assistant',
           ["AI Chat"]
         );
@@ -45090,7 +45120,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                         title="Select Local Ollama, LM Studio, or Cloud AI Engine"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>{composeSelectedModel.name}</span>
+                        <span>{localTargetModel.name}</span>
                         <ChevronDown size={10} className="text-violet-600" />
                       </button>
 
@@ -45118,7 +45148,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                                   key={idx}
                                   type="button"
                                   onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
-                                  className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
+                                  className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${localTargetModel.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
                                 >
                                   <span className="truncate">{m.name}</span>
                                   <span className="text-[9px] text-emerald-400/80 font-mono">{m.provider}</span>
@@ -45139,7 +45169,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                                 key={cIdx}
                                 type="button"
                                 onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
-                                className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
+                                className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${localTargetModel.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
                               >
                                 <span>{cM.name}</span>
                                 <span className="text-[9px] text-cyan-400/80 font-mono">{cM.provider}</span>
@@ -46945,11 +46975,32 @@ const renderRoomTopHeader = () => (
           <Shield size={16} />
         </button>
 
-        {/* Recording pill */}
-        <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm ${isRoomRecording ? 'border-violet-100/50 bg-violet-50/10 dark:border-violet-900/50 dark:bg-violet-950/20' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'}`}>
-          {isRoomRecording ? <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600"></span>}
-          <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 tracking-wide pr-1">{t('room.recording') || 'Recording'}</span>
-        </div>
+        {/* Interactive Meeting / Screen Recording Button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (isRoomRecording) {
+              stopRoomRecording();
+            } else {
+              startRoomRecording();
+            }
+          }}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-xs active:scale-95 ${
+            isRoomRecording 
+              ? 'border-red-200 dark:border-red-900/60 bg-red-50/80 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-semibold' 
+              : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium'
+          }`}
+          title={isRoomRecording ? "Stop screen recording" : "Record screen & audio"}
+        >
+          {isRoomRecording ? (
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-500" />
+          )}
+          <span className="text-xs tracking-wide">
+            {isRoomRecording ? (t('room.recording') || 'Recording') : (t('room.record') || 'Record')}
+          </span>
+        </button>
 
         <button 
           onClick={() => {
@@ -70947,6 +70998,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           <RoomLandingPage 
             showToast={showToast}
+            onCallAi={callGemini}
             onSwitchProductMode={(mode) => {
               setProductMode(mode);
               if (mode !== 'room' && mode !== 'room-landing') {
@@ -71955,7 +72007,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Selection AI</span>
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
-                  {composeSelectedModel.name}
+                  {localTargetModel.name}
                 </span>
               </div>
 
@@ -76799,7 +76851,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 title="Select AI Model"
                               >
                                 <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                                <span className="max-w-[70px] truncate">{composeSelectedModel.name}</span>
+                                <span className="max-w-[70px] truncate">{localTargetModel.name}</span>
                                 <ChevronDown size={8} className="text-slate-400 shrink-0" />
                               </button>
                             </div>
@@ -79854,7 +79906,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                      <span className="max-w-[110px] truncate">{composeSelectedModel.name}</span>
+                      <span className="max-w-[110px] truncate">{localTargetModel.name}</span>
                       <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                     </button>
                     {activeAgentTag && (
@@ -80619,44 +80671,226 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
 
-                      {/* Ask AI Bar */}
-                      <form onSubmit={handleRoomAISubmit} className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px] relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
-                        {roomAIModal.isOpen && (
-                          <>
-                            <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto z-[50]">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
+                      {/* Ask AI Bar with Model Selector Dropdown & Regaarder Signature Icon */}
+                      <div className="flex items-center gap-2.5 w-full min-w-[560px] max-w-[620px] relative">
+                        {/* LLM Model Selection Dropdown */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsRoomModelDropdownOpen(!isRoomModelDropdownOpen)}
+                            className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/80 dark:border-zinc-800 shadow-md hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
+                          >
+                            <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                            <span className="truncate max-w-[90px] text-[11.5px]">
+                              {selectedRoomAiModel === 'gemini-2.0-flash' ? 'Gemini 2.0' : selectedRoomAiModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : selectedRoomAiModel === 'claude-3-5-sonnet-20241022' ? 'Claude 3.5' : selectedRoomAiModel === 'gpt-4o' ? 'GPT-4o' : selectedRoomAiModel === 'deepseek-chat' ? 'DeepSeek V3' : selectedRoomAiModel}
+                            </span>
+                            <ChevronDown size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                          </button>
+
+                          {/* Model Dropdown Menu */}
+                          {isRoomModelDropdownOpen && (
+                            <div 
+                              className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150 text-left font-sans pointer-events-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1.5">
+                                {t('room.selectModel') || 'Select AI Model'}
+                              </div>
+                              {/* Local Models Section */}
+                              {composeDetectedModels && composeDetectedModels.length > 0 && (
+                                <div className="mb-2">
+                                  <div className="flex items-center justify-between px-2.5 py-1">
+                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      {t('room.localModels') || 'Local Models'} ({composeDetectedModels.length})
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); scanComposeLocalModels(); }}
+                                      className="text-[10px] text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
+                                    >
+                                      ⟳
+                                    </button>
+                                  </div>
+                                  {composeDetectedModels.map((localM) => {
+                                    const isSel = selectedRoomAiModel === localM.id;
+                                    return (
+                                      <button
+                                        key={localM.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedRoomAiModel(localM.id);
+                                          updateSelectedModelGlobally(localM);
+                                          setIsRoomModelDropdownOpen(false);
+                                          showToast?.(`Local Model: ${localM.name}`);
+                                        }}
+                                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
+                                          isSel 
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold' 
+                                            : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="w-5 h-5 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                            <RegaarderAiIcon size={12} />
+                                          </div>
+                                          <div className="min-w-0">
+                                            <div className="text-xs font-bold truncate leading-tight">{localM.name}</div>
+                                            <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{localM.provider || 'Local LLM'} {localM.sizeGB ? `(${localM.sizeGB} GB)` : ''}</div>
+                                          </div>
+                                        </div>
+                                        {isSel && (
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                  <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-1.5" />
+                                </div>
+                              )}
+
+                              {/* Cloud Models Header */}
+                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
+                                {t('room.cloudModels') || 'Cloud Models'}
+                              </div>
+
+                              {[
+                                { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Google AI' },
+                                { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google AI' },
+                                { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+                                { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
+                                { id: 'deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek' }
+                              ].map((m) => {
+                                const isSel = selectedRoomAiModel === m.id;
+                                return (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedRoomAiModel(m.id);
+                                      setIsRoomModelDropdownOpen(false);
+                                      showToast?.(`Model set to ${m.name}`);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
+                                      isSel 
+                                        ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold' 
+                                        : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-5 h-5 rounded-lg bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                                        <RegaarderAiIcon size={12} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold truncate leading-tight">{m.name}</div>
+                                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{m.provider}</div>
+                                      </div>
+                                    </div>
+                                    {isSel && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-violet-600 shrink-0" />
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
-                            <p className="text-[15px] text-slate-700 font-medium">{roomAIModal.prompt}</p>
-                            <div className="h-[1px] w-full bg-slate-100 my-1"></div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Sparkles size={14} className="text-violet-500" />
-                              <span className="text-[13px] font-medium text-slate-500">Room AI</span>
-                            </div>
-                            <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
-                          </div>
-                          </>
-                        )}
-                        <RegaarderAiIcon size={18} className="text-violet-400 shrink-0" />
-                        <input 
-                          type="text"
-                          value={roomAIPrompt}
-                          onChange={(e) => setRoomAIPrompt(e.target.value)}
-                          placeholder={t('room.askRoomAi') || 'Ask Room AI...'}
-                          className="text-[14px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent border-none ring-0 focus:ring-0 p-0 m-0 outline-none placeholder:text-slate-400 pointer-events-auto"
-                        />
-                        <button 
-                          type="submit" 
-                          disabled={!roomAIPrompt.trim() || isRoomAILoading}
-                          className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-500 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-all border border-violet-100/50 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto active:scale-95"
-                        >
-                          {isRoomAILoading ? (
-                            <Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
-                          ) : (
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                           )}
-                        </button>
-                      </form>
+                        </div>
+
+                        {/* Input form */}
+                        <form onSubmit={handleRoomAISubmit} className="flex-1 flex items-center gap-3 bg-white/90 backdrop-blur-2xl rounded-[32px] px-6 py-3.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
+                          {roomAIModal.isOpen && (
+                            <div 
+                              className="absolute bottom-[calc(100%+14px)] left-0 right-0 z-[100] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_24px_80px_rgba(0,0,0,0.18)] rounded-[32px] p-6 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text" 
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center justify-between gap-3 mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
+                                      <RegaarderAiIcon size={20} />
+                                    </div>
+                                    <div>
+                                      <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                                        {t('room.aiIntelligence') || 'Room AI Intelligence'}
+                                      </h3>
+                                      <p className="text-[11px] text-violet-600 dark:text-violet-400 font-semibold flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                        {t('room.sessionAnalysis') || 'Live Meeting Analysis'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRoomAIModal({ isOpen: false, prompt: '', answer: '' })}
+                                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+
+                                {roomAIModal.prompt && (
+                                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-700/80 mb-3 text-xs text-slate-700 dark:text-zinc-300 font-medium">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block mb-1">{t('room.yourQuestion') || 'Your Question'}</span>
+                                    "{roomAIModal.prompt}"
+                                  </div>
+                                )}
+
+                                <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 mb-4 min-h-[100px] max-h-[260px] overflow-y-auto thin-scrollbar">
+                                  {isRoomAILoading ? (
+                                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-violet-600 dark:text-violet-400">
+                                      <RegaarderAiIcon size={20} className="animate-spin" />
+                                      <span className="text-xs font-semibold">{t('room.aiAnalyzing') || 'Analyzing meeting context...'}</span>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-slate-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                                      {roomAIModal.answer}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (roomAIModal.answer) {
+                                        navigator.clipboard?.writeText(roomAIModal.answer);
+                                        showToast?.(t('room.copied') || 'AI response copied to clipboard!');
+                                      }
+                                    }}
+                                    disabled={isRoomAILoading || !roomAIModal.answer}
+                                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40"
+                                  >
+                                    {t('room.copyAnswer') || 'Copy Answer'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRoomAIModal({ isOpen: false, prompt: '', answer: '' })}
+                                    className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                                  >
+                                    {t('room.done') || 'Done'}
+                                  </button>
+                                </div>
+                            </div>
+                          )}
+                          <input 
+                            type="text"
+                            value={roomAIPrompt}
+                            onChange={(e) => setRoomAIPrompt(e.target.value)}
+                            placeholder={t('room.askRoomAi') || 'Ask Room AI...'}
+                            className="text-[13px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent border-none ring-0 focus:ring-0 p-0 m-0 outline-none placeholder:text-slate-400 pointer-events-auto"
+                          />
+                          <button 
+                            type="submit" 
+                            disabled={!roomAIPrompt.trim() || isRoomAILoading}
+                            className="w-8 h-8 rounded-full bg-violet-50/80 text-violet-500 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-all border border-violet-100/50 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto active:scale-95 cursor-pointer"
+                          >
+                            {isRoomAILoading ? (
+                              <RegaarderAiIcon size={14} className="animate-spin" />
+                            ) : (
+                              <Send size={12} />
+                            )}
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   </DraggablePanel>
                 )}
@@ -83699,7 +83933,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderAuthModal()}
 
       <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
-      <SummaryModal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} />
+      <SummaryModal 
+        isOpen={isSummaryModalOpen} 
+        onClose={() => setIsSummaryModalOpen(false)}
+        liveTranscript={roomChatMessages || []}
+        showToast={showToast}
+        onGenerateAiSummary={async () => {
+          const transcriptText = roomChatMessages?.length > 0 
+            ? roomChatMessages.map(m => `${m.sender}: ${m.text}`).join('\n')
+            : 'Meeting started. Discussed project architecture, sprint timelines, and resource allocation.';
+          
+          const result = await callGemini({
+            userPrompt: `Here is the live transcript of the meeting:\n\n${transcriptText}\n\nPlease generate a concise, executive meeting summary formatted with: 1) Key Takeaways, 2) Decisions Made, 3) Action Items.`,
+            systemPrompt: 'You are an executive meeting assistant summarizing live spoken dialogue in real-time.',
+            customModel: selectedRoomAiModel
+          });
+
+          return typeof result === 'string' ? result : (result?.text || 'Summary generated.');
+        }}
+        onExportToCompose={(summaryContent) => {
+          createComposeExperience({
+            initialTitle: `Meeting Summary - ${(typeof roomName !== 'undefined' && roomName) ? roomName : 'Product Sync'}`,
+            initialContent: `<h1>Meeting Summary: ${(typeof roomName !== 'undefined' && roomName) ? roomName : 'Product Sync'}</h1><p><em>Generated on ${new Date().toLocaleDateString()}</em></p><hr/><p>${summaryContent.replace(/\n/g, '<br/>')}</p>`
+          });
+          showToast('Exported meeting summary to Docs');
+        }}
+      />
       <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} setInvites={setInvites} />
       <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
       <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} />
