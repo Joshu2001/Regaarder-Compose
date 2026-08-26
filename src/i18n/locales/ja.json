@@ -50,7 +50,10 @@
     "searchFont": "フォントを検索",
     "pinned": "固定済み",
     "apply": "適用",
-    "ai": "AI"
+    "ai": "AI",
+    "copyText": "テキストをコピー",
+    "copyStyle": "スタイルをコピー",
+    "deleteBlock": "ブロックを削除"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -941,7 +944,7 @@
     "insert": "挿入",
     "allSaved": "すべての変更が保存されました",
     "newPresentation": "新規プレゼンテーション",
-    "newPresentationSubtitle": "クリックしてプレゼンテーションの作成を開始します。",
+    "newPresentationSubtitle": "クリックしてプレゼンテーションの作成を開始してください。",
     "slidesCount": "スライド",
     "slideCountLabel": "{{count}} スライド",
     "createNewDeck": "新規スライドを作成",
@@ -1046,7 +1049,29 @@
     "tmplFinancialProjections": "財務予測",
     "tmplMarketingRoadmap": "マーケティング計画",
     "tmplCompanyOverview": "企業概要",
-    "resetZoom": "リセット"
+    "resetZoom": "リセット",
+    "vectorMesh": "ベクターメッシュ",
+    "glow": "グロー",
+    "glowUltraRadiant": "ウルトララディアント",
+    "glowNeonBloom": "ネオンブルーム",
+    "glowElectricHigh": "エレクトリックハイ",
+    "glowSoftAmbient": "ソフトアンビエント",
+    "glowSaturationIntensity": "グロー彩度と強度",
+    "primaryBeam": "メインビーム",
+    "primaryBeamColor": "メインビーム色",
+    "secondaryBeam": "サブビーム",
+    "secondaryBeamColor": "サブビーム色",
+    "customSpectrumRange": "カスタムスペクトラム：",
+    "spectrumPicker": "スペクトラムピッカー",
+    "resetBounds": "境界をリセット",
+    "deleteMesh": "メッシュを削除",
+    "stylesCountLabel": "スタイル",
+    "assetsCountLabel": "アセット",
+    "descInsertPhoto": "写真やグラフィックを挿入",
+    "descPlaceEmblem": "高解像度企業ロゴを配置",
+    "descAutoConvertSvg": "画像を鮮明なSVGに自動変換",
+    "descAddMonogram": "モノグラムバッジを追加",
+    "defaultCompany": "Novaris Company"
   },
   "whiteboard": {
     "untitledWhiteboard": "無題のホワイトボード",
@@ -1164,7 +1189,8 @@
       "lasso": "破線なげなわ",
       "marker": "マーカー",
       "highlighter": "蛍光ペン",
-      "calligraphy": "カリグラフィーペン"
+      "calligraphy": "カリグラフィーペン",
+      "felt-pen": "フェルトペン"
     },
     "penSelected": "{{name}} を選択しました",
     "penToolActive": "ペンツールが有効です",
@@ -1187,7 +1213,10 @@
     "nothingToUndo": "元に戻す操作はありません",
     "nothingToRedo": "やり直す操作はありません",
     "connectedNoteAdded": "接続されたノートを追加しました",
-    "notReadyForExport": "ホワイトボードはまだエクスポートの準備ができていません"
+    "notReadyForExport": "ホワイトボードはまだエクスポートの準備ができていません",
+    "copyText": "テキストをコピー",
+    "copyStyle": "スタイルをコピー",
+    "deleteBlock": "ブロックを削除"
   },
   "analytics": {
     "title": "ビジネス意思決定インテリジェンス",
