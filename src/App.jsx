@@ -14509,8 +14509,11 @@ const ALL_DECK_ANIMATION_OPTIONS = [
   {
     id: 'whip-slide',
     label: 'Whip Slide (Fast In)',
+    labelKey: 'deck.animWhipSlide',
     tag: 'High Velocity',
+    tagKey: 'deck.tagHighVelocity',
     desc: 'Snappy horizontal entrance with momentum ease-out',
+    descKey: 'deck.descWhipSlide',
     icon: Zap,
     c1: '#7C4DFF',
     c2: '#3B82F6'
@@ -14518,8 +14521,11 @@ const ALL_DECK_ANIMATION_OPTIONS = [
   {
     id: 'zoom-glow',
     label: 'Zoom & Glow Entrance',
+    labelKey: 'deck.animZoomGlow',
     tag: 'Radiant Hero',
+    tagKey: 'deck.tagRadiantHero',
     desc: 'Expands from depth with luminous aura bloom',
+    descKey: 'deck.descZoomGlow',
     icon: Maximize2,
     c1: '#00f0ff',
     c2: '#7C4DFF'
@@ -14527,8 +14533,11 @@ const ALL_DECK_ANIMATION_OPTIONS = [
   {
     id: 'shake-vibrate',
     label: 'Shake & Vibrate',
+    labelKey: 'deck.animShake',
     tag: 'Kinetic Pulse',
+    tagKey: 'deck.tagKineticPulse',
     desc: 'High-impact micro-vibration tension pulse',
+    descKey: 'deck.descShakeVibrate',
     icon: Activity,
     c1: '#F43F5E',
     c2: '#F59E0B'
@@ -14536,8 +14545,11 @@ const ALL_DECK_ANIMATION_OPTIONS = [
   {
     id: 'smooth-float',
     label: 'Smooth Float Ambient Loop',
+    labelKey: 'deck.animSmoothFloat',
     tag: 'Floating Loop',
+    tagKey: 'deck.tagFloatingLoop',
     desc: 'Weightless continuous vertical levitation',
+    descKey: 'deck.descSmoothFloat',
     icon: Sparkles,
     c1: '#10B981',
     c2: '#06B6D4'
@@ -14545,8 +14557,11 @@ const ALL_DECK_ANIMATION_OPTIONS = [
   {
     id: 'stagger-reveal',
     label: 'Stagger Text Reveal',
+    labelKey: 'deck.animStagger',
     tag: 'Sequential',
+    tagKey: 'deck.tagSequential',
     desc: 'Cascade lines into place with rhythmic cadence',
+    descKey: 'deck.descStaggerReveal',
     icon: MoveHorizontal,
     c1: '#A855F7',
     c2: '#EC4899'
@@ -14554,8 +14569,11 @@ const ALL_DECK_ANIMATION_OPTIONS = [
   {
     id: 'cinematic-dissolve',
     label: 'Cinematic Dissolve & Rise',
+    labelKey: 'deck.animDissolve',
     tag: 'Subtle Elegance',
+    tagKey: 'deck.tagSubtleElegance',
     desc: 'Soft atmospheric rise with blur fade-in',
+    descKey: 'deck.descCinematicDissolve',
     icon: Film,
     c1: '#6366F1',
     c2: '#D946EF'
@@ -14563,20 +14581,20 @@ const ALL_DECK_ANIMATION_OPTIONS = [
 ];
 
 const ALL_DECK_BACKGROUND_OPTIONS = [
-    { label: 'Deep Cyber Glow (#05070B)', value: '#05070B', category: 'Executive Dark', isDark: true },
-    { label: 'Midnight Obsidian (#0A0A0C)', value: '#0A0A0C', category: 'Executive Dark', isDark: true },
-    { label: 'Deep Navy Space (#030712)', value: '#030712', category: 'Executive Dark', isDark: true },
-    { label: 'Executive Slate (#0F172A)', value: '#0F172A', category: 'Executive Dark', isDark: true },
-    { label: 'Cyber Teal Night (#02161A)', value: '#02161A', category: 'Executive Dark', isDark: true },
-    { label: 'Aurora Violet Dark (#0A081E)', value: '#0A081E', category: 'Executive Dark', isDark: true },
-    { label: 'Pure OLED Black (#000000)', value: '#000000', category: 'Executive Dark', isDark: true },
-    { label: 'Cobalt Cyber Glow Radial', value: 'radial-gradient(circle at 80% 20%, #1e1b4b 0%, #05070b 70%)', category: 'Mesh Gradients', isDark: true },
-    { label: 'Emerald Deep Tech Radial', value: 'radial-gradient(circle at 20% 80%, #064e3b 0%, #020617 70%)', category: 'Mesh Gradients', isDark: true },
-    { label: 'Sunset Horizon Dark Mesh', value: 'linear-gradient(135deg, #180828 0%, #070714 60%, #000000 100%)', category: 'Mesh Gradients', isDark: true },
-    { label: 'Clean Studio White (#FFFFFF)', value: '#FFFFFF', category: 'Studio Light', isDark: false },
-    { label: 'Soft Porcelain (#F8FAFC)', value: '#F8FAFC', category: 'Studio Light', isDark: false },
-    { label: 'Light Titanium Grey (#F1F5F9)', value: '#F1F5F9', category: 'Studio Light', isDark: false },
-    { label: 'Warm Pearl Ivory (#FAFAF9)', value: '#FAFAF9', category: 'Studio Light', isDark: false }
+    { label: 'Deep Cyber Glow (#05070B)', labelKey: 'deck.bgCyberGlow', value: '#05070B', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Midnight Obsidian (#0A0A0C)', labelKey: 'deck.bgMidnightObsidian', value: '#0A0A0C', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Deep Navy Space (#030712)', labelKey: 'deck.bgDeepNavy', value: '#030712', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Executive Slate (#0F172A)', labelKey: 'deck.bgExecutiveSlate', value: '#0F172A', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Cyber Teal Night (#02161A)', labelKey: 'deck.bgCyberTeal', value: '#02161A', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Aurora Violet Dark (#0A081E)', labelKey: 'deck.bgAuroraViolet', value: '#0A081E', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Pure OLED Black (#000000)', labelKey: 'deck.bgPureOled', value: '#000000', category: 'Executive Dark', catKey: 'deck.catExecutiveDark', isDark: true },
+    { label: 'Cobalt Cyber Glow Radial', labelKey: 'deck.bgCobaltRadial', value: 'radial-gradient(circle at 80% 20%, #1e1b4b 0%, #05070b 70%)', category: 'Mesh Gradients', catKey: 'deck.catMeshGradients', isDark: true },
+    { label: 'Emerald Deep Tech Radial', labelKey: 'deck.bgEmeraldRadial', value: 'radial-gradient(circle at 20% 80%, #064e3b 0%, #020617 70%)', category: 'Mesh Gradients', catKey: 'deck.catMeshGradients', isDark: true },
+    { label: 'Sunset Horizon Dark Mesh', labelKey: 'deck.bgSunsetMesh', value: 'linear-gradient(135deg, #180828 0%, #070714 60%, #000000 100%)', category: 'Mesh Gradients', catKey: 'deck.catMeshGradients', isDark: true },
+    { label: 'Clean Studio White (#FFFFFF)', labelKey: 'deck.bgCleanWhite', value: '#FFFFFF', category: 'Studio Light', catKey: 'deck.catStudioLight', isDark: false },
+    { label: 'Soft Porcelain (#F8FAFC)', labelKey: 'deck.bgSoftPorcelain', value: '#F8FAFC', category: 'Studio Light', catKey: 'deck.catStudioLight', isDark: false },
+    { label: 'Light Titanium Grey (#F1F5F9)', labelKey: 'deck.bgTitaniumGrey', value: '#F1F5F9', category: 'Studio Light', catKey: 'deck.catStudioLight', isDark: false },
+    { label: 'Warm Pearl Ivory (#FAFAF9)', labelKey: 'deck.bgPearlIvory', value: '#FAFAF9', category: 'Studio Light', catKey: 'deck.catStudioLight', isDark: false }
   ];
 
 
@@ -48524,7 +48542,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {/* Bottom Sidebar Action */}
                       <div className="p-3 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
-                          {isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}
+                          {isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? (t('sheets.sheetsCount') || 'sheets') : (t('deck.slidesCount') || 'slides')}
                         </div>
                           <button type="button" className="p-1 rounded-md bg-white shadow-sm text-slate-700 hover:text-gray-900" title="Grid view">
                             <LayoutGrid size={13} />
@@ -52969,7 +52987,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
-                                                          {ALL_DECK_ANIMATION_OPTIONS.filter(a => (deckAnimationFilter === 'All' || (deckAnimationFilter === 'Entrances' && (a.id.includes('whip') || a.id.includes('zoom') || a.id.includes('dissolve'))) || (deckAnimationFilter === 'Loops' && a.id.includes('float')) || (deckAnimationFilter === 'Kinetic' && (a.id.includes('shake') || a.id.includes('stagger')))) && (!deckAnimationSearch || a.label.toLowerCase().includes(deckAnimationSearch.toLowerCase()) || a.desc.toLowerCase().includes(deckAnimationSearch.toLowerCase()))).length} PRESETS
+                                                          {ALL_DECK_ANIMATION_OPTIONS.filter(a => (deckAnimationFilter === 'All' || (deckAnimationFilter === 'Entrances' && (a.id.includes('whip') || a.id.includes('zoom') || a.id.includes('dissolve'))) || (deckAnimationFilter === 'Loops' && a.id.includes('float')) || (deckAnimationFilter === 'Kinetic' && (a.id.includes('shake') || a.id.includes('stagger')))) && (!deckAnimationSearch || a.label.toLowerCase().includes(deckAnimationSearch.toLowerCase()) || a.desc.toLowerCase().includes(deckAnimationSearch.toLowerCase()))).length} {t('deck.presets') || 'PRESETS'}
                                                         </span>
                                                       </div>
 
@@ -53050,7 +53068,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               >
                                                                 <div className="flex items-center justify-between w-full z-10">
                                                                   <span className="text-[6.5px] font-semibold text-slate-400 uppercase tracking-wider">
-                                                                    {animOpt.tag}
+                                                                    {animOpt.tagKey ? (t(animOpt.tagKey) || animOpt.tag) : animOpt.tag}
                                                                   </span>
                                                                   {isCurrent && (
                                                                     <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-xs shrink-0">
@@ -53120,17 +53138,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 </div>
 
                                                                 <div className="flex items-center justify-between w-full z-10 text-[5.5px] text-slate-500">
-                                                                  <span>Keynote Physics</span>
-                                                                  <span className="text-cyan-400/80">Live</span>
+                                                                  <span>{t('deck.keynotePhysics') || 'Keynote Physics'}</span>
+                                                                  <span className="text-cyan-400/80">{t('deck.live') || 'Live'}</span>
                                                                 </div>
                                                               </div>
 
                                                               <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
                                                                 <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'}`}>
-                                                                  {animOpt.label}
+                                                                  {animOpt.labelKey ? (t(animOpt.labelKey) || animOpt.label) : animOpt.label}
                                                                 </span>
                                                                 <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 line-clamp-1">
-                                                                  {animOpt.desc}
+                                                                  {animOpt.descKey ? (t(animOpt.descKey) || animOpt.desc) : animOpt.desc}
                                                                 </span>
                                                               </div>
                                                             </button>
@@ -53151,7 +53169,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
-                                                          {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))).length} STYLES
+                                                          {ALL_INDUSTRY_VECTOR_STYLES.filter((s) => (deckVectorFilter === 'All' || s.category === deckVectorFilter) && (!vectorWaveSearch || s.label.toLowerCase().includes(vectorWaveSearch.toLowerCase()) || s.desc.toLowerCase().includes(vectorWaveSearch.toLowerCase()))).length} {t('deck.stylesCountLabel') || 'STYLES'}
                                                         </span>
                                                       </div>
 
@@ -53195,7 +53213,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
-                                                              {cat === 'Deep-Tech & Systems' ? 'Deep-Tech' : cat === 'Sports & Athletics' ? 'Sports' : cat === 'Faith & Spiritual' ? 'Faith' : cat}
+                                                              {catLabel}
                                                             </button>
                                                           );
                                                         })}
@@ -53232,7 +53250,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               >
                                                                 <div className="flex items-center justify-between w-full z-10">
                                                                   <span className="text-[6.5px] font-semibold text-slate-400 truncate tracking-wide">
-                                                                    {styleObj.category}
+                                                                    {styleObj.category === 'Startup Specials' ? (t('deck.catStartup') || 'Startup Specials') : styleObj.category === '3D Shapes' ? (t('deck.cat3DShapes') || '3D Shapes') : styleObj.category === 'Featured Waves' ? (t('deck.catFeaturedWaves') || 'Featured Waves') : styleObj.category === 'Deep-Tech & Systems' ? (t('deck.catDeepTech') || 'Deep-Tech') : styleObj.category === 'Sports & Athletics' ? (t('deck.catSports') || 'Sports') : styleObj.category === 'Faith & Spiritual' ? (t('deck.catFaith') || 'Faith') : styleObj.category}
                                                                   </span>
                                                                   {isCurrent && (
                                                                     <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-xs shrink-0">
@@ -53250,16 +53268,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                     <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c1 }} />
                                                                     <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: styleObj.c2 }} />
                                                                   </div>
-                                                                  <span className="text-[6.5px] font-mono text-slate-400">3D Mesh</span>
+                                                                  <span className="text-[6.5px] font-mono text-slate-400">{t('deck.3dMesh') || '3D Mesh'}</span>
                                                                 </div>
                                                               </div>
 
                                                               <div className="mt-1.5 px-0.5 flex flex-col gap-0.5 w-full">
                                                                 <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'}`}>
-                                                                  {styleObj.label}
+                                                                  {t('deck.vStyle_' + styleObj.id + '_label') || styleObj.label}
                                                                 </span>
                                                                 <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 line-clamp-1">
-                                                                  {styleObj.desc}
+                                                                  {t('deck.vStyle_' + styleObj.id + '_desc') || styleObj.desc}
                                                                 </span>
                                                               </div>
                                                             </button>
@@ -53279,7 +53297,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
-                                                          {ALL_DECK_BACKGROUND_OPTIONS.filter(b => (deckBgFilter === 'All' || b.category.toLowerCase().includes(deckBgFilter.toLowerCase())) && (!deckBgSearch || b.label.toLowerCase().includes(deckBgSearch.toLowerCase()) || b.value.toLowerCase().includes(deckBgSearch.toLowerCase()))).length} THEMES
+                                                          {ALL_DECK_BACKGROUND_OPTIONS.filter(b => (deckBgFilter === 'All' || b.category.toLowerCase().includes(deckBgFilter.toLowerCase())) && (!deckBgSearch || b.label.toLowerCase().includes(deckBgSearch.toLowerCase()) || b.value.toLowerCase().includes(deckBgSearch.toLowerCase()))).length} {t('deck.themesCountLabel') || 'THEMES'}
                                                         </span>
                                                       </div>
 
@@ -53308,6 +53326,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Dark', 'Gradient', 'Neon', 'Slate'].map((cat) => {
                                                           const isTabActive = deckBgFilter === cat;
+                                                          const catLabel = cat === 'All' ? (t('common.all') || 'All') : cat === 'Dark' ? (t('deck.bgDark') || 'Dark') : cat === 'Gradient' ? (t('deck.bgGradient') || 'Gradient') : cat === 'Neon' ? (t('deck.bgNeon') || 'Neon') : (t('deck.bgSlate') || 'Slate');
                                                           return (
                                                             <button
                                                               key={cat}
@@ -53322,7 +53341,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
-                                                              {cat}
+                                                              {catLabel}
                                                             </button>
                                                           );
                                                         })}
@@ -53366,7 +53385,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               >
                                                                 <div className="flex items-center justify-between w-full z-10">
                                                                   <span className={`text-[6.5px] font-medium tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                                    {bgOpt.category}
+                                                                    {bgOpt.catKey ? (t(bgOpt.catKey) || bgOpt.category) : bgOpt.category}
                                                                   </span>
                                                                   {isCurrent && (
                                                                     <span className="w-3.5 h-3.5 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-xs shrink-0">
@@ -53399,7 +53418,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                               <div className="mt-1.5 px-0.5 flex items-center justify-between gap-1 w-full">
                                                                 <span className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white'}`}>
-                                                                  {bgOpt.label.replace(/\s*\([^)]*\)/, '')}
+                                                                  {bgOpt.labelKey ? (t(bgOpt.labelKey) || bgOpt.label.replace(/\s*\([^)]*\)/, '')) : bgOpt.label.replace(/\s*\([^)]*\)/, '')}
                                                                 </span>
                                                                 <span className="text-[9px] font-mono text-slate-500 dark:text-zinc-400 shrink-0">
                                                                   {bgOpt.value.startsWith('#') ? bgOpt.value : 'Grad'}
@@ -53419,11 +53438,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div className="flex items-center gap-1.5">
                                                           <RegaarderStylesIcon size={13} className="text-slate-700 dark:text-zinc-300" />
                                                           <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
-                                                            STYLE PRESETS
+                                                            {t('deck.stylePresetsHeader') || 'STYLE PRESETS'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
-                                                          {btn.menuItems.filter(item => !deckStyleSearch || item.toLowerCase().includes(deckStyleSearch.toLowerCase())).length} PRESETS
+                                                          {btn.menuItems.filter(item => !deckStyleSearch || item.toLowerCase().includes(deckStyleSearch.toLowerCase())).length} {t('deck.presets') || 'PRESETS'}
                                                         </span>
                                                       </div>
 
@@ -53462,6 +53481,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           const styleBg = isCyber ? '#05070B' : isAurora ? '#0A081E' : isMidnight ? '#0F172A' : isElectric ? '#030D1B' : '#000000';
                                                           const waveColor1 = isCyber ? '#00f0ff' : isAurora ? '#a855f7' : isMidnight ? '#38bdf8' : isElectric ? '#00f0ff' : '#94a3b8';
                                                           const waveColor2 = isCyber ? '#7c4dff' : isAurora ? '#ec4899' : isMidnight ? '#1e293b' : isElectric ? '#3b82f6' : '#475569';
+                                                          const styleDisplayLabel = isCyber ? (t('deck.styleCyberGlow') || 'Deep Cyber Glow') : isAurora ? (t('deck.styleAuroraWave') || 'Aurora Gradient Wave') : isMidnight ? (t('deck.styleMidnightSlate') || 'Midnight Slate Clean') : isElectric ? (t('deck.styleNeonCyan') || 'Neon Electric Cyan') : (t('deck.styleMinimalistDark') || 'Minimalist Mono Dark');
 
                                                           return (
                                                             <button
@@ -53480,12 +53500,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               >
                                                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: waveColor1 }} />
                                                                 <div className="text-[8px] font-bold text-white uppercase tracking-tight">
-                                                                  {item.split('(')[0].trim()}
+                                                                  {styleDisplayLabel}
                                                                 </div>
                                                                 <div className="w-full h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, ${waveColor1}, ${waveColor2})` }} />
                                                               </div>
                                                               <span className="mt-1 text-[10.5px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
-                                                                {item.split('(')[0].trim()}
+                                                                {styleDisplayLabel}
                                                               </span>
                                                             </button>
                                                           );
@@ -53532,10 +53552,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                     <div className="p-1.5 space-y-1 bg-white dark:bg-[#13151b]">
                                                       {[
-                                                        { label: 'Upload Picture / Image', icon: ImageIcon, badge: 'JPG / PNG', desc: 'Insert photography or graphic asset' },
-                                                        { label: 'Upload Brand Logo', icon: Award, badge: 'SVG / PNG', desc: 'Place high-res company emblem' },
-                                                        { label: 'Convert PNG/JPG to Vector (SVG)', icon: Wand2, badge: 'AI Tracing', desc: 'Auto-convert raster images to crisp SVG' },
-                                                        { label: 'Preset Monogram Logo', icon: Layers, badge: 'Vector', desc: 'Add sleek executive monogram badge' }
+                                                        { label: 'Upload Picture / Image', labelKey: 'deck.uploadPicture', icon: ImageIcon, badge: 'JPG / PNG', desc: 'Insert photography or graphic asset', descKey: 'deck.descInsertPhoto' },
+                                                        { label: 'Upload Brand Logo', labelKey: 'deck.uploadBrandLogo', icon: Award, badge: 'SVG / PNG', desc: 'Place high-res company emblem', descKey: 'deck.descPlaceEmblem' },
+                                                        { label: 'Convert PNG/JPG to Vector (SVG)', labelKey: 'deck.convertPngJpgVector', icon: Wand2, badge: 'AI Tracing', badgeKey: 'deck.badgeAiTracing', desc: 'Auto-convert raster images to crisp SVG', descKey: 'deck.descAutoConvertSvg' },
+                                                        { label: 'Preset Monogram Logo', labelKey: 'deck.presetMonogramLogo', icon: Layers, badge: 'Vector', badgeKey: 'deck.badgeVector', desc: 'Add sleek executive monogram badge', descKey: 'deck.descAddMonogram' }
                                                       ]
                                                         .filter(m => !deckMediaSearch || m.label.toLowerCase().includes(deckMediaSearch.toLowerCase()) || m.desc.toLowerCase().includes(deckMediaSearch.toLowerCase()) || m.badge.toLowerCase().includes(deckMediaSearch.toLowerCase()))
                                                         .map((mediaItem) => {
@@ -53557,15 +53577,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                 </div>
                                                                 <div className="flex flex-col min-w-0">
                                                                   <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
-                                                                    {mediaItem.label}
+                                                                    {mediaItem.labelKey ? (t(mediaItem.labelKey) || mediaItem.label) : mediaItem.label}
                                                                   </span>
                                                                   <span className="text-[9px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                    {mediaItem.desc}
+                                                                    {mediaItem.descKey ? (t(mediaItem.descKey) || mediaItem.desc) : mediaItem.desc}
                                                                   </span>
                                                                 </div>
                                                               </div>
                                                               <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
-                                                                {mediaItem.badge}
+                                                                {mediaItem.badgeKey ? (t(mediaItem.badgeKey) || mediaItem.badge) : mediaItem.badge}
                                                               </span>
                                                             </button>
                                                           );
@@ -53584,7 +53604,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
-                                                          OBJECTS
+                                                          {t('deck.objects') || 'OBJECTS'}
                                                         </span>
                                                       </div>
 
@@ -53613,6 +53633,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Media', 'Shapes', 'Typography'].map((cat) => {
                                                           const isTabActive = deckInsertFilter === cat;
+                                                          const catLabel = cat === 'All' ? (t('common.all') || 'All') : cat === 'Media' ? (t('deck.filterMedia') || 'Media') : cat === 'Shapes' ? (t('deck.filterShapes') || 'Shapes') : (t('deck.filterTypography') || 'Typography');
                                                           return (
                                                             <button
                                                               key={cat}
@@ -53627,7 +53648,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
-                                                              {cat}
+                                                              {catLabel}
                                                             </button>
                                                           );
                                                         })}
@@ -53641,10 +53662,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">{t('deck.secMediaVectors') || 'Media & Vectors'}</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
-                                                              { label: 'Picture / Image', icon: ImageIcon, desc: 'Photo upload' },
-                                                              { label: 'Brand Logo', icon: Award, desc: 'Vector emblem' },
-                                                              { label: 'Convert JPG/PNG to Vector', icon: Wand2, desc: 'AI Vectorize' },
-                                                              { label: 'Glow Vector Wave', icon: Sparkles, desc: '3D mesh layer' }
+                                                              { label: 'Picture / Image', labelKey: 'deck.itemPictureImage', icon: ImageIcon, desc: 'Photo upload', descKey: 'deck.descPhotoUpload' },
+                                                              { label: 'Brand Logo', labelKey: 'deck.itemBrandLogo', icon: Award, desc: 'Vector emblem', descKey: 'deck.descVectorEmblem' },
+                                                              { label: 'Convert JPG/PNG to Vector', labelKey: 'deck.itemConvertVector', icon: Wand2, desc: 'AI Vectorize', descKey: 'deck.descAiVectorize' },
+                                                              { label: 'Glow Vector Wave', labelKey: 'deck.itemGlowWave', icon: Sparkles, desc: '3D mesh layer', descKey: 'deck.desc3dMeshLayer' }
                                                             ]
                                                               .filter(item => !deckInsertSearch || item.label.toLowerCase().includes(deckInsertSearch.toLowerCase()) || item.desc.toLowerCase().includes(deckInsertSearch.toLowerCase()))
                                                               .map((item) => {
@@ -53664,8 +53685,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                       <ItemIcon size={12} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
-                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.label}</span>
-                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.desc}</span>
+                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.labelKey ? (t(item.labelKey) || item.label) : item.label}</span>
+                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.descKey ? (t(item.descKey) || item.desc) : item.desc}</span>
                                                                     </div>
                                                                   </button>
                                                                 );
@@ -53680,12 +53701,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">{t('deck.secShapesBadges') || 'Geometric Shapes & Badges'}</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
-                                                              { label: 'Presenter Pill Badge', icon: Shield, desc: 'Speaker bio' },
-                                                              { label: 'Gradient Pill Shape', icon: Palette, desc: 'Accent pill' },
-                                                              { label: 'Circle Shape', icon: Circle, desc: 'Round focus' },
-                                                              { label: 'Square Shape', icon: Square, desc: 'Bento card' },
-                                                              { label: 'Diamond Shape', icon: Diamond, desc: 'Badge gem' },
-                                                              { label: 'Triangle Shape', icon: Triangle, desc: 'Polygon' }
+                                                              { label: 'Presenter Pill Badge', labelKey: 'deck.itemPresenterBadge', icon: Shield, desc: 'Speaker bio', descKey: 'deck.descSpeakerBio' },
+                                                              { label: 'Gradient Pill Shape', labelKey: 'deck.itemGradientPill', icon: Palette, desc: 'Accent pill', descKey: 'deck.descAccentPill' },
+                                                              { label: 'Circle Shape', labelKey: 'deck.itemCircle', icon: Circle, desc: 'Round focus', descKey: 'deck.descRoundFocus' },
+                                                              { label: 'Square Shape', labelKey: 'deck.itemSquare', icon: Square, desc: 'Bento card', descKey: 'deck.descBentoCard' },
+                                                              { label: 'Diamond Shape', labelKey: 'deck.itemDiamond', icon: Diamond, desc: 'Badge gem', descKey: 'deck.descBadgeGem' },
+                                                              { label: 'Triangle Shape', labelKey: 'deck.itemTriangle', icon: Triangle, desc: 'Polygon', descKey: 'deck.descPolygon' }
                                                             ]
                                                               .filter(item => !deckInsertSearch || item.label.toLowerCase().includes(deckInsertSearch.toLowerCase()) || item.desc.toLowerCase().includes(deckInsertSearch.toLowerCase()))
                                                               .map((item) => {
@@ -53705,8 +53726,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                       <ItemIcon size={12} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
-                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.label}</span>
-                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.desc}</span>
+                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.labelKey ? (t(item.labelKey) || item.label) : item.label}</span>
+                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.descKey ? (t(item.descKey) || item.desc) : item.desc}</span>
                                                                     </div>
                                                                   </button>
                                                                 );
@@ -53721,10 +53742,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">{t('deck.secTypographyLines') || 'Typography & Lines'}</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
-                                                              { label: 'Heading H1', icon: Heading1, desc: 'Headline text' },
-                                                              { label: 'Text Box (Multi-line)', icon: Type, desc: 'Paragraph text' },
-                                                              { label: 'Divider Line', icon: Minus, desc: 'Rule separator' },
-                                                              { label: 'Contact Icon Shape', icon: Globe, desc: 'Footer contact' }
+                                                              { label: 'Heading H1', labelKey: 'deck.itemHeading', icon: Heading1, desc: 'Headline text', descKey: 'deck.descHeadlineText' },
+                                                              { label: 'Text Box (Multi-line)', labelKey: 'deck.itemTextBox', icon: Type, desc: 'Paragraph text', descKey: 'deck.descParagraphText' },
+                                                              { label: 'Divider Line', labelKey: 'deck.itemDivider', icon: Minus, desc: 'Rule separator', descKey: 'deck.descRuleSeparator' },
+                                                              { label: 'Contact Icon Shape', labelKey: 'deck.itemContact', icon: Globe, desc: 'Footer contact', descKey: 'deck.descFooterContact' }
                                                             ]
                                                               .filter(item => !deckInsertSearch || item.label.toLowerCase().includes(deckInsertSearch.toLowerCase()) || item.desc.toLowerCase().includes(deckInsertSearch.toLowerCase()))
                                                               .map((item) => {
@@ -53744,8 +53765,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                       <ItemIcon size={12} />
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
-                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.label}</span>
-                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.desc}</span>
+                                                                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">{item.labelKey ? (t(item.labelKey) || item.label) : item.label}</span>
+                                                                      <span className="text-[8px] text-slate-500 dark:text-zinc-400 truncate">{item.descKey ? (t(item.descKey) || item.desc) : item.desc}</span>
                                                                     </div>
                                                                   </button>
                                                                 );
@@ -53765,11 +53786,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                             <RegaarderAiIcon size={14} className="text-[#7C4DFF] dark:text-violet-300" />
                                                           </div>
                                                           <span className="text-[10.5px] font-bold tracking-wider text-slate-800 dark:text-zinc-200 uppercase">
-                                                            DECK INTELLIGENCE
+                                                            {t('deck.deckIntelligence') || 'DECK INTELLIGENCE'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[8.5px] font-semibold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono border border-black/5 dark:border-white/5">
-                                                          SLIDE {activeDeckSlide?.id || 1}
+                                                          {t('deck.slideBadge', { id: activeDeckSlide?.id || 1 }) || `SLIDE ${activeDeckSlide?.id || 1}`}
                                                         </span>
                                                       </div>
 
@@ -53811,14 +53832,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Tier 1: Suggested for this slide */}
                                                       <div>
                                                         <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">
-                                                          Suggested for this slide
+                                                          {t('deck.suggestedForSlide') || 'Suggested for this slide'}
                                                         </span>
                                                         <div className="space-y-1">
                                                           {[
-                                                            { label: 'Improve visual hierarchy', icon: Type, badge: 'Hierarchy', desc: 'Rebalance headline scale, tracking & whitespace' },
-                                                            { label: 'Balance composition', icon: LayoutGrid, badge: 'Layout', desc: 'Optimize margins, element balance & alignment' },
-                                                            { label: 'Strengthen title contrast', icon: ContrastIcon, badge: 'Contrast', desc: 'Enhance headline luminance & backdrop legibility' },
-                                                            { label: 'Auto-format as bento grid', icon: Square, badge: 'Cards', desc: 'Structure narrative bullets into visual cards' }
+                                                            { label: 'Improve visual hierarchy', labelKey: 'deck.aiImproveHierarchy', icon: Type, badge: 'Hierarchy', badgeKey: 'deck.badgeHierarchy', desc: 'Rebalance headline scale, tracking & whitespace', descKey: 'deck.descHierarchy' },
+                                                            { label: 'Balance composition', labelKey: 'deck.aiBalanceComposition', icon: LayoutGrid, badge: 'Layout', badgeKey: 'deck.badgeLayout', desc: 'Optimize margins, element balance & alignment', descKey: 'deck.descBalanceComposition' },
+                                                            { label: 'Strengthen title contrast', labelKey: 'deck.aiStrengthenContrast', icon: ContrastIcon, badge: 'Contrast', badgeKey: 'deck.badgeContrast', desc: 'Enhance headline luminance & backdrop legibility', descKey: 'deck.descContrast' },
+                                                            { label: 'Auto-format as bento grid', labelKey: 'deck.aiAutoFormatBento', icon: Square, badge: 'Cards', badgeKey: 'deck.badgeCards', desc: 'Structure narrative bullets into visual cards', descKey: 'deck.descBento' }
                                                           ]
                                                             .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
                                                             .map((aiItem) => {
@@ -53840,15 +53861,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
                                                                       <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
-                                                                        {aiItem.label}
+                                                                        {aiItem.labelKey ? (t(aiItem.labelKey) || aiItem.label) : aiItem.label}
                                                                       </span>
                                                                       <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                        {aiItem.desc}
+                                                                        {aiItem.descKey ? (t(aiItem.descKey) || aiItem.desc) : aiItem.desc}
                                                                       </span>
                                                                     </div>
                                                                   </div>
                                                                   <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
-                                                                    {aiItem.badge}
+                                                                    {aiItem.badgeKey ? (t(aiItem.badgeKey) || aiItem.badge) : aiItem.badge}
                                                                   </span>
                                                                 </button>
                                                               );
@@ -53859,13 +53880,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Tier 2: For the whole deck */}
                                                       <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
                                                         <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">
-                                                          For the whole deck
+                                                          {t('deck.forWholeDeck') || 'For the whole deck'}
                                                         </span>
                                                         <div className="space-y-1">
                                                           {[
-                                                            { label: 'Apply consistent theme', icon: Palette, badge: 'Deck Theme', desc: 'Harmonize chromatic styling & glow hues across deck' },
-                                                            { label: 'Fix typography inconsistencies', icon: Type, badge: 'Typography', desc: 'Standardize font pairings & scale across all slides' },
-                                                            { label: 'Improve slide-to-slide coherence', icon: Wand2, badge: 'Flow', desc: 'Align narrative pacing, section markers & transitions' }
+                                                            { label: 'Apply consistent theme', labelKey: 'deck.aiApplyTheme', icon: Palette, badge: 'Deck Theme', badgeKey: 'deck.badgeDeckTheme', desc: 'Harmonize chromatic styling & glow hues across deck', descKey: 'deck.descTheme' },
+                                                            { label: 'Fix typography inconsistencies', labelKey: 'deck.aiFixTypography', icon: Type, badge: 'Typography', badgeKey: 'deck.badgeTypography', desc: 'Standardize font pairings & scale across all slides', descKey: 'deck.descTypography' },
+                                                            { label: 'Improve slide-to-slide coherence', labelKey: 'deck.aiImproveCoherence', icon: Wand2, badge: 'Flow', badgeKey: 'deck.badgeFlow', desc: 'Align narrative pacing, section markers & transitions', descKey: 'deck.descCoherence' }
                                                           ]
                                                             .filter(ai => !deckAiSearch || ai.label.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.desc.toLowerCase().includes(deckAiSearch.toLowerCase()) || ai.badge.toLowerCase().includes(deckAiSearch.toLowerCase()))
                                                             .map((aiItem) => {
@@ -53887,15 +53908,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                     </div>
                                                                     <div className="flex flex-col min-w-0">
                                                                       <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white truncate">
-                                                                        {aiItem.label}
+                                                                        {aiItem.labelKey ? (t(aiItem.labelKey) || aiItem.label) : aiItem.label}
                                                                       </span>
                                                                       <span className="text-[8.5px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                        {aiItem.desc}
+                                                                        {aiItem.descKey ? (t(aiItem.descKey) || aiItem.desc) : aiItem.desc}
                                                                       </span>
                                                                     </div>
                                                                   </div>
                                                                   <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 shrink-0">
-                                                                    {aiItem.badge}
+                                                                    {aiItem.badgeKey ? (t(aiItem.badgeKey) || aiItem.badge) : aiItem.badge}
                                                                   </span>
                                                                 </button>
                                                               );
@@ -54378,7 +54399,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 cursor-pointer shrink-0"
                                             title="Reset Bounds"
                                           >
-                                            <RotateCcw size={11} /> Reset Bounds
+                                            <RotateCcw size={11} /> {t('deck.resetBounds') || 'Reset Bounds'}
                                           </button>
 
                                           <button
@@ -54391,7 +54412,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
                                             title="Delete Mesh"
                                           >
-                                            <Trash2 size={11} /> Delete Mesh
+                                            <Trash2 size={11} /> {t('deck.deleteMesh') || 'Delete Mesh'}
                                           </button>
                                         </div>
                                       );
@@ -54717,7 +54738,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       onClick={() => setDeckZoomLevel(100)}
                                       className="px-1.5 py-0.5 text-[10.5px] font-medium text-slate-500 hover:text-slate-800 rounded cursor-pointer border-l border-slate-200/60 pl-1.5"
                                     >
-                                      Reset
+                                      {t('deck.resetZoom') || 'Reset'}
                                     </button>
                                   </div>
 
@@ -54743,7 +54764,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200/60 hover:bg-slate-200/60'
                                     }`}
                                   >
-                                    <Maximize size={13} /> Focus Mode: {isSheetZenMode ? 'On' : 'Off'}
+                                    <Maximize size={13} /> {t('deck.focusMode') || 'Focus Mode'}: {isSheetZenMode ? (t('common.on') || 'On') : (t('common.off') || 'Off')}
                                   </button>
                                 </div>
 
@@ -54756,7 +54777,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     title="Present Deck (Fullscreen)"
                                     className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 active:scale-95 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer transition-all"
                                   >
-                                    <Play size={13} /> Present
+                                    <Play size={13} /> {t('deck.present') || 'Present'}
                                   </button>
                                 </div>
                               </div>
@@ -54792,8 +54813,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <Plus size={16} />
                                   </div>
                                   <div>
-                                    <h3 className="font-bold text-sm text-white tracking-tight">Create New Presentation</h3>
-                                    <p className="text-[11px] text-zinc-400">Select how you want to begin your presentation</p>
+                                    <h3 className="font-bold text-sm text-white tracking-tight">{t('deck.createNewPresentation') || 'Create New Presentation'}</h3>
+                                    <p className="text-[11px] text-zinc-400">{t('deck.selectHowToBegin') || 'Select how you want to begin your presentation'}</p>
                                   </div>
                                 </div>
                                 <button 
@@ -54824,14 +54845,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 group-hover:scale-105 transition-transform">
                                       <Layout size={18} />
                                     </div>
-                                    <h4 className="text-sm font-bold text-white mb-1">Start from Template</h4>
+                                    <h4 className="text-sm font-bold text-white mb-1">{t('deck.startFromTemplate') || 'Start from Template'}</h4>
                                     <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                      Browse curated pitch decks, business plans, or use AI generation.
+                                      {t('deck.browsePitchDecks') || 'Browse curated pitch decks, business plans, or use AI generation.'}
                                     </p>
                                   </div>
                                   <div className="mt-3.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] font-semibold text-cyan-400">
-                                    <span>Template Library</span>
-                                    <span>Browse →</span>
+                                    <span>{t('deck.templateLibrary') || 'Template Library'}</span>
+                                    <span>{t('deck.browseAction') || 'Browse →'}</span>
                                   </div>
                                 </button>
 
@@ -54848,14 +54869,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 mb-3 group-hover:scale-105 transition-transform">
                                       <FileText size={18} />
                                     </div>
-                                    <h4 className="text-sm font-bold text-white mb-1">Blank Canvas</h4>
+                                    <h4 className="text-sm font-bold text-white mb-1">{t('deck.blankCanvas') || 'Blank Canvas'}</h4>
                                     <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                      Start from a clean slate and author your slides from scratch.
+                                      {t('deck.startFromCleanSlate') || 'Start from a clean slate and author your slides from scratch.'}
                                     </p>
                                   </div>
                                   <div className="mt-3.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] font-semibold text-violet-400">
-                                    <span>Clean Slate</span>
-                                    <span>Create Blank →</span>
+                                    <span>{t('deck.cleanSlate') || 'Clean Slate'}</span>
+                                    <span>{t('deck.createBlankAction') || 'Create Blank →'}</span>
                                   </div>
                                 </button>
                               </div>
@@ -66615,7 +66636,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
                                             className={`text-[40px] leading-[1.15] font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
                                           >
-                                            {resolvedDeckSlideDesign.headline}
+                                            {resolvedDeckSlideDesign.headline === 'New Presentation' ? (t('deck.newPresentation') || 'New Presentation') : resolvedDeckSlideDesign.headline}
                                           </h1>
                                           <p
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -66624,7 +66645,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
                                             className={`mt-3 text-[15px] leading-relaxed font-normal outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
                                           >
-                                            {resolvedDeckSlideDesign.blurb}
+                                            {resolvedDeckSlideDesign.blurb === 'Click anywhere to begin crafting your presentation narrative.' ? (t('deck.newPresentationSubtitle') || 'Click anywhere to begin crafting your presentation narrative.') : resolvedDeckSlideDesign.blurb}
                                           </p>
                                         </div>
                                       )}
@@ -67078,7 +67099,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-red-950/80 hover:text-red-300 text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                             >
                               <X size={14} />
-                              <span>Exit</span>
+                              <span>{t('common.exit') || 'Exit'}</span>
                             </button>
                           </div>
                         ) : (
@@ -67087,7 +67108,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div className="flex items-center gap-4">
                               <span>{t('deck.slideOf', { current: deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1, total: deckSlides.length }) || `Slide ${deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of ${deckSlides.length}`}</span>
                               <button type="button" className="flex items-center gap-1 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors">
-                                <span>English (US)</span>
+                                <span>{uiLanguage === 'zh-TW' ? '繁體中文' : uiLanguage === 'ja' ? '日本語' : uiLanguage === 'ko' ? '한국어' : uiLanguage === 'es' ? 'Español' : uiLanguage === 'fr' ? 'Français' : uiLanguage === 'id' ? 'Bahasa Indonesia' : uiLanguage === 'vi' ? 'Tiếng Việt' : uiLanguage === 'ar' ? 'العربية' : 'English (US)'}</span>
                                 <ChevronDown size={11} />
                               </button>
                               <span className="text-gray-300 dark:text-zinc-600">•</span>
@@ -67167,7 +67188,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   handleStartDeckPresentation();
                                 }}
                                 className="hover:text-gray-600 dark:hover:text-zinc-200 transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer flex items-center justify-center active:scale-95"
-                                title="Enter Fullscreen Presentation (Slide takes fullscreen)"
+                                title={t('deck.enterPresentMode') || 'Enter presentation mode (Fullscreen)'}
                               >
                                 <Maximize size={14} />
                               </button>

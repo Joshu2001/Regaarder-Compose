@@ -147,7 +147,13 @@ export function I18nProvider({ children }) {
     }
 
     if (val === null || val === undefined) {
-      return key; // return the key itself if missing
+      if (typeof params === 'string') return params;
+      if (params && typeof params === 'object' && params.defaultValue) return params.defaultValue;
+      // If it is a namespaced dot key (e.g. 'deck.bgCyberGlow'), return empty string so `t(k) || defaultLabel` works seamlessly
+      if (key.includes('.')) {
+        return '';
+      }
+      return key;
     }
 
     if (typeof val !== 'string') return String(val);
