@@ -146,7 +146,10 @@
     "pageSizeA4": "A4 (210 x 297 mm)",
     "pageSizeLegal": "リーガル (8.5 x 14 インチ)",
     "watermark": "透かし",
-    "editReplay": "編集リプレイを開く"
+    "editReplay": "編集リプレイを開く",
+    "create": "作成",
+    "expand": "展開",
+    "collapse": "折りたたむ"
   },
   "search": {
     "title": "ワークスペース検索",
@@ -927,7 +930,23 @@
       "pitch": "ピッチデッキ",
       "business": "事業計画",
       "product": "製品・技術"
-    }
+    },
+    "animation": "アニメーション",
+    "background": "背景",
+    "styles": "スタイル",
+    "vectorWave": "ベクター＆ウェーブ",
+    "mediaLogo": "メディア＆ロゴ",
+    "insert": "挿入",
+    "allSaved": "すべての変更が保存されました",
+    "newPresentation": "新規プレゼンテーション",
+    "newPresentationSubtitle": "クリックしてプレゼンテーションの作成を開始します。",
+    "slidesCount": "スライド",
+    "slideCountLabel": "スライド",
+    "createNewDeck": "新規スライドを作成",
+    "presentations": "プレゼンテーション一覧",
+    "activePresentation": "現在のプレゼンテーション",
+    "noOtherPresentations": "他のプレゼンテーションはありません。",
+    "createNewDeckDesc": "新規プロジェクトを追加します。"
   },
   "whiteboard": {
     "untitledWhiteboard": "無題のホワイトボード",
@@ -947,7 +966,7 @@
       "more": "その他"
     },
     "templates": "テンプレート",
-    "add": "+ 追加",
+    "add": "追加",
     "tasks": "タスク",
     "typeYourText": "テキストを入力…",
     "aiTemplateGenerator": "AI テンプレート生成",
@@ -1008,7 +1027,20 @@
     "resetWhiteboard": "ホワイトボードをリセット",
     "quickSnapshotPng": "クイックスナップショット (PNG)",
     "quickExportPdf": "クイックエクスポート (PDF)",
-    "openAssistant": "アシスタントを開く"
+    "openAssistant": "アシスタントを開く",
+    "stickyColors": "付箋の色",
+    "customColor": "カスタム色",
+    "webLink": "Web リンク",
+    "webBookmark": "Web ブックマーク",
+    "uploadImage": "画像をアップロード",
+    "clickToBrowseOrDrop": "クリックして選択またはファイルをドロップ",
+    "colors": {
+      "yellow": "イエロー",
+      "purple": "パープル",
+      "blue": "ブルー",
+      "green": "グリーン",
+      "pink": "ピンク"
+    }
   },
   "analytics": {
     "title": "ビジネス意思決定インテリジェンス",

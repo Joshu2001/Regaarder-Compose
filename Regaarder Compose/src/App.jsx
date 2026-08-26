@@ -52402,7 +52402,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                           {/* Apple Segmented Control Track */}
                           <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
-                            {['Context', 'Templates', 'Create', 'Review', 'View'].map((tab) => (
+                            {['Context', 'Templates', 'Create', 'Review', 'View'].map((tab) => {
+                                const tabLabel = tab === 'Context' ? (t('toolbar.context') || 'Context') : tab === 'Templates' ? (t('toolbar.templates') || 'Templates') : tab === 'Create' ? (t('toolbar.create') || 'Create') : tab === 'Review' ? (t('toolbar.review') || 'Review') : tab === 'View' ? (t('toolbar.view') || 'View') : tab;
+                                return (
                               <button
                                 key={tab}
                                 type="button"
@@ -52419,9 +52421,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
                                 }`}
                               >
-                                {tab}
+                                {tabLabel}
                               </button>
-                            ))}
+                            );
+                            })}
                           </div>
 
                           {/* Collapse / Expand Toggle Button */}
@@ -52431,7 +52434,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
                             title={isDeckToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
                           >
-                            <span>{isDeckToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
+                            <span>{isDeckToolbarCollapsed ? (t('toolbar.expand') || 'Expand') : (t('toolbar.collapse') || 'Collapse')}</span>
                             <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isDeckToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
                           </button>
                         </div>
@@ -52460,7 +52463,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 hover:bg-gray-100/80 text-gray-800 dark:text-zinc-100'
                                       }`}
                                     >
-                                      <span>{activeDeckTitle}</span>
+                                      <span>{activeDeckTitle === 'Untitled Deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : activeDeckTitle}</span>
                                       <ChevronDown size={13} className={`text-gray-400 shrink-0 transition-transform ${deckActiveToolbarMenu === 'title' ? 'rotate-180 text-[#7C4DFF]' : ''}`} />
                                     </button>
 
@@ -52470,14 +52473,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         className="absolute left-0 top-9 w-64 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.14)] p-2 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
                                       >
                                         <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider flex items-center justify-between">
-                                          <span>Presentations</span>
+                                          <span>{t('deck.presentations') || 'Presentations'}</span>
                                           <span className="text-[9.5px] font-mono">Deck</span>
                                         </div>
 
                                         {/* Current Active Presentation Item */}
                                         <div className="px-2.5 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/80 my-1 flex items-center justify-between">
                                           <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-[#7C4DFF] truncate">{activeDeckTitle || 'Untitled Deck'}</span>
+                                            <span className="text-xs font-bold text-[#7C4DFF] truncate">{(!activeDeckTitle || activeDeckTitle === 'Untitled Deck') ? (t('deck.untitledDeck') || 'Untitled Deck') : activeDeckTitle}</span>
                                             <span className="text-[10px] text-zinc-500">Active presentation • {(deckSlidesData || []).length} slides</span>
                                           </div>
                                           <div className="w-2 h-2 rounded-full bg-[#7C4DFF] shadow-[0_0_8px_rgba(124,77,255,0.8)]" />
@@ -52485,8 +52488,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                         {/* Minimalist Empty State */}
                                         <div className="px-2.5 py-3 text-center flex flex-col items-center justify-center gap-1 border border-dashed border-gray-200 dark:border-zinc-800 rounded-xl my-1 bg-gray-50/50 dark:bg-zinc-950/40">
-                                          <p className="text-[11px] font-medium text-gray-600 dark:text-zinc-400">No other presentations yet.</p>
-                                          <p className="text-[10px] text-gray-400 dark:text-zinc-500">Create a new deck to add another project.</p>
+                                          <p className="text-[11px] font-medium text-gray-600 dark:text-zinc-400">{t('deck.noOtherPresentations') || 'No other presentations yet.'}</p>
+                                          <p className="text-[10px] text-gray-400 dark:text-zinc-500">{t('deck.createNewDeckDesc') || 'Create a new deck to add another project.'}</p>
                                         </div>
 
                                         <div className="h-px bg-gray-100 dark:bg-zinc-800 my-1.5"></div>
@@ -52507,7 +52510,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           className="w-full text-left px-2.5 py-2 text-xs font-bold text-[#7C4DFF] hover:bg-violet-50 dark:hover:bg-violet-950/50 rounded-xl transition-all cursor-pointer flex items-center gap-2"
                                         >
                                           <Plus size={14} className="text-[#7C4DFF]" />
-                                          <span>Create New Deck</span>
+                                          <span>{t('deck.createNewDeck') || 'Create New Deck'}</span>
                                         </button>
                                       </div>
                                     )}
@@ -52897,7 +52900,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             }`}
                                           >
                                             <btn.icon size={13} className={`shrink-0 ${isOpen ? 'text-[#7C4DFF]' : 'text-gray-500'}`} />
-                                            <span>{btn.label}</span>
+                                            <span>{btn.label === 'Animation' ? (t('deck.animation') || 'Animation') : btn.label === 'Background' ? (t('deck.background') || 'Background') : btn.label === 'Styles' ? (t('deck.styles') || 'Styles') : btn.label === 'Vector & Wave' ? (t('deck.vectorWave') || 'Vector & Wave') : btn.label === 'Media & Logo' ? (t('deck.mediaLogo') || 'Media & Logo') : btn.label === 'Insert' ? (t('deck.insert') || '+ Insert') : btn.label === 'AI' ? (t('common.ai') || 'AI') : btn.label}</span>
                                             <ChevronDown size={10} className={`shrink-0 transition-transform ${isOpen ? 'rotate-180 text-[#7C4DFF]' : 'text-gray-400'}`} />
                                           </button>
 
@@ -67086,7 +67089,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <ChevronDown size={11} />
                               </button>
                               <span className="text-gray-300 dark:text-zinc-600">•</span>
-                              <span>{t('saved.allSaved') || 'All changes saved'}</span>
+                              <span>{t('deck.allSaved') || 'All changes saved'}</span>
                             </div>
 
                             <div className="flex items-center gap-3">
@@ -74954,7 +74957,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   )}
                   {whiteboardStickyPaletteOpen && (
                     <div className="absolute left-20 top-[62%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2 flex flex-col gap-1.5 w-[172px]">
-                      <p className="text-[10px] font-semibold text-gray-500 px-1">Sticky note colors</p>
+                      <p className="text-[10px] font-semibold text-gray-500 px-1">{t('whiteboard.stickyColors') || 'Sticky note colors'}</p>
                       {whiteboardStickyColorPresets.map((colorPreset) => (
                         <button
                           key={colorPreset.key}
@@ -74968,11 +74971,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           title={colorPreset.label}
                         >
                           <span className="h-4 w-4 rounded-md border border-gray-200" style={{ backgroundColor: colorPreset.value }} />
-                          <span className="text-[11px] font-medium truncate">{colorPreset.label}</span>
+                          <span className="text-[11px] font-medium truncate">{t('whiteboard.colors.' + colorPreset.key) || colorPreset.label}</span>
                         </button>
                       ))}
                       <div className="px-2 pb-1">
-                        <label className="text-[10px] font-medium text-gray-500">Custom color</label>
+                        <label className="text-[10px] font-medium text-gray-500">{t('whiteboard.customColor') || 'Custom color'}</label>
                         <input
                           type="color"
                           value={whiteboardStickyColor}
@@ -75867,13 +75870,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="text-[13px] font-bold text-slate-800 dark:text-zinc-200 leading-tight group-hover/drop:text-violet-600 dark:group-hover/drop:text-violet-400 transition-colors pointer-events-none"
                               style={{ cursor: 'pointer' }}
                             >
-                              Upload Image
+                              {t('whiteboard.uploadImage') || 'Upload Image'}
                             </p>
                             <p 
                               className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400 font-medium pointer-events-none"
                               style={{ cursor: 'pointer' }}
                             >
-                              Click to browse or drop file here
+                              {t('whiteboard.clickToBrowseOrDrop') || 'Click to browse or drop file here'}
                             </p>
                           </div>
                         )
@@ -75943,7 +75946,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="text-[12px] font-bold text-slate-800 dark:text-zinc-100 truncate leading-tight">
-                                {widget.title || widget.linkedUrl}
+                                {widget.title === 'Web Link' ? (t('whiteboard.webLink') || 'Web Link') : (widget.title || widget.linkedUrl)}
                               </h4>
                               <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 font-mono">
                                 {widget.linkedUrl}
@@ -75952,10 +75955,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-zinc-800">
                             <span className="text-[9.5px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider flex items-center gap-1">
-                              <Globe size={10} /> Web Bookmark
+                              <Globe size={10} /> {t('whiteboard.webBookmark') || 'Web Bookmark'}
                             </span>
                             <span className="text-[9.5px] text-slate-400 hover:text-slate-700 flex items-center gap-0.5 font-medium">
-                              Open <ArrowUpRight size={9} />
+                              {t('common.open') || 'Open'} <ArrowUpRight size={9} />
                             </span>
                           </div>
                         </div>
@@ -77065,7 +77068,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         title="Add object"
                       >
                         <Plus size={13} strokeWidth={2} className="text-[#7C5ACF] dark:text-violet-400" />
-                        <span>{t('whiteboard.add') || '+ Add'}</span>
+                        <span>{t('whiteboard.add') || 'Add'}</span>
                       </button>
                       {whiteboardAddMenuOpen && (
                         <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-[360] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-1.5 w-48 font-sans animate-in fade-in zoom-in-95 duration-150">

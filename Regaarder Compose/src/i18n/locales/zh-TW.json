@@ -146,7 +146,10 @@
     "pageSizeA4": "A4 (210 x 297 公釐)",
     "pageSizeLegal": "Legal (8.5 x 14 吋)",
     "watermark": "防偽浮水印",
-    "editReplay": "開啟編輯歷程重播"
+    "editReplay": "開啟編輯歷程重播",
+    "create": "建立",
+    "expand": "展開",
+    "collapse": "收合"
   },
   "search": {
     "title": "工作區搜尋",
@@ -927,7 +930,23 @@
       "pitch": "募資簡報",
       "business": "商業企劃",
       "product": "產品與技術"
-    }
+    },
+    "animation": "動畫特效",
+    "background": "背景設定",
+    "styles": "風格樣式",
+    "vectorWave": "向量與光波",
+    "mediaLogo": "媒體與商標",
+    "insert": "插入元件",
+    "allSaved": "所有變更已儲存",
+    "newPresentation": "新簡報專案",
+    "newPresentationSubtitle": "點擊任意處開始構建您的簡報敘事。",
+    "slidesCount": "頁簡報",
+    "slideCountLabel": "頁簡報",
+    "createNewDeck": "建立新簡報",
+    "presentations": "簡報清單",
+    "activePresentation": "目前簡報",
+    "noOtherPresentations": "尚無其他簡報專案。",
+    "createNewDeckDesc": "建立新簡報以開啟其他專案。"
   },
   "whiteboard": {
     "untitledWhiteboard": "未命名白板",
@@ -947,7 +966,7 @@
       "more": "更多工具"
     },
     "templates": "範本庫",
-    "add": "+ 新增",
+    "add": "新增",
     "tasks": "任務",
     "typeYourText": "輸入文字…",
     "aiTemplateGenerator": "AI 範本生成器",
@@ -1008,7 +1027,20 @@
     "resetWhiteboard": "重設並清空白板",
     "quickSnapshotPng": "快速擷圖 (PNG)",
     "quickExportPdf": "快速匯出 (單頁 PDF)",
-    "openAssistant": "開啟 AI 助手"
+    "openAssistant": "開啟 AI 助手",
+    "stickyColors": "便利貼顏色",
+    "customColor": "自訂顏色",
+    "webLink": "網頁連結",
+    "webBookmark": "網頁書籤",
+    "uploadImage": "上傳圖片",
+    "clickToBrowseOrDrop": "點擊瀏覽或將檔案拖曳至此",
+    "colors": {
+      "yellow": "黃色",
+      "purple": "紫色",
+      "blue": "藍色",
+      "green": "綠色",
+      "pink": "粉紅色"
+    }
   },
   "analytics": {
     "title": "商業決策智慧中心",
