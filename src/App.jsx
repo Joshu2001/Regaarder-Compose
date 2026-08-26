@@ -46826,7 +46826,31 @@ If requested to draw a chart or graph, append a structured action JSON block:
   
 const renderRoomTopHeader = () => (
     <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative pt-2" style={{ zIndex: 999999 }}>
-      <div className="flex items-center gap-10">
+      <div className="flex items-center gap-6">
+        {/* App Switcher Button */}
+        <div className="relative z-[360] flex items-center">
+          <button
+            type="button"
+            data-workspace-switcher="true"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className={`flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer active:scale-95 ${
+              workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+            }`}
+            title="Switch Workspace App"
+          >
+            <LayoutGrid size={16} />
+          </button>
+        </div>
+
         {/* Logo */}
         <div className="flex items-center gap-2.5 select-none">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
