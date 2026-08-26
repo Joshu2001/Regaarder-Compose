@@ -1714,6 +1714,18 @@
     "decisions": "Key Decisions",
     "exportToCompose": "Export to Docs",
     "transcriptCount": "Transcript Chunks",
-    "noTranscriptYet": "Listening to meeting audio... Speak to generate live summary."
+    "noTranscriptYet": "Listening to meeting audio... Speak to generate live summary.",
+    "replyPlaceholder": "Reply to Room AI or ask a follow-up...",
+    "expandModal": "Expand window",
+    "collapseModal": "Restore window",
+    "conversationThread": "Conversation Thread",
+    "minimize": "Minimize Chat",
+    "restoreChat": "Resume active chat",
+    "newChat": "New Chat",
+    "history": "Chat History",
+    "addContext": "Add document or image context",
+    "uploadFromDevice": "Upload from device",
+    "attachWorkspaceDoc": "Attach workspace document",
+    "removeAttachment": "Remove attachment"
   }
 }
