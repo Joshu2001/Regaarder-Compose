@@ -5390,6 +5390,7 @@ const FullPageTemplateGallery = ({
   setActiveSheetId,
   setSheetsTitle,
 }) => {
+  const { t } = useTranslation();
   const [category, setCategory] = React.useState('all');
   const [previewTemplate, setPreviewTemplate] = React.useState(null);
   const [openMenuId, setOpenMenuId] = React.useState(null);
