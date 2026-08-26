@@ -1624,6 +1624,7 @@ const SlashMenuPopover = React.forwardRef(({
   source = 'default',
   position = 'above'
 }, ref) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [internalSelectedIndex, setInternalSelectedIndex] = useState(selectedIndex);
   const searchInputRef = useRef(null);
@@ -1700,7 +1701,7 @@ const SlashMenuPopover = React.forwardRef(({
     }
   }, [activeIdx]);
 
-  const displayBadgeText = badgeText !== null ? badgeText : `${filteredOptions.length} COMMANDS`;
+  const displayBadgeText = badgeText !== null ? badgeText : `${filteredOptions.length} ${t('slash.commands') || 'COMMANDS'}`;
   const isBelow = position ? position === 'below' : (source === 'chat' && position !== 'above');
   const posClasses = isBelow 
     ? 'top-full left-0 mt-1.5 slide-in-from-top-2' 
@@ -1725,7 +1726,7 @@ const SlashMenuPopover = React.forwardRef(({
               setInternalSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search commands…"
+            placeholder={t('slash.searchPlaceholder') || "Search commands…"}
             className="w-full h-8 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans shadow-2xs"
           />
           {searchQuery && (
@@ -1768,8 +1769,8 @@ const SlashMenuPopover = React.forwardRef(({
         {filteredOptions.length === 0 ? (
           <div className="py-8 px-3 text-center flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
             <Search size={18} className="mb-1.5 text-slate-300 dark:text-zinc-600 stroke-[1.5]" />
-            <div className="text-xs font-medium">No commands found</div>
-            <div className="text-[11px] opacity-70 mt-0.5">Try a different search term</div>
+            <div className="text-xs font-medium">{t('slash.noCommandsFound') || "No commands found"}</div>
+            <div className="text-[11px] opacity-70 mt-0.5">{t('slash.tryDifferent') || "Try a different search term"}</div>
           </div>
         ) : (
           Object.entries(groupedOptions).map(([category, items]) => (
@@ -1777,7 +1778,7 @@ const SlashMenuPopover = React.forwardRef(({
               {/* Category Header */}
               {Object.keys(groupedOptions).length > 1 && (
                 <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold tracking-wider text-slate-400 dark:text-zinc-500 uppercase select-none font-sans">
-                  {category}
+                  {t('slash.categories.' + category.toLowerCase()) || category}
                 </div>
               )}
               {items.map((opt) => {
@@ -1818,7 +1819,7 @@ const SlashMenuPopover = React.forwardRef(({
                         <span className={`text-[12.5px] font-semibold tracking-tight leading-tight ${
                           isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200'
                         }`}>
-                          {opt.label}
+                          {t('slash.items.' + opt.key + '.label') || opt.label}
                         </span>
                         {tagText && (
                           <span className={`text-[10px] font-mono shrink-0 ${
@@ -48103,10 +48104,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {!isSheetsPresentationMode && !isDeckPresentationMode && !isSheetZenMode && (
             <div data-sheets-toolbar="true" className="h-10 border-b border-slate-200/50 dark:border-[#333333] px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-[#111111] relative z-[140] min-w-0 shrink-0 select-none">
               {orderedDocuments.map((doc, docIndex) => {
-                const defaultName = productMode === 'sheets' ? 'Untitled Sheet' : productMode === 'deck' ? 'Untitled Deck' : `Tab ${docIndex + 1}`;
+                const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
+                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
                 const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
-                  ? UNTITLED_WHITEBOARD_LABEL
-                  : (doc.title?.trim() ? doc.title : defaultName);
+                  ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
+                  : (!isDefaultTitle ? doc.title : defaultName);
                 const isActive = activeDocId === doc.id;
 
                 return (
@@ -48135,7 +48137,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                       />
                     ) : (
-                      <span className="max-w-[160px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                      <span className="max-w-[160px] truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
                     )}
                     <button
                       data-doc-menu-root
@@ -48632,7 +48634,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
                           title={isSheetToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
                         >
-                          <span>{isSheetToolbarCollapsed ? 'Expand' : 'Collapse'}</span>
+                          <span>{isSheetToolbarCollapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse')}</span>
                           <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isSheetToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
                         </button>
                       </div>
@@ -48831,13 +48833,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <div className="absolute top-9 left-0 z-[230] w-64 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-3 flex flex-col gap-3 backdrop-blur-xl select-none" onPointerDown={e => e.stopPropagation()}>
                                               <div className="flex flex-col gap-2">
                                                 <div className="flex items-center justify-between px-1">
-                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cell Fill & Gradient</span>
-                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Fill</button>
+                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('sheets.cellFillGradient') || 'Cell Fill & Gradient'}</span>
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">{t('sheets.clearFill') || 'Clear Fill'}</button>
                                                 </div>
 
                                                 {/* Preset Swatches (Shades & Gradients) */}
                                                 <div className="flex flex-col gap-1">
-                                                  <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Presets & Shades</span>
+                                                  <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">{t('sheets.presetsShades') || 'Presets & Shades'}</span>
                                                   <div className="grid grid-cols-6 gap-1 px-1">
                                                     {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#f1f5f9', '#fca5a5', '#fdba74', '#fde047', '#86efac', '#67e8f9', '#93c5fd', '#c4b5fd', '#f0abfc', '#475569', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#0f172a', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#6b21a8', '#86198f'].map(c => (
                                                       <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }} className="color-swatch-btn w-5 h-5 rounded-md border border-slate-200/80 hover:scale-110 transition-transform shadow-xs cursor-pointer" style={{ backgroundColor: c }} title={c}></button>
@@ -48846,7 +48848,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 </div>
 
                                                 <div className="flex flex-col gap-1 mt-1">
-                                                  <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">Gradients</span>
+                                                  <span className="text-[9px] font-semibold text-slate-400 px-1 uppercase tracking-tight">{t('sheets.gradients') || 'Gradients'}</span>
                                                   <div className="grid grid-cols-5 gap-1 px-1">
                                                     {[
                                                       'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
@@ -48867,7 +48869,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                 {/* Interactive Custom Color & Gradient Input Controls */}
                                                 <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2 px-1">
-                                                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Hex / CSS / Gradient</span>
+                                                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">{t('sheets.customHex') || 'Custom Hex / CSS / Gradient'}</span>
                                                   <div className="flex items-center gap-1.5">
                                                     <input
                                                       type="color"
@@ -48909,8 +48911,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               <div className="flex flex-col gap-2">
                                                 {/* Text Color Section */}
                                                 <div className="flex items-center justify-between px-1">
-                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Color</span>
-                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Reset</button>
+                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('sheets.textColor') || 'Text Color'}</span>
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">{t('common.reset') || 'Reset'}</button>
                                                 </div>
                                                 <div className="grid grid-cols-6 gap-1 px-1">
                                                   {['#ffffff', '#000000', '#1e293b', '#475569', '#64748b', '#94a3b8', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#991b1b', '#9a3412', '#854d0e', '#065f46', '#155e75', '#1e40af', '#3730a3', '#6b21a8'].map(c => (
@@ -48918,7 +48920,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   ))}
                                                 </div>
                                                 <div className="flex items-center gap-1.5 px-1 pt-1">
-                                                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Custom Text Hex</span>
+                                                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">{t('sheets.customTextHex') || 'Custom Text Hex'}</span>
                                                   <input
                                                     type="color"
                                                     className="w-6 h-6 rounded-md border border-slate-200 cursor-pointer bg-transparent p-0 overflow-hidden"
@@ -48942,8 +48944,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                                 {/* Highlight Section */}
                                                 <div className="flex items-center justify-between px-1">
-                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Text Highlight</span>
-                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">Clear Highlight</button>
+                                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('sheets.textHighlight') || 'Text Highlight'}</span>
+                                                  <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="text-[10px] font-medium text-slate-400 hover:text-purple-600 transition-colors">{t('sheets.clearHighlight') || 'Clear Highlight'}</button>
                                                 </div>
                                                 <div className="grid grid-cols-6 gap-1 px-1">
                                                   <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }} className="w-5 h-5 rounded-md border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center cursor-pointer" title="No Highlight"><X size={11} className="text-slate-400"/></button>
@@ -66926,7 +66928,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div className="flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/70 px-3.5 py-1.5 rounded-2xl shadow-2xl">
                               <div className="flex items-center gap-2">
                                 <DeckIcon size={20} className="text-violet-400 shrink-0" />
-                                <span className="font-bold text-xs text-zinc-100 tracking-tight">{deckTitle || 'Startup Pitch Deck'}</span>
+                                <span className="font-bold text-xs text-zinc-100 tracking-tight">{(deckTitle === 'Untitled Deck' || !deckTitle?.trim()) ? (t('deck.untitledDeck') || 'Untitled Deck') : deckTitle}</span>
                               </div>
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-violet-950/60 text-violet-300 border border-violet-800/50 flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
@@ -67274,14 +67276,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
             style={{ left: Math.max(12, headerContextMenu.x - 20), top: Math.max(12, headerContextMenu.y - 12) }}
           >
             <div className="px-2 py-2 border-b border-gray-100 mb-1">
-              <div className="text-[13px] font-semibold text-gray-900">{headerContextMenu.type === 'col' ? 'Column options' : 'Row options'}</div>
+              <div className="text-[13px] font-semibold text-gray-900">{headerContextMenu.type === 'col' ? (t('sheets.colOptions') || 'Column options') : (t('sheets.rowOptions') || 'Row options')}</div>
             </div>
             {[
-              { key: 'select', label: headerContextMenu.type === 'col' ? 'Select column' : 'Select row' },
-              { key: 'insert-before', label: headerContextMenu.type === 'col' ? 'Insert 1 column left' : 'Insert 1 row above' },
-              { key: 'insert-after', label: headerContextMenu.type === 'col' ? 'Insert 1 column right' : 'Insert 1 row below' },
-              { key: 'delete', label: headerContextMenu.type === 'col' ? 'Delete column' : 'Delete row' },
-              { key: 'clear', label: headerContextMenu.type === 'col' ? 'Clear column' : 'Clear row' },
+              { key: 'select', label: headerContextMenu.type === 'col' ? (t('sheets.selectCol') || 'Select column') : (t('sheets.selectRow') || 'Select row') },
+              { key: 'insert-before', label: headerContextMenu.type === 'col' ? (t('sheets.insertColLeft') || 'Insert 1 column left') : (t('sheets.insertRowAbove') || 'Insert 1 row above') },
+              { key: 'insert-after', label: headerContextMenu.type === 'col' ? (t('sheets.insertColRight') || 'Insert 1 column right') : (t('sheets.insertRowBelow') || 'Insert 1 row below') },
+              { key: 'delete', label: headerContextMenu.type === 'col' ? (t('sheets.deleteCol') || 'Delete column') : (t('sheets.deleteRow') || 'Delete row') },
+              { key: 'clear', label: headerContextMenu.type === 'col' ? (t('sheets.clearCol') || 'Clear column') : (t('sheets.clearRow') || 'Clear row') },
             ].map((item, i) => (
               <React.Fragment key={item.key}>
                 {(i === 1 || i === 3) && <div className="h-px bg-gray-100 my-1 mx-1" />}
@@ -71373,7 +71375,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 title="Hover or click to reveal workspace tabs, export, and controls"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                <span className="text-[11.5px] font-semibold tracking-tight">{docTitle || 'Untitled Whiteboard'}</span>
+                <span className="text-[11.5px] font-semibold tracking-tight">{(docTitle === 'Untitled Whiteboard' || !docTitle?.trim()) ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : docTitle}</span>
                 <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/pill:translate-y-0.5 transition-transform" />
               </div>
             )}

@@ -45,7 +45,10 @@
     "privacy": "Chính sách bảo mật",
     "legal": "Pháp lý",
     "updated": "Đã cập nhật",
-    "version": "Phiên bản"
+    "version": "Phiên bản",
+    "tabIndex": "Thẻ {{index}}",
+    "searchFont": "Tìm kiếm phông chữ",
+    "pinned": "Đã ghim"
   },
   "nav": {
     "docs": "Tài liệu",
@@ -634,7 +637,28 @@
     "cellsSelected": "ô đã chọn",
     "sum": "Tổng",
     "avg": "Trung bình",
-    "count": "Số lượng"
+    "count": "Số lượng",
+    "cellFillGradient": "Tô màu ô và chuyển sắc",
+    "clearFill": "Xóa màu tô",
+    "presetsShades": "Mẫu màu & Sắc thái",
+    "gradients": "Màu chuyển sắc",
+    "customHex": "Mã màu tùy chỉnh / CSS / Chuyển sắc",
+    "textColor": "Màu chữ",
+    "customTextHex": "Mã màu chữ tùy chỉnh",
+    "textHighlight": "Đánh dấu văn bản",
+    "clearHighlight": "Xóa đánh dấu",
+    "colOptions": "Tùy chọn cột",
+    "rowOptions": "Tùy chọn hàng",
+    "selectCol": "Chọn cột",
+    "selectRow": "Chọn hàng",
+    "insertColLeft": "Chèn 1 cột bên trái",
+    "insertRowAbove": "Chèn 1 hàng phía trên",
+    "insertColRight": "Chèn 1 cột bên phải",
+    "insertRowBelow": "Chèn 1 hàng phía dưới",
+    "deleteCol": "Xóa cột",
+    "deleteRow": "Xóa hàng",
+    "clearCol": "Xóa nội dung cột",
+    "clearRow": "Xóa nội dung hàng"
   },
   "saved": {
     "notSaved": "Chưa lưu",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "Lộ trình ra mắt",
     "intelligentSchedule": "Lịch trình thông minh"
+  },
+  "slash": {
+    "searchPlaceholder": "Tìm kiếm lệnh…",
+    "commands": "LỆNH",
+    "noCommandsFound": "Không tìm thấy lệnh",
+    "tryDifferent": "Thử từ khóa tìm kiếm khác",
+    "categories": {
+      "ai": "AI",
+      "insert": "Chèn",
+      "format": "Định dạng",
+      "data": "Dữ liệu",
+      "analyze": "Phân tích",
+      "transform": "Chuyển đổi",
+      "security": "Bảo mật"
+    },
+    "items": {
+      "orb": {
+        "label": "Trí tuệ Orb",
+        "desc": "RAG đa không gian: trích dẫn Sheets, Decks & Tasks"
+      },
+      "table": {
+        "label": "Bảng thông minh (AI)",
+        "desc": "Tạo bảng AI từ ngữ cảnh"
+      },
+      "proofread": {
+        "label": "Hiệu đính & Trau chuốt",
+        "desc": "Cải thiện chính tả và văn phong"
+      },
+      "translate": {
+        "label": "Dịch thuật",
+        "desc": "Dịch văn bản sang ngôn ngữ đích"
+      },
+      "schedule": {
+        "label": "Lập lịch trình",
+        "desc": "Tạo dòng thời gian hoặc danh sách AI"
+      },
+      "import_equation": {
+        "label": "Tạo công thức toán",
+        "desc": "Tạo hoặc tải lên công thức LaTeX"
+      },
+      "insert_table": {
+        "label": "Chèn bảng (Thủ công)",
+        "desc": "Chọn kích thước và chèn lưới"
+      },
+      "bullets": {
+        "label": "Danh sách dấu đầu dòng",
+        "desc": "Chèn danh sách dấu đầu dòng"
+      },
+      "graph": {
+        "label": "Biểu đồ & Đồ thị",
+        "desc": "Chèn biểu đồ tương tác"
+      },
+      "media": {
+        "label": "Tệp đa phương tiện",
+        "desc": "Chèn hình ảnh, video hoặc tệp"
+      },
+      "shapes": {
+        "label": "Hình dạng",
+        "desc": "Chèn hình học tương tác"
+      },
+      "icon": {
+        "label": "Biểu tượng",
+        "desc": "Chèn biểu tượng hoặc ký hiệu"
+      },
+      "emoji": {
+        "label": "Biểu tượng cảm xúc",
+        "desc": "Duyệt và chèn biểu tượng cảm xúc"
+      },
+      "symbols": {
+        "label": "Ký hiệu đặc biệt",
+        "desc": "Chèn ký tự đặc biệt"
+      },
+      "equations": {
+        "label": "Công thức LaTeX",
+        "desc": "Chèn khối công thức toán"
+      },
+      "divider": {
+        "label": "Đường phân cách",
+        "desc": "Chèn đường kẻ ngang"
+      },
+      "callout": {
+        "label": "Khối chú thích",
+        "desc": "Chèn khối trích dẫn nổi bật"
+      },
+      "code_block": {
+        "label": "Khối mã",
+        "desc": "Chèn khung chứa mã"
+      },
+      "hyperlink": {
+        "label": "Siêu liên kết",
+        "desc": "Thêm liên kết vào văn bản đã chọn"
+      },
+      "bookmark": {
+        "label": "Dấu trang",
+        "desc": "Thêm điểm neo hoặc dấu trang"
+      },
+      "watermark": {
+        "label": "Hình mờ",
+        "desc": "Thêm hình mờ văn bản hoặc hình ảnh"
+      },
+      "comment": {
+        "label": "Bình luận",
+        "desc": "Chèn hộp bình luận nội dòng"
+      },
+      "redact": {
+        "label": "Che giấu & Bảo vệ",
+        "desc": "Che giấu phần đã chọn"
+      },
+      "special_characters": {
+        "label": "Định dạng đặc biệt",
+        "desc": "Tiền tệ, ký hiệu toán & số"
+      },
+      "insert_date": {
+        "label": "Chèn ngày",
+        "desc": "Chèn ngày hôm nay"
+      },
+      "insert_chart": {
+        "label": "Chèn biểu đồ",
+        "desc": "Thêm biểu đồ trực quan"
+      },
+      "insert_shape": {
+        "label": "Chèn hình dạng",
+        "desc": "Thêm hình nổi"
+      },
+      "insert_textbox": {
+        "label": "Hộp văn bản",
+        "desc": "Thêm hộp văn bản"
+      },
+      "insert_comment": {
+        "label": "Chèn nhận xét",
+        "desc": "Thêm nhận xét vào ô"
+      },
+      "format_cell": {
+        "label": "Định dạng ô",
+        "desc": "Mở tùy chọn định dạng ô"
+      },
+      "copy_style": {
+        "label": "Sao chép định dạng",
+        "desc": "Sao chép kiểu ô"
+      },
+      "paste_style": {
+        "label": "Dán định dạng",
+        "desc": "Áp dụng kiểu ô đã sao chép"
+      },
+      "merge_cells": {
+        "label": "Hợp nhất ô",
+        "desc": "Hợp nhất các ô đã chọn"
+      },
+      "clear_format": {
+        "label": "Xóa định dạng",
+        "desc": "Đặt lại tất cả kiểu ô"
+      },
+      "add_row": {
+        "label": "Thêm hàng",
+        "desc": "Chèn một hàng mới bên dưới"
+      },
+      "add_column": {
+        "label": "Thêm cột",
+        "desc": "Chèn một cột mới bên phải"
+      },
+      "sort_asc": {
+        "label": "Sắp xếp A-Z",
+        "desc": "Sắp xếp theo thứ tự bảng chữ cái"
+      },
+      "filter": {
+        "label": "Bộ lọc",
+        "desc": "Bật lọc trên vùng chọn"
+      },
+      "remove_dupes": {
+        "label": "Xóa trùng lặp",
+        "desc": "Chỉ giữ lại các hàng duy nhất"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "Bản trình bày chưa có tiêu đề"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "Bảng trắng chưa có tiêu đề"
   }
 }

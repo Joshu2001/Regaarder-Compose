@@ -45,7 +45,10 @@
     "privacy": "개인정보처리방침",
     "legal": "법적 고지",
     "updated": "업데이트됨",
-    "version": "버전"
+    "version": "버전",
+    "tabIndex": "탭 {{index}}",
+    "searchFont": "글꼴 검색",
+    "pinned": "고정됨"
   },
   "nav": {
     "docs": "문서",
@@ -634,7 +637,28 @@
     "cellsSelected": "개 셀 선택됨",
     "sum": "합계",
     "avg": "평균",
-    "count": "개수"
+    "count": "개수",
+    "cellFillGradient": "셀 채우기 및 그라데이션",
+    "clearFill": "채우기 지우기",
+    "presetsShades": "프리셋 및 음영",
+    "gradients": "그라데이션",
+    "customHex": "사용자 지정 색상 / CSS / 그라데이션",
+    "textColor": "글자 색상",
+    "customTextHex": "사용자 지정 글자 색상",
+    "textHighlight": "텍스트 강조 색상",
+    "clearHighlight": "강조 지우기",
+    "colOptions": "열 옵션",
+    "rowOptions": "행 옵션",
+    "selectCol": "열 선택",
+    "selectRow": "행 선택",
+    "insertColLeft": "왼쪽에 1열 삽입",
+    "insertRowAbove": "위에 1행 삽입",
+    "insertColRight": "오른쪽에 1열 삽입",
+    "insertRowBelow": "아래에 1행 삽입",
+    "deleteCol": "열 삭제",
+    "deleteRow": "행 삭제",
+    "clearCol": "열 내용 지우기",
+    "clearRow": "행 내용 지우기"
   },
   "saved": {
     "notSaved": "아직 저장되지 않음",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "일정 타임라인",
     "intelligentSchedule": "지능형 일정"
+  },
+  "slash": {
+    "searchPlaceholder": "명령어 검색…",
+    "commands": "개 명령어",
+    "noCommandsFound": "명령어를 찾을 수 없습니다",
+    "tryDifferent": "다른 검색어를 사용해 보세요",
+    "categories": {
+      "ai": "AI",
+      "insert": "삽입",
+      "format": "서식",
+      "data": "데이터",
+      "analyze": "분석",
+      "transform": "변환",
+      "security": "보안"
+    },
+    "items": {
+      "orb": {
+        "label": "Orb 인텔리전스",
+        "desc": "워크스페이스 전체 RAG：Sheets, Decks, Tasks 인용"
+      },
+      "table": {
+        "label": "스마트 표 (AI)",
+        "desc": "컨텍스트에서 AI 표 생성"
+      },
+      "proofread": {
+        "label": "교정 및 다듬기",
+        "desc": "맞춤법 및 문체 개선"
+      },
+      "translate": {
+        "label": "다국어 번역",
+        "desc": "텍스트를 대상 언어로 번역"
+      },
+      "schedule": {
+        "label": "일정 계획",
+        "desc": "AI 타임라인 또는 체크리스트 생성"
+      },
+      "import_equation": {
+        "label": "수식 생성",
+        "desc": "LaTeX 수식 생성 또는 업로드"
+      },
+      "insert_table": {
+        "label": "수동 표 삽입",
+        "desc": "크기를 지정하여 그리드 삽입"
+      },
+      "bullets": {
+        "label": "글머리 기호 목록",
+        "desc": "글머리 기호 목록 삽입"
+      },
+      "graph": {
+        "label": "차트 및 그래프",
+        "desc": "대화형 SVG 차트 삽입"
+      },
+      "media": {
+        "label": "미디어",
+        "desc": "이미지, 비디오, 파일 삽입"
+      },
+      "shapes": {
+        "label": "도형",
+        "desc": "기하학적 도형 삽입"
+      },
+      "icon": {
+        "label": "아이콘",
+        "desc": "아이콘 또는 기호 삽입"
+      },
+      "emoji": {
+        "label": "이모지",
+        "desc": "이모지 검색 및 삽입"
+      },
+      "symbols": {
+        "label": "특수 기호",
+        "desc": "특수 문자 및 기호 삽입"
+      },
+      "equations": {
+        "label": "LaTeX 수식",
+        "desc": "수식 편집기 블록 삽입"
+      },
+      "divider": {
+        "label": "구분선",
+        "desc": "가로선 삽입"
+      },
+      "callout": {
+        "label": "콜아웃",
+        "desc": "강조 인용구 블록 삽입"
+      },
+      "code_block": {
+        "label": "코드 블록",
+        "desc": "코드 컨테이너 삽입"
+      },
+      "hyperlink": {
+        "label": "하이퍼링크",
+        "desc": "선택한 텍스트에 링크 추가"
+      },
+      "bookmark": {
+        "label": "북마크",
+        "desc": "앵커 또는 북마크 추가"
+      },
+      "watermark": {
+        "label": "워터마크",
+        "desc": "텍스트 또는 이미지 워터마크 추가"
+      },
+      "comment": {
+        "label": "댓글",
+        "desc": "인라인 댓글 상자 삽입"
+      },
+      "redact": {
+        "label": "가리기 및 보호",
+        "desc": "기밀 텍스트 가리기"
+      },
+      "special_characters": {
+        "label": "특수 서식",
+        "desc": "통화, 수학 기호, 숫자 서식"
+      },
+      "insert_date": {
+        "label": "날짜 삽입",
+        "desc": "오늘 날짜 또는 캘린더에서 선택"
+      },
+      "insert_chart": {
+        "label": "차트 삽입",
+        "desc": "시각적 차트 추가"
+      },
+      "insert_shape": {
+        "label": "도형 삽입",
+        "desc": "플로팅 도형 추가"
+      },
+      "insert_textbox": {
+        "label": "텍스트 상자",
+        "desc": "텍스트 상자 추가"
+      },
+      "insert_comment": {
+        "label": "댓글 삽입",
+        "desc": "셀에 댓글 추가"
+      },
+      "format_cell": {
+        "label": "셀 서식",
+        "desc": "셀 서식 옵션 열기"
+      },
+      "copy_style": {
+        "label": "서식 복사",
+        "desc": "셀 서식 복사"
+      },
+      "paste_style": {
+        "label": "서식 붙여넣기",
+        "desc": "복사한 서식 적용"
+      },
+      "merge_cells": {
+        "label": "셀 병합",
+        "desc": "선택한 셀 병합"
+      },
+      "clear_format": {
+        "label": "서식 지우기",
+        "desc": "모든 셀 스타일 초기화"
+      },
+      "add_row": {
+        "label": "행 추가",
+        "desc": "아래에 새 행 삽입"
+      },
+      "add_column": {
+        "label": "열 추가",
+        "desc": "오른쪽에 새 열 삽입"
+      },
+      "sort_asc": {
+        "label": "오름차순 정렬 (A-Z)",
+        "desc": "알파벳순 정렬"
+      },
+      "filter": {
+        "label": "필터",
+        "desc": "필터링 활성화"
+      },
+      "remove_dupes": {
+        "label": "중복 항목 제거",
+        "desc": "고유한 행만 유지"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "제목 없는 프레젠테이션"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "제목 없는 화이트보드"
   }
 }

@@ -45,7 +45,10 @@
     "privacy": "プライバシーポリシー",
     "legal": "法的通知",
     "updated": "更新",
-    "version": "バージョン"
+    "version": "バージョン",
+    "tabIndex": "タブ {{index}}",
+    "searchFont": "フォントを検索",
+    "pinned": "固定済み"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -634,7 +637,28 @@
     "cellsSelected": "個のセルを選択中",
     "sum": "合計",
     "avg": "平均",
-    "count": "個数"
+    "count": "個数",
+    "cellFillGradient": "セルの塗りつぶしとグラデーション",
+    "clearFill": "塗りつぶしをクリア",
+    "presetsShades": "プリセットとシェード",
+    "gradients": "グラデーション",
+    "customHex": "カスタムカラー / CSS / グラデーション",
+    "textColor": "文字の色",
+    "customTextHex": "カスタム文字色",
+    "textHighlight": "文字のハイライト",
+    "clearHighlight": "ハイライトをクリア",
+    "colOptions": "列のオプション",
+    "rowOptions": "行のオプション",
+    "selectCol": "列を選択",
+    "selectRow": "行を選択",
+    "insertColLeft": "左に1列挿入",
+    "insertRowAbove": "上に1行挿入",
+    "insertColRight": "右に1列挿入",
+    "insertRowBelow": "下に1行挿入",
+    "deleteCol": "列を削除",
+    "deleteRow": "行を削除",
+    "clearCol": "列をクリア",
+    "clearRow": "行をクリア"
   },
   "saved": {
     "notSaved": "未保存",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "スケジュールタイムライン",
     "intelligentSchedule": "インテリジェントスケジュール"
+  },
+  "slash": {
+    "searchPlaceholder": "コマンドを検索…",
+    "commands": "個のコマンド",
+    "noCommandsFound": "コマンドが見つかりません",
+    "tryDifferent": "別の検索キーワードをお試しください",
+    "categories": {
+      "ai": "AI",
+      "insert": "挿入",
+      "format": "書式",
+      "data": "データ",
+      "analyze": "分析",
+      "transform": "変換",
+      "security": "セキュリティ"
+    },
+    "items": {
+      "orb": {
+        "label": "Orb インテリジェンス",
+        "desc": "ワークスペース全体 RAG：Sheets、Decks、Tasks を引用"
+      },
+      "table": {
+        "label": "スマートテーブル (AI)",
+        "desc": "コンテキストから AI テーブルを生成"
+      },
+      "proofread": {
+        "label": "校正と推敲",
+        "desc": "スペルと文章スタイルを改善"
+      },
+      "translate": {
+        "label": "多言語翻訳",
+        "desc": "テキストを指定言語に翻訳"
+      },
+      "schedule": {
+        "label": "スケジュール計画",
+        "desc": "AI タイムラインやチェックリストを作成"
+      },
+      "import_equation": {
+        "label": "数式生成",
+        "desc": "LaTeX 数式を生成またはアップロード"
+      },
+      "insert_table": {
+        "label": "手動テーブル挿入",
+        "desc": "サイズを指定してグリッドを挿入"
+      },
+      "bullets": {
+        "label": "箇条書きリスト",
+        "desc": "箇条書きリストを挿入"
+      },
+      "graph": {
+        "label": "グラフとチャート",
+        "desc": "インタラクティブな SVG チャートを挿入"
+      },
+      "media": {
+        "label": "メディア",
+        "desc": "画像、動画、ファイルを挿入"
+      },
+      "shapes": {
+        "label": "図形",
+        "desc": "幾何学的な図形を挿入"
+      },
+      "icon": {
+        "label": "アイコン",
+        "desc": "アイコンまたは記号を挿入"
+      },
+      "emoji": {
+        "label": "絵文字",
+        "desc": "絵文字を検索して挿入"
+      },
+      "symbols": {
+        "label": "特殊記号",
+        "desc": "特殊文字や記号を挿入"
+      },
+      "equations": {
+        "label": "LaTeX 数式",
+        "desc": "数式ブロックを挿入"
+      },
+      "divider": {
+        "label": "区切り線",
+        "desc": "水平線を挿入"
+      },
+      "callout": {
+        "label": "コールアウト",
+        "desc": "引用・強調ブロックを挿入"
+      },
+      "code_block": {
+        "label": "コードブロック",
+        "desc": "コードコンテナを挿入"
+      },
+      "hyperlink": {
+        "label": "ハイパーリンク",
+        "desc": "選択テキストにリンクを追加"
+      },
+      "bookmark": {
+        "label": "ブックマーク",
+        "desc": "アンカーまたはブックマークを追加"
+      },
+      "watermark": {
+        "label": "透かし",
+        "desc": "テキストまたは画像の透かしを追加"
+      },
+      "comment": {
+        "label": "コメント",
+        "desc": "インラインコメントボックスを挿入"
+      },
+      "redact": {
+        "label": "墨消しと保護",
+        "desc": "機密テキストを保護"
+      },
+      "special_characters": {
+        "label": "特殊書式",
+        "desc": "通貨、数式記号、数値書式"
+      },
+      "insert_date": {
+        "label": "日付を挿入",
+        "desc": "今日の日付またはカレンダーから選択"
+      },
+      "insert_chart": {
+        "label": "グラフを挿入",
+        "desc": "視覚的なグラフを追加"
+      },
+      "insert_shape": {
+        "label": "図形を挿入",
+        "desc": "フローティング図形を追加"
+      },
+      "insert_textbox": {
+        "label": "テキストボックス",
+        "desc": "テキストボックスを追加"
+      },
+      "insert_comment": {
+        "label": "コメントを挿入",
+        "desc": "セルにコメントを追加"
+      },
+      "format_cell": {
+        "label": "セル書式設定",
+        "desc": "セル書式オプションを開く"
+      },
+      "copy_style": {
+        "label": "書式をコピー",
+        "desc": "セルの書式をコピー"
+      },
+      "paste_style": {
+        "label": "書式を貼り付け",
+        "desc": "コピーした書式を適用"
+      },
+      "merge_cells": {
+        "label": "セルを結合",
+        "desc": "選択したセルを結合"
+      },
+      "clear_format": {
+        "label": "書式をクリア",
+        "desc": "すべてのセルスタイルをリセット"
+      },
+      "add_row": {
+        "label": "行を追加",
+        "desc": "下に行を挿入"
+      },
+      "add_column": {
+        "label": "列を追加",
+        "desc": "右に列を挿入"
+      },
+      "sort_asc": {
+        "label": "昇順ソート (A-Z)",
+        "desc": "アルファベット順に並べ替え"
+      },
+      "filter": {
+        "label": "フィルター",
+        "desc": "フィルターを有効化"
+      },
+      "remove_dupes": {
+        "label": "重複を削除",
+        "desc": "一意の行のみを保持"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "無題のプレゼンテーション"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "無題のホワイトボード"
   }
 }

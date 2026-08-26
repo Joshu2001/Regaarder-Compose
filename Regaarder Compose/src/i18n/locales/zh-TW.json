@@ -45,7 +45,10 @@
     "privacy": "隱私政策",
     "legal": "法律條款",
     "updated": "更新於",
-    "version": "版本"
+    "version": "版本",
+    "tabIndex": "標籤頁 {{index}}",
+    "searchFont": "搜尋字型",
+    "pinned": "已釘選"
   },
   "nav": {
     "docs": "文件",
@@ -634,7 +637,28 @@
     "cellsSelected": "個儲存格已選取",
     "sum": "總和",
     "avg": "平均值",
-    "count": "個數"
+    "count": "個數",
+    "cellFillGradient": "儲存格填滿與漸層",
+    "clearFill": "清除填滿",
+    "presetsShades": "預設色彩與色調",
+    "gradients": "漸層色彩",
+    "customHex": "自訂色彩代碼 / CSS / 漸層",
+    "textColor": "文字色彩",
+    "customTextHex": "自訂文字色彩代碼",
+    "textHighlight": "文字螢光筆標記",
+    "clearHighlight": "清除標記",
+    "colOptions": "欄位設定選項",
+    "rowOptions": "列位設定選項",
+    "selectCol": "選取整欄",
+    "selectRow": "選取整列",
+    "insertColLeft": "向左插入 1 欄",
+    "insertRowAbove": "向上插入 1 列",
+    "insertColRight": "向右插入 1 欄",
+    "insertRowBelow": "向下插入 1 列",
+    "deleteCol": "刪除此欄",
+    "deleteRow": "刪除此列",
+    "clearCol": "清除此欄內容",
+    "clearRow": "清除此列內容"
   },
   "saved": {
     "notSaved": "尚未儲存",
@@ -658,5 +682,184 @@
   "schedule": {
     "launchTimeline": "時程排程規劃",
     "intelligentSchedule": "智慧行事曆時程"
+  },
+  "slash": {
+    "searchPlaceholder": "搜尋快捷指令…",
+    "commands": "項指令",
+    "noCommandsFound": "找不到相符指令",
+    "tryDifferent": "請嘗試使用其他搜尋關鍵字",
+    "categories": {
+      "ai": "智慧 AI",
+      "insert": "插入元件",
+      "format": "格式排版",
+      "data": "資料運算",
+      "analyze": "分析與審查",
+      "transform": "語氣改寫",
+      "security": "安全性與保護"
+    },
+    "items": {
+      "orb": {
+        "label": "Orb 全域智慧中心",
+        "desc": "跨工作區 RAG：即時引用 Sheets、Decks 與任務"
+      },
+      "table": {
+        "label": "智慧表格 (AI)",
+        "desc": "根據文脈自動生成智慧資料表格"
+      },
+      "proofread": {
+        "label": "校對與潤飾",
+        "desc": "優化文法拼字與寫作風格"
+      },
+      "translate": {
+        "label": "多國語言翻譯",
+        "desc": "將文字翻譯為指定目標語言"
+      },
+      "schedule": {
+        "label": "時程規劃",
+        "desc": "自動建立 AI 專案時間軸或待辦清單"
+      },
+      "import_equation": {
+        "label": "數學公式生成",
+        "desc": "AI 生成或上傳 LaTeX 數學式"
+      },
+      "insert_table": {
+        "label": "手動插入表格",
+        "desc": "自訂行列大小並插入表格網格"
+      },
+      "bullets": {
+        "label": "項目符號清單",
+        "desc": "插入標準項目符號清單"
+      },
+      "graph": {
+        "label": "圖表與視覺化",
+        "desc": "插入互動式 SVG 圖表與數據網格"
+      },
+      "media": {
+        "label": "多媒體檔案",
+        "desc": "插入圖片、影片或檔案"
+      },
+      "shapes": {
+        "label": "幾何圖形",
+        "desc": "插入互動式向量幾何形狀"
+      },
+      "icon": {
+        "label": "精選圖示",
+        "desc": "插入向量圖示或符號"
+      },
+      "emoji": {
+        "label": "表情符號",
+        "desc": "瀏覽並插入 Emoji 表情符號"
+      },
+      "symbols": {
+        "label": "特殊符號",
+        "desc": "插入數學、貨幣與特殊字符"
+      },
+      "equations": {
+        "label": "LaTeX 公式",
+        "desc": "插入數學公式編輯區塊"
+      },
+      "divider": {
+        "label": "水平分隔線",
+        "desc": "插入段落水平分割線"
+      },
+      "callout": {
+        "label": "重點引言框",
+        "desc": "插入醒目引言或提示區塊"
+      },
+      "code_block": {
+        "label": "程式碼區塊",
+        "desc": "插入等寬語法高亮代碼容器"
+      },
+      "hyperlink": {
+        "label": "超連結",
+        "desc": "為選取文字新增外部連結"
+      },
+      "bookmark": {
+        "label": "錨點書籤",
+        "desc": "新增段落跳轉書籤或定位點"
+      },
+      "watermark": {
+        "label": "浮水印",
+        "desc": "新增文字或圖片防偽浮水印"
+      },
+      "comment": {
+        "label": "行內註解",
+        "desc": "插入行內評論與註釋框"
+      },
+      "redact": {
+        "label": "遮蔽與保護",
+        "desc": "遮蔽機密文字或鎖定區塊"
+      },
+      "special_characters": {
+        "label": "特殊格式設定",
+        "desc": "貨幣、數學符號與數值格式"
+      },
+      "insert_date": {
+        "label": "插入日期",
+        "desc": "插入今日日期或從日曆選取"
+      },
+      "insert_chart": {
+        "label": "插入圖表",
+        "desc": "新增精美視覺圖表或統計圖"
+      },
+      "insert_shape": {
+        "label": "插入形狀",
+        "desc": "新增懸浮向量幾何圖形"
+      },
+      "insert_textbox": {
+        "label": "插入文字框",
+        "desc": "新增可拖曳的獨立文字框"
+      },
+      "insert_comment": {
+        "label": "插入評論",
+        "desc": "為儲存格新增備註或討論"
+      },
+      "format_cell": {
+        "label": "儲存格格式",
+        "desc": "開啟進階儲存格排版選項"
+      },
+      "copy_style": {
+        "label": "複製格式",
+        "desc": "複製選取儲存格的視覺樣式"
+      },
+      "paste_style": {
+        "label": "貼上格式",
+        "desc": "將樣式套用至目標儲存格"
+      },
+      "merge_cells": {
+        "label": "合併儲存格",
+        "desc": "將多個相鄰儲存格合併為一"
+      },
+      "clear_format": {
+        "label": "清除格式",
+        "desc": "重設所有儲存格樣式與色彩"
+      },
+      "add_row": {
+        "label": "新增列",
+        "desc": "在下方插入全新的一列"
+      },
+      "add_column": {
+        "label": "新增欄",
+        "desc": "在右側插入全新的一欄"
+      },
+      "sort_asc": {
+        "label": "字母排序 (A-Z)",
+        "desc": "依字母或數值遞增排序"
+      },
+      "filter": {
+        "label": "資料篩選",
+        "desc": "在選取範圍啟用條件篩選"
+      },
+      "remove_dupes": {
+        "label": "移除重複項目",
+        "desc": "僅保留唯一資料列"
+      }
+    }
+  },
+  "deck": {
+    "untitledDeck": "未命名簡報"
+  },
+  "whiteboard": {
+    "untitledWhiteboard": "未命名白板"
   }
 }
