@@ -683,7 +683,26 @@
   "sidebar": {
     "composeAssistant": "Docs アシスタント",
     "sheetsAssistant": "Sheets アシスタント",
-    "deckAssistant": "Deck アシスタント"
+    "deckAssistant": "Deck アシスタント",
+    "assistant": "アシスタント",
+    "history": "履歴",
+    "tasks": "タスク",
+    "conversationHistory": "会話履歴",
+    "chat": "チャット",
+    "agents": "エージェント",
+    "schedule": "スケジュール",
+    "room": "ルーム",
+    "help": "ヘルプ",
+    "comments": "コメント",
+    "dm": "ダイレクトメッセージ",
+    "whiteboard": "ホワイトボード",
+    "people": "メンバー",
+    "memory": "メモリ",
+    "orb": "Orb",
+    "manageen": "Manageen",
+    "files": "ファイル",
+    "home": "ホーム",
+    "createNew": "新規作成"
   },
   "tasks": {
     "yourTasks": "あなたのタスク",
@@ -874,7 +893,40 @@
     "noSlides": "スライドがまだありません。",
     "hidden": "非表示",
     "unhide": "再表示",
-    "hideSlide": "スライドを非表示"
+    "hideSlide": "スライドを非表示",
+    "startFromTemplate": "テンプレートから開始",
+    "startFromTemplateDesc": "ピッチデッキや事業計画のテンプレートを閲覧、またはAIで生成します。",
+    "templateLibrary": "テンプレートライブラリ",
+    "blankCanvas": "白紙のキャンバス",
+    "blankCanvasDesc": "白紙の状態からスライドを作成します。",
+    "cleanSlate": "新規作成",
+    "presentationTemplateLibrary": "プレゼンテーションテンプレートライブラリ",
+    "templateLibrarySubtitle": "Bentoカードとスタイルが事前設定されたテンプレートを選択",
+    "allLibrary": "すべて (ライブラリ)",
+    "aiGenerator": "AI ジェネレーター",
+    "storyStructure": "ストーリー構成",
+    "contentQuality": "コンテンツ品質",
+    "visualHierarchy": "視覚的階層",
+    "accessibility": "アクセシビリティ",
+    "presentationPacing": "プレゼンテンポ",
+    "aiDeckAudit": "AI スライド診断",
+    "slideSorter": "スライド一覧",
+    "guides": "ガイド線",
+    "inspector": "インスペクター",
+    "synthesizingNarrative": "スライドのストーリーとBentoグリッドを生成中…",
+    "draftingCopy": "原稿の作成、タイポグラフィのスケーリング中",
+    "topicGoal": "プレゼンテーションのトピック / 目標",
+    "slideCount": "スライド枚数",
+    "tonePacing": "トーンとテンポ",
+    "themePreset": "テーマプリセット",
+    "generatePresentation": "プレゼンテーションを生成",
+    "slideOf": "スライド {{current}} / {{total}}",
+    "resizePresentation": "プレゼンテーションのサイズ変更",
+    "categories": {
+      "pitch": "ピッチデッキ",
+      "business": "事業計画",
+      "product": "製品・技術"
+    }
   },
   "whiteboard": {
     "untitledWhiteboard": "無題のホワイトボード"
@@ -1081,6 +1133,10 @@
         "label": "データサンプリング",
         "desc": "無作為または系統抽出により代表的なサブセットを抽出。"
       }
-    }
+    },
+    "range": "範囲",
+    "colANumerical": "A列 (数値)",
+    "selectionRange": "選択範囲 (A1:B50)",
+    "workflow": "ワークフロー"
   }
 }

@@ -1171,11 +1171,11 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-base font-semibold tracking-tight text-slate-800 dark:text-zinc-200">
-              Business Decision Intelligence
+              {t('analytics.title') || 'Business Decision Intelligence'}
             </h1>
           </div>
           <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal mt-0.5 tracking-wide">
-            Data → Analyze → Explain → Decide
+            {t('analytics.subtitle') || 'Data → Analyze → Explain → Decide'}
           </p>
         </div>
       </div>
@@ -1207,8 +1207,8 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               className="flex items-center gap-1.5 px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-normal text-slate-300 hover:text-white transition-all cursor-pointer"
             >
               <Table size={13} className="text-slate-400" />
-              <span className="hidden sm:inline">Range:</span>
-              <span className="max-w-[110px] truncate">{selectedDataRange}</span>
+              <span className="hidden sm:inline">{t('analytics.range') || 'Range'}:</span>
+              <span className="max-w-[110px] truncate">{selectedDataRange === 'Entire Active Sheet' ? (t('analytics.entireActiveSheet') || 'Entire Active Sheet') : selectedDataRange === 'Column A (Numerical)' ? (t('analytics.colANumerical') || 'Column A (Numerical)') : selectedDataRange === 'Selection (A1:B50)' ? (t('analytics.selectionRange') || 'Selection (A1:B50)') : selectedDataRange}</span>
               <ChevronDown size={13} className="text-slate-400" />
             </button>
             {selectDataMenuOpen && (
@@ -1420,7 +1420,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Activity size={18} className="text-violet-600" />
-            <span>Workflow: {t('analytics.items.' + activeModuleItem.id + '.label') || activeModuleItem.label}</span>
+            <span>{t('analytics.workflow') || 'Workflow'}: {t('analytics.items.' + activeModuleItem.id + '.label') || activeModuleItem.label}</span>
           </h2>
           <span className="text-xs text-slate-500 font-medium">{t('analytics.executiveDecisionIntelligence') || '6-Step Executive Decision Intelligence'}</span>
         </div>
