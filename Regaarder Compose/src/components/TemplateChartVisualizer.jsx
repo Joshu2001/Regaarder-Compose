@@ -587,9 +587,9 @@ export default function TemplateChartVisualizer({
             <line x1="18" y1="20" x2="18" y2="6" />
           </svg>
         </div>
-        <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">No Data to Display</h4>
+        <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{(window.__rc_t ? window.__rc_t('sheets.noDataToDisplay') : null) || 'No Data to Display'}</h4>
         <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mt-2 max-w-[230px]">
-          Upload or select a worksheet grid with numerical values to render your live interactive visual charts.
+          {(window.__rc_t ? window.__rc_t('sheets.noDataToDisplayDesc') : null) || 'Upload or select a worksheet grid with numerical values to render your live interactive visual charts.'}
         </p>
       </div>
     );

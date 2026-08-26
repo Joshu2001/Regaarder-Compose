@@ -367,7 +367,18 @@
     "budget": "예산 계획",
     "runwayburn": "런웨이 및 자금 소진율",
     "businessplan": "사업 계획서",
-    "gtmplan": "GTM 시장 진출 전략"
+    "gtmplan": "GTM 시장 진출 전략",
+    "createTemplate": "+ 템플릿 만들기",
+    "allTemplates": "모든 템플릿",
+    "financeGrowth": "재무 및 성장",
+    "sales": "영업",
+    "operations": "운영",
+    "myTemplates": "내 템플릿",
+    "startBlank": "빈 시트 시작",
+    "startFromScratch": "처음부터 시작",
+    "financialModel": "재무 모델",
+    "saasMetrics": "SaaS 지표",
+    "salesCrm": "영업 CRM"
   },
   "replay": {
     "title": "편집 리플레이",
@@ -522,7 +533,8 @@
     "strategicReasoning": "전략적 추론 및 의사결정 시스템",
     "strategicReasoningDesc": "직접적인 텍스트 답변, 문서 간 모순 조정, 가설 분석 및 실행 가능한 결론을 제공합니다.",
     "inquiryContradictions": "전략 메모와 시트 사이에 어떤 모순이 존재합니까?",
-    "inquiryGrowth": "성장 전략을 검토하고 전환 가설을 스트레스 테스트하세요"
+    "inquiryGrowth": "성장 전략을 검토하고 전환 가설을 스트레스 테스트하세요",
+    "askFollowUpInquiry": "선택한 항목에 대해 추가 질문하기..."
   },
   "quickActions": {
     "title": "빠른 실행",
@@ -577,5 +589,26 @@
     "sections": "개 섹션",
     "minRead": "분 소요",
     "words": "단어"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "데이터",
+      "templates": "템플릿",
+      "analyze": "분석",
+      "visualize": "시각화",
+      "view": "보기 설정"
+    },
+    "addRow": "+ 행",
+    "removeRow": "- 행",
+    "addCol": "+ 열",
+    "removeCol": "- 열",
+    "addYourData": "데이터 추가",
+    "addYourDataDesc": "파일을 업로드하거나 데이터를 붙여넣거나 빈 시트에서 시작하세요.",
+    "getStarted": "시작하기：",
+    "dropFiles": "파일을 여기에 드롭하거나",
+    "browse": "찾아보기",
+    "supportsUpload": "PDF, Excel, CSV, JSON 등 다중 파일 업로드 지원",
+    "noDataToDisplay": "표시할 데이터가 없습니다",
+    "noDataToDisplayDesc": "수치 데이터가 있는 워크시트를 업로드하거나 선택하여 대화형 시각 차트를 렌더링하세요。"
   }
 }

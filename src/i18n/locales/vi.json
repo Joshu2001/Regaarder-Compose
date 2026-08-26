@@ -367,7 +367,18 @@
     "budget": "Ngân sách",
     "runwayburn": "Thời gian hoạt động & Mức chi tiêu",
     "businessplan": "Kế hoạch kinh doanh",
-    "gtmplan": "Kế hoạch Go-to-Market"
+    "gtmplan": "Kế hoạch Go-to-Market",
+    "createTemplate": "+ Tạo mẫu",
+    "allTemplates": "Tất cả mẫu",
+    "financeGrowth": "Tài chính & Tăng trưởng",
+    "sales": "Bán hàng",
+    "operations": "Vận hành",
+    "myTemplates": "Mẫu của tôi",
+    "startBlank": "Bắt đầu trang trống",
+    "startFromScratch": "Bắt đầu từ đầu",
+    "financialModel": "Mô hình tài chính",
+    "saasMetrics": "Chỉ số SaaS",
+    "salesCrm": "CRM Bán hàng"
   },
   "replay": {
     "title": "Xem lại chỉnh sửa",
@@ -522,7 +533,8 @@
     "strategicReasoning": "Hệ thống lập luận chiến lược",
     "strategicReasoningDesc": "Câu trả lời trực tiếp, giải quyết mâu thuẫn giữa các tài liệu và kết luận vận hành có thể hành động.",
     "inquiryContradictions": "Những mâu thuẫn nào tồn tại giữa các bản ghi nhớ chiến lược và bảng tính?",
-    "inquiryGrowth": "Thử thách chiến lược tăng trưởng và kiểm tra các giả định chuyển đổi"
+    "inquiryGrowth": "Thử thách chiến lược tăng trưởng và kiểm tra các giả định chuyển đổi",
+    "askFollowUpInquiry": "Hỏi phần tiếp theo về lựa chọn này..."
   },
   "quickActions": {
     "title": "THAO TÁC NHANH",
@@ -577,5 +589,26 @@
     "sections": "Phần",
     "minRead": "phút đọc",
     "words": "từ"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "Dữ liệu",
+      "templates": "Mẫu",
+      "analyze": "Phân tích",
+      "visualize": "Trực quan hóa",
+      "view": "Xem"
+    },
+    "addRow": "+ Hàng",
+    "removeRow": "- Hàng",
+    "addCol": "+ Cột",
+    "removeCol": "- Cột",
+    "addYourData": "Thêm dữ liệu của bạn",
+    "addYourDataDesc": "Tải lên tệp, dán dữ liệu hoặc bắt đầu với một trang tính trống.",
+    "getStarted": "BẮT ĐẦU:",
+    "dropFiles": "Kéo tệp vào đây hoặc nhấp để",
+    "browse": "duyệt tệp",
+    "supportsUpload": "Hỗ trợ tải lên nhiều tệp cùng lúc cho PDF, Excel, CSV, JSON, v.v.",
+    "noDataToDisplay": "Không có dữ liệu để hiển thị",
+    "noDataToDisplayDesc": "Tải lên hoặc chọn một trang tính có giá trị số để hiển thị biểu đồ tương tác."
   }
 }

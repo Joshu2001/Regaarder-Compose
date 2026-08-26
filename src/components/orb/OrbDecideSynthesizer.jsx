@@ -364,7 +364,7 @@ export default function OrbDecideSynthesizer({
                 type="text"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder={activeQuoteContext ? "Ask a follow-up inquiry about this selection..." : "Ask an executive question or evaluate strategy..."}
+                placeholder={activeQuoteContext ? (t('orb.askFollowUpInquiry') || "Ask a follow-up inquiry about this selection...") : (t('orb.decidePlaceholder') || "Ask an executive question or evaluate strategy...")}
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
               />
             </div>

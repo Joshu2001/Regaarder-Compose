@@ -212,7 +212,7 @@ export default function OrbSpotlightModal({
                     ? 'font-bold border-2 border-slate-500 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-slate-950 dark:text-zinc-100'
                     : 'font-semibold bg-slate-100/80 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400 border border-slate-200/50 dark:border-zinc-700/50'
                 }`}>
-                  Intelligence Layer
+                  {t('orb.intelligenceLayer') || 'Intelligence Layer'}
                 </span>
               </div>
             </div>

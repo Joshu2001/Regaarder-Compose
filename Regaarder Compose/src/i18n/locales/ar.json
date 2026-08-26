@@ -367,7 +367,18 @@
     "budget": "الميزانية",
     "runwayburn": "معدل الحرق المالي وفترة البقاء",
     "businessplan": "خطة العمل",
-    "gtmplan": "خطة الدخول للسوق (GTM)"
+    "gtmplan": "خطة الدخول للسوق (GTM)",
+    "createTemplate": "+ إنشاء قالب",
+    "allTemplates": "جميع القوالب",
+    "financeGrowth": "المالية والنمو",
+    "sales": "المبيعات",
+    "operations": "العمليات",
+    "myTemplates": "قوالبي",
+    "startBlank": "البدء بصفحة فارغة",
+    "startFromScratch": "البدء من الصفر",
+    "financialModel": "النموذج المالي",
+    "saasMetrics": "مقاييس SaaS",
+    "salesCrm": "إدارة علاقات العملاء"
   },
   "replay": {
     "title": "إعادة تشغيل التعديلات",
@@ -522,7 +533,8 @@
     "strategicReasoning": "نظام الاستدلال الاستراتيجي",
     "strategicReasoningDesc": "إجابات مباشرة، والتوفيق بين التناقضات، وتحليل الافتراضات واستنتاجات قابلة للتنفيذ.",
     "inquiryContradictions": "ما هي التناقضات الموجودة بين مذكرات الاستراتيجية والجداول؟",
-    "inquiryGrowth": "اختبر استراتيجية النمو وافحص افتراضات التحويل المطلوبة"
+    "inquiryGrowth": "اختبر استراتيجية النمو وافحص افتراضات التحويل المطلوبة",
+    "askFollowUpInquiry": "اطرح سؤال متابعة حول هذا التحديد..."
   },
   "quickActions": {
     "title": "إجراءات سريعة",
@@ -577,5 +589,26 @@
     "sections": "أقسام",
     "minRead": "دقيقة قراءة",
     "words": "كلمات"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "بيانات",
+      "templates": "قوالب",
+      "analyze": "تحليل",
+      "visualize": "تصور",
+      "view": "عرض"
+    },
+    "addRow": "+ صف",
+    "removeRow": "- صف",
+    "addCol": "+ عمود",
+    "removeCol": "- عمود",
+    "addYourData": "أضف بياناتك",
+    "addYourDataDesc": "قم بتحميل ملف أو لصق البيانات أو البدء بورقة فارغة.",
+    "getStarted": "البدء:",
+    "dropFiles": "أسقط الملفات هنا أو انقر لـ",
+    "browse": "تصفح",
+    "supportsUpload": "يدعم التحميل المتزامن لملفات PDF و Excel و CSV و JSON وغيرها",
+    "noDataToDisplay": "لا توجد بيانات للعرض",
+    "noDataToDisplayDesc": "قم بتحميل أو تحديد شبكة ورقة عمل بها قيم رقمية لتقديم مخططاتك المرئية التفاعلية."
   }
 }

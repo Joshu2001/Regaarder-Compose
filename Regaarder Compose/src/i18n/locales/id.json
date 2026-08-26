@@ -367,7 +367,18 @@
     "budget": "Anggaran",
     "runwayburn": "Runway & Burn Rate",
     "businessplan": "Rencana Bisnis",
-    "gtmplan": "Rencana Go-to-Market"
+    "gtmplan": "Rencana Go-to-Market",
+    "createTemplate": "+ Buat templat",
+    "allTemplates": "Semua Templat",
+    "financeGrowth": "Keuangan & Pertumbuhan",
+    "sales": "Penjualan",
+    "operations": "Operasional",
+    "myTemplates": "Templat Saya",
+    "startBlank": "Mulai kosong",
+    "startFromScratch": "Mulai dari awal",
+    "financialModel": "Model Keuangan",
+    "saasMetrics": "Metrik SaaS",
+    "salesCrm": "CRM Penjualan"
   },
   "replay": {
     "title": "Putar Ulang Editan",
@@ -522,7 +533,8 @@
     "strategicReasoning": "Sistem Penalaran Strategis",
     "strategicReasoningDesc": "Jawaban prosa langsung, rekonsiliasi kontradiksi dokumen, dan kesimpulan operasional yang dapat ditindaklanjuti.",
     "inquiryContradictions": "Kontradiksi apa yang ada di antara memo strategi dan spreadsheet aktif?",
-    "inquiryGrowth": "Uji strategi pertumbuhan kami dan uji asumsi konversi yang diperlukan"
+    "inquiryGrowth": "Uji strategi pertumbuhan kami dan uji asumsi konversi yang diperlukan",
+    "askFollowUpInquiry": "Ajukan pertanyaan lanjutan tentang pilihan ini..."
   },
   "quickActions": {
     "title": "TINDAKAN CEPAT",
@@ -577,5 +589,26 @@
     "sections": "Bagian",
     "minRead": "menit baca",
     "words": "kata"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "Data",
+      "templates": "Templat",
+      "analyze": "Analisis",
+      "visualize": "Visualisasikan",
+      "view": "Tampilan"
+    },
+    "addRow": "+ Baris",
+    "removeRow": "- Baris",
+    "addCol": "+ Kolom",
+    "removeCol": "- Kolom",
+    "addYourData": "Tambahkan data Anda",
+    "addYourDataDesc": "Unggah file, tempel data, atau mulai dengan lembar kosong.",
+    "getStarted": "MULAI:",
+    "dropFiles": "Tarik file ke sini atau klik untuk",
+    "browse": "telusuri",
+    "supportsUpload": "Mendukung pengunggahan multi-file simultan untuk PDF, Excel, CSV, JSON, dll.",
+    "noDataToDisplay": "Tidak Ada Data untuk Ditampilkan",
+    "noDataToDisplayDesc": "Unggah atau pilih kisi lembar kerja dengan nilai numerik untuk merender grafik visual interaktif."
   }
 }

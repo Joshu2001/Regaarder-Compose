@@ -367,7 +367,18 @@
     "budget": "預算編列",
     "runwayburn": "資金消耗與週期",
     "businessplan": "商業營運計畫",
-    "gtmplan": "市場推廣計畫"
+    "gtmplan": "市場推廣計畫",
+    "createTemplate": "+ 建立新範本",
+    "allTemplates": "所有範本",
+    "financeGrowth": "財務與增長",
+    "sales": "業務銷售",
+    "operations": "營運管理",
+    "myTemplates": "我的範本",
+    "startBlank": "空白試算表",
+    "startFromScratch": "從頭建立全新數據表",
+    "financialModel": "財務營收模型",
+    "saasMetrics": "SaaS 核心營運指標",
+    "salesCrm": "業務銷售 CRM 漏斗"
   },
   "replay": {
     "title": "編輯歷程重播",
@@ -522,7 +533,8 @@
     "strategicReasoning": "戰略推理與決策系統",
     "strategicReasoningDesc": "提供直接文字解答、跨文件矛盾調和、遺漏假設分析、反方論點壓力測試與可執行的營運決策。",
     "inquiryContradictions": "目前各策略備忘錄與試算表之間存在哪些跨工作區矛盾？",
-    "inquiryGrowth": "檢驗我們的成長策略，並針對必要的轉換率假設進行壓力測試"
+    "inquiryGrowth": "檢驗我們的成長策略，並針對必要的轉換率假設進行壓力測試",
+    "askFollowUpInquiry": "針對此選取內容提出後續追問..."
   },
   "quickActions": {
     "title": "常用快捷動作",
@@ -577,5 +589,26 @@
     "sections": "個章節",
     "minRead": "分鐘閱讀",
     "words": "字"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "數據資料",
+      "templates": "範本庫",
+      "analyze": "智慧分析",
+      "visualize": "視覺圖表",
+      "view": "檢視設定"
+    },
+    "addRow": "+ 列",
+    "removeRow": "- 列",
+    "addCol": "+ 欄",
+    "removeCol": "- 欄",
+    "addYourData": "匯入您的數據",
+    "addYourDataDesc": "上傳檔案、貼上數據或從空白試算表開始。",
+    "getStarted": "開始使用：",
+    "dropFiles": "將檔案拖放到此處，或點擊",
+    "browse": "瀏覽上傳",
+    "supportsUpload": "支援同時上傳多個 PDF、Excel、CSV、JSON 等檔案",
+    "noDataToDisplay": "尚無可顯示之圖表數據",
+    "noDataToDisplayDesc": "上傳或選取包含數值之工作表表格，以即時生成互動式視覺圖表。"
   }
 }
