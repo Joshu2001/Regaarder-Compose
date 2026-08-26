@@ -31847,6 +31847,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setIsRoomMicOn(false);
     setIsRoomCameraOn(false);
     setIsMicMuted(true);
+    // Lock duration at the exact moment user leaves
+    if (meetingStartedAt) {
+      setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
+    }
     // Show the post-call rating modal. The actual roomState transition to 'summary'
     // (and navigation home) happens inside confirmLeaveRoom() once the user submits.
     setCallRating(0);
@@ -32054,14 +32058,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
   }, [isRoomCameraOn, localStream]);
 
   useEffect(() => {
-    if (roomState !== 'active' || !meetingStartedAt) {
+    if (roomState !== 'active' || !meetingStartedAt || isPostCallRatingOpen) {
       return undefined;
     }
     const interval = setInterval(() => {
       setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
     }, 1000);
     return () => clearInterval(interval);
-  }, [roomState, meetingStartedAt, formatMeetingElapsed]);
+  }, [roomState, meetingStartedAt, isPostCallRatingOpen, formatMeetingElapsed]);
 
   const activeSharedMeetingFile = useMemo(() => {
     if (!sharedMeetingFiles.length) {
@@ -81006,65 +81010,63 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Post-Call Rating Overlay ── */}
       {isPostCallRatingOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xl">
-          <div className="relative w-full max-w-md mx-4 bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 overflow-hidden">
-            {/* Top gradient accent */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500 rounded-t-[32px]" />
-
-            <div className="px-10 pt-10 pb-8 flex flex-col items-center gap-6">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[440px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl rounded-[32px] shadow-[0_32px_100px_rgba(0,0,0,0.18)] border border-white/80 dark:border-white/10 overflow-hidden text-center select-none animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-8 pt-8 pb-7 flex flex-col items-center gap-5">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-[0_8px_24px_rgba(124,58,237,0.35)]">
-                <PhoneOff size={26} className="text-white" strokeWidth={1.5} />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-[0_8px_24px_rgba(124,58,237,0.3)]">
+                <PhoneOff size={24} className="text-white" strokeWidth={1.75} />
               </div>
 
               {/* Heading */}
               <div className="text-center">
-                <h2 className="text-[22px] font-semibold text-gray-900 tracking-tight">{t('room.leftMeeting') || 'You left the meeting'}</h2>
-                <p className="text-[14px] text-gray-400 mt-1 font-normal">{t('room.howWasExperience') || 'How was your experience?'}</p>
+                <h2 className="text-[20px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">{t('room.leftMeeting') || 'You left the meeting'}</h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 font-normal">{t('room.howWasExperience') || 'How was your experience?'}</p>
               </div>
 
               {/* Meeting stats */}
-              <div className="flex items-center gap-6 w-full justify-center">
+              <div className="flex items-center gap-5 w-full justify-center py-1">
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[20px] font-semibold text-gray-900">{meetingDurationLabel || '00:00'}</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('room.duration') || 'Duration'}</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">{meetingDurationLabel || '00:00'}</span>
+                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('room.duration') || 'Duration'}</span>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[20px] font-semibold text-gray-900">4</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('room.participants') || 'Participants'}</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">4</span>
+                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('room.participants') || 'Participants'}</span>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[20px] font-semibold text-gray-900">{roomId || '—'}</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('workspace.room') || 'Room'}</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">{roomId || '—'}</span>
+                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('workspace.room') || 'Room'}</span>
                 </div>
               </div>
 
               {/* 5-Star Rating */}
-              <div className="flex flex-col items-center gap-3 w-full">
-                <p className="text-[13px] text-gray-500 font-medium">{t('room.rateCallQuality') || 'Rate the call quality'}</p>
+              <div className="flex flex-col items-center gap-2.5 w-full">
+                <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">{t('room.rateCallQuality') || 'Rate the call quality'}</p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
+                      type="button"
                       onMouseEnter={() => setCallRatingHover(star)}
                       onMouseLeave={() => setCallRatingHover(0)}
                       onClick={() => {
                         setCallRating(star);
                         setTimeout(() => confirmLeaveRoom(), 200);
                       }}
-                      className="transition-all duration-150 hover:scale-110 active:scale-95"
+                      className="transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer"
                       aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     >
                       <svg
-                        width="36" height="36" viewBox="0 0 24 24" fill="none"
+                        width="32" height="32" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" strokeWidth="1.5"
                         strokeLinecap="round" strokeLinejoin="round"
                         className={`transition-colors duration-100 ${
                           star <= (callRatingHover || callRating)
                             ? 'fill-amber-400 stroke-amber-400'
-                            : 'fill-transparent stroke-gray-300'
+                            : 'fill-transparent stroke-slate-300 dark:stroke-zinc-700'
                         }`}
                       >
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -81073,25 +81075,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   ))}
                 </div>
                 {callRating > 0 && (
-                  <p className="text-[12px] text-violet-500 font-medium animate-in fade-in duration-200">
+                  <p className="text-xs text-violet-600 dark:text-violet-400 font-medium animate-in fade-in duration-200">
                     {callRating === 1 ? 'Sorry to hear that.' : callRating === 2 ? 'We\'ll improve.' : callRating === 3 ? 'Thanks for the feedback.' : callRating === 4 ? 'Glad it went well!' : '🎉 Perfect call!'}
                   </p>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col gap-3 w-full mt-1">
+              <div className="flex flex-col gap-2.5 w-full mt-1">
                 <button
+                  type="button"
                   onClick={confirmLeaveRoom}
-                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[15px] font-semibold shadow-[0_8px_24px_rgba(124,58,237,0.3)] hover:shadow-[0_12px_32px_rgba(124,58,237,0.4)] hover:from-violet-700 hover:to-purple-700 transition-all duration-200 active:scale-[0.98]"
+                  className="w-full h-11 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold shadow-[0_6px_20px_rgba(124,58,237,0.28)] hover:shadow-[0_8px_24px_rgba(124,58,237,0.38)] hover:from-violet-700 hover:to-purple-700 transition-all duration-200 active:scale-[0.98] cursor-pointer"
                 >
-                  Return to Home
+                  {t('room.returnToHome') || 'Return to Home'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setIsPostCallRatingOpen(false)}
-                  className="w-full h-10 rounded-2xl text-gray-400 text-[13px] font-medium hover:text-gray-600 hover:bg-gray-50 transition-all duration-150"
+                  className="w-full h-9 rounded-2xl text-slate-400 dark:text-zinc-500 text-xs font-semibold hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-all duration-150 cursor-pointer"
                 >
-                  Cancel — Rejoin meeting
+                  {t('room.cancelRejoin') || 'Cancel — Rejoin meeting'}
                 </button>
               </div>
             </div>
