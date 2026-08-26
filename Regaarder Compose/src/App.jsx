@@ -80480,15 +80480,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    {/* Interactive Live Working App Stage — Authentic Workspace Projection */}
+                    {/* Interactive Live Working App Stage */}
                     <div className="flex-1 overflow-hidden bg-[#F7F7F9] dark:bg-[#121214] relative flex flex-col">
-                      <div className="flex-1 overflow-auto bg-transparent relative flex flex-col">
-                        {/* Live Projection of Active Product Workspace */}
-                        <div className="w-full h-full flex-1 flex flex-col pointer-events-auto">
-                          {renderProductWorkspaceContent ? renderProductWorkspaceContent() : null}
+                      {roomPresentedApp === 'docs' ? (
+                        <div className="flex-1 overflow-auto bg-[#F7F7F9] dark:bg-[#121214] p-4 md:p-6 flex flex-col items-center">
+                          <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] rounded-[24px] border border-slate-200/60 dark:border-zinc-800 p-8 md:p-12 min-h-[460px] relative transition-all">
+                            <input
+                              type="text"
+                              value={docTitle || ''}
+                              onChange={(e) => setDocTitle(e.target.value)}
+                              placeholder="Untitled Document"
+                              className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white w-full bg-transparent border-none outline-none mb-4 font-sans"
+                            />
+                            <div 
+                              contentEditable
+                              suppressContentEditableWarning
+                              onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                              onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                              dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
+                              className="prose dark:prose-invert max-w-none text-[14px] leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[280px]"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </div>
                       ) : roomPresentedApp === 'whiteboard' ? (
                         /* Live Interactive Whiteboard Stage */
                         <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none flex flex-col justify-center items-center">
