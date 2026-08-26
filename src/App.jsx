@@ -80508,25 +80508,134 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    {/* Interactive Live Working App Stage */}
-                    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-zinc-950 thin-scrollbar relative flex flex-col">
+                    {/* Interactive Live Working App Stage — Authentic Workspace Engine (Exact Image 3 Parity) */}
+                    <div className="flex-1 overflow-hidden bg-[#F7F7F9] dark:bg-[#121214] relative flex flex-col">
                       {roomPresentedApp === 'docs' ? (
-                        <div className="flex-1 flex flex-col overflow-auto bg-[#F7F7F9] dark:bg-[#121214] p-4 md:p-6">
-                          <div className="max-w-3xl mx-auto w-full bg-white dark:bg-[#1C1C1E] shadow-sm rounded-2xl p-8 border border-slate-200/80 dark:border-zinc-800 min-h-[420px]">
-                            <input
-                              type="text"
-                              value={docTitle || ''}
-                              onChange={(e) => setDocTitle(e.target.value)}
-                              placeholder="Untitled Document"
-                              className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white w-full bg-transparent border-none outline-none mb-4"
-                            />
+                        <div className="flex-1 flex flex-col overflow-hidden bg-[#F7F7F9] dark:bg-[#121214]">
+                          {/* 1. Header Navigation Bar (Exact Image 3 Layout) */}
+                          <div className="px-4 py-2 bg-white/95 dark:bg-zinc-900/95 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 select-none">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <button type="button" className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                                <ChevronRight size={14} className="rotate-180" />
+                              </button>
+                              <div className="w-5 h-5 rounded-lg bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                                <ComposeIcon size={12} />
+                              </div>
+                              <input
+                                type="text"
+                                value={docTitle || ''}
+                                onChange={(e) => setDocTitle(e.target.value)}
+                                placeholder="Untitled Document"
+                                className="text-xs font-bold text-slate-800 dark:text-zinc-100 bg-transparent border-none outline-none max-w-[200px] truncate"
+                              />
+                            </div>
+
+                            {/* Document Tabs Strip */}
+                            <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-zinc-800/80 p-0.5 rounded-xl border border-slate-200/50">
+                              <span className="px-2.5 py-0.5 bg-white dark:bg-zinc-900 text-[11px] font-semibold rounded-lg shadow-2xs text-slate-800 dark:text-zinc-200 flex items-center gap-1">
+                                <span className="truncate max-w-[120px]">{docTitle || 'Untitled Document'}</span>
+                              </span>
+                              <button type="button" className="p-1 text-slate-400 hover:text-slate-600"><Plus size={11} /></button>
+                            </div>
+
+                            {/* Right Action Suite */}
+                            <div className="flex items-center gap-1.5">
+                              <button type="button" onClick={() => applyFormatCommand('undo')} className="p-1 text-slate-400 hover:text-slate-600 rounded"><Undo2 size={13} /></button>
+                              <button type="button" onClick={() => applyFormatCommand('redo')} className="p-1 text-slate-400 hover:text-slate-600 rounded"><Redo2 size={13} /></button>
+                              <button type="button" className="px-2 py-0.5 text-[11px] font-semibold bg-violet-600 text-white rounded-lg shadow-2xs">{t('common.share') || 'Share'}</button>
+                            </div>
+                          </div>
+
+                          {/* 2. Ribbon Tabs Strip (Context, Templates, Write, Review, View) */}
+                          <div className="px-4 py-1.5 bg-white/90 dark:bg-zinc-900/90 border-b border-slate-200/70 dark:border-zinc-800 flex items-center justify-between shrink-0 select-none">
+                            <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-zinc-800/70 p-0.5 rounded-xl">
+                              {['Context', 'Templates', 'Write', 'Review', 'View'].map((tab) => (
+                                <button
+                                  key={tab}
+                                  type="button"
+                                  onClick={() => setDocToolbarTab(tab)}
+                                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                                    docToolbarTab === tab 
+                                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs' 
+                                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-300'
+                                  }`}
+                                >
+                                  {tab}
+                                </button>
+                              ))}
+                            </div>
+                            <span className="text-[10px] font-medium text-slate-400">{t('toolbar.collapse') || 'Collapse'} ⌃</span>
+                          </div>
+
+                          {/* 3. Formatting Toolbar Sub-Bar (Paragraph, Page #, Font, Size, Alignment, Lists, Insert) */}
+                          <div className="px-4 py-1.5 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/60 dark:border-zinc-800 flex items-center gap-3 shrink-0 select-none overflow-x-auto no-scrollbar">
+                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
+                              <span>Paragraph ▾</span>
+                            </div>
+                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
+                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
+                              <span>Page # ▾</span>
+                            </div>
+                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
+                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
+                              <span>{editorFont} ▾</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
+                              <span>{activeFontSize} ▾</span>
+                            </div>
+                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
+                            <div className="flex items-center gap-0.5 bg-slate-200/60 dark:bg-zinc-800 p-0.5 rounded-lg">
+                              <button type="button" onClick={() => applyFormatCommand('justifyLeft')} className="p-1 hover:bg-white rounded text-slate-600"><AlignLeft size={12} /></button>
+                              <button type="button" onClick={() => applyFormatCommand('justifyCenter')} className="p-1 hover:bg-white rounded text-slate-600"><AlignCenter size={12} /></button>
+                              <button type="button" onClick={() => applyFormatCommand('justifyRight')} className="p-1 hover:bg-white rounded text-slate-600"><AlignRight size={12} /></button>
+                            </div>
+                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
+                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
+                              <List size={12} />
+                              <span>Lists ▾</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
+                              <Plus size={12} />
+                              <span>Insert ▾</span>
+                            </div>
+                          </div>
+
+                          {/* 4. Document Page Surface Paper with Draft Tag (Exact Image 3 Layout) */}
+                          <div className="flex-1 overflow-y-auto p-4 md:p-8 thin-scrollbar flex flex-col items-center bg-[#F7F7F9] dark:bg-[#121214] relative">
+                            {/* Floating Left Orb Icon */}
+                            <div className="absolute left-6 top-10 w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-950/80 border border-violet-200/60 text-violet-600 flex items-center justify-center shadow-xs">
+                              <RegaarderAiIcon size={16} />
+                            </div>
+
+                            {/* White Document Paper Sheet */}
                             <div 
-                              contentEditable
-                              suppressContentEditableWarning
-                              onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
-                              className="prose dark:prose-invert max-w-none text-sm leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[260px]"
-                            />
+                              className="w-full max-w-[760px] bg-white dark:bg-[#1C1C1E] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] rounded-[24px] border border-slate-200/60 dark:border-zinc-800 p-8 md:p-12 min-h-[460px] relative transition-all"
+                              style={{ fontFamily: resolveFontFamily(editorFont) }}
+                            >
+                              {/* Top Draft Badge */}
+                              <div className="flex justify-end mb-4">
+                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100/90 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-semibold border border-slate-200/60 shadow-2xs">
+                                  <FileEdit size={12} className="text-violet-600" />
+                                  <span>Draft</span>
+                                </div>
+                              </div>
+
+                              {/* Editable Document Body Surface */}
+                              <div 
+                                contentEditable
+                                suppressContentEditableWarning
+                                onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                                onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                                dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
+                                className="prose dark:prose-invert max-w-none text-[14px] leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[280px]"
+                              />
+                            </div>
+
+                            {/* Bottom Floating Dictate Pill */}
+                            <div className="absolute right-8 bottom-6 flex items-center gap-2 bg-white dark:bg-zinc-900 shadow-md border border-slate-200/80 rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-700 select-none">
+                              <Mic size={13} className="text-slate-500" />
+                              <span>Dictate</span>
+                            </div>
                           </div>
                         </div>
                       ) : roomPresentedApp === 'whiteboard' ? (
@@ -80954,44 +81063,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MonitorPlay size={18} strokeWidth={1.5} />
                           </button>
 
-                          {/* Present Mode Selection Popover */}
+                          {/* Present Mode Selection Popover — Apple Executive Tier Stacked List */}
                           {isRoomPresentPickerOpen && (
                             <div 
-                              className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 w-[340px] max-h-[460px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl border border-slate-200/80 dark:border-zinc-800 shadow-[0_28px_90px_rgba(0,0,0,0.25)] rounded-[32px] p-4 z-[99999] animate-in slide-in-from-bottom-3 fade-in duration-200 font-sans text-left flex flex-col pointer-events-auto"
+                              className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 w-[320px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_24px_70px_rgba(0,0,0,0.18)] rounded-[28px] p-3 z-[99999] animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans text-left flex flex-col pointer-events-auto"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <div className="flex items-center justify-between px-2 mb-2">
-                                <span className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                                  {t('room.presentWorkspaceApp') || 'Present Workspace App'}
-                                </span>
-                              </div>
-
                               {/* Search Bar */}
-                              <div className="flex items-center gap-2 bg-slate-100/80 dark:bg-zinc-800/80 px-3 py-1.5 rounded-xl mb-3 border border-slate-200/60 dark:border-zinc-700/60">
-                                <Search size={13} className="text-slate-400" />
+                              <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-zinc-800/90 px-3.5 py-2 rounded-2xl mb-2.5 border border-slate-200/70 dark:border-zinc-700/60 focus-within:ring-2 focus-within:ring-violet-400/20 focus-within:border-violet-300">
+                                <Search size={14} className="text-slate-400 shrink-0" />
                                 <input
                                   type="text"
                                   value={roomPresentAppSearch}
                                   onChange={(e) => setRoomPresentAppSearch(e.target.value)}
-                                  placeholder={t('room.searchWorkspaceApps') || 'Search apps & docs...'}
-                                  className="w-full text-xs bg-transparent border-none outline-none text-slate-700 dark:text-zinc-200 placeholder:text-slate-400"
+                                  placeholder={t('room.searchWorkspaceApps') || 'Search workspace apps...'}
+                                  className="w-full text-xs bg-transparent border-none outline-none text-slate-800 dark:text-zinc-100 placeholder:text-slate-400"
                                 />
                                 {roomPresentAppSearch && (
-                                  <button type="button" onClick={() => setRoomPresentAppSearch('')} className="text-slate-400 hover:text-slate-600">×</button>
+                                  <button type="button" onClick={() => setRoomPresentAppSearch('')} className="text-slate-400 hover:text-slate-600 text-xs">×</button>
                                 )}
                               </div>
 
-                              {/* All Workspace Apps Grid */}
-                              <div className="grid grid-cols-2 gap-1.5 max-h-[260px] overflow-y-auto thin-scrollbar pr-0.5 mb-2">
+                              {/* Stacked Clean List */}
+                              <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto thin-scrollbar pr-0.5 mb-1.5">
                                 {[
-                                  { id: 'docs', name: t('room.presentDocs') || 'Docs', sub: docTitle || 'Active Document', icon: ComposeIcon, color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/70' },
-                                  { id: 'whiteboard', name: t('room.presentWhiteboard') || 'Whiteboard', sub: 'Infinite Canvas', icon: WhiteboardIcon, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/70' },
-                                  { id: 'sheets', name: t('room.presentSheets') || 'Sheets', sub: sheetsTitle || 'Active Workbook', icon: SheetIcon, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/70' },
-                                  { id: 'decks', name: t('room.presentDecks') || 'Decks', sub: deckTitle || 'Slide Presentation', icon: DeckIcon, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/70' },
-                                  { id: 'memory', name: 'Memory', sub: 'Knowledge Base', icon: MemoryIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/70' },
-                                  { id: 'tasks', name: 'Tasks', sub: 'Sprint Initiatives', icon: TasksIcon, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/70' },
-                                  { id: 'schedule', name: 'Schedule', sub: 'Calendar & Agenda', icon: ScheduleIcon, color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/70' },
-                                  { id: 'browser', name: 'Browser', sub: 'Web Agent Canvas', icon: BrowserIcon, color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/70' }
+                                  { id: 'docs', name: t('room.presentDocs') || 'Docs Document', sub: docTitle || 'Untitled Document', icon: ComposeIcon, iconBg: 'bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400' },
+                                  { id: 'whiteboard', name: t('room.presentWhiteboard') || 'Whiteboard Canvas', sub: 'Untitled Whiteboard', icon: WhiteboardIcon, iconBg: 'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400' },
+                                  { id: 'sheets', name: t('room.presentSheets') || 'Sheets Spreadsheet', sub: sheetsTitle || 'Untitled Sheet', icon: SheetIcon, iconBg: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' },
+                                  { id: 'decks', name: t('room.presentDecks') || 'Decks Presentation', sub: deckTitle || 'Untitled Deck', icon: DeckIcon, iconBg: 'bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400' },
+                                  { id: 'memory', name: 'Memory Knowledge Base', sub: 'Project Context & Notes', icon: MemoryIcon, iconBg: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' },
+                                  { id: 'tasks', name: 'Sprint Tasks', sub: 'Active Initiatives', icon: TasksIcon, iconBg: 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400' },
+                                  { id: 'schedule', name: 'Meeting Schedule', sub: 'Agenda & Calendar', icon: ScheduleIcon, iconBg: 'bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400' },
+                                  { id: 'browser', name: 'Agent Browser', sub: 'Live Research Canvas', icon: BrowserIcon, iconBg: 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400' }
                                 ]
                                 .filter(item => !roomPresentAppSearch || item.name.toLowerCase().includes(roomPresentAppSearch.toLowerCase()) || item.sub.toLowerCase().includes(roomPresentAppSearch.toLowerCase()))
                                 .map((app) => (
@@ -81003,20 +81106,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       setIsRoomPresentPickerOpen(false);
                                       showToast?.(`Presenting ${app.name}`);
                                     }}
-                                    className="flex items-center gap-2 p-2 rounded-2xl hover:bg-slate-100/90 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-all text-left group cursor-pointer border border-slate-100 dark:border-zinc-800/80 hover:border-slate-200 active:scale-98"
+                                    className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-all text-left group cursor-pointer active:scale-[0.99]"
                                   >
-                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${app.color}`}>
-                                      <app.icon size={16} />
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${app.iconBg}`}>
+                                        <app.icon size={16} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">{app.name}</div>
+                                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{app.sub}</div>
+                                      </div>
                                     </div>
-                                    <div className="min-w-0">
-                                      <div className="text-xs font-bold truncate leading-tight">{app.name}</div>
-                                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate leading-tight">{app.sub}</div>
-                                    </div>
+                                    <ChevronRight size={13} className="text-slate-300 dark:text-zinc-600 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors shrink-0 mr-1" />
                                   </button>
                                 ))}
                               </div>
 
-                              <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-2" />
+                              <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-1.5" />
 
                               {/* Native Display Media Screen Sharing */}
                               <button
@@ -81025,12 +81131,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setIsRoomPresentPickerOpen(false);
                                   toggleScreenShare();
                                 }}
-                                className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer border border-dashed border-slate-200 dark:border-zinc-700"
+                                className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
-                                <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
-                                  <MonitorPlay size={14} />
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
+                                  <MonitorPlay size={15} />
                                 </div>
-                                <span>{t('room.presentEntireScreen') || 'Share Entire Screen / Window'}</span>
+                                <div className="min-w-0 text-left">
+                                  <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.presentEntireScreen') || 'Share Entire Screen / Window'}</div>
+                                  <div className="text-[10px] text-slate-400">Native OS screen broadcasting</div>
+                                </div>
                               </button>
                             </div>
                           )}
