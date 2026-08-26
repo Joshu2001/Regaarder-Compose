@@ -930,7 +930,22 @@
     }
   },
   "whiteboard": {
-    "untitledWhiteboard": "無題のホワイトボード"
+    "untitledWhiteboard": "無題のホワイトボード",
+    "eraserSize": "消しゴムのサイズ",
+    "customSize": "カスタムサイズ",
+    "tools": {
+      "select": "選択",
+      "hand": "手のひら (移動)",
+      "pen": "ペン",
+      "shapes": "図形",
+      "text": "テキスト",
+      "connector": "コネクタ",
+      "sticky": "付箋",
+      "comment": "コメント",
+      "eraser": "消しゴム",
+      "image": "画像",
+      "more": "その他"
+    }
   },
   "analytics": {
     "title": "ビジネス意思決定インテリジェンス",
@@ -1178,5 +1193,17 @@
     "savePreset": "プリセットを保存",
     "resetDefaults": "デフォルトに戻す",
     "noPresets": "保存されたカスタムプリセットはまだありません。"
+  },
+  "workspace": {
+    "compose": "ドキュメント",
+    "deck": "プレゼンテーション",
+    "sheet": "スプレッドシート",
+    "room": "ビデオ会議",
+    "whiteboard": "ホワイトボード"
+  },
+  "room": {
+    "meetingRoom": "ミーティングルーム",
+    "meetingActiveDesc": "ミーティングルームは現在ワークスペースステージでアクティブです。",
+    "showRoomView": "ルーム画面を表示"
   }
 }

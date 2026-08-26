@@ -42640,9 +42640,9 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mb-3 border border-violet-100 shadow-sm">
                 <RoomIcon size={20} />
               </div>
-              <h3 className="text-sm font-bold text-slate-800">Meeting Room</h3>
+              <h3 className="text-sm font-bold text-slate-800">{t('room.meetingRoom') || 'Meeting Room'}</h3>
               <p className="text-xs text-slate-500 max-w-[240px] mt-1.5 leading-relaxed">
-                The meeting room is currently active in the workspace stage view.
+                {t('room.meetingActiveDesc') || 'The meeting room is currently active in the workspace stage view.'}
               </p>
               <button 
                 onClick={() => {
@@ -42651,7 +42651,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 }}
                 className="mt-4 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.15)] transition-all active:scale-95"
               >
-                Show Room View
+                {t('room.showRoomView') || 'Show Room View'}
               </button>
             </div>
           )}
@@ -43444,13 +43444,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setProductMode('landing');
                       setMiniSidebarDismissed(true);
                     }}
-                    title="Home"
+                    title={t('sidebar.home') || 'Home'}
                   >
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
                       <Home size={19} strokeWidth={1.8} />
                     </div>
                     <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
-                      Home
+                      {t('sidebar.home') || 'Home'}
                     </span>
                   </div>
 
@@ -43458,7 +43458,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   {workspaceLauncherOpen && (
                     <div className="absolute right-full top-0 mr-4 z-[9999] w-[180px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden origin-right animate-in fade-in zoom-in-95 duration-200">
                       <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('sidebar.createNew') || 'Create New'}</span>
                         <button onClick={() => setWorkspaceLauncherOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
                           <X size={14} />
                         </button>
@@ -43481,7 +43481,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
                           >
                             <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
-                            {label}
+                            {t('workspace.' + key) || label}
                           </button>
                         ))}
                       </div>
@@ -74717,7 +74717,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button
                           key={tool.key}
                           type="button"
-                          onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
+                          onMouseEnter={() => setWhiteboardHoverLabel(t('whiteboard.tools.' + tool.key) || tool.label)}
                           onMouseLeave={() => setWhiteboardHoverLabel('')}
                           onClick={() => {
                             if (tool.key === 'pen') {
@@ -74759,7 +74759,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             activateWhiteboardTool(tool.key);
                           }}
                           className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'border border-violet-200 dark:border-violet-700/60 text-violet-700 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-950/40 shadow-xs' : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-100'}`}
-                          title={tool.label}
+                          title={t('whiteboard.tools.' + tool.key) || tool.label}
                         >
                           <ToolIcon size={16} strokeWidth={1.6} style={toolIconStyle} />
                         </button>
@@ -74768,7 +74768,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   {whiteboardTool === 'eraser' && whiteboardEraserMenuOpen && (
                     <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2.5 w-[172px]">
-                      <p className="text-[10px] font-semibold text-gray-500">Eraser size</p>
+                      <p className="text-[10px] font-semibold text-gray-500">{t('whiteboard.eraserSize') || 'Eraser size'}</p>
                       <div className="mt-2 flex items-end justify-between gap-2">
                         {whiteboardEraserSizeOptions.map((sizeValue) => (
                           <button
@@ -74787,7 +74787,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onClick={() => setWhiteboardEraserCustomSizeOpen((prev) => !prev)}
                         className={`mt-2 w-full rounded-lg border px-2 py-1.5 text-[11px] font-medium ${whiteboardEraserCustomSizeOpen ? 'border-slate-300 bg-slate-50 text-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                       >
-                        Custom size
+                        {t('whiteboard.customSize') || 'Custom size'}
                       </button>
                       {whiteboardEraserCustomSizeOpen && (
                         <div className="mt-2 flex items-center gap-2">

@@ -703,7 +703,7 @@
     "manageen": "專案看板",
     "files": "雲端檔案",
     "home": "首頁",
-    "createNew": "快速建立"
+    "createNew": "建立新項目"
   },
   "tasks": {
     "yourTasks": "您的個人任務",
@@ -930,7 +930,22 @@
     }
   },
   "whiteboard": {
-    "untitledWhiteboard": "未命名白板"
+    "untitledWhiteboard": "未命名白板",
+    "eraserSize": "橡皮擦粗細",
+    "customSize": "自訂大小",
+    "tools": {
+      "select": "選取工具",
+      "hand": "平移畫布 (抓手)",
+      "pen": "畫筆",
+      "shapes": "形狀與圖案",
+      "text": "文字方塊",
+      "connector": "連接線",
+      "sticky": "便利貼",
+      "comment": "評論註解",
+      "eraser": "橡皮擦",
+      "image": "插入圖片",
+      "more": "更多工具"
+    }
   },
   "analytics": {
     "title": "商業決策智慧中心",
@@ -1178,5 +1193,17 @@
     "savePreset": "儲存預設樣式",
     "resetDefaults": "恢復預設值",
     "noPresets": "尚未儲存任何自訂預設樣式。"
+  },
+  "workspace": {
+    "compose": "文件撰寫",
+    "deck": "簡報製作",
+    "sheet": "試算表格",
+    "room": "視訊空間",
+    "whiteboard": "共用白板"
+  },
+  "room": {
+    "meetingRoom": "會議空間",
+    "meetingActiveDesc": "會議空間目前正在工作區主畫面中運作中。",
+    "showRoomView": "進入會議畫面"
   }
 }
