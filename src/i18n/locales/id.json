@@ -3,7 +3,7 @@
     "save": "Simpan",
     "cancel": "Batal",
     "close": "Tutup",
-    "delete": "Hapus",
+    "delete": "Delete",
     "edit": "Edit",
     "search": "Cari",
     "export": "Ekspor",
@@ -49,7 +49,8 @@
     "tabIndex": "Tab {{index}}",
     "searchFont": "Cari font",
     "pinned": "Disematkan",
-    "apply": "Apply"
+    "apply": "Apply",
+    "ai": "AI"
   },
   "nav": {
     "docs": "Dokumen",
@@ -674,7 +675,8 @@
     "clearCol": "Bersihkan isi kolom",
     "clearRow": "Bersihkan isi baris",
     "newSheet": "New Sheet",
-    "noWorksheets": "No worksheets yet. Create one to see a live preview."
+    "noWorksheets": "No worksheets yet. Create one to see a live preview.",
+    "sheetsCount": "sheets"
   },
   "saved": {
     "notSaved": "Belum disimpan",
@@ -941,12 +943,35 @@
     "newPresentation": "New Presentation",
     "newPresentationSubtitle": "Click anywhere to begin crafting your presentation narrative.",
     "slidesCount": "slides",
-    "slideCountLabel": "slides",
+    "slideCountLabel": "{{count}} slides",
     "createNewDeck": "Create New Deck",
     "presentations": "Presentations",
     "activePresentation": "Active presentation",
     "noOtherPresentations": "No other presentations yet.",
-    "createNewDeckDesc": "Create a new deck to add another project."
+    "createNewDeckDesc": "Create a new deck to add another project.",
+    "motionPhysicsHeader": "MOTION & ENTRANCE PHYSICS",
+    "presets": "PRESETS",
+    "searchAnimations": "Search animations, physics cues…",
+    "entrances": "Entrances",
+    "loops": "Loops",
+    "kinetic": "Kinetic",
+    "animWhipSlide": "Whip Slide (Fast In)",
+    "animZoomGlow": "Zoom & Glow Entrance",
+    "animShake": "Shake & Vibrate",
+    "animSmoothFloat": "Smooth Float Ambient Loop",
+    "animStagger": "Stagger Text Reveal",
+    "animDissolve": "Dissolve & Luminous Rise",
+    "vectorMeshesWaves": "VECTOR MESHES & WAVES",
+    "searchVectorStyles": "Search vector styles, waveforms…",
+    "backgroundPalette": "BACKGROUND PALETTE",
+    "themeStylingPresets": "THEME STYLING PRESETS",
+    "mediaAssets": "MEDIA & ASSETS",
+    "uploadImage": "Upload Picture / Image",
+    "uploadLogo": "Upload Brand Logo",
+    "convertToVector": "Convert PNG/JPG to Vector (SVG)",
+    "presetMonogram": "Preset Monogram Logo",
+    "insertElements": "INSERT ELEMENTS",
+    "pillBadgeShape": "Pill Badge Shape"
   },
   "whiteboard": {
     "untitledWhiteboard": "Untitled Whiteboard",
@@ -1040,7 +1065,18 @@
       "blue": "Blue",
       "green": "Green",
       "pink": "Pink"
-    }
+    },
+    "comment": "Comment",
+    "typeYourComment": "Type your comment...",
+    "tapToExpandComment": "Tap + to expand comment",
+    "convertToTasks": "Convert to tasks",
+    "whiteboardProject": "Whiteboard Project",
+    "structuredItemsInferred": "{{count}} structured items inferred from notes, connectors, and comments.",
+    "milestones": "Milestones",
+    "risks": "Risks",
+    "phases": "Phases",
+    "dependencies": "Dependencies",
+    "imageAsset": "Image asset"
   },
   "analytics": {
     "title": "Business Decision Intelligence",

@@ -49,7 +49,8 @@
     "tabIndex": "タブ {{index}}",
     "searchFont": "フォントを検索",
     "pinned": "固定済み",
-    "apply": "適用"
+    "apply": "適用",
+    "ai": "AI"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -674,7 +675,8 @@
     "clearCol": "列をクリア",
     "clearRow": "行をクリア",
     "newSheet": "新しいシート",
-    "noWorksheets": "ワークシートがまだありません。作成してプレビューを表示します。"
+    "noWorksheets": "ワークシートがまだありません。作成してプレビューを表示します。",
+    "sheetsCount": "シート"
   },
   "saved": {
     "notSaved": "未保存",
@@ -941,12 +943,35 @@
     "newPresentation": "新規プレゼンテーション",
     "newPresentationSubtitle": "クリックしてプレゼンテーションの作成を開始します。",
     "slidesCount": "スライド",
-    "slideCountLabel": "スライド",
+    "slideCountLabel": "{{count}} スライド",
     "createNewDeck": "新規スライドを作成",
     "presentations": "プレゼンテーション一覧",
     "activePresentation": "現在のプレゼンテーション",
     "noOtherPresentations": "他のプレゼンテーションはありません。",
-    "createNewDeckDesc": "新規プロジェクトを追加します。"
+    "createNewDeckDesc": "新規プロジェクトを追加します。",
+    "motionPhysicsHeader": "モーション＆エントランス物理",
+    "presets": "プリセット",
+    "searchAnimations": "アニメーションを検索…",
+    "entrances": "エントランス",
+    "loops": "ループ",
+    "kinetic": "キネティック",
+    "animWhipSlide": "ホイップスライド",
+    "animZoomGlow": "ズーム＆グロー",
+    "animShake": "シェイク＆振動",
+    "animSmoothFloat": "スムーズフロート",
+    "animStagger": "スタッガーテキスト",
+    "animDissolve": "ディゾルブ＆ライズ",
+    "vectorMeshesWaves": "ベクターメッシュ＆ウェーブ",
+    "searchVectorStyles": "ベクタースタイルを検索…",
+    "backgroundPalette": "背景パレット",
+    "themeStylingPresets": "テーマスタイルプリセット",
+    "mediaAssets": "メディア＆アセット",
+    "uploadImage": "画像をアップロード",
+    "uploadLogo": "ブランドロゴをアップロード",
+    "convertToVector": "画像をベクターに変換 (SVG)",
+    "presetMonogram": "プリセットモノグラムロゴ",
+    "insertElements": "要素を挿入",
+    "pillBadgeShape": "ピルバッジ形状"
   },
   "whiteboard": {
     "untitledWhiteboard": "無題のホワイトボード",
@@ -1040,7 +1065,18 @@
       "blue": "ブルー",
       "green": "グリーン",
       "pink": "ピンク"
-    }
+    },
+    "comment": "コメント",
+    "typeYourComment": "コメントを入力…",
+    "tapToExpandComment": "+ をタップして展開",
+    "convertToTasks": "タスクに変換",
+    "whiteboardProject": "ホワイトボードプロジェクト",
+    "structuredItemsInferred": "ノートやコネクタから {{count}} 件の構造化アイテムを生成しました。",
+    "milestones": "マイルストーン",
+    "risks": "リスク",
+    "phases": "フェーズ",
+    "dependencies": "依存関係",
+    "imageAsset": "画像アセット"
   },
   "analytics": {
     "title": "ビジネス意思決定インテリジェンス",
