@@ -232,7 +232,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
         <div className="w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] bg-white/70 dark:bg-zinc-900/80 border border-white/60 dark:border-zinc-800 rounded-[40px]">
           
           {/* Top-Left Crisp Workspace Switcher Icon Button (Always Accessible in Lobby & Room) */}
-          <div className="absolute top-4 left-6 z-50 flex items-center gap-2 select-none">
+          <div className="absolute top-5 left-7 z-[999] flex items-center gap-3 select-none pointer-events-auto">
             <button
               type="button"
               data-workspace-switcher="true"
@@ -246,19 +246,19 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                   setIsWorkspaceMenuOpen(prev => !prev);
                 }
               }}
-              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer active:scale-95"
+              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/95 dark:bg-zinc-800/95 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-700/90 shadow-sm hover:bg-white dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer active:scale-95"
               title="Switch Workspace App"
             >
-              <LayoutGrid size={15} />
+              <LayoutGrid size={16} />
             </button>
 
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/70 dark:bg-zinc-800/70 backdrop-blur-xl border border-slate-200/60 dark:border-zinc-700/60 text-xs font-bold text-violet-600 dark:text-violet-400">
-              <RoomIcon size={15} strokeWidth={1.8} />
-              <span>Room</span>
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-700/70 text-xs font-bold text-violet-600 dark:text-violet-400 shadow-2xs">
+              <RoomIcon size={16} strokeWidth={1.8} />
+              <span className="font-semibold text-xs">Room</span>
             </div>
 
             {/* Built-in Workspace Switcher Popover */}
-            {isWorkspaceMenuOpen && (
+            {isWorkspaceMenuOpen && !onOpenWorkspaceSwitcher && (
               <div 
                 className="absolute top-full left-0 mt-2 w-56 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
                 onClick={(e) => e.stopPropagation()}
@@ -325,26 +325,36 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
             <header className="h-[68px] flex items-center justify-between px-7 border-b border-slate-100/80 dark:border-zinc-800/80 bg-transparent shrink-0 relative z-20">
               {/* Left: Interactive Workspace Switcher + Room Selector Dropdown */}
               <div className="flex items-center gap-3 relative">
-                {/* Workspace Switcher Trigger (Works in both Lobby and Live Room) */}
-                <div className="relative">
-                  <button 
+                {/* Global App Switcher Button */}
+                <div className="relative z-50 flex items-center">
+                  <button
                     type="button"
+                    data-workspace-switcher="true"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      if (onOpenWorkspaceSwitcher) {
+                        onOpenWorkspaceSwitcher(rect);
+                      } else {
+                        setIsWorkspaceMenuOpen(prev => !prev);
+                      }
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen);
                     }}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-violet-600 dark:text-violet-400 select-none cursor-pointer group"
-                    title="Switch Workspace"
+                    className={`flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer active:scale-95 ${
+                      isWorkspaceMenuOpen ? 'bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-400' : ''
+                    }`}
+                    title="Switch Workspace App"
                   >
-                    <RoomIcon size={20} strokeWidth={1.8} className="shrink-0" />
-                    <span className="text-base font-bold tracking-tight">Room</span>
-                    <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-200 transition-colors" />
+                    <LayoutGrid size={15} />
                   </button>
 
-                  {/* Built-in Apple-Style Workspace Switcher Dropdown */}
-                  {isWorkspaceMenuOpen && (
+                  {/* Fallback Workspace Switcher Popover if onOpenWorkspaceSwitcher is not provided */}
+                  {isWorkspaceMenuOpen && !onOpenWorkspaceSwitcher && (
                     <div 
-                      className="absolute top-full left-0 mt-2 w-56 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[100] animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
+                      className="absolute top-full left-0 mt-2 w-56 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
@@ -394,6 +404,12 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Room Brand Badge */}
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-violet-600 dark:text-violet-400 select-none">
+                  <RoomIcon size={20} strokeWidth={1.8} className="shrink-0" />
+                  <span className="text-base font-bold tracking-tight">Room</span>
                 </div>
 
                 <div className="relative" ref={roomNameRef}>
