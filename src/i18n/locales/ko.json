@@ -146,7 +146,10 @@
     "pageSizeA4": "A4 (210 x 297 mm)",
     "pageSizeLegal": "Legal (8.5 x 14 in)",
     "watermark": "워터마크",
-    "editReplay": "편집 리플레이 열기"
+    "editReplay": "편집 리플레이 열기",
+    "create": "Create",
+    "expand": "Expand",
+    "collapse": "Collapse"
   },
   "search": {
     "title": "워크스페이스 검색",
@@ -927,7 +930,23 @@
       "pitch": "Pitch Decks",
       "business": "Business Plans",
       "product": "Product & Tech"
-    }
+    },
+    "animation": "Animation",
+    "background": "Background",
+    "styles": "Styles",
+    "vectorWave": "Vector & Wave",
+    "mediaLogo": "Media & Logo",
+    "insert": "Insert",
+    "allSaved": "All changes saved",
+    "newPresentation": "New Presentation",
+    "newPresentationSubtitle": "Click anywhere to begin crafting your presentation narrative.",
+    "slidesCount": "slides",
+    "slideCountLabel": "slides",
+    "createNewDeck": "Create New Deck",
+    "presentations": "Presentations",
+    "activePresentation": "Active presentation",
+    "noOtherPresentations": "No other presentations yet.",
+    "createNewDeckDesc": "Create a new deck to add another project."
   },
   "whiteboard": {
     "untitledWhiteboard": "Untitled Whiteboard",
@@ -947,7 +966,7 @@
       "more": "More"
     },
     "templates": "Templates",
-    "add": "+ Add",
+    "add": "Add",
     "tasks": "Tasks",
     "typeYourText": "Type your text...",
     "aiTemplateGenerator": "AI template generator",
@@ -1008,7 +1027,20 @@
     "resetWhiteboard": "Reset whiteboard",
     "quickSnapshotPng": "Quick snapshot (PNG)",
     "quickExportPdf": "Quick export (single PDF)",
-    "openAssistant": "Open assistant"
+    "openAssistant": "Open assistant",
+    "stickyColors": "Sticky note colors",
+    "customColor": "Custom color",
+    "webLink": "Web Link",
+    "webBookmark": "Web Bookmark",
+    "uploadImage": "Upload Image",
+    "clickToBrowseOrDrop": "Click to browse or drop file here",
+    "colors": {
+      "yellow": "Yellow",
+      "purple": "Purple",
+      "blue": "Blue",
+      "green": "Green",
+      "pink": "Pink"
+    }
   },
   "analytics": {
     "title": "Business Decision Intelligence",
