@@ -80412,11 +80412,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {roomPresentedApp ? (
-                  /* Interactive Workspace Presentation Stage — Matches Video Canvas Boundaries Exactly */
-                  <div className={`w-full relative overflow-hidden bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl shadow-[0_32px_100px_rgba(0,0,0,0.14)] pointer-events-auto transition-all duration-500 border border-slate-200/80 dark:border-zinc-800 shrink flex-1 select-text flex flex-col z-10 ${
+                  /* Live Workspace Projector Stage — Projects Real App Viewports */
+                  <div className={`w-full relative overflow-hidden bg-white dark:bg-[#121214] shadow-[0_32px_100px_rgba(0,0,0,0.14)] pointer-events-auto transition-all duration-500 border border-slate-200/80 dark:border-zinc-800 shrink flex-1 select-text flex flex-col z-10 ${
                     isVideoExpanded 
                       ? '!absolute !inset-0 !max-w-none !max-h-none z-20 rounded-none' 
-                      : 'max-w-[640px] max-h-[480px] min-h-[20vh] aspect-[4/3] rounded-[28px]'
+                      : 'max-w-[840px] max-h-[560px] min-h-[30vh] aspect-[16/10] rounded-[28px]'
                   }`}>
                     {/* Presentation Control Banner */}
                     <div className="px-6 py-3 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0">
@@ -81075,6 +81075,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     type="button"
                                     onClick={() => {
                                       setRoomPresentedApp(app.id);
+                                      setProductMode(app.id === 'docs' ? 'compose' : app.id);
                                       setIsRoomPresentPickerOpen(false);
                                       showToast?.(`Presenting ${app.name}`);
                                     }}
