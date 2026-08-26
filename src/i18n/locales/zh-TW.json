@@ -49,7 +49,8 @@
     "tabIndex": "標籤頁 {{index}}",
     "searchFont": "搜尋字型",
     "pinned": "已釘選",
-    "apply": "套用"
+    "apply": "套用",
+    "ai": "AI 創作"
   },
   "nav": {
     "docs": "文件",
@@ -674,7 +675,8 @@
     "clearCol": "清除此欄內容",
     "clearRow": "清除此列內容",
     "newSheet": "新增工作表",
-    "noWorksheets": "尚無工作表。建立新工作表以查看即時預覽。"
+    "noWorksheets": "尚無工作表。建立新工作表以查看即時預覽。",
+    "sheetsCount": "個工作表"
   },
   "saved": {
     "notSaved": "尚未儲存",
@@ -941,12 +943,35 @@
     "newPresentation": "新簡報專案",
     "newPresentationSubtitle": "點擊任意處開始構建您的簡報敘事。",
     "slidesCount": "頁簡報",
-    "slideCountLabel": "頁簡報",
+    "slideCountLabel": "{{count}} 頁簡報",
     "createNewDeck": "建立新簡報",
     "presentations": "簡報清單",
     "activePresentation": "目前簡報",
     "noOtherPresentations": "尚無其他簡報專案。",
-    "createNewDeckDesc": "建立新簡報以開啟其他專案。"
+    "createNewDeckDesc": "建立新簡報以開啟其他專案。",
+    "motionPhysicsHeader": "動畫與入場動態物理",
+    "presets": "個預設",
+    "searchAnimations": "搜尋動畫效果、動態提示…",
+    "entrances": "入場動畫",
+    "loops": "循環動態",
+    "kinetic": "動力彈跳",
+    "animWhipSlide": "急速甩入 (Fast In)",
+    "animZoomGlow": "縮放發光入場",
+    "animShake": "震動提示",
+    "animSmoothFloat": "平滑懸浮環境循環",
+    "animStagger": "文字逐行顯現",
+    "animDissolve": "光感漸顯上升",
+    "vectorMeshesWaves": "向量網格與流動光波",
+    "searchVectorStyles": "搜尋向量風格、波形…",
+    "backgroundPalette": "簡報背景色盤",
+    "themeStylingPresets": "主題風格預設",
+    "mediaAssets": "媒體與品牌資產",
+    "uploadImage": "上傳圖片／照片",
+    "uploadLogo": "上傳品牌商標 Logo",
+    "convertToVector": "將圖片轉為向量 (SVG)",
+    "presetMonogram": "預設字母商標",
+    "insertElements": "插入簡報元件",
+    "pillBadgeShape": "膠囊徽章造型"
   },
   "whiteboard": {
     "untitledWhiteboard": "未命名白板",
@@ -1040,7 +1065,18 @@
       "blue": "藍色",
       "green": "綠色",
       "pink": "粉紅色"
-    }
+    },
+    "comment": "評論",
+    "typeYourComment": "輸入您的評論…",
+    "tapToExpandComment": "點擊 + 展開評論",
+    "convertToTasks": "轉換為任務",
+    "whiteboardProject": "白板專案",
+    "structuredItemsInferred": "已從白板筆記、連接線與註解推導出 {{count}} 個結構化項目。",
+    "milestones": "里程碑",
+    "risks": "風險",
+    "phases": "階段",
+    "dependencies": "依賴項",
+    "imageAsset": "圖片素材"
   },
   "analytics": {
     "title": "商業決策智慧中心",

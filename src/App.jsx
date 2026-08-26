@@ -48379,7 +48379,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
             
                       <div className="p-4 border-t border-gray-100 bg-[#FAFAFC] flex items-center justify-between mt-auto">
-                        <div className="text-[12px] font-medium text-gray-500">{isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}</div>
+                        <div className="text-[12px] font-medium text-gray-500">{isSheetsMode ? `${sheetsData.length} ${t('sheets.sheetsCount') || 'sheets'}` : `${deckSlidesData.length} ${t('deck.slidesCount') || 'slides'}`}</div>
                         <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600">
                           <div className="w-2 h-2 rounded-full bg-violet-500"></div>
                           {isSheetsMode ? 'Sheet style' : 'Deck style'}
@@ -48511,7 +48511,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       onClick={() => { deleteDeckSlide(item.id); setDeckSlideMenuOpenId(null); }} 
                                       className="w-full text-left px-2 py-1 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-500 rounded-lg flex items-center gap-1.5 cursor-pointer"
                                     >
-                                      <Trash2 size={12} /> Delete
+                                      <Trash2 size={12} /> {t('common.delete') || 'Delete'}
                                     </button>
                                   </div>
                                 )}
@@ -52481,7 +52481,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <div className="px-2.5 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/80 my-1 flex items-center justify-between">
                                           <div className="flex flex-col min-w-0">
                                             <span className="text-xs font-bold text-[#7C4DFF] truncate">{(!activeDeckTitle || activeDeckTitle === 'Untitled Deck') ? (t('deck.untitledDeck') || 'Untitled Deck') : activeDeckTitle}</span>
-                                            <span className="text-[10px] text-zinc-500">Active presentation • {(deckSlidesData || []).length} slides</span>
+                                            <span className="text-[10px] text-zinc-500">{t('deck.activePresentation') || 'Active presentation'} • {(deckSlidesData || []).length} {t('deck.slidesCount') || 'slides'}</span>
                                           </div>
                                           <div className="w-2 h-2 rounded-full bg-[#7C4DFF] shadow-[0_0_8px_rgba(124,77,255,0.8)]" />
                                         </div>
@@ -52965,7 +52965,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div className="flex items-center gap-1.5">
                                                           <Wand2 size={13} className="text-slate-700 dark:text-zinc-300" />
                                                           <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
-                                                            MOTION & ENTRANCE PHYSICS
+                                                            {t('deck.motionPhysicsHeader') || 'MOTION & ENTRANCE PHYSICS'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
@@ -52980,7 +52980,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           type="text"
                                                           value={deckAnimationSearch}
                                                           onChange={(e) => setDeckAnimationSearch(e.target.value)}
-                                                          placeholder="Search animations, physics cues…"
+                                                          placeholder={t('deck.searchAnimations') || 'Search animations, physics cues…'}
                                                           className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckAnimationSearch && (
@@ -52997,6 +52997,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Filter Tabs */}
                                                       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                                                         {['All', 'Entrances', 'Loops', 'Kinetic'].map((cat) => {
+                                                          const catLabel = cat === 'All' ? (t('common.all') || 'All') : cat === 'Entrances' ? (t('deck.entrances') || 'Entrances') : cat === 'Loops' ? (t('deck.loops') || 'Loops') : cat === 'Kinetic' ? (t('deck.kinetic') || 'Kinetic') : cat;
                                                           const isTabActive = deckAnimationFilter === cat;
                                                           return (
                                                             <button
@@ -53012,7 +53013,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                                   : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
                                                               }`}
                                                             >
-                                                              {cat}
+                                                              {catLabel}
                                                             </button>
                                                           );
                                                         })}
@@ -57954,7 +57955,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
                                             className={`text-[28px] leading-snug font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
                                           >
-                                            {resolvedDeckSlideDesign.headline}
+                                            {resolvedDeckSlideDesign.headline === 'New Presentation' ? (t('deck.newPresentation') || 'New Presentation') : resolvedDeckSlideDesign.headline}
                                           </h1>
                                           <p 
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -57963,7 +57964,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
                                             className={`text-[14px] leading-relaxed max-w-[80%] outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
                                           >
-                                            {resolvedDeckSlideDesign.blurb}
+                                            {resolvedDeckSlideDesign.blurb === 'Click anywhere to begin crafting your presentation narrative.' ? (t('deck.newPresentationSubtitle') || 'Click anywhere to begin crafting your presentation narrative.') : resolvedDeckSlideDesign.blurb}
                                           </p>
                                         </div>
                                       ) : layout === 'Quote Slide' ? (
@@ -75068,7 +75069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
                         <CheckSquare size={14} strokeWidth={1.8} />
-                        <span>Convert to tasks</span>
+                        <span>{t('whiteboard.convertToTasks') || 'Convert to tasks'}</span>
                       </button>
                     </div>
                   )}
@@ -76805,7 +76806,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }}
                         >
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-[10px] font-semibold">Comment</span>
+                            <span className="text-[10px] font-semibold">{t('whiteboard.tools.comment') || 'Comment'}</span>
                             <button
                               type="button"
                               onPointerDown={(event) => event.stopPropagation()}
@@ -76842,11 +76843,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 )));
                               }}
                               className="w-full h-[64px] resize bg-transparent border border-white/30 rounded px-1.5 py-1 outline-none placeholder:text-white/70 text-[11px] leading-snug"
-                              placeholder="Type your comment..."
+                              placeholder={t('whiteboard.typeYourComment') || 'Type your comment...'}
                               onPointerDown={(event) => event.stopPropagation()}
                             />
                           ) : (
-                            <p className="text-[11px] leading-snug whitespace-nowrap overflow-hidden text-ellipsis">{comment.text || 'Tap + to expand comment'}</p>
+                            <p className="text-[11px] leading-snug whitespace-nowrap overflow-hidden text-ellipsis">{comment.text || (t('whiteboard.tapToExpandComment') || 'Tap + to expand comment')}</p>
                           )}
                         </div>
                         <div className="w-2 h-2 bg-sky-500 rotate-45 -mt-1 shadow-[0_8px_30px_rgba(124,58,237,0.06)]" />
@@ -77206,7 +77207,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <span className="w-3.5 h-3.5 rounded-full border-[1.8px] border-violet-500 dark:border-violet-400 flex items-center justify-center shrink-0" />
                               <span>{t('whiteboard.aiTaskConversion') || 'AI Task Conversion'}</span>
                             </div>
-                            <h2 className="mt-1 text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{whiteboardTaskPreview.projectName || 'Whiteboard Project'}</h2>
+                            <h2 className="mt-1 text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{whiteboardTaskPreview.projectName === 'Whiteboard Project' ? (t('whiteboard.whiteboardProject') || 'Whiteboard Project') : (whiteboardTaskPreview.projectName || t('whiteboard.whiteboardProject') || 'Whiteboard Project')}</h2>
                             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">{whiteboardTaskPreview.summary}</p>
                           </div>
                           <button
@@ -77229,7 +77230,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             { label: 'Dependencies', value: whiteboardTaskPreviewStats.dependencies },
                           ].map((stat) => (
                             <div key={stat.label} className="rounded-xl border border-slate-200/60 dark:border-zinc-800 bg-white/80 dark:bg-zinc-800/80 px-3 py-1.5 shadow-2xs">
-                              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-400 uppercase tracking-wider">{stat.label}</div>
+                              <div className="text-[10px] font-semibold text-slate-400 dark:text-zinc-400 uppercase tracking-wider">{stat.label === 'Tasks' ? (t('whiteboard.tasks') || 'Tasks') : stat.label === 'Milestones' ? (t('whiteboard.milestones') || 'Milestones') : stat.label === 'Risks' ? (t('whiteboard.risks') || 'Risks') : stat.label === 'Phases' ? (t('whiteboard.phases') || 'Phases') : stat.label === 'Dependencies' ? (t('whiteboard.dependencies') || 'Dependencies') : stat.label}</div>
                               <div className="mt-0.5 text-base font-bold text-slate-800 dark:text-zinc-100">{stat.value}</div>
                             </div>
                           ))}
@@ -77353,7 +77354,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer shadow-sm shadow-violet-600/20"
                             >
                               <CheckSquare size={13} strokeWidth={2} />
-                              <span>Import to Tasks</span>
+                              <span>{t('whiteboard.importToTasks') || 'Import to Tasks'}</span>
                             </button>
                           </div>
                         </div>
