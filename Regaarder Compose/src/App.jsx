@@ -3300,8 +3300,8 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
           <div className="p-8 flex flex-col gap-6">
             {/* Header */}
             <div className="text-center">
-              <h2 className="text-[20px] font-semibold text-gray-900 tracking-tight">Invite people</h2>
-              <p className="text-[13px] text-gray-500 mt-1">Share access code or email your teammates</p>
+              <h2 className="text-[20px] font-semibold text-gray-900 tracking-tight">{t('room.invitePeople') || 'Invite people'}</h2>
+              <p className="text-[13px] text-gray-500 mt-1">{t('room.inviteSubtitle') || 'Share access code or email your teammates'}</p>
             </div>
             
             {/* Search */}
@@ -3309,7 +3309,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
               <Search size={16} className="text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Search by name or email" 
+                placeholder={t('room.searchNameOrEmail') || 'Search by name or email'} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-gray-400 text-gray-900 font-medium"
@@ -3318,7 +3318,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
             
             {/* Recently collaborated */}
             <div className="flex flex-col gap-3">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Recently collaborated</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('room.recentlyCollaborated') || 'Recently collaborated'}</span>
               <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1 thin-scrollbar">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((u, i) => {
@@ -3343,7 +3343,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
                               : 'bg-white border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 hover:shadow-sm'
                           }`}
                         >
-                          {isInvited ? 'Invited' : 'Invite'}
+                          {isInvited ? (t('room.invited') || 'Invited') : (t('room.invite') || 'Invite')}
                         </button>
                       </div>
                     );
@@ -3358,7 +3358,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
             
             {/* Room access */}
             <div className="flex flex-col gap-2 relative">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Room access</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('room.roomAccess') || 'Room access'}</span>
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="w-full flex items-center justify-between border border-gray-200 rounded-xl p-3 hover:bg-gray-55/30 transition-all bg-white shadow-sm relative z-10"
@@ -3367,10 +3367,10 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
                   <Globe size={18} className={accessLevel === 'anyone' ? 'text-violet-500' : 'text-gray-500'} />
                   <div className="flex flex-col items-start">
                     <span className="text-[13px] font-semibold text-gray-800 leading-tight">
-                      {accessLevel === 'anyone' ? 'Anyone with the link' : 'Restricted'}
+                      {accessLevel === 'anyone' ? (t('room.anyoneWithLink') || 'Anyone with the link') : (t('room.restricted') || 'Restricted')}
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      {accessLevel === 'anyone' ? 'Can join directly' : 'Only invited people'}
+                      {accessLevel === 'anyone' ? (t('room.canJoinDirectly') || 'Can join directly') : (t('room.onlyInvited') || 'Only invited people')}
                     </span>
                   </div>
                 </div>
@@ -3414,7 +3414,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isCopied ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600 group-hover:scale-110'}`}>
                   {isCopied ? <Check size={14} strokeWidth={2.5} /> : <LinkIcon size={14} strokeWidth={2.5} />}
                 </div>
-                <span className="text-[11px] font-semibold text-gray-700 mt-1">{isCopied ? 'Copied!' : 'Copy link'}</span>
+                <span className="text-[11px] font-semibold text-gray-700 mt-1">{isCopied ? (t('room.copied') || 'Copied!') : (t('room.copyLink') || 'Copy link')}</span>
               </button>
               <button onClick={handleEmailInvite} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-55/40 hover:bg-gray-50 hover:border-gray-200 rounded-2xl p-3 gap-1 hover:shadow-sm transition-all group">
                 <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform">
@@ -13271,7 +13271,7 @@ const DEFAULT_DECK_SLIDES = [
     if (!roomAIModal.isOpen) return;
     const handleOutsideClick = (e) => {
       const form = e.target.closest('form');
-      if (!form || !form.querySelector('input[placeholder="Ask Room AI..."]')) {
+      if (!form || !form.querySelector('input')) {
         setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
       }
     };
@@ -24640,7 +24640,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           <span class="ai-preview-banner-label">AI Preview</span>
         </div>
         <div class="ai-preview-banner-actions">
-          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')">Accept</button>
+          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')">{t('room.accept') || 'Accept'}</button>
           <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="runImmediateRetry('${previewId}')">Retry</button>
           <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="showEditPromptInput('${previewId}')">Edit</button>
           <button type="button" class="ai-preview-btn-delete" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="deleteAiPreview('${previewId}')">Delete</button>
@@ -46571,7 +46571,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
           }}
         >
           <div className="flex items-center gap-2 pointer-events-none">
-            <span className="text-[15px] font-medium text-slate-800">People</span>
+            <span className="text-[15px] font-medium text-slate-800">{t('room.people') || 'People'}</span>
             <span className="text-[11px] font-medium text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">{allParticipants.length}</span>
           </div>
           <button
@@ -46588,7 +46588,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
             <Search size={14} className="text-slate-300 mr-2 shrink-0" />
             <input
               type="text"
-              placeholder="Search people"
+              placeholder={t('room.searchPeople') || 'Search people'}
               value={peopleSearchQuery}
               onChange={(e) => setPeopleSearchQuery(e.target.value)}
               className="w-full bg-transparent text-[13px] font-normal text-slate-700 placeholder:text-slate-300 outline-none border-none py-0.5"
@@ -46603,8 +46603,8 @@ If requested to draw a chart or graph, append a structured action JSON block:
               <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
                 <Users size={20} className="text-slate-300" />
               </div>
-              <p className="text-[13px] font-medium text-slate-400">No results</p>
-              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Try a different name or clear the search.</p>
+              <p className="text-[13px] font-medium text-slate-400">{t('room.noResults') || 'No results'}</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">{t('room.noResultsDesc') || 'Try a different name or clear the search.'}</p>
             </div>
           ) : (
             filtered.map((p, idx) => (
@@ -46667,8 +46667,8 @@ If requested to draw a chart or graph, append a structured action JSON block:
               <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
                 <Users size={20} className="text-slate-300" />
               </div>
-              <p className="text-[13px] font-medium text-slate-400">You're the only one here</p>
-              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Share the meeting link to invite others.</p>
+              <p className="text-[13px] font-medium text-slate-400">{t('room.onlyOneHere') || "You're the only one here"}</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">{t('room.shareLinkInvite') || 'Share the meeting link to invite others.'}</p>
               <button
                 onClick={() => setIsRoomInviteModalOpen(true)}
                 className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
@@ -46687,7 +46687,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
             className="w-full flex items-center justify-center gap-2 py-3 bg-violet-50/50 hover:bg-violet-50 text-violet-500 text-xs font-medium rounded-2xl transition-colors"
           >
             <UserPlus size={14} />
-            <span>Invite people</span>
+            <span>{t('room.invitePeople') || 'Invite people'}</span>
           </button>
         </div>
       </div>
@@ -46729,7 +46729,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
             setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
           }}
         >
-          <span className="text-[15px] font-medium text-slate-800 pointer-events-none">Chat</span>
+          <span className="text-[15px] font-medium text-slate-800 pointer-events-none">{t('room.chat') || 'Chat'}</span>
           <button onClick={() => setIsRoomRightSidebarOpen(false)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
             <X size={16} />
           </button>
@@ -46742,13 +46742,13 @@ If requested to draw a chart or graph, append a structured action JSON block:
             className={`px-4 py-3 text-[13px] font-medium transition-colors ${
               (activeRoomChatTab !== 'direct') ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
             }`}
-          >Everyone</button>
+          >{t('room.everyone') || 'Everyone'}</button>
           <button
             onClick={() => setActiveRoomChatTab?.('direct')}
             className={`px-4 py-3 text-[13px] font-medium transition-colors ${
               activeRoomChatTab === 'direct' ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
             }`}
-          >Direct messages</button>
+          >{t('room.directMessages') || 'Direct messages'}</button>
         </div>
 
         {/* Messages */}
@@ -46758,8 +46758,8 @@ If requested to draw a chart or graph, append a structured action JSON block:
               <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
                 <MessageSquare size={20} className="text-slate-300" />
               </div>
-              <p className="text-[13px] font-medium text-slate-400">No messages yet</p>
-              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Start the conversation by sending a message.</p>
+              <p className="text-[13px] font-medium text-slate-400">{t('room.noMessages') || 'No messages yet'}</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">{t('room.startConversation') || 'Start the conversation by sending a message.'}</p>
             </div>
           ) : (
             roomChatMessages.map((msg) => (
@@ -46789,7 +46789,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
               type="text"
               value={roomChatInput}
               onChange={(e) => setRoomChatInput(e.target.value)}
-              placeholder="Message everyone..."
+              placeholder={t('room.messageEveryone') || 'Message everyone...'}
               className="w-full bg-[#F9FAFB] border border-transparent rounded-[24px] py-3.5 pl-5 pr-12 text-[13px] text-slate-700 placeholder:text-slate-300 outline-none focus:bg-white focus:border-gray-100 transition-colors shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)]"
             />
             <button 
@@ -46825,7 +46825,7 @@ const renderRoomTopHeader = () => (
         {/* Product Sync dropdown */}
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-50 transition-colors text-[14px] font-medium text-slate-600">
-            Product Sync
+            {t('room.productSync') || 'Product Sync'}
             <ChevronDown size={14} className="text-slate-300" />
           </button>
           <button className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-gray-50 hover:bg-slate-50 transition-colors text-[11px] font-medium text-slate-500 shadow-sm">
@@ -46851,9 +46851,9 @@ const renderRoomTopHeader = () => (
           
           {isInvitesOpen && (
             <div className="absolute top-full right-0 mt-2 w-80 bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.08)] rounded-[24px] p-4 z-50 animate-in fade-in slide-in-from-top-2">
-              <h3 className="font-semibold text-slate-800 mb-3 px-2">Invites</h3>
+              <h3 className="font-semibold text-slate-800 mb-3 px-2">{t('room.invites') || 'Invites'}</h3>
               {invites.length === 0 ? (
-                <div className="text-sm text-slate-400 text-center py-4">No new invites</div>
+                <div className="text-sm text-slate-400 text-center py-4">{t('room.noNewInvites') || 'No new invites'}</div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
                   {invites.map(notif => (
@@ -46895,7 +46895,7 @@ const renderRoomTopHeader = () => (
                              }
                            }}
                            className="flex-1 py-1.5 bg-white text-slate-600 text-xs font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
-                         >Ignore</button>
+                         >{t('room.ignore') || 'Ignore'}</button>
                        </div>
                     </div>
                   ))}
@@ -80755,21 +80755,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-56 bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[24px] p-2 shadow-[0_32px_100px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-300 z-[50]">
                               <div className="flex flex-col">
                                 <button onClick={() => { showToast('Audio & Video Settings opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <Settings size={16} strokeWidth={2} className="shrink-0" /> Audio & Video
+                                  <Settings size={16} strokeWidth={2} className="shrink-0" /> {t('room.audioVideo') || 'Audio & Video'}
                                 </button>
                                 <button onClick={() => { showToast('Layout Options opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <LayoutGrid size={16} strokeWidth={2} className="shrink-0" /> Change Layout
+                                  <LayoutGrid size={16} strokeWidth={2} className="shrink-0" /> {t('room.changeLayout') || 'Change Layout'}
                                 </button>
                                 <button onClick={() => { showToast('Visual Effects opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <Sparkles size={16} strokeWidth={2} className="shrink-0" /> Visual Effects
+                                  <Sparkles size={16} strokeWidth={2} className="shrink-0" /> {t('room.visualEffects') || 'Visual Effects'}
                                 </button>
                                 <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
                                 <button onClick={() => { showToast('Captions enabled'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <MessageSquare size={16} strokeWidth={2} className="shrink-0" /> Turn on Captions
+                                  <MessageSquare size={16} strokeWidth={2} className="shrink-0" /> {t('room.turnOnCaptions') || 'Turn on Captions'}
                                 </button>
                                 <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
                                 <button onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-red-500 hover:bg-red-50/80 rounded-xl transition-colors w-full text-left">
-                                  <ShieldAlert size={16} strokeWidth={2} className="shrink-0" /> Report an Issue
+                                  <ShieldAlert size={16} strokeWidth={2} className="shrink-0" /> {t('room.reportIssue') || 'Report an Issue'}
                                 </button>
                               </div>
                             </div>
