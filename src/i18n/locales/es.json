@@ -685,7 +685,7 @@
     "composeAssistant": "Asistente de Docs",
     "sheetsAssistant": "Asistente de Sheets",
     "deckAssistant": "Asistente de Deck",
-    "assistant": "Assistant",
+    "assistant": "Assist",
     "history": "History",
     "tasks": "Tasks",
     "conversationHistory": "Conversation History",
@@ -930,7 +930,22 @@
     }
   },
   "whiteboard": {
-    "untitledWhiteboard": "Pizarra sin título"
+    "untitledWhiteboard": "Pizarra sin título",
+    "eraserSize": "Eraser size",
+    "customSize": "Custom size",
+    "tools": {
+      "select": "Select",
+      "hand": "Hand (pan)",
+      "pen": "Pen",
+      "shapes": "Shapes",
+      "text": "Text",
+      "connector": "Connector",
+      "sticky": "Sticky note",
+      "comment": "Comment",
+      "eraser": "Eraser",
+      "image": "Image",
+      "more": "More"
+    }
   },
   "analytics": {
     "title": "Business Decision Intelligence",
@@ -1178,5 +1193,17 @@
     "savePreset": "Save Preset",
     "resetDefaults": "Reset Defaults",
     "noPresets": "No saved custom presets yet."
+  },
+  "workspace": {
+    "compose": "Compose",
+    "deck": "Deck",
+    "sheet": "Sheet",
+    "room": "Room",
+    "whiteboard": "Whiteboard"
+  },
+  "room": {
+    "meetingRoom": "Meeting Room",
+    "meetingActiveDesc": "The meeting room is currently active in the workspace stage view.",
+    "showRoomView": "Show Room View"
   }
 }
