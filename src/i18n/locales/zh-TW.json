@@ -609,6 +609,54 @@
     "browse": "瀏覽上傳",
     "supportsUpload": "支援同時上傳多個 PDF、Excel、CSV、JSON 等檔案",
     "noDataToDisplay": "尚無可顯示之圖表數據",
-    "noDataToDisplayDesc": "上傳或選取包含數值之工作表表格，以即時生成互動式視覺圖表。"
+    "noDataToDisplayDesc": "上傳或選取包含數值之工作表表格，以即時生成互動式視覺圖表。",
+    "untitledSheet": "未命名試算表",
+    "sheetTab": "工作表",
+    "formulaPlaceholder": "輸入數值或公式 (=)",
+    "chartPanel": "圖表側欄",
+    "gridlines": "網格線",
+    "gridlinesOff": "關閉",
+    "gridlinesOffDesc": "隱藏所有網格線",
+    "gridlinesSubtle": "極簡淡灰",
+    "gridlinesSubtleDesc": "淺灰色淡雅框線",
+    "gridlinesMedium": "標準預設",
+    "gridlinesMediumDesc": "標準清晰網格線",
+    "gridlinesHigh": "高對比強烈",
+    "gridlinesHighDesc": "高對比清晰框線",
+    "viewOptions": "檢視選項設定",
+    "theme": "色彩主題",
+    "freezePanes": "凍結窗格",
+    "freezeOff": "無凍結",
+    "freezeTopRow": "凍結首列",
+    "freezeFirstCol": "凍結首欄",
+    "headers": "列欄標頭",
+    "cellSelected": "{{count}} 個儲存格已選取",
+    "cellsSelected": "個儲存格已選取",
+    "sum": "總和",
+    "avg": "平均值",
+    "count": "個數"
+  },
+  "saved": {
+    "notSaved": "尚未儲存",
+    "justNow": "剛剛已儲存",
+    "secondsAgo": "已儲存於 {{count}} 秒前",
+    "minutesAgo": "已儲存於 {{count}} 分鐘前",
+    "hoursAgo": "已儲存於 {{count}} 小時前",
+    "daysAgo": "已儲存於 {{count}} 天前"
+  },
+  "sidebar": {
+    "composeAssistant": "Docs 智慧寫作助理",
+    "sheetsAssistant": "Sheets 試算表運算助理",
+    "deckAssistant": "Decks 簡報設計助理"
+  },
+  "tasks": {
+    "yourTasks": "您的個人任務",
+    "agentTasks": "AI 代理任務",
+    "teamTasks": "團隊指派任務",
+    "addPlaceholder": "新增一項工作任務..."
+  },
+  "schedule": {
+    "launchTimeline": "時程排程規劃",
+    "intelligentSchedule": "智慧行事曆時程"
   }
 }

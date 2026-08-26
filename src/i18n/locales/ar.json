@@ -609,6 +609,54 @@
     "browse": "تصفح",
     "supportsUpload": "يدعم التحميل المتزامن لملفات PDF و Excel و CSV و JSON وغيرها",
     "noDataToDisplay": "لا توجد بيانات للعرض",
-    "noDataToDisplayDesc": "قم بتحميل أو تحديد شبكة ورقة عمل بها قيم رقمية لتقديم مخططاتك المرئية التفاعلية."
+    "noDataToDisplayDesc": "قم بتحميل أو تحديد شبكة ورقة عمل بها قيم رقمية لتقديم مخططاتك المرئية التفاعلية.",
+    "untitledSheet": "ورقة عمل بدون عنوان",
+    "sheetTab": "ورقة",
+    "formulaPlaceholder": "أدخل قيمة أو صيغة",
+    "chartPanel": "لوحة المخططات",
+    "gridlines": "خطوط الشبكة",
+    "gridlinesOff": "إيقاف",
+    "gridlinesOffDesc": "إخفاء كافة خطوط الشبكة",
+    "gridlinesSubtle": "خفيف",
+    "gridlinesSubtleDesc": "حدود رمادية فاتحة",
+    "gridlinesMedium": "متوسط",
+    "gridlinesMediumDesc": "خطوط الشبكة القياسية",
+    "gridlinesHigh": "عالي",
+    "gridlinesHighDesc": "حدود عالية التباين",
+    "viewOptions": "خيارات العرض",
+    "theme": "السمة",
+    "freezePanes": "تجميد الألواح",
+    "freezeOff": "إيقاف",
+    "freezeTopRow": "الصف العلوي",
+    "freezeFirstCol": "العمود الأول",
+    "headers": "العناوين",
+    "cellSelected": "تم تحديد {{count}} خلية",
+    "cellsSelected": "خلايا محددة",
+    "sum": "المجموع",
+    "avg": "المتوسط",
+    "count": "العدد"
+  },
+  "saved": {
+    "notSaved": "لم يتم الحفظ بعد",
+    "justNow": "تم الحفظ الآن",
+    "secondsAgo": "تم الحفظ منذ {{count}} ثوانٍ",
+    "minutesAgo": "تم الحفظ منذ {{count}} دقيقة",
+    "hoursAgo": "تم الحفظ منذ {{count}} ساعة",
+    "daysAgo": "تم الحفظ منذ {{count}} يوم"
+  },
+  "sidebar": {
+    "composeAssistant": "مساعد المستندات",
+    "sheetsAssistant": "مساعد الجداول",
+    "deckAssistant": "مساعد العروض"
+  },
+  "tasks": {
+    "yourTasks": "مهامك",
+    "agentTasks": "مهام الوكيل",
+    "teamTasks": "مهام الفريق",
+    "addPlaceholder": "إضافة مهمة جديدة..."
+  },
+  "schedule": {
+    "launchTimeline": "الجدول الزمني للإطلاق",
+    "intelligentSchedule": "جدول زمني ذكي"
   }
 }

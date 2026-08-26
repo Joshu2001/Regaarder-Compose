@@ -609,6 +609,54 @@
     "browse": "browse",
     "supportsUpload": "Supports simultaneous multi-file upload for PDF, Excel, CSV, JSON, and more",
     "noDataToDisplay": "No Data to Display",
-    "noDataToDisplayDesc": "Upload or select a worksheet grid with numerical values to render your live interactive visual charts."
+    "noDataToDisplayDesc": "Upload or select a worksheet grid with numerical values to render your live interactive visual charts.",
+    "untitledSheet": "Untitled Sheet",
+    "sheetTab": "Sheet",
+    "formulaPlaceholder": "Enter value or formula",
+    "chartPanel": "Chart panel",
+    "gridlines": "Gridlines",
+    "gridlinesOff": "Off",
+    "gridlinesOffDesc": "Hide all gridlines",
+    "gridlinesSubtle": "Subtle",
+    "gridlinesSubtleDesc": "Light grey borders",
+    "gridlinesMedium": "Medium",
+    "gridlinesMediumDesc": "Standard gridlines",
+    "gridlinesHigh": "High",
+    "gridlinesHighDesc": "High contrast borders",
+    "viewOptions": "View options",
+    "theme": "Theme",
+    "freezePanes": "Freeze panes",
+    "freezeOff": "Off",
+    "freezeTopRow": "Top Row",
+    "freezeFirstCol": "1st Col",
+    "headers": "Headers",
+    "cellSelected": "{{count}} cell selected",
+    "cellsSelected": "cells selected",
+    "sum": "Sum",
+    "avg": "Avg",
+    "count": "Count"
+  },
+  "saved": {
+    "notSaved": "Not saved yet",
+    "justNow": "Saved just now",
+    "secondsAgo": "Saved {{count}}s ago",
+    "minutesAgo": "Saved {{count}}m ago",
+    "hoursAgo": "Saved {{count}}h ago",
+    "daysAgo": "Saved {{count}}d ago"
+  },
+  "sidebar": {
+    "composeAssistant": "Compose Assistant",
+    "sheetsAssistant": "Sheets Assistant",
+    "deckAssistant": "Deck Assistant"
+  },
+  "tasks": {
+    "yourTasks": "Your Tasks",
+    "agentTasks": "Agent Tasks",
+    "teamTasks": "Team Tasks",
+    "addPlaceholder": "Add a new task..."
+  },
+  "schedule": {
+    "launchTimeline": "Launch Timeline",
+    "intelligentSchedule": "Intelligent schedule"
   }
 }
