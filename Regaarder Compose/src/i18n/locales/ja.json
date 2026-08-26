@@ -48,7 +48,8 @@
     "version": "バージョン",
     "tabIndex": "タブ {{index}}",
     "searchFont": "フォントを検索",
-    "pinned": "固定済み"
+    "pinned": "固定済み",
+    "apply": "適用"
   },
   "nav": {
     "docs": "ドキュメント",
@@ -1137,6 +1138,45 @@
     "range": "範囲",
     "colANumerical": "A列 (数値)",
     "selectionRange": "選択範囲 (A1:B50)",
-    "workflow": "ワークフロー"
+    "workflow": "ワークフロー",
+    "step3Title": "ステップ 3：エグゼクティブ説明と主要因",
+    "step4Title": "ステップ 4：インタラクティブ可視化",
+    "step5Title": "ステップ 5：リアルタイムシナリオ・リスクシミュレーション",
+    "step6Title": "ステップ 6：戦略的決定の推奨事項",
+    "keyImpactDrivers": "主要因：",
+    "realtimeSimulation": "リアルタイムシミュレーション",
+    "priceGrowthShift": "価格 / 成長率の変動 (%):",
+    "volumeUnitShift": "数量 / ユニットの変動 (%):",
+    "costRiskVariance": "コスト / リスクの変動 (%):",
+    "recalculatedImpact": "再計算後の正味影響：",
+    "adjustedTarget": "調整後の目標値：",
+    "projectedVariance": "予測変動率",
+    "decisionReady": "意思決定準備完了",
+    "recommendedAction": "推奨される実行アクション：",
+    "riskAssessment": "リスク評価：",
+    "readyForIntelligence": "意思決定インテリジェンスの準備完了",
+    "readyDesc": "上記の分析モジュールを選択するか、自然言語でビジネスの質問を入力して計算を実行し、意思決定の推奨事項を生成します。",
+    "runModule": "{{module}} を実行"
+  },
+  "charts": {
+    "customizeChart": "グラフをカスタマイズ",
+    "insertAllCharts": "すべてのグラフをシートに挿入",
+    "refreshChartData": "グラフデータを更新",
+    "exportsCopy": "グラフのエクスポートとコピー",
+    "exportPng": "グラフ画像をエクスポート (PNG)",
+    "exportSvg": "ベクトルグラフをエクスポート (SVG)",
+    "exportJson": "概要データセットをエクスポート (JSON)",
+    "copyClipboard": "グラフ画像をクリップボードにコピー",
+    "integrationsShare": "連携と共有",
+    "sendToDocs": "Docs / プレゼンテーションに送信",
+    "pinDashboard": "ホームダッシュボードにピン留め",
+    "shareLink": "共同作業者と共有",
+    "resetLayout": "ダッシュボードのレイアウトをリセット",
+    "showGridLines": "背景のグリッド線を表示",
+    "showDataLabels": "数値データラベルを表示",
+    "showKpiCards": "KPI 概要カードを表示",
+    "savePreset": "プリセットを保存",
+    "resetDefaults": "デフォルトに戻す",
+    "noPresets": "保存されたカスタムプリセットはまだありません。"
   }
 }

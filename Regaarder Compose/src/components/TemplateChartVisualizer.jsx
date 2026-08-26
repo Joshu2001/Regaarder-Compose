@@ -646,7 +646,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Sliders size={14} className="text-violet-500" />
-                    <span>Customize Chart</span>
+                    <span>{t('charts.customizeChart') || 'Customize Chart'}</span>
                   </button>
                   <button
                     type="button"
@@ -654,7 +654,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Plus size={14} className="text-violet-600 dark:text-violet-400" />
-                    <span>Insert All Charts to Sheet</span>
+                    <span>{t('charts.insertAllCharts') || 'Insert All Charts to Sheet'}</span>
                   </button>
                   <button
                     type="button"
@@ -662,20 +662,20 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <RefreshCw size={14} className="text-cyan-500" />
-                    <span>Refresh Chart Data</span>
+                    <span>{t('charts.refreshChartData') || 'Refresh Chart Data'}</span>
                   </button>
                 </div>
 
                 {/* Exports Section */}
                 <div className="py-1">
-                  <span className="px-3.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">Chart Exports & Copy</span>
+                  <span className="px-3.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">{t('charts.exportsCopy') || 'Chart Exports & Copy'}</span>
                   <button
                     type="button"
                     onClick={() => { handleExportPngChart(); setIsOptionsMenuOpen(false); }}
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Download size={14} className="text-sky-500" />
-                    <span>Export Chart Image (PNG)</span>
+                    <span>{t('charts.exportPng') || 'Export Chart Image (PNG)'}</span>
                   </button>
                   <button
                     type="button"
@@ -683,7 +683,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <FileText size={14} className="text-violet-600 dark:text-violet-400" />
-                    <span>Export Chart Vector (SVG)</span>
+                    <span>{t('charts.exportSvg') || 'Export Chart Vector (SVG)'}</span>
                   </button>
                   <button
                     type="button"
@@ -691,7 +691,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <FileText size={14} className="text-amber-500" />
-                    <span>Export Summary Dataset (JSON)</span>
+                    <span>{t('charts.exportJson') || 'Export Summary Dataset (JSON)'}</span>
                   </button>
                   <button
                     type="button"
@@ -699,20 +699,20 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Copy size={14} className="text-indigo-500" />
-                    <span>Copy Chart Image to Clipboard</span>
+                    <span>{t('charts.copyClipboard') || 'Copy Chart Image to Clipboard'}</span>
                   </button>
                 </div>
 
                 {/* Send & Share Integrations */}
                 <div className="py-1">
-                  <span className="px-3.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">Integrations & Share</span>
+                  <span className="px-3.5 py-1 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">{t('charts.integrationsShare') || 'Integrations & Share'}</span>
                   <button
                     type="button"
                     onClick={() => handleActionToast('Sent dashboard to Docs')}
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Send size={14} className="text-blue-500" />
-                    <span>Send to Docs / Presentation</span>
+                    <span>{t('charts.sendToDocs') || 'Send to Docs / Presentation'}</span>
                   </button>
                   <button
                     type="button"
@@ -720,7 +720,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Pin size={14} className="text-rose-500" />
-                    <span>Pin to Home Dashboard</span>
+                    <span>{t('charts.pinDashboard') || 'Pin to Home Dashboard'}</span>
                   </button>
                   <button
                     type="button"
@@ -728,7 +728,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <Share2 size={14} className="text-purple-500" />
-                    <span>Share with Collaborators</span>
+                    <span>{t('charts.shareLink') || 'Share with Collaborators'}</span>
                   </button>
                 </div>
 
@@ -740,7 +740,7 @@ export default function TemplateChartVisualizer({
                     className="w-full text-left px-3.5 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 font-medium cursor-pointer"
                   >
                     <RotateCcw size={14} />
-                    <span>Reset Dashboard Layout</span>
+                    <span>{t('charts.resetLayout') || 'Reset Dashboard Layout'}</span>
                   </button>
                 </div>
               </div>
@@ -1467,7 +1467,7 @@ export default function TemplateChartVisualizer({
 
                 <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-2">
                   <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
-                    <span className="font-bold text-slate-700 dark:text-zinc-200">Show Background Grid Lines</span>
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">{t('charts.showGridLines') || 'Show Background Grid Lines'}</span>
                     <input
                       type="checkbox"
                       checked={showGridLines}
@@ -1477,7 +1477,7 @@ export default function TemplateChartVisualizer({
                   </label>
 
                   <label className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
-                    <span className="font-bold text-slate-700 dark:text-zinc-200">Show Numeric Data Labels</span>
+                    <span className="font-bold text-slate-700 dark:text-zinc-200">{t('charts.showDataLabels') || 'Show Numeric Data Labels'}</span>
                     <input
                       type="checkbox"
                       checked={showDataLabels}
@@ -1493,7 +1493,7 @@ export default function TemplateChartVisualizer({
             {activeTab === 'display' && (
               <div className="space-y-3 text-xs">
                 <label className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 dark:border-zinc-800 cursor-pointer">
-                  <span className="font-bold text-slate-700 dark:text-zinc-200">Show KPI Summary Stat Cards</span>
+                  <span className="font-bold text-slate-700 dark:text-zinc-200">{t('charts.showKpiCards') || 'Show KPI Summary Stat Cards'}</span>
                   <input
                     type="checkbox"
                     checked={showKpiCards}
@@ -1520,13 +1520,13 @@ export default function TemplateChartVisualizer({
                     onClick={handleSavePreset}
                     className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold rounded-lg cursor-pointer"
                   >
-                    Save Preset
+                    {t('charts.savePreset') || 'Save Preset'}
                   </button>
                 </div>
 
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {customPresets.length === 0 ? (
-                    <p className="text-slate-400 dark:text-zinc-500 text-[11px] text-center py-3">No saved custom presets yet.</p>
+                    <p className="text-slate-400 dark:text-zinc-500 text-[11px] text-center py-3">{t('charts.noPresets') || 'No saved custom presets yet.'}</p>
                   ) : (
                     customPresets.map(preset => (
                       <div key={preset.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-200/60 dark:border-zinc-800">
@@ -1552,14 +1552,14 @@ export default function TemplateChartVisualizer({
                 onClick={handleResetLayout}
                 className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 font-semibold cursor-pointer"
               >
-                Reset Defaults
+                {t('charts.resetDefaults') || 'Reset Defaults'}
               </button>
               <button
                 type="button"
                 onClick={() => setIsCustomizeModalOpen(false)}
                 className="px-5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
               >
-                Done
+                {t('common.done') || 'Done'}
               </button>
             </div>
           </div>

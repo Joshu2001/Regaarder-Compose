@@ -48,7 +48,8 @@
     "version": "版本",
     "tabIndex": "標籤頁 {{index}}",
     "searchFont": "搜尋字型",
-    "pinned": "已釘選"
+    "pinned": "已釘選",
+    "apply": "套用"
   },
   "nav": {
     "docs": "文件",
@@ -950,7 +951,7 @@
     "primaryMetricCol": "主要指標欄位 (Y / 序列 A)：",
     "secondaryCol": "次要指標欄位 (預算 / 預測 X / 序列 B)：",
     "typeCommaSeparated": "輸入或貼上以逗號分隔之數值：",
-    "step2Title": "步驟 2：確定性運算引擎",
+    "step2Title": "步驟 2：精確計算與指標引擎",
     "moduleInputParams": "模組輸入參數 ({{module}})：",
     "categories": {
       "business": "商業分析",
@@ -1137,6 +1138,45 @@
     "range": "範圍",
     "colANumerical": "A 欄 (數值)",
     "selectionRange": "選取範圍 (A1:B50)",
-    "workflow": "分析工作流"
+    "workflow": "分析工作流",
+    "step3Title": "步驟 3：高階商業解讀與核心驅動因子",
+    "step4Title": "步驟 4：動態視覺化圖表",
+    "step5Title": "步驟 5：即時情境與風險模擬",
+    "step6Title": "步驟 6：策略決策建議與執行方案",
+    "keyImpactDrivers": "關鍵影響驅動因素：",
+    "realtimeSimulation": "即時模擬運算",
+    "priceGrowthShift": "價格 / 成長幅度調整 (%):",
+    "volumeUnitShift": "銷量 / 單位量調整 (%):",
+    "costRiskVariance": "成本 / 風險變異 (%):",
+    "recalculatedImpact": "即時重新計算之淨效益影響：",
+    "adjustedTarget": "調整後預估值：",
+    "projectedVariance": "預期變異幅度",
+    "decisionReady": "決策就緒",
+    "recommendedAction": "建議高階執行方案：",
+    "riskAssessment": "風險評估：",
+    "readyForIntelligence": "商業智慧模型就緒",
+    "readyDesc": "請點選上方任一專業分析模組，或輸入自然語言商業問題，即可執行精確數值計算並生成高階決策建議。",
+    "runModule": "執行 {{module}}"
+  },
+  "charts": {
+    "customizeChart": "自訂圖表樣式",
+    "insertAllCharts": "將所有圖表插入工作表",
+    "refreshChartData": "重新整理圖表數據",
+    "exportsCopy": "圖表匯出與複製",
+    "exportPng": "匯出圖表圖片 (PNG)",
+    "exportSvg": "匯出向量圖表 (SVG)",
+    "exportJson": "匯出摘要數據 (JSON)",
+    "copyClipboard": "複製圖表至剪貼簿",
+    "integrationsShare": "整合與協作分享",
+    "sendToDocs": "傳送至文件 / 簡報",
+    "pinDashboard": "固定至首頁儀表板",
+    "shareLink": "與協作成員分享",
+    "resetLayout": "重設儀表板佈局",
+    "showGridLines": "顯示背景網格線",
+    "showDataLabels": "顯示數值數據標籤",
+    "showKpiCards": "顯示 KPI 摘要指標卡",
+    "savePreset": "儲存預設樣式",
+    "resetDefaults": "恢復預設值",
+    "noPresets": "尚未儲存任何自訂預設樣式。"
   }
 }

@@ -1537,7 +1537,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Step 2: Deterministic Calculation Engine</h3>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('analytics.step2Title') || 'Step 2: Deterministic Calculation Engine'}</h3>
                 </div>
               </div>
 
@@ -2358,14 +2358,14 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                 <Sparkles size={16} className="text-violet-600" />
-                <span>Step 3: Executive Explanation & Key Drivers</span>
+                <span>{t('analytics.step3Title') || 'Step 3: Executive Explanation & Key Drivers'}</span>
               </div>
               <p className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed">
                 {analysisResult.explanation}
               </p>
               {analysisResult.drivers && (
                 <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 space-y-1">
-                  <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Key Impact Drivers:</div>
+                  <div className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">{t('analytics.keyImpactDrivers') || 'Key Impact Drivers:'}</div>
                   <ul className="list-disc list-inside text-xs text-slate-600 dark:text-zinc-400 space-y-1">
                     {analysisResult.drivers.map((d, i) => (
                       <li key={i}>{d}</li>
@@ -2380,7 +2380,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                   <BarChart3 size={16} className="text-violet-600" />
-                  <span>Step 4: Interactive Visualization</span>
+                  <span>{t('analytics.step4Title') || 'Step 4: Interactive Visualization'}</span>
                 </div>
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
                   {analysisResult.title || 'Dynamic Metric Distribution'}
@@ -2442,15 +2442,15 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                   <Sliders size={16} className="text-violet-600" />
-                  <span>Step 5: Live Scenario & Risk Simulation</span>
+                  <span>{t('analytics.step5Title') || 'Step 5: Live Scenario & Risk Simulation'}</span>
                 </div>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Real-Time Simulation</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">{t('analytics.realtimeSimulation') || 'Real-Time Simulation'}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Price / Growth Shift (%):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">{t('analytics.priceGrowthShift') || 'Price / Growth Shift (%):'}</label>
                     <input
                       type="number"
                       value={simPriceDelta}
@@ -2470,7 +2470,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
                 <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Volume / Unit Shift (%):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">{t('analytics.volumeUnitShift') || 'Volume / Unit Shift (%):'}</label>
                     <input
                       type="number"
                       value={simVolumeDelta}
@@ -2490,7 +2490,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
 
                 <div className="p-3 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Cost / Risk Variance (%):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">{t('analytics.costRiskVariance') || 'Cost / Risk Variance (%):'}</label>
                     <input
                       type="number"
                       value={simCostDelta}
@@ -2524,16 +2524,16 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 return (
                   <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-800 rounded-xl flex items-center justify-between text-xs font-medium">
                     <span className="text-slate-600 dark:text-zinc-400">
-                      Recalculated Net Outcome Impact:
+                      {t('analytics.recalculatedImpact') || 'Recalculated Net Outcome Impact:'}
                     </span>
                     <div className="flex items-center gap-3">
                       {recalculatedVal !== null && (
                         <span className="text-slate-500 dark:text-zinc-400">
-                          Adjusted Target: <strong className="text-slate-900 dark:text-white">${recalculatedVal.toLocaleString()}</strong>
+                          {t('analytics.adjustedTarget') || 'Adjusted Target:'} <strong className="text-slate-900 dark:text-white">${recalculatedVal.toLocaleString()}</strong>
                         </span>
                       )}
                       <span className={`text-sm font-bold ${netVariance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                        {netVariance >= 0 ? '+' : ''}{netVariance.toFixed(1)}% Projected Variance
+                        {netVariance >= 0 ? '+' : ''}{netVariance.toFixed(1)}% {t('analytics.projectedVariance') || 'Projected Variance'}
                       </span>
                     </div>
                   </div>
@@ -2546,15 +2546,15 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                   <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400" />
-                  <span>Step 6: Strategic Decision Recommendation</span>
+                  <span>{t('analytics.step6Title') || 'Step 6: Strategic Decision Recommendation'}</span>
                 </div>
                 <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md text-[11px] font-semibold border border-emerald-200/80 dark:border-emerald-800">
-                  Decision Ready
+                  {t('analytics.decisionReady') || 'Decision Ready'}
                 </span>
               </div>
 
               <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/70 dark:border-emerald-900/40 space-y-1.5">
-                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300">Recommended Executive Action:</div>
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300">{t('analytics.recommendedAction') || 'Recommended Executive Action:'}</div>
                 <p className="text-xs text-slate-700 dark:text-zinc-200 leading-relaxed font-normal">
                   {analysisResult.recommendation}
                 </p>
@@ -2564,7 +2564,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
                 <div className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200 bg-amber-50/70 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/40">
                   <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                   <div>
-                    <span className="font-bold">Risk Assessment: </span>
+                    <span className="font-bold">{t('analytics.riskAssessment') || 'Risk Assessment:'} </span>
                     <span className="font-normal">{analysisResult.risks.join('; ')}</span>
                   </div>
                 </div>
@@ -2579,9 +2579,9 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               <Play size={24} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Ready for Decision Intelligence</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('analytics.readyForIntelligence') || 'Ready for Decision Intelligence'}</h3>
               <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-width-md mx-auto">
-                Select an analysis module above or type a natural language business question to execute deterministic calculations and generate decision recommendations.
+                {t('analytics.readyDesc') || 'Select an analysis module above or type a natural language business question to execute deterministic calculations and generate decision recommendations.'}
               </p>
             </div>
             <button
@@ -2593,7 +2593,7 @@ export default function AnalyticsHubUI({ activeSheetGrid, activeSheetId, updateS
               className="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl transition-all shadow-md cursor-pointer inline-flex items-center gap-2"
             >
               <Play size={14} />
-              <span>Run {activeModuleItem.label}</span>
+              <span>{t('analytics.runModule', { module: t('analytics.items.' + activeModuleItem.id + '.label') || activeModuleItem.label }) || `Run ${activeModuleItem.label}`}</span>
             </button>
           </div>
         )}
