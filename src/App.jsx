@@ -47175,7 +47175,7 @@ const renderRoomTopHeader = () => (
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
-          <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
+          <span className="text-[13px] font-semibold text-gray-800">{t('whiteboard.insertShape') || 'Insert Shape'}</span>
         </div>
 
         {/* Scrollable shape sections */}
@@ -74906,7 +74906,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         .map((section) => (
                           <div key={section.label} className="mb-3">
                             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
-                              {section.label}
+                              {section.label === 'Recently Used' ? (t('whiteboard.recentlyUsed') || 'Recently Used') : section.label === 'Lines' ? (t('whiteboard.shapeLines') || 'Lines') : section.label === 'Rectangles' ? (t('whiteboard.shapeRectangles') || 'Rectangles') : section.label === 'Basic Shapes' ? (t('whiteboard.shapeBasic') || 'Basic Shapes') : section.label === 'Block Arrows' ? (t('whiteboard.shapeArrows') || 'Block Arrows') : section.label === 'Flowchart' ? (t('whiteboard.shapeFlowchart') || 'Flowchart') : section.label === 'Stars & Banners' ? (t('whiteboard.shapeStarsBanners') || 'Stars & Banners') : section.label}
                             </div>
                             <div className="flex flex-wrap gap-0.5">
                               {section.shapes.map((shape) => {
@@ -75013,7 +75013,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       >
                         <RefreshCcw size={14} strokeWidth={1.8} />
-                        <span>Reset whiteboard</span>
+                        <span>{t('whiteboard.resetWhiteboard') || 'Reset whiteboard'}</span>
                       </button>
 
                       <div className="h-px bg-slate-100 dark:bg-zinc-800 my-0.5" />
@@ -75027,7 +75027,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
                         <ImageIcon size={14} strokeWidth={1.8} />
-                        <span>Quick snapshot (PNG)</span>
+                        <span>{t('whiteboard.quickSnapshotPng') || 'Quick snapshot (PNG)'}</span>
                       </button>
                       <button
                         type="button"
@@ -75038,7 +75038,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
                         <File size={14} strokeWidth={1.8} />
-                        <span>Quick export (single PDF)</span>
+                        <span>{t('whiteboard.quickExportPdf') || 'Quick export (single PDF)'}</span>
                       </button>
 
                       <div className="h-px bg-slate-100 dark:bg-zinc-800 my-0.5" />
@@ -75054,7 +75054,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-full h-9 px-3 rounded-xl flex items-center gap-2.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
                       >
                         <span className="w-3.5 h-3.5 rounded-full border-[1.8px] border-violet-500 dark:border-violet-400 flex items-center justify-center shrink-0" />
-                        <span>Open assistant</span>
+                        <span>{t('whiteboard.openAssistant') || 'Open assistant'}</span>
                       </button>
                       <button
                         type="button"
@@ -76990,7 +76990,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 onClick={() => whiteboardTemplateSourceInputRef.current?.click()}
                                 className="text-[10px] px-2 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-750"
                               >
-                                Attach files
+                                {t('whiteboard.attachFiles') || 'Attach files'}
                               </button>
                               <button
                                 type="button"
@@ -77010,7 +77010,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 onClick={saveCurrentWhiteboardAsTemplate}
                                 className="text-[10px] px-2 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-750 transition-colors"
                               >
-                                Save current
+                                {t('whiteboard.saveCurrent') || 'Save current'}
                               </button>
                             </div>
                             {whiteboardTemplateSources.length > 0 && (
@@ -77065,7 +77065,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         title="Add object"
                       >
                         <Plus size={13} strokeWidth={2} className="text-[#7C5ACF] dark:text-violet-400" />
-                        <span>Add</span>
+                        <span>{t('whiteboard.add') || '+ Add'}</span>
                       </button>
                       {whiteboardAddMenuOpen && (
                         <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-[360] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-1.5 w-48 font-sans animate-in fade-in zoom-in-95 duration-150">
@@ -77123,8 +77123,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <Video size={16} />
                             </div>
                             <div>
-                              <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100">Embed Media or Link</h3>
-                              <p className="text-xs text-slate-400 dark:text-zinc-500">Paste YouTube, Vimeo, MP4 video, image, or website URL</p>
+                              <h3 className="text-base font-bold text-slate-800 dark:text-zinc-100">{t('whiteboard.embedMediaTitle') || 'Embed Media or Link'}</h3>
+                              <p className="text-xs text-slate-400 dark:text-zinc-500">{t('whiteboard.embedMediaSubtitle') || 'Paste YouTube, Vimeo, MP4 video, image, or website URL'}</p>
                             </div>
                           </div>
                           <button
@@ -77153,7 +77153,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               type="url"
                               value={whiteboardMediaUrlInput}
                               onChange={(e) => setWhiteboardMediaUrlInput(e.target.value)}
-                              placeholder="https://www.youtube.com/watch?v=... or image URL"
+                              placeholder={t('whiteboard.embedMediaPlaceholder') || 'https://www.youtube.com/watch?v=... or image URL'}
                               className="w-full h-11 px-4 text-sm bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                             />
                           </div>
@@ -77201,7 +77201,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-400">
                               <span className="w-3.5 h-3.5 rounded-full border-[1.8px] border-violet-500 dark:border-violet-400 flex items-center justify-center shrink-0" />
-                              <span>AI Task Conversion</span>
+                              <span>{t('whiteboard.aiTaskConversion') || 'AI Task Conversion'}</span>
                             </div>
                             <h2 className="mt-1 text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{whiteboardTaskPreview.projectName || 'Whiteboard Project'}</h2>
                             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">{whiteboardTaskPreview.summary}</p>
@@ -77234,14 +77234,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Action Subheader */}
                         <div className="flex items-center justify-between gap-3 px-6 py-2.5 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                          <div className="text-[11.5px] text-slate-500 dark:text-zinc-400">Review and customize items before importing into your task board.</div>
+                          <div className="text-[11.5px] text-slate-500 dark:text-zinc-400">{t('whiteboard.reviewCustomizeDesc') || 'Review and customize items before importing into your task board.'}</div>
                           <button
                             type="button"
                             onClick={mergeWhiteboardTaskPreviewDuplicates}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200/80 dark:border-violet-800 bg-violet-50/70 dark:bg-violet-950/40 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-100 transition-colors cursor-pointer"
                           >
                             <RegaarderAiIcon size={12} />
-                            <span>Merge duplicates</span>
+                            <span>{t('whiteboard.mergeDuplicates') || 'Merge duplicates'}</span>
                           </button>
                         </div>
 
@@ -77254,13 +77254,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <input
                                     value={item.title}
                                     onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { title: event.target.value })}
-                                    placeholder="Task title"
+                                    placeholder={t('whiteboard.taskTitlePlaceholder') || 'Task title'}
                                     className="w-full rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-slate-50/40 dark:bg-zinc-800/40 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-400 focus:bg-white dark:focus:bg-zinc-800 transition-all"
                                   />
                                   <textarea
                                     value={item.notes || ''}
                                     onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { notes: event.target.value })}
-                                    placeholder="Add notes or description..."
+                                    placeholder={t('whiteboard.addNotesPlaceholder') || 'Add notes or description...'}
                                     className="mt-2 h-16 w-full resize-none rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-slate-50/40 dark:bg-zinc-800/40 px-3 py-1.5 text-[11px] text-slate-600 dark:text-zinc-300 outline-none focus:border-violet-400 focus:bg-white dark:focus:bg-zinc-800 transition-all"
                                   />
                                 </div>
@@ -77269,20 +77269,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { type: event.target.value })}
                                   className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400 cursor-pointer"
                                 >
-                                  <option value="task">Task</option>
-                                  <option value="milestone">Milestone</option>
-                                  <option value="risk">Risk</option>
+                                  <option value="task">{t('whiteboard.taskTypeTask') || 'Task'}</option>
+                                  <option value="milestone">{t('whiteboard.taskTypeMilestone') || 'Milestone'}</option>
+                                  <option value="risk">{t('whiteboard.taskTypeRisk') || 'Risk'}</option>
                                 </select>
                                 <input
                                   value={item.phase || ''}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { phase: event.target.value })}
-                                  placeholder="Phase"
+                                  placeholder={t('whiteboard.phasePlaceholder') || 'Phase'}
                                   className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                                 <input
                                   value={item.assignee || ''}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { assignee: event.target.value })}
-                                  placeholder="Assignee"
+                                  placeholder={t('whiteboard.assigneePlaceholder') || 'Assignee'}
                                   className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                                 <button
@@ -77301,20 +77301,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { priority: event.target.value })}
                                   className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400 cursor-pointer"
                                 >
-                                  <option value="low">Low Priority</option>
-                                  <option value="medium">Medium Priority</option>
-                                  <option value="high">High Priority</option>
+                                  <option value="low">{t('whiteboard.lowPriority') || 'Low Priority'}</option>
+                                  <option value="medium">{t('whiteboard.mediumPriority') || 'Medium Priority'}</option>
+                                  <option value="high">{t('whiteboard.highPriority') || 'High Priority'}</option>
                                 </select>
                                 <input
                                   value={item.dueLabel || ''}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dueLabel: event.target.value })}
-                                  placeholder="Due date"
+                                  placeholder={t('whiteboard.dueDatePlaceholder') || 'Due date'}
                                   className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                                 <input
                                   value={(item.dependencies || []).join(', ')}
                                   onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dependencies: event.target.value.split(',').map((val) => val.trim()).filter(Boolean) })}
-                                  placeholder="Dependencies (comma separated)"
+                                  placeholder={t('whiteboard.dependenciesPlaceholder') || 'Dependencies (comma separated)'}
                                   className="rounded-xl border border-slate-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-400"
                                 />
                               </div>
@@ -77326,7 +77326,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   </span>
                                 ))}
                                 {!item.subtasks?.length && (
-                                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500">No subtasks detected</span>
+                                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500">{t('whiteboard.noSubtasksDetected') || 'No subtasks detected'}</span>
                                 )}
                               </div>
                             </div>
@@ -77335,7 +77335,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Footer */}
                         <div className="flex items-center justify-between gap-4 border-t border-slate-100 dark:border-zinc-800 px-6 py-3.5 bg-white dark:bg-zinc-900">
-                          <div className="text-[11.5px] text-slate-500 dark:text-zinc-400">Structured automatically from board shapes, stickies, and notes.</div>
+                          <div className="text-[11.5px] text-slate-500 dark:text-zinc-400">{t('whiteboard.structuredAutomaticallyDesc') || 'Structured automatically from board shapes, stickies, and notes.'}</div>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -80969,31 +80969,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {/* Heading */}
               <div className="text-center">
-                <h2 className="text-[22px] font-semibold text-gray-900 tracking-tight">You left the meeting</h2>
-                <p className="text-[14px] text-gray-400 mt-1 font-normal">How was your experience?</p>
+                <h2 className="text-[22px] font-semibold text-gray-900 tracking-tight">{t('room.leftMeeting') || 'You left the meeting'}</h2>
+                <p className="text-[14px] text-gray-400 mt-1 font-normal">{t('room.howWasExperience') || 'How was your experience?'}</p>
               </div>
 
               {/* Meeting stats */}
               <div className="flex items-center gap-6 w-full justify-center">
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[20px] font-semibold text-gray-900">{meetingDurationLabel || '00:00'}</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Duration</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('room.duration') || 'Duration'}</span>
                 </div>
                 <div className="w-px h-8 bg-gray-200" />
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[20px] font-semibold text-gray-900">4</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Participants</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('room.participants') || 'Participants'}</span>
                 </div>
                 <div className="w-px h-8 bg-gray-200" />
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[20px] font-semibold text-gray-900">{roomId || '—'}</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Room</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('workspace.room') || 'Room'}</span>
                 </div>
               </div>
 
               {/* 5-Star Rating */}
               <div className="flex flex-col items-center gap-3 w-full">
-                <p className="text-[13px] text-gray-500 font-medium">Rate the call quality</p>
+                <p className="text-[13px] text-gray-500 font-medium">{t('room.rateCallQuality') || 'Rate the call quality'}</p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
