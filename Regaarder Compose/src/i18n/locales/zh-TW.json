@@ -945,7 +945,10 @@
       "eraser": "橡皮擦",
       "image": "插入圖片",
       "more": "更多工具"
-    }
+    },
+    "templates": "範本庫",
+    "add": "+ 新增",
+    "tasks": "任務"
   },
   "analytics": {
     "title": "商業決策智慧中心",
@@ -1250,6 +1253,27 @@
     "canJoinDirectly": "可直接加入",
     "onlyInvited": "僅限受邀成員",
     "copyLink": "複製連結",
-    "copied": "已複製！"
+    "copied": "已複製！",
+    "welcomeToRoom": "歡迎使用 Room 會議",
+    "startOrJoinCode": "發起即時會議或透過代碼加入。",
+    "startInstantMeeting": "發起即時會議",
+    "createRoomInviteOthers": "建立會議室並邀請其他成員",
+    "enterRoomCode": "輸入會議代碼",
+    "joinExistingRoom": "加入現有的會議室",
+    "enter6LetterCode": "輸入 6 碼會議代碼",
+    "createMeeting": "建立會議",
+    "chooseStartOrSchedule": "選擇立即開始或預約稍後進行的會議。",
+    "startMeetingNow": "立即發起會議",
+    "launchRoomImmediately": "立即啟動會議室並邀請成員",
+    "scheduleForLater": "預約稍後會議",
+    "pickDateTimeInvite": "選取日期、時間並邀請團隊成員",
+    "backToOptions": "‹ 返回選項",
+    "join": "加入",
+    "cameraOn": "鏡頭開啟",
+    "cameraOff": "鏡頭關閉",
+    "you": "您",
+    "notRecording": "未錄製",
+    "copyMeetingLink": "複製會議連結",
+    "inviteCollaborators": "邀請協作成員"
   }
 }

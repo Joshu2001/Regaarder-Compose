@@ -945,7 +945,10 @@
       "eraser": "消しゴム",
       "image": "画像",
       "more": "その他"
-    }
+    },
+    "templates": "テンプレート",
+    "add": "+ 追加",
+    "tasks": "タスク"
   },
   "analytics": {
     "title": "ビジネス意思決定インテリジェンス",
@@ -1250,6 +1253,27 @@
     "canJoinDirectly": "直接参加可能",
     "onlyInvited": "招待されたユーザーのみ",
     "copyLink": "リンクをコピー",
-    "copied": "コピーしました！"
+    "copied": "コピーしました！",
+    "welcomeToRoom": "Room へようこそ",
+    "startOrJoinCode": "インスタントミーティングを開始するか、コードで参加します。",
+    "startInstantMeeting": "インスタントミーティングを開始",
+    "createRoomInviteOthers": "ルームを作成して他のユーザーを招待",
+    "enterRoomCode": "ルームコードを入力",
+    "joinExistingRoom": "既存のルームに参加",
+    "enter6LetterCode": "6桁のコードを入力",
+    "createMeeting": "ミーティングを作成",
+    "chooseStartOrSchedule": "今すぐ開始するか、後でスケジュールするかを選択します。",
+    "startMeetingNow": "今すぐミーティングを開始",
+    "launchRoomImmediately": "すぐにルームを起動して招待",
+    "scheduleForLater": "後でスケジュール",
+    "pickDateTimeInvite": "日時を選択してチームを招待",
+    "backToOptions": "‹ オプションに戻る",
+    "join": "参加",
+    "cameraOn": "カメラオン",
+    "cameraOff": "カメラオフ",
+    "you": "あなた",
+    "notRecording": "未録画",
+    "copyMeetingLink": "リンクをコピー",
+    "inviteCollaborators": "共同作業者を招待"
   }
 }

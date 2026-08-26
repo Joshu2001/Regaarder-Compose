@@ -930,7 +930,7 @@
     }
   },
   "whiteboard": {
-    "untitledWhiteboard": "Bảng trắng chưa có tiêu đề",
+    "untitledWhiteboard": "Untitled Whiteboard",
     "eraserSize": "Eraser size",
     "customSize": "Custom size",
     "tools": {
@@ -945,7 +945,10 @@
       "eraser": "Eraser",
       "image": "Image",
       "more": "More"
-    }
+    },
+    "templates": "Templates",
+    "add": "+ Add",
+    "tasks": "Tasks"
   },
   "analytics": {
     "title": "Business Decision Intelligence",
@@ -1250,6 +1253,27 @@
     "canJoinDirectly": "Can join directly",
     "onlyInvited": "Only invited people",
     "copyLink": "Copy link",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "welcomeToRoom": "Welcome to Room",
+    "startOrJoinCode": "Start an instant meeting or join with a code.",
+    "startInstantMeeting": "Start an instant meeting",
+    "createRoomInviteOthers": "Create a room and invite others",
+    "enterRoomCode": "Enter room code",
+    "joinExistingRoom": "Join an existing room",
+    "enter6LetterCode": "Enter 6-letter room code",
+    "createMeeting": "Create a Meeting",
+    "chooseStartOrSchedule": "Choose whether to start right now or schedule for later.",
+    "startMeetingNow": "Start meeting now",
+    "launchRoomImmediately": "Launch room and invite others immediately",
+    "scheduleForLater": "Schedule for later",
+    "pickDateTimeInvite": "Pick a date, time, and invite teammates",
+    "backToOptions": "‹ Back to options",
+    "join": "Join",
+    "cameraOn": "Camera on",
+    "cameraOff": "Camera off",
+    "you": "You",
+    "notRecording": "Not recording",
+    "copyMeetingLink": "Copy Meeting Link",
+    "inviteCollaborators": "Invite Collaborators"
   }
 }

@@ -4,6 +4,7 @@ import {
   MoreHorizontal, MessageSquare, Layout, LayoutGrid, X, Keyboard, Send, Check, Download,
   Maximize2, Minimize2, Share2, PhoneOff, Search, Sparkles
 } from "lucide-react";
+import { useTranslation } from "./i18n";
 import { RoomIcon, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 
@@ -13,13 +14,14 @@ import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EET
  * Implements the Apple-tier design specified in Image 2:
  * - Room lobby uses the exact same visual environment as the active Room interface
  * - Background displays the complete Room workspace with soft blur & desaturation during lobby state
- * - Centered premium glassmorphism card with "Welcome to Room"
+ * - Centered premium glassmorphism card with "{t('room.welcomeToRoom') || 'Welcome to Room'}"
  * - Primary Action: "Start an instant meeting" (Purple theme)
  * - Secondary Action: "Enter room code" (Join with code affordance)
  * - Preserves Header, People panel, Chat panel, Call controls, and AI prompt bar
  * - Smooth transition from lobby into active meeting workspace
  */
 export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMode, onOpenWorkspaceSwitcher }) {
+  const { t } = useTranslation();
   // Lobby State
   const [isLobby, setIsLobby] = useState(true);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
@@ -472,7 +474,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                   className="flex items-center gap-1.5 px-3 py-1 bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200/80 dark:hover:bg-zinc-700 border border-slate-200/60 dark:border-zinc-700/80 rounded-full text-xs text-slate-600 dark:text-zinc-300 font-medium transition-colors"
                 >
                   <span className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-400 dark:bg-zinc-500'}`} />
-                  <span>{isRecording ? "Recording" : "Not recording"}</span>
+                  <span>{isRecording ? (t('room.recording') || "Recording") : (t('room.notRecording') || "Not recording")}</span>
                 </button>
 
                 {/* Fullscreen / Expand Button */}
@@ -528,7 +530,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                 <aside className="w-[250px] shrink-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800 rounded-[28px] p-4 flex flex-col shadow-xs transition-all animate-in fade-in duration-200 text-left">
                   <div className="flex items-center justify-between mb-3 px-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">People</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.people') || 'People'}</span>
                       <span className="px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-zinc-800 text-[10px] font-semibold text-slate-500">1</span>
                     </div>
                     <button 
@@ -558,8 +560,8 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                         Y
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100 leading-tight">You</div>
-                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">{isCameraOn ? "Camera on" : "Camera off"}</div>
+                        <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100 leading-tight">{t('room.you') || 'You'}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">{isCameraOn ? (t('room.cameraOn') || "Camera on") : (t('room.cameraOff') || "Camera off")}</div>
                       </div>
                     </div>
                     {isMicOn ? (
@@ -574,9 +576,9 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                     <div className="w-10 h-10 rounded-2xl bg-slate-100/80 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2">
                       <Users size={18} strokeWidth={1.5} />
                     </div>
-                    <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">You're the only one here</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{t('room.onlyOneHere') || "You're the only one here"}</span>
                     <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 max-w-[170px] leading-relaxed">
-                      Share the meeting link to invite others.
+                      {t('room.shareLinkInvite') || 'Share the meeting link to invite others.'}
                     </p>
                     <button 
                       onClick={() => setIsInviteModalOpen(true)}
@@ -735,7 +737,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                           type="text"
                           value={aiPrompt}
                           onChange={(e) => setAiPrompt(e.target.value)}
-                          placeholder="Ask Room AI..."
+                          placeholder={t('room.askRoomAi') || 'Ask Room AI...'}
                           className="w-full bg-transparent border-none text-xs text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 dark:placeholder:zinc-500 focus:outline-none"
                         />
                       </div>
@@ -861,10 +863,10 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
 
                     {/* Typography Header */}
                     <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
-                      Create a Meeting
+                      {t('room.createMeeting') || 'Create a Meeting'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
-                      Choose whether to start right now or schedule for later.
+                      {t('room.chooseStartOrSchedule') || 'Choose whether to start right now or schedule for later.'}
                     </p>
 
                     {/* Option 1: Start Meeting Now */}
@@ -878,8 +880,8 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                           <Video size={16} strokeWidth={2.2} />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Start meeting now</div>
-                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Launch room and invite others immediately</div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.startMeetingNow') || 'Start meeting now'}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.launchRoomImmediately') || 'Launch room and invite others immediately'}</div>
                         </div>
                       </div>
                       <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -898,8 +900,8 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                           <Calendar size={15} strokeWidth={2.2} />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Schedule for later</div>
-                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Pick a date, time, and invite teammates</div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.scheduleForLater') || 'Schedule for later'}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.pickDateTimeInvite') || 'Pick a date, time, and invite teammates'}</div>
                         </div>
                       </div>
                       <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -911,7 +913,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       onClick={() => setIsMeetingOptionsOpen(false)}
                       className="text-xs font-semibold text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors py-1 cursor-pointer"
                     >
-                      ‹ Back to options
+                      {t('room.backToOptions') || '‹ Back to options'}
                     </button>
                   </div>
                 ) : (
@@ -935,7 +937,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       Welcome to Room
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
-                      Start an instant meeting or join with a code.
+                      {t('room.startOrJoinCode') || 'Start an instant meeting or join with a code.'}
                     </p>
 
                     {/* Action 1: Start an instant meeting (Opens Options) */}
@@ -949,8 +951,8 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                           <Plus size={16} strokeWidth={2.5} />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Start an instant meeting</div>
-                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Create a room and invite others</div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.startInstantMeeting') || 'Start an instant meeting'}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.createRoomInviteOthers') || 'Create a room and invite others'}</div>
                         </div>
                       </div>
                       <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -959,7 +961,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                     {/* Subtle Divider */}
                     <div className="flex items-center gap-3 w-full my-3.5">
                       <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
-                      <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">or</span>
+                      <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">{t('common.or') || 'or'}</span>
                       <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
                     </div>
 
@@ -975,8 +977,8 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                             <Hash size={15} strokeWidth={2.2} />
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Enter room code</div>
-                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">Join an existing room</div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.enterRoomCode') || 'Enter room code'}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.joinExistingRoom') || 'Join an existing room'}</div>
                           </div>
                         </div>
                         <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -1001,7 +1003,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                           </button>
                         </div>
                         <div className="flex justify-between items-center px-1">
-                          <span className="text-[10px] text-slate-400">Enter 6-letter room code</span>
+                          <span className="text-[10px] text-slate-400">{t('room.enter6LetterCode') || 'Enter 6-letter room code'}</span>
                           <button 
                             type="button" 
                             onClick={() => setIsEnteringCode(false)}

@@ -37964,6 +37964,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
   const activeDraftDisplayTitle = (() => {
     const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
+    if (rawTitle === 'Untitled Whiteboard') return t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard';
     return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.unsavedDraft') || 'Unsaved draft'));
   })();
   const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
@@ -46549,7 +46550,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
     // added here via WebRTC signalling in a real multi-user implementation.
     const youEntry = {
       name: 'You',
-      sub: isRoomCameraOn ? 'Camera on' : 'Camera off',
+      sub: isRoomCameraOn ? (t('room.cameraOn') || 'Camera on') : (t('room.cameraOff') || 'Camera off'),
       state: 'host',
       activeMic: isRoomMicOn,
     };
@@ -46674,7 +46675,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <UserPlus size={12} />
-                Invite people
+                <span>{t('room.invitePeople') || 'Invite people'}</span>
               </button>
             </div>
           )}
@@ -72934,7 +72935,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {orderedDocuments.map((doc, docIndex) => {
               const rawTitle = doc.title?.trim();
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
-              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : rawTitle) : (isWbDoc ? (docIndex === 0 ? (t('common.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
+              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : rawTitle)) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
               const isActive = activeDocId === doc.id;
 
               return (
@@ -76948,7 +76949,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         title="Templates library"
                       >
                         <LayoutGrid size={14} strokeWidth={1.6} />
-                        <span>Templates</span>
+                        <span>{t('templates.title') || 'Templates'}</span>
                       </button>
                       {whiteboardTemplateMenuOpen && (
                         <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-[360] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-2 w-[340px] max-h-[420px] overflow-y-auto thin-scrollbar">
@@ -77099,7 +77100,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       title="Convert board to Tasks"
                     >
                       <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
-                      <span>Tasks</span>
+                      <span>{t('whiteboard.tasks') || 'Tasks'}</span>
                     </button>
                     <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
                     {/* Clear Board */}
@@ -80528,7 +80529,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
                       </div>
                     )}
-                    <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.name}</span>
+                    <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.isYou ? (t('room.you') || 'You') : activeVideoSpeaker.name}</span>
                   </div>
 
                   {/* Captions Overlay */}
@@ -80614,7 +80615,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
       <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
         <div className="flex items-center justify-between w-full relative z-10">
-          <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{youTileSpeaker.name}</span>
+          <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{youTileSpeaker.isYou ? (t('room.you') || 'You') : youTileSpeaker.name}</span>
           {((youTileSpeaker.isYou && !isRoomMicOn) || (!youTileSpeaker.isYou && !youTileSpeaker.isRoomMicOn)) && (
             <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />
           )}
