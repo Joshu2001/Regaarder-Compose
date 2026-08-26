@@ -11463,17 +11463,17 @@ const DEFAULT_DECK_SLIDES = [
       setWhiteboardStickyPreview(null);
     }
     if (toolKey === 'pen') {
-      showToast('Pen tool active');
+      showToast(t('whiteboard.penToolActive') || 'Pen tool active');
       return;
     }
     if (toolKey === 'shapes') {
       setWhiteboardShapeMenuOpen(true);
-      showToast('Shape tools opened');
+      showToast(t('whiteboard.shapeToolsOpened') || 'Shape tools opened');
       return;
     }
     if (toolKey === 'sticky') {
       setWhiteboardStickyPaletteOpen(true);
-      showToast('Sticky note tool active');
+      showToast(t('whiteboard.stickyNoteToolActive') || 'Sticky note tool active');
       return;
     }
     if (toolKey === 'text' || toolKey === 'image' || toolKey === 'link') {
@@ -11483,7 +11483,7 @@ const DEFAULT_DECK_SLIDES = [
     }
     if (toolKey === 'more') {
       setWhiteboardMoreMenuOpen(true);
-      showToast('More whiteboard actions opened');
+      showToast(t('whiteboard.moreActionsOpened') || 'More whiteboard actions opened');
       return;
     }
     if (toolKey === 'select') {
@@ -53147,7 +53147,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div className="flex items-center gap-1.5">
                                                           <RegaarderVectorIcon size={13} className="text-slate-700 dark:text-zinc-300" />
                                                           <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
-                                                            VECTOR MESHES & WAVES
+                                                            {t('deck.vectorMeshesWaves') || 'VECTOR MESHES & WAVES'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
@@ -53162,7 +53162,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           type="text"
                                                           value={vectorWaveSearch}
                                                           onChange={(e) => setVectorWaveSearch(e.target.value)}
-                                                          placeholder="Search 3D meshes, waves, shapes…"
+                                                          placeholder={t('deck.searchVectorMeshes') || 'Search 3D meshes, waves, shapes…'}
                                                           className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {vectorWaveSearch && (
@@ -53274,7 +53274,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div className="flex items-center gap-1.5">
                                                           <Palette size={13} className="text-slate-700 dark:text-zinc-300" />
                                                           <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
-                                                            KEYNOTE THEMES & BACKGROUNDS
+                                                            {t('deck.keynoteThemesBackgrounds') || 'KEYNOTE THEMES & BACKGROUNDS'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
@@ -53289,7 +53289,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           type="text"
                                                           value={deckBgSearch}
                                                           onChange={(e) => setDeckBgSearch(e.target.value)}
-                                                          placeholder="Search background colors, gradients…"
+                                                          placeholder={t('deck.searchBgGradients') || 'Search background colors, gradients…'}
                                                           className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckBgSearch && (
@@ -53433,7 +53433,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           type="text"
                                                           value={deckStyleSearch}
                                                           onChange={(e) => setDeckStyleSearch(e.target.value)}
-                                                          placeholder="Search color schemes, palettes…"
+                                                          placeholder={t('deck.searchColorSchemes') || 'Search color schemes, palettes…'}
                                                           className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckStyleSearch && (
@@ -53499,7 +53499,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div className="flex items-center gap-1.5">
                                                           <RegaarderMediaIcon size={13} className="text-slate-700 dark:text-zinc-300" />
                                                           <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
-                                                            MEDIA & BRAND ASSETS
+                                                            {t('deck.mediaBrandAssets') || 'MEDIA & BRAND ASSETS'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
@@ -53514,7 +53514,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           type="text"
                                                           value={deckMediaSearch}
                                                           onChange={(e) => setDeckMediaSearch(e.target.value)}
-                                                          placeholder="Search media, logos, uploads…"
+                                                          placeholder={t('deck.searchMediaLogos') || 'Search media, logos, uploads…'}
                                                           className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckMediaSearch && (
@@ -53579,7 +53579,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         <div className="flex items-center gap-1.5">
                                                           <Plus size={13} className="text-slate-700 dark:text-zinc-300" />
                                                           <span className="text-[10px] font-bold tracking-wider text-slate-600 dark:text-zinc-400 uppercase">
-                                                            INSERT SLIDE OBJECTS
+                                                            {t('deck.insertSlideObjects') || 'INSERT SLIDE OBJECTS'}
                                                           </span>
                                                         </div>
                                                         <span className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
@@ -53594,7 +53594,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                           type="text"
                                                           value={deckInsertSearch}
                                                           onChange={(e) => setDeckInsertSearch(e.target.value)}
-                                                          placeholder="Search shapes, text, media, badges…"
+                                                          placeholder={t('deck.searchSlideObjects') || 'Search shapes, text, media, badges…'}
                                                           className="w-full h-7 pl-8 pr-7 text-xs bg-slate-100 dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200 dark:border-zinc-750 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:bg-white dark:focus:bg-zinc-800 transition-all font-sans"
                                                         />
                                                         {deckInsertSearch && (
@@ -53637,7 +53637,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Section 1: Media & Vector */}
                                                       {(deckInsertFilter === 'All' || deckInsertFilter === 'Media') && (
                                                         <div>
-                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">Media & Vectors</span>
+                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">{t('deck.secMediaVectors') || 'Media & Vectors'}</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
                                                               { label: 'Picture / Image', icon: ImageIcon, desc: 'Photo upload' },
@@ -53676,7 +53676,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Section 2: Shapes & Badges */}
                                                       {(deckInsertFilter === 'All' || deckInsertFilter === 'Shapes') && (
                                                         <div>
-                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">Geometric Shapes & Badges</span>
+                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">{t('deck.secShapesBadges') || 'Geometric Shapes & Badges'}</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
                                                               { label: 'Presenter Pill Badge', icon: Shield, desc: 'Speaker bio' },
@@ -53717,7 +53717,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       {/* Section 3: Typography & Structure */}
                                                       {(deckInsertFilter === 'All' || deckInsertFilter === 'Typography') && (
                                                         <div>
-                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">Typography & Lines</span>
+                                                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider px-1 mb-1 block">{t('deck.secTypographyLines') || 'Typography & Lines'}</span>
                                                           <div className="grid grid-cols-2 gap-1.5">
                                                             {[
                                                               { label: 'Heading H1', icon: Heading1, desc: 'Headline text' },
@@ -53786,7 +53786,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                               setDeckAiSearch('');
                                                             }
                                                           }}
-                                                          placeholder="What would you like to improve?"
+                                                          placeholder={t('deck.whatToImprove') || 'What would you like to improve?'}
                                                           className="w-full h-9.5 pl-3.5 pr-10 text-xs bg-white dark:bg-zinc-850 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-xl border border-slate-200/90 dark:border-zinc-700/80 focus:outline-none focus:border-[#7C4DFF] dark:focus:border-violet-500 focus:ring-2 focus:ring-[#7C4DFF]/20 shadow-xs transition-all font-sans"
                                                         />
                                                         <button
@@ -54405,7 +54405,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             {deckToolbarTab === 'Context' && (
                               <div className="w-full flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 select-none">Presentation Context & Sources:</span>
+                                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 shrink-0 select-none">{t('deck.presentationContextSources') || 'Presentation Context & Sources:'}</span>
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -54416,21 +54416,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }}
                                     className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 border border-violet-200/60 flex items-center gap-1.5 shrink-0 cursor-pointer"
                                   >
-                                    <Plus size={13} /> Upload / Import Sources <ChevronDown size={11} />
+                                    <Plus size={13} /> {t('deck.uploadImportSources') || 'Upload / Import Sources'} <ChevronDown size={11} />
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => showToast('Pasted briefing context into presentation memory')}
                                     className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 border border-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1"
                                   >
-                                    <FileText size={13} /> Briefing Notes
+                                    <FileText size={13} /> {t('deck.briefingNotes') || 'Briefing Notes'}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => showToast('Research links attached to slide context')}
                                     className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 border border-slate-200/60 shrink-0 cursor-pointer flex items-center gap-1"
                                   >
-                                    <BookOpen size={13} /> Research & Links
+                                    <BookOpen size={13} /> {t('deck.researchLinks') || 'Research & Links'}
                                   </button>
                                 </div>
                                 <button
@@ -54439,7 +54439,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   disabled={isComposing}
                                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
                                 >
-                                  <Sparkles size={13} /> Synthesize Context
+                                  <Sparkles size={13} /> {t('deck.synthesizeContext') || 'Synthesize Context'}
                                 </button>
                               </div>
                             )}
@@ -54448,7 +54448,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             {deckToolbarTab === 'Templates' && (
                               <div className="w-full flex items-center justify-between gap-1.5 py-0.5 relative">
                                 <div className="flex items-center gap-1 min-w-0 flex-1 relative">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 select-none">DECK TEMPLATES:</span>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 select-none">{t('deck.deckTemplates') || 'DECK TEMPLATES:'}</span>
                                   
                                   {/* Left Scroll Arrow */}
                                   <button
@@ -54476,7 +54476,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       title="Load Complete 10-Slide Executive Business Plan"
                                     >
                                       <Sparkles size={12} className="text-emerald-400 shrink-0" />
-                                      <span className="font-bold whitespace-nowrap">Business Plan (10 Slides)</span>
+                                      <span className="font-bold whitespace-nowrap">{t('deck.tmplBusinessPlan') || 'Business Plan (10 Slides)'}</span>
                                     </button>
 
                                     {/* 2. Startup Pitch Deck */}
@@ -54487,7 +54487,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       title="Load Original 15-Slide Startup Pitch Deck"
                                     >
                                       <Presentation size={12} className="text-violet-400 shrink-0" />
-                                      <span className="whitespace-nowrap">Startup Pitch Deck (15)</span>
+                                      <span className="whitespace-nowrap">{t('deck.tmplStartupPitch') || 'Startup Pitch Deck (15)'}</span>
                                     </button>
 
                                     {/* Additional Catalog Templates */}
@@ -74816,7 +74816,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   )}
                   {whiteboardTool === 'pen' && whiteboardPenMenuOpen && (
                     <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2.5 flex flex-col gap-1.5 w-[172px]">
-                      <p className="text-[10px] font-semibold text-gray-500 px-1">Pen styles</p>
+                      <p className="text-[10px] font-semibold text-gray-500 px-1">{t('whiteboard.penStyles') || 'Pen styles'}</p>
                       {whiteboardPenPresets.map((penPreset, penIndex) => (
                         <button
                           key={penPreset.key}
@@ -74826,7 +74826,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             setWhiteboardPenVariant(penPreset.key);
                             setWhiteboardPenMenuOpen(false);
-                            showToast(`${penPreset.label} selected`);
+                            showToast(t('whiteboard.penSelected', { name: t('whiteboard.pens.' + penPreset.key) || penPreset.label }) || `${penPreset.label} selected`);
                           }}
                           className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-slate-100 text-slate-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
                           title={penPreset.label}
@@ -74834,12 +74834,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <span className="h-5 w-5 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center">
                             <penPreset.icon size={12} style={{ color: penPreset.stroke, opacity: penPreset.opacity ?? 1 }} />
                           </span>
-                          <span className="text-[11px] font-medium truncate">{penPreset.label}</span>
-                          {penIndex < 2 && <span className="ml-auto text-[9px] text-gray-400">Popular</span>}
+                          <span className="text-[11px] font-medium truncate">{t('whiteboard.pens.' + penPreset.key) || penPreset.label}</span>
+                          {penIndex < 2 && <span className="ml-auto text-[9px] text-gray-400">{t('whiteboard.popular') || 'Popular'}</span>}
                         </button>
                       ))}
                       <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-2 py-2">
-                        <div className="text-[10px] font-semibold text-gray-500">Tip size</div>
+                        <div className="text-[10px] font-semibold text-gray-500">{t('whiteboard.tipSize') || 'Tip size'}</div>
                         <div className="mt-2 flex items-end justify-between gap-1">
                           {whiteboardPenSizeOptions.map((sizeValue) => {
                             const isActive = Math.abs(effectiveWhiteboardPenWidth - sizeValue) < 0.01;
