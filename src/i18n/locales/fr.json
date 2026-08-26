@@ -609,6 +609,54 @@
     "browse": "parcourir",
     "supportsUpload": "Prend en charge le téléchargement multi-fichiers PDF, Excel, CSV, JSON, etc.",
     "noDataToDisplay": "Aucune donnée à afficher",
-    "noDataToDisplayDesc": "Téléchargez ou sélectionnez une feuille contenant des valeurs numériques pour afficher vos graphiques."
+    "noDataToDisplayDesc": "Téléchargez ou sélectionnez une feuille contenant des valeurs numériques pour afficher vos graphiques.",
+    "untitledSheet": "Feuille sans titre",
+    "sheetTab": "Feuille",
+    "formulaPlaceholder": "Entrez une valeur ou une formule",
+    "chartPanel": "Panneau de graphique",
+    "gridlines": "Quadrillage",
+    "gridlinesOff": "Désactivé",
+    "gridlinesOffDesc": "Masquer tout le quadrillage",
+    "gridlinesSubtle": "Subtil",
+    "gridlinesSubtleDesc": "Bordures gris clair",
+    "gridlinesMedium": "Moyen",
+    "gridlinesMediumDesc": "Quadrillage standard",
+    "gridlinesHigh": "Élevé",
+    "gridlinesHighDesc": "Bordures à contraste élevé",
+    "viewOptions": "Options d'affichage",
+    "theme": "Thème",
+    "freezePanes": "Figer les volets",
+    "freezeOff": "Désactivé",
+    "freezeTopRow": "Première ligne",
+    "freezeFirstCol": "1ère colonne",
+    "headers": "En-têtes",
+    "cellSelected": "{{count}} cellule sélectionnée",
+    "cellsSelected": "cellules sélectionnées",
+    "sum": "Somme",
+    "avg": "Moyenne",
+    "count": "Nombre"
+  },
+  "saved": {
+    "notSaved": "Non enregistré",
+    "justNow": "Enregistré à l'instant",
+    "secondsAgo": "Enregistré il y a {{count}}s",
+    "minutesAgo": "Enregistré il y a {{count}} min",
+    "hoursAgo": "Enregistré il y a {{count}} h",
+    "daysAgo": "Enregistré il y a {{count}} j"
+  },
+  "sidebar": {
+    "composeAssistant": "Assistant Docs",
+    "sheetsAssistant": "Assistant Sheets",
+    "deckAssistant": "Assistant Deck"
+  },
+  "tasks": {
+    "yourTasks": "Vos tâches",
+    "agentTasks": "Tâches de l'agent",
+    "teamTasks": "Tâches d'équipe",
+    "addPlaceholder": "Ajouter une nouvelle tâche..."
+  },
+  "schedule": {
+    "launchTimeline": "Planning de lancement",
+    "intelligentSchedule": "Planning intelligent"
   }
 }

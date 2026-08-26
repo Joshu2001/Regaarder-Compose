@@ -609,6 +609,54 @@
     "browse": "参照",
     "supportsUpload": "PDF、Excel、CSV、JSON などの同時アップロードに対応",
     "noDataToDisplay": "表示するデータがありません",
-    "noDataToDisplayDesc": "数値を含むワークシートを選択またはアップロードして、インタラクティブなグラフを生成します。"
+    "noDataToDisplayDesc": "数値を含むワークシートを選択またはアップロードして、インタラクティブなグラフを生成します。",
+    "untitledSheet": "無題のスプレッドシート",
+    "sheetTab": "シート",
+    "formulaPlaceholder": "値または数式を入力",
+    "chartPanel": "グラフパネル",
+    "gridlines": "グリッド線",
+    "gridlinesOff": "オフ",
+    "gridlinesOffDesc": "すべてのグリッド線を非表示",
+    "gridlinesSubtle": "控えめ",
+    "gridlinesSubtleDesc": "薄いグレーの枠線",
+    "gridlinesMedium": "標準",
+    "gridlinesMediumDesc": "標準的なグリッド線",
+    "gridlinesHigh": "高コントラスト",
+    "gridlinesHighDesc": "高コントラスト枠線",
+    "viewOptions": "表示オプション",
+    "theme": "テーマ",
+    "freezePanes": "ウィンドウ枠固定",
+    "freezeOff": "解除",
+    "freezeTopRow": "先頭行",
+    "freezeFirstCol": "先頭列",
+    "headers": "見出し",
+    "cellSelected": "{{count}} 個のセルを選択中",
+    "cellsSelected": "個のセルを選択中",
+    "sum": "合計",
+    "avg": "平均",
+    "count": "個数"
+  },
+  "saved": {
+    "notSaved": "未保存",
+    "justNow": "たった今保存",
+    "secondsAgo": "{{count}} 秒前に保存",
+    "minutesAgo": "{{count}} 分前に保存",
+    "hoursAgo": "{{count}} 時間前に保存",
+    "daysAgo": "{{count}} 日前に保存"
+  },
+  "sidebar": {
+    "composeAssistant": "Docs アシスタント",
+    "sheetsAssistant": "Sheets アシスタント",
+    "deckAssistant": "Deck アシスタント"
+  },
+  "tasks": {
+    "yourTasks": "あなたのタスク",
+    "agentTasks": "AIタスク",
+    "teamTasks": "チームタスク",
+    "addPlaceholder": "新しいタスクを追加..."
+  },
+  "schedule": {
+    "launchTimeline": "スケジュールタイムライン",
+    "intelligentSchedule": "インテリジェントスケジュール"
   }
 }

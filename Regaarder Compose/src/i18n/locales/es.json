@@ -609,6 +609,54 @@
     "browse": "explorar",
     "supportsUpload": "Admite subida simultánea de archivos PDF, Excel, CSV, JSON y más",
     "noDataToDisplay": "No hay datos para mostrar",
-    "noDataToDisplayDesc": "Sube o selecciona una hoja con valores numéricos para generar gráficos interactivos en tiempo real."
+    "noDataToDisplayDesc": "Sube o selecciona una hoja con valores numéricos para generar gráficos interactivos en tiempo real.",
+    "untitledSheet": "Hoja sin título",
+    "sheetTab": "Hoja",
+    "formulaPlaceholder": "Introduce un valor o fórmula",
+    "chartPanel": "Panel de gráficos",
+    "gridlines": "Líneas de cuadrícula",
+    "gridlinesOff": "Desactivado",
+    "gridlinesOffDesc": "Ocultar todas las líneas",
+    "gridlinesSubtle": "Sutil",
+    "gridlinesSubtleDesc": "Bordes gris claro",
+    "gridlinesMedium": "Medio",
+    "gridlinesMediumDesc": "Líneas de cuadrícula estándar",
+    "gridlinesHigh": "Alto",
+    "gridlinesHighDesc": "Bordes de alto contraste",
+    "viewOptions": "Opciones de vista",
+    "theme": "Tema",
+    "freezePanes": "Inmovilizar paneles",
+    "freezeOff": "Desactivado",
+    "freezeTopRow": "Fila superior",
+    "freezeFirstCol": "1ª columna",
+    "headers": "Encabezados",
+    "cellSelected": "{{count}} celda seleccionada",
+    "cellsSelected": "celdas seleccionadas",
+    "sum": "Suma",
+    "avg": "Promedio",
+    "count": "Recuento"
+  },
+  "saved": {
+    "notSaved": "Aún no guardado",
+    "justNow": "Guardado hace un momento",
+    "secondsAgo": "Guardado hace {{count}}s",
+    "minutesAgo": "Guardado hace {{count}} min",
+    "hoursAgo": "Guardado hace {{count}} h",
+    "daysAgo": "Guardado hace {{count}} d"
+  },
+  "sidebar": {
+    "composeAssistant": "Asistente de Docs",
+    "sheetsAssistant": "Asistente de Sheets",
+    "deckAssistant": "Asistente de Deck"
+  },
+  "tasks": {
+    "yourTasks": "Tus tareas",
+    "agentTasks": "Tareas del agente",
+    "teamTasks": "Tareas del equipo",
+    "addPlaceholder": "Añadir una nueva tarea..."
+  },
+  "schedule": {
+    "launchTimeline": "Cronograma de lanzamiento",
+    "intelligentSchedule": "Horario inteligente"
   }
 }

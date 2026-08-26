@@ -609,6 +609,54 @@
     "browse": "telusuri",
     "supportsUpload": "Mendukung pengunggahan multi-file simultan untuk PDF, Excel, CSV, JSON, dll.",
     "noDataToDisplay": "Tidak Ada Data untuk Ditampilkan",
-    "noDataToDisplayDesc": "Unggah atau pilih kisi lembar kerja dengan nilai numerik untuk merender grafik visual interaktif."
+    "noDataToDisplayDesc": "Unggah atau pilih kisi lembar kerja dengan nilai numerik untuk merender grafik visual interaktif.",
+    "untitledSheet": "Spreadsheet Tanpa Judul",
+    "sheetTab": "Lembar",
+    "formulaPlaceholder": "Masukkan nilai atau rumus",
+    "chartPanel": "Panel grafik",
+    "gridlines": "Garis Kisi",
+    "gridlinesOff": "Mati",
+    "gridlinesOffDesc": "Sembunyikan semua garis kisi",
+    "gridlinesSubtle": "Halus",
+    "gridlinesSubtleDesc": "Garis batas abu-abu muda",
+    "gridlinesMedium": "Sedang",
+    "gridlinesMediumDesc": "Garis kisi standar",
+    "gridlinesHigh": "Tinggi",
+    "gridlinesHighDesc": "Batas kontras tinggi",
+    "viewOptions": "Opsi Tampilan",
+    "theme": "Tema",
+    "freezePanes": "Bekukan Panel",
+    "freezeOff": "Mati",
+    "freezeTopRow": "Baris Atas",
+    "freezeFirstCol": "Kolom Pertama",
+    "headers": "Header",
+    "cellSelected": "{{count}} sel dipilih",
+    "cellsSelected": "sel dipilih",
+    "sum": "Jumlah",
+    "avg": "Rata-rata",
+    "count": "Jumlah item"
+  },
+  "saved": {
+    "notSaved": "Belum disimpan",
+    "justNow": "Baru saja disimpan",
+    "secondsAgo": "Disimpan {{count}} detik lalu",
+    "minutesAgo": "Disimpan {{count}} menit lalu",
+    "hoursAgo": "Disimpan {{count}} jam lalu",
+    "daysAgo": "Disimpan {{count}} hari lalu"
+  },
+  "sidebar": {
+    "composeAssistant": "Asisten Docs",
+    "sheetsAssistant": "Asisten Sheets",
+    "deckAssistant": "Asisten Deck"
+  },
+  "tasks": {
+    "yourTasks": "Tugas Anda",
+    "agentTasks": "Tugas Agen",
+    "teamTasks": "Tugas Tim",
+    "addPlaceholder": "Tambahkan tugas baru..."
+  },
+  "schedule": {
+    "launchTimeline": "Lini Masa Peluncuran",
+    "intelligentSchedule": "Jadwal cerdas"
   }
 }

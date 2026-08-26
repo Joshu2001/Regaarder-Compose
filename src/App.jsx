@@ -7021,6 +7021,7 @@ function MoreViewOptionsDropdown({
   setShowRowHeaders,
   showToast 
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -7060,12 +7061,12 @@ function MoreViewOptionsDropdown({
       {isOpen && (
         <div className="absolute right-0 origin-top-right top-full mt-1.5 w-[280px] rounded-xl border border-slate-200/60 dark:border-zinc-800/60 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl shadow-md z-[400] p-3.5 space-y-3.5 animate-in zoom-in-95 fade-in duration-150 select-none">
           <div className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-            View options
+            {t('sheets.viewOptions') || 'View options'}
           </div>
 
           {/* Theme Configuration */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 shrink-0">Theme</span>
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 shrink-0">{t('sheets.theme') || 'Theme'}</span>
             <ThemeDropdown
               value={sheetsThemePalette}
               onChange={(newThemeId) => {
@@ -7082,12 +7083,12 @@ function MoreViewOptionsDropdown({
 
           {/* Freeze Panes Setting */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 shrink-0">Freeze panes</span>
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 shrink-0">{t('sheets.freezePanes') || 'Freeze panes'}</span>
             <div className="inline-flex items-center p-0.5 bg-slate-100/80 dark:bg-zinc-800/70 rounded-lg text-[11px] border border-slate-200/50 dark:border-zinc-700/50">
               {[
-                { id: 'off', label: 'Off' },
-                { id: 'row', label: 'Top Row' },
-                { id: 'col', label: '1st Col' },
+                { id: 'off', label: t('sheets.freezeOff') || 'Off' },
+                { id: 'row', label: t('sheets.freezeTopRow') || 'Top Row' },
+                { id: 'col', label: t('sheets.freezeFirstCol') || '1st Col' },
               ].map((item) => (
                 <button
                   key={item.id}
@@ -7111,7 +7112,7 @@ function MoreViewOptionsDropdown({
 
           {/* Row & Column Headers Toggle */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
-            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">Headers</span>
+            <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">{t('sheets.headers') || 'Headers'}</span>
             <button
               type="button"
               data-toggle-active={showRowHeaders ? 'true' : 'false'}
@@ -7138,15 +7139,16 @@ function MoreViewOptionsDropdown({
 }
 
 function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, gridLineContrast, setGridLineContrast, showToast }) {
+  const { t } = useTranslation();
   const currentValue = !showGridLines 
     ? 'off' 
     : (gridLineContrast || 'medium');
 
   const options = [
-    { id: 'off', label: 'Off', description: 'Hide all gridlines' },
-    { id: 'subtle', label: 'Subtle', description: 'Light grey borders' },
-    { id: 'medium', label: 'Medium', description: 'Standard gridlines' },
-    { id: 'high', label: 'High', description: 'High contrast borders' },
+    { id: 'off', label: t('sheets.gridlinesOff') || 'Off', description: t('sheets.gridlinesOffDesc') || 'Hide all gridlines' },
+    { id: 'subtle', label: t('sheets.gridlinesSubtle') || 'Subtle', description: t('sheets.gridlinesSubtleDesc') || 'Light grey borders' },
+    { id: 'medium', label: t('sheets.gridlinesMedium') || 'Medium', description: t('sheets.gridlinesMediumDesc') || 'Standard gridlines' },
+    { id: 'high', label: t('sheets.gridlinesHigh') || 'High', description: t('sheets.gridlinesHighDesc') || 'High contrast borders' },
   ];
 
   const handleSelect = (optionId) => {
@@ -7162,7 +7164,7 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 
   return (
     <AppleToolbarDropdown
-      label="Gridlines ·"
+      label={t('sheets.gridlines') ? `${t('sheets.gridlines')} ·` : "Gridlines ·"}
       value={currentValue}
       options={options}
       onChange={handleSelect}
@@ -18719,27 +18721,27 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   const formatRelativeSavedLabel = (savedAt) => {
     if (!userHasEnteredContentRef.current || !savedAt) {
-      return 'Not saved yet';
+      return t('saved.notSaved') || 'Not saved yet';
     }
 
     const diffMs = Math.max(0, relativeNow - savedAt);
     const seconds = Math.floor(diffMs / 1000);
     if (seconds < 5) {
-      return 'Saved just now';
+      return t('saved.justNow') || 'Saved just now';
     }
     if (seconds < 60) {
-      return `Saved ${seconds} second${seconds === 1 ? '' : 's'} ago`;
+      return t('saved.secondsAgo', { count: seconds }) || `Saved ${seconds}s ago`;
     }
     const minutes = Math.floor(diffMs / 60000);
     if (minutes < 60) {
-      return `Saved ${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+      return t('saved.minutesAgo', { count: minutes }) || `Saved ${minutes}m ago`;
     }
     const hours = Math.floor(minutes / 60);
     if (hours < 24) {
-      return `Saved ${hours} hour${hours === 1 ? '' : 's'} ago`;
+      return t('saved.hoursAgo', { count: hours }) || `Saved ${hours}h ago`;
     }
     const days = Math.floor(hours / 24);
-    return `Saved ${days} day${days === 1 ? '' : 's'} ago`;
+    return t('saved.daysAgo', { count: days }) || `Saved ${days}d ago`;
   };
 
   const resolveFontFamily = (fontName) => FONT_FAMILY_MAP[fontName] || `${fontName}, Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -39278,7 +39280,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       <Bot size={12} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
                     </div>
                     <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-100 tracking-tight truncate">
-                      {productMode === 'compose' ? 'Compose Assistant' : productMode === 'sheets' ? 'Sheets Assistant' : 'Deck Assistant'}
+                      {productMode === 'compose' ? (t('sidebar.composeAssistant') || 'Compose Assistant') : productMode === 'sheets' ? (t('sidebar.sheetsAssistant') || 'Sheets Assistant') : (t('sidebar.deckAssistant') || 'Deck Assistant')}
                     </h3>
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
@@ -40779,7 +40781,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
-                    Your Tasks
+                    {t('tasks.yourTasks') || 'Your Tasks'}
                   </button>
                   <button
                     type="button"
@@ -40798,7 +40800,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
-                    Agent Tasks
+                    {t('tasks.agentTasks') || 'Agent Tasks'}
                   </button>
                   <button
                     type="button"
@@ -40817,7 +40819,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
-                    Team Tasks
+                    {t('tasks.teamTasks') || 'Team Tasks'}
                   </button>
                   <button
                     type="button"
@@ -40859,7 +40861,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           addTaskFromInput(newTaskInput);
                         }
                       }}
-                      placeholder="Add a new task..."
+                      placeholder={t('tasks.addPlaceholder') || "Add a new task..."}
                       className="w-full bg-slate-50/60 dark:bg-zinc-800/30 border border-slate-200/60 dark:border-zinc-700/60 rounded-lg pl-8 pr-3 h-[42px] text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500/80 focus:bg-white dark:focus:bg-zinc-900 transition-all shadow-2xs"
                     />
                   </div>
@@ -41549,8 +41551,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                 {/* 1. HEADER */}
                 <div className="flex items-center justify-between px-0.5">
                   <div>
-                    <div className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">Launch Timeline</div>
-                    <div className="text-[11.5px] font-normal text-slate-400 mt-1">Intelligent schedule • {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                    <div className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">{t('schedule.launchTimeline') || 'Launch Timeline'}</div>
+                    <div className="text-[11.5px] font-normal text-slate-400 mt-1">{t('schedule.intelligentSchedule') || 'Intelligent schedule'} • {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                   </div>
                   <button
                     type="button"
@@ -47728,7 +47730,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                         }}
                         className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
-                        placeholder="Untitled Sheet"
+                        placeholder={t('sheets.untitledSheet') || "Untitled Sheet"}
                       />
                     ) : (
                       <button
@@ -47737,7 +47739,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="text-sm font-semibold text-slate-800 dark:text-zinc-100 hover:text-slate-600 dark:hover:text-zinc-300 px-1 py-0.5 rounded text-left truncate transition-colors"
                         title="Double-click or tap to rename"
                       >
-                        {sheetsTitle || 'Untitled Sheet'}
+                        {(sheetsTitle === 'Untitled Sheet' || !sheetsTitle?.trim()) ? (t('sheets.untitledSheet') || 'Untitled Sheet') : sheetsTitle}
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
@@ -48665,7 +48667,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     : 'bg-slate-100/90 dark:bg-[#18181b] border-slate-200/60 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 dark:hover:bg-zinc-800/70'
                                 }`}
                               >
-                                <span>Chart panel</span>
+                                <span>{t('sheets.chartPanel') || 'Chart panel'}</span>
                                 {/* Compact iOS-Style Switch */}
                                 <span
                                   data-toggle-active={showTemplateChart ? 'true' : 'false'}
@@ -49722,7 +49724,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                         }}
                         className="flex-1 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-2xs placeholder:text-slate-400"
-                        placeholder="Enter value or formula"
+                        placeholder={t('sheets.formulaPlaceholder') || "Enter value or formula"}
                       />
                     </div>
                       )}
@@ -52198,7 +52200,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }`}
                             >
                               {isActive && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDarkMode ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]' : 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.6)]'}`} />}
-                              <span>{sheet.title.split(' ')[0]}</span>
+                              <span>{(sheet.title === 'Sheet 1' || sheet.title === 'Sheet' || sheet.title === 'Untitled Sheet' || !sheet.title?.trim()) ? (t('sheets.sheetTab') || 'Sheet') : sheet.title.split(' ')[0]}</span>
                             </button>
                           );
                         })}
@@ -52218,7 +52220,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }`}>
                           {(() => {
                             if (!selectedSheetRange && sheetSelectionMode === 'cell') {
-                              return <span>1 cell selected</span>;
+                              return <span>{t('sheets.cellSelected', { count: 1 }) || '1 cell selected'}</span>;
                             }
                             if (selectedSheetRange) {
                               const rows = Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + 1;
@@ -52235,8 +52237,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               const avg = values.length ? (sum / values.length) : 0;
                               return (
                                 <>
-                                  <span>{total.toLocaleString()} cells selected</span>
-                                  {values.length > 0 && <><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>Sum: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>Avg: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>Count: {values.length}</span></> }
+                                  <span>{total.toLocaleString()} {t('sheets.cellsSelected') || 'cells selected'}</span>
+                                  {values.length > 0 && <><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>{t('sheets.sum') || 'Sum'}: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>{t('sheets.avg') || 'Avg'}: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-zinc-600' : 'bg-slate-400'}`} /><span>{t('sheets.count') || 'Count'}: {values.length}</span></> }
                                 </>
                               );
                             }

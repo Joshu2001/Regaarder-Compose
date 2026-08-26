@@ -609,6 +609,54 @@
     "browse": "찾아보기",
     "supportsUpload": "PDF, Excel, CSV, JSON 등 다중 파일 업로드 지원",
     "noDataToDisplay": "표시할 데이터가 없습니다",
-    "noDataToDisplayDesc": "수치 데이터가 있는 워크시트를 업로드하거나 선택하여 대화형 시각 차트를 렌더링하세요。"
+    "noDataToDisplayDesc": "수치 데이터가 있는 워크시트를 업로드하거나 선택하여 대화형 시각 차트를 렌더링하세요。",
+    "untitledSheet": "제목 없는 스프레드시트",
+    "sheetTab": "시트",
+    "formulaPlaceholder": "값 또는 수식 입력",
+    "chartPanel": "차트 패널",
+    "gridlines": "눈금선",
+    "gridlinesOff": "끔",
+    "gridlinesOffDesc": "모든 눈금선 숨기기",
+    "gridlinesSubtle": "은은하게",
+    "gridlinesSubtleDesc": "연한 회색 테두리",
+    "gridlinesMedium": "중간",
+    "gridlinesMediumDesc": "표준 눈금선",
+    "gridlinesHigh": "높은 대비",
+    "gridlinesHighDesc": "고대비 테두리",
+    "viewOptions": "보기 옵션",
+    "theme": "테마",
+    "freezePanes": "틀 고정",
+    "freezeOff": "해제",
+    "freezeTopRow": "첫 행",
+    "freezeFirstCol": "첫 열",
+    "headers": "머리글",
+    "cellSelected": "{{count}}개 셀 선택됨",
+    "cellsSelected": "개 셀 선택됨",
+    "sum": "합계",
+    "avg": "평균",
+    "count": "개수"
+  },
+  "saved": {
+    "notSaved": "아직 저장되지 않음",
+    "justNow": "방금 저장됨",
+    "secondsAgo": "{{count}}초 전 저장됨",
+    "minutesAgo": "{{count}}분 전 저장됨",
+    "hoursAgo": "{{count}}시간 전 저장됨",
+    "daysAgo": "{{count}}일 전 저장됨"
+  },
+  "sidebar": {
+    "composeAssistant": "문서 어시스턴트",
+    "sheetsAssistant": "시트 어시스턴트",
+    "deckAssistant": "프레젠테이션 어시스턴트"
+  },
+  "tasks": {
+    "yourTasks": "내 작업",
+    "agentTasks": "에이전트 작업",
+    "teamTasks": "팀 작업",
+    "addPlaceholder": "새 작업 추가..."
+  },
+  "schedule": {
+    "launchTimeline": "일정 타임라인",
+    "intelligentSchedule": "지능형 일정"
   }
 }

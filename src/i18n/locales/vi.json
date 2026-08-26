@@ -609,6 +609,54 @@
     "browse": "duyệt tệp",
     "supportsUpload": "Hỗ trợ tải lên nhiều tệp cùng lúc cho PDF, Excel, CSV, JSON, v.v.",
     "noDataToDisplay": "Không có dữ liệu để hiển thị",
-    "noDataToDisplayDesc": "Tải lên hoặc chọn một trang tính có giá trị số để hiển thị biểu đồ tương tác."
+    "noDataToDisplayDesc": "Tải lên hoặc chọn một trang tính có giá trị số để hiển thị biểu đồ tương tác.",
+    "untitledSheet": "Trang tính chưa có tiêu đề",
+    "sheetTab": "Trang tính",
+    "formulaPlaceholder": "Nhập giá trị hoặc công thức",
+    "chartPanel": "Bảng biểu đồ",
+    "gridlines": "Đường lưới",
+    "gridlinesOff": "Tắt",
+    "gridlinesOffDesc": "Ẩn tất cả đường lưới",
+    "gridlinesSubtle": "Nhẹ nhàng",
+    "gridlinesSubtleDesc": "Đường viền màu xám nhạt",
+    "gridlinesMedium": "Trung bình",
+    "gridlinesMediumDesc": "Đường lưới tiêu chuẩn",
+    "gridlinesHigh": "Tương phản cao",
+    "gridlinesHighDesc": "Đường viền tương phản cao",
+    "viewOptions": "Tùy chọn xem",
+    "theme": "Chủ đề",
+    "freezePanes": "Cố định khung",
+    "freezeOff": "Tắt",
+    "freezeTopRow": "Hàng trên cùng",
+    "freezeFirstCol": "Cột đầu tiên",
+    "headers": "Tiêu đề hàng/cột",
+    "cellSelected": "{{count}} ô đã chọn",
+    "cellsSelected": "ô đã chọn",
+    "sum": "Tổng",
+    "avg": "Trung bình",
+    "count": "Số lượng"
+  },
+  "saved": {
+    "notSaved": "Chưa lưu",
+    "justNow": "Vừa lưu xong",
+    "secondsAgo": "Đã lưu {{count}} giây trước",
+    "minutesAgo": "Đã lưu {{count}} phút trước",
+    "hoursAgo": "Đã lưu {{count}} giờ trước",
+    "daysAgo": "Đã lưu {{count}} ngày trước"
+  },
+  "sidebar": {
+    "composeAssistant": "Trợ lý Docs",
+    "sheetsAssistant": "Trợ lý Sheets",
+    "deckAssistant": "Trợ lý Deck"
+  },
+  "tasks": {
+    "yourTasks": "Nhiệm vụ của bạn",
+    "agentTasks": "Tác vụ AI",
+    "teamTasks": "Nhiệm vụ nhóm",
+    "addPlaceholder": "Thêm tác vụ mới..."
+  },
+  "schedule": {
+    "launchTimeline": "Lộ trình ra mắt",
+    "intelligentSchedule": "Lịch trình thông minh"
   }
 }
