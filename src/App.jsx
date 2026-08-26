@@ -15613,6 +15613,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                       }
                       if (item.mode === 'browser') {
                         setProductMode('browser');
+                        setRoomPanelMode('docked');
                         showToast('Switched to Research');
                         return;
                       }
@@ -32375,6 +32376,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('compose');
+    setFocusedModule('compose');
+    setDockedModules([]);
+    setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
     createNewComposition(options);
@@ -32384,6 +32388,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('deck');
+    setFocusedModule('compose');
+    setDockedModules([]);
+    setRoomPanelMode('docked');
     setDeckTitle('Untitled deck');
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
     setActiveDeckSlideId(1);
@@ -32404,6 +32411,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
+    setFocusedModule('compose');
+    setDockedModules([]);
+    setRoomPanelMode('docked');
     setSheetsTitle('Untitled Sheet');
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
@@ -32777,6 +32787,9 @@ Respond with valid JSON formatted like this:
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
+    setFocusedModule('compose');
+    setDockedModules([]);
+    setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
@@ -70952,7 +70965,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* 2. Main Editor Area */}
-      {roomState === 'active' && roomPanelMode === 'expanded' ? (
+      {roomState === 'active' && roomPanelMode === 'expanded' && (productMode === 'room-landing' || productMode === 'room') ? (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
@@ -70964,6 +70977,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast={showToast}
             onSwitchProductMode={(mode) => {
               setProductMode(mode);
+              if (mode !== 'room' && mode !== 'room-landing') {
+                setFocusedModule('compose');
+                setDockedModules([]);
+                setRoomPanelMode('docked');
+              }
               const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', whiteboard: 'Whiteboard', browser: 'Research' };
               showToast?.(`Switched to ${labelMap[mode] || mode}`);
             }}
@@ -74489,217 +74507,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
           
-          <div 
-            className={`flex flex-col overflow-hidden transition-all duration-300 ${focusedModule === 'room' ? 'bg-[#FAF9FF] h-full w-full' : 'bg-slate-900 border border-slate-800 shadow-xl z-50 cursor-pointer'}`}
-            style={getWorkspaceModuleStyle('room')}
-            onClick={() => handleWorkspaceModuleClick('room')}
-          >
-            {focusedModule !== 'room' ? (
-              /* Docked preview mode */
-              <div className="flex-1 flex flex-col p-3 text-white relative group select-none">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Meeting Live</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
-                </div>
-                <div className="flex-1 rounded-lg overflow-hidden bg-slate-800 relative flex items-center justify-center">
-                  {isVideoOff ? (
-                    <div className="text-center">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 flex items-center justify-center mx-auto text-sm font-bold border border-slate-300/40">J</div>
-                    </div>
-                  ) : (
-                    <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
-                  )}
-                  <div className="absolute bottom-1.5 left-1.5 bg-black/60 px-2 py-0.5 rounded text-[9px]">You</div>
-                </div>
-                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
-                  <span className="text-xs font-semibold bg-white text-slate-900 px-2.5 py-1 rounded-lg shadow">Focus Room</span>
-                </div>
-              </div>
-            ) : (
-              /* Premium Immersive Room Mode */
-              <div 
-                className="flex-1 relative flex flex-col h-full w-full p-6 select-none bg-[#F8F9FC] font-sans cursor-pointer" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setRoomMaximized(true);
-                  const docEl = document.documentElement;
-                  const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
-                  if (requestFS && !document.fullscreenElement) {
-                    requestFS.call(docEl).catch(()=>{});
-                  }
-                }}
-              >
-                {/* Active Speaker Card (Sarah Chen) */}
-                <div className="flex-1 min-h-0 relative mb-4 rounded-[28px] overflow-hidden border border-slate-200/50 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.06)] bg-white flex flex-col justify-center">
-                  <img 
-                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200" 
-                    alt="Sarah Chen" 
-                    className="w-full h-full object-cover" 
-                  />
-                  
-                  {/* Speaker Overlay details */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-900/85 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-lg">
-                      <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330" className="w-5 h-5 rounded-full object-cover" alt="" />
-                      <span className="text-xs font-bold">Sarah Chen</span>
-                      
-                      {/* Active Soundwave Animation */}
-                      <div className="flex items-end gap-[2px] h-3 px-1 ml-1">
-                        <span className="w-[1.5px] bg-[#a78bfa] rounded-full animate-[pulse_0.6s_infinite_alternate]" style={{ height: '50%' }}></span>
-                        <span className="w-[1.5px] bg-[#a78bfa] rounded-full animate-[pulse_0.4s_infinite_alternate]" style={{ height: '90%' }}></span>
-                        <span className="w-[1.5px] bg-[#a78bfa] rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }}></span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7C3AED]/90 backdrop-blur-md rounded-xl text-white text-xs font-semibold shadow-lg border border-violet-400/20">
-                      <Tv size={12} className="animate-pulse" />
-                      <span>Presenting screen</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sub-grid of participants */}
-                <div className="flex gap-4 overflow-x-auto pb-2 shrink-0 justify-center select-none thin-scrollbar">
-                  {/* Card 1: You */}
-                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
-                    {!isVideoOff && localStream ? (
-                      <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
-                    ) : (
-                      <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 flex items-center justify-center text-xs font-bold border border-slate-300/40">You</div>
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">You</span>
-                      <span className={`p-1 rounded-lg border shadow-sm ${!isMicMuted ? 'bg-white text-slate-700' : 'bg-red-50 text-red-500'}`}>
-                        {!isMicMuted ? <Mic size={10} /> : <MicOff size={10} />}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Alex Rivera */}
-                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d" className="w-full h-full object-cover" alt="" />
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Alex</span>
-                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
-                        <MicOff size={10} />
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Jamie Patel */}
-                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
-                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2" className="w-full h-full object-cover" alt="" />
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Jamie</span>
-                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
-                        <MicOff size={10} />
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 4: Taylor Kim */}
-                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb" className="w-full h-full object-cover" alt="" />
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Taylor</span>
-                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
-                        <MicOff size={10} />
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 5: Morgan Lee */}
-                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
-                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" className="w-full h-full object-cover" alt="" />
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Morgan</span>
-                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
-                        <MicOff size={10} />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Floating Centered Bottom controls & AI Input */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 w-full max-w-sm pointer-events-none">
-                  {/* Floating Action Controls */}
-                  <div className="flex items-center gap-2 p-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl pointer-events-auto">
-                    <button 
-                      onClick={toggleRoomMic} 
-                      className={`p-2.5 rounded-xl transition-all active:scale-95 ${!isMicMuted ? 'bg-slate-800 text-slate-200 hover:bg-slate-750' : 'bg-red-500 text-white'}`}
-                      title={!isMicMuted ? 'Mute microphone' : 'Unmute microphone'}
-                    >
-                      {!isMicMuted ? <Mic size={15} /> : <MicOff size={15} />}
-                    </button>
-                    <button 
-                      onClick={toggleRoomCamera} 
-                      className={`p-2.5 rounded-xl transition-all active:scale-95 ${!isVideoOff ? 'bg-slate-800 text-slate-200 hover:bg-slate-750' : 'bg-red-500 text-white'}`}
-                      title={!isVideoOff ? 'Turn off camera' : 'Turn on camera'}
-                    >
-                      {!isVideoOff ? <Video size={15} /> : <VideoOff size={15} />}
-                    </button>
-                    <button 
-                      onClick={toggleScreenShare} 
-                      className={`p-2.5 rounded-xl transition-all active:scale-95 ${isScreenSharing ? 'bg-[#7C3AED] text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-750'}`}
-                      title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
-                    >
-                      <Tv size={15} />
-                    </button>
-                    <button 
-                      onClick={() => handleWorkspaceModuleClick('compose')} 
-                      className="p-2.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-750 transition-all active:scale-95" 
-                      title="Show document split-screen"
-                    >
-                      <FileText size={15} />
-                    </button>
-                    <button 
-                      onClick={leaveRoom} 
-                      className="p-2.5 rounded-xl bg-[#EA4335] text-white hover:bg-red-600 transition-all active:scale-95" 
-                      title="Leave meeting"
-                    >
-                      <PhoneOff size={15} />
-                    </button>
-                  </div>
-
-                  {/* AI Prompt Capsule */}
-                  <div 
-                    onClick={() => {
-                      setRoomPanelMode('expanded');
-                      setIsRoomRightSidebarOpen(true);
-                    }}
-                    className="flex items-center bg-slate-900/90 dark:bg-zinc-900/90 text-white backdrop-blur border border-slate-700/80 dark:border-zinc-700/80 px-3.5 py-2.5 rounded-[22px] w-full shadow-[0_12px_32px_rgba(0,0,0,0.18)] hover:border-violet-400 transition-all pointer-events-auto cursor-pointer"
-                  >
-                    <RegaarderAiIcon size={15} className="text-violet-400 mr-2 shrink-0 animate-pulse" />
-                    <span className="text-xs text-slate-300 dark:text-zinc-300 text-left flex-1 font-medium select-none">Ask Room AI...</span>
-                    <div className="w-5 h-5 rounded-full bg-violet-950/80 flex items-center justify-center text-violet-300 border border-violet-700/40">
-                      <ArrowUpRight size={12} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Left Corner: Toggle People Sidebar */}
-                <button 
-                  onClick={() => setIsRoomLeftSidebarOpen(!isRoomLeftSidebarOpen)}
-                  className="absolute bottom-6 left-6 z-20 p-3 rounded-2xl bg-white border border-slate-250 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all shadow-md active:scale-95 pointer-events-auto"
-                  title="Toggle participant list"
-                >
-                  <Users size={16} />
-                </button>
-
-                {/* Bottom Right Corner: Toggle AI Assistant Sidebar */}
-                <button 
-                  onClick={() => setIsRoomRightSidebarOpen(!isRoomRightSidebarOpen)}
-                  className="absolute bottom-6 right-6 z-20 p-3 rounded-2xl bg-white border border-slate-250 hover:bg-slate-50 text-slate-650 hover:text-slate-900 transition-all shadow-md active:scale-95 pointer-events-auto"
-                  title="Toggle room assistant"
-                >
-                  <Sparkles size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-
+          {(productMode === 'room' || productMode === 'room-landing') && (
         <div 
           className="flex-1 flex flex-col min-h-0 bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 cursor-pointer"
           style={getWorkspaceModuleStyle('compose')}
@@ -81107,8 +80915,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
           <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
-          <button onClick={() => { setMainView('document'); setRoomPanelMode('docked'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
-          <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
+          <button onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer">Return</button>
+          <button onClick={confirmLeaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Leave</button>
         </div>
       )}
 

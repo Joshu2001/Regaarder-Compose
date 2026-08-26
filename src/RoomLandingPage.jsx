@@ -280,7 +280,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                     onClick={() => {
                       setIsWorkspaceMenuOpen(false);
                       if (item.id === 'compose') {
-                        onSwitchProductMode ? onSwitchProductMode('landing') : (window.location.hash = '#compose');
+                        onSwitchProductMode ? onSwitchProductMode('compose') : (window.location.hash = '#compose');
                       } else if (item.id === 'whiteboard') {
                         onSwitchProductMode ? onSwitchProductMode('whiteboard') : (window.location.hash = '#whiteboard');
                       } else if (item.id === 'sheet') {
@@ -374,7 +374,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                           onClick={() => {
                             setIsWorkspaceMenuOpen(false);
                             if (item.id === 'compose') {
-                              onSwitchProductMode ? onSwitchProductMode('landing') : (window.location.hash = '#compose');
+                              onSwitchProductMode ? onSwitchProductMode('compose') : (window.location.hash = '#compose');
                             } else if (item.id === 'whiteboard') {
                               onSwitchProductMode ? onSwitchProductMode('whiteboard') : (window.location.hash = '#whiteboard');
                             } else if (item.id === 'sheet') {
