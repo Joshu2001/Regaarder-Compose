@@ -80508,136 +80508,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    {/* Interactive Live Working App Stage — Authentic Workspace Engine (Exact Image 3 Parity) */}
+                    {/* Interactive Live Working App Stage — Authentic Workspace Projection */}
                     <div className="flex-1 overflow-hidden bg-[#F7F7F9] dark:bg-[#121214] relative flex flex-col">
-                      {roomPresentedApp === 'docs' ? (
-                        <div className="flex-1 flex flex-col overflow-hidden bg-[#F7F7F9] dark:bg-[#121214]">
-                          {/* 1. Header Navigation Bar (Exact Image 3 Layout) */}
-                          <div className="px-4 py-2 bg-white/95 dark:bg-zinc-900/95 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 select-none">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <button type="button" className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
-                                <ChevronRight size={14} className="rotate-180" />
-                              </button>
-                              <div className="w-5 h-5 rounded-lg bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-                                <ComposeIcon size={12} />
-                              </div>
-                              <input
-                                type="text"
-                                value={docTitle || ''}
-                                onChange={(e) => setDocTitle(e.target.value)}
-                                placeholder="Untitled Document"
-                                className="text-xs font-bold text-slate-800 dark:text-zinc-100 bg-transparent border-none outline-none max-w-[200px] truncate"
-                              />
-                            </div>
-
-                            {/* Document Tabs Strip */}
-                            <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-zinc-800/80 p-0.5 rounded-xl border border-slate-200/50">
-                              <span className="px-2.5 py-0.5 bg-white dark:bg-zinc-900 text-[11px] font-semibold rounded-lg shadow-2xs text-slate-800 dark:text-zinc-200 flex items-center gap-1">
-                                <span className="truncate max-w-[120px]">{docTitle || 'Untitled Document'}</span>
-                              </span>
-                              <button type="button" className="p-1 text-slate-400 hover:text-slate-600"><Plus size={11} /></button>
-                            </div>
-
-                            {/* Right Action Suite */}
-                            <div className="flex items-center gap-1.5">
-                              <button type="button" onClick={() => applyFormatCommand('undo')} className="p-1 text-slate-400 hover:text-slate-600 rounded"><Undo2 size={13} /></button>
-                              <button type="button" onClick={() => applyFormatCommand('redo')} className="p-1 text-slate-400 hover:text-slate-600 rounded"><Redo2 size={13} /></button>
-                              <button type="button" className="px-2 py-0.5 text-[11px] font-semibold bg-violet-600 text-white rounded-lg shadow-2xs">{t('common.share') || 'Share'}</button>
-                            </div>
-                          </div>
-
-                          {/* 2. Ribbon Tabs Strip (Context, Templates, Write, Review, View) */}
-                          <div className="px-4 py-1.5 bg-white/90 dark:bg-zinc-900/90 border-b border-slate-200/70 dark:border-zinc-800 flex items-center justify-between shrink-0 select-none">
-                            <div className="flex items-center gap-1 bg-slate-100/70 dark:bg-zinc-800/70 p-0.5 rounded-xl">
-                              {['Context', 'Templates', 'Write', 'Review', 'View'].map((tab) => (
-                                <button
-                                  key={tab}
-                                  type="button"
-                                  onClick={() => setDocToolbarTab(tab)}
-                                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                                    docToolbarTab === tab 
-                                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs' 
-                                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-300'
-                                  }`}
-                                >
-                                  {tab}
-                                </button>
-                              ))}
-                            </div>
-                            <span className="text-[10px] font-medium text-slate-400">{t('toolbar.collapse') || 'Collapse'} ⌃</span>
-                          </div>
-
-                          {/* 3. Formatting Toolbar Sub-Bar (Paragraph, Page #, Font, Size, Alignment, Lists, Insert) */}
-                          <div className="px-4 py-1.5 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/60 dark:border-zinc-800 flex items-center gap-3 shrink-0 select-none overflow-x-auto no-scrollbar">
-                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
-                              <span>Paragraph ▾</span>
-                            </div>
-                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
-                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
-                              <span>Page # ▾</span>
-                            </div>
-                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
-                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
-                              <span>{editorFont} ▾</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
-                              <span>{activeFontSize} ▾</span>
-                            </div>
-                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
-                            <div className="flex items-center gap-0.5 bg-slate-200/60 dark:bg-zinc-800 p-0.5 rounded-lg">
-                              <button type="button" onClick={() => applyFormatCommand('justifyLeft')} className="p-1 hover:bg-white rounded text-slate-600"><AlignLeft size={12} /></button>
-                              <button type="button" onClick={() => applyFormatCommand('justifyCenter')} className="p-1 hover:bg-white rounded text-slate-600"><AlignCenter size={12} /></button>
-                              <button type="button" onClick={() => applyFormatCommand('justifyRight')} className="p-1 hover:bg-white rounded text-slate-600"><AlignRight size={12} /></button>
-                            </div>
-                            <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-zinc-700" />
-                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
-                              <List size={12} />
-                              <span>Lists ▾</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-zinc-300">
-                              <Plus size={12} />
-                              <span>Insert ▾</span>
-                            </div>
-                          </div>
-
-                          {/* 4. Document Page Surface Paper with Draft Tag (Exact Image 3 Layout) */}
-                          <div className="flex-1 overflow-y-auto p-4 md:p-8 thin-scrollbar flex flex-col items-center bg-[#F7F7F9] dark:bg-[#121214] relative">
-                            {/* Floating Left Orb Icon */}
-                            <div className="absolute left-6 top-10 w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-950/80 border border-violet-200/60 text-violet-600 flex items-center justify-center shadow-xs">
-                              <RegaarderAiIcon size={16} />
-                            </div>
-
-                            {/* White Document Paper Sheet */}
-                            <div 
-                              className="w-full max-w-[760px] bg-white dark:bg-[#1C1C1E] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] rounded-[24px] border border-slate-200/60 dark:border-zinc-800 p-8 md:p-12 min-h-[460px] relative transition-all"
-                              style={{ fontFamily: resolveFontFamily(editorFont) }}
-                            >
-                              {/* Top Draft Badge */}
-                              <div className="flex justify-end mb-4">
-                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100/90 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-semibold border border-slate-200/60 shadow-2xs">
-                                  <FileEdit size={12} className="text-violet-600" />
-                                  <span>Draft</span>
-                                </div>
-                              </div>
-
-                              {/* Editable Document Body Surface */}
-                              <div 
-                                contentEditable
-                                suppressContentEditableWarning
-                                onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                                onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                                dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
-                                className="prose dark:prose-invert max-w-none text-[14px] leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[280px]"
-                              />
-                            </div>
-
-                            {/* Bottom Floating Dictate Pill */}
-                            <div className="absolute right-8 bottom-6 flex items-center gap-2 bg-white dark:bg-zinc-900 shadow-md border border-slate-200/80 rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-700 select-none">
-                              <Mic size={13} className="text-slate-500" />
-                              <span>Dictate</span>
-                            </div>
-                          </div>
+                      <div className="flex-1 overflow-auto bg-transparent relative flex flex-col">
+                        {/* Live Projection of Active Product Workspace */}
+                        <div className="w-full h-full flex-1 flex flex-col pointer-events-auto">
+                          {renderProductWorkspaceContent ? renderProductWorkspaceContent() : null}
                         </div>
+                      </div>
+                    </div>
                       ) : roomPresentedApp === 'whiteboard' ? (
                         /* Live Interactive Whiteboard Stage */
                         <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none flex flex-col justify-center items-center">
