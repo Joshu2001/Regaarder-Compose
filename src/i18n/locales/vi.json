@@ -948,7 +948,33 @@
     },
     "templates": "Templates",
     "add": "+ Add",
-    "tasks": "Tasks"
+    "tasks": "Tasks",
+    "typeYourText": "Type your text...",
+    "aiTemplateGenerator": "AI template generator",
+    "describePromptPlaceholder": "Describe customer input, use case, or desired structure...",
+    "attachFiles": "Attach files",
+    "generate": "Generate",
+    "generating": "Generating...",
+    "saveCurrent": "Save current",
+    "prebuiltTemplates": "Prebuilt templates",
+    "catStartup": "Startup",
+    "catEnterprise": "Enterprise",
+    "catPersonal": "Personal",
+    "catSaved": "Saved",
+    "tplLeanCanvas": "Lean Canvas",
+    "tplLeanCanvasDesc": "Problem, solution, channels, metrics, unfair advantage.",
+    "tplMvpSprint": "MVP Sprint Roadmap",
+    "tplMvpSprintDesc": "Weekly milestones from validation to launch.",
+    "tplQor": "Quarterly Operating Review",
+    "tplQorDesc": "OKRs, risks, dependencies, owners, and escalations.",
+    "tplStakeholder": "Stakeholder Update Board",
+    "tplStakeholderDesc": "Status rollup for leadership and cross-functional teams.",
+    "tplWeeklyPlanner": "Weekly Planner",
+    "tplWeeklyPlannerDesc": "Goals, priorities, routines, and reflections.",
+    "tplGoalsHabits": "Goals + Habit Tracker",
+    "tplGoalsHabitsDesc": "Monthly outcomes with daily habit checkpoints.",
+    "embedLinkVideo": "Embed Link / Video",
+    "taskCard": "Task Card"
   },
   "analytics": {
     "title": "Business Decision Intelligence",
@@ -1274,6 +1300,7 @@
     "you": "You",
     "notRecording": "Not recording",
     "copyMeetingLink": "Copy Meeting Link",
-    "inviteCollaborators": "Invite Collaborators"
+    "inviteCollaborators": "Invite Collaborators",
+    "calendar": "Calendar"
   }
 }

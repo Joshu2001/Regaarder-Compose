@@ -934,8 +934,8 @@
     "eraserSize": "消しゴムのサイズ",
     "customSize": "カスタムサイズ",
     "tools": {
-      "select": "選択",
-      "hand": "手のひら (移動)",
+      "select": "選択ツール",
+      "hand": "手のひらツール",
       "pen": "ペン",
       "shapes": "図形",
       "text": "テキスト",
@@ -948,7 +948,33 @@
     },
     "templates": "テンプレート",
     "add": "+ 追加",
-    "tasks": "タスク"
+    "tasks": "タスク",
+    "typeYourText": "テキストを入力…",
+    "aiTemplateGenerator": "AI テンプレート生成",
+    "describePromptPlaceholder": "ユースケースや構造を入力してください…",
+    "attachFiles": "ファイルを添付",
+    "generate": "生成",
+    "generating": "生成中…",
+    "saveCurrent": "現在のボードを保存",
+    "prebuiltTemplates": "既定のテンプレート",
+    "catStartup": "スタートアップ",
+    "catEnterprise": "エンタープライズ",
+    "catPersonal": "個人",
+    "catSaved": "保存済み",
+    "tplLeanCanvas": "リーンキャンバス",
+    "tplLeanCanvasDesc": "課題、ソリューション、主要指標、独自の強み。",
+    "tplMvpSprint": "MVP スプリントロードマップ",
+    "tplMvpSprintDesc": "検証からローンチまでのスプリント計画。",
+    "tplQor": "四半期運用レビュー",
+    "tplQorDesc": "OKR、リスク、依存関係、担当者。",
+    "tplStakeholder": "ステークホルダー更新ボード",
+    "tplStakeholderDesc": "経営陣およびチーム向けステータス集約。",
+    "tplWeeklyPlanner": "ウィークリープランナー",
+    "tplWeeklyPlannerDesc": "目標、優先順位、習慣、振り返り。",
+    "tplGoalsHabits": "目標＆習慣トラッカー",
+    "tplGoalsHabitsDesc": "毎月の成果と毎日の習慣チェック。",
+    "embedLinkVideo": "リンク/動画を埋め込む",
+    "taskCard": "タスクカード"
   },
   "analytics": {
     "title": "ビジネス意思決定インテリジェンス",
@@ -1274,6 +1300,7 @@
     "you": "あなた",
     "notRecording": "未録画",
     "copyMeetingLink": "リンクをコピー",
-    "inviteCollaborators": "共同作業者を招待"
+    "inviteCollaborators": "共同作業者を招待",
+    "calendar": "カレンダー"
   }
 }

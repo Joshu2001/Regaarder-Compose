@@ -46637,7 +46637,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                     </div>
                   )}
                   <div className="text-left min-w-0">
-                    <div className="text-[13px] font-normal text-slate-700 leading-normal truncate">{p.name}</div>
+                    <div className="text-[13px] font-normal text-slate-700 leading-normal truncate">{p.name === 'You' ? (t('room.you') || 'You') : p.name}</div>
                     <div className={`text-[10px] leading-normal font-normal tracking-wide mt-0.5 ${p.state === 'speaking' ? 'text-violet-400 font-medium' : 'text-slate-400'}`}>
                       {p.sub}
                     </div>
@@ -46917,7 +46917,7 @@ const renderRoomTopHeader = () => (
         {/* Recording pill */}
         <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm ${isRoomRecording ? 'border-violet-100/50 bg-violet-50/10 dark:border-violet-900/50 dark:bg-violet-950/20' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'}`}>
           {isRoomRecording ? <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600"></span>}
-          <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 tracking-wide pr-1">Recording</span>
+          <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 tracking-wide pr-1">{t('room.recording') || 'Recording'}</span>
         </div>
 
         <button 
@@ -46956,43 +46956,43 @@ const renderRoomTopHeader = () => (
                 onClick={() => { setIsRoomCaptionsEnabled(!isRoomCaptionsEnabled); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <MessageSquare size={16} /> {isRoomCaptionsEnabled ? 'Disable Captions' : 'Captions'}
+                <MessageSquare size={16} /> {isRoomCaptionsEnabled ? (t('room.disableCaptions') || 'Disable Captions') : (t('room.captions') || 'Captions')}
               </button>
               <button 
                 onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <MonitorPlay size={16} /> Present
+                <MonitorPlay size={16} /> {t('room.present') || 'Present'}
               </button>
               <button 
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <FileText size={16} /> Notes
+                <FileText size={16} /> {t('room.notes') || 'Notes'}
               </button>
               <button 
                 onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <Sparkles size={16} /> Summary
+                <Sparkles size={16} /> {t('room.summary') || 'Summary'}
               </button>
               <button 
                 onClick={() => { setIsCalendarModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <Calendar size={16} /> Calendar
+                <Calendar size={16} /> {t('sidebar.schedule') || t('room.calendar') || 'Calendar'}
               </button>
               <button 
                 onClick={() => { setIsMeetingsModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <Users size={16} /> Meetings
+                <Users size={16} /> {t('room.meetings') || 'Meetings'}
               </button>
               <button 
                 onClick={() => { setIsRecordingModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <Disc size={16} /> Recording
+                <Disc size={16} /> {t('room.recording') || 'Recording'}
               </button>
             </div>
           )}
@@ -75695,7 +75695,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             )));
                           }}
                           className="w-full h-full bg-transparent resize-none outline-none placeholder:text-violet-700/60 leading-relaxed"
-                          placeholder="Type your text..."
+                          placeholder={t('whiteboard.typeYourText') || 'Type your text...'}
                           style={{
                             cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : (isWidgetEditing ? 'text' : 'move'),
                             fontFamily: widget.fontFamily || 'Calibri',
@@ -76957,7 +76957,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div className="text-[11px] font-bold text-slate-750 dark:text-zinc-200 mb-1.5 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
                                 <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
-                                <span>AI template generator</span>
+                                <span>{t('whiteboard.aiTemplateGenerator') || 'AI template generator'}</span>
                               </div>
                               <button
                                 type="button"
@@ -76974,7 +76974,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               value={whiteboardTemplatePrompt}
                               onChange={(event) => setWhiteboardTemplatePrompt(event.target.value)}
                               className="w-full h-16 resize-none rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-850 px-2.5 py-1.5 text-[11px] text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-400 dark:focus:border-violet-500"
-                              placeholder="Describe customer input, use case, or desired structure..."
+                              placeholder={t('whiteboard.describePromptPlaceholder') || 'Describe customer input, use case, or desired structure...'}
                             />
                             <input
                               ref={whiteboardTemplateSourceInputRef}
@@ -77003,7 +77003,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 ) : (
                                   <RegaarderAiIcon size={11} />
                                 )}
-                                <span>{isGeneratingAiTemplate ? 'Generating...' : 'Generate'}</span>
+                                <span>{isGeneratingAiTemplate ? (t('whiteboard.generating') || 'Generating...') : (t('whiteboard.generate') || 'Generate')}</span>
                               </button>
                               <button
                                 type="button"
@@ -77023,10 +77023,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
                             )}
                           </div>
-                          <div className="px-1 pb-1 text-[11px] font-bold text-slate-700 dark:text-zinc-200">Prebuilt templates</div>
+                          <div className="px-1 pb-1 text-[11px] font-bold text-slate-700 dark:text-zinc-200">{t('whiteboard.prebuiltTemplates') || 'Prebuilt templates'}</div>
                           {Array.from(new Set(['Startup', 'Enterprise', 'Personal', 'Saved', ...whiteboardTemplateCatalog.map((template) => template.category)])).map((category) => (
                             <div key={category} className="mt-1.5">
-                              <div className="px-1 py-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-zinc-500 font-semibold">{category}</div>
+                              <div className="px-1 py-0.5 text-[10px] uppercase tracking-wide text-slate-400 dark:text-zinc-500 font-semibold">{category === 'Startup' ? (t('whiteboard.catStartup') || 'Startup') : category === 'Enterprise' ? (t('whiteboard.catEnterprise') || 'Enterprise') : category === 'Personal' ? (t('whiteboard.catPersonal') || 'Personal') : category === 'Saved' ? (t('whiteboard.catSaved') || 'Saved') : category}</div>
                               <div className="grid grid-cols-2 gap-2 mt-1">
                                 {whiteboardTemplateCatalog
                                   .filter((template) => template.category === category)
@@ -77042,8 +77042,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           <div key={`${template.key}-swatch-${index}`} className="flex-1 rounded-sm" style={{ backgroundColor: swatch, height: `${40 + (index % 3) * 8}px` }} />
                                         ))}
                                       </div>
-                                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">{template.label}</div>
-                                      <div className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 line-clamp-1">{template.detail}</div>
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">{template.key === 'startup-lean-canvas' ? (t('whiteboard.tplLeanCanvas') || template.label) : template.key === 'startup-roadmap-sprint' ? (t('whiteboard.tplMvpSprint') || template.label) : template.key === 'enterprise-quarterly-operating-review' ? (t('whiteboard.tplQor') || template.label) : template.key === 'enterprise-stakeholder-update' ? (t('whiteboard.tplStakeholder') || template.label) : template.key === 'personal-weekly-planner' ? (t('whiteboard.tplWeeklyPlanner') || template.label) : template.key === 'personal-goals-habit-tracker' ? (t('whiteboard.tplGoalsHabits') || template.label) : template.label}</div>
+                                      <div className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 line-clamp-1">{template.key === 'startup-lean-canvas' ? (t('whiteboard.tplLeanCanvasDesc') || template.detail) : template.key === 'startup-roadmap-sprint' ? (t('whiteboard.tplMvpSprintDesc') || template.detail) : template.key === 'enterprise-quarterly-operating-review' ? (t('whiteboard.tplQorDesc') || template.detail) : template.key === 'enterprise-stakeholder-update' ? (t('whiteboard.tplStakeholderDesc') || template.detail) : template.key === 'personal-weekly-planner' ? (t('whiteboard.tplWeeklyPlannerDesc') || template.detail) : template.key === 'personal-goals-habit-tracker' ? (t('whiteboard.tplGoalsHabitsDesc') || template.detail) : template.detail}</div>
                                     </button>
                                   ))}
                               </div>
@@ -77070,14 +77070,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {whiteboardAddMenuOpen && (
                         <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-[360] rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-1.5 w-48 font-sans animate-in fade-in zoom-in-95 duration-150">
                           {[
-                            { label: 'Sticky Note', icon: StickyNote, action: () => { activateWhiteboardTool('sticky'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Text Block', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Shape', icon: Shapes, action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Image', icon: ImageIcon, action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Embed Link / Video', icon: Video, action: () => { setWhiteboardMediaModalOpen(true); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
+                            { label: t('whiteboard.tools.sticky') || 'Sticky Note', icon: StickyNote, action: () => { activateWhiteboardTool('sticky'); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.tools.text') || 'Text Block', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.tools.shapes') || 'Shape', icon: Shapes, action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.tools.image') || 'Image', icon: ImageIcon, action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.embedLinkVideo') || 'Embed Link / Video', icon: Video, action: () => { setWhiteboardMediaModalOpen(true); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.tools.connector') || 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.tools.comment') || 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
+                            { label: t('whiteboard.taskCard') || 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
                           ].map((item) => (
                             <button
                               key={item.label}
@@ -80809,7 +80809,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           type="text"
                           value={roomAIPrompt}
                           onChange={(e) => setRoomAIPrompt(e.target.value)}
-                          placeholder="Ask Room AI..."
+                          placeholder={t('room.askRoomAi') || 'Ask Room AI...'}
                           className="text-[14px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent border-none ring-0 focus:ring-0 p-0 m-0 outline-none placeholder:text-slate-400 pointer-events-auto"
                         />
                         <button 

@@ -948,7 +948,33 @@
     },
     "templates": "範本庫",
     "add": "+ 新增",
-    "tasks": "任務"
+    "tasks": "任務",
+    "typeYourText": "輸入文字…",
+    "aiTemplateGenerator": "AI 範本生成器",
+    "describePromptPlaceholder": "描述您的受眾、使用情境或所需的白板架構…",
+    "attachFiles": "附加檔案",
+    "generate": "生成範本",
+    "generating": "生成中…",
+    "saveCurrent": "儲存目前白板",
+    "prebuiltTemplates": "預設範本",
+    "catStartup": "新創商業",
+    "catEnterprise": "企業管理",
+    "catPersonal": "個人規劃",
+    "catSaved": "已儲存範本",
+    "tplLeanCanvas": "精實商業畫布 (Lean Canvas)",
+    "tplLeanCanvasDesc": "問題、解決方案、關鍵指標與獨特價值主張。",
+    "tplMvpSprint": "MVP 衝刺路線圖",
+    "tplMvpSprintDesc": "從概念驗證到產品發布的每週衝刺里程碑。",
+    "tplQor": "季度營運回顧 (QOR)",
+    "tplQorDesc": "OKRs、關鍵風險、跨團隊依賴與負責人追蹤。",
+    "tplStakeholder": "利益相關者更新看板",
+    "tplStakeholderDesc": "面向領導團隊與跨部門專案的進度整合看板。",
+    "tplWeeklyPlanner": "每週目標與工作計畫",
+    "tplWeeklyPlannerDesc": "每週優先級、目標達成與反思總結。",
+    "tplGoalsHabits": "長期目標與習慣追蹤器",
+    "tplGoalsHabitsDesc": "每月關鍵成果與每日良好習慣檢查清單。",
+    "embedLinkVideo": "嵌入連結 / 影片",
+    "taskCard": "任務卡片"
   },
   "analytics": {
     "title": "商業決策智慧中心",
@@ -1274,6 +1300,7 @@
     "you": "您",
     "notRecording": "未錄製",
     "copyMeetingLink": "複製會議連結",
-    "inviteCollaborators": "邀請協作成員"
+    "inviteCollaborators": "邀請協作成員",
+    "calendar": "行事曆"
   }
 }
