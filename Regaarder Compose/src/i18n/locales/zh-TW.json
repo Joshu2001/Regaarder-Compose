@@ -50,7 +50,10 @@
     "searchFont": "搜尋字型",
     "pinned": "已釘選",
     "apply": "套用",
-    "ai": "AI 創作"
+    "ai": "AI 創作",
+    "copyText": "複製文字",
+    "copyStyle": "複製樣式",
+    "deleteBlock": "刪除區塊"
   },
   "nav": {
     "docs": "文件",
@@ -1046,7 +1049,29 @@
     "tmplFinancialProjections": "財務預測與模型",
     "tmplMarketingRoadmap": "行銷推廣路線圖",
     "tmplCompanyOverview": "公司全貌與文化",
-    "resetZoom": "重設"
+    "resetZoom": "重設",
+    "vectorMesh": "向量網格",
+    "glow": "光暈",
+    "glowUltraRadiant": "超高亮度 (Ultra Radiant)",
+    "glowNeonBloom": "霓虹綻放 (Neon Bloom)",
+    "glowElectricHigh": "電光高亮 (Electric High)",
+    "glowSoftAmbient": "柔和環境光 (Soft Ambient)",
+    "glowSaturationIntensity": "光暈飽和度與強度",
+    "primaryBeam": "主光束",
+    "primaryBeamColor": "主光束色彩",
+    "secondaryBeam": "次光束",
+    "secondaryBeamColor": "次光束色彩",
+    "customSpectrumRange": "自訂光譜範圍：",
+    "spectrumPicker": "光譜選色器",
+    "resetBounds": "重設邊界",
+    "deleteMesh": "刪除網格",
+    "stylesCountLabel": "款風格",
+    "assetsCountLabel": "個資產",
+    "descInsertPhoto": "插入攝影相片或圖形素材",
+    "descPlaceEmblem": "放置高解析度公司標誌",
+    "descAutoConvertSvg": "自動將點陣圖轉為清晰向量 SVG",
+    "descAddMonogram": "新增簡約商務字母標誌",
+    "defaultCompany": "Novaris 企業"
   },
   "whiteboard": {
     "untitledWhiteboard": "未命名白板",
@@ -1164,7 +1189,8 @@
       "lasso": "虛線套索",
       "marker": "麥克筆",
       "highlighter": "螢光筆",
-      "calligraphy": "書法鋼筆"
+      "calligraphy": "書法鋼筆",
+      "felt-pen": "簽字筆"
     },
     "penSelected": "已選取 {{name}}",
     "penToolActive": "筆刷工具已啟動",
@@ -1187,7 +1213,10 @@
     "nothingToUndo": "沒有可復原的動作",
     "nothingToRedo": "沒有可重做的動作",
     "connectedNoteAdded": "已新增關聯筆記",
-    "notReadyForExport": "白板尚未準備好匯出"
+    "notReadyForExport": "白板尚未準備好匯出",
+    "copyText": "複製文字",
+    "copyStyle": "複製樣式",
+    "deleteBlock": "刪除區塊"
   },
   "analytics": {
     "title": "商業決策智慧中心",

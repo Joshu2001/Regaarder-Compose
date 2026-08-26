@@ -50,7 +50,10 @@
     "searchFont": "Cari font",
     "pinned": "Disematkan",
     "apply": "Apply",
-    "ai": "AI"
+    "ai": "AI",
+    "copyText": "Copy text",
+    "copyStyle": "Copy style",
+    "deleteBlock": "Delete block"
   },
   "nav": {
     "docs": "Dokumen",
@@ -1046,7 +1049,29 @@
     "tmplFinancialProjections": "Financial Projections",
     "tmplMarketingRoadmap": "Marketing Roadmap",
     "tmplCompanyOverview": "Company Overview",
-    "resetZoom": "Reset"
+    "resetZoom": "Reset",
+    "vectorMesh": "Vector Mesh",
+    "glow": "Glow",
+    "glowUltraRadiant": "Ultra Radiant",
+    "glowNeonBloom": "Neon Bloom",
+    "glowElectricHigh": "Electric High",
+    "glowSoftAmbient": "Soft Ambient",
+    "glowSaturationIntensity": "Glow Saturation & Intensity",
+    "primaryBeam": "Primary Beam",
+    "primaryBeamColor": "Primary Beam Color",
+    "secondaryBeam": "Secondary Beam",
+    "secondaryBeamColor": "Secondary Beam Color",
+    "customSpectrumRange": "Custom Spectrum Range:",
+    "spectrumPicker": "Spectrum Picker",
+    "resetBounds": "Reset Bounds",
+    "deleteMesh": "Delete Mesh",
+    "stylesCountLabel": "STYLES",
+    "assetsCountLabel": "ASSETS",
+    "descInsertPhoto": "Insert photography or graphic asset",
+    "descPlaceEmblem": "Place high-res company emblem",
+    "descAutoConvertSvg": "Auto-convert raster images to crisp SVG",
+    "descAddMonogram": "Add sleek executive monogram badge",
+    "defaultCompany": "Novaris Company"
   },
   "whiteboard": {
     "untitledWhiteboard": "Untitled Whiteboard",
@@ -1164,7 +1189,8 @@
       "lasso": "Lasso dashed",
       "marker": "Marker",
       "highlighter": "Highlighter",
-      "calligraphy": "Calligraphy pen"
+      "calligraphy": "Calligraphy pen",
+      "felt-pen": "Felt pen"
     },
     "penSelected": "{{name}} selected",
     "penToolActive": "Pen tool active",
@@ -1187,7 +1213,10 @@
     "nothingToUndo": "Nothing to undo",
     "nothingToRedo": "Nothing to redo",
     "connectedNoteAdded": "Connected note added",
-    "notReadyForExport": "Whiteboard is not ready for export yet"
+    "notReadyForExport": "Whiteboard is not ready for export yet",
+    "copyText": "Copy text",
+    "copyStyle": "Copy style",
+    "deleteBlock": "Delete block"
   },
   "analytics": {
     "title": "Business Decision Intelligence",
