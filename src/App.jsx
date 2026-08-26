@@ -24171,21 +24171,21 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       }
 
       try {
-        const isOllama = localTargetModel.provider === 'Ollama' || localTargetModel.endpoint.includes('11434');
-        const baseEndpoint = localTargetModel.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
+        const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint.includes('11434');
+        const baseEndpoint = composeSelectedModel?.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
           ? `${baseEndpoint}/api/generate`
-          : `${localTargetModel.endpoint.endsWith('/v1') ? localTargetModel.endpoint : localTargetModel.endpoint + '/v1'}/chat/completions`;
+          : `${composeSelectedModel?.endpoint.endsWith('/v1') ? composeSelectedModel?.endpoint : composeSelectedModel?.endpoint + '/v1'}/chat/completions`;
 
         const requestBody = isOllama
           ? {
-              model: localTargetModel.id,
+              model: composeSelectedModel?.id,
               prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
               format: schema ? 'json' : undefined,
               stream: false,
             }
           : {
-              model: localTargetModel.id || 'default',
+              model: composeSelectedModel?.id || 'default',
               messages: [
                 ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
                 { role: 'user', content: userPrompt }
@@ -24224,7 +24224,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  model: localTargetModel.id,
+                  model: composeSelectedModel?.id,
                   messages: [
                     { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
                   ],
@@ -24270,7 +24270,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         } else {
           const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
           return {
-            text: `⚠️ Unable to reach local inference model (${localTargetModel.name}) at ${localTargetModel.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            text: `⚠️ Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
             modelName: localTargetModel.name
           };
         }
@@ -39787,7 +39787,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                              <span className="max-w-[120px] truncate">{localTargetModel.name}</span>
+                              <span className="max-w-[120px] truncate">{composeSelectedModel?.name || "Model"}</span>
                               <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                             </button>
                             <button
@@ -40554,7 +40554,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                             title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                            <span className="max-w-[130px] truncate">{localTargetModel.name}</span>
+                            <span className="max-w-[130px] truncate">{composeSelectedModel?.name || "Model"}</span>
                             <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                           </button>
 
@@ -40603,7 +40603,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                         key={idx}
                                         type="button"
                                         onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
-                                        className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${localTargetModel.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
+                                        className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel?.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
                                       >
                                         <div className="min-w-0 pr-1 space-y-0.5">
                                           <div className="flex items-center gap-1.5">
@@ -40614,7 +40614,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                           </div>
                                           {m.sizeGB && <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-normal">{m.sizeGB} GB active</span>}
                                         </div>
-                                        {localTargetModel.id === m.id && <Check size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                                        {composeSelectedModel?.id === m.id && <Check size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />}
                                       </button>
                                     ))}
                                   </div>
@@ -40677,7 +40677,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                     key={cIdx}
                                     type="button"
                                     onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Active model: ${cM.name}`); }}
-                                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${localTargetModel.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
+                                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel?.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
                                   >
                                     <span className="font-semibold">{cM.name}</span>
                                     <span className="text-[9px] text-violet-600 dark:text-cyan-400 font-mono">{cM.provider}</span>
@@ -44419,7 +44419,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
 
       const tempAssistantId = `dm-ai-assistant-loading-${now}`;
-      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: `Thinking with ${localTargetModel.name}...` };
+      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: `Thinking with ${composeSelectedModel?.name || "Model"}...` };
       
       setDmAgentHistories((prev) => ({
         ...prev,
@@ -44469,15 +44469,15 @@ If requested to draw a chart or graph, append a structured action JSON block:
         let replyText = '';
 
         // Check if user selected a Local LLM (Ollama / LM Studio / llama.cpp)
-        if (composeSelectedModel.isLocal && localTargetModel.endpoint) {
-          const isOllama = localTargetModel.provider === 'Ollama' || localTargetModel.endpoint.includes('11434');
+        if (composeSelectedModel.isLocal && composeSelectedModel?.endpoint) {
+          const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint.includes('11434');
           const targetUrl = isOllama
-            ? `${localTargetModel.endpoint.replace(/\/v1$/, '')}/api/chat`
-            : `${localTargetModel.endpoint.endsWith('/v1') ? localTargetModel.endpoint : localTargetModel.endpoint + '/v1'}/chat/completions`;
+            ? `${composeSelectedModel?.endpoint.replace(/\/v1$/, '')}/api/chat`
+            : `${composeSelectedModel?.endpoint.endsWith('/v1') ? composeSelectedModel?.endpoint : composeSelectedModel?.endpoint + '/v1'}/chat/completions`;
 
           const requestBody = isOllama
             ? {
-                model: localTargetModel.id,
+                model: composeSelectedModel?.id,
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
@@ -44485,7 +44485,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 stream: false
               }
             : {
-                model: localTargetModel.id || 'default',
+                model: composeSelectedModel?.id || 'default',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
@@ -44544,7 +44544,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
         });
 
         addWorkspaceMemory(
-          `Orb (${localTargetModel.name}) processed: "${text.substring(0, 30)}..."`,
+          `Orb (${composeSelectedModel?.name || "Model"}) processed: "${text.substring(0, 30)}..."`,
           routedAgent !== 'Orb (AI Assistant)' ? `Orb ??${routedAgent.split(' ')[0]}` : 'Orb Assistant',
           ["AI Chat"]
         );
@@ -45215,7 +45215,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                         title="Select Local Ollama, LM Studio, or Cloud AI Engine"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>{localTargetModel.name}</span>
+                        <span>{composeSelectedModel?.name || "Model"}</span>
                         <ChevronDown size={10} className="text-violet-600" />
                       </button>
 
@@ -45243,7 +45243,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                                   key={idx}
                                   type="button"
                                   onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
-                                  className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${localTargetModel.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
+                                  className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel?.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
                                 >
                                   <span className="truncate">{m.name}</span>
                                   <span className="text-[9px] text-emerald-400/80 font-mono">{m.provider}</span>
@@ -45264,7 +45264,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
                                 key={cIdx}
                                 type="button"
                                 onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
-                                className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${localTargetModel.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
+                                className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel?.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
                               >
                                 <span>{cM.name}</span>
                                 <span className="text-[9px] text-cyan-400/80 font-mono">{cM.provider}</span>
@@ -72126,7 +72126,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Selection AI</span>
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
-                  {localTargetModel.name}
+                  {composeSelectedModel?.name || "Model"}
                 </span>
               </div>
 
@@ -76970,7 +76970,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 title="Select AI Model"
                               >
                                 <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                                <span className="max-w-[70px] truncate">{localTargetModel.name}</span>
+                                <span className="max-w-[70px] truncate">{composeSelectedModel?.name || "Model"}</span>
                                 <ChevronDown size={8} className="text-slate-400 shrink-0" />
                               </button>
                             </div>
@@ -80025,7 +80025,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                      <span className="max-w-[110px] truncate">{localTargetModel.name}</span>
+                      <span className="max-w-[110px] truncate">{composeSelectedModel?.name || "Model"}</span>
                       <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0" />
                     </button>
                     {activeAgentTag && (
@@ -81251,7 +81251,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px', zIndex: 40 }}>
+                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', zIndex: 40 }}>
                   {renderRoomRightSidebar()}
                 </div>
               </DraggablePanel>
