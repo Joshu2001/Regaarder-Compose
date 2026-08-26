@@ -367,7 +367,18 @@
     "budget": "Budget",
     "runwayburn": "Runway & Burn",
     "businessplan": "Business Plan",
-    "gtmplan": "GTM Plan"
+    "gtmplan": "GTM Plan",
+    "createTemplate": "+ Create template",
+    "allTemplates": "All Templates",
+    "financeGrowth": "Finance & Growth",
+    "sales": "Sales",
+    "operations": "Operations",
+    "myTemplates": "My Templates",
+    "startBlank": "Start blank",
+    "startFromScratch": "Start from scratch",
+    "financialModel": "Financial Model",
+    "saasMetrics": "SaaS Metrics",
+    "salesCrm": "Sales CRM"
   },
   "replay": {
     "title": "Edit Replay",
@@ -522,7 +533,8 @@
     "strategicReasoning": "Strategic Reasoning System",
     "strategicReasoningDesc": "Direct prose answers, cross-document contradiction reconciliation, missing assumption analysis, counterargument stress tests, and actionable operational conclusions.",
     "inquiryContradictions": "What cross-workspace contradictions exist across active strategy memos and sheets?",
-    "inquiryGrowth": "Challenge our growth strategy and stress-test required conversion assumptions"
+    "inquiryGrowth": "Challenge our growth strategy and stress-test required conversion assumptions",
+    "askFollowUpInquiry": "Ask a follow-up inquiry about this selection..."
   },
   "quickActions": {
     "title": "QUICK ACTIONS",
@@ -577,5 +589,26 @@
     "sections": "Sections",
     "minRead": "min read",
     "words": "words"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "Data",
+      "templates": "Templates",
+      "analyze": "Analyze",
+      "visualize": "Visualize",
+      "view": "View"
+    },
+    "addRow": "+ Row",
+    "removeRow": "- Row",
+    "addCol": "+ Col",
+    "removeCol": "- Col",
+    "addYourData": "Add your data",
+    "addYourDataDesc": "Upload a file, paste data, or start with a blank sheet.",
+    "getStarted": "GET STARTED:",
+    "dropFiles": "Drop file(s) here or click to",
+    "browse": "browse",
+    "supportsUpload": "Supports simultaneous multi-file upload for PDF, Excel, CSV, JSON, and more",
+    "noDataToDisplay": "No Data to Display",
+    "noDataToDisplayDesc": "Upload or select a worksheet grid with numerical values to render your live interactive visual charts."
   }
 }

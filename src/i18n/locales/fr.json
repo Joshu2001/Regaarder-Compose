@@ -367,7 +367,18 @@
     "budget": "Budget prévisionnel",
     "runwayburn": "Runway & Burn rate",
     "businessplan": "Business Plan",
-    "gtmplan": "Plan Go-to-Market"
+    "gtmplan": "Plan Go-to-Market",
+    "createTemplate": "+ Créer un modèle",
+    "allTemplates": "Tous les modèles",
+    "financeGrowth": "Finance & Croissance",
+    "sales": "Ventes",
+    "operations": "Opérations",
+    "myTemplates": "Mes modèles",
+    "startBlank": "Partir de zéro",
+    "startFromScratch": "Créer à partir de zéro",
+    "financialModel": "Modèle financier",
+    "saasMetrics": "Métriques SaaS",
+    "salesCrm": "CRM Ventes"
   },
   "replay": {
     "title": "Replay d'édition",
@@ -522,7 +533,8 @@
     "strategicReasoning": "Système de raisonnement stratégique",
     "strategicReasoningDesc": "Réponses directes en prose, réconciliation des contradictions, analyse des hypothèses et conclusions opérationnelles.",
     "inquiryContradictions": "Quelles contradictions existent entre les mémos stratégiques et les feuilles de calcul ?",
-    "inquiryGrowth": "Testez notre stratégie de croissance et évaluez les hypothèses de conversion"
+    "inquiryGrowth": "Testez notre stratégie de croissance et évaluez les hypothèses de conversion",
+    "askFollowUpInquiry": "Posez une question sur cette sélection..."
   },
   "quickActions": {
     "title": "ACTIONS RAPIDES",
@@ -577,5 +589,26 @@
     "sections": "Sections",
     "minRead": "min de lecture",
     "words": "mots"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "Données",
+      "templates": "Modèles",
+      "analyze": "Analyser",
+      "visualize": "Visualiser",
+      "view": "Affichage"
+    },
+    "addRow": "+ Ligne",
+    "removeRow": "- Ligne",
+    "addCol": "+ Col",
+    "removeCol": "- Col",
+    "addYourData": "Ajoutez vos données",
+    "addYourDataDesc": "Téléchargez un fichier, collez des données ou commencez avec une feuille vierge.",
+    "getStarted": "COMMENCER :",
+    "dropFiles": "Déposez des fichiers ici ou cliquez pour",
+    "browse": "parcourir",
+    "supportsUpload": "Prend en charge le téléchargement multi-fichiers PDF, Excel, CSV, JSON, etc.",
+    "noDataToDisplay": "Aucune donnée à afficher",
+    "noDataToDisplayDesc": "Téléchargez ou sélectionnez une feuille contenant des valeurs numériques pour afficher vos graphiques."
   }
 }

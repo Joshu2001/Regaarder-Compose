@@ -367,7 +367,18 @@
     "budget": "Presupuesto",
     "runwayburn": "Runway y gasto de capital",
     "businessplan": "Plan de negocio",
-    "gtmplan": "Plan Go-to-Market"
+    "gtmplan": "Plan Go-to-Market",
+    "createTemplate": "+ Crear plantilla",
+    "allTemplates": "Todas las plantillas",
+    "financeGrowth": "Finanzas y Crecimiento",
+    "sales": "Ventas",
+    "operations": "Operaciones",
+    "myTemplates": "Mis plantillas",
+    "startBlank": "Empezar en blanco",
+    "startFromScratch": "Crear desde cero",
+    "financialModel": "Modelo financiero",
+    "saasMetrics": "Métricas SaaS",
+    "salesCrm": "CRM de Ventas"
   },
   "replay": {
     "title": "Reproducción de edición",
@@ -522,7 +533,8 @@
     "strategicReasoning": "Sistema de Razonamiento Estratégico",
     "strategicReasoningDesc": "Respuestas directas, reconciliación de contradicciones, análisis de supuestos y conclusiones operativas accionables.",
     "inquiryContradictions": "¿Qué contradicciones existen entre los memorandos de estrategia y las hojas de cálculo?",
-    "inquiryGrowth": "Desafía nuestra estrategia de crecimiento y prueba los supuestos de conversión"
+    "inquiryGrowth": "Desafía nuestra estrategia de crecimiento y prueba los supuestos de conversión",
+    "askFollowUpInquiry": "Haz una pregunta sobre esta selección..."
   },
   "quickActions": {
     "title": "ACCIONES RÁPIDAS",
@@ -577,5 +589,26 @@
     "sections": "Secciones",
     "minRead": "min de lectura",
     "words": "palabras"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "Datos",
+      "templates": "Plantillas",
+      "analyze": "Analizar",
+      "visualize": "Visualizar",
+      "view": "Vista"
+    },
+    "addRow": "+ Fila",
+    "removeRow": "- Fila",
+    "addCol": "+ Col",
+    "removeCol": "- Col",
+    "addYourData": "Añade tus datos",
+    "addYourDataDesc": "Sube un archivo, pega datos o empieza con una hoja en blanco.",
+    "getStarted": "EMPEZAR:",
+    "dropFiles": "Arrastra archivos aquí o haz clic para",
+    "browse": "explorar",
+    "supportsUpload": "Admite subida simultánea de archivos PDF, Excel, CSV, JSON y más",
+    "noDataToDisplay": "No hay datos para mostrar",
+    "noDataToDisplayDesc": "Sube o selecciona una hoja con valores numéricos para generar gráficos interactivos en tiempo real."
   }
 }

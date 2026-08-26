@@ -5551,18 +5551,18 @@ const FullPageTemplateGallery = ({
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus size={14} />
-            <span>Create template</span>
+            <span>{t('templates.createTemplate') || '+ Create template'}</span>
           </button>
         </div>
 
         {/* Initial 4 Category Pills Bar (Apple Segmented Control Track) */}
         <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-black/90 rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-inner overflow-x-auto thin-scrollbar my-1">
           {[
-            { id: 'all', label: 'All Templates' },
-            { id: 'finance', label: 'Finance & Growth' },
-            { id: 'sales', label: 'Sales' },
-            { id: 'operations', label: 'Operations' },
-            { id: 'custom', label: customTemplates.length > 0 ? `My Templates (${customTemplates.length})` : 'My Templates' }
+            { id: 'all', label: t('templates.allTemplates') || 'All Templates' },
+            { id: 'finance', label: t('templates.financeGrowth') || 'Finance & Growth' },
+            { id: 'sales', label: t('templates.sales') || 'Sales' },
+            { id: 'operations', label: t('templates.operations') || 'Operations' },
+            { id: 'custom', label: customTemplates.length > 0 ? `${t('templates.myTemplates') || 'My Templates'} (${customTemplates.length})` : (t('templates.myTemplates') || 'My Templates') }
           ].map((cat) => {
             const isActive = category === cat.id;
             return (
@@ -5711,10 +5711,10 @@ const FullPageTemplateGallery = ({
               {/* Bottom 20% Information Footer (Name + Subtle Category only, no metadata) */}
               <div className="h-[54px] shrink-0 w-full px-3.5 py-2 flex flex-col justify-center bg-white dark:bg-[#0d0e12]">
                 <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                  {card.title}
+                  {card.id === 'blank' ? (t('templates.startBlank') || card.title) : card.id === 'financial_model' ? (t('templates.financialModel') || card.title) : card.id === 'saas_metrics' ? (t('templates.saasMetrics') || card.title) : card.id === 'sales_crm' ? (t('templates.salesCrm') || card.title) : card.title}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
-                  {card.category}
+                  {card.id === 'blank' ? (t('templates.startFromScratch') || card.category) : card.category === 'Finance & Growth' ? (t('templates.financeGrowth') || card.category) : card.category === 'Sales' ? (t('templates.sales') || card.category) : card.category === 'Operations' ? (t('templates.operations') || card.category) : card.category}
                 </span>
               </div>
             </div>
@@ -48618,7 +48618,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
                               }`}
                             >
-                              {tab}
+                              {t('sheets.tabs.' + tab.toLowerCase()) || tab}
                             </button>
                           ))}
                         </div>
@@ -48957,11 +48957,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   })()}
                                 </div>
                                 <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none">
-                                  <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">+ Row</button>
-                                  <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">- Row</button>
+                                  <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.addRow') || '+ Row'}</button>
+                                  <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.removeRow') || '- Row'}</button>
                                   <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-800 my-0.5" />
-                                  <button type="button" onClick={addSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">+ Col</button>
-                                  <button type="button" onClick={removeSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">- Col</button>
+                                  <button type="button" onClick={addSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.addCol') || '+ Col'}</button>
+                                  <button type="button" onClick={removeSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.removeCol') || '- Col'}</button>
                                 </div>
                                 <div className="ml-auto flex items-center gap-4">
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -48997,12 +48997,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                               {/* Title & Subtitle */}
                               <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-2">
-                                {hasActualUploadedFile ? 'Your document is ready' : 'Add your data'}
+                                {hasActualUploadedFile ? (t('sheets.documentReady') || 'Your document is ready') : (t('sheets.addYourData') || 'Add your data')}
                               </h2>
                               <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6 leading-relaxed">
                                 {hasActualUploadedFile
                                   ? "We've processed your file and extracted the data. Review the preview below or start working with your sheet."
-                                  : 'Upload a file, paste data, or start with a blank sheet.'}
+                                  : (t('sheets.addYourDataDesc') || 'Upload a file, paste data, or start with a blank sheet.')}
                               </p>
 
                               {/* Processed Document File Cards List (only shown when an actual file was uploaded) */}
@@ -49173,7 +49173,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div className="w-full flex flex-col items-center mb-6">
                               <div className="flex items-center gap-3 w-full max-w-sm">
                                 <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
-                                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">GET STARTED:</span>
+                                <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{t('sheets.getStarted') || 'GET STARTED:'}</span>
                                 <div className="h-px bg-slate-200/80 dark:bg-zinc-800 flex-1" />
                               </div>
                             </div>
@@ -49591,10 +49591,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <Upload size={20} />
                             </div>
                             <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-1">
-                              Drop file(s) here or click to <span className="text-violet-600 dark:text-violet-400 font-bold hover:underline">browse</span>
+                              {t('sheets.dropFiles') || 'Drop file(s) here or click to'} <span className="text-violet-600 dark:text-violet-400 font-bold hover:underline">{t('sheets.browse') || 'browse'}</span>
                             </p>
                             <span className="text-xs text-slate-400 dark:text-zinc-500">
-                              Supports simultaneous multi-file upload for PDF, Excel, CSV, JSON, and more
+                              {t('sheets.supportsUpload') || 'Supports simultaneous multi-file upload for PDF, Excel, CSV, JSON, and more'}
                             </span>
                           </div>
                           );

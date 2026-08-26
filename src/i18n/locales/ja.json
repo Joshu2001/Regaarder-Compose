@@ -367,7 +367,18 @@
     "budget": "予算管理",
     "runwayburn": "ランウェイ・資金予測",
     "businessplan": "事業計画書",
-    "gtmplan": "市場投入計画"
+    "gtmplan": "市場投入計画",
+    "createTemplate": "+ テンプレート作成",
+    "allTemplates": "すべてのテンプレート",
+    "financeGrowth": "財務と成長",
+    "sales": "営業・セールス",
+    "operations": "業務運用",
+    "myTemplates": "マイテンプレート",
+    "startBlank": "空白から開始",
+    "startFromScratch": "ゼロから作成",
+    "financialModel": "財務モデル",
+    "saasMetrics": "SaaS メトリクス",
+    "salesCrm": "営業 CRM"
   },
   "replay": {
     "title": "編集リプレイ",
@@ -522,7 +533,8 @@
     "strategicReasoning": "戦略的意思決定システム",
     "strategicReasoningDesc": "直接的な回答、ドキュメント間の矛盾解消、仮説検証、ストレステストを提供します。",
     "inquiryContradictions": "戦略メモとスプレッドシートの間にどのような矛盾が存在しますか？",
-    "inquiryGrowth": "成長戦略を検証し、コンバージョン仮説をストレステストしてください"
+    "inquiryGrowth": "成長戦略を検証し、コンバージョン仮説をストレステストしてください",
+    "askFollowUpInquiry": "選択したテキストについて質問..."
   },
   "quickActions": {
     "title": "クイックアクション",
@@ -577,5 +589,26 @@
     "sections": "セクション",
     "minRead": "分で読了",
     "words": "文字"
+  },
+  "sheets": {
+    "tabs": {
+      "data": "データ",
+      "templates": "テンプレート",
+      "analyze": "分析",
+      "visualize": "グラフ",
+      "view": "表示設定"
+    },
+    "addRow": "+ 行",
+    "removeRow": "- 行",
+    "addCol": "+ 列",
+    "removeCol": "- 列",
+    "addYourData": "データを追加",
+    "addYourDataDesc": "ファイルをアップロード、データを貼り付け、または空白のシートから開始します。",
+    "getStarted": "開始：",
+    "dropFiles": "ファイルをここにドロップ、または",
+    "browse": "参照",
+    "supportsUpload": "PDF、Excel、CSV、JSON などの同時アップロードに対応",
+    "noDataToDisplay": "表示するデータがありません",
+    "noDataToDisplayDesc": "数値を含むワークシートを選択またはアップロードして、インタラクティブなグラフを生成します。"
   }
 }
