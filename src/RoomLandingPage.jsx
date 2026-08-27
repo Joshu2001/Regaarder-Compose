@@ -53,8 +53,16 @@ export default function RoomLandingPage({
   const docBodyHtml = propDocBodyHtml !== undefined ? propDocBodyHtml : localDocBodyHtml;
   const setDocBodyHtml = propSetDocBodyHtml || setLocalDocBodyHtml;
 
-  // Lobby State
-  const [isLobby, setIsLobby] = useState(true);
+  // Lobby State - Auto-bypass if entering with an active screen share or call
+  const [isLobby, setIsLobby] = useState(() => {
+    return !(isScreenSharing || screenShareStream || sharedSourceInfo);
+  });
+
+  useEffect(() => {
+    if (isScreenSharing || screenShareStream || sharedSourceInfo) {
+      setIsLobby(false);
+    }
+  }, [isScreenSharing, screenShareStream, sharedSourceInfo]);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isMeetingOptionsOpen, setIsMeetingOptionsOpen] = useState(false);
