@@ -305,21 +305,25 @@ export default function ScreenShareSourceModal({ isOpen, onClose, onSelectSource
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/80 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-zinc-800 bg-slate-50/90 dark:bg-zinc-900/90 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-[11px] text-slate-400">Selected: <strong className="text-slate-700 dark:text-zinc-200 font-semibold">{selectedSourceId.startsWith('clean-') ? 'Isolated Canvas' : 'Window / Display'}</strong></span>
-            <label className="flex items-center gap-1.5 cursor-pointer select-none bg-white dark:bg-zinc-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-zinc-700">
-              <input
-                type="checkbox"
-                checked={shareAudio}
-                onChange={(e) => setShareAudio(e.target.checked)}
-                className="w-3.5 h-3.5 rounded text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
-              />
-              <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 flex items-center gap-1">
-                <Volume2 size={12} className="text-slate-400" />
-                Share System Audio
-              </span>
-            </label>
+            <span className="text-xs text-slate-500 dark:text-zinc-400">Selected: <strong className="text-slate-800 dark:text-zinc-100 font-semibold">{selectedSourceId.startsWith('clean-') ? 'Isolated Canvas' : 'Window / Display'}</strong></span>
+            
+            {/* Executive Audio Toggle */}
+            <button
+              type="button"
+              onClick={() => setShareAudio(!shareAudio)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                shareAudio 
+                  ? 'bg-violet-50 dark:bg-violet-950/60 border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 shadow-xs' 
+                  : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 hover:bg-slate-50'
+              }`}
+              title="Toggle broadcasting system audio along with video"
+            >
+              <Volume2 size={13} className={shareAudio ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+              <span>Share System Audio</span>
+              <span className={`w-2 h-2 rounded-full ${shareAudio ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <button

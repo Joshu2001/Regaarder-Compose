@@ -48049,6 +48049,30 @@ const renderRoomTopHeader = () => (
             <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
           </div>
           <div className="flex items-center gap-1.5">
+            {/* Pop-Out OS PiP Window */}
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const vidEl = pipDragContainerRef.current?.querySelector('video');
+                  if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                    showToast?.('Exited Picture-in-Picture');
+                  } else if (vidEl && document.pictureInPictureEnabled) {
+                    await vidEl.requestPictureInPicture();
+                    showToast?.('Floating OS Mini-Window Active');
+                  }
+                } catch (err) {
+                  console.warn('PiP error:', err);
+                  showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+                }
+              }}
+              className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
+              title="Pop out into Always-on-Top OS Floating Window"
+            >
+              <ExternalLink size={13} />
+            </button>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
