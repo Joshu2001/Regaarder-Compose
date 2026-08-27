@@ -1728,7 +1728,7 @@ const SlashMenuPopover = React.forwardRef(({
               setInternalSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={t('slash.searchPlaceholder') || "Search commands…"}
+            placeholder={t('slash.searchPlaceholder') || "Search commands..."}
             className="w-full h-8 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans shadow-2xs"
           />
           {searchQuery && (
