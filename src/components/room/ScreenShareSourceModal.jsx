@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, AppWindow, FileText, Check, X, ShieldCheck, Sparkles, Sliders } from 'lucide-react';
+import { Monitor, AppWindow, FileText, Check, X, ShieldCheck, Sparkles, Sliders, Volume2 } from 'lucide-react';
 
 export default function ScreenShareSourceModal({ isOpen, onClose, onSelectSource }) {
   const [sources, setSources] = useState([]);
   const [selectedSourceId, setSelectedSourceId] = useState('clean-docs');
   const [activeTab, setActiveTab] = useState('clean'); // 'clean' | 'windows' | 'screens'
   const [isLoading, setIsLoading] = useState(false);
+  const [shareAudio, setShareAudio] = useState(true);
 
   useEffect(() => {
     if (!isOpen) return;
