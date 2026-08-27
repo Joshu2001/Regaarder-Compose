@@ -53,64 +53,51 @@ function createWindow() {
 
   ipcMain.handle('desktop:focus-window', async (event, { sourceId, name }) => {
     try {
-      let bounds = null;
       if (process.platform === 'win32') {
         const { exec } = require('child_process');
-        const { promisify } = require('util');
-        const execAsync = promisify(exec);
-        const targetName = name || '';
+        const handleMatch = sourceId ? sourceId.match(/window:(\d+):/) : null;
+        const hwnd = handleMatch ? parseInt(handleMatch[1], 10) : null;
+        const targetName = (name || '').replace(/'/g, "''");
 
-        let cleanApp = targetName;
-        if (cleanApp.includes('MINGW') || cleanApp.includes('bash')) cleanApp = 'MINGW';
-        else if (cleanApp.includes('cmd.exe')) cleanApp = 'cmd';
-        const safeName = cleanApp.replace(/'/g, "''");
+        let psScript = `
+$code = @'
+using System;
+using System.Runtime.InteropServices;
+public class WinFocus {
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+}
+'@
+Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+`;
 
-        const psScript = [
-          '$ws = New-Object -ComObject WScript.Shell;',
-          "if ('" + safeName + "') { $ws.AppActivate('" + safeName + "'); }",
-          'Start-Sleep -Milliseconds 60;',
-          '$code = @\"',
-          'using System;',
-          'using System.Runtime.InteropServices;',
-          'public class WinRect {',
-          '  [StructLayout(LayoutKind.Sequential)]',
-          '  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }',
-          '  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();',
-          '  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);',
-          '}',
-          '\"@;',
-          'Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue;',
-          '$r = New-Object WinRect+RECT;',
-          '$fg = [WinRect]::GetForegroundWindow();',
-          '[WinRect]::GetWindowRect($fg, [ref]$r);',
-          'Write-Output "$($r.Left),$($r.Top),$($r.Right - $r.Left),$($r.Bottom - $r.Top)"'
-        ].join(' ');
-
-        try {
-          const { stdout } = await execAsync(`powershell -NoProfile -Command "${psScript}"`);
-          if (stdout && stdout.trim()) {
-            const parts = stdout.trim().split(',').map(n => parseInt(n.trim(), 10));
-            if (parts.length === 4 && !parts.some(isNaN)) {
-              const { screen } = require('electron');
-              const primary = screen.getPrimaryDisplay();
-              bounds = {
-                x: Math.max(0, parts[0]),
-                y: Math.max(0, parts[1]),
-                width: Math.max(100, parts[2]),
-                height: Math.max(100, parts[3]),
-                screenWidth: primary.size.width,
-                screenHeight: primary.size.height
-              };
-            }
-          }
-        } catch (psErr) {
-          console.warn('[Electron Main] Window rect query error:', psErr);
+        if (hwnd && hwnd > 0) {
+          psScript += `
+$h = [IntPtr]${hwnd}
+[WinFocus]::ShowWindowAsync($h, 9)
+[WinFocus]::BringWindowToTop($h)
+[WinFocus]::SetForegroundWindow($h)
+[WinFocus]::SwitchToThisWindow($h, $true)
+`;
+        } else if (targetName) {
+          psScript += `
+$ws = New-Object -ComObject WScript.Shell
+$ws.AppActivate('${targetName}')
+`;
         }
+
+        const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+        exec(`powershell -NoProfile -EncodedCommand ${encoded}`, (err) => {
+          if (err) console.warn('[Electron Main] Focus window error:', err);
+        });
       }
+
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.minimize();
       }
-      return { success: true, bounds };
+      return { success: true };
     } catch (e) {
       console.error('[Electron Main] focus error:', e);
       return { success: false };

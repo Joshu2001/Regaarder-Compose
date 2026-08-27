@@ -13472,11 +13472,10 @@ const DEFAULT_DECK_SLIDES = [
         }
 
         const primaryScreen = rawSources?.find(s => s.id?.startsWith('screen:')) || rawSources?.[0];
-        const winNameLower = (selection.source?.name || '').toLowerCase();
-        const isConsoleWindow = winNameLower.includes('mingw') || winNameLower.includes('cmd') || winNameLower.includes('bash') || winNameLower.includes('powershell');
-
-        // For Windows console/terminal windows without DirectX swapchain, directly use primary screen stream
-        if (isConsoleWindow && primaryScreen) {
+        
+        // When sharing any external application window or screen, use the display capture stream
+        // while the exact HWND is focused into the foreground.
+        if (selection.type === 'desktop-source' && primaryScreen) {
           sourceId = primaryScreen.id;
         }
 
@@ -13496,26 +13495,25 @@ const DEFAULT_DECK_SLIDES = [
               }
             });
           } catch (e) {
-            console.warn('getUserMedia desktop capturer failed, trying screen fallback:', e);
-          }
-
-          if (!stream && primaryScreen && sourceId !== primaryScreen.id) {
-            try {
-              stream = await navigator.mediaDevices.getUserMedia({
-                audio: false,
-                video: {
-                  mandatory: {
-                    chromeMediaSource: 'desktop',
-                    chromeMediaSourceId: primaryScreen.id,
-                    minWidth: 1280,
-                    maxWidth: 1920,
-                    minHeight: 720,
-                    maxHeight: 1080
+            console.warn('Primary stream acquisition failed, trying primaryScreen fallback:', e);
+            if (primaryScreen && sourceId !== primaryScreen.id) {
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  audio: false,
+                  video: {
+                    mandatory: {
+                      chromeMediaSource: 'desktop',
+                      chromeMediaSourceId: primaryScreen.id,
+                      minWidth: 1280,
+                      maxWidth: 1920,
+                      minHeight: 720,
+                      maxHeight: 1080
+                    }
                   }
-                }
-              });
-            } catch (fallbackErr) {
-              console.warn('Screen fallback error:', fallbackErr);
+                });
+              } catch (fallbackErr) {
+                console.warn('Fallback stream error:', fallbackErr);
+              }
             }
           }
         }
