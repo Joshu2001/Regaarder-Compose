@@ -3,7 +3,7 @@ import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger Vercel Build Safely
+// Trigger HMR & Live Reload: 2026-08-28T00:51:30
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -12793,6 +12793,7 @@ const DEFAULT_DECK_SLIDES = [
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
+  const [sharedSourceInfo, setSharedSourceInfo] = useState(null);
 
   const [isRoomRecording, setIsRoomRecording] = useState(false);
   const roomMediaRecorderRef = useRef(null);
@@ -13329,6 +13330,7 @@ const DEFAULT_DECK_SLIDES = [
   const nativePipVideoRef = useRef(null);
   const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
   const pipFramePumpRef = useRef(null);
+  const cropBoundsRef = useRef(null);
   const pipOffscreenVideoRef = useRef(null);
 
   // IPC Frame Pump: when pip widget is open, draw screenShareStream to an offscreen
@@ -13350,10 +13352,13 @@ const DEFAULT_DECK_SLIDES = [
       vid.autoplay = true;
       vid.playsInline = true;
       vid.style.position = 'fixed';
-      vid.style.top = '-9999px';
-      vid.style.left = '-9999px';
-      vid.style.width = '1px';
-      vid.style.height = '1px';
+      vid.style.top = '0';
+      vid.style.left = '0';
+      vid.style.width = '640px';
+      vid.style.height = '360px';
+      vid.style.opacity = '0.001';
+      vid.style.pointerEvents = 'none';
+      vid.style.zIndex = '-999999';
       document.body.appendChild(vid);
       pipOffscreenVideoRef.current = vid;
     }
@@ -13361,6 +13366,9 @@ const DEFAULT_DECK_SLIDES = [
     const vid = pipOffscreenVideoRef.current;
     if (vid.srcObject !== screenShareStream) {
       vid.srcObject = screenShareStream;
+      vid.onloadedmetadata = () => {
+        vid.play().catch(() => {});
+      };
       vid.play().catch(() => {});
     }
 
@@ -13373,13 +13381,20 @@ const DEFAULT_DECK_SLIDES = [
       if (!window.electronAPI?.sendPipFrame) return;
       if (vid.readyState < 2 || vid.videoWidth === 0) return;
       try {
-        ctx.drawImage(vid, 0, 0, 640, 360);
-        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.55);
+        const isExtWindow = sharedSourceInfo?.type === 'desktop-source';
+        if (isExtWindow) {
+          // Cleanly crop out top window titlebar (top ~28px / 2.6%) and bottom Windows taskbar (bottom ~58px / 5.5%)
+          const topCrop = Math.round(vid.videoHeight * 0.026);
+          const bottomCrop = Math.round(vid.videoHeight * 0.055);
+          const sourceH = vid.videoHeight - topCrop - bottomCrop;
+          ctx.drawImage(vid, 0, topCrop, vid.videoWidth, sourceH, 0, 0, 640, 360);
+        } else {
+          ctx.drawImage(vid, 0, 0, 640, 360);
+        }
+        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.65);
         window.electronAPI.sendPipFrame(jpegDataUrl);
       } catch (e) {
-        // tainted canvas or stream ended — stop pumping
-        clearInterval(pipFramePumpRef.current);
-        pipFramePumpRef.current = null;
+        // frame pump error
       }
     }, 33);
 
@@ -13456,6 +13471,15 @@ const DEFAULT_DECK_SLIDES = [
           sourceId = rawSources[0]?.id;
         }
 
+        const primaryScreen = rawSources?.find(s => s.id?.startsWith('screen:')) || rawSources?.[0];
+        const winNameLower = (selection.source?.name || '').toLowerCase();
+        const isConsoleWindow = winNameLower.includes('mingw') || winNameLower.includes('cmd') || winNameLower.includes('bash') || winNameLower.includes('powershell');
+
+        // For Windows console/terminal windows without DirectX swapchain, directly use primary screen stream
+        if (isConsoleWindow && primaryScreen) {
+          sourceId = primaryScreen.id;
+        }
+
         if (sourceId && (sourceId.startsWith('window:') || sourceId.startsWith('screen:'))) {
           try {
             stream = await navigator.mediaDevices.getUserMedia({
@@ -13472,7 +13496,27 @@ const DEFAULT_DECK_SLIDES = [
               }
             });
           } catch (e) {
-            console.warn('getUserMedia desktop capturer failed:', e);
+            console.warn('getUserMedia desktop capturer failed, trying screen fallback:', e);
+          }
+
+          if (!stream && primaryScreen && sourceId !== primaryScreen.id) {
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                  mandatory: {
+                    chromeMediaSource: 'desktop',
+                    chromeMediaSourceId: primaryScreen.id,
+                    minWidth: 1280,
+                    maxWidth: 1920,
+                    minHeight: 720,
+                    maxHeight: 1080
+                  }
+                }
+              });
+            } catch (fallbackErr) {
+              console.warn('Screen fallback error:', fallbackErr);
+            }
           }
         }
       }
@@ -13513,6 +13557,7 @@ const DEFAULT_DECK_SLIDES = [
           track.onended = () => {
             setIsScreenSharing(false);
             setScreenShareStream(null);
+            setSharedSourceInfo(null);
             if (typeof window !== 'undefined') {
               window.__currentScreenShareStream = null;
             }
@@ -13527,6 +13572,11 @@ const DEFAULT_DECK_SLIDES = [
         }
         setScreenShareStream(stream);
         setIsScreenSharing(true);
+        setSharedSourceInfo({
+          type: selection.type,
+          name: selection.preset?.name || selection.source?.name || 'Screen',
+          id: selection.sourceId || selection.source?.id
+        });
       }
 
       if (selection.type === 'clean-preset') {
@@ -13543,10 +13593,34 @@ const DEFAULT_DECK_SLIDES = [
         setIsWhiteboardImmersive(false);
         showToast?.(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
       } else {
-        showToast?.(`Sharing live window: ${selection.source?.name || 'Selected Window'}`);
+        const winName = selection.source?.name || 'Selected Window';
+        showToast?.(`Sharing live window: ${winName}`);
+        setProductMode('room-landing');
+        setRoomState('active');
+        setRoomPanelMode('docked');
+        setFocusedModule('room');
+        setIsPipWidgetOpen(true);
+        const targetSourceId = selection.sourceId || selection.source?.id || '';
+        if (window.electronAPI?.focusExternalWindow) {
+          window.electronAPI.focusExternalWindow({ sourceId: targetSourceId, name: winName }).then(res => {
+            if (res?.bounds) {
+              cropBoundsRef.current = res.bounds;
+            } else {
+              cropBoundsRef.current = null;
+            }
+          }).catch(() => {
+            cropBoundsRef.current = null;
+          });
+        } else if (window.electronAPI?.minimizeMainWindow) {
+          cropBoundsRef.current = null;
+          window.electronAPI.minimizeMainWindow();
+        } else {
+          cropBoundsRef.current = null;
+        }
         if (window.electronAPI?.openFloatingPipWidget) {
-          window.electronAPI.openFloatingPipWidget();
-          setIsPipWidgetOpen(true);
+          window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetSourceId });
+        } else {
+          triggerNativePictureInPicture(stream);
         }
       }
     } catch (err) {
@@ -48161,7 +48235,7 @@ const renderRoomTopHeader = () => (
           {/* Floating Streaming Status Badge */}
           <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white border border-white/10 shadow-sm pointer-events-none">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="font-semibold text-[9.5px] tracking-wide uppercase">{activeStream ? 'Streaming Live' : 'Live'}</span>
+            <span className="font-semibold text-[9.5px] tracking-wide uppercase truncate max-w-[120px]">{sharedSourceInfo?.name ? sharedSourceInfo.name : activeStream ? 'Streaming Live' : 'Live'}</span>
           </div>
 
           {/* OS Picture-in-Picture Popout Button */}
@@ -71656,6 +71730,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             setIsScreenSharing={setIsScreenSharing}
             screenShareStream={screenShareStream}
             setScreenShareStream={setScreenShareStream}
+            sharedSourceInfo={sharedSourceInfo}
+            setSharedSourceInfo={setSharedSourceInfo}
             onSelectScreenSource={handleSelectScreenSource}
             onOpenSourceModal={() => setIsScreenSourceModalOpen(true)}
             onSwitchProductMode={(mode) => {

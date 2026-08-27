@@ -77,12 +77,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Screen Sharing Desktop Sources
   getDesktopSources: (types) => ipcRenderer.invoke('desktop:get-sources', types),
   setActiveScreenSource: (source) => ipcRenderer.invoke('desktop:set-active-source', source),
+  focusExternalWindow: (params) => ipcRenderer.invoke('desktop:focus-window', params),
 
   // OS-Level Native Floating Picture-in-Picture Widget (Always on Top)
   openFloatingPipWidget: (params) => ipcRenderer.invoke('pip:open-floating-widget', params),
   closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget'),
   minimizeMainWindow: () => ipcRenderer.invoke('window:minimize'),
   restoreMainWindow: () => ipcRenderer.invoke('window:restore'),
+  returnToRoom: () => ipcRenderer.invoke('pip:return-to-room'),
+  onNavigateToRoom: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('pip:navigate-to-room', handler);
+    return () => ipcRenderer.removeListener('pip:navigate-to-room', handler);
+  },
 
   // PiP IPC Frame Pipe — main renderer pumps JPEG frames to floating pip window via main process
   // Called from the main window's active screen share canvas loop

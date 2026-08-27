@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Video, VideoOff, Mic, MicOff, Calendar, Settings, Plus, Users, UserPlus, Hash, Bell, Shield, ChevronDown, ChevronRight,
   MoreHorizontal, MessageSquare, Layout, LayoutGrid, X, Keyboard, Send, Check, Download,
-  Maximize2, Minimize2, Share2, PhoneOff, Search, Sparkles
+  Maximize2, Minimize2, Share2, PhoneOff, Search, Sparkles, ExternalLink
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
@@ -33,7 +33,15 @@ export default function RoomLandingPage({
   setDocTitle: propSetDocTitle,
   docBodyHtml: propDocBodyHtml,
   setDocBodyHtml: propSetDocBodyHtml,
-  isDarkMode = false
+  isDarkMode = false,
+  isScreenSharing: propIsScreenSharing,
+  setIsScreenSharing: propSetIsScreenSharing,
+  screenShareStream: propScreenShareStream,
+  setScreenShareStream: propSetScreenShareStream,
+  onSelectScreenSource,
+  onOpenSourceModal,
+  sharedSourceInfo: propSharedSourceInfo,
+  setSharedSourceInfo: propSetSharedSourceInfo
 }) {
   const { t } = useTranslation();
   const [localDocTitle, setLocalDocTitle] = useState("Product Strategy & Architecture Spec");
@@ -148,8 +156,18 @@ export default function RoomLandingPage({
   const [isRoomNameMenuOpen, setIsRoomNameMenuOpen] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [screenShareStream, setScreenShareStream] = useState(null);
+  
+  const [localIsScreenSharing, setLocalIsScreenSharing] = useState(false);
+  const [localScreenShareStream, setLocalScreenShareStream] = useState(null);
+  const [localSharedSourceInfo, setLocalSharedSourceInfo] = useState(null);
+
+  const isScreenSharing = propIsScreenSharing !== undefined ? propIsScreenSharing : localIsScreenSharing;
+  const setIsScreenSharing = propSetIsScreenSharing || setLocalIsScreenSharing;
+  const screenShareStream = propScreenShareStream !== undefined ? propScreenShareStream : localScreenShareStream;
+  const setScreenShareStream = propSetScreenShareStream || setLocalScreenShareStream;
+  const sharedSourceInfo = propSharedSourceInfo !== undefined ? propSharedSourceInfo : localSharedSourceInfo;
+  const setSharedSourceInfo = propSetSharedSourceInfo || setLocalSharedSourceInfo;
+
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [lastPresentedMode, setLastPresentedMode] = useState('compose');
 
@@ -204,6 +222,10 @@ export default function RoomLandingPage({
         track.onended = () => {
           setIsScreenSharing(false);
           setScreenShareStream(null);
+          setSharedSourceInfo(null);
+          if (typeof window !== 'undefined') {
+            window.__currentScreenShareStream = null;
+          }
           showToast?.("Screen sharing stopped.");
         };
       }
@@ -213,13 +235,22 @@ export default function RoomLandingPage({
       }
       setScreenShareStream(stream);
       setIsScreenSharing(true);
-      if (propSetScreenShareStream) propSetScreenShareStream(stream);
-      if (propSetIsScreenSharing) propSetIsScreenSharing(true);
+      setSharedSourceInfo({
+        type: selection.type,
+        name: selection.preset?.name || selection.source?.name || 'Screen',
+        id: selection.sourceId || selection.source?.id
+      });
 
       if (selection.type === 'clean-preset' && onSwitchProductMode) {
         const mode = selection.preset?.mode || 'compose';
         setLastPresentedMode(mode);
         onSwitchProductMode(mode);
+      } else {
+        const winName = selection.preset?.name || selection.source?.name || 'Screen';
+        if (window.electronAPI?.openFloatingPipWidget) {
+          window.electronAPI.openFloatingPipWidget({ windowTitle: winName });
+          window.electronAPI.minimizeMainWindow?.();
+        }
       }
       showToast?.(`Sharing live: ${selection.preset?.name || selection.source?.name || 'Screen'}`);
     } catch (err) {
@@ -237,10 +268,18 @@ export default function RoomLandingPage({
       screenShareStream.getTracks().forEach((track) => track.stop());
       setScreenShareStream(null);
       setIsScreenSharing(false);
+      setSharedSourceInfo(null);
+      if (typeof window !== 'undefined') {
+        window.__currentScreenShareStream = null;
+      }
       showToast?.("Screen sharing stopped.");
       return;
     }
-    setIsSourceModalOpen(true);
+    if (onOpenSourceModal) {
+      onOpenSourceModal();
+    } else {
+      setIsSourceModalOpen(true);
+    }
   };
 
   // Panels
@@ -793,85 +832,164 @@ export default function RoomLandingPage({
                     
                     {/* Real Live Screen Share Video Feed with Live Preview Tile */}
                     {isScreenSharing ? (
-                      <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-6 select-none text-center">
-                        {/* Real Mini Live Monitor Tile */}
-                        <div className="w-72 aspect-video rounded-2xl overflow-hidden bg-black border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative mb-4 group">
-                          {screenShareStream ? (
-                            <video
-                              ref={(node) => {
-                                if (node && screenShareStream) {
-                                  if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
-                                  node.play?.().catch(() => {});
-                                }
-                              }}
-                              autoPlay
-                              playsInline
-                              muted
-                              className="w-full h-full object-contain bg-black"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-500 text-xs">
-                              Live Stream Connected
+                      sharedSourceInfo?.type === 'desktop-source' || (sharedSourceInfo && !sharedSourceInfo.type?.startsWith('clean-')) ? (
+                        /* Dedicated Live External Application Monitor Viewport */
+                        <div className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden items-center justify-center p-3 select-none">
+                          <div className="w-full h-full rounded-2xl overflow-hidden bg-black border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative flex items-center justify-center">
+                            {screenShareStream ? (
+                              <video
+                                ref={(node) => {
+                                  if (node && screenShareStream) {
+                                    if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+                                    node.play?.().catch(() => {});
+                                  }
+                                }}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-contain bg-black"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-400 text-xs">
+                                Connecting external video stream...
+                              </div>
+                            )}
+
+                            {/* Top Status & Controls Header Bar Overlay */}
+                            <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-auto z-20">
+                              <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-semibold text-white border border-white/10 shadow-lg">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                                <span>Broadcasting External Window: <strong className="text-violet-400 font-bold">{sharedSourceInfo?.name || 'Selected Window'}</strong></span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {/* Pop out into OS floating PiP */}
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const allVideos = Array.from(document.querySelectorAll('video'));
+                                      const vid = allVideos.find(v => v.srcObject && v.videoWidth > 0) || allVideos[0];
+                                      if (document.pictureInPictureElement) {
+                                        await document.exitPictureInPicture();
+                                        showToast?.('Exited Picture-in-Picture');
+                                      } else if (vid && document.pictureInPictureEnabled) {
+                                        await vid.play().catch(() => {});
+                                        await vid.requestPictureInPicture();
+                                        showToast?.('Floating OS Mini-Window Active');
+                                      }
+                                    } catch (err) {
+                                      console.warn('PiP error:', err);
+                                      showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 rounded-xl bg-violet-600/90 hover:bg-violet-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5 backdrop-blur-md border border-violet-400/30"
+                                  title="Keep preview floating while you interact with the external application"
+                                >
+                                  <ExternalLink size={12} />
+                                  <span>Floating OS Window</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={toggleScreenShare}
+                                  className="px-3 py-1.5 rounded-xl bg-rose-500/90 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1 backdrop-blur-md border border-rose-400/30"
+                                >
+                                  <X size={12} />
+                                  <span>Stop Sharing</span>
+                                </button>
+                              </div>
                             </div>
-                          )}
-                          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[9.5px] font-bold text-white border border-white/10">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>STREAMING LIVE</span>
+
+                            {/* Bottom Reassurance Footer Overlay */}
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-medium text-zinc-300 border border-white/10 shadow-lg pointer-events-none z-20">
+                              Live stream active • Participants see your real-time actions in {sharedSourceInfo?.name || 'the external window'}
+                            </div>
                           </div>
                         </div>
+                      ) : (
+                        /* Clean App Canvas / Internal Docs/Sheets Anti-Mirror Dashboard */
+                        <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-6 select-none text-center">
+                          {/* Real Mini Live Monitor Tile */}
+                          <div className="w-72 aspect-video rounded-2xl overflow-hidden bg-black border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative mb-4 group">
+                            {screenShareStream ? (
+                              <video
+                                ref={(node) => {
+                                  if (node && screenShareStream) {
+                                    if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+                                    node.play?.().catch(() => {});
+                                  }
+                                }}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-contain bg-black"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-500 text-xs">
+                                Live Stream Connected
+                              </div>
+                            )}
+                            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[9.5px] font-bold text-white border border-white/10">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>STREAMING LIVE</span>
+                            </div>
+                          </div>
 
-                        <h3 className="text-base font-bold text-white mb-1">You are presenting to everyone</h3>
-                        <p className="text-xs text-slate-400 max-w-[420px] leading-relaxed mb-5">
-                          Participants are viewing your live broadcast. Use the buttons below to manage your stream or pop out into a floating desktop widget.
-                        </p>
-                        
-                        <div className="flex items-center gap-2.5 flex-wrap justify-center">
-                          <button
-                            type="button"
-                            onClick={toggleScreenShare}
-                            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-                          >
-                            Stop Sharing
-                          </button>
+                          <h3 className="text-base font-bold text-white mb-1">You are presenting to everyone</h3>
+                          <p className="text-xs text-slate-400 max-w-[420px] leading-relaxed mb-5">
+                            Participants are viewing your live workspace. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+                          </p>
                           
-                          {/* Dedicated Popout to OS Desktop Floating Window */}
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                const allVideos = Array.from(document.querySelectorAll('video'));
-                                const vid = allVideos.find(v => v.srcObject && v.videoWidth > 0) || allVideos[0];
-                                if (document.pictureInPictureElement) {
-                                  await document.exitPictureInPicture();
-                                  showToast?.('Exited Picture-in-Picture');
-                                } else if (vid && document.pictureInPictureEnabled) {
-                                  await vid.play().catch(() => {});
-                                  await vid.requestPictureInPicture();
-                                  showToast?.('Floating OS Mini-Window Active');
+                          <div className="flex items-center gap-2.5 flex-wrap justify-center">
+                            <button
+                              type="button"
+                              onClick={toggleScreenShare}
+                              className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                            >
+                              Stop Sharing
+                            </button>
+                            
+                            {/* Dedicated Popout to OS Desktop Floating Window */}
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  const allVideos = Array.from(document.querySelectorAll('video'));
+                                  const vid = allVideos.find(v => v.srcObject && v.videoWidth > 0) || allVideos[0];
+                                  if (document.pictureInPictureElement) {
+                                    await document.exitPictureInPicture();
+                                    showToast?.('Exited Picture-in-Picture');
+                                  } else if (vid && document.pictureInPictureEnabled) {
+                                    await vid.play().catch(() => {});
+                                    await vid.requestPictureInPicture();
+                                    showToast?.('Floating OS Mini-Window Active');
+                                  }
+                                } catch (err) {
+                                  console.warn('PiP error:', err);
+                                  showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
                                 }
-                              } catch (err) {
-                                console.warn('PiP error:', err);
-                                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
-                              }
-                            }}
-                            className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
-                          >
-                            <ExternalLink size={13} />
-                            <span>Pop out Floating Window</span>
-                          </button>
+                              }}
+                              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+                            >
+                              <ExternalLink size={13} />
+                              <span>Pop out Floating Window</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (onSwitchProductMode) onSwitchProductMode('compose');
-                            }}
-                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
-                          >
-                            Go to Workspace
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onSwitchProductMode) onSwitchProductMode(lastPresentedMode || 'compose');
+                              }}
+                              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+                            >
+                              Return to Workspace
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )
                     ) : isCameraOn ? (
                       <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-xs font-mono">
                         [Active Camera Video Feed]

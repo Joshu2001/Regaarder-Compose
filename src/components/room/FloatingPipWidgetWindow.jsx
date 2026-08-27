@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, Maximize2, X, MonitorPlay } from 'lucide-react';
 
 export default function FloatingPipWidgetWindow() {
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const rawTitle = searchParams?.get('title') || 'External Window';
+
+  // Clean title for display (e.g. "MINGW64:/c/Users/..." -> "Git Bash" or original name)
+  const displayTitle = rawTitle.includes('MINGW') || rawTitle.includes('cmd.exe') || rawTitle.includes('bash')
+    ? 'Git Bash'
+    : rawTitle;
+
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [meetingTimer, setMeetingTimer] = useState('00:00');
@@ -9,12 +17,10 @@ export default function FloatingPipWidgetWindow() {
   const canvasRef = useRef(null);
   const imgRef = useRef(new Image());
 
+  // CPU 2D Software Rasterized Frame Pipeline (Zero GPU crash code 34)
   useEffect(() => {
-    // ── IPC Frame Receiver ──────────────────────────────────────────────────
-    // The main Electron renderer pipes JPEG data URLs through main.cjs.
-    // No getUserMedia, no GPU swapchain, no stream re-acquisition.
-    // This works 100% with disable-gpu active because canvas 2D is CPU-rasterized.
     const drawFrame = (jpegDataUrl) => {
+      if (!jpegDataUrl) return;
       const img = imgRef.current;
       img.onload = () => {
         const cvs = canvasRef.current;
@@ -46,14 +52,22 @@ export default function FloatingPipWidgetWindow() {
       if (typeof unsubscribe === 'function') unsubscribe();
       else window.electronAPI?.offPipFrame?.();
     };
-  }, []);
+  }, [hasFrames]);
 
   const handleClose = () => {
     window.electronAPI?.closeFloatingPipWidget?.();
   };
 
-  const handleReturnToApp = () => {
-    window.electronAPI?.restoreMainWindow?.();
+  const handleReturnToApp = async () => {
+    try {
+      if (window.electronAPI?.returnToRoom) {
+        await window.electronAPI.returnToRoom();
+      } else if (window.electronAPI?.restoreMainWindow) {
+        await window.electronAPI.restoreMainWindow();
+      }
+    } catch (err) {
+      console.warn('Return to room error:', err);
+    }
     window.electronAPI?.closeFloatingPipWidget?.();
   };
 
@@ -67,20 +81,20 @@ export default function FloatingPipWidgetWindow() {
         <div className="h-7 px-2.5 bg-black/50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-1.5 pointer-events-none">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="text-[10px] font-bold tracking-wide uppercase text-zinc-300">Live Presenter</span>
+            <span className="text-[10px] font-bold tracking-wide text-zinc-200 truncate max-w-[130px]">{displayTitle}</span>
             <span className="text-[10px] text-zinc-500 font-mono ml-1">{meetingTimer}</span>
           </div>
           <div style={{ WebkitAppRegion: 'no-drag' }} className="flex items-center gap-1">
-            <button type="button" onClick={handleReturnToApp} className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" title="Return to Regaarder">
+            <button type="button" onClick={handleReturnToApp} className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer" title="Return to Regaarder">
               <Maximize2 size={11} />
             </button>
-            <button type="button" onClick={handleClose} className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-white/10 transition-colors" title="Close">
+            <button type="button" onClick={handleClose} className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-white/10 transition-colors cursor-pointer" title="Close">
               <X size={11} />
             </button>
           </div>
         </div>
 
-        {/* Canvas Viewport — CPU 2D software rasterized, immune to disable-gpu */}
+        {/* Live Video Viewport */}
         <div className="flex-1 min-h-0 bg-black relative flex items-center justify-center overflow-hidden">
           <canvas
             ref={canvasRef}
@@ -91,7 +105,7 @@ export default function FloatingPipWidgetWindow() {
               <div className="w-8 h-8 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1.5 border border-violet-500/30 text-xs font-bold">
                 R
               </div>
-              <span className="text-[9px] font-medium text-zinc-400">Waiting for live frames...</span>
+              <span className="text-[9px] font-medium text-zinc-400">Streaming live preview...</span>
             </div>
           )}
         </div>
@@ -105,14 +119,14 @@ export default function FloatingPipWidgetWindow() {
             <button
               type="button"
               onClick={() => setIsMicOn(!isMicOn)}
-              className={`p-1.5 rounded-lg transition-colors ${isMicOn ? 'bg-white/10 text-zinc-200 hover:bg-white/20' : 'bg-red-500/20 text-red-400'}`}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isMicOn ? 'bg-white/10 text-zinc-200 hover:bg-white/20' : 'bg-red-500/20 text-red-400'}`}
             >
               {isMicOn ? <Mic size={11} /> : <MicOff size={11} />}
             </button>
             <button
               type="button"
               onClick={() => setIsCameraOn(!isCameraOn)}
-              className={`p-1.5 rounded-lg transition-colors ${isCameraOn ? 'bg-white/10 text-zinc-200 hover:bg-white/20' : 'bg-red-500/20 text-red-400'}`}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isCameraOn ? 'bg-white/10 text-zinc-200 hover:bg-white/20' : 'bg-red-500/20 text-red-400'}`}
             >
               {isCameraOn ? <Video size={11} /> : <VideoOff size={11} />}
             </button>

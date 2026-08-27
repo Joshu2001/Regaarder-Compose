@@ -6,9 +6,13 @@ const BrowserViewManager = require('./browserViewManager.cjs');
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 let mainWindow = null;
 let browserViewManager = null;
+let activeAppUrl = null;
 
 function createWindow() {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -45,6 +49,72 @@ function createWindow() {
   ipcMain.handle('desktop:set-active-source', (event, source) => {
     currentSelectedDesktopSource = source;
     return { success: true };
+  });
+
+  ipcMain.handle('desktop:focus-window', async (event, { sourceId, name }) => {
+    try {
+      let bounds = null;
+      if (process.platform === 'win32') {
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execAsync = promisify(exec);
+        const targetName = name || '';
+
+        let cleanApp = targetName;
+        if (cleanApp.includes('MINGW') || cleanApp.includes('bash')) cleanApp = 'MINGW';
+        else if (cleanApp.includes('cmd.exe')) cleanApp = 'cmd';
+        const safeName = cleanApp.replace(/'/g, "''");
+
+        const psScript = [
+          '$ws = New-Object -ComObject WScript.Shell;',
+          "if ('" + safeName + "') { $ws.AppActivate('" + safeName + "'); }",
+          'Start-Sleep -Milliseconds 60;',
+          '$code = @\"',
+          'using System;',
+          'using System.Runtime.InteropServices;',
+          'public class WinRect {',
+          '  [StructLayout(LayoutKind.Sequential)]',
+          '  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }',
+          '  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();',
+          '  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);',
+          '}',
+          '\"@;',
+          'Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue;',
+          '$r = New-Object WinRect+RECT;',
+          '$fg = [WinRect]::GetForegroundWindow();',
+          '[WinRect]::GetWindowRect($fg, [ref]$r);',
+          'Write-Output "$($r.Left),$($r.Top),$($r.Right - $r.Left),$($r.Bottom - $r.Top)"'
+        ].join(' ');
+
+        try {
+          const { stdout } = await execAsync(`powershell -NoProfile -Command "${psScript}"`);
+          if (stdout && stdout.trim()) {
+            const parts = stdout.trim().split(',').map(n => parseInt(n.trim(), 10));
+            if (parts.length === 4 && !parts.some(isNaN)) {
+              const { screen } = require('electron');
+              const primary = screen.getPrimaryDisplay();
+              bounds = {
+                x: Math.max(0, parts[0]),
+                y: Math.max(0, parts[1]),
+                width: Math.max(100, parts[2]),
+                height: Math.max(100, parts[3]),
+                screenWidth: primary.size.width,
+                screenHeight: primary.size.height
+              };
+            }
+          }
+        } catch (psErr) {
+          console.warn('[Electron Main] Window rect query error:', psErr);
+        }
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.minimize();
+      }
+      return { success: true, bounds };
+    } catch (e) {
+      console.error('[Electron Main] focus error:', e);
+      return { success: false };
+    }
   });
 
   // Handle WebRTC getDisplayMedia screen and window sharing in Electron
@@ -110,12 +180,16 @@ function createWindow() {
 
   const loadApp = (portIndex = 0, attemptsLeft = 10) => {
     const currentUrl = portsToTry[portIndex % portsToTry.length];
-    mainWindow.loadURL(currentUrl).catch(err => {
+    mainWindow.loadURL(currentUrl).then(() => {
+      activeAppUrl = currentUrl;
+    }).catch(err => {
       if (attemptsLeft > 0) {
         setTimeout(() => loadApp(portIndex + 1, attemptsLeft - 1), 400);
       } else {
         console.warn('[Electron Main] Dev server not active. Loading production dist/index.html...');
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(loadErr => {
+        mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).then(() => {
+          activeAppUrl = `file://${path.join(__dirname, '../dist/index.html')}`;
+        }).catch(loadErr => {
           console.error('[Electron Main] Failed to load dist/index.html:', loadErr);
         });
       }
@@ -482,13 +556,24 @@ ipcMain.handle('pip:open-floating-widget', async (event, params) => {
     pipFloatingWindow.setAlwaysOnTop(true, 'screen-saver');
     pipFloatingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
-    const isDev = process.env.NODE_ENV !== 'production';
-    const baseUrl = isDev ? 'http://localhost:5173' : `file://${path.join(__dirname, '../dist/index.html')}`;
-    const pipUrl = `${baseUrl}${isDev ? '' : ''}#/floating-pip-widget`;
+    const winTitle = params?.windowTitle || 'External Window';
+    const sourceId = params?.sourceId || '';
+    const baseUrl = activeAppUrl || (process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : `file://${path.join(__dirname, '../dist/index.html')}`);
 
-    await pipFloatingWindow.loadURL(pipUrl).catch(err => {
-      console.warn('[Floating PIP] loadURL error:', err.message);
-    });
+    if (baseUrl.startsWith('file://')) {
+      const distPath = path.join(__dirname, '../dist/index.html');
+      await pipFloatingWindow.loadFile(distPath, {
+        hash: '/floating-pip-widget',
+        query: { title: winTitle, sourceId: sourceId }
+      }).catch(err => {
+        console.warn('[Floating PIP] loadFile error:', err.message);
+      });
+    } else {
+      const pipUrl = `${baseUrl}?title=${encodeURIComponent(winTitle)}&sourceId=${encodeURIComponent(sourceId)}#/floating-pip-widget`;
+      await pipFloatingWindow.loadURL(pipUrl).catch(err => {
+        console.warn('[Floating PIP] loadURL error:', err.message);
+      });
+    }
 
     pipFloatingWindow.on('closed', () => {
       pipFloatingWindow = null;
@@ -520,6 +605,16 @@ ipcMain.handle('window:restore', async () => {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
+  }
+  return { success: true };
+});
+
+ipcMain.handle('pip:return-to-room', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send('pip:navigate-to-room');
   }
   return { success: true };
 });

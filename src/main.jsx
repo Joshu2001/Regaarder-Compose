@@ -4,6 +4,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles.css'
 import Analytics from './Analytics.jsx'
+import SplashScreen from './components/SplashScreen.jsx'
+import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow.jsx'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -43,8 +45,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-import SplashScreen from './components/SplashScreen.jsx'
-
 function RootApp() {
   const [loading, setLoading] = useState(true);
 
@@ -58,8 +58,17 @@ function RootApp() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+const hash = typeof window !== 'undefined' ? window.location.hash : '';
 
-if (pathname === '/analytics') {
+if (hash.includes('floating-pip-widget')) {
+  root.render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <FloatingPipWidgetWindow />
+      </ErrorBoundary>
+    </React.StrictMode>,
+  );
+} else if (pathname === '/analytics') {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
@@ -76,4 +85,4 @@ if (pathname === '/analytics') {
     </React.StrictMode>,
   );
 }
-
+ // 1787849516091
