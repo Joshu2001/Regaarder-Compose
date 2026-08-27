@@ -81301,67 +81301,96 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
-    <div className="w-full h-full flex flex-col bg-gradient-to-br from-slate-900 via-zinc-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
-      {/* Ambient background glow */}
-      <div className="absolute w-96 h-96 rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
-      
-      {/* Presenter Icon */}
-      <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 relative z-10">
-        <MonitorPlay size={36} className="text-violet-400" />
+    <div className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden items-center justify-center select-none">
+      {/* Full Live High-Resolution Presentation Stream */}
+      <video
+        ref={(node) => {
+          if (node && screenShareStream) {
+            if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+            node.play?.().catch(() => {});
+          }
+        }}
+        autoPlay
+        playsInline
+        muted
+        className="w-full h-full object-contain bg-black"
+      />
+
+      {/* Google Meet-Style Top Presentation Header Bar */}
+      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20">
+        <div className="flex items-center gap-2.5 bg-black/75 backdrop-blur-xl px-4 py-2 rounded-2xl text-xs font-semibold text-white border border-white/10 shadow-xl">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
+          <span className="text-zinc-200">You are presenting:</span>
+          <span className="text-violet-300 font-bold max-w-[320px] truncate">{sharedSourceInfo?.name || 'Live Screen / Window'}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Pop out to Floating OS HUD */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              const winName = sharedSourceInfo?.name || 'Selected Window';
+              const targetId = sharedSourceInfo?.id || '';
+              if (window.electronAPI?.focusExternalWindow) {
+                window.electronAPI.focusExternalWindow({ sourceId: targetId, name: winName });
+              } else if (window.electronAPI?.minimizeMainWindow) {
+                window.electronAPI.minimizeMainWindow();
+              }
+              if (window.electronAPI?.openFloatingPipWidget) {
+                window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
+              } else {
+                triggerNativePictureInPicture(screenShareStream);
+              }
+              showToast?.('Floating PiP overlay active');
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-xl text-white text-xs font-semibold border border-white/15 shadow-md active:scale-95 transition-all cursor-pointer"
+            title="Switch to floating mini-widget over apps"
+          >
+            <ExternalLink size={13} />
+            <span>Floating OS Window</span>
+          </button>
+
+          {/* Stop Presenting Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+              if (typeof window !== 'undefined') window.__currentScreenShareStream = null;
+              setScreenShareStream(null);
+              setIsScreenSharing(false);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.('Stopped presenting');
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-500/30 active:scale-95 transition-all cursor-pointer"
+          >
+            <PhoneOff size={13} />
+            <span>Stop presenting</span>
+          </button>
+        </div>
       </div>
 
-      {/* Presenting Information */}
-      <h3 className="text-lg font-bold text-white mb-1.5 tracking-tight relative z-10">You are presenting to everyone</h3>
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-violet-300 mb-3 relative z-10 shadow-sm">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-        <span>Broadcasting: {sharedSourceInfo?.name || 'Selected Window'}</span>
-      </div>
-      <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6 relative z-10">
-        Participants are viewing your live workspace in real time.
-      </p>
-
-      {/* Controls */}
-      <div className="flex items-center gap-3 relative z-10">
-        <button
-          type="button"
-          onClick={() => {
-            if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
-            if (typeof window !== 'undefined') window.__currentScreenShareStream = null;
-            setScreenShareStream(null);
-            setIsScreenSharing(false);
-            setIsPipWidgetOpen(false);
-            window.electronAPI?.closeFloatingPipWidget?.();
-            showToast?.('Stopped presenting');
-          }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-lg shadow-rose-500/25 active:scale-95 cursor-pointer"
-        >
-          <PhoneOff size={14} />
-          <span>Stop Presenting</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={async () => {
-            const winName = sharedSourceInfo?.name || 'Selected Window';
-            const targetId = sharedSourceInfo?.id || '';
-            if (window.electronAPI?.focusExternalWindow) {
-              window.electronAPI.focusExternalWindow({ sourceId: targetId, name: winName });
-            } else if (window.electronAPI?.minimizeMainWindow) {
-              window.electronAPI.minimizeMainWindow();
-            }
-            if (window.electronAPI?.openFloatingPipWidget) {
-              window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
-            } else {
-              triggerNativePictureInPicture(screenShareStream);
-            }
-            showToast?.('Floating PiP overlay active');
-          }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
-        >
-          <ExternalLink size={14} />
-          <span>Floating OS Window</span>
-        </button>
-      </div>
+      {/* Self-View Picture-in-Picture Tile (Bottom Right, Google Meet Style) */}
+      {isRoomCameraOn && localStream && (
+        <div className="absolute bottom-4 right-4 w-44 aspect-video rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-black z-20 pointer-events-auto">
+          <video
+            ref={(node) => {
+              if (node && localStream) {
+                if (node.srcObject !== localStream) node.srcObject = localStream;
+                node.play?.().catch(() => {});
+              }
+            }}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-1.5 left-2 text-[10px] font-semibold text-white/90 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md">
+            You
+          </div>
+        </div>
+      )}
     </div>
   ) : activeVideoSpeaker.isYou ? (
     <>
