@@ -13326,17 +13326,59 @@ const DEFAULT_DECK_SLIDES = [
     return stream;
   };
 
-  const handleSelectScreenSource = async (selection) => {
+  const nativePipVideoRef = useRef(null);
+
+  const triggerNativePictureInPicture = async (streamToUse) => {
+    try {
+      const activeStream = streamToUse || screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
+      if (!activeStream) return false;
+
+      let vid = nativePipVideoRef.current || pipDragContainerRef.current?.querySelector('video');
+      if (!vid) {
+        vid = document.createElement('video');
+        vid.muted = true;
+        vid.autoplay = true;
+        vid.playsInline = true;
+        vid.style.position = 'fixed';
+        vid.style.pointerEvents = 'none';
+        vid.style.opacity = '0';
+        vid.style.width = '10px';
+        vid.style.height = '10px';
+        vid.style.bottom = '0';
+        vid.style.right = '0';
+        document.body.appendChild(vid);
+        nativePipVideoRef.current = vid;
+      }
+
+      if (vid.srcObject !== activeStream) {
+        vid.srcObject = activeStream;
+      }
+
+      await vid.play().catch(() => {});
+
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture().catch(() => {});
+      }
+
+      if (document.pictureInPictureEnabled && vid.requestPictureInPicture) {
+        await vid.requestPictureInPicture();
+        showToast?.('OS Always-on-Top PiP active over external apps');
+        return true;
+      }
+    } catch (err) {
+      console.warn('[Native PiP] Error activating Picture-in-Picture:', err);
+    }
+    return false;
+  };
+
+    const handleSelectScreenSource = async (selection) => {
     try {
       let stream = null;
-      let sourceId = selection.source?.id;
+      let sourceId = selection.sourceId || selection.source?.id;
 
       if (window.electronAPI?.getDesktopSources) {
         const rawSources = await window.electronAPI.getDesktopSources(['screen', 'window']);
-        if (selection.type === 'clean-preset') {
-          const appWin = rawSources.find(s => s.id.startsWith('window:') && (s.name.includes('Regaarder') || s.name.includes('Compose') || s.name.includes('Electron')));
-          sourceId = appWin ? appWin.id : (rawSources[0]?.id || selection.sourceId);
-        } else if (!sourceId) {
+        if (!sourceId && rawSources && rawSources.length > 0) {
           sourceId = rawSources[0]?.id;
         }
 
@@ -13395,6 +13437,9 @@ const DEFAULT_DECK_SLIDES = [
         showToast(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
       } else {
         showToast(`Sharing live window: ${selection.source?.name || 'Selected Window'}`);
+        setTimeout(() => {
+          triggerNativePictureInPicture(stream);
+        }, 200);
       }
     } catch (err) {
       console.error('Real screen share error:', err);
@@ -48055,23 +48100,11 @@ const renderRoomTopHeader = () => (
               type="button"
               onClick={async (e) => {
                 e.stopPropagation();
-                try {
-                  if (window.electronAPI?.openFloatingPipWidget) {
-                    await window.electronAPI.openFloatingPipWidget();
-                    showToast?.('Detached Always-on-Top OS Mini-Window Active');
-                    return;
-                  }
-                  const vidEl = pipDragContainerRef.current?.querySelector('video');
-                  if (document.pictureInPictureElement) {
-                    await document.exitPictureInPicture();
-                    showToast?.('Exited Picture-in-Picture');
-                  } else if (vidEl && document.pictureInPictureEnabled) {
-                    await vidEl.requestPictureInPicture();
-                    showToast?.('Floating OS Mini-Window Active');
-                  }
-                } catch (err) {
-                  console.warn('PiP error:', err);
-                  showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+                if (document.pictureInPictureElement) {
+                  await document.exitPictureInPicture().catch(() => {});
+                  showToast?.('Exited Picture-in-Picture');
+                } else {
+                  await triggerNativePictureInPicture(activeStream);
                 }
               }}
               className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
