@@ -433,6 +433,97 @@ ipcMain.handle('desktop:get-sources', async (event, types = ['screen', 'window']
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PiP Frame Relay: main renderer → main process → floating pip window
+// This sidesteps GPU/D3D11 entirely. The main window draws its screenShareStream
+// to an offscreen canvas and sends JPEG data URLs here via ipcRenderer.send().
+// We forward them to pipFloatingWindow.webContents.send() for canvas rendering.
+// ─────────────────────────────────────────────────────────────────────────────
+let pipFloatingWindow = null;
+
+ipcMain.on('pip:push-frame', (event, jpegDataUrl) => {
+  if (pipFloatingWindow && !pipFloatingWindow.isDestroyed()) {
+    pipFloatingWindow.webContents.send('pip:frame', jpegDataUrl);
+  }
+});
+
+ipcMain.handle('pip:open-floating-widget', async (event, params) => {
+  try {
+    if (pipFloatingWindow && !pipFloatingWindow.isDestroyed()) {
+      pipFloatingWindow.show();
+      pipFloatingWindow.focus();
+      return { success: true };
+    }
+
+    const { screen } = require('electron');
+    const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+    const winWidth = 320;
+    const winHeight = 220;
+
+    pipFloatingWindow = new BrowserWindow({
+      width: winWidth,
+      height: winHeight,
+      x: screenWidth - winWidth - 24,
+      y: screenHeight - winHeight - 24,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      resizable: false,
+      skipTaskbar: true,
+      hasShadow: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.cjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      }
+    });
+
+    pipFloatingWindow.setAlwaysOnTop(true, 'screen-saver');
+    pipFloatingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+    const isDev = process.env.NODE_ENV !== 'production';
+    const baseUrl = isDev ? 'http://localhost:5173' : `file://${path.join(__dirname, '../dist/index.html')}`;
+    const pipUrl = `${baseUrl}${isDev ? '' : ''}#/floating-pip-widget`;
+
+    await pipFloatingWindow.loadURL(pipUrl).catch(err => {
+      console.warn('[Floating PIP] loadURL error:', err.message);
+    });
+
+    pipFloatingWindow.on('closed', () => {
+      pipFloatingWindow = null;
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('[Floating PIP] Error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('pip:close-floating-widget', async () => {
+  if (pipFloatingWindow && !pipFloatingWindow.isDestroyed()) {
+    pipFloatingWindow.close();
+    pipFloatingWindow = null;
+  }
+  return { success: true };
+});
+
+// Window minimize / restore for pip widget "Open Room" button
+ipcMain.handle('window:minimize', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize();
+  return { success: true };
+});
+
+ipcMain.handle('window:restore', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  return { success: true };
+});
+
 app.whenReady().then(() => {
   createWindow();
 

@@ -13327,6 +13327,70 @@ const DEFAULT_DECK_SLIDES = [
   };
 
   const nativePipVideoRef = useRef(null);
+  const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
+  const pipFramePumpRef = useRef(null);
+  const pipOffscreenVideoRef = useRef(null);
+
+  // IPC Frame Pump: when pip widget is open, draw screenShareStream to an offscreen
+  // canvas every 33ms (~30 fps) and send JPEG data URLs to main.cjs which relays them
+  // to the floating pip window renderer. Bypasses disable-gpu black screen completely.
+  useEffect(() => {
+    if (!isPipWidgetOpen || !screenShareStream) {
+      if (pipFramePumpRef.current) {
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+      return;
+    }
+
+    // Reuse or create an offscreen video element to decode the stream
+    if (!pipOffscreenVideoRef.current) {
+      const vid = document.createElement('video');
+      vid.muted = true;
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.style.position = 'fixed';
+      vid.style.top = '-9999px';
+      vid.style.left = '-9999px';
+      vid.style.width = '1px';
+      vid.style.height = '1px';
+      document.body.appendChild(vid);
+      pipOffscreenVideoRef.current = vid;
+    }
+
+    const vid = pipOffscreenVideoRef.current;
+    if (vid.srcObject !== screenShareStream) {
+      vid.srcObject = screenShareStream;
+      vid.play().catch(() => {});
+    }
+
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = 640;
+    offscreenCanvas.height = 360;
+    const ctx = offscreenCanvas.getContext('2d');
+
+    pipFramePumpRef.current = setInterval(() => {
+      if (!window.electronAPI?.sendPipFrame) return;
+      if (vid.readyState < 2 || vid.videoWidth === 0) return;
+      try {
+        ctx.drawImage(vid, 0, 0, 640, 360);
+        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.55);
+        window.electronAPI.sendPipFrame(jpegDataUrl);
+      } catch (e) {
+        // tainted canvas or stream ended — stop pumping
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+    }, 33);
+
+    return () => {
+      if (pipFramePumpRef.current) {
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+    };
+  }, [isPipWidgetOpen, screenShareStream]);
+
 
   const triggerNativePictureInPicture = async (streamToUse) => {
     try {
@@ -13422,6 +13486,8 @@ const DEFAULT_DECK_SLIDES = [
         track.onended = () => {
           setIsScreenSharing(false);
           setScreenShareStream(null);
+          setIsPipWidgetOpen(false);
+          window.electronAPI?.closeFloatingPipWidget?.();
           showToast('Screen sharing stopped');
         };
       }
@@ -13444,9 +13510,10 @@ const DEFAULT_DECK_SLIDES = [
         showToast(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
       } else {
         showToast(`Sharing live window: ${selection.source?.name || 'Selected Window'}`);
-        setTimeout(() => {
-          triggerNativePictureInPicture(stream);
-        }, 200);
+        if (window.electronAPI?.openFloatingPipWidget) {
+          window.electronAPI.openFloatingPipWidget();
+          setIsPipWidgetOpen(true);
+        }
       }
     } catch (err) {
       console.error('Real screen share error:', err);
@@ -48107,11 +48174,16 @@ const renderRoomTopHeader = () => (
               type="button"
               onClick={async (e) => {
                 e.stopPropagation();
-                if (document.pictureInPictureElement) {
-                  await document.exitPictureInPicture().catch(() => {});
-                  showToast?.('Exited Picture-in-Picture');
+                if (isPipWidgetOpen) {
+                  setIsPipWidgetOpen(false);
+                  window.electronAPI?.closeFloatingPipWidget?.();
+                  showToast?.('Closed floating window');
                 } else {
-                  await triggerNativePictureInPicture(activeStream);
+                  if (window.electronAPI?.openFloatingPipWidget) {
+                    window.electronAPI.openFloatingPipWidget();
+                    setIsPipWidgetOpen(true);
+                    showToast?.('OS Floating Window Active');
+                  }
                 }
               }}
               className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"

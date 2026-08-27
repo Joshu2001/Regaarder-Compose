@@ -82,6 +82,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFloatingPipWidget: (params) => ipcRenderer.invoke('pip:open-floating-widget', params),
   closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget'),
   minimizeMainWindow: () => ipcRenderer.invoke('window:minimize'),
-  restoreMainWindow: () => ipcRenderer.invoke('window:restore')
-});
+  restoreMainWindow: () => ipcRenderer.invoke('window:restore'),
 
+  // PiP IPC Frame Pipe — main renderer pumps JPEG frames to floating pip window via main process
+  // Called from the main window's active screen share canvas loop
+  sendPipFrame: (jpegDataUrl) => ipcRenderer.send('pip:push-frame', jpegDataUrl),
+
+  // Called from FloatingPipWidgetWindow — subscribes to incoming frames
+  onPipFrame: (callback) => {
+    const handler = (event, jpegDataUrl) => callback(jpegDataUrl);
+    ipcRenderer.on('pip:frame', handler);
+    return () => ipcRenderer.removeListener('pip:frame', handler);
+  },
+
+  // Called on FloatingPipWidgetWindow unmount to clean up
+  offPipFrame: () => ipcRenderer.removeAllListeners('pip:frame'),
+});
