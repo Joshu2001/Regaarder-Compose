@@ -8,6 +8,8 @@ import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
 import { RoomIcon, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
+import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
+import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
 
 /**
  * Pixel-Perfect Room Workspace with Unified Ambient Lobby
@@ -21,8 +23,28 @@ import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EET
  * - Preserves Header, People panel, Chat panel, Call controls, and AI prompt bar
  * - Smooth transition from lobby into active meeting workspace
  */
-export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMode, onOpenWorkspaceSwitcher, onCallAi }) {
+export default function RoomLandingPage({
+  onLaunch,
+  showToast,
+  onSwitchProductMode,
+  onOpenWorkspaceSwitcher,
+  onCallAi,
+  docTitle: propDocTitle,
+  setDocTitle: propSetDocTitle,
+  docBodyHtml: propDocBodyHtml,
+  setDocBodyHtml: propSetDocBodyHtml,
+  isDarkMode = false
+}) {
   const { t } = useTranslation();
+  const [localDocTitle, setLocalDocTitle] = useState("Product Strategy & Architecture Spec");
+  const [localDocBodyHtml, setLocalDocBodyHtml] = useState("<p>Collaborative project meeting notes and architecture decisions.</p>");
+  const [liveDocViewMode, setLiveDocViewMode] = useState("clean");
+
+  const docTitle = propDocTitle !== undefined ? propDocTitle : localDocTitle;
+  const setDocTitle = propSetDocTitle || setLocalDocTitle;
+  const docBodyHtml = propDocBodyHtml !== undefined ? propDocBodyHtml : localDocBodyHtml;
+  const setDocBodyHtml = propSetDocBodyHtml || setLocalDocBodyHtml;
+
   // Lobby State
   const [isLobby, setIsLobby] = useState(true);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
@@ -127,8 +149,87 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [screenShareStream, setScreenShareStream] = useState(null);
+  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+
+  const handleSelectScreenSource = async (selection) => {
+    try {
+      let stream = null;
+      let sourceId = selection.source?.id;
+
+      if (window.electronAPI?.getDesktopSources) {
+        const rawSources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (selection.type === 'clean-preset') {
+          const appWin = rawSources.find(s => s.id.startsWith('window:') && (s.name.includes('Regaarder') || s.name.includes('Compose') || s.name.includes('Electron')));
+          sourceId = appWin ? appWin.id : (rawSources[0]?.id || selection.sourceId);
+        } else if (!sourceId) {
+          sourceId = rawSources[0]?.id;
+        }
+
+        if (sourceId) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sourceId,
+                minWidth: 1280,
+                maxWidth: 1920,
+                minHeight: 720,
+                maxHeight: 1080
+              }
+            }
+          });
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always' },
+          audio: true
+        });
+      }
+
+      if (!stream) {
+        throw new Error('Unable to capture real application display stream');
+      }
+
+      const [track] = stream.getVideoTracks();
+      if (track) {
+        track.onended = () => {
+          setIsScreenSharing(false);
+          setScreenShareStream(null);
+          showToast?.("Screen sharing stopped.");
+        };
+      }
+
+      setScreenShareStream(stream);
+      setIsScreenSharing(true);
+
+      if (selection.type === 'clean-preset' && onSwitchProductMode) {
+        onSwitchProductMode(selection.preset?.mode || 'compose');
+      }
+      showToast?.(`Sharing live: ${selection.preset?.name || selection.source?.name || 'Screen'}`);
+    } catch (err) {
+      console.error('Real screen capture error:', err);
+      showToast?.('Failed to start live stream: ' + err.message);
+    }
+  };
+  const screenShareVideoRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+
+  // Native WebRTC Screen Sharing (Google Meet / Zoom style) with Selective Source Modal
+  const toggleScreenShare = () => {
+    if (isScreenSharing && screenShareStream) {
+      screenShareStream.getTracks().forEach((track) => track.stop());
+      setScreenShareStream(null);
+      setIsScreenSharing(false);
+      showToast?.("Screen sharing stopped.");
+      return;
+    }
+    setIsSourceModalOpen(true);
+  };
 
   // Panels
   const [isPeopleOpen, setIsPeopleOpen] = useState(true);
@@ -676,10 +777,36 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                 
                 {/* Main Video Canvas Stage */}
                 <div className="w-full flex-1 flex items-center justify-center relative min-h-[300px]">
-                  <div className="w-full max-w-[580px] aspect-[4/3] bg-slate-200/60 dark:bg-zinc-800/60 backdrop-blur-md rounded-[32px] border border-slate-300/40 dark:border-zinc-700/60 shadow-inner relative flex items-center justify-center overflow-hidden transition-all duration-300">
+                  <div className={`w-full ${isScreenSharing ? 'max-w-[1180px] h-full max-h-[82vh] min-h-[520px]' : 'max-w-[580px] aspect-[4/3]'} bg-slate-200/60 dark:bg-zinc-800/60 backdrop-blur-md rounded-[32px] border border-slate-300/40 dark:border-zinc-700/60 shadow-inner relative flex items-center justify-center overflow-hidden transition-all duration-300`}>
                     
-                    {/* User Avatar Presentation Tile */}
-                    {isCameraOn ? (
+                    {/* Real Live Screen Share Video Feed (Google Meet / Zoom Anti-Mirror Stage) */}
+                    {isScreenSharing ? (
+                      <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
+                        <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
+                          <Share2 size={34} className="text-violet-400" />
+                        </div>
+                        <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
+                        <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
+                          Participants are viewing your live stream. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={toggleScreenShare}
+                            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                          >
+                            Stop Sharing
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (onSwitchProductMode) onSwitchProductMode('compose');
+                            }}
+                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+                          >
+                            Return to Document
+                          </button>
+                        </div>
+                      </div>
+                    ) : isCameraOn ? (
                       <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-xs font-mono">
                         [Active Camera Video Feed]
                       </div>
@@ -692,24 +819,26 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                     {/* Stage Overlay Expand / Maximize Button */}
                     <button 
                       onClick={() => setIsVideoExpanded(!isVideoExpanded)}
-                      className="absolute top-4 right-4 p-2 rounded-full bg-black/20 text-white hover:bg-black/30 backdrop-blur-md transition-all border border-white/10"
+                      className="absolute top-4 right-4 p-2 rounded-full bg-black/20 text-white hover:bg-black/30 backdrop-blur-md transition-all border border-white/10 z-30"
                     >
                       <Maximize2 size={13} />
                     </button>
 
                     {/* Microphone Status Pill */}
-                    <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-xs border border-white/10">
-                      {isMicOn ? (
-                        <div className="flex items-baseline gap-0.5 h-3">
-                          <span className="w-1 bg-emerald-400 rounded-full h-3 animate-pulse" />
-                          <span className="w-1 bg-emerald-400 rounded-full h-2 animate-pulse delay-75" />
-                          <span className="w-1 bg-emerald-400 rounded-full h-3 animate-pulse delay-150" />
-                        </div>
-                      ) : (
-                        <MicOff size={12} className="text-red-400" />
-                      )}
-                      <span className="text-[11px] font-medium">Joshua (You)</span>
-                    </div>
+                    {!isScreenSharing && (
+                      <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-xs border border-white/10">
+                        {isMicOn ? (
+                          <div className="flex items-baseline gap-0.5 h-3">
+                            <span className="w-1 bg-emerald-400 rounded-full h-3 animate-pulse" />
+                            <span className="w-1 bg-emerald-400 rounded-full h-2 animate-pulse delay-75" />
+                            <span className="w-1 bg-emerald-400 rounded-full h-3 animate-pulse delay-150" />
+                          </div>
+                        ) : (
+                          <MicOff size={12} className="text-red-400" />
+                        )}
+                        <span className="text-[11px] font-medium">Joshua (You)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -748,18 +877,15 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
                     </button>
 
-                    {/* Screen Share */}
+                    {/* Screen Share (Native WebRTC Zoom / Meet style) */}
                     <button 
-                      onClick={() => {
-                        setIsScreenSharing(!isScreenSharing);
-                        showToast?.(isScreenSharing ? "Screen sharing ended." : "Screen share active.");
-                      }}
+                      onClick={toggleScreenShare}
                       className={`p-2.5 rounded-full transition-all active:scale-95 ${
                         isScreenSharing 
-                          ? 'bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-300' 
+                          ? 'bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-300 ring-2 ring-violet-500 shadow-sm' 
                           : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400'
                       }`}
-                      title="Share Screen"
+                      title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen / Tab (Google Meet / Zoom style)"}
                     >
                       <Share2 size={16} />
                     </button>
@@ -977,6 +1103,11 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
 
           </div>
 
+          <ScreenShareSourceModal
+            isOpen={isSourceModalOpen}
+            onClose={() => setIsSourceModalOpen(false)}
+            onSelectSource={handleSelectScreenSource}
+          />
           {/* ========================================================================= */}
           {/* LOBBY MODAL OVERLAY (Pixel-Perfect Layer as in Image 2)                    */}
           {/* ========================================================================= */}

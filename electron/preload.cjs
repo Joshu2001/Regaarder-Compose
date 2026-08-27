@@ -72,6 +72,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   captureAppFrame: () => ipcRenderer.invoke('app:capture-frame'),
 
   // Native OS Dictation Bridge (Windows Win+H / macOS Dictation)
-  startNativeDictation: (params) => ipcRenderer.invoke('native:start-dictation', params)
+  startNativeDictation: (params) => ipcRenderer.invoke('native:start-dictation', params),
+
+  // Screen Sharing Desktop Sources
+  getDesktopSources: (types) => ipcRenderer.invoke('desktop:get-sources', types),
+  setActiveScreenSource: (source) => ipcRenderer.invoke('desktop:set-active-source', source)
 });
 

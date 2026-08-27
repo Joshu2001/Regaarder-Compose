@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session } = require('electron');
+const { app, BrowserWindow, ipcMain, session, desktopCapturer } = require('electron');
 const path = require('path');
 const BrowserViewManager = require('./browserViewManager.cjs');
 
@@ -31,15 +31,43 @@ function createWindow() {
     callback({ cancel: false, responseHeaders });
   });
 
-  // Automatically grant microphone and media permissions for local voice transcription and dictation
+  // Automatically grant microphone, display-capture, and media permissions
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (['media', 'microphone', 'audio-capture'].includes(permission)) {
+    if (['media', 'microphone', 'audio-capture', 'display-capture', 'screen'].includes(permission)) {
       return callback(true);
     }
     callback(true);
   });
 
   session.defaultSession.setPermissionCheckHandler(() => true);
+
+  let currentSelectedDesktopSource = null;
+  ipcMain.handle('desktop:set-active-source', (event, source) => {
+    currentSelectedDesktopSource = source;
+    return { success: true };
+  });
+
+  // Handle WebRTC getDisplayMedia screen and window sharing in Electron
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
+      if (currentSelectedDesktopSource) {
+        const targetId = typeof currentSelectedDesktopSource === 'string' ? currentSelectedDesktopSource : currentSelectedDesktopSource.id;
+        const matched = sources.find(s => s.id === targetId);
+        if (matched) {
+          callback({ video: matched });
+          return;
+        }
+      }
+      if (sources && sources.length > 0) {
+        callback({ video: sources[0] });
+      } else {
+        callback({});
+      }
+    }).catch((err) => {
+      console.error('[Electron Main] getDisplayMedia error:', err);
+      callback({});
+    });
+  });
 
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -391,6 +419,17 @@ ipcMain.handle('native:start-dictation', async () => {
   } catch (err) {
     console.warn('[Native Dictation] Error:', err);
     return { success: false, error: err.message };
+  }
+});
+
+// Screen and Window Desktop Sources for Room Screen Sharing
+ipcMain.handle('desktop:get-sources', async (event, types = ['screen', 'window']) => {
+  try {
+    const sources = await desktopCapturer.getSources({ types, thumbnailSize: { width: 320, height: 180 } });
+    return sources.map(s => ({ id: s.id, name: s.name, thumbnail: s.thumbnail.toDataURL() }));
+  } catch (e) {
+    console.error('[Electron Main] getDesktopSources error:', e);
+    return [];
   }
 });
 

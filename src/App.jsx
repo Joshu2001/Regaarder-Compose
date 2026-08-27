@@ -84,6 +84,7 @@ const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
+import ScreenShareSourceModal from './components/room/ScreenShareSourceModal';
 import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
 import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
@@ -13221,6 +13222,151 @@ const DEFAULT_DECK_SLIDES = [
   const [roomPresentAppSearch, setRoomPresentAppSearch] = useState('');
   const [roomPresentViewMode, setRoomPresentViewMode] = useState('clean'); // 'clean' | 'full' // 'docs' | 'sheets' | 'decks' | 'whiteboard' | 'screen' | null
   const [isRoomPresentPickerOpen, setIsRoomPresentPickerOpen] = useState(false);
+  const [isScreenSourceModalOpen, setIsScreenSourceModalOpen] = useState(false);
+
+  const startCleanDocCanvasStream = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    let isStreaming = true;
+
+    const renderFrame = () => {
+      if (!isStreaming) return;
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const pageWidth = 1080;
+      const pageHeight = 1400;
+      const startX = (canvas.width - pageWidth) / 2;
+      const startY = 40;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.06)';
+      ctx.shadowBlur = 24;
+      ctx.fillRect(startX, startY, pageWidth, pageHeight);
+      ctx.shadowBlur = 0;
+
+      // Header border
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(startX + 48, startY + 120);
+      ctx.lineTo(startX + pageWidth - 48, startY + 120);
+      ctx.stroke();
+
+      // Draw title
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(docTitle || 'Untitled Document', startX + 48, startY + 85);
+
+      // Draw text content
+      ctx.fillStyle = '#334155';
+      ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const rawText = blankBodyRef.current ? blankBodyRef.current.innerText : (docBodyHtml ? docBodyHtml.replace(/<[^>]+>/g, ' ') : 'Start typing notes or press / for commands...');
+      const lines = rawText.split('\n');
+      let yOffset = startY + 165;
+      for (let i = 0; i < Math.min(lines.length, 32); i++) {
+        const line = lines[i];
+        if (line) {
+          ctx.fillText(line.substring(0, 85), startX + 48, yOffset);
+        }
+        yOffset += 30;
+      }
+
+      requestAnimationFrame(renderFrame);
+    };
+
+    renderFrame();
+
+    const stream = canvas.captureStream(30);
+    const [track] = stream.getVideoTracks();
+    if (track) {
+      const origStop = track.stop.bind(track);
+      track.stop = () => {
+        isStreaming = false;
+        origStop();
+      };
+      track.onended = () => {
+        setIsScreenSharing(false);
+        setScreenShareStream(null);
+        showToast('Screen sharing stopped');
+      };
+    }
+    return stream;
+  };
+
+  const handleSelectScreenSource = async (selection) => {
+    try {
+      let stream = null;
+      let sourceId = selection.source?.id;
+
+      if (window.electronAPI?.getDesktopSources) {
+        const rawSources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (selection.type === 'clean-preset') {
+          const appWin = rawSources.find(s => s.id.startsWith('window:') && (s.name.includes('Regaarder') || s.name.includes('Compose') || s.name.includes('Electron')));
+          sourceId = appWin ? appWin.id : (rawSources[0]?.id || selection.sourceId);
+        } else if (!sourceId) {
+          sourceId = rawSources[0]?.id;
+        }
+
+        if (sourceId) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sourceId,
+                minWidth: 1280,
+                maxWidth: 1920,
+                minHeight: 720,
+                maxHeight: 1080
+              }
+            }
+          });
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always' },
+          audio: true
+        });
+      }
+
+      if (!stream) {
+        throw new Error('Unable to capture real application display stream');
+      }
+
+      const [track] = stream.getVideoTracks();
+      if (track) {
+        track.onended = () => {
+          setIsScreenSharing(false);
+          setScreenShareStream(null);
+          showToast('Screen sharing stopped');
+        };
+      }
+
+      setScreenShareStream(stream);
+      setIsScreenSharing(true);
+
+      if (selection.type === 'clean-preset') {
+        const mode = selection.preset?.mode || 'compose';
+        setFocusedModule(mode);
+        setProductMode(mode);
+        setActiveDocView('document');
+        setActiveRightTab('assistant');
+        setIsWhiteboardImmersive(false);
+        setRoomPanelMode('docked');
+        showToast(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
+      } else {
+        showToast(`Sharing live window: ${selection.source?.name || 'Selected Window'}`);
+      }
+    } catch (err) {
+      console.error('Real screen share error:', err);
+      showToast('Failed to start live stream: ' + err.message);
+    }
+  };
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
 
@@ -32155,10 +32301,37 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
+      let stream = null;
+      if (window.electronAPI?.getDesktopSources) {
+        const sources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (sources && sources.length > 0) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sources[0].id,
+                minWidth: 1280,
+                maxWidth: 1920,
+                minHeight: 720,
+                maxHeight: 1080
+              }
+            }
+          });
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always' },
+          audio: false,
+        });
+      }
+
+      if (!stream) {
+        throw new Error('Screen capture not supported in this environment');
+      }
+
       const [track] = stream.getVideoTracks();
       if (track) {
         track.onended = () => {
@@ -32170,13 +32343,17 @@ Answer the user's question, provide an insightful summary, or explain the contex
       setScreenShareStream(stream);
       setIsScreenSharing(true);
       showToast('Screen sharing started');
-    } catch (_err) {
-      // User cancelled or permission denied — silently ignore to avoid jarring error toasts.
-      showToast('Screen share cancelled.');
+    } catch (err) {
+      console.warn('Screen share cancelled or failed:', err);
+      if (err.name !== 'NotAllowedError') {
+        showToast('Screen share: ' + (err.message || 'Unable to access screen'));
+      } else {
+        showToast('Screen share cancelled.');
+      }
     }
   };
 
-  // Foolproof privacy: Ensure hardware is off if state is off.
+    // Foolproof privacy: Ensure hardware is off if state is off.
   useEffect(() => {
     if (!isRoomCameraOn && localStream) {
       localStream.getVideoTracks().forEach(t => t.stop());
@@ -70324,13 +70501,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
   };
 
   const getWorkspaceModuleStyle = (moduleName) => {
-    if (focusedModule === moduleName) {
+    if (
+      focusedModule === moduleName || 
+      (productMode === 'compose' && moduleName === 'compose') ||
+      (productMode === 'deck' && moduleName === 'deck') ||
+      (productMode === 'sheets' && moduleName === 'sheets')
+    ) {
       return {
-        position: 'absolute',
-        inset: '0',
+        position: 'relative',
+        width: '100%',
+        height: '100%',
         zIndex: 10,
-        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        transform: 'scale(1) translate3d(0,0,0)',
         opacity: 1,
         borderRadius: '0px',
       };
@@ -70356,9 +70537,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
     }
 
     return {
-      display: 'none',
-      opacity: 0,
-      pointerEvents: 'none',
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      opacity: 1,
     };
   };
 
@@ -70911,7 +71093,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="preview-owner-view">
                     <div
                       className="prose prose-sm max-w-none text-slate-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                      dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing or press / for commands...</p>' }}
                     />
                   </div>
                 </div>
@@ -77460,7 +77642,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
             className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-all duration-200 ${
-              (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
+              (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
           >
           <div
@@ -80444,7 +80626,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className={`w-full relative overflow-hidden bg-white dark:bg-[#121214] shadow-[0_32px_100px_rgba(0,0,0,0.14)] pointer-events-auto transition-all duration-500 border border-slate-200/80 dark:border-zinc-800 shrink flex-1 select-text flex flex-col z-10 ${
                     isVideoExpanded 
                       ? '!absolute !inset-0 !max-w-none !max-h-none z-20 rounded-none' 
-                      : 'max-w-[840px] max-h-[560px] min-h-[30vh] aspect-[16/10] rounded-[28px]'
+                      : 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] rounded-[32px]'
                   }`}>
                     {/* Presentation Control Banner */}
                     <div className="px-6 py-3 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0">
@@ -80511,25 +80693,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Interactive Live Working App Stage */}
                     <div className="flex-1 overflow-hidden bg-[#F7F7F9] dark:bg-[#121214] relative flex flex-col">
                       {roomPresentedApp === 'docs' ? (
-                        <div className="flex-1 overflow-auto bg-[#F7F7F9] dark:bg-[#121214] p-4 md:p-6 flex flex-col items-center">
-                          <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] rounded-[24px] border border-slate-200/60 dark:border-zinc-800 p-8 md:p-12 min-h-[460px] relative transition-all">
-                            <input
-                              type="text"
-                              value={docTitle || ''}
-                              onChange={(e) => setDocTitle(e.target.value)}
-                              placeholder="Untitled Document"
-                              className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white w-full bg-transparent border-none outline-none mb-4 font-sans"
-                            />
-                            <div 
-                              contentEditable
-                              suppressContentEditableWarning
-                              onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
-                              className="prose dark:prose-invert max-w-none text-[14px] leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[280px]"
-                            />
+                        screenShareStream ? (
+                          <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
+      <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
+        <MonitorPlay size={34} className="text-violet-400" />
+      </div>
+      <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
+      <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
+        Participants are viewing your live workspace. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+            setScreenShareStream(null);
+            setIsScreenSharing(false);
+            showToast?.('Stopped presenting');
+          }}
+          className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+        >
+          Stop Sharing
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setProductMode('compose');
+            setRoomPanelMode('docked');
+          }}
+          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+        >
+          Return to Workspace
+        </button>
+      </div>
+    </div>
+                        ) : (
+                          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-zinc-900">
+                            <div className="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-4 shadow-xs">
+                              <ComposeIcon size={28} />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">{docTitle || 'Docs Workspace'}</h3>
+                            <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mb-5 leading-relaxed">
+                              Share your live Docs tab or window directly to the meeting stage with zero latency.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={toggleScreenShare}
+                              className="px-5 py-2.5 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Share2 size={14} />
+                              <span>Start Screen Sharing Docs</span>
+                            </button>
                           </div>
-                        </div>
+                        )
                       ) : roomPresentedApp === 'whiteboard' ? (
                         /* Live Interactive Whiteboard Stage */
                         <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none flex flex-col justify-center items-center">
@@ -80630,12 +80846,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-[32px] cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
-    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center pointer-events-none" />
+    <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
+      <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
+        <MonitorPlay size={34} className="text-violet-400" />
+      </div>
+      <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
+      <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
+        Participants are viewing your live workspace. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+            setScreenShareStream(null);
+            setIsScreenSharing(false);
+            showToast?.('Stopped presenting');
+          }}
+          className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+        >
+          Stop Sharing
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setProductMode('compose');
+            setRoomPanelMode('docked');
+          }}
+          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+        >
+          Return to Workspace
+        </button>
+      </div>
+    </div>
   ) : activeVideoSpeaker.isYou ? (
     <>
       <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover object-center pointer-events-none ${isRoomCameraOn ? '' : 'hidden'}`} />
@@ -80936,10 +81184,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               e.stopPropagation();
                               if (roomPresentedApp || isScreenSharing) {
                                 setRoomPresentedApp(null);
-                                if (isScreenSharing) toggleScreenShare();
+                                if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+                                setScreenShareStream(null);
+                                setIsScreenSharing(false);
                                 showToast?.(t('room.stopPresenting') || 'Stopped presenting');
                               } else {
-                                setIsRoomPresentPickerOpen(prev => !prev);
+                                setIsScreenSourceModalOpen(true);
                               }
                             }}
                             className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer ${
@@ -80993,10 +81243,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <button
                                     key={app.id}
                                     type="button"
-                                    onClick={() => {
-                                      setRoomPresentedApp(app.id);
-                                      setProductMode(app.id === 'docs' ? 'compose' : app.id);
+                                    onPointerDown={async (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       setIsRoomPresentPickerOpen(false);
+                                      const targetMode = app.id === 'docs' ? 'compose' : app.id;
+                                      setFocusedModule(targetMode);
+                                      setProductMode(targetMode);
+                                      setActiveDocView('document');
+                                      setActiveRightTab('assistant');
+                                      setIsWhiteboardImmersive(false);
+                                      setRoomPanelMode('docked');
+                                      if (!isScreenSharing || !screenShareStream) {
+                                        toggleScreenShare();
+                                      }
                                       showToast?.(`Presenting ${app.name}`);
                                     }}
                                     className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-all text-left group cursor-pointer active:scale-[0.99]"
@@ -81020,9 +81280,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               {/* Native Display Media Screen Sharing */}
                               <button
                                 type="button"
-                                onClick={() => {
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   setIsRoomPresentPickerOpen(false);
-                                  toggleScreenShare();
+                                  setIsScreenSourceModalOpen(true);
                                 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
@@ -81741,15 +82003,101 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {roomState === 'active' && mainView === 'document' && (
-        <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
-          <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
-          <button onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer">Return</button>
-          <button onClick={confirmLeaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Leave</button>
+      {(isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked')) && productMode !== 'room' && productMode !== 'room-landing' && (
+        <div className="fixed bottom-6 right-8 z-[99999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto">
+          
+          {/* Floating Live Video Mini Preview Tile */}
+          <div 
+            onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+            className="w-56 h-36 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-700 shadow-[0_24px_60px_rgba(0,0,0,0.35)] relative group cursor-pointer hover:ring-2 ring-violet-500 transition-all duration-200"
+            title="Click to expand Room"
+          >
+            {/* Live Video Element */}
+            {screenShareStream ? (
+              <video 
+                ref={(node) => { 
+                  if (node && screenShareStream) {
+                    if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+                    node.play?.().catch(() => {});
+                  }
+                }} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-contain bg-black" 
+              />
+            ) : localStream && isRoomCameraOn ? (
+              <video 
+                ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-cover" 
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
+                <div className="w-9 h-9 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-sm font-bold border border-violet-500/30">
+                  Y
+                </div>
+                <span className="text-[10px] font-medium text-zinc-400">Meeting in progress</span>
+              </div>
+            )}
+
+            {/* Floating Streaming Status Badge */}
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white border border-white/10 shadow-sm pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              <span className="font-semibold text-[9.5px] tracking-wide uppercase">{screenShareStream ? 'Streaming Live' : 'Live'}</span>
+            </div>
+
+            {/* Hover Overlay with Expand Action */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+              <Maximize2 size={15} />
+              <span>Return to Room</span>
+            </div>
+          </div>
+
+          {/* Meeting Controls Bar */}
+          <div className="w-56 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-2 px-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
+                className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomMicOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+                title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
+              >
+                {isRoomMicOn ? <Mic size={13} /> : <MicOff size={13} />}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
+                className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomCameraOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+                title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+              >
+                {isRoomCameraOn ? <Video size={13} /> : <VideoOff size={13} />}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
+                className="p-1.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                title="Leave Meeting"
+              >
+                <PhoneOff size={13} />
+              </button>
+            </div>
+          </div>
+
         </div>
       )}
 
+      <ScreenShareSourceModal
+        isOpen={isScreenSourceModalOpen}
+        onClose={() => setIsScreenSourceModalOpen(false)}
+        onSelectSource={handleSelectScreenSource}
+      />
       <input
         ref={meetingShareFileInputRef}
         type="file"
