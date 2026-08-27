@@ -13283,18 +13283,6 @@ const DEFAULT_DECK_SLIDES = [
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(startX + 48, startY + 120);
-      ctx.lineTo(startX + pageWidth - 48, startY + 120);
-      ctx.stroke();
-
-      // Draw title
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(docTitle || 'Untitled Document', startX + 48, startY + 85);
-
-      // Draw text content
-      ctx.fillStyle = '#334155';
-      ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      const rawText = blankBodyRef.current ? blankBodyRef.current.innerText : (docBodyHtml ? docBodyHtml.replace(/<[^>]+>/g, ' ') : 'Start typing notes or press / for commands...');
       const lines = rawText.split('\n');
       let yOffset = startY + 165;
       for (let i = 0; i < Math.min(lines.length, 32); i++) {
@@ -13405,6 +13393,23 @@ const DEFAULT_DECK_SLIDES = [
       }
     };
   }, [isPipWidgetOpen, screenShareStream]);
+
+  // Listen for Cross-Process "Open Room" event from Floating PiP HUD
+  useEffect(() => {
+    if (window.electronAPI?.onNavigateToRoom) {
+      const unsub = window.electronAPI.onNavigateToRoom(() => {
+        setProductMode('room-landing');
+        setRoomState('active');
+        setRoomPanelMode('docked');
+        setFocusedModule('room');
+        if (window.__currentScreenShareStream) {
+          setScreenShareStream(window.__currentScreenShareStream);
+          setIsScreenSharing(true);
+        }
+      });
+      return () => unsub?.();
+    }
+  }, []);
 
 
   const triggerNativePictureInPicture = async (streamToUse) => {
@@ -13553,15 +13558,15 @@ const DEFAULT_DECK_SLIDES = [
         const [track] = stream.getVideoTracks();
         if (track) {
           track.onended = () => {
-            setIsScreenSharing(false);
-            setScreenShareStream(null);
-            setSharedSourceInfo(null);
-            if (typeof window !== 'undefined') {
-              window.__currentScreenShareStream = null;
+            // Guard against premature teardown during window minimize or backgrounding
+            if (!window.__currentScreenShareStream) {
+              setIsScreenSharing(false);
+              setScreenShareStream(null);
+              setSharedSourceInfo(null);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.('Screen sharing stopped');
             }
-            setIsPipWidgetOpen(false);
-            window.electronAPI?.closeFloatingPipWidget?.();
-            showToast?.('Screen sharing stopped');
           };
         }
 
