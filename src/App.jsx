@@ -13333,19 +13333,23 @@ const DEFAULT_DECK_SLIDES = [
       const activeStream = streamToUse || screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
       if (!activeStream) return false;
 
-      let vid = nativePipVideoRef.current || pipDragContainerRef.current?.querySelector('video');
+      // Find any active playing video element on DOM first
+      const allVideos = Array.from(document.querySelectorAll('video'));
+      let vid = allVideos.find(v => v.srcObject === activeStream && v.videoWidth > 0) || allVideos[0];
+
       if (!vid) {
         vid = document.createElement('video');
         vid.muted = true;
         vid.autoplay = true;
         vid.playsInline = true;
+        vid.width = 320;
+        vid.height = 180;
         vid.style.position = 'fixed';
+        vid.style.bottom = '16px';
+        vid.style.right = '16px';
+        vid.style.zIndex = '999999';
+        vid.style.borderRadius = '16px';
         vid.style.pointerEvents = 'none';
-        vid.style.opacity = '0';
-        vid.style.width = '10px';
-        vid.style.height = '10px';
-        vid.style.bottom = '0';
-        vid.style.right = '0';
         document.body.appendChild(vid);
         nativePipVideoRef.current = vid;
       }
@@ -13355,6 +13359,9 @@ const DEFAULT_DECK_SLIDES = [
       }
 
       await vid.play().catch(() => {});
+
+      // Wait for video frames to start rendering
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture().catch(() => {});

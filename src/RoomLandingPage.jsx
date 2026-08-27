@@ -836,11 +836,13 @@ export default function RoomLandingPage({
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
-                                const vid = document.querySelector('video');
+                                const allVideos = Array.from(document.querySelectorAll('video'));
+                                const vid = allVideos.find(v => v.srcObject && v.videoWidth > 0) || allVideos[0];
                                 if (document.pictureInPictureElement) {
                                   await document.exitPictureInPicture();
                                   showToast?.('Exited Picture-in-Picture');
                                 } else if (vid && document.pictureInPictureEnabled) {
+                                  await vid.play().catch(() => {});
                                   await vid.requestPictureInPicture();
                                   showToast?.('Floating OS Mini-Window Active');
                                 }
