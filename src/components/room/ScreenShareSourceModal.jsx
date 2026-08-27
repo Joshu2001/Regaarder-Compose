@@ -91,14 +91,16 @@ export default function ScreenShareSourceModal({ isOpen, onClose, onSelectSource
         await onSelectSource?.({
           type: 'clean-preset',
           preset: preset || cleanAppPresets[0],
-          sourceId: selectedSourceId
+          sourceId: selectedSourceId,
+          shareAudio
         });
       } else {
         const found = sources.find(s => s.id === selectedSourceId);
         await onSelectSource?.({
           type: 'desktop-source',
           source: found || { id: selectedSourceId, name: 'Screen' },
-          sourceId: selectedSourceId
+          sourceId: selectedSourceId,
+          shareAudio
         });
       }
     } catch (err) {
@@ -303,7 +305,21 @@ export default function ScreenShareSourceModal({ isOpen, onClose, onSelectSource
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-slate-100 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/80 flex items-center justify-between">
-          <span className="text-[11px] text-slate-400">Selected: <strong className="text-slate-700 dark:text-zinc-200 font-semibold">{selectedSourceId.startsWith('clean-') ? 'Isolated Canvas' : 'Window / Display'}</strong></span>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] text-slate-400">Selected: <strong className="text-slate-700 dark:text-zinc-200 font-semibold">{selectedSourceId.startsWith('clean-') ? 'Isolated Canvas' : 'Window / Display'}</strong></span>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none bg-white dark:bg-zinc-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-zinc-700">
+              <input
+                type="checkbox"
+                checked={shareAudio}
+                onChange={(e) => setShareAudio(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
+              />
+              <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 flex items-center gap-1">
+                <Volume2 size={12} className="text-slate-400" />
+                Share System Audio
+              </span>
+            </label>
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"

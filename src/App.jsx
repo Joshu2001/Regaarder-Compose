@@ -48010,6 +48010,31 @@ const renderRoomTopHeader = () => (
             <span className="font-semibold text-[9.5px] tracking-wide uppercase">{activeStream ? 'Streaming Live' : 'Live'}</span>
           </div>
 
+          {/* OS Picture-in-Picture Popout Button */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const vidEl = pipDragContainerRef.current?.querySelector('video');
+                if (document.pictureInPictureElement) {
+                  await document.exitPictureInPicture();
+                  showToast?.('Exited Picture-in-Picture');
+                } else if (vidEl && document.pictureInPictureEnabled) {
+                  await vidEl.requestPictureInPicture();
+                  showToast?.('Floating OS Mini-Window Active');
+                }
+              } catch (err) {
+                console.warn('PiP error:', err);
+                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+              }
+            }}
+            className="absolute top-2 right-2 p-1 rounded-lg bg-black/75 hover:bg-black/90 text-white/90 hover:text-white border border-white/10 shadow-sm transition-all cursor-pointer z-20"
+            title="Pop out into Floating OS Window (Always on Top)"
+          >
+            <ExternalLink size={11} />
+          </button>
+
           {/* Hover Overlay with Expand Action */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
             <Maximize2 size={15} />
