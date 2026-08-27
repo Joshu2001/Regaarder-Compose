@@ -12794,6 +12794,7 @@ const DEFAULT_DECK_SLIDES = [
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
+  const [lastScreenShareFrameUrl, setLastScreenShareFrameUrl] = useState(null);
   const [sharedSourceInfo, setSharedSourceInfo] = useState(null);
 
   const [isRoomRecording, setIsRoomRecording] = useState(false);
@@ -13381,16 +13382,11 @@ const DEFAULT_DECK_SLIDES = [
           const bottomCrop = Math.round(vid.videoHeight * 0.055);
           const sourceH = vid.videoHeight - topCrop - bottomCrop;
           ctx.drawImage(vid, 0, topCrop, vid.videoWidth, sourceH, 0, 0, 640, 360);
-
-          // If console window, mask out the bottom-right HUD area to eliminate recursive mini-HUD inset
-          if (isConsole) {
-            ctx.fillStyle = '#0c0c0c';
-            ctx.fillRect(440, 230, 200, 130);
-          }
         } else {
           ctx.drawImage(vid, 0, 0, 640, 360);
         }
-        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.65);
+        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.85);
+        setLastScreenShareFrameUrl(jpegDataUrl);
         window.electronAPI.sendPipFrame(jpegDataUrl);
       } catch (e) {
         // frame pump error
@@ -81304,18 +81300,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
   {screenShareStream ? (
     <div className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden items-center justify-center select-none">
       {/* Full Live High-Resolution Presentation Stream */}
-      <video
-        ref={(node) => {
-          if (node && screenShareStream) {
-            if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
-            node.play?.().catch(() => {});
-          }
-        }}
-        autoPlay
-        playsInline
-        muted
-        className="w-full h-full object-contain bg-black"
-      />
+      {sharedSourceInfo?.id?.startsWith('screen:') || (sharedSourceInfo?.name || '').toLowerCase().includes('cmd') || (sharedSourceInfo?.name || '').toLowerCase().includes('bash') ? (
+        <div className="w-full h-full relative flex items-center justify-center bg-black overflow-hidden">
+          <img 
+            src={lastScreenShareFrameUrl || ''} 
+            alt="Live Presentation Stream" 
+            className="w-full h-full object-contain bg-black select-none"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          {!lastScreenShareFrameUrl && (
+            <video
+              ref={(node) => {
+                if (node && screenShareStream) {
+                  if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+                  node.play?.().catch(() => {});
+                }
+              }}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-contain bg-black"
+            />
+          )}
+        </div>
+      ) : (
+        <video
+          ref={(node) => {
+            if (node && screenShareStream) {
+              if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+              node.play?.().catch(() => {});
+            }
+          }}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-contain bg-black"
+        />
+      )}
 
       {/* Google Meet-Style Top Presentation Header Bar */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20">
