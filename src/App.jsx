@@ -81331,11 +81331,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* Google Meet-Style Top Presentation Header Bar */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20">
-        <div className="flex items-center gap-2.5 bg-black/75 backdrop-blur-xl px-4 py-2 rounded-2xl text-xs font-semibold text-white border border-white/10 shadow-xl">
+      <div className="absolute top-4 left-6 right-6 flex items-center justify-between pointer-events-auto z-30 transition-all">
+        <div className="flex items-center gap-2.5 bg-black/85 backdrop-blur-xl px-4 py-2 rounded-2xl text-xs font-semibold text-white border border-white/15 shadow-2xl">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
           <span className="text-zinc-200">You are presenting:</span>
-          <span className="text-violet-300 font-bold max-w-[320px] truncate">{sharedSourceInfo?.name || 'Live Screen / Window'}</span>
+          <span className="text-violet-300 font-bold max-w-[240px] truncate">{sharedSourceInfo?.name || 'Live Screen / Window'}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -81346,16 +81346,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
               e.stopPropagation();
               const winName = sharedSourceInfo?.name || 'Selected Window';
               const targetId = sharedSourceInfo?.id || '';
-              if (window.electronAPI?.focusExternalWindow) {
-                window.electronAPI.focusExternalWindow({ sourceId: targetId, name: winName });
-              } else if (window.electronAPI?.minimizeMainWindow) {
-                window.electronAPI.minimizeMainWindow();
-              }
+              
               if (window.electronAPI?.openFloatingPipWidget) {
                 window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
               } else {
                 triggerNativePictureInPicture(screenShareStream);
               }
+
+              if (window.electronAPI?.focusExternalWindow) {
+                window.electronAPI.focusExternalWindow({ sourceId: targetId, name: winName });
+              }
+
+              if (window.electronAPI?.minimizeMainWindow) {
+                window.electronAPI.minimizeMainWindow();
+              }
+              
               showToast?.('Floating PiP overlay active');
             }}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-xl text-white text-xs font-semibold border border-white/15 shadow-md active:scale-95 transition-all cursor-pointer"
@@ -81374,6 +81379,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               setScreenShareStream(null);
               setIsScreenSharing(false);
               setIsPipWidgetOpen(false);
+              window.electronAPI?.setContentProtection?.(false);
               window.electronAPI?.closeFloatingPipWidget?.();
               showToast?.('Stopped presenting');
             }}
