@@ -787,30 +787,82 @@ export default function RoomLandingPage({
                 <div className="w-full flex-1 flex items-center justify-center relative min-h-[300px]">
                   <div className={`w-full ${isScreenSharing ? 'max-w-[1180px] h-full max-h-[82vh] min-h-[520px]' : 'max-w-[580px] aspect-[4/3]'} bg-slate-200/60 dark:bg-zinc-800/60 backdrop-blur-md rounded-[32px] border border-slate-300/40 dark:border-zinc-700/60 shadow-inner relative flex items-center justify-center overflow-hidden transition-all duration-300`}>
                     
-                    {/* Real Live Screen Share Video Feed (Google Meet / Zoom Anti-Mirror Stage) */}
+                    {/* Real Live Screen Share Video Feed with Live Preview Tile */}
                     {isScreenSharing ? (
-                      <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
-                        <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
-                          <Share2 size={34} className="text-violet-400" />
+                      <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-6 select-none text-center">
+                        {/* Real Mini Live Monitor Tile */}
+                        <div className="w-72 aspect-video rounded-2xl overflow-hidden bg-black border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative mb-4 group">
+                          {screenShareStream ? (
+                            <video
+                              ref={(node) => {
+                                if (node && screenShareStream) {
+                                  if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+                                  node.play?.().catch(() => {});
+                                }
+                              }}
+                              autoPlay
+                              playsInline
+                              muted
+                              className="w-full h-full object-contain bg-black"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-500 text-xs">
+                              Live Stream Connected
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-full text-[9.5px] font-bold text-white border border-white/10">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>STREAMING LIVE</span>
+                          </div>
                         </div>
-                        <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
-                        <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
-                          Participants are viewing your live stream. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+
+                        <h3 className="text-base font-bold text-white mb-1">You are presenting to everyone</h3>
+                        <p className="text-xs text-slate-400 max-w-[420px] leading-relaxed mb-5">
+                          Participants are viewing your live broadcast. Use the buttons below to manage your stream or pop out into a floating desktop widget.
                         </p>
-                        <div className="flex items-center gap-3">
+                        
+                        <div className="flex items-center gap-2.5 flex-wrap justify-center">
                           <button
+                            type="button"
                             onClick={toggleScreenShare}
                             className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
                           >
                             Stop Sharing
                           </button>
+                          
+                          {/* Dedicated Popout to OS Desktop Floating Window */}
                           <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const vid = document.querySelector('video');
+                                if (document.pictureInPictureElement) {
+                                  await document.exitPictureInPicture();
+                                  showToast?.('Exited Picture-in-Picture');
+                                } else if (vid && document.pictureInPictureEnabled) {
+                                  await vid.requestPictureInPicture();
+                                  showToast?.('Floating OS Mini-Window Active');
+                                }
+                              } catch (err) {
+                                console.warn('PiP error:', err);
+                                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+                              }
+                            }}
+                            className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+                          >
+                            <ExternalLink size={13} />
+                            <span>Pop out Floating Window</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => {
                               if (onSwitchProductMode) onSwitchProductMode('compose');
                             }}
                             className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
                           >
-                            Return to Document
+                            Go to Workspace
                           </button>
                         </div>
                       </div>
