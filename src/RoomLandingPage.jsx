@@ -205,6 +205,8 @@ export default function RoomLandingPage({
 
       setScreenShareStream(stream);
       setIsScreenSharing(true);
+      if (propSetScreenShareStream) propSetScreenShareStream(stream);
+      if (propSetIsScreenSharing) propSetIsScreenSharing(true);
 
       if (selection.type === 'clean-preset' && onSwitchProductMode) {
         onSwitchProductMode(selection.preset?.mode || 'compose');

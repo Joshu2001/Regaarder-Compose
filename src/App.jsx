@@ -13223,6 +13223,34 @@ const DEFAULT_DECK_SLIDES = [
   const [roomPresentViewMode, setRoomPresentViewMode] = useState('clean'); // 'clean' | 'full' // 'docs' | 'sheets' | 'decks' | 'whiteboard' | 'screen' | null
   const [isRoomPresentPickerOpen, setIsRoomPresentPickerOpen] = useState(false);
   const [isScreenSourceModalOpen, setIsScreenSourceModalOpen] = useState(false);
+  const [pipPosition, setPipPosition] = useState({ x: null, y: null });
+  const pipDragContainerRef = useRef(null);
+
+  const handlePipPointerDown = (e) => {
+    if (e.target.closest('button')) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect = pipDragContainerRef.current ? pipDragContainerRef.current.getBoundingClientRect() : { left: window.innerWidth - 260, top: window.innerHeight - 200 };
+    const initialX = rect.left;
+    const initialY = rect.top;
+
+    const onPointerMove = (moveEvt) => {
+      const dx = moveEvt.clientX - startX;
+      const dy = moveEvt.clientY - startY;
+      setPipPosition({
+        x: Math.max(16, Math.min(window.innerWidth - 260, initialX + dx)),
+        y: Math.max(16, Math.min(window.innerHeight - 200, initialY + dy))
+      });
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
 
   const startCleanDocCanvasStream = () => {
     const canvas = document.createElement('canvas');
@@ -71304,12 +71332,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <RoomLandingPage 
             showToast={showToast}
             onCallAi={callGemini}
+            isScreenSharing={isScreenSharing}
+            setIsScreenSharing={setIsScreenSharing}
+            screenShareStream={screenShareStream}
+            setScreenShareStream={setScreenShareStream}
+            onSelectScreenSource={handleSelectScreenSource}
+            onOpenSourceModal={() => setIsScreenSourceModalOpen(true)}
             onSwitchProductMode={(mode) => {
               setProductMode(mode);
-              if (mode !== 'room' && mode !== 'room-landing') {
-                setFocusedModule('compose');
-                setDockedModules([]);
-                setRoomPanelMode('docked');
+              setRoomState('active');
+              setRoomPanelMode('docked');
+              setFocusedModule(mode);
+              if (mode === 'compose') {
+                setActiveDocView('document');
+                setActiveRightTab('assistant');
               }
               const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', whiteboard: 'Whiteboard', browser: 'Research' };
               showToast?.(`Switched to ${labelMap[mode] || mode}`);
@@ -82003,8 +82039,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {(isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked')) && productMode !== 'room' && productMode !== 'room-landing' && (
-        <div className="fixed bottom-6 right-8 z-[99999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto">
+      {typeof document !== 'undefined' && ReactDOM.createPortal(
+        (isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked')) && productMode !== 'room' && productMode !== 'room-landing' ? (
+          <div 
+            ref={pipDragContainerRef}
+            onPointerDown={handlePipPointerDown}
+            style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
+            className={`fixed ${pipPosition.x === null ? 'bottom-6 right-8' : ''} z-[999999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
+          >
           
           {/* Floating Live Video Mini Preview Tile */}
           <div 
@@ -82091,6 +82133,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
         </div>
+        ) : null,
+        document.body
       )}
 
       <ScreenShareSourceModal
