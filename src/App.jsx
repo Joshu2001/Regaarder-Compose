@@ -81287,37 +81287,71 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
-    <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
-      <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
-        <MonitorPlay size={34} className="text-violet-400" />
-      </div>
-      <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
-      <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
-        Participants are viewing your live workspace. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
-      </p>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
-            setScreenShareStream(null);
-            setIsScreenSharing(false);
-            showToast?.('Stopped presenting');
-          }}
-          className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-        >
-          Stop Sharing
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setProductMode(lastPresentedMode || 'compose');
-            setRoomPanelMode('docked');
-          }}
-          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
-        >
-          Return to Workspace
-        </button>
+    <div className="w-full h-full flex flex-col bg-black relative overflow-hidden items-center justify-center select-none">
+      <video
+        ref={(node) => {
+          if (node && screenShareStream) {
+            if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+            node.play?.().catch(() => {});
+          }
+        }}
+        autoPlay
+        playsInline
+        muted
+        className="w-full h-full object-contain bg-black"
+      />
+
+      {/* Sleek Floating Top Control Overlay */}
+      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20">
+        <div className="flex items-center gap-2 bg-black/70 backdrop-blur-xl px-3.5 py-1.5 rounded-2xl text-xs font-semibold text-white border border-white/10 shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+          <span>Presenting: <strong className="text-violet-300 font-bold">{sharedSourceInfo?.name || 'Live Application'}</strong></span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Pop out into OS floating PiP */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              const winName = sharedSourceInfo?.name || 'Selected Window';
+              const targetId = sharedSourceInfo?.id || '';
+              if (window.electronAPI?.focusExternalWindow) {
+                window.electronAPI.focusExternalWindow({ sourceId: targetId, name: winName });
+              } else if (window.electronAPI?.minimizeMainWindow) {
+                window.electronAPI.minimizeMainWindow();
+              }
+              if (window.electronAPI?.openFloatingPipWidget) {
+                window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
+              } else {
+                triggerNativePictureInPicture(screenShareStream);
+              }
+              showToast?.('Floating PiP overlay active');
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-xl text-white text-xs font-semibold border border-white/15 shadow-md active:scale-95 transition-all cursor-pointer"
+          >
+            <ExternalLink size={12} />
+            <span>Floating OS Window</span>
+          </button>
+
+          {/* Stop Sharing Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+              if (typeof window !== 'undefined') window.__currentScreenShareStream = null;
+              setScreenShareStream(null);
+              setIsScreenSharing(false);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.('Stopped presenting');
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-500/25 active:scale-95 transition-all cursor-pointer"
+          >
+            <PhoneOff size={12} />
+            <span>Stop Sharing</span>
+          </button>
+        </div>
       </div>
     </div>
   ) : activeVideoSpeaker.isYou ? (
