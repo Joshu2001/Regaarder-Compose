@@ -49,6 +49,9 @@ export default function FloatingPipWidgetWindow() {
   };
 
   const handleReturnToApp = () => {
+    if (window.electronAPI?.restoreMainWindow) {
+      window.electronAPI.restoreMainWindow();
+    }
     window.electronAPI?.sendPopoverAction?.('navigate-room', {});
     window.electronAPI?.closeFloatingPipWidget?.();
   };

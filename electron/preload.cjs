@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // OS-Level Native Floating Picture-in-Picture Widget (Always on Top)
   openFloatingPipWidget: (params) => ipcRenderer.invoke('pip:open-floating-widget', params),
-  closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget')
+  closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget'),
+  minimizeMainWindow: () => ipcRenderer.invoke('window:minimize'),
+  restoreMainWindow: () => ipcRenderer.invoke('window:restore')
 });
 
