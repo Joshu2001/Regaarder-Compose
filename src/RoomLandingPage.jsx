@@ -204,6 +204,9 @@ export default function RoomLandingPage({
         };
       }
 
+      if (typeof window !== 'undefined') {
+        window.__currentScreenShareStream = stream;
+      }
       setScreenShareStream(stream);
       setIsScreenSharing(true);
       if (propSetScreenShareStream) propSetScreenShareStream(stream);

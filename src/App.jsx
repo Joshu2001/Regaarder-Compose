@@ -32723,9 +32723,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('deck');
-    setFocusedModule('compose');
+    setFocusedModule('deck');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setDeckTitle('Untitled deck');
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
     setActiveDeckSlideId(1);
@@ -32746,9 +32749,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
-    setFocusedModule('compose');
+    setFocusedModule('sheets');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setSheetsTitle('Untitled Sheet');
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
@@ -33122,9 +33128,12 @@ Respond with valid JSON formatted like this:
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
-    setFocusedModule('compose');
+    setFocusedModule('whiteboard');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
@@ -82045,7 +82054,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {typeof document !== 'undefined' && createPortal(
-        (isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked')) && productMode !== 'room' && productMode !== 'room-landing' ? (
+        (isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked') || (typeof window !== 'undefined' && window.__currentScreenShareStream)) && productMode !== 'room' && productMode !== 'room-landing' ? (
           <div 
             ref={pipDragContainerRef}
             onPointerDown={handlePipPointerDown}
@@ -82060,11 +82069,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             title="Click to expand Room"
           >
             {/* Live Video Element */}
-            {screenShareStream ? (
+            {(screenShareStream || (typeof window !== 'undefined' && window.__currentScreenShareStream)) ? (
               <video 
                 ref={(node) => { 
-                  if (node && screenShareStream) {
-                    if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
+                  const activeStream = screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
+                  if (node && activeStream) {
+                    if (node.srcObject !== activeStream) node.srcObject = activeStream;
                     node.play?.().catch(() => {});
                   }
                 }} 
