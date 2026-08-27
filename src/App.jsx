@@ -13398,10 +13398,11 @@ const DEFAULT_DECK_SLIDES = [
   useEffect(() => {
     if (window.electronAPI?.onNavigateToRoom) {
       const unsub = window.electronAPI.onNavigateToRoom(() => {
-        setProductMode('room-landing');
+        setProductMode('room');
         setRoomState('active');
-        setRoomPanelMode('docked');
+        setRoomPanelMode('expanded');
         setFocusedModule('room');
+        setIsScreenSourceModalOpen(false);
         if (window.__currentScreenShareStream) {
           setScreenShareStream(window.__currentScreenShareStream);
           setIsScreenSharing(true);
@@ -13598,9 +13599,9 @@ const DEFAULT_DECK_SLIDES = [
       } else {
         const winName = selection.source?.name || 'Selected Window';
         showToast?.(`Sharing live window: ${winName}`);
-        setProductMode('room-landing');
+        setProductMode('room');
         setRoomState('active');
-        setRoomPanelMode('docked');
+        setRoomPanelMode('expanded');
         setFocusedModule('room');
         setIsPipWidgetOpen(true);
         const targetSourceId = selection.sourceId || selection.source?.id || '';
