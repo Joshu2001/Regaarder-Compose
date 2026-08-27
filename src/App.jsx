@@ -32621,6 +32621,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       }
       setScreenShareStream(stream);
       setIsScreenSharing(true);
+      window.electronAPI?.setContentProtection?.(true);
       showToast('Screen sharing started');
     } catch (err) {
       console.warn('Screen share cancelled or failed:', err);

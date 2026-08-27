@@ -84,6 +84,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget'),
   minimizeMainWindow: () => ipcRenderer.invoke('window:minimize'),
   restoreMainWindow: () => ipcRenderer.invoke('window:restore'),
+  setContentProtection: (enable) => ipcRenderer.invoke('window:set-content-protection', enable),
   returnToRoom: () => ipcRenderer.invoke('pip:return-to-room'),
   onNavigateToRoom: (callback) => {
     const handler = () => callback();

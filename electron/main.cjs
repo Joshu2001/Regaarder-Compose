@@ -599,6 +599,13 @@ ipcMain.handle('window:restore', async () => {
   return { success: true };
 });
 
+ipcMain.handle('window:set-content-protection', async (event, enable) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setContentProtection(Boolean(enable));
+  }
+  return { success: true };
+});
+
 ipcMain.handle('pip:return-to-room', async () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore();
