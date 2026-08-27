@@ -1,47 +1,85 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Maximize2, X, MonitorPlay } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Maximize2, X, MonitorPlay } from 'lucide-react';
 
 export default function FloatingPipWidgetWindow() {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [meetingTimer, setMeetingTimer] = useState('00:00');
+  const [hasFrames, setHasFrames] = useState(false);
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animFrameIdRef = useRef(null);
 
   useEffect(() => {
-    // Attempt to acquire desktop stream or listen to global stream
-    if (window.electronAPI?.getDesktopSources) {
-      window.electronAPI.getDesktopSources(['screen', 'window']).then(sources => {
-        if (sources && sources.length > 0) {
-          navigator.mediaDevices?.getUserMedia?.({
-            audio: false,
-            video: {
-              mandatory: {
-                chromeMediaSource: 'desktop',
-                chromeMediaSourceId: sources[0].id,
-                minWidth: 640,
-                maxWidth: 1280,
-                minHeight: 360,
-                maxHeight: 720
+    let activeStream = null;
+
+    const startStream = async () => {
+      try {
+        if (window.electronAPI?.getDesktopSources) {
+          const sources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+          // Parse sourceId from hash if present
+          const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+          const targetSourceId = hashParams.get('sourceId');
+          const matched = (targetSourceId && sources.find(s => s.id === targetSourceId)) || sources[0];
+
+          if (matched) {
+            activeStream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                mandatory: {
+                  chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: matched.id,
+                  minWidth: 640,
+                  maxWidth: 1280,
+                  minHeight: 360,
+                  maxHeight: 720
+                }
               }
-            }
-          }).then(stream => {
+            });
+
             if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              videoRef.current.play().catch(() => {});
+              videoRef.current.srcObject = activeStream;
+              await videoRef.current.play().catch(() => {});
             }
-          }).catch(err => {
-            console.warn('[Floating PIP] Stream capture notice:', err);
-          });
+
+            // Software 2D Canvas Fallback Loop (immune to disable-gpu)
+            const renderCanvas = () => {
+              const vid = videoRef.current;
+              const cvs = canvasRef.current;
+              if (vid && cvs && vid.readyState >= 2) {
+                const ctx = cvs.getContext('2d');
+                if (ctx) {
+                  if (cvs.width !== vid.videoWidth && vid.videoWidth > 0) {
+                    cvs.width = vid.videoWidth;
+                    cvs.height = vid.videoHeight;
+                  }
+                  ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+                  setHasFrames(true);
+                }
+              }
+              animFrameIdRef.current = requestAnimationFrame(renderCanvas);
+            };
+
+            animFrameIdRef.current = requestAnimationFrame(renderCanvas);
+          }
         }
-      });
-    }
+      } catch (err) {
+        console.warn('[Floating PIP] Stream capture notice:', err);
+      }
+    };
+
+    startStream();
 
     const timer = setInterval(() => {
       const now = new Date();
       setMeetingTimer(`${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      if (activeStream) activeStream.getTracks().forEach(t => t.stop());
+    };
   }, []);
 
   const handleClose = () => {
@@ -60,13 +98,13 @@ export default function FloatingPipWidgetWindow() {
     <div className="w-screen h-screen p-2 bg-transparent select-none font-sans flex flex-col justify-end overflow-hidden">
       <div 
         style={{ WebkitAppRegion: 'drag' }}
-        className="w-full h-full bg-zinc-950/95 dark:bg-black/95 text-white rounded-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative group"
+        className="w-full h-full bg-zinc-950/95 dark:bg-black/95 text-white rounded-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col relative group"
       >
         {/* Header Drag Bar */}
-        <div className="h-7 px-2.5 bg-black/40 backdrop-blur-md flex items-center justify-between shrink-0">
+        <div className="h-7 px-2.5 bg-black/50 backdrop-blur-md flex items-center justify-between shrink-0">
           <div className="flex items-center gap-1.5 pointer-events-none">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="text-[10px] font-bold tracking-wide uppercase text-zinc-300">Live Meeting</span>
+            <span className="text-[10px] font-bold tracking-wide uppercase text-zinc-300">Live Presenter</span>
             <span className="text-[10px] text-zinc-500 font-mono ml-1">{meetingTimer}</span>
           </div>
 
@@ -90,29 +128,36 @@ export default function FloatingPipWidgetWindow() {
           </div>
         </div>
 
-        {/* Video Canvas Container */}
-        <div className="flex-1 min-h-0 bg-zinc-900 relative flex items-center justify-center overflow-hidden">
+        {/* Video & Software Canvas Viewport */}
+        <div className="flex-1 min-h-0 bg-black relative flex items-center justify-center overflow-hidden">
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain hidden"
+          />
+
+          <canvas
+            ref={canvasRef}
+            className={`w-full h-full object-contain bg-black ${hasFrames ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
           />
           
-          {/* Overlay fallback if no active stream */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
-            <div className="w-8 h-8 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-xs font-bold border border-violet-500/30">
-              R
+          {/* Overlay fallback if no frames yet */}
+          {!hasFrames && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-60 bg-zinc-950">
+              <div className="w-8 h-8 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-xs font-bold border border-violet-500/30">
+                R
+              </div>
+              <span className="text-[9px] font-medium text-zinc-400">Broadcasting live...</span>
             </div>
-            <span className="text-[9px] font-medium text-zinc-400">Broadcasting to room</span>
-          </div>
+          )}
         </div>
 
         {/* Controls Footer */}
         <div 
           style={{ WebkitAppRegion: 'no-drag' }}
-          className="h-9 px-2 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center justify-between shrink-0"
+          className="h-9 px-2.5 bg-black/70 backdrop-blur-md border-t border-white/10 flex items-center justify-between shrink-0"
         >
           <div className="flex items-center gap-1">
             <button
