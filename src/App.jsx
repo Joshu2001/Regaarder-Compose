@@ -81299,29 +81299,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     
   {screenShareStream ? (
     <div className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden items-center justify-center select-none">
-      {/* Full Live High-Resolution Presentation Stream */}
+      {/* Full Live High-Resolution Presentation Stream or Presenter Card */}
       {sharedSourceInfo?.id?.startsWith('screen:') || (sharedSourceInfo?.name || '').toLowerCase().includes('cmd') || (sharedSourceInfo?.name || '').toLowerCase().includes('bash') ? (
-        <div className="w-full h-full relative flex items-center justify-center bg-black overflow-hidden">
-          <img 
-            src={lastScreenShareFrameUrl || ''} 
-            alt="Live Presentation Stream" 
-            className="w-full h-full object-contain bg-black select-none"
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-          {!lastScreenShareFrameUrl && (
-            <video
-              ref={(node) => {
-                if (node && screenShareStream) {
-                  if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
-                  node.play?.().catch(() => {});
-                }
-              }}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-contain bg-black"
-            />
-          )}
+        <div className="w-full h-full flex flex-col bg-gradient-to-br from-slate-900 via-zinc-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
+          <div className="absolute w-96 h-96 rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
+          <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 relative z-10">
+            <MonitorPlay size={36} className="text-violet-400" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-1.5 tracking-tight relative z-10">You are presenting your screen</h3>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-violet-300 mb-3 relative z-10 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            <span>Broadcasting: {sharedSourceInfo?.name || 'Live Workspace'}</span>
+          </div>
+          <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6 relative z-10">
+            Participants are viewing your live workspace in real time. Click Floating OS Window to return to your application.
+          </p>
         </div>
       ) : (
         <video
