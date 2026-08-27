@@ -94,7 +94,10 @@ $ws.AppActivate('${targetName}')
         });
       }
 
-      // Target window brought to foreground directly without minimizing mainWindow to prevent OS Z-order jumping
+      const isConsole = (name || '').toLowerCase().includes('mingw') || (name || '').toLowerCase().includes('cmd') || (name || '').toLowerCase().includes('bash');
+      if (isConsole && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.minimize();
+      }
       return { success: true };
     } catch (e) {
       console.error('[Electron Main] focus error:', e);

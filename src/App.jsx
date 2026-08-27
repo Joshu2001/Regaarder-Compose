@@ -13370,8 +13370,12 @@ const DEFAULT_DECK_SLIDES = [
       if (vid.readyState < 2 || vid.videoWidth === 0) return;
       try {
         const isScreenCapture = sharedSourceInfo?.id?.startsWith('screen:');
-        if (isScreenCapture) {
-          // Cleanly crop out top titlebar and bottom Windows taskbar on full screen captures
+        const isConsole = (sharedSourceInfo?.name || '').toLowerCase().includes('mingw') || 
+                          (sharedSourceInfo?.name || '').toLowerCase().includes('cmd') || 
+                          (sharedSourceInfo?.name || '').toLowerCase().includes('bash');
+        
+        if (isScreenCapture || isConsole) {
+          // Cleanly crop out top titlebar and bottom Windows taskbar on console desktop captures
           const topCrop = Math.round(vid.videoHeight * 0.026);
           const bottomCrop = Math.round(vid.videoHeight * 0.055);
           const sourceH = vid.videoHeight - topCrop - bottomCrop;
@@ -13478,8 +13482,15 @@ const DEFAULT_DECK_SLIDES = [
         }
 
         const primaryScreen = rawSources?.find(s => s.id?.startsWith('screen:')) || rawSources?.[0];
-        
-        // Preserve specific window sourceId (e.g. window:HWND:0) for isolated window capture
+        const winNameLower = (selection.preset?.name || selection.source?.name || '').toLowerCase();
+        const isConsoleWindow = winNameLower.includes('mingw') || winNameLower.includes('cmd') || winNameLower.includes('bash') || winNameLower.includes('powershell');
+
+        // Console windows (cmd/bash) lack DirectX swapchains, so they use the desktop stream; GUI apps use isolated window IDs
+        if (isConsoleWindow && primaryScreen) {
+          sourceId = primaryScreen.id;
+        } else {
+          sourceId = selection.sourceId || selection.source?.id || primaryScreen?.id;
+        }
 
         if (sourceId && (sourceId.startsWith('window:') || sourceId.startsWith('screen:'))) {
           try {
