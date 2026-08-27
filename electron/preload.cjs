@@ -76,6 +76,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Screen Sharing Desktop Sources
   getDesktopSources: (types) => ipcRenderer.invoke('desktop:get-sources', types),
-  setActiveScreenSource: (source) => ipcRenderer.invoke('desktop:set-active-source', source)
+  setActiveScreenSource: (source) => ipcRenderer.invoke('desktop:set-active-source', source),
+
+  // OS-Level Native Floating Picture-in-Picture Widget (Always on Top)
+  openFloatingPipWidget: (params) => ipcRenderer.invoke('pip:open-floating-widget', params),
+  closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget')
 });
 

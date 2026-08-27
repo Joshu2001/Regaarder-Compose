@@ -1,3 +1,4 @@
+import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow';
 import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -48055,6 +48056,11 @@ const renderRoomTopHeader = () => (
               onClick={async (e) => {
                 e.stopPropagation();
                 try {
+                  if (window.electronAPI?.openFloatingPipWidget) {
+                    await window.electronAPI.openFloatingPipWidget();
+                    showToast?.('Detached Always-on-Top OS Mini-Window Active');
+                    return;
+                  }
                   const vidEl = pipDragContainerRef.current?.querySelector('video');
                   if (document.pictureInPictureElement) {
                     await document.exitPictureInPicture();
