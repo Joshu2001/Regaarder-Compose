@@ -53,6 +53,17 @@ export default function RoomLandingPage({
   const docBodyHtml = propDocBodyHtml !== undefined ? propDocBodyHtml : localDocBodyHtml;
   const setDocBodyHtml = propSetDocBodyHtml || setLocalDocBodyHtml;
 
+  const [localIsScreenSharing, setLocalIsScreenSharing] = useState(false);
+  const [localScreenShareStream, setLocalScreenShareStream] = useState(null);
+  const [localSharedSourceInfo, setLocalSharedSourceInfo] = useState(null);
+
+  const isScreenSharing = propIsScreenSharing !== undefined ? propIsScreenSharing : localIsScreenSharing;
+  const setIsScreenSharing = propSetIsScreenSharing || setLocalIsScreenSharing;
+  const screenShareStream = propScreenShareStream !== undefined ? propScreenShareStream : localScreenShareStream;
+  const setScreenShareStream = propSetScreenShareStream || setLocalScreenShareStream;
+  const sharedSourceInfo = propSharedSourceInfo !== undefined ? propSharedSourceInfo : localSharedSourceInfo;
+  const setSharedSourceInfo = propSetSharedSourceInfo || setLocalSharedSourceInfo;
+
   // Lobby State - Auto-bypass if entering with an active screen share or call
   const [isLobby, setIsLobby] = useState(() => {
     return !(isScreenSharing || screenShareStream || sharedSourceInfo);
@@ -165,17 +176,7 @@ export default function RoomLandingPage({
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isMicOn, setIsMicOn] = useState(false);
   
-  const [localIsScreenSharing, setLocalIsScreenSharing] = useState(false);
-  const [localScreenShareStream, setLocalScreenShareStream] = useState(null);
-  const [localSharedSourceInfo, setLocalSharedSourceInfo] = useState(null);
-
-  const isScreenSharing = propIsScreenSharing !== undefined ? propIsScreenSharing : localIsScreenSharing;
-  const setIsScreenSharing = propSetIsScreenSharing || setLocalIsScreenSharing;
-  const screenShareStream = propScreenShareStream !== undefined ? propScreenShareStream : localScreenShareStream;
-  const setScreenShareStream = propSetScreenShareStream || setLocalScreenShareStream;
-  const sharedSourceInfo = propSharedSourceInfo !== undefined ? propSharedSourceInfo : localSharedSourceInfo;
-  const setSharedSourceInfo = propSetSharedSourceInfo || setLocalSharedSourceInfo;
-
+  
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [lastPresentedMode, setLastPresentedMode] = useState('compose');
 
