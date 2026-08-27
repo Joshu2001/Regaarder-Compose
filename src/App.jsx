@@ -3247,6 +3247,7 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 };
 
 const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [invitedEmails, setInvitedEmails] = useState(new Set());
   const [isCopied, setIsCopied] = useState(false);
