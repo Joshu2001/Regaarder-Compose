@@ -13369,9 +13369,9 @@ const DEFAULT_DECK_SLIDES = [
       if (!window.electronAPI?.sendPipFrame) return;
       if (vid.readyState < 2 || vid.videoWidth === 0) return;
       try {
-        const isExtWindow = sharedSourceInfo?.type === 'desktop-source';
-        if (isExtWindow) {
-          // Cleanly crop out top window titlebar (top ~28px / 2.6%) and bottom Windows taskbar (bottom ~58px / 5.5%)
+        const isScreenCapture = sharedSourceInfo?.id?.startsWith('screen:');
+        if (isScreenCapture) {
+          // Cleanly crop out top titlebar and bottom Windows taskbar on full screen captures
           const topCrop = Math.round(vid.videoHeight * 0.026);
           const bottomCrop = Math.round(vid.videoHeight * 0.055);
           const sourceH = vid.videoHeight - topCrop - bottomCrop;
@@ -13479,11 +13479,7 @@ const DEFAULT_DECK_SLIDES = [
 
         const primaryScreen = rawSources?.find(s => s.id?.startsWith('screen:')) || rawSources?.[0];
         
-        // When sharing any external application window or screen, use the display capture stream
-        // while the exact HWND is focused into the foreground.
-        if (selection.type === 'desktop-source' && primaryScreen) {
-          sourceId = primaryScreen.id;
-        }
+        // Preserve specific window sourceId (e.g. window:HWND:0) for isolated window capture
 
         if (sourceId && (sourceId.startsWith('window:') || sourceId.startsWith('screen:'))) {
           try {
