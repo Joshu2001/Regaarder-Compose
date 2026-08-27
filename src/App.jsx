@@ -13224,6 +13224,7 @@ const DEFAULT_DECK_SLIDES = [
   const [isRoomPresentPickerOpen, setIsRoomPresentPickerOpen] = useState(false);
   const [isScreenSourceModalOpen, setIsScreenSourceModalOpen] = useState(false);
   const [pipPosition, setPipPosition] = useState({ x: null, y: null });
+  const [lastPresentedMode, setLastPresentedMode] = useState('compose');
   const pipDragContainerRef = useRef(null);
 
   const handlePipPointerDown = (e) => {
@@ -13380,12 +13381,16 @@ const DEFAULT_DECK_SLIDES = [
 
       if (selection.type === 'clean-preset') {
         const mode = selection.preset?.mode || 'compose';
+        setLastPresentedMode(mode);
         setFocusedModule(mode);
         setProductMode(mode);
-        setActiveDocView('document');
-        setActiveRightTab('assistant');
-        setIsWhiteboardImmersive(false);
+        setRoomState('active');
         setRoomPanelMode('docked');
+        if (mode === 'compose') {
+          setActiveDocView('document');
+          setActiveRightTab('assistant');
+        }
+        setIsWhiteboardImmersive(false);
         showToast(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
       } else {
         showToast(`Sharing live window: ${selection.source?.name || 'Selected Window'}`);
@@ -80754,7 +80759,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <button
           type="button"
           onClick={() => {
-            setProductMode('compose');
+            setProductMode(lastPresentedMode || 'compose');
             setRoomPanelMode('docked');
           }}
           className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
@@ -80911,7 +80916,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <button
           type="button"
           onClick={() => {
-            setProductMode('compose');
+            setProductMode(lastPresentedMode || 'compose');
             setRoomPanelMode('docked');
           }}
           className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"

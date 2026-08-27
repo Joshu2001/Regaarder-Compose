@@ -151,6 +151,7 @@ export default function RoomLandingPage({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenShareStream, setScreenShareStream] = useState(null);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [lastPresentedMode, setLastPresentedMode] = useState('compose');
 
   const handleSelectScreenSource = async (selection) => {
     try {
@@ -209,7 +210,9 @@ export default function RoomLandingPage({
       if (propSetIsScreenSharing) propSetIsScreenSharing(true);
 
       if (selection.type === 'clean-preset' && onSwitchProductMode) {
-        onSwitchProductMode(selection.preset?.mode || 'compose');
+        const mode = selection.preset?.mode || 'compose';
+        setLastPresentedMode(mode);
+        onSwitchProductMode(mode);
       }
       showToast?.(`Sharing live: ${selection.preset?.name || selection.source?.name || 'Screen'}`);
     } catch (err) {
