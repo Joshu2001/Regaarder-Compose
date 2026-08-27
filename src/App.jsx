@@ -82039,7 +82039,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {typeof document !== 'undefined' && ReactDOM.createPortal(
+      {typeof document !== 'undefined' && createPortal(
         (isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked')) && productMode !== 'room' && productMode !== 'room-landing' ? (
           <div 
             ref={pipDragContainerRef}
