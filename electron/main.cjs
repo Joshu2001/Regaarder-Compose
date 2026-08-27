@@ -74,9 +74,11 @@ Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 `;
 
         if (hwnd && hwnd > 0) {
+          const isConsoleWin = (name || '').toLowerCase().includes('mingw') || (name || '').toLowerCase().includes('cmd') || (name || '').toLowerCase().includes('bash');
+          const showCmd = isConsoleWin ? 3 : 9; // SW_MAXIMIZE (3) for terminal to fill screen cleanly, SW_RESTORE (9) for GUI apps
           psScript += `
 $h = [IntPtr]${hwnd}
-[WinFocus]::ShowWindowAsync($h, 9)
+[WinFocus]::ShowWindowAsync($h, ${showCmd})
 [WinFocus]::BringWindowToTop($h)
 [WinFocus]::SetForegroundWindow($h)
 [WinFocus]::SwitchToThisWindow($h, $true)

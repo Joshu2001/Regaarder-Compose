@@ -13381,6 +13381,12 @@ const DEFAULT_DECK_SLIDES = [
           const bottomCrop = Math.round(vid.videoHeight * 0.055);
           const sourceH = vid.videoHeight - topCrop - bottomCrop;
           ctx.drawImage(vid, 0, topCrop, vid.videoWidth, sourceH, 0, 0, 640, 360);
+
+          // If console window, mask out the bottom-right HUD area to eliminate recursive mini-HUD inset
+          if (isConsole) {
+            ctx.fillStyle = '#0c0c0c';
+            ctx.fillRect(440, 230, 200, 130);
+          }
         } else {
           ctx.drawImage(vid, 0, 0, 640, 360);
         }
