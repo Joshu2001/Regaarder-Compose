@@ -154,6 +154,10 @@ export default function RoomLandingPage({
   const [lastPresentedMode, setLastPresentedMode] = useState('compose');
 
   const handleSelectScreenSource = async (selection) => {
+    if (onSelectScreenSource) {
+      onSelectScreenSource(selection);
+      return;
+    }
     try {
       let stream = null;
       let sourceId = selection.source?.id;
