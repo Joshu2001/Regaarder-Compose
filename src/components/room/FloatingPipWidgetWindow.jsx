@@ -56,6 +56,37 @@ export default function FloatingPipWidgetWindow() {
     };
   }, []);
 
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    let timer = null;
+    const onMove = () => {
+      setIsHovered(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        setIsHovered(false);
+      }, 3000);
+    };
+
+    const onLeave = (e) => {
+      if (!e.relatedTarget && (e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY <= 0 || e.clientY >= window.innerHeight)) {
+        if (timer) clearTimeout(timer);
+        setIsHovered(false);
+      }
+    };
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseenter', onMove, { passive: true });
+    document.addEventListener('mouseleave', onLeave, { passive: true });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseenter', onMove);
+      document.removeEventListener('mouseleave', onLeave);
+    };
+  }, []);
+
   const handleClose = (e) => {
     e?.stopPropagation();
     window.electronAPI?.closeFloatingPipWidget?.();
@@ -78,6 +109,8 @@ export default function FloatingPipWidgetWindow() {
   return (
     <div
       style={{ WebkitAppRegion: 'drag' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="group relative w-screen h-screen bg-transparent select-none font-sans overflow-hidden cursor-move flex items-center justify-center m-0 p-0"
     >
       {/* 100% Pure Frameless Floating Screen Surface (No Clipped Shadows) */}
@@ -104,10 +137,10 @@ export default function FloatingPipWidgetWindow() {
           </div>
         )}
 
-        {/* Minimalist Apple-style Hover Overlay Controls (Draggable Background) */}
+        {/* Minimalist Apple-style Hover Overlay Controls (Active Mouse Tracking) */}
         <div
           style={{ WebkitAppRegion: 'drag' }}
-          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2 pointer-events-none"
+          className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/50 transition-opacity duration-200 flex flex-col justify-between p-2 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}
         >
           {/* Top Bar: Title & Window Controls */}
           <div className="flex items-center justify-between">
