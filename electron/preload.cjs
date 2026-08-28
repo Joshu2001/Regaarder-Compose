@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restoreMainWindow: () => ipcRenderer.invoke('window:restore'),
   setContentProtection: (enable) => ipcRenderer.invoke('window:set-content-protection', enable),
   returnToRoom: () => ipcRenderer.invoke('pip:return-to-room'),
+  moveFloatingPipWidget: (delta) => ipcRenderer.send('pip:move-window', delta),
   onNavigateToRoom: (callback) => {
     const handler = () => callback();
     ipcRenderer.on('pip:navigate-to-room', handler);

@@ -57,35 +57,33 @@ export default function FloatingPipWidgetWindow() {
   }, []);
 
   const [isHovered, setIsHovered] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
 
-  useEffect(() => {
-    let timer = null;
-    const onMove = () => {
-      setIsHovered(true);
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        setIsHovered(false);
-      }, 3000);
-    };
+  const handleMouseDown = (e) => {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    isDraggingRef.current = true;
+    dragStartPosRef.current = { x: e.screenX, y: e.screenY };
 
-    const onLeave = (e) => {
-      if (!e.relatedTarget && (e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY <= 0 || e.clientY >= window.innerHeight)) {
-        if (timer) clearTimeout(timer);
-        setIsHovered(false);
+    const onMouseMove = (moveEvent) => {
+      if (!isDraggingRef.current) return;
+      const deltaX = moveEvent.screenX - dragStartPosRef.current.x;
+      const deltaY = moveEvent.screenY - dragStartPosRef.current.y;
+      dragStartPosRef.current = { x: moveEvent.screenX, y: moveEvent.screenY };
+      if (deltaX !== 0 || deltaY !== 0) {
+        window.electronAPI?.moveFloatingPipWidget?.({ deltaX, deltaY });
       }
     };
 
-    window.addEventListener('mousemove', onMove, { passive: true });
-    window.addEventListener('mouseenter', onMove, { passive: true });
-    document.addEventListener('mouseleave', onLeave, { passive: true });
-
-    return () => {
-      if (timer) clearTimeout(timer);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseenter', onMove);
-      document.removeEventListener('mouseleave', onLeave);
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
-  }, []);
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
 
   const handleClose = (e) => {
     e?.stopPropagation();
@@ -108,28 +106,21 @@ export default function FloatingPipWidgetWindow() {
 
   return (
     <div
-      style={{ WebkitAppRegion: 'drag' }}
+      onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative w-screen h-screen bg-transparent select-none font-sans overflow-hidden cursor-move flex items-center justify-center m-0 p-0"
+      className="group relative w-screen h-screen bg-transparent select-none font-sans overflow-hidden cursor-grab active:cursor-grabbing flex items-center justify-center m-0 p-0"
     >
-      {/* 100% Pure Frameless Floating Screen Surface (No Clipped Shadows) */}
-      <div
-        style={{ WebkitAppRegion: 'drag' }}
-        className="relative w-full h-full rounded-xl overflow-hidden flex items-center justify-center bg-transparent"
-      >
+      {/* 100% Pure Frameless Floating Screen Surface */}
+      <div className="relative w-full h-full rounded-xl overflow-hidden flex items-center justify-center bg-transparent">
         <canvas
           ref={canvasRef}
-          style={{ WebkitAppRegion: 'drag' }}
-          className={`w-full h-full block bg-transparent transition-opacity duration-200 ${hasFrames ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full block bg-transparent transition-opacity duration-150 ${hasFrames ? 'opacity-100' : 'opacity-0'}`}
         />
 
         {/* Placeholder state when waiting for initial stream frames */}
         {!hasFrames && (
-          <div
-            style={{ WebkitAppRegion: 'drag' }}
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-zinc-950 text-zinc-400"
-          >
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-zinc-950 text-zinc-400">
             <div className="w-7 h-7 rounded-full bg-violet-600/30 text-violet-300 flex items-center justify-center mb-1 border border-violet-500/20 text-xs font-bold">
               <MonitorPlay size={13} />
             </div>
@@ -137,10 +128,9 @@ export default function FloatingPipWidgetWindow() {
           </div>
         )}
 
-        {/* Minimalist Apple-style Hover Overlay Controls (Active Mouse Tracking) */}
+        {/* Minimalist Apple-style Hover Overlay Controls (Instantaneous 0ms Response) */}
         <div
-          style={{ WebkitAppRegion: 'drag' }}
-          className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/50 transition-opacity duration-200 flex flex-col justify-between p-2 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/50 transition-opacity duration-200 flex flex-col justify-between p-2 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
         >
           {/* Top Bar: Title & Window Controls */}
           <div className="flex items-center justify-between">
@@ -148,10 +138,9 @@ export default function FloatingPipWidgetWindow() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[10px] font-semibold text-white truncate max-w-[140px]">{displayTitle}</span>
             </div>
-            <div style={{ WebkitAppRegion: 'no-drag' }} className="flex items-center gap-1 pointer-events-auto">
+            <div className="flex items-center gap-1 pointer-events-auto">
               <button
                 type="button"
-                style={{ WebkitAppRegion: 'no-drag' }}
                 onClick={handleReturnToApp}
                 className="p-1 rounded-md bg-black/60 hover:bg-white/20 text-zinc-200 hover:text-white transition-colors cursor-pointer backdrop-blur-md border border-white/10"
                 title="Expand to Full Room"
@@ -160,7 +149,6 @@ export default function FloatingPipWidgetWindow() {
               </button>
               <button
                 type="button"
-                style={{ WebkitAppRegion: 'no-drag' }}
                 onClick={handleClose}
                 className="p-1 rounded-md bg-black/60 hover:bg-rose-500/80 text-zinc-200 hover:text-white transition-colors cursor-pointer backdrop-blur-md border border-white/10"
                 title="Close"
@@ -171,10 +159,9 @@ export default function FloatingPipWidgetWindow() {
           </div>
 
           {/* Bottom Bar: Action Pill */}
-          <div style={{ WebkitAppRegion: 'no-drag' }} className="flex items-center justify-end pointer-events-auto">
+          <div className="flex items-center justify-end pointer-events-auto">
             <button
               type="button"
-              style={{ WebkitAppRegion: 'no-drag' }}
               onClick={handleReturnToApp}
               className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-semibold shadow-lg transition-all flex items-center gap-1 cursor-pointer"
             >

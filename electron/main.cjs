@@ -539,6 +539,14 @@ ipcMain.on('pip:push-frame', (event, jpegDataUrl) => {
   }
 });
 
+ipcMain.on('pip:move-window', (event, delta) => {
+  if (pipFloatingWindow && !pipFloatingWindow.isDestroyed() && delta) {
+    const { deltaX = 0, deltaY = 0 } = delta;
+    const [currentX, currentY] = pipFloatingWindow.getPosition();
+    pipFloatingWindow.setPosition(currentX + deltaX, currentY + deltaY);
+  }
+});
+
 ipcMain.handle('pip:open-floating-widget', async (event, params) => {
   try {
     if (pipFloatingWindow && !pipFloatingWindow.isDestroyed()) {
