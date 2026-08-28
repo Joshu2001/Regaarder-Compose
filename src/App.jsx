@@ -7265,71 +7265,9 @@ function AppCore() {
     color: randomColor({ luminosity: 'dark' }),
     avatar: ''
   }));
-  const defaultMeetingRoster = [
-    {
-      id: "p-sophia",
-      name: "Sophia Chen",
-      role: "Speaking",
-      isSpeaking: true,
-      isRoomMicOn: true,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
-      color: "#8B5CF6"
-    },
-    {
-      id: "p-marcus",
-      name: "Marcus Vance",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
-      color: "#3B82F6"
-    },
-    {
-      id: "p-elena",
-      name: "Elena Rostova",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: true,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
-      color: "#EC4899"
-    },
-    {
-      id: "p-sarah",
-      name: "Sarah Chen",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
-      color: "#10B981"
-    },
-    {
-      id: "p-alex",
-      name: "Alex Rivera",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80",
-      color: "#F59E0B"
-    },
-    {
-      id: "p-jamie",
-      name: "Jamie Patel",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&auto=format&fit=crop&q=80",
-      color: "#6366F1"
-    }
-  ];
   const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: "you", name: "You", isYou: true });
   const [youTileSpeaker, setYouTileSpeaker] = useState(null);
-  const [videoParticipants, setVideoParticipants] = useState(defaultMeetingRoster);
+  const [videoParticipants, setVideoParticipants] = useState([]);
   const [isParticipantOverflowOpen, setIsParticipantOverflowOpen] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState({});
   const pcsRef = useRef({});
@@ -17876,9 +17814,13 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     };
   }, [activeDocId, roomId]);
 
-  // Synchronize meeting room video participants with Yjs awareness presence
+  // Synchronize meeting room video participants with Yjs awareness presence (Real peers only)
   useEffect(() => {
     if (roomState !== "active" || !roomId) {
+      setVideoParticipants([]);
+      setRoomParticipants([]);
+      setActiveVideoSpeaker({ id: "you", name: "You", isYou: true });
+      setYouTileSpeaker(null);
       return;
     }
 
@@ -17903,25 +17845,23 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       }
     });
 
-    if (onlineOthers.length > 0) {
-      setRoomParticipants(() => {
-        return onlineOthers.map(o => ({
-          name: o.name,
-          sub: o.isRoomCameraOn ? "Camera on" : "Camera off",
-          state: "idle",
-          activeMic: o.isRoomMicOn,
-        }));
-      });
+    setRoomParticipants(() => {
+      return onlineOthers.map(o => ({
+        name: o.name,
+        sub: o.isRoomCameraOn ? "Camera on" : "Camera off",
+        state: "idle",
+        activeMic: o.isRoomMicOn,
+      }));
+    });
 
-      setActiveVideoSpeaker((prevActive) => {
-        let nextActive = prevActive;
-        if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
-          nextActive = onlineOthers[0] || { id: "you", name: "You", isYou: true };
-        }
-        setVideoParticipants(() => onlineOthers.filter(o => o.id !== nextActive.id));
-        return nextActive;
-      });
-    }
+    setActiveVideoSpeaker((prevActive) => {
+      let nextActive = prevActive;
+      if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
+        nextActive = onlineOthers[0] || { id: "you", name: "You", isYou: true };
+      }
+      setVideoParticipants(() => onlineOthers.filter(o => o.id !== nextActive.id));
+      return nextActive;
+    });
   }, [awarenessUsers, roomId, roomState]);
 
   useEffect(() => {
@@ -81598,11 +81538,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 )}
 
-                {/* Participant Mounts & Interactive Overflow Card */}
-                {!isDistractionFreeMode && (
-                  <div className={`flex justify-between gap-3.5 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
+                {/* Participant Mounts & Interactive Overflow Card (Real Peers Only) */}
+                {!isDistractionFreeMode && videoParticipants && videoParticipants.length > 0 && (
+                  <div className={`flex justify-center gap-3.5 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
                     
-                    {/* Primary Visible Mounts (3 slots) */}
+                    {/* Primary Visible Mounts (up to 3 slots) */}
                     {videoParticipants.slice(0, 3).map((p, i) => (
                       <div 
                         key={p.id} 
@@ -81642,7 +81582,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="w-full h-full object-cover absolute inset-0"
                               />
                             ) : (
-                              <img src={p.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"} alt={p.name} className="w-full h-full object-cover absolute inset-0 pointer-events-none" />
+                              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center absolute inset-0">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-md text-lg" style={{ background: p.color || "#6366F1" }}>
+                                  {(p.name || "U").charAt(0).toUpperCase()}
+                                </div>
+                              </div>
                             )}
                           </>
                         )}
@@ -81664,9 +81608,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/15 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.03] select-none"
                         title="Click to view all overflowing participants"
                       >
-                        {videoParticipants[3]?.img ? (
-                          <img src={videoParticipants[3].img} alt="Overflow" className="w-full h-full object-cover filter blur-md scale-110 opacity-50" />
-                        ) : null}
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/45 via-white/20 to-white/10 shadow-inner group-hover:bg-white/50 transition-colors">
                           <span className="text-slate-800 text-[16px] font-bold drop-shadow-sm tracking-tight">+{videoParticipants.length - 3}</span>
                           <span className="text-slate-600 text-[9px] font-semibold uppercase tracking-wider mt-0.5">Show all</span>
@@ -81675,7 +81616,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     )}
                   </div>
                 )}
-
                 {/* Expanded Overflow Participants Modal Overlay */}
                 {isParticipantOverflowOpen && (
                   <div 
