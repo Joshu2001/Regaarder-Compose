@@ -7457,7 +7457,7 @@ function AppCore() {
   const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
+  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(true);
   const [isGeminiActive, setIsGeminiActive] = useState(true);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
@@ -32553,24 +32553,35 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const toggleRoomMic = async () => {
-    // Optimistically toggle the mic state immediately (like Zoom/Google Meet),
-    // so the UI responds instantly regardless of whether a real stream exists.
-    // Both isRoomMicOn and isMicMuted are kept in sync as inverses of each other
-    // because two different control bars reference each state.
     const nextOn = !isRoomMicOn;
     setIsRoomMicOn(nextOn);
     setIsMicMuted(!nextOn);
-    showToast(nextOn ? 'Microphone unmuted' : 'Microphone muted');
+    showToast(nextOn ? "Microphone unmuted (Captions active)" : "Microphone muted");
 
-    // If a real media stream is active, also enable/disable the actual audio track.
-    if (localStream && !mediaError) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = nextOn;
+    if (nextOn) {
+      try {
+        if (!localStream) {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setLocalStream(micStream);
+        } else {
+          const audioTracks = localStream.getAudioTracks();
+          if (audioTracks.length > 0) {
+            audioTracks.forEach(t => { t.enabled = true; });
+          } else {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const [audioTrack] = micStream.getAudioTracks();
+            if (audioTrack) localStream.addTrack(audioTrack);
+          }
+        }
+      } catch (err) {
+        console.warn("[Microphone] Error accessing audio hardware:", err);
+      }
+    } else {
+      if (localStream) {
+        localStream.getAudioTracks().forEach(t => { t.enabled = false; });
       }
     }
   };
-
   const toggleScreenShare = async () => {
     if (isScreenSharing && screenShareStream) {
       screenShareStream.getTracks().forEach((track) => track.stop());
@@ -81303,7 +81314,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-[32px] cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-2xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
                     
@@ -81697,7 +81708,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
                       
                       {/* Toolbar */}
-                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-2xl px-5 py-2.5 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
                         <button
                           onClick={toggleRoomMic}
                           className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
@@ -82347,7 +82358,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-2xl overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
                   {renderRoomLeftSidebar()}
                 </div>
               </DraggablePanel>
@@ -82361,7 +82372,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', zIndex: 40 }}>
+                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-2xl overflow-hidden" style={{ right: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', zIndex: 40 }}>
                   {renderRoomRightSidebar()}
                 </div>
               </DraggablePanel>
