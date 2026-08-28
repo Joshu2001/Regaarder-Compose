@@ -7295,11 +7295,42 @@ function AppCore() {
       isRoomCameraOn: true,
       img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
       color: "#EC4899"
+    },
+    {
+      id: "p-sarah",
+      name: "Sarah Chen",
+      role: "Listening",
+      isSpeaking: false,
+      isRoomMicOn: false,
+      isRoomCameraOn: true,
+      img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
+      color: "#10B981"
+    },
+    {
+      id: "p-alex",
+      name: "Alex Rivera",
+      role: "Listening",
+      isSpeaking: false,
+      isRoomMicOn: false,
+      isRoomCameraOn: true,
+      img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80",
+      color: "#F59E0B"
+    },
+    {
+      id: "p-jamie",
+      name: "Jamie Patel",
+      role: "Listening",
+      isSpeaking: false,
+      isRoomMicOn: false,
+      isRoomCameraOn: true,
+      img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&auto=format&fit=crop&q=80",
+      color: "#6366F1"
     }
   ];
   const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: "you", name: "You", isYou: true });
   const [youTileSpeaker, setYouTileSpeaker] = useState(null);
   const [videoParticipants, setVideoParticipants] = useState(defaultMeetingRoster);
+  const [isParticipantOverflowOpen, setIsParticipantOverflowOpen] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState({});
   const pcsRef = useRef({});
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
@@ -81567,10 +81598,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 )}
 
-                {/* 3 Participant Mounts (Exact Design Parity) */}
+                {/* Participant Mounts & Interactive Overflow Card */}
                 {!isDistractionFreeMode && (
-                  <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
+                  <div className={`flex justify-between gap-3.5 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
                     
+                    {/* Primary Visible Mounts (3 slots) */}
                     {videoParticipants.slice(0, 3).map((p, i) => (
                       <div 
                         key={p.id} 
@@ -81581,7 +81613,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           newParticipants[i] = prevActive;
                           setVideoParticipants(newParticipants);
                         }}
-                        className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.02]"
+                        className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.02]"
                       >
                         {p.isYou ? (
                           <>
@@ -81624,6 +81656,94 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     ))}
+
+                    {/* Interactive Frosted Overflow Card (+N / Show All) */}
+                    {videoParticipants.length > 3 && (
+                      <div 
+                        onClick={() => setIsParticipantOverflowOpen(prev => !prev)}
+                        className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/15 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.03] select-none"
+                        title="Click to view all overflowing participants"
+                      >
+                        {videoParticipants[3]?.img ? (
+                          <img src={videoParticipants[3].img} alt="Overflow" className="w-full h-full object-cover filter blur-md scale-110 opacity-50" />
+                        ) : null}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/45 via-white/20 to-white/10 shadow-inner group-hover:bg-white/50 transition-colors">
+                          <span className="text-slate-800 text-[16px] font-bold drop-shadow-sm tracking-tight">+{videoParticipants.length - 3}</span>
+                          <span className="text-slate-600 text-[9px] font-semibold uppercase tracking-wider mt-0.5">Show all</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Expanded Overflow Participants Modal Overlay */}
+                {isParticipantOverflowOpen && (
+                  <div 
+                    onClick={() => setIsParticipantOverflowOpen(false)}
+                    className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200"
+                  >
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative w-full max-w-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-[32px] shadow-[0_32px_120px_rgba(0,0,0,0.25)] border border-white/20 p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 flex items-center justify-center">
+                            <Users size={16} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">All Meeting Participants</h3>
+                            <p className="text-[11px] text-slate-500 dark:text-zinc-400">Click any attendee to bring them to the main screen</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsParticipantOverflowOpen(false)}
+                          className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 transition-colors cursor-pointer"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {/* Participant Grid */}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto pr-1 thin-scrollbar py-2">
+                        {[activeVideoSpeaker, ...videoParticipants].map((p, idx) => (
+                          <div
+                            key={p.id || idx}
+                            onClick={() => {
+                              if (p.id !== activeVideoSpeaker.id) {
+                                const prevActive = activeVideoSpeaker;
+                                setActiveVideoSpeaker(p);
+                                const remaining = [prevActive, ...videoParticipants.filter(x => x.id !== p.id)];
+                                setVideoParticipants(remaining);
+                              }
+                              setIsParticipantOverflowOpen(false);
+                            }}
+                            className={`relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-900 border cursor-pointer group transition-all hover:scale-[1.03] ${p.id === activeVideoSpeaker.id ? "ring-2 ring-violet-500 border-violet-500 shadow-md" : "border-white/10 hover:border-violet-300"}`}
+                          >
+                            {p.isYou ? (
+                              <>
+                                {isRoomCameraOn && localStream ? (
+                                  <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-emerald-600 text-sm">Y</div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <img src={p.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"} alt={p.name} className="w-full h-full object-cover" />
+                            )}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-white truncate drop-shadow">{p.name}</span>
+                              {p.id === activeVideoSpeaker.id && (
+                                <span className="text-[8.5px] px-1 py-0.5 rounded bg-violet-600 text-white font-semibold">Active</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
                 {/* Bottom Control Section */}
