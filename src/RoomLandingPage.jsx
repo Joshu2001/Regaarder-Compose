@@ -75,6 +75,10 @@ export default function RoomLandingPage({
     }
   }, [isScreenSharing, screenShareStream, sharedSourceInfo]);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
+  const [isGreenRoomOpen, setIsGreenRoomOpen] = useState(false);
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(28);
+  const [greenRoomCameraOn, setGreenRoomCameraOn] = useState(true);
+  const [greenRoomMicOn, setGreenRoomMicOn] = useState(true);
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isMeetingOptionsOpen, setIsMeetingOptionsOpen] = useState(false);
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
@@ -530,12 +534,8 @@ export default function RoomLandingPage({
 
           {/* ========================================================================= */}
           {/* ROOM WORKSPACE (Rendered in background, blurred when isLobby is true)     */}
-          {/* ========================================================================= */}
-          <div className={`w-full h-full flex flex-col transition-all duration-500 ${
-            isLobby 
-              ? 'filter blur-[7px] grayscale-[25%] opacity-75 scale-[0.995] pointer-events-none' 
-              : 'filter blur-0 grayscale-0 opacity-100 scale-100 pointer-events-auto'
-          }`}>
+          {!isLobby ? (
+            <div className="w-full h-full flex flex-col transition-all duration-300 pointer-events-auto">
             
             {/* Top Header Bar */}
             <header className="h-[68px] flex items-center justify-between px-7 border-b border-slate-100/80 dark:border-zinc-800/80 bg-transparent shrink-0 relative z-20">
@@ -1295,196 +1295,214 @@ export default function RoomLandingPage({
             </div>
 
           </div>
-
-          <ScreenShareSourceModal
-            isOpen={isSourceModalOpen}
-            onClose={() => setIsSourceModalOpen(false)}
-            onSelectSource={handleSelectScreenSource}
-          />
-          {/* ========================================================================= */}
-          {/* LOBBY MODAL OVERLAY (Pixel-Perfect Layer as in Image 2)                    */}
-          {/* ========================================================================= */}
-          {isLobby && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/[0.04] dark:bg-black/30 backdrop-blur-[6px] animate-in fade-in duration-300">
-              <div 
-                className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.1)] rounded-[32px] max-w-[420px] w-full p-7 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200 select-none"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {isMeetingOptionsOpen ? (
-                  /* ========================================================= */
-                  /* PROGRESSIVE DISCLOSURE: INSTANT VS SCHEDULE OPTIONS       */
-                  /* ========================================================= */
-                  <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
-                    {/* Top Badge with Delicate Purple Sparkles (✦) */}
-                    <div className="relative mb-3">
-                      <div className="w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                        <Video size={22} strokeWidth={1.75} />
-                      </div>
-                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
-                      <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
-                    </div>
-
-                    {/* Typography Header */}
-                    <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
-                      {t('room.createMeeting') || 'Create a Meeting'}
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
-                      {t('room.chooseStartOrSchedule') || 'Choose whether to start right now or schedule for later.'}
-                    </p>
-
-                    {/* Option 1: Start Meeting Now */}
-                    <button
-                      type="button"
-                      onClick={handleStartInstantMeeting}
-                      className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                          <Video size={16} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.startMeetingNow') || 'Start meeting now'}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.launchRoomImmediately') || 'Launch room and invite others immediately'}</div>
-                        </div>
-                      </div>
-                      <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                    </button>
-
-                    {/* Option 2: Schedule for Later */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSchedulingModalOpen(true);
-                      }}
-                      className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                          <Calendar size={15} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.scheduleForLater') || 'Schedule for later'}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.pickDateTimeInvite') || 'Pick a date, time, and invite teammates'}</div>
-                        </div>
-                      </div>
-                      <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                    </button>
-
-                    {/* Back Button */}
-                    <button
-                      type="button"
-                      onClick={() => setIsMeetingOptionsOpen(false)}
-                      className="text-xs font-semibold text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors py-1 cursor-pointer"
-                    >
-                      {t('room.backToOptions') || '‹ Back to options'}
-                    </button>
+        ) : (
+            <div className="w-full h-full flex flex-col bg-[#F9F9F8] dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 font-sans select-none overflow-y-auto">
+              {/* Top Header Bar */}
+              <header className="h-[68px] flex items-center justify-between px-8 border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 sticky top-0 z-30">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md">
+                    <RoomIcon size={20} />
                   </div>
-                ) : (
-                  /* ========================================================= */
-                  /* DEFAULT WELCOME TO ROOM LOBBY SCREEN                      */
-                  /* ========================================================= */
-                  <>
-                    {/* Top Badge with Delicate Purple Sparkles (✦) */}
-                    <div className="relative mb-3">
-                      <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                        <Users size={22} strokeWidth={1.75} />
-                      </div>
-                      {/* Floating sparkles */}
-                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
-                      <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
-                      <span className="absolute -bottom-1 -right-1 text-[8px] font-bold text-violet-400">✦</span>
-                    </div>
+                  <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100">Room</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 font-semibold">Workspace</span>
+                </div>
 
-                    {/* Typography Header */}
-                    <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
-                      Welcome to Room
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
-                      {t('room.startOrJoinCode') || 'Start an instant meeting or join with a code.'}
-                    </p>
-
-                    {/* Action 1: Start an instant meeting (Opens Options) */}
-                    <button
-                      type="button"
-                      onClick={() => setIsMeetingOptionsOpen(true)}
-                      className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                          <Plus size={16} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.startInstantMeeting') || 'Start an instant meeting'}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.createRoomInviteOthers') || 'Create a room and invite others'}</div>
-                        </div>
-                      </div>
-                      <ChevronRight size={15} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                    </button>
-
-                    {/* Subtle Divider */}
-                    <div className="flex items-center gap-3 w-full my-3.5">
-                      <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
-                      <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">{t('common.or') || 'or'}</span>
-                      <div className="h-[1px] bg-slate-200/70 dark:bg-zinc-800 flex-1" />
-                    </div>
-
-                    {/* Action 2: Enter room code (Secondary Action with Code Input Affordance) */}
-                    {!isEnteringCode ? (
+                {/* Quick Join / Action Header */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:ring-2 ring-violet-500/20 transition-all">
+                    <Keyboard size={15} className="text-slate-400 mr-2" />
+                    <input
+                      type="text"
+                      value={roomCodeInput}
+                      onChange={(e) => setRoomCodeInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && roomCodeInput.trim()) handleJoinWithCode(e); }}
+                      placeholder="Enter a code or link"
+                      className="bg-transparent text-xs font-medium text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 outline-none w-36 sm:w-48"
+                    />
+                    {roomCodeInput.trim() && (
                       <button
                         type="button"
-                        onClick={() => setIsEnteringCode(true)}
-                        className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
+                        onClick={handleJoinWithCode}
+                        className="text-xs font-bold text-violet-600 hover:text-violet-700 ml-2 cursor-pointer"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 font-bold text-sm group-hover:scale-105 transition-transform">
-                            <Hash size={15} strokeWidth={2.2} />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.enterRoomCode') || 'Enter room code'}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 font-normal">{t('room.joinExistingRoom') || 'Join an existing room'}</div>
-                          </div>
-                        </div>
-                        <ChevronRight size={15} className="text-slate-400 dark:text-zinc-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        Join
                       </button>
-                    ) : (
-                      <form onSubmit={handleJoinWithCode} className="w-full bg-slate-50/90 dark:bg-zinc-850/80 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3 flex flex-col gap-2.5 animate-in fade-in duration-150">
-                        <div className="flex items-center gap-2">
-                          <input
-                            ref={codeInputRef}
-                            type="text"
-                            value={roomCodeInput}
-                            onChange={(e) => setRoomCodeInput(e.target.value)}
-                            placeholder="e.g. ABC-123"
-                            className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-900 dark:text-zinc-100 px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-400 uppercase text-center"
-                          />
-                          <button
-                            type="submit"
-                            disabled={!roomCodeInput.trim()}
-                            className="px-4 py-2 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-40 transition-all active:scale-95"
-                          >
-                            Join
-                          </button>
-                        </div>
-                        <div className="flex justify-between items-center px-1">
-                          <span className="text-[10px] text-slate-400">{t('room.enter6LetterCode') || 'Enter 6-letter room code'}</span>
-                          <button 
-                            type="button" 
-                            onClick={() => setIsEnteringCode(false)}
-                            className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
                     )}
-                  </>
-                )}
+                  </div>
 
+                  <button
+                    type="button"
+                    onClick={() => setIsGreenRoomOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus size={15} strokeWidth={2.5} />
+                    <span>New Meeting</span>
+                  </button>
+                </div>
+              </header>
+
+              {/* Main Landing Body */}
+              <div className="flex-1 max-w-5xl w-full mx-auto p-6 sm:p-10 flex flex-col gap-6">
+                
+                {/* Calendar Date & Week Strip */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center">
+                      <Calendar size={16} />
+                    </div>
+                    <div>
+                      <div className="text-base font-bold text-slate-900 dark:text-zinc-100">Friday, Aug 28</div>
+                      <div className="text-[11px] text-slate-400">Today · 0 active sessions scheduled</div>
+                    </div>
+                  </div>
+
+                  {/* Week Day Selector Strip (SUN 23 ... SAT 29) */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-800/60 p-1 rounded-xl border border-slate-200/50 dark:border-zinc-700/50">
+                    {[
+                      { day: "SUN", date: 23 },
+                      { day: "MON", date: 24 },
+                      { day: "TUE", date: 25 },
+                      { day: "WED", date: 26 },
+                      { day: "THU", date: 27 },
+                      { day: "FRI", date: 28, isToday: true },
+                      { day: "SAT", date: 29 },
+                    ].map((item) => (
+                      <button
+                        key={item.date}
+                        type="button"
+                        onClick={() => setSelectedCalendarDay(item.date)}
+                        className={`flex flex-col items-center px-2.5 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                          selectedCalendarDay === item.date
+                            ? "bg-violet-600 text-white font-bold shadow-xs scale-105"
+                            : item.isToday
+                            ? "bg-violet-50 dark:bg-violet-950/60 text-violet-600 font-semibold"
+                            : "text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50"
+                        }`}
+                      >
+                        <span className="text-[9px] uppercase tracking-wider">{item.day}</span>
+                        <span className="text-xs font-bold">{item.date}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Security Trust Badge */}
+                <div className="flex items-center gap-3.5 bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 p-4 rounded-2xl">
+                  <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Shield size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-violet-950 dark:text-violet-200">Your meeting is protected</div>
+                    <div className="text-[11px] text-violet-700 dark:text-violet-300">End-to-end encrypted room with hardware acceleration. No one can join unless invited or admitted by host.</div>
+                  </div>
+                </div>
+
+                {/* Empty State / Schedule Overview (Google Meet Style) */}
+                <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-xs text-center min-h-[340px]">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 text-white flex items-center justify-center mb-4 shadow-lg shadow-violet-500/20 border border-white/20">
+                    <Video size={28} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mb-6">Schedule a meeting with your team or launch an instant collaborative sync.</p>
+                  
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsGreenRoomOpen(true)}
+                      className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Plus size={16} strokeWidth={2.5} />
+                      <span>Start an Instant Meeting</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsSchedulingModalOpen(true)}
+                      className="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 text-slate-700 dark:text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Calendar size={15} />
+                      <span>Schedule for Later</span>
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* ========================================================================= */}
+              {/* APPLE-STYLE GREEN ROOM PRE-FLIGHT MODAL (SEAMLESS STAGING)                 */}
+              {/* ========================================================================= */}
+              {isGreenRoomOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-[28px] shadow-[0_32px_120px_rgba(0,0,0,0.3)] border border-slate-200/80 dark:border-zinc-800 p-6 flex flex-col items-center animate-in zoom-in-95 duration-200"
+                  >
+                    {/* Video Mirror / Pre-Flight Avatar Card */}
+                    <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-950 shadow-inner mb-4 flex items-center justify-center">
+                      {greenRoomCameraOn ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400 text-white">
+                          <div className="w-16 h-16 rounded-full border-2 border-white/40 flex items-center justify-center text-2xl font-bold bg-white/20 shadow-lg">
+                            Y
+                          </div>
+                          <span className="text-xs font-semibold mt-2">Camera Ready</span>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-400">
+                          <VideoOff size={32} className="opacity-60 mb-2" />
+                          <span className="text-xs font-medium">Camera is off</span>
+                        </div>
+                      )}
+
+                      {/* Pre-Flight Quick Controls */}
+                      <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setGreenRoomMicOn(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-md ${
+                            greenRoomMicOn ? "bg-white/20 hover:bg-white/30 text-white" : "bg-rose-500 text-white"
+                          }`}
+                          title={greenRoomMicOn ? "Mute Microphone" : "Unmute Microphone"}
+                        >
+                          {greenRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGreenRoomCameraOn(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-md ${
+                            greenRoomCameraOn ? "bg-white/20 hover:bg-white/30 text-white" : "bg-rose-500 text-white"
+                          }`}
+                          title={greenRoomCameraOn ? "Turn off camera" : "Turn on camera"}
+                        >
+                          {greenRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100 mb-1">Ready to join?</h3>
+                    <p className="text-xs text-slate-400 mb-6 text-center">No one else is here yet. You can invite your team once you enter.</p>
+
+                    <div className="flex items-center gap-3 w-full">
+                      <button
+                        type="button"
+                        onClick={() => setIsGreenRoomOpen(false)}
+                        className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsGreenRoomOpen(false);
+                          handleStartInstantMeeting();
+                        }}
+                        className="flex-1 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-lg shadow-violet-600/30 transition-all cursor-pointer"
+                      >
+                        Join Meeting Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
-          {/* ========================================================================= */}
           {/* FRESH REFINED EXECUTIVE APPLE-TIER SCHEDULE ROOM SESSION MODAL (NO SCROLL)*/}
           {/* ========================================================================= */}
           {isSchedulingModalOpen && (
@@ -2282,6 +2300,11 @@ export default function RoomLandingPage({
           </div>
         </div>
       )}
+          <ScreenShareSourceModal
+            isOpen={isSourceModalOpen}
+            onClose={() => setIsSourceModalOpen(false)}
+            onSelectSource={handleSelectScreenSource}
+          />
     </div>
   );
 }
