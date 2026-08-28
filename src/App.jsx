@@ -1,3 +1,4 @@
+import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
 import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow';
 import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
@@ -81317,6 +81318,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-2xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
+    <RoomAnnotationOverlay isEnabled={true} />
                     
   {screenShareStream ? (
     <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-6 gap-4">
