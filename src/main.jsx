@@ -61,6 +61,10 @@ const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 const hash = typeof window !== 'undefined' ? window.location.hash : '';
 
 if (hash.includes('floating-pip-widget')) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+  }
   root.render(
     <React.StrictMode>
       <ErrorBoundary>

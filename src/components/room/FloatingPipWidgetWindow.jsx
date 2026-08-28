@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Maximize2, X, MonitorPlay } from 'lucide-react';
+import { Maximize2, X, MonitorPlay } from 'lucide-react';
 
 export default function FloatingPipWidgetWindow() {
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const rawTitle = searchParams?.get('title') || 'External Window';
+  const rawTitle = searchParams?.get('title') || 'Screen Share';
 
-  // Clean title for display (e.g. "MINGW64:/c/Users/..." -> "Git Bash" or original name)
   const displayTitle = rawTitle.includes('MINGW') || rawTitle.includes('cmd.exe') || rawTitle.includes('bash')
     ? 'Git Bash'
     : rawTitle;
 
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [meetingTimer, setMeetingTimer] = useState('00:00');
   const [hasFrames, setHasFrames] = useState(false);
   const canvasRef = useRef(null);
   const imgRef = useRef(new Image());
+  const hasReceivedFrameRef = useRef(false);
 
-  // CPU 2D Software Rasterized Frame Pipeline (Zero GPU crash code 34)
+  // Stable CPU 2D Software Rasterized Frame Pipeline
   useEffect(() => {
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+
     const drawFrame = (jpegDataUrl) => {
       if (!jpegDataUrl) return;
       const img = imgRef.current;
@@ -31,8 +31,14 @@ export default function FloatingPipWidgetWindow() {
           cvs.width = img.naturalWidth;
           cvs.height = img.naturalHeight;
         }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
         ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
-        if (!hasFrames) setHasFrames(true);
+        if (!hasReceivedFrameRef.current) {
+          hasReceivedFrameRef.current = true;
+          setHasFrames(true);
+        }
       };
       img.src = jpegDataUrl;
     };
@@ -42,23 +48,21 @@ export default function FloatingPipWidgetWindow() {
       unsubscribe = window.electronAPI.onPipFrame(drawFrame);
     }
 
-    const timer = setInterval(() => {
-      const now = new Date();
-      setMeetingTimer(`${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
-    }, 1000);
-
     return () => {
-      clearInterval(timer);
+      document.documentElement.style.background = '';
+      document.body.style.background = '';
       if (typeof unsubscribe === 'function') unsubscribe();
       else window.electronAPI?.offPipFrame?.();
     };
-  }, [hasFrames]);
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = (e) => {
+    e?.stopPropagation();
     window.electronAPI?.closeFloatingPipWidget?.();
   };
 
-  const handleReturnToApp = async () => {
+  const handleReturnToApp = async (e) => {
+    e?.stopPropagation();
     try {
       if (window.electronAPI?.returnToRoom) {
         await window.electronAPI.returnToRoom();
@@ -72,73 +76,79 @@ export default function FloatingPipWidgetWindow() {
   };
 
   return (
-    <div className="w-screen h-screen p-2 bg-transparent select-none font-sans flex flex-col justify-end overflow-hidden">
+    <div
+      style={{ WebkitAppRegion: 'drag' }}
+      className="group relative w-screen h-screen bg-transparent select-none font-sans overflow-hidden cursor-move flex items-center justify-center m-0 p-0"
+    >
+      {/* 100% Pure Frameless Floating Screen Surface (No Clipped Shadows) */}
       <div
         style={{ WebkitAppRegion: 'drag' }}
-        className="w-full h-full bg-zinc-950/95 text-white rounded-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col relative"
+        className="relative w-full h-full rounded-xl overflow-hidden flex items-center justify-center bg-transparent"
       >
-        {/* Header Drag Bar */}
-        <div className="h-7 px-2.5 bg-black/50 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 pointer-events-none">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="text-[10px] font-bold tracking-wide text-zinc-200 truncate max-w-[130px]">{displayTitle}</span>
-            <span className="text-[10px] text-zinc-500 font-mono ml-1">{meetingTimer}</span>
-          </div>
-          <div style={{ WebkitAppRegion: 'no-drag' }} className="flex items-center gap-1">
-            <button type="button" onClick={handleReturnToApp} className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer" title="Return to Regaarder">
-              <Maximize2 size={11} />
-            </button>
-            <button type="button" onClick={handleClose} className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-white/10 transition-colors cursor-pointer" title="Close">
-              <X size={11} />
-            </button>
-          </div>
-        </div>
+        <canvas
+          ref={canvasRef}
+          style={{ WebkitAppRegion: 'drag' }}
+          className={`w-full h-full block bg-transparent transition-opacity duration-200 ${hasFrames ? 'opacity-100' : 'opacity-0'}`}
+        />
 
-        {/* Live Video Viewport */}
-        <div className="flex-1 min-h-0 bg-black relative flex items-center justify-center overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            className={`w-full h-full object-contain bg-black transition-opacity duration-300 ${hasFrames ? 'opacity-100' : 'opacity-0'}`}
-          />
-          {!hasFrames && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-zinc-950">
-              <div className="w-8 h-8 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1.5 border border-violet-500/30 text-xs font-bold">
-                R
-              </div>
-              <span className="text-[9px] font-medium text-zinc-400">Streaming live preview...</span>
-            </div>
-          )}
-        </div>
-
-        {/* Controls Footer */}
-        <div
-          style={{ WebkitAppRegion: 'no-drag' }}
-          className="h-9 px-2.5 bg-black/70 border-t border-white/10 flex items-center justify-between shrink-0"
-        >
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setIsMicOn(!isMicOn)}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isMicOn ? 'bg-white/10 text-zinc-200 hover:bg-white/20' : 'bg-red-500/20 text-red-400'}`}
-            >
-              {isMicOn ? <Mic size={11} /> : <MicOff size={11} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsCameraOn(!isCameraOn)}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isCameraOn ? 'bg-white/10 text-zinc-200 hover:bg-white/20' : 'bg-red-500/20 text-red-400'}`}
-            >
-              {isCameraOn ? <Video size={11} /> : <VideoOff size={11} />}
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={handleReturnToApp}
-            className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+        {/* Placeholder state when waiting for initial stream frames */}
+        {!hasFrames && (
+          <div
+            style={{ WebkitAppRegion: 'drag' }}
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-zinc-950 text-zinc-400"
           >
-            <MonitorPlay size={10} />
-            <span>Open Room</span>
-          </button>
+            <div className="w-7 h-7 rounded-full bg-violet-600/30 text-violet-300 flex items-center justify-center mb-1 border border-violet-500/20 text-xs font-bold">
+              <MonitorPlay size={13} />
+            </div>
+            <span className="text-[9px] font-medium text-zinc-400">Live preview active</span>
+          </div>
+        )}
+
+        {/* Minimalist Apple-style Hover Overlay Controls (Draggable Background) */}
+        <div
+          style={{ WebkitAppRegion: 'drag' }}
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2 pointer-events-none"
+        >
+          {/* Top Bar: Title & Window Controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-semibold text-white truncate max-w-[140px]">{displayTitle}</span>
+            </div>
+            <div style={{ WebkitAppRegion: 'no-drag' }} className="flex items-center gap-1 pointer-events-auto">
+              <button
+                type="button"
+                style={{ WebkitAppRegion: 'no-drag' }}
+                onClick={handleReturnToApp}
+                className="p-1 rounded-md bg-black/60 hover:bg-white/20 text-zinc-200 hover:text-white transition-colors cursor-pointer backdrop-blur-md border border-white/10"
+                title="Expand to Full Room"
+              >
+                <Maximize2 size={11} />
+              </button>
+              <button
+                type="button"
+                style={{ WebkitAppRegion: 'no-drag' }}
+                onClick={handleClose}
+                className="p-1 rounded-md bg-black/60 hover:bg-rose-500/80 text-zinc-200 hover:text-white transition-colors cursor-pointer backdrop-blur-md border border-white/10"
+                title="Close"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Bar: Action Pill */}
+          <div style={{ WebkitAppRegion: 'no-drag' }} className="flex items-center justify-end pointer-events-auto">
+            <button
+              type="button"
+              style={{ WebkitAppRegion: 'no-drag' }}
+              onClick={handleReturnToApp}
+              className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-semibold shadow-lg transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <MonitorPlay size={10} />
+              <span>Open Room</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

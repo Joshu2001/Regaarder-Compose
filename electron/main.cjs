@@ -64,10 +64,18 @@ $code = @'
 using System;
 using System.Runtime.InteropServices;
 public class WinFocus {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RECT {
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom;
+  }
   [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 }
 '@
 Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
@@ -75,13 +83,17 @@ Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 
         if (hwnd && hwnd > 0) {
           const isConsoleWin = (name || '').toLowerCase().includes('mingw') || (name || '').toLowerCase().includes('cmd') || (name || '').toLowerCase().includes('bash');
-          const showCmd = isConsoleWin ? 3 : 9; // SW_MAXIMIZE (3) for terminal to fill screen cleanly, SW_RESTORE (9) for GUI apps
+          const showCmd = isConsoleWin ? 3 : 9; // SW_MAXIMIZE (3) for terminal, SW_RESTORE (9) for GUI apps
           psScript += `
 $h = [IntPtr]${hwnd}
 [WinFocus]::ShowWindowAsync($h, ${showCmd})
 [WinFocus]::BringWindowToTop($h)
 [WinFocus]::SetForegroundWindow($h)
 [WinFocus]::SwitchToThisWindow($h, $true)
+$r = New-Object WinFocus+RECT
+if ([WinFocus]::GetWindowRect($h, [ref]$r)) {
+  Write-Output "$($r.Left),$($r.Top),$($r.Right - $r.Left),$($r.Bottom - $r.Top)"
+}
 `;
         } else if (targetName) {
           psScript += `
@@ -91,8 +103,24 @@ $ws.AppActivate('${targetName}')
         }
 
         const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
-        exec(`powershell -NoProfile -EncodedCommand ${encoded}`, (err) => {
-          if (err) console.warn('[Electron Main] Focus window error:', err);
+        return new Promise((resolve) => {
+          exec(`powershell -NoProfile -EncodedCommand ${encoded}`, (err, stdout) => {
+            if (err) {
+              console.warn('[Electron Main] Focus window error:', err);
+              return resolve({ success: true });
+            }
+            const out = (stdout || '').trim();
+            if (out && out.includes(',')) {
+              const parts = out.split(',').map(n => parseInt(n.trim(), 10));
+              if (parts.length === 4 && !parts.some(isNaN)) {
+                return resolve({
+                  success: true,
+                  bounds: { x: parts[0], y: parts[1], width: parts[2], height: parts[3] }
+                });
+              }
+            }
+            resolve({ success: true });
+          });
         });
       }
 
@@ -522,7 +550,7 @@ ipcMain.handle('pip:open-floating-widget', async (event, params) => {
     const { screen } = require('electron');
     const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
     const winWidth = 320;
-    const winHeight = 220;
+    const winHeight = 180;
 
     pipFloatingWindow = new BrowserWindow({
       width: winWidth,
@@ -531,10 +559,11 @@ ipcMain.handle('pip:open-floating-widget', async (event, params) => {
       y: screenHeight - winHeight - 24,
       frame: false,
       transparent: true,
+      backgroundColor: '#00000000',
       alwaysOnTop: true,
       resizable: false,
       skipTaskbar: true,
-      hasShadow: true,
+      hasShadow: false,
       webPreferences: {
         preload: path.join(__dirname, 'preload.cjs'),
         contextIsolation: true,
@@ -601,12 +630,16 @@ ipcMain.handle('window:restore', async () => {
 
 ipcMain.handle('window:set-content-protection', async (event, enable) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.setContentProtection(Boolean(enable));
+    mainWindow.setContentProtection(false);
   }
   return { success: true };
 });
 
 ipcMain.handle('pip:return-to-room', async () => {
+  if (pipFloatingWindow && !pipFloatingWindow.isDestroyed()) {
+    pipFloatingWindow.close();
+    pipFloatingWindow = null;
+  }
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();

@@ -13371,19 +13371,38 @@ const DEFAULT_DECK_SLIDES = [
       if (!window.electronAPI?.sendPipFrame) return;
       if (vid.readyState < 2 || vid.videoWidth === 0) return;
       try {
-        const isScreenCapture = sharedSourceInfo?.id?.startsWith('screen:');
         const isConsole = (sharedSourceInfo?.name || '').toLowerCase().includes('mingw') || 
                           (sharedSourceInfo?.name || '').toLowerCase().includes('cmd') || 
                           (sharedSourceInfo?.name || '').toLowerCase().includes('bash');
         
-        if (isScreenCapture || isConsole) {
+        if (isConsole && vid.videoHeight > 100) {
           // Cleanly crop out top titlebar and bottom Windows taskbar on console desktop captures
           const topCrop = Math.round(vid.videoHeight * 0.026);
           const bottomCrop = Math.round(vid.videoHeight * 0.055);
-          const sourceH = vid.videoHeight - topCrop - bottomCrop;
+          const sourceH = Math.max(10, vid.videoHeight - topCrop - bottomCrop);
           ctx.drawImage(vid, 0, topCrop, vid.videoWidth, sourceH, 0, 0, 640, 360);
         } else {
-          ctx.drawImage(vid, 0, 0, 640, 360);
+          const bounds = cropBoundsRef.current;
+          if (bounds && bounds.width > 50 && bounds.height > 50 && vid.videoWidth > 0 && vid.videoHeight > 0) {
+            const scaleX = vid.videoWidth / (window.screen.width || 1920);
+            const scaleY = vid.videoHeight / (window.screen.height || 1080);
+            const sx = Math.max(0, Math.round(bounds.x * scaleX));
+            const sy = Math.max(0, Math.round(bounds.y * scaleY));
+            const sWidth = Math.min(vid.videoWidth - sx, Math.round(bounds.width * scaleX));
+            const sHeight = Math.min(vid.videoHeight - sy, Math.round(bounds.height * scaleY));
+            if (sWidth > 20 && sHeight > 20) {
+              ctx.drawImage(vid, sx, sy, sWidth, sHeight, 0, 0, 640, 360);
+            } else {
+              const taskbarH = Math.round(vid.videoHeight * 0.055);
+              const sourceH = Math.max(10, vid.videoHeight - taskbarH);
+              ctx.drawImage(vid, 0, 0, vid.videoWidth, sourceH, 0, 0, 640, 360);
+            }
+          } else {
+            // Always crop out the bottom Windows taskbar so the application window fills the screen cleanly
+            const taskbarH = Math.round(vid.videoHeight * 0.055);
+            const sourceH = Math.max(10, vid.videoHeight - taskbarH);
+            ctx.drawImage(vid, 0, 0, vid.videoWidth, sourceH, 0, 0, 640, 360);
+          }
         }
         const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.85);
         setLastScreenShareFrameUrl(jpegDataUrl);
@@ -13405,6 +13424,8 @@ const DEFAULT_DECK_SLIDES = [
   useEffect(() => {
     if (window.electronAPI?.onNavigateToRoom) {
       const unsub = window.electronAPI.onNavigateToRoom(() => {
+        setIsPipWidgetOpen(false);
+        window.electronAPI?.closeFloatingPipWidget?.();
         setProductMode('room');
         setRoomState('active');
         setRoomPanelMode('expanded');
@@ -13488,12 +13509,8 @@ const DEFAULT_DECK_SLIDES = [
         const winNameLower = (selection.preset?.name || selection.source?.name || '').toLowerCase();
         const isConsoleWindow = winNameLower.includes('mingw') || winNameLower.includes('cmd') || winNameLower.includes('bash') || winNameLower.includes('powershell');
 
-        // Console windows (cmd/bash) lack DirectX swapchains, so they use the desktop stream; GUI apps use isolated window IDs
-        if (isConsoleWindow && primaryScreen) {
-          sourceId = primaryScreen.id;
-        } else {
-          sourceId = selection.sourceId || selection.source?.id || primaryScreen?.id;
-        }
+        // Always stream the primary desktop screen on Windows to prevent DirectX window blackout
+        sourceId = primaryScreen ? primaryScreen.id : (selection.sourceId || selection.source?.id);
 
         if (sourceId && (sourceId.startsWith('window:') || sourceId.startsWith('screen:'))) {
           try {
@@ -32617,7 +32634,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       }
       setScreenShareStream(stream);
       setIsScreenSharing(true);
-      window.electronAPI?.setContentProtection?.(true);
+      // content protection disabled for smooth screen capture
       showToast('Screen sharing started');
     } catch (err) {
       console.warn('Screen share cancelled or failed:', err);
@@ -81298,62 +81315,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
-    <div className="w-full h-full flex flex-col bg-black relative overflow-hidden items-center justify-center select-none">
-      {/* Full Live High-Resolution 60 FPS Presentation Stream */}
-      <video
-        ref={(node) => {
-          if (node && screenShareStream) {
-            if (node.srcObject !== screenShareStream) node.srcObject = screenShareStream;
-            node.play?.().catch(() => {});
-          }
-        }}
-        autoPlay
-        playsInline
-        muted
-        className="w-full h-full object-contain bg-black"
-      />
+    <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950/90 text-white relative overflow-hidden select-none p-6">
+      {/* Subtle Ambient Presentation Glow */}
+      <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute pointer-events-none" />
 
-      {/* Google Meet-Style Top Presentation Header Bar */}
-      <div className="absolute top-4 left-6 right-6 flex items-center justify-between pointer-events-auto z-30 transition-all">
-        <div className="flex items-center gap-2.5 bg-black/85 backdrop-blur-xl px-4 py-2 rounded-2xl text-xs font-semibold text-white border border-white/15 shadow-2xl">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
-          <span className="text-zinc-200">You are presenting:</span>
-          <span className="text-violet-300 font-bold max-w-[240px] truncate">{sharedSourceInfo?.name || 'Live Screen / Window'}</span>
+      {/* Google Meet-Style Presenter Slate */}
+      <div className="relative z-10 flex flex-col items-center text-center max-w-md p-8 rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-5 shadow-lg shadow-violet-500/25 border border-white/20">
+          <MonitorPlay size={30} className="text-white" />
         </div>
+        
+        <h3 className="text-lg font-bold text-white tracking-tight mb-2">
+          You are presenting to everyone
+        </h3>
+        <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+          To avoid an infinite mirror effect, your screen is hidden here. Everyone in the meeting can see your live presentation.
+        </p>
 
-        <div className="flex items-center gap-2">
-          {/* Pop out to Floating OS HUD */}
-          <button
-            type="button"
-            onClick={async (e) => {
-              e.stopPropagation();
-              const winName = sharedSourceInfo?.name || 'Selected Window';
-              const targetId = sharedSourceInfo?.id || '';
-              
-              if (window.electronAPI?.openFloatingPipWidget) {
-                window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
-              } else {
-                triggerNativePictureInPicture(screenShareStream);
-              }
-
-              if (window.electronAPI?.focusExternalWindow) {
-                window.electronAPI.focusExternalWindow({ sourceId: targetId, name: winName });
-              }
-
-              if (window.electronAPI?.minimizeMainWindow) {
-                window.electronAPI.minimizeMainWindow();
-              }
-              
-              showToast?.('Floating PiP overlay active');
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-xl text-white text-xs font-semibold border border-white/15 shadow-md active:scale-95 transition-all cursor-pointer"
-            title="Switch to floating mini-widget over apps"
-          >
-            <ExternalLink size={13} />
-            <span>Floating OS Window</span>
-          </button>
-
-          {/* Stop Presenting Button */}
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => {
@@ -81362,70 +81341,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
               setScreenShareStream(null);
               setIsScreenSharing(false);
               setIsPipWidgetOpen(false);
-              window.electronAPI?.setContentProtection?.(false);
               window.electronAPI?.closeFloatingPipWidget?.();
               showToast?.('Stopped presenting');
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-lg shadow-rose-500/30 active:scale-95 transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2 cursor-pointer"
           >
-            <PhoneOff size={13} />
+            <PhoneOff size={14} />
             <span>Stop presenting</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const winName = sharedSourceInfo?.name || 'Selected Window';
+              const targetId = sharedSourceInfo?.id || '';
+              if (window.electronAPI?.openFloatingPipWidget) {
+                window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
+              }
+              if (window.electronAPI?.minimizeMainWindow) {
+                window.electronAPI.minimizeMainWindow();
+              }
+            }}
+            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <ExternalLink size={13} />
+            <span>Floating OS HUD</span>
           </button>
         </div>
       </div>
-
-      {/* Self-View Picture-in-Picture Tile (Bottom Right, Google Meet Style) */}
-      {isRoomCameraOn && localStream && (
-        <div className="absolute bottom-4 right-4 w-44 aspect-video rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-black z-20 pointer-events-auto">
-          <video
-            ref={(node) => {
-              if (node && localStream) {
-                if (node.srcObject !== localStream) node.srcObject = localStream;
-                node.play?.().catch(() => {});
-              }
-            }}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute bottom-1.5 left-2 text-[10px] font-semibold text-white/90 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md">
-            You
-          </div>
-        </div>
-      )}
     </div>
-  ) : activeVideoSpeaker.isYou ? (
-    <>
-      <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover object-center pointer-events-none ${isRoomCameraOn ? '' : 'hidden'}`} />
-      {!isRoomCameraOn && (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-          <div 
-            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
-            style={{
-              background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
-              border: '1px solid rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            Y
-          </div>
-        </div>
-      )}
-    </>
-  ) : (
-    <>
-      {!activeVideoSpeaker.isRoomCameraOn ? (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-          <div 
-            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
-            style={{
-              background: `linear-gradient(135deg, ${activeVideoSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-              border: '1px solid rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            {(activeVideoSpeaker.name || 'U').charAt(0).toUpperCase()}
-          </div>
-        </div>
       ) : (
         <>
           <video
@@ -81444,8 +81388,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           )}
         </>
       )}
-    </>
-  )}
 
                   </div>
                   
