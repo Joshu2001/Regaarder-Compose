@@ -81315,20 +81315,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950/90 text-white relative overflow-hidden select-none p-6">
+    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-6 gap-4">
       {/* Subtle Ambient Presentation Glow */}
-      <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute pointer-events-none" />
+      <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute -top-12 -left-12 pointer-events-none" />
 
-      {/* Google Meet-Style Presenter Slate */}
-      <div className="relative z-10 flex flex-col items-center text-center max-w-md p-8 rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-2xl shadow-2xl">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-5 shadow-lg shadow-violet-500/25 border border-white/20">
+      {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
           <MonitorPlay size={30} className="text-white" />
         </div>
         
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Presentation Active</span>
+        </div>
+
         <h3 className="text-lg font-bold text-white tracking-tight mb-2">
           You are presenting to everyone
         </h3>
-        <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+        <p className="text-xs text-zinc-400 leading-relaxed mb-6 max-w-sm">
           To avoid an infinite mirror effect, your screen is hidden here. Everyone in the meeting can see your live presentation.
         </p>
 
@@ -81337,12 +81342,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             type="button"
             onClick={() => {
               if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
-              if (typeof window !== 'undefined') window.__currentScreenShareStream = null;
+              if (typeof window !== "undefined") window.__currentScreenShareStream = null;
               setScreenShareStream(null);
               setIsScreenSharing(false);
               setIsPipWidgetOpen(false);
               window.electronAPI?.closeFloatingPipWidget?.();
-              showToast?.('Stopped presenting');
+              showToast?.("Stopped presenting");
             }}
             className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2 cursor-pointer"
           >
@@ -81353,8 +81358,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <button
             type="button"
             onClick={async () => {
-              const winName = sharedSourceInfo?.name || 'Selected Window';
-              const targetId = sharedSourceInfo?.id || '';
+              const winName = sharedSourceInfo?.name || "Selected Window";
+              const targetId = sharedSourceInfo?.id || "";
               if (window.electronAPI?.openFloatingPipWidget) {
                 window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
               }
@@ -81368,6 +81373,70 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <span>Floating OS HUD</span>
           </button>
         </div>
+      </div>
+
+      {/* Participants Gallery Filmstrip (Audience Presence) */}
+      <div className="w-full md:w-60 lg:w-64 shrink-0 flex flex-col gap-2.5 relative z-10 overflow-y-auto max-h-[75vh] pr-1 custom-scrollbar">
+        <div className="flex items-center justify-between px-1 mb-1">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Users size={12} className="text-violet-400" />
+            In Meeting ({(videoParticipants?.length > 0 ? videoParticipants.length : 4) + 1})
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 font-medium">Audience</span>
+        </div>
+
+        {/* You (Presenter) Tile */}
+        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-violet-500/40 shadow-lg group">
+          {localStream && isRoomCameraOn ? (
+            <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-950/60 to-zinc-900 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-md border border-white/20">
+                You
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-white truncate">You (Presenter)</span>
+            <div className="flex items-center gap-1">
+              {!isRoomMicOn && <MicOff size={11} className="text-rose-400" />}
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-600/80 text-white font-medium">Host</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Audience / Peer Attendees */}
+        {(videoParticipants && videoParticipants.length > 0 ? videoParticipants : [
+          { id: "mock-1", name: "Sophia Chen", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80", color: "#10B981", isRoomMicOn: true, isRoomCameraOn: true, isSpeaking: true },
+          { id: "mock-2", name: "Marcus Vance", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80", color: "#6366F1", isRoomMicOn: false, isRoomCameraOn: true, isSpeaking: false },
+          { id: "mock-3", name: "Elena Rostova", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80", color: "#EC4899", isRoomMicOn: true, isRoomCameraOn: true, isSpeaking: false },
+          { id: "mock-4", name: "Liam Davis", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80", color: "#F59E0B", isRoomMicOn: false, isRoomCameraOn: false, isSpeaking: false },
+        ]).map((p) => (
+          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-lg group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
+            {p.isRoomCameraOn && p.img ? (
+              <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md" style={{ background: p.color || "#6366F1" }}>
+                  {(p.name || "U").charAt(0).toUpperCase()}
+                </div>
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+              <span className="text-[11px] font-medium text-zinc-200 truncate">{p.name}</span>
+              <div className="flex items-center gap-1">
+                {p.isSpeaking && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                )}
+                {p.isRoomMicOn ? (
+                  <Mic size={11} className="text-emerald-400" />
+                ) : (
+                  <MicOff size={11} className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
       ) : (
