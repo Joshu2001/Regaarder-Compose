@@ -17894,11 +17894,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
 
   // Synchronize meeting room video participants with Yjs awareness presence
   useEffect(() => {
-    if (roomState !== 'active' || !roomId) {
-      setVideoParticipants([]);
-      setRoomParticipants([]);
-      setYouTileSpeaker(null);
-      setActiveVideoSpeaker({ id: 'you', name: 'You', isYou: true });
+    if (roomState !== "active" || !roomId) {
       return;
     }
 
@@ -17914,45 +17910,34 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           id: `client-${clientID}`,
           name: userName,
           isYou: false,
-          img: u.avatar || '',
-          color: u.color || '#7C3AED',
+          img: u.avatar || "",
+          color: u.color || "#7C3AED",
           isRoomMicOn: !!state.isRoomMicOn,
           isRoomCameraOn: !!state.isRoomCameraOn,
-          socketId: state.socketId || '',
+          socketId: state.socketId || "",
         });
       }
     });
 
-    setRoomParticipants(() => {
-      return onlineOthers.map(o => ({
-        name: o.name,
-        sub: o.isRoomCameraOn ? 'Camera on' : 'Camera off',
-        state: 'idle',
-        activeMic: o.isRoomMicOn,
-      }));
-    });
-
-    setActiveVideoSpeaker((prevActive) => {
-      let nextActive = prevActive;
-      if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
-        nextActive = { id: 'you', name: 'You', isYou: true };
-      }
-      
-      setVideoParticipants(() => {
-        const remainingOthers = onlineOthers.filter(o => o.id !== nextActive.id);
-        return remainingOthers;
+    if (onlineOthers.length > 0) {
+      setRoomParticipants(() => {
+        return onlineOthers.map(o => ({
+          name: o.name,
+          sub: o.isRoomCameraOn ? "Camera on" : "Camera off",
+          state: "idle",
+          activeMic: o.isRoomMicOn,
+        }));
       });
 
-      setYouTileSpeaker(() => {
-        if (nextActive.isYou) {
-          return null;
-        } else {
-          return { id: 'you', name: 'You', isYou: true };
+      setActiveVideoSpeaker((prevActive) => {
+        let nextActive = prevActive;
+        if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
+          nextActive = onlineOthers[0] || { id: "you", name: "You", isYou: true };
         }
+        setVideoParticipants(() => onlineOthers.filter(o => o.id !== nextActive.id));
+        return nextActive;
       });
-
-      return nextActive;
-    });
+    }
   }, [awarenessUsers, roomId, roomState]);
 
   useEffect(() => {
@@ -81535,11 +81520,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className="w-full h-full object-cover object-center"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-zinc-900 to-black relative">
-              <div className="w-28 h-28 md:w-36 md:h-36 rounded-full flex items-center justify-center font-bold text-white shadow-2xl select-none text-4xl md:text-5xl border-2 border-white/20 bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400">
+            <div className="w-full h-full flex flex-col items-center justify-center relative select-none bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
+              {/* Ambient Apple Glow */}
+              <div className="w-72 h-72 rounded-full bg-violet-600/15 blur-3xl absolute pointer-events-none" />
+              
+              {/* Apple-Style Initials Avatar Glass Orb */}
+              <div className="relative z-10 w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center font-semibold text-white/95 shadow-2xl backdrop-blur-2xl border border-white/20 bg-gradient-to-tr from-violet-600/80 via-indigo-500/70 to-purple-400/80 text-4xl md:text-5xl tracking-tight ring-4 ring-white/10 ring-offset-4 ring-offset-zinc-950">
                 Y
               </div>
-              <span className="mt-4 text-white/90 text-sm font-semibold tracking-wide drop-shadow">You</span>
+              <div className="relative z-10 mt-5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white/80 text-xs font-medium tracking-wide flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-zinc-500" />
+                <span>You (Camera Off)</span>
+              </div>
             </div>
           )}
         </>
