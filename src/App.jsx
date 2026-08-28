@@ -7267,86 +7267,39 @@ function AppCore() {
   }));
   const defaultMeetingRoster = [
     {
-      id: "p-sarah",
-      name: "Sarah Chen",
-      sub: "Speaking",
+      id: "p-sophia",
+      name: "Sophia Chen",
       role: "Speaking",
       isSpeaking: true,
       isRoomMicOn: true,
       isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1000&auto=format&fit=crop&q=80",
+      img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
       color: "#8B5CF6"
     },
     {
-      id: "p-alex",
-      name: "Alex Rivera",
-      sub: "Listening",
+      id: "p-marcus",
+      name: "Marcus Vance",
       role: "Listening",
       isSpeaking: false,
       isRoomMicOn: false,
       isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
+      img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
       color: "#3B82F6"
     },
     {
-      id: "p-jamie",
-      name: "Jamie Patel",
-      sub: "Listening",
+      id: "p-elena",
+      name: "Elena Rostova",
       role: "Listening",
       isSpeaking: false,
-      isRoomMicOn: false,
+      isRoomMicOn: true,
       isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&auto=format&fit=crop&q=80",
+      img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
       color: "#EC4899"
-    },
-    {
-      id: "p-taylor",
-      name: "Taylor Kim",
-      sub: "Listening",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
-      color: "#10B981"
-    },
-    {
-      id: "p-morgan",
-      name: "Morgan Lee",
-      sub: "Listening",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80",
-      color: "#F59E0B"
-    },
-    {
-      id: "p-riley",
-      name: "Riley Zhang",
-      sub: "Listening",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
-      color: "#6366F1"
-    },
-    {
-      id: "p-casey",
-      name: "Casey Nguyen",
-      sub: "Listening",
-      role: "Listening",
-      isSpeaking: false,
-      isRoomMicOn: false,
-      isRoomCameraOn: true,
-      img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80",
-      color: "#14B8A6"
     }
   ];
-  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState(defaultMeetingRoster[0]);
+  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: "you", name: "You", isYou: true });
   const [youTileSpeaker, setYouTileSpeaker] = useState(null);
-  const [videoParticipants, setVideoParticipants] = useState(defaultMeetingRoster.slice(1));
+  const [videoParticipants, setVideoParticipants] = useState(defaultMeetingRoster);
   const [remoteStreams, setRemoteStreams] = useState({});
   const pcsRef = useRef({});
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
@@ -81522,14 +81475,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center relative select-none bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
               {/* Ambient Apple Glow */}
-              <div className="w-72 h-72 rounded-full bg-violet-600/15 blur-3xl absolute pointer-events-none" />
+              <div className="w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl absolute pointer-events-none" />
               
               {/* Apple-Style Initials Avatar Glass Orb */}
-              <div className="relative z-10 w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center font-semibold text-white/95 shadow-2xl backdrop-blur-2xl border border-white/20 bg-gradient-to-tr from-violet-600/80 via-indigo-500/70 to-purple-400/80 text-4xl md:text-5xl tracking-tight ring-4 ring-white/10 ring-offset-4 ring-offset-zinc-950">
+              <div className="relative z-10 w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center font-semibold text-white/95 shadow-2xl backdrop-blur-2xl border border-white/20 bg-gradient-to-tr from-emerald-600/90 via-teal-500/80 to-emerald-400/90 text-4xl md:text-5xl tracking-tight ring-4 ring-white/10 ring-offset-4 ring-offset-zinc-950">
                 Y
               </div>
               <div className="relative z-10 mt-5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white/80 text-xs font-medium tracking-wide flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-zinc-500" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>You (Camera Off)</span>
               </div>
             </div>
@@ -81551,7 +81504,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
           ) : (
             <img
-              src={activeVideoSpeaker.img || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1200&auto=format&fit=crop&q=80"}
+              src={activeVideoSpeaker.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop&q=80"}
               alt={activeVideoSpeaker.name}
               className="w-full h-full object-cover object-center pointer-events-none"
             />
@@ -81614,12 +81567,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 )}
 
-                {/* Participant Thumbnail Strip (Mockup Parity) */}
+                {/* 3 Participant Mounts (Exact Design Parity) */}
                 {!isDistractionFreeMode && (
-                  <div className={`flex justify-between gap-3.5 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
+                  <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
                     
-                    {/* 4 Active Attendees */}
-                    {videoParticipants.slice(0, 4).map((p, i) => (
+                    {videoParticipants.slice(0, 3).map((p, i) => (
                       <div 
                         key={p.id} 
                         onClick={() => {
@@ -81629,7 +81581,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           newParticipants[i] = prevActive;
                           setVideoParticipants(newParticipants);
                         }}
-                        className="relative flex-1 aspect-[4/3] max-w-[130px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.02]"
+                        className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.02]"
                       >
                         {p.isYou ? (
                           <>
@@ -81637,7 +81589,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover absolute inset-0" />
                             ) : (
                               <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-                                <div className="w-11 h-11 rounded-full flex items-center justify-center font-semibold text-white shadow-inner bg-gradient-to-tr from-emerald-600 to-teal-400 text-lg">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner bg-gradient-to-tr from-emerald-600 to-teal-400 text-xl border border-white/20">
                                   Y
                                 </div>
                               </div>
@@ -81658,32 +81610,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="w-full h-full object-cover absolute inset-0"
                               />
                             ) : (
-                              <img src={p.img || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80"} alt={p.name} className="w-full h-full object-cover absolute inset-0 pointer-events-none" />
+                              <img src={p.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"} alt={p.name} className="w-full h-full object-cover absolute inset-0 pointer-events-none" />
                             )}
                           </>
                         )}
                         
                         {/* Bottom Name & Mic Overlay */}
-                        <div className="absolute inset-x-0 bottom-0 h-[36%] bg-gradient-to-t from-black/75 via-black/35 to-transparent flex items-end p-2.5">
+                        <div className="absolute inset-x-0 bottom-0 h-[32%] bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-2.5">
                           <div className="flex items-center justify-between w-full relative z-10">
-                            <span className="text-white/95 text-[11px] font-medium truncate drop-shadow-sm">{p.name}</span>
-                            {!p.isRoomMicOn && <MicOff size={11} className="text-white/70 shrink-0 drop-shadow-sm" />}
+                            <span className="text-white/95 text-[11.5px] font-medium truncate drop-shadow-sm">{p.name}</span>
+                            {!p.isRoomMicOn && <MicOff size={11.5} className="text-white/70 shrink-0 drop-shadow-sm" />}
                           </div>
                         </div>
                       </div>
                     ))}
-
-                    {/* +3 Frosted Glass Overflow Card */}
-                    {videoParticipants.length > 4 && (
-                      <div className="relative flex-1 aspect-[4/3] max-w-[130px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 select-none cursor-default">
-                        {videoParticipants[4]?.img ? (
-                          <img src={videoParticipants[4].img} alt="Overflow" className="w-full h-full object-cover filter blur-md scale-110 opacity-60" />
-                        ) : null}
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
-                          <span className="text-slate-700 text-[15px] font-semibold drop-shadow-sm">+{videoParticipants.length - 4}</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
                 {/* Bottom Control Section */}
