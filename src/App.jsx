@@ -8560,6 +8560,11 @@ function AppCore() {
   useEffect(() => {
     if (productMode === 'landing') {
       setRightSidebarOpen(false);
+      setIsDocumentImmersive(false);
+      setIsFocusMode(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
     }
   }, [productMode]);
 
@@ -20779,22 +20784,9 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       }
     };
 
-    const handleGlobalDoubleClick = (e) => {
-      if (e.target.closest('input, textarea, [contenteditable="true"], .no-fullscreen-toggle')) return;
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => console.error(err));
-      } else {
-        if (appShellRef.current?.requestFullscreen) {
-          appShellRef.current.requestFullscreen().catch(err => console.error(err));
-        }
-      }
-    };
-
-    document.addEventListener('dblclick', handleGlobalDoubleClick);
     document.addEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
     window.addEventListener('focus', handleWindowFocus);
     return () => {
-      document.removeEventListener('dblclick', handleGlobalDoubleClick);
       document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
       window.removeEventListener('focus', handleWindowFocus);
     };
