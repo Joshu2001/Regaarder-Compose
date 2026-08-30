@@ -78,6 +78,33 @@ export const SheetIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
   </svg>
 );
 
+
+export const RoomSpatialPresenceSymbol = ({ size = 30, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Spatial Room Outer Chamber / Perspective Horizon */}
+    <rect x="4" y="5" width="17" height="14" rx="3.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+    
+    {/* Interlocking Collaborative Stage / Dynamic Presence Window */}
+    <rect x="11" y="13" width="17" height="14" rx="3.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+    
+    {/* Central Video Vision Lens / Optical Aperture */}
+    <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth={strokeWidth} />
+    <circle cx="16" cy="16" r="1.2" fill="currentColor" />
+    
+    {/* Presence Spatial Orbit Indicators */}
+    <circle cx="8.5" cy="9.5" r="1" fill="currentColor" />
+    <circle cx="23.5" cy="22.5" r="1" fill="currentColor" />
+  </svg>
+);
+
 export const RoomIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}

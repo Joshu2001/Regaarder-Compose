@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
@@ -1320,31 +1320,34 @@ export default function RoomLandingPage({
                   <span>Secure room · End-to-end encrypted</span>
                 </div>
 
-                {/* 3. Visually Elevated Central Meeting Stage (Refined Proportions) */}
+                {/* 3. Visually Elevated Central Meeting Stage (Custom Symbol & Optical Lift) */}
                 <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[300px]">
-                  <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/60 dark:bg-violet-950/30 border border-violet-100/50 dark:border-violet-900/30 text-violet-500 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none">
-                    <Video size={34} strokeWidth={1.4} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
-                  
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsGreenRoomOpen(true)}
-                      className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-violet-600/25 transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      <Plus size={15} strokeWidth={2.5} />
-                      <span>Start an Instant Meeting</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsSchedulingModalOpen(true)}
-                      className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 text-slate-700 dark:text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      <Calendar size={14} />
-                      <span>Schedule for Later</span>
-                    </button>
+                  <div className="flex flex-col items-center -translate-y-2">
+                    {/* Custom Branded Room Spatial Presence Mark */}
+                    <div className="w-[52px] h-[52px] rounded-2xl bg-violet-50/60 dark:bg-violet-950/30 border border-violet-100/50 dark:border-violet-900/30 text-violet-500 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none">
+                      <RoomSpatialPresenceSymbol size={30} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-[17px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-[345px] leading-relaxed mx-auto mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
+                    
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsGreenRoomOpen(true)}
+                        className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-violet-600/25 transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <Plus size={15} strokeWidth={2.5} />
+                        <span>Start an Instant Meeting</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSchedulingModalOpen(true)}
+                        className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 text-slate-700 dark:text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <Calendar size={14} />
+                        <span>Schedule for Later</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
