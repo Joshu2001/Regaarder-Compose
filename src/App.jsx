@@ -12750,6 +12750,13 @@ const DEFAULT_DECK_SLIDES = [
   });
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
   const [isVisualEffectsActive, setIsVisualEffectsActive] = useState(false);
+  const [isAudioVideoPanelOpen, setIsAudioVideoPanelOpen] = useState(false);
+  const [isLayoutPanelOpen, setIsLayoutPanelOpen] = useState(false);
+  const [roomLayoutMode, setRoomLayoutMode] = useState('speaker');
+  const [selectedVisualEffect, setSelectedVisualEffect] = useState('none');
+  const [isReportIssueModalOpen, setIsReportIssueModalOpen] = useState(false);
+  const [reportIssueDescription, setReportIssueDescription] = useState('');
+  const [reportIssueSeverity, setReportIssueSeverity] = useState('Minor');
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
   // Start both as false — requestMediaPermissions() will set them to true once the
   // browser grants access. This prevents the UI showing mic/camera as "on" with no stream.
@@ -82076,61 +82083,117 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MoreHorizontal size={18} strokeWidth={1.6} />
                           </button>
                           {isRoomStartMenuOpen && (
-                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[220px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl border border-slate-200/60 dark:border-zinc-800/60 rounded-[20px] p-1.5 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[50]" onClick={e => e.stopPropagation()}>
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[248px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl border border-slate-200/60 dark:border-zinc-800/60 rounded-[20px] p-1.5 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.18)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[50]" onClick={e => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
 
-                                {/* Audio & Video — opens settings sub-panel (navigation row) */}
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsRoomStartMenuOpen(false); showToast('Audio & Video settings'); }}
-                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors w-full text-left cursor-pointer"
-                                >
-                                  <div className="w-7 h-7 rounded-[10px] bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60 transition-colors">
-                                    <Settings size={15} strokeWidth={1.7} className="text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+                                {/* ── Audio & Video ── */}
+                                <button type="button" onClick={() => setIsAudioVideoPanelOpen(p => !p)}
+                                  className={"group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer " + (isAudioVideoPanelOpen ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60")}>
+                                  <div className={"w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors " + (isAudioVideoPanelOpen ? "bg-violet-100 dark:bg-violet-900/60" : "bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60")}>
+                                    <Settings size={15} strokeWidth={1.7} className={"transition-colors " + (isAudioVideoPanelOpen ? "text-violet-600 dark:text-violet-400" : "text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400")} />
                                   </div>
-                                  <span className="flex-1 text-[13.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{t('room.audioVideo') || 'Audio & Video'}</span>
-                                  <ChevronRight size={14} className="text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors shrink-0" />
+                                  <span className={"flex-1 text-[13.5px] font-medium transition-colors " + (isAudioVideoPanelOpen ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300")}>{t('room.audioVideo') || 'Audio & Video'}</span>
+                                  <ChevronRight size={14} className={"transition-all shrink-0 " + (isAudioVideoPanelOpen ? "rotate-90 text-violet-400" : "text-slate-300 dark:text-zinc-600 group-hover:text-violet-400")} />
                                 </button>
-
-                                {/* Change Layout — navigation to layout picker */}
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsRoomStartMenuOpen(false); showToast('Layout options'); }}
-                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors w-full text-left cursor-pointer"
-                                >
-                                  <div className="w-7 h-7 rounded-[10px] bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60 transition-colors">
-                                    <LayoutGrid size={15} strokeWidth={1.7} className="text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+                                {isAudioVideoPanelOpen && (
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700/60 p-3 space-y-2.5 animate-in fade-in duration-150">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Microphone</span>
+                                        <button type="button" onClick={() => setIsRoomMicOn(p => !p)} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomMicOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
+                                          <span className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-200 " + (isRoomMicOn ? "left-[18px]" : "left-0.5")} />
+                                        </button>
+                                      </div>
+                                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Mic size={11} className={isRoomMicOn ? "text-violet-500" : "text-slate-400"} />
+                                        {isRoomMicOn ? 'Default Microphone (Active)' : 'Microphone Off'}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Camera</span>
+                                        <button type="button" onClick={() => setIsRoomCameraOn(p => !p)} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomCameraOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
+                                          <span className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-200 " + (isRoomCameraOn ? "left-[18px]" : "left-0.5")} />
+                                        </button>
+                                      </div>
+                                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Video size={11} className={isRoomCameraOn ? "text-violet-500" : "text-slate-400"} />
+                                        {isRoomCameraOn ? 'FaceTime HD Camera (Active)' : 'Camera Off'}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">Speaker</span>
+                                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Volume2 size={11} className="text-slate-400" />
+                                        Default Speaker Output
+                                      </div>
+                                    </div>
                                   </div>
-                                  <span className="flex-1 text-[13.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{t('room.changeLayout') || 'Change Layout'}</span>
-                                  <ChevronRight size={14} className="text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors shrink-0" />
+                                )}
+
+                                {/* ── Change Layout ── */}
+                                <button type="button" onClick={() => setIsLayoutPanelOpen(p => !p)}
+                                  className={"group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer " + (isLayoutPanelOpen ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60")}>
+                                  <div className={"w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors " + (isLayoutPanelOpen ? "bg-violet-100 dark:bg-violet-900/60" : "bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60")}>
+                                    <LayoutGrid size={15} strokeWidth={1.7} className={"transition-colors " + (isLayoutPanelOpen ? "text-violet-600 dark:text-violet-400" : "text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400")} />
+                                  </div>
+                                  <span className={"flex-1 text-[13.5px] font-medium transition-colors " + (isLayoutPanelOpen ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300")}>{t('room.changeLayout') || 'Change Layout'}</span>
+                                  <ChevronRight size={14} className={"transition-all shrink-0 " + (isLayoutPanelOpen ? "rotate-90 text-violet-400" : "text-slate-300 dark:text-zinc-600 group-hover:text-violet-400")} />
                                 </button>
-
-                                {/* Visual Effects — toggleable active state */}
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsVisualEffectsActive(prev => !prev); }}
-                                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer ${isVisualEffectsActive ? 'bg-violet-50 dark:bg-violet-950/40' : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/60'}`}
-                                >
-                                  <div className={`w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors ${isVisualEffectsActive ? 'bg-violet-100 dark:bg-violet-900/60' : 'bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60'}`}>
-                                    <VisualEffectsIcon size={15} className={`transition-colors ${isVisualEffectsActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400'}`} />
+                                {isLayoutPanelOpen && (
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700/60 p-2.5 animate-in fade-in duration-150">
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      {[{ id: 'speaker', label: 'Speaker' }, { id: 'gallery', label: 'Gallery' }, { id: 'sidebar', label: 'Sidebar' }].map(layout => (
+                                        <button key={layout.id} type="button" onClick={() => setRoomLayoutMode(layout.id)}
+                                          className={"py-2 px-1 rounded-[10px] text-[11px] font-semibold transition-all cursor-pointer " + (roomLayoutMode === layout.id ? "bg-violet-600 text-white shadow-xs" : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 border border-slate-200/60 dark:border-zinc-700/60")}>
+                                          {layout.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <p className="text-[10px] text-violet-600 dark:text-violet-400 font-medium mt-1.5 text-center capitalize">{roomLayoutMode} View Active</p>
                                   </div>
-                                  <span className={`flex-1 text-[13.5px] font-medium transition-colors ${isVisualEffectsActive ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300'}`}>
-                                    {t('room.visualEffects') || 'Visual Effects'}
+                                )}
+
+                                {/* ── Visual Effects ── */}
+                                <button type="button" onClick={() => { setIsVisualEffectsActive(p => !p); }}
+                                  className={"group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer " + (isVisualEffectsActive ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60")}>
+                                  <div className={"w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors " + (isVisualEffectsActive ? "bg-violet-100 dark:bg-violet-900/60" : "bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60")}>
+                                    <VisualEffectsIcon size={15} className={"transition-colors " + (isVisualEffectsActive ? "text-violet-600 dark:text-violet-400" : "text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400")} />
+                                  </div>
+                                  <span className={"flex-1 text-[13.5px] font-medium transition-colors " + (isVisualEffectsActive ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300")}>{t('room.visualEffects') || 'Visual Effects'}</span>
+                                  {isVisualEffectsActive && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />}
+                                </button>
+                                {isVisualEffectsActive && (
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700/60 p-2.5 space-y-1 animate-in fade-in duration-150">
+                                    {[{ id: 'none', label: 'No Effect' }, { id: 'blur', label: 'Blur Background' }, { id: 'virtual', label: 'Virtual Background' }].map(fx => (
+                                      <button key={fx.id} type="button" onClick={() => setSelectedVisualEffect(fx.id)}
+                                        className={"w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-[10px] text-[12px] font-medium transition-all cursor-pointer " + (selectedVisualEffect === fx.id ? "bg-violet-600 text-white" : "bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/30 border border-slate-200/60 dark:border-zinc-700/60")}>
+                                        <span className="w-3 h-3 rounded-full border-2 border-current shrink-0" />
+                                        {fx.label}
+                                        {selectedVisualEffect === fx.id && <span className="ml-auto text-[10px] opacity-70">Active</span>}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* ── AI Status — read-only ── */}
+                                <div className="flex items-center gap-3 px-3 py-2 rounded-[14px]">
+                                  <div className="w-7 h-7 rounded-[10px] bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
+                                    <RegaarderAiIcon size={14} className="text-violet-500 dark:text-violet-400" />
+                                  </div>
+                                  <span className="flex-1 text-[13px] font-medium text-slate-500 dark:text-zinc-400">Room AI</span>
+                                  <span className="flex items-center gap-1 text-[10.5px] font-semibold text-violet-500 dark:text-violet-400">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                                    Listening
                                   </span>
-                                  {isVisualEffectsActive && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
-                                  )}
-                                </button>
+                                </div>
 
-                                {/* Divider */}
+                                {/* ── Divider ── */}
                                 <div className="h-px bg-slate-100/80 dark:bg-zinc-800/80 mx-1.5 my-0.5" />
 
-                                {/* Report an Issue — destructive */}
-                                <button
-                                  type="button"
-                                  onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }}
-                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-red-50/80 dark:hover:bg-red-950/30 transition-colors w-full text-left cursor-pointer"
-                                >
+                                {/* ── Report an Issue ── */}
+                                <button type="button" onClick={() => { setIsReportIssueModalOpen(true); setIsRoomStartMenuOpen(false); }}
+                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-red-50/80 dark:hover:bg-red-950/30 transition-colors w-full text-left cursor-pointer">
                                   <div className="w-7 h-7 rounded-[10px] bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
                                     <ShieldAlert size={15} strokeWidth={1.7} className="text-red-500 dark:text-red-400" />
                                   </div>
