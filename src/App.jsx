@@ -13267,8 +13267,8 @@ const DEFAULT_DECK_SLIDES = [
   const [roomChatMessages, setRoomChatMessages] = useState([]);
   const [roomChatInput, setRoomChatInput] = useState('');
   const roomChatEndRef = useRef(null);
-  const [isRoomLeftSidebarOpen, setIsRoomLeftSidebarOpen] = useState(true);
-  const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(true);
+  const [isRoomLeftSidebarOpen, setIsRoomLeftSidebarOpen] = useState(false);
+  const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(false);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
   const [roomPresentedApp, setRoomPresentedApp] = useState(null);
@@ -48369,7 +48369,7 @@ const renderRoomTopHeader = () => (
           >
             {/* Floating Live Video Mini Preview Tile — clicking opens Room */}
             <div
-              onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+              onClick={() => { setIsRoomLeftSidebarOpen(false); setIsRoomRightSidebarOpen(false); setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
               className="w-52 h-32 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 shadow-[0_20px_48px_rgba(0,0,0,0.28)] relative group cursor-pointer hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200"
               title="Click to open Room"
             >
@@ -48503,6 +48503,8 @@ const renderRoomTopHeader = () => (
                         type="button"
                         onClick={() => {
                           setIsPipMoreMenuOpen(false);
+                          setIsRoomLeftSidebarOpen(false);
+                          setIsRoomRightSidebarOpen(false);
                           setProductMode('room-landing');
                           setRoomPanelMode('expanded');
                         }}
@@ -81545,35 +81547,41 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-2xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1100px] w-full h-full max-h-[calc(100vh-260px)] min-h-[340px] z-10 rounded-3xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
     <RoomAnnotationOverlay isEnabled={true} />
                     
   {screenShareStream ? (
-    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-6 gap-4">
+    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-5 gap-4">
       {/* Subtle Ambient Presentation Glow */}
       <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute -top-12 -left-12 pointer-events-none" />
 
-      {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
-          <PresentationIcon size={30} className="text-white" />
+      {/* Presentation Slate (Centered Card with tight, balanced hierarchy) */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-6 md:p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
+        {/* Presentation Icon */}
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/20 border border-white/20">
+          <PresentationIcon size={26} className="text-white" />
         </div>
         
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
+        {/* Live Presentation Status Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-2.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Live Presentation Active</span>
         </div>
 
-        <h3 className="text-lg font-bold text-white tracking-tight mb-2">
+        {/* Strong Headline */}
+        <h3 className="text-[19px] font-extrabold text-white tracking-tight mb-1.5">
           You are presenting to everyone
         </h3>
-        <p className="text-xs text-zinc-400 leading-relaxed mb-6 max-w-sm">
+        
+        {/* Subtle Explanatory Text */}
+        <p className="text-[11.5px] text-zinc-400 leading-relaxed mb-5 max-w-[340px]">
           To avoid an infinite mirror effect, your screen is hidden here. Everyone in the meeting can see your live presentation.
         </p>
 
-        <div className="flex items-center gap-3">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => {
@@ -81585,9 +81593,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               window.electronAPI?.closeFloatingPipWidget?.();
               showToast?.("Stopped presenting");
             }}
-            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <PhoneOff size={14} />
+            <PhoneOff size={13} />
             <span>Stop presenting</span>
           </button>
 
@@ -81603,66 +81611,80 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 window.electronAPI.minimizeMainWindow();
               }
             }}
-            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <ExternalLink size={13} />
-            <span>Floating OS HUD</span>
+            <ExternalLink size={12} />
+            <span>Open floating controls</span>
           </button>
         </div>
       </div>
 
-      {/* Participants Gallery Filmstrip (Audience Presence) */}
-      <div className="w-full md:w-60 lg:w-64 shrink-0 flex flex-col gap-2.5 relative z-10 overflow-y-auto max-h-[75vh] pr-1 custom-scrollbar">
-        <div className="flex items-center justify-between px-1 mb-1">
-          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Users size={12} className="text-violet-400" />
+      {/* Participants Gallery Filmstrip (Integrated Right-Side Column) */}
+      <div className="w-full md:w-56 lg:w-60 shrink-0 flex flex-col gap-1.5 relative z-10 overflow-y-auto max-h-[75vh] pr-0.5 custom-scrollbar">
+        {/* In Meeting Header & Directly Aligned Expand Control */}
+        <div className="flex items-center justify-between px-1 min-h-[28px]">
+          <span className="text-[10.5px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Users size={11} className="text-violet-400" />
             In Meeting ({videoParticipants.length + 1})
           </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 font-medium">Audience</span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsParticipantOverflowOpen(true); }}
+            className="w-6 h-6 rounded-md bg-white/8 hover:bg-white/15 border border-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            title="Expand participants"
+            aria-label="Expand participants"
+          >
+            <Maximize2 size={12} strokeWidth={1.75} />
+          </button>
         </div>
 
         {/* You (Presenter) Tile */}
-        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-violet-500/40 shadow-lg group">
-          {localStream && isRoomCameraOn ? (
-            <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-violet-950/60 to-zinc-900 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-md border border-white/20">
-                You
+        <div className="relative select-none">
+          {/* Main Card */}
+          <div className="relative aspect-[16/9] w-full rounded-[14px] overflow-hidden bg-zinc-900/90 border border-white/10 shadow-sm">
+            {localStream && isRoomCameraOn ? (
+              <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#18181b] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[11px] shadow-xs border border-white/20">
+                  You
+                </div>
               </div>
-            </div>
-          )}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-white truncate">You (Presenter)</span>
-            <div className="flex items-center gap-1">
-              {!isRoomMicOn && <MicOff size={11} className="text-rose-400" />}
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-600/80 text-white font-medium">Host</span>
+            )}
+
+            {/* Compact, Subordinate Bottom Name & Status Overlay */}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-2.5 py-1.5 flex items-center justify-between">
+              <span className="text-[10px] font-medium text-zinc-300 truncate">You (Presenter)</span>
+              <div className="flex items-center gap-1.5">
+                {!isRoomMicOn && <MicOff size={9.5} className="text-rose-400" />}
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 font-medium">Host</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Audience Attendees */}
         {videoParticipants.map((p) => (
-          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-lg group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
+          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-md group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
             {p.isRoomCameraOn && p.img ? (
               <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md" style={{ background: p.color || "#6366F1" }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shadow-sm" style={{ background: p.color || "#6366F1" }}>
                   {(p.name || "U").charAt(0).toUpperCase()}
                 </div>
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
-              <span className="text-[11px] font-medium text-zinc-200 truncate">{p.name}</span>
+              <span className="text-[10.5px] font-medium text-zinc-200 truncate">{p.name}</span>
               <div className="flex items-center gap-1">
                 {p.isSpeaking && (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 )}
                 {p.isRoomMicOn ? (
-                  <Mic size={11} className="text-emerald-400" />
+                  <Mic size={10} className="text-emerald-400" />
                 ) : (
-                  <MicOff size={11} className="text-zinc-400" />
+                  <MicOff size={10} className="text-zinc-400" />
                 )}
               </div>
             </div>

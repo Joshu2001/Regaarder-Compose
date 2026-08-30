@@ -229,7 +229,7 @@ export default function RoomAnnotationOverlay({
       />
 
       {/* Floating Apple-Style Annotation Toolstrip (Fixed at top-center of viewport) */}
-      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999999] pointer-events-auto flex items-center gap-1 bg-black/75 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/20 px-2.5 py-1.5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all select-none animate-in fade-in slide-in-from-top-3 duration-200">
+      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[9999999] pointer-events-auto flex items-center gap-1 backdrop-blur-2xl border px-2 py-1 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.25)] transition-all select-none animate-in fade-in slide-in-from-top-2 duration-200 ${activeTool === 'cursor' ? 'bg-black/45 dark:bg-zinc-900/60 border-white/10 opacity-75 hover:opacity-100 hover:bg-black/70' : 'bg-black/80 dark:bg-zinc-900/90 border-white/20 opacity-100'}`}>
         {/* Tool: Cursor */}
         <button
           type="button"
