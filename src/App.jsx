@@ -71759,7 +71759,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
       ) : productMode === 'room-landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+        <div className="fixed inset-0 z-[500] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
           <RoomLandingPage 
             showToast={showToast}
             onCallAi={callGemini}
