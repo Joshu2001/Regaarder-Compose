@@ -4,9 +4,10 @@ import { LaserPointerIcon } from '../RegaarderProductIcons';
 
 export default function RoomAnnotationOverlay({
   isEnabled = true,
-  className = ''
+  className = '',
+  initialTool = 'cursor'
 }) {
-  const [activeTool, setActiveTool] = useState('laser'); // 'cursor' | 'laser' | 'pen' | 'highlighter'
+  const [activeTool, setActiveTool] = useState(initialTool); // 'cursor' | 'laser' | 'pen' | 'highlighter'
   const [activeColor, setActiveColor] = useState('#EF4444'); // Red laser / pen default
   
   const canvasRef = useRef(null);
