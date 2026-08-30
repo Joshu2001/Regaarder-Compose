@@ -622,6 +622,21 @@ ipcMain.handle('pip:close-floating-widget', async () => {
 });
 
 // Window minimize / restore for pip widget "Open Room" button
+
+ipcMain.handle('window:set-fullscreen', async (event, flag) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setFullScreen(Boolean(flag));
+  }
+  return { success: true };
+});
+
+ipcMain.handle('window:is-fullscreen', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return mainWindow.isFullScreen();
+  }
+  return false;
+});
+
 ipcMain.handle('window:minimize', async () => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize();
   return { success: true };

@@ -82,6 +82,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // OS-Level Native Floating Picture-in-Picture Widget (Always on Top)
   openFloatingPipWidget: (params) => ipcRenderer.invoke('pip:open-floating-widget', params),
   closeFloatingPipWidget: () => ipcRenderer.invoke('pip:close-floating-widget'),
+    setFullscreen: (flag) => ipcRenderer.invoke('window:set-fullscreen', flag),
+  isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen'),
   minimizeMainWindow: () => ipcRenderer.invoke('window:minimize'),
   restoreMainWindow: () => ipcRenderer.invoke('window:restore'),
   setContentProtection: (enable) => ipcRenderer.invoke('window:set-content-protection', enable),
