@@ -13369,16 +13369,39 @@ const DEFAULT_DECK_SLIDES = [
   const nativePipVideoRef = useRef(null);
   const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
   const [isPipMoreMenuOpen, setIsPipMoreMenuOpen] = useState(false);
-  // One-time onboarding: tracks whether user has ever interacted with the Room icon.
-  // Persisted in sessionStorage so it resets on new tab but not on re-renders.
+  // One-time onboarding: tracks whether user has ever interacted with the More (…) button.
+  // Persisted in sessionStorage so it resets on new session/tab.
   const [isPipRoomDiscovered, setIsPipRoomDiscovered] = useState(() => {
     try { return !!sessionStorage.getItem('pip_room_discovered'); } catch { return false; }
   });
+  const [showPipCoachmark, setShowPipCoachmark] = useState(() => {
+    try { return !sessionStorage.getItem('pip_room_discovered'); } catch { return true; }
+  });
+  const [isPipCoachmarkFading, setIsPipCoachmarkFading] = useState(false);
+  const [isPipMoreHovered, setIsPipMoreHovered] = useState(false);
+
   const markPipRoomDiscovered = () => {
     if (isPipRoomDiscovered) return;
     try { sessionStorage.setItem('pip_room_discovered', '1'); } catch {}
     setIsPipRoomDiscovered(true);
+    setShowPipCoachmark(false);
   };
+
+  // 2-second elegant onboarding coachmark auto-dismissal
+  useEffect(() => {
+    if (!showPipCoachmark) return;
+    const fadeTimer = setTimeout(() => {
+      setIsPipCoachmarkFading(true);
+    }, 2000);
+    const removeTimer = setTimeout(() => {
+      setShowPipCoachmark(false);
+      markPipRoomDiscovered();
+    }, 2400);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [showPipCoachmark]);
   const pipFramePumpRef = useRef(null);
   const cropBoundsRef = useRef(null);
   const pipOffscreenVideoRef = useRef(null);
@@ -48401,8 +48424,7 @@ const renderRoomTopHeader = () => (
                 <span className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 font-mono">{meetingDurationLabel || '00:00'}</span>
               </div>
 
-              {/* Primary Controls: Mic · Camera · More · End
-                  Expand removed — the video tile itself navigates to Room on click. */}
+              {/* Primary Controls: Mic · Camera · More (…) · End */}
               <div className="flex items-center gap-1">
 
                 {/* Mic */}
@@ -48425,33 +48447,58 @@ const renderRoomTopHeader = () => (
                   {isRoomCameraOn ? <Video size={13} strokeWidth={1.6} /> : <VideoOff size={13} strokeWidth={1.6} />}
                 </button>
 
-                {/* More Options — one-time onboarding pulse (3 cycles, session-persisted) */}
+                {/* More Options Control (…) with First-Time Discovery & Desktop Hover Tooltip */}
                 <div className="relative">
+                  {/* First-Time Discovery Coachmark: 2s elegant pulse & auto-fade */}
+                  {showPipCoachmark && !isPipMoreMenuOpen && (
+                    <div 
+                      className={`absolute bottom-full right-0 mb-2.5 pointer-events-none z-50 flex flex-col items-center transition-all duration-300 transform ${isPipCoachmarkFading ? 'opacity-0 translate-y-1 scale-95' : 'opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-bottom-1'}`}
+                    >
+                      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-700/80 shadow-[0_4px_16px_rgba(0,0,0,0.12)] rounded-lg px-2 py-1 text-[10px] font-medium text-slate-700 dark:text-zinc-200 whitespace-nowrap flex items-center gap-1">
+                        <span>More controls</span>
+                      </div>
+                      <div className="w-1.5 h-1.5 bg-white dark:bg-zinc-900 border-r border-b border-slate-200/90 dark:border-zinc-700/80 transform rotate-45 -mt-0.5" />
+                    </div>
+                  )}
+
+                  {/* Standard Desktop Hover Tooltip */}
+                  {!showPipCoachmark && isPipMoreHovered && !isPipMoreMenuOpen && (
+                    <div className="absolute bottom-full right-0 mb-2 pointer-events-none z-50 flex flex-col items-center animate-in fade-in duration-150">
+                      <div className="bg-slate-900/90 dark:bg-zinc-800/90 text-white backdrop-blur-md shadow-sm rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
+                        More controls
+                      </div>
+                      <div className="w-1 h-1 bg-slate-900/90 dark:bg-zinc-800/90 transform rotate-45 -mt-0.5" />
+                    </div>
+                  )}
+
                   <button
                     type="button"
+                    onMouseEnter={() => setIsPipMoreHovered(true)}
+                    onMouseLeave={() => setIsPipMoreHovered(false)}
                     onClick={(e) => {
                       e.stopPropagation();
                       markPipRoomDiscovered();
                       setIsPipMoreMenuOpen((prev) => !prev);
                     }}
-                    className={`relative p-1.5 rounded-lg transition-colors cursor-pointer text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 ${!isPipRoomDiscovered ? 'ring-1 ring-violet-400/40 ring-offset-1 ring-offset-white/80 dark:ring-offset-zinc-900/80' : ''}`}
-                    title="More meeting tools"
+                    className={`relative p-1.5 rounded-lg transition-colors cursor-pointer text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 ${showPipCoachmark ? 'ring-1 ring-violet-400/50 ring-offset-1 ring-offset-white dark:ring-offset-zinc-900' : ''}`}
+                    aria-label="More controls"
                   >
                     <MoreHorizontal size={13} strokeWidth={1.6} />
-                    {!isPipRoomDiscovered && (
+                    {/* Single subtle onboarding ripple on first visit */}
+                    {showPipCoachmark && (
                       <span
                         className="absolute inset-0 rounded-lg animate-ping bg-violet-400/20 pointer-events-none"
-                        style={{ animationDuration: '1.8s', animationIterationCount: '3' }}
+                        style={{ animationDuration: '2s', animationIterationCount: '1' }}
                       />
                     )}
                   </button>
 
                   {isPipMoreMenuOpen && (
                     <div
-                      className="absolute bottom-full right-0 mb-2 w-52 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl p-1 shadow-xl z-50 flex flex-col gap-0.5"
+                      className="absolute bottom-full right-0 mb-2 w-52 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl p-1 shadow-xl z-50 flex flex-col gap-0.5 select-none"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* Open Room — redundant with video tile, surfaced here for discoverability */}
+                      {/* Open Full Room */}
                       <button
                         type="button"
                         onClick={() => {
@@ -48476,6 +48523,28 @@ const renderRoomTopHeader = () => (
                       >
                         <LaserPointerIcon size={13} strokeWidth={1.6} className="text-violet-600 dark:text-violet-400" />
                         <span>{isWorkspaceAnnotationActive ? 'Hide Laser / Pen' : 'Laser / Annotations'}</span>
+                      </button>
+
+                      {/* Screen Sharing Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPipMoreMenuOpen(false);
+                          if (isScreenSharing) {
+                            setIsScreenSharing(false);
+                            if (screenShareStream) {
+                              screenShareStream.getTracks().forEach(t => t.stop());
+                              setScreenShareStream(null);
+                            }
+                            showToast?.('Screen sharing stopped');
+                          } else {
+                            setIsScreenSourceModalOpen(true);
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <Share2 size={13} strokeWidth={1.6} className="text-blue-500" />
+                        <span>{isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}</span>
                       </button>
 
                       {/* OS Popout Window */}
@@ -48521,7 +48590,6 @@ const renderRoomTopHeader = () => (
       </>
     );
   };
-
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
