@@ -1300,6 +1300,21 @@ export default function RoomLandingPage({
               {/* Top Header Bar */}
               <header className="h-[68px] flex items-center justify-between px-8 border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
+                  {/* App Switcher Button */}
+                  <button
+                    type="button"
+                    data-workspace-switcher="true"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      if (onOpenWorkspaceSwitcher) onOpenWorkspaceSwitcher(rect);
+                    }}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-slate-50 text-slate-600 dark:text-zinc-300 hover:text-violet-600 transition-all cursor-pointer"
+                    title="Switch Workspace App"
+                  >
+                    <LayoutGrid size={15} />
+                  </button>
                   <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md">
                     <RoomIcon size={20} />
                   </div>

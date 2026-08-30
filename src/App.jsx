@@ -72256,7 +72256,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div
           onMouseEnter={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(true); }}
           onMouseLeave={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(false); }}
-          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isWhiteboardWorkspace
               ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${
                   isWhiteboardTopNavRevealed 
@@ -81076,16 +81076,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
+        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${'p-0 bg-[#FBFBFA] dark:bg-zinc-950'}`}>
           {/* Subtle vignette/radial glow overlay */}
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
           <div className={`w-full h-full relative flex items-center justify-center ${isVideoExpanded ? 'max-w-none bg-black' : 'max-w-[1640px]'}`}>
-            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-white/70 border border-white/60 rounded-[40px]'}`}>
+            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-[#FBFBFA] dark:bg-zinc-950 border-none rounded-none'}`}>
               {!isVideoExpanded && renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
-              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${isVideoExpanded ? 'rounded-none' : 'rounded-t-[40px]'}`}>
+              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${'rounded-none'}`}>
 
               {/* Main Video Canvas or Embedded Presentation Stage */}
               <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
