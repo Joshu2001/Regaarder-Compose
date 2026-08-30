@@ -48224,9 +48224,16 @@ const renderRoomTopHeader = () => (
 
     const activeStream = screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
 
-    return createPortal(
-      <div 
-        ref={pipDragContainerRef}
+    return (
+      <>
+        {/* Full-Screen Workspace Laser / Pen Annotation Layer */}
+        {isWorkspaceAnnotationActive && createPortal(
+          <RoomAnnotationOverlay isEnabled={true} />,
+          document.body
+        )}
+        {createPortal(
+          <div 
+            ref={pipDragContainerRef}
         onPointerDown={handlePipPointerDown}
         style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
         className={`fixed ${pipPosition.x === null ? 'bottom-6 right-8' : ''} z-[999999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
@@ -48379,13 +48386,10 @@ const renderRoomTopHeader = () => (
           </div>
         </div>
 
-        {/* Full-Screen Workspace Laser / Pen Annotation Layer */}
-        {isWorkspaceAnnotationActive && (
-          <RoomAnnotationOverlay isEnabled={true} />
+          </div>,
+          document.body
         )}
-
-      </div>,
-      document.body
+      </>
     );
   };
 
