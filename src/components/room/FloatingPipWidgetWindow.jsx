@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Maximize2, X, MonitorPlay, Users, Mic, MicOff, LayoutGrid, Monitor } from 'lucide-react';
+import { LaserPointerIcon } from '../RegaarderProductIcons';
 
 export default function FloatingPipWidgetWindow() {
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -287,6 +288,25 @@ export default function FloatingPipWidgetWindow() {
 
             {/* Window Controls */}
             <div className="flex items-center gap-1 pointer-events-auto">
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    if (window.electronAPI?.toggleLaserOverlay) {
+                      await window.electronAPI.toggleLaserOverlay();
+                    } else if (window.electronAPI?.returnToRoom) {
+                      await window.electronAPI.returnToRoom();
+                    }
+                  } catch (err) {
+                    console.warn('Laser overlay toggle error:', err);
+                  }
+                }}
+                className="p-1 rounded-md bg-black/60 hover:bg-violet-600/80 text-zinc-200 hover:text-white transition-colors cursor-pointer backdrop-blur-md border border-white/10"
+                title="Toggle Laser & Screen Annotations"
+              >
+                <LaserPointerIcon size={11} strokeWidth={1.6} />
+              </button>
               <button
                 type="button"
                 onClick={handleReturnToApp}
