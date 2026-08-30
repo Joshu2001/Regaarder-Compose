@@ -6,7 +6,7 @@ export default function RoomAnnotationOverlay({
   isEnabled = true,
   className = ''
 }) {
-  const [activeTool, setActiveTool] = useState('cursor'); // 'cursor' | 'laser' | 'pen' | 'highlighter'
+  const [activeTool, setActiveTool] = useState('laser'); // 'cursor' | 'laser' | 'pen' | 'highlighter'
   const [activeColor, setActiveColor] = useState('#EF4444'); // Red laser / pen default
   
   const canvasRef = useRef(null);
@@ -201,10 +201,10 @@ export default function RoomAnnotationOverlay({
 
   return (
     <div
-      className={`absolute inset-0 z-30 pointer-events-none ${className}`}
+      className={`fixed inset-0 z-[9999990] pointer-events-none select-none ${className}`}
       style={{ touchAction: 'none' }}
     >
-      {/* Canvas for Live Render */}
+      {/* Canvas for Live Render across full screen */}
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
@@ -214,8 +214,8 @@ export default function RoomAnnotationOverlay({
         className={`w-full h-full ${activeTool !== 'cursor' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
       />
 
-      {/* Floating Apple-Style Annotation Toolstrip */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-1 bg-black/45 backdrop-blur-xl border border-white/15 px-2 py-1 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-all select-none">
+      {/* Floating Apple-Style Annotation Toolstrip (Fixed at top-center of viewport) */}
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999999] pointer-events-auto flex items-center gap-1 bg-black/75 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/20 px-2.5 py-1.5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all select-none animate-in fade-in slide-in-from-top-3 duration-200">
         {/* Tool: Cursor */}
         <button
           type="button"
