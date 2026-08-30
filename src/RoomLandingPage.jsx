@@ -1270,11 +1270,14 @@ export default function RoomLandingPage({
                   {/* Immersive Mode Toggle Button */}
                   <button
                     type="button"
-                    onClick={onToggleImmersive}
-                    className={`p-2 rounded-xl transition-all border cursor-pointer ${
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      onToggleImmersive?.();
+                    }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all border cursor-pointer ${
                       isDocumentImmersive
-                        ? "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800"
-                        : "text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 border-transparent"
+                        ? "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-transparent"
                     }`}
                     title={isDocumentImmersive ? "Exit immersive mode" : "Enter immersive mode"}
                     aria-label={isDocumentImmersive ? "Exit immersive mode" : "Enter immersive mode"}
@@ -1340,10 +1343,10 @@ export default function RoomLandingPage({
 
                 {/* 3. Visually Elevated Central Meeting Stage Card */}
                 <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[300px]">
-                  <div className="flex flex-col items-center -translate-y-3.5">
-                    {/* Concept 1 — Spatial Aperture Lens Symbol (12-15% larger, delicate stroke) */}
-                    <div className="w-[58px] h-[58px] rounded-2xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100/60 dark:border-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none shadow-2xs">
-                      <SpatialApertureLensSymbol size={32} strokeWidth={1.5} />
+                  <div className="flex flex-col items-center -translate-y-[34px]">
+                    {/* Refined Spatial Aperture Lens Empty-State Visual */}
+                    <div className="w-[42px] h-[42px] rounded-xl bg-violet-50/80 dark:bg-violet-950/40 border border-violet-100/70 dark:border-violet-900/40 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none">
+                      <SpatialApertureLensSymbol size={25} strokeWidth={1.5} />
                     </div>
                     <h3 className="text-[17px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
                     <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-[345px] leading-relaxed mx-auto mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>

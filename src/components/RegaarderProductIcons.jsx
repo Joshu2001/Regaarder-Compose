@@ -146,21 +146,12 @@ export const SpatialApertureLensSymbol = ({ size = 32, className = "", strokeWid
     {/* Outer Spatial Chamber Precision Geometry */}
     <rect x="4.5" y="4.5" width="23" height="23" rx="6.5" stroke="currentColor" strokeWidth={strokeWidth} />
     
-    {/* Concentric Spatial Aperture Ring 1 (Outer Field Ring) */}
-    <circle cx="16" cy="16" r="8" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray="3.5 2" />
+    {/* Concentric Spatial Aperture Ring (Outer Field Ring) */}
+    <circle cx="16" cy="16" r="6.75" stroke="currentColor" strokeWidth={strokeWidth} />
     
-    {/* Concentric Spatial Aperture Ring 2 (Core Focus Nexus) */}
-    <circle cx="16" cy="16" r="4.8" stroke="currentColor" strokeWidth={strokeWidth} />
-    
-    {/* Concentric Optical Focal Core (Illuminated Center Node) */}
-    <circle cx="16" cy="16" r="2.1" stroke="currentColor" strokeWidth={1.2} opacity="0.85" />
-    <circle cx="16" cy="16" r="0.9" fill="currentColor" />
-    
-    {/* Precision Alignment Cross-Ticks / Presence Orbiters */}
-    <line x1="16" y1="2" x2="16" y2="3.8" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
-    <line x1="16" y1="28.2" x2="16" y2="30" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
-    <line x1="2" y1="16" x2="3.8" y2="16" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
-    <line x1="28.2" y1="16" x2="30" y2="16" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
+    {/* Core Optical Focal Nexus */}
+    <circle cx="16" cy="16" r="3.2" stroke="currentColor" strokeWidth={strokeWidth} />
+    <circle cx="16" cy="16" r="1.1" fill="currentColor" />
   </svg>
 );
 
