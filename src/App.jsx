@@ -15700,10 +15700,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                         return;
                       }
                       if (item.mode === 'room') {
-                        setProductMode('room-landing');
-                        setLeftSidebarOpen(false);
-                        setRightSidebarOpen(false);
-                        showToast('Switched to Room');
+                        createRoomLandingExperience();
                         return;
                       }
                       if (item.mode === 'browser') {
@@ -33071,6 +33068,18 @@ Respond with valid JSON formatted like this:
     openCreationPicker();
   };
 
+  const createRoomLandingExperience = () => {
+    enterFullscreen();
+    setIsDocumentImmersive(true);
+    setCreationPickerOpen(false);
+    setProductMode('room-landing');
+    setLeftSidebarOpen(false);
+    setRightSidebarOpen(false);
+    setFocusedModule('room');
+    setRoomPanelMode('expanded');
+    showToast('Room workspace ready');
+  };
+
   const createRoomExperience = () => {
     enterFullscreen();
     setIsDocumentImmersive(true);
@@ -33162,9 +33171,7 @@ Respond with valid JSON formatted like this:
     }
 
     if (target === 'room') {
-      enterFullscreen();
-      setActivePrimaryNav('home');
-      setProductMode('room-landing');
+      createRoomLandingExperience();
       return;
     }
 
