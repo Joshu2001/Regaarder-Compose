@@ -6354,10 +6354,10 @@ const SummaryModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000000] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
-      <div className="bg-white/98 dark:bg-zinc-900/98 border border-slate-200/80 dark:border-zinc-800 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.45)] rounded-[18px] w-full max-w-lg overflow-hidden flex flex-col max-h-[82vh] text-left select-text" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] rounded-[18px] w-full max-w-lg overflow-hidden flex flex-col max-h-[82vh] text-left select-text relative z-10" onClick={e => e.stopPropagation()}>
         {/* Compact Structured Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 shadow-2xs">
               <MeetingSummaryIcon size={15} />
@@ -6396,7 +6396,7 @@ const SummaryModal = ({
         </div>
 
         {/* Body Content */}
-        <div className="px-5 py-4 overflow-y-auto thin-scrollbar flex-1 space-y-3 font-sans">
+        <div className="px-5 py-5 overflow-y-auto thin-scrollbar flex-1 space-y-3 font-sans bg-white dark:bg-zinc-900">
           {isGenerating ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2.5 text-violet-600 dark:text-violet-400">
               <div className="w-8 h-8 rounded-full bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center border border-violet-200/60 dark:border-violet-800/60">
@@ -6424,7 +6424,7 @@ const SummaryModal = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-5 py-3 bg-slate-50/70 dark:bg-zinc-850/70 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-slate-50/90 dark:bg-zinc-950/90 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
           <button 
             type="button"
             onClick={() => {
