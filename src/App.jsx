@@ -6832,18 +6832,32 @@ const RecordingModal = ({ isOpen, onClose }) => {
 };
 
 const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
-  const [localEvents, setLocalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: '' }] });
+  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
+  
+  // Seed default sample events around current live date
+  const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const tomorrowKey = `${tomorrow.getFullYear()}-${tomorrow.getMonth() + 1}-${tomorrow.getDate()}`;
+  
+  const [localEvents, setLocalEvents] = useState({
+    [todayKey]: [
+      { id: 1, title: 'Product Sync & Design Review', time: '10:00 AM', duration: '30m', link: '' }
+    ],
+    [tomorrowKey]: [
+      { id: 2, title: 'Engineering Architecture Standup', time: '02:00 PM', duration: '45m', link: '' }
+    ]
+  });
   
   const events = globalEvents || localEvents;
   const setEvents = setGlobalEvents || setLocalEvents;
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [newEventTitle, setNewEventTitle] = useState('');
   
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventTime, setNewEventTime] = useState('11:00 AM');
+  const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
-  const [editingEventIndex, setEditingEventIndex] = useState(null);
-  const [editingEventTitle, setEditingEventTitle] = useState('');
-  const longPressTimer = useRef(null);
 
   if (!isOpen) return null;
   
@@ -6861,184 +6875,270 @@ const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
+  const handleJumpToToday = () => {
+    const t = new Date();
+    setCurrentDate(new Date(t.getFullYear(), t.getMonth(), 1));
+    setSelectedDate(t.getDate());
+    setIsMonthPickerOpen(false);
+  };
+
   const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
   const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
   const dates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  const selectedDateKey = selectedDate ? `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}` : null;
+  const currentDayEvents = selectedDateKey && events[selectedDateKey] ? events[selectedDateKey] : [];
+
+  const isToday = (d) => {
+    const now = new Date();
+    return d === now.getDate() && currentDate.getMonth() === now.getMonth() && currentDate.getFullYear() === now.getFullYear();
+  };
+
   const addEvent = () => {
-    if (!newEventTitle.trim() || !selectedDate) return;
-    const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
+    if (!newEventTitle.trim() || !selectedDateKey) return;
+    const item = { 
+      id: Date.now(), 
+      title: newEventTitle.trim(), 
+      time: newEventTime || '11:00 AM',
+      duration: '30m',
+      link: '' 
+    };
     setEvents(prev => ({
       ...prev,
-      [dateStr]: [...(prev[dateStr] || []), { title: newEventTitle, link: '' }]
+      [selectedDateKey]: [...(prev[selectedDateKey] || []), item]
     }));
     setNewEventTitle('');
+    setIsAddingEvent(false);
   };
 
   return (
-    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Calendar className="text-violet-500" size={24} /> Calendar</h2>
-        </div>
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronLeft size={20} /></button>
-          <button onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)} className="font-medium text-gray-700 hover:bg-gray-100 px-4 py-1.5 rounded-xl flex items-center gap-2 transition-colors">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isMonthPickerOpen ? 'rotate-180' : ''}`} />
-          </button>
-          <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronRight size={20} /></button>
-        </div>
-        
-        {!isMonthPickerOpen ? (
-          <>
-            <div className="grid grid-cols-7 gap-2 mb-2">
-              {days.map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-400">{day}</div>
-              ))}
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] rounded-[18px] w-full max-w-[370px] overflow-hidden flex flex-col max-h-[85vh] text-left select-text relative z-10" onClick={e => e.stopPropagation()}>
+        {/* Apple Utility Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 shadow-2xs">
+              <Calendar size={15} />
             </div>
-            <div className="grid grid-cols-7 gap-2">
-              {blanks.map(blank => (
-                <div key={`blank-${blank}`} className="text-center p-2 text-sm text-gray-300"></div>
-              ))}
-              {dates.map(date => {
-                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
-                const hasEvents = events[dateStr] && events[dateStr].length > 0;
-                const isSelected = selectedDate === date;
-                return (
-                  <div 
-                    key={date} 
-                    onClick={() => {
-                      setSelectedDate(isSelected ? null : date);
-                      setEditingEventIndex(null); // Reset edit state when changing date
-                    }}
-                    className={`relative text-center p-2 text-sm rounded-full cursor-pointer transition-colors flex items-center justify-center
-                      ${isSelected ? 'bg-violet-500 text-white font-medium shadow-md hover:bg-violet-600' : 'text-gray-700 hover:bg-gray-100'}`}
-                  >
-                    {date}
-                    {hasEvents && !isSelected && (
-                      <div className="absolute bottom-1 w-1 h-1 bg-violet-500 rounded-full"></div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <div className="py-2 animate-in fade-in">
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {monthNames.map((m, i) => (
-                <button 
-                  key={m}
-                  onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), i, 1)); setIsMonthPickerOpen(false); }}
-                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getMonth() === i ? 'bg-violet-500 text-white font-medium shadow-md' : 'hover:bg-gray-50 text-gray-600'}`}
-                >
-                  {m.substring(0, 3)}
-                </button>
-              ))}
-            </div>
-            <div className="border-t border-gray-100 pt-4 grid grid-cols-4 gap-2">
-              {Array.from({length: 12}, (_, i) => currentDate.getFullYear() - 5 + i).map(y => (
-                <button
-                  key={y}
-                  onClick={() => { setCurrentDate(new Date(y, currentDate.getMonth(), 1)); setIsMonthPickerOpen(false); }}
-                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getFullYear() === y ? 'bg-violet-100 text-violet-700 font-medium' : 'hover:bg-gray-50 text-gray-600'}`}
-                >
-                  {y}
-                </button>
-              ))}
+            <div>
+              <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                Schedule
+              </h2>
             </div>
           </div>
-        )}
+          
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleJumpToToday}
+              className="px-2.5 py-1 rounded-lg bg-slate-100/90 dark:bg-zinc-800 hover:bg-slate-200/90 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11px] font-medium transition-all cursor-pointer border border-slate-200/60 dark:border-zinc-700/60 active:scale-95 shadow-2xs"
+            >
+              Today
+            </button>
+            <button 
+              type="button"
+              onClick={onClose} 
+              className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              title="Close"
+              aria-label="Close"
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
 
-        {selectedDate && !isMonthPickerOpen && (
-          <div className="mt-6 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-bottom-2">
-            <div className="text-sm font-medium text-gray-700 mb-2">
-              Events for {monthNames[currentDate.getMonth()]} {selectedDate}
-            </div>
-            <div className="space-y-2 mb-3">
-              {events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`]?.map((ev, i) => {
-                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
-                
-                if (editingEventIndex === i) {
+        {/* Month Navigator */}
+        <div className="px-4 pt-3 pb-1.5 flex items-center justify-between bg-white dark:bg-zinc-900">
+          <button 
+            onClick={handlePrevMonth} 
+            type="button"
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button 
+            type="button"
+            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)} 
+            className="text-xs font-semibold text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+            <ChevronDown size={13} className={`text-slate-400 transition-transform ${isMonthPickerOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <button 
+            onClick={handleNextMonth} 
+            type="button"
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* Calendar Grid or Month Picker */}
+        <div className="px-4 pb-3">
+          {!isMonthPickerOpen ? (
+            <>
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {days.map(day => (
+                  <div key={day} className="text-center text-[10.5px] font-semibold text-slate-400 dark:text-zinc-500 py-0.5">{day}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {blanks.map(blank => (
+                  <div key={`blank-${blank}`} className="h-7"></div>
+                ))}
+                {dates.map(date => {
+                  const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
+                  const hasEvents = events[dateKey] && events[dateKey].length > 0;
+                  const isSelected = selectedDate === date;
+                  const isCurrentToday = isToday(date);
+                  
                   return (
-                    <div key={i} className="flex flex-col gap-2 bg-violet-50 p-2.5 rounded-xl border border-violet-100">
-                      <input 
-                        type="text" 
-                        className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-400 w-full"
-                        value={editingEventTitle}
-                        autoFocus
-                        onChange={(e) => setEditingEventTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const newEvents = [...events[dateStr]];
-                            newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
+                    <button 
+                      key={date} 
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(date);
+                      }}
+                      className={`relative h-7.5 w-full rounded-lg text-[12px] font-medium transition-all flex flex-col items-center justify-center cursor-pointer
+                        ${isSelected ? 'bg-violet-600 text-white font-semibold shadow-xs' : isCurrentToday ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold border border-violet-200 dark:border-violet-800' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                    >
+                      <span>{date}</span>
+                      {hasEvents && (
+                        <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-violet-500'} -mt-0.5`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="py-2 animate-in fade-in">
+              <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+                {monthNames.map((m, i) => (
+                  <button 
+                    key={m}
+                    type="button"
+                    onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), i, 1)); setIsMonthPickerOpen(false); }}
+                    className={`text-xs py-1.5 rounded-lg transition-all font-medium cursor-pointer ${currentDate.getMonth() === i ? 'bg-violet-600 text-white shadow-xs' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300'}`}
+                  >
+                    {m.substring(0, 3)}
+                  </button>
+                ))}
+              </div>
+              <div className="border-t border-slate-100 dark:border-zinc-800 pt-2 grid grid-cols-4 gap-1">
+                {Array.from({length: 8}, (_, i) => currentDate.getFullYear() - 2 + i).map(y => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => { setCurrentDate(new Date(y, currentDate.getMonth(), 1)); setIsMonthPickerOpen(false); }}
+                    className={`text-[11px] py-1 rounded-lg transition-all font-medium cursor-pointer ${currentDate.getFullYear() === y ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 font-semibold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400'}`}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Selected Date Agenda / Upcoming Meetings */}
+        {!isMonthPickerOpen && (
+          <div className="border-t border-slate-100 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-950/70 px-4 py-3 flex-1 overflow-y-auto thin-scrollbar">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
+                {selectedDate ? `${monthNames[currentDate.getMonth()]} ${selectedDate}` : 'Upcoming Meetings'}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setIsAddingEvent(!isAddingEvent)} 
+                className="text-[11px] text-violet-600 dark:text-violet-400 font-medium hover:underline flex items-center gap-0.5 cursor-pointer"
+              >
+                <Plus size={12} />
+                <span>Add Event</span>
+              </button>
+            </div>
+
+            {/* Quick Add Form */}
+            {isAddingEvent && (
+              <div className="mb-2.5 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-1.5 animate-in fade-in">
+                <input 
+                  type="text" 
+                  placeholder="Meeting / event title..." 
+                  className="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-violet-500 text-slate-800 dark:text-zinc-100"
+                  value={newEventTitle}
+                  autoFocus
+                  onChange={e => setNewEventTitle(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addEvent()}
+                />
+                <div className="flex items-center justify-between gap-1.5">
+                  <input 
+                    type="text" 
+                    placeholder="Time (e.g. 10:00 AM)" 
+                    className="w-28 text-[11px] bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2 py-1 outline-none text-slate-700 dark:text-zinc-300"
+                    value={newEventTime}
+                    onChange={e => setNewEventTime(e.target.value)}
+                  />
+                  <div className="flex items-center gap-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsAddingEvent(false)} 
+                      className="px-2 py-1 text-[11px] text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={addEvent} 
+                      className="px-2.5 py-1 text-[11px] font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md shadow-2xs cursor-pointer"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Event List */}
+            <div className="space-y-1.5">
+              {currentDayEvents.length > 0 ? (
+                currentDayEvents.map((ev, i) => {
+                  const evTitle = typeof ev === 'object' ? ev.title : ev;
+                  const evTime = typeof ev === 'object' ? (ev.time || 'All Day') : '10:00 AM';
+                  
+                  return (
+                    <div key={i} className="group p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 shadow-2xs hover:border-violet-300 dark:hover:border-violet-800/80 transition-all flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-slate-800 dark:text-zinc-200 truncate">{evTitle}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">{evTime}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const dateStr = selectedDateKey;
+                            const newEvents = events[dateStr].filter((_, idx) => idx !== i);
                             setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
-                            setEditingEventIndex(null);
-                          }
-                        }}
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => {
-                           const newEvents = events[dateStr].filter((_, idx) => idx !== i);
-                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
-                           setEditingEventIndex(null);
-                        }} className="text-xs px-2 py-1 rounded-md text-red-500 hover:bg-red-50 font-medium transition-colors">Delete</button>
-                        <button onClick={() => setEditingEventIndex(null)} className="text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100 font-medium transition-colors">Cancel</button>
-                        <button onClick={() => {
-                           const newEvents = [...events[dateStr]];
-                           newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
-                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
-                           setEditingEventIndex(null);
-                        }} className="text-xs px-2 py-1 rounded-md bg-violet-500 text-white hover:bg-violet-600 font-medium transition-colors">Save</button>
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </div>
                   );
-                }
-
-                return (
-                  <div 
-                    key={i} 
-                    className="group text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-xl flex flex-col gap-1 hover:bg-violet-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
-                      <span className="flex-1 truncate font-medium">{ev.title || ev}</span>
-                      <button 
-                        onClick={() => {
-                          setEditingEventIndex(i);
-                          setEditingEventTitle(ev.title || ev);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-violet-400 hover:text-violet-700 transition-all rounded-md hover:bg-violet-200/50"
-                      >
-                        <Pen size={14} />
-                      </button>
-                    </div>
-                    {ev.link && (
-                      <a href={ev.link} target="_blank" rel="noreferrer" className="text-violet-500 flex items-center gap-1 hover:underline ml-3.5 w-fit">
-                        <LinkIcon size={12} /> Join Meeting
-                      </a>
-                    )}
-                  </div>
-                );
-              })}
-              {(!events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`] || events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`].length === 0) && (
-                <div className="text-xs text-gray-400 italic">No events</div>
+                })
+              ) : (
+                <div className="py-4 text-center">
+                  <p className="text-[11.5px] text-slate-400 dark:text-zinc-500">
+                    No meetings scheduled for this date.
+                  </p>
+                </div>
               )}
-            </div>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Add new event..." 
-                className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-violet-500 transition-colors"
-                value={newEventTitle}
-                onChange={e => setNewEventTitle(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addEvent()}
-              />
-              <button onClick={addEvent} className="p-2 bg-violet-50 text-violet-600 rounded-xl hover:bg-violet-100 transition-colors">
-                <Plus size={16} />
-              </button>
             </div>
           </div>
         )}
