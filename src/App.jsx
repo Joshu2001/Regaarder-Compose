@@ -13368,6 +13368,7 @@ const DEFAULT_DECK_SLIDES = [
 
   const nativePipVideoRef = useRef(null);
   const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
+  const [isPipMoreMenuOpen, setIsPipMoreMenuOpen] = useState(false);
   const pipFramePumpRef = useRef(null);
   const cropBoundsRef = useRef(null);
   const pipOffscreenVideoRef = useRef(null);
@@ -48329,158 +48330,163 @@ const renderRoomTopHeader = () => (
         {createPortal(
           <div 
             ref={pipDragContainerRef}
-        onPointerDown={handlePipPointerDown}
-        style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
-        className={`fixed ${pipPosition.x === null ? 'bottom-6 right-8' : ''} z-[999999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
-      >
-        {/* Floating Live Video Mini Preview Tile */}
-        <div 
-          onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
-          className="w-56 h-36 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-700 shadow-[0_24px_60px_rgba(0,0,0,0.35)] relative group cursor-pointer hover:ring-2 ring-violet-500 transition-all duration-200"
-          title="Click to expand Room"
-        >
-          {/* Live Video Element */}
-          {activeStream ? (
-            <video 
-              ref={(node) => { 
-                if (node && activeStream) {
-                  if (node.srcObject !== activeStream) node.srcObject = activeStream;
-                  node.play?.().catch(() => {});
-                }
-              }} 
-              autoPlay 
-              playsInline 
-              muted 
-              className="w-full h-full object-contain bg-black" 
-            />
-          ) : localStream && isRoomCameraOn ? (
-            <video 
-              ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} 
-              autoPlay 
-              playsInline 
-              muted 
-              className="w-full h-full object-cover" 
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
-              <div className="w-9 h-9 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-sm font-bold border border-violet-500/30">
-                Y
-              </div>
-              <span className="text-[10px] font-medium text-zinc-400">Meeting in progress</span>
-            </div>
-          )}
-
-          {/* Floating Streaming Status Badge */}
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white border border-white/10 shadow-sm pointer-events-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="font-semibold text-[9.5px] tracking-wide uppercase truncate max-w-[120px]">{sharedSourceInfo?.name ? sharedSourceInfo.name : activeStream ? 'Streaming Live' : 'Live'}</span>
-          </div>
-
-          {/* OS Picture-in-Picture Popout Button */}
-          <button
-            type="button"
-            onClick={async (e) => {
-              e.stopPropagation();
-              try {
-                const vidEl = pipDragContainerRef.current?.querySelector('video');
-                if (document.pictureInPictureElement) {
-                  await document.exitPictureInPicture();
-                  showToast?.('Exited Picture-in-Picture');
-                } else if (vidEl && document.pictureInPictureEnabled) {
-                  await vidEl.requestPictureInPicture();
-                  showToast?.('Floating OS Mini-Window Active');
-                }
-              } catch (err) {
-                console.warn('PiP error:', err);
-                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
-              }
-            }}
-            className="absolute top-2 right-2 p-1 rounded-lg bg-black/75 hover:bg-black/90 text-white/90 hover:text-white border border-white/10 shadow-sm transition-all cursor-pointer z-20"
-            title="Pop out into Floating OS Window (Always on Top)"
+            onPointerDown={handlePipPointerDown}
+            style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
+            className={`fixed ${pipPosition.x === null ? 'bottom-8 right-6' : ''} z-[999999] flex flex-col items-end gap-2 animate-in slide-in-from-bottom-3 duration-200 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
           >
-            <ExternalLink size={11} />
-          </button>
+            {/* Floating Live Video Mini Preview Tile (Reduced by ~10% for macOS utility feel) */}
+            <div 
+              onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+              className="w-52 h-32 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 shadow-[0_20px_48px_rgba(0,0,0,0.28)] relative group cursor-pointer hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200"
+              title="Click to open Room"
+            >
+              {/* Live Video Element */}
+              {activeStream ? (
+                <video 
+                  ref={(node) => { 
+                    if (node && activeStream) {
+                      if (node.srcObject !== activeStream) node.srcObject = activeStream;
+                      node.play?.().catch(() => {});
+                    }
+                  }} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className="w-full h-full object-contain bg-black" 
+                />
+              ) : localStream && isRoomCameraOn ? (
+                <video 
+                  ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
+                  <div className="w-8 h-8 rounded-full bg-violet-600/25 text-violet-300 flex items-center justify-center mb-1 text-xs font-semibold border border-violet-500/20">
+                    Y
+                  </div>
+                  <span className="text-[9.5px] font-medium text-zinc-400">Meeting in progress</span>
+                </div>
+              )}
 
-          {/* Hover Overlay with Expand Action */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
-            <Maximize2 size={15} />
-            <span>Return to Room</span>
-          </div>
-        </div>
+              {/* Quiet, Subtle Compose Label with Green Indicator */}
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white/90 border border-white/10 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                <span className="font-medium text-[10px] tracking-normal capitalize">{sharedSourceInfo?.name || 'Compose'}</span>
+              </div>
 
-        {/* Meeting Controls Bar */}
-        <div className="w-56 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-2 px-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {/* Toggle Laser / Screen Annotation Overlay */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsWorkspaceAnnotationActive((prev) => !prev);
-              }}
-              className={`p-1.5 rounded-xl text-xs transition-all cursor-pointer ${
-                isWorkspaceAnnotationActive 
-                  ? 'bg-violet-600 text-white shadow-xs scale-105' 
-                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300'
-              }`}
-              title={isWorkspaceAnnotationActive ? "Hide Laser / Annotations" : "Draw Laser Pointer / Annotate Screen"}
-            >
-              <LaserPointerIcon size={13} strokeWidth={1.6} />
-            </button>
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/35 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
+                <Maximize2 size={13} strokeWidth={1.6} />
+                <span>Open Room</span>
+              </div>
+            </div>
 
-            {/* Pop-Out OS PiP Window */}
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (isPipWidgetOpen) {
-                  setIsPipWidgetOpen(false);
-                  window.electronAPI?.closeFloatingPipWidget?.();
-                  showToast?.('Closed floating window');
-                } else {
-                  if (window.electronAPI?.openFloatingPipWidget) {
-                    window.electronAPI.openFloatingPipWidget();
-                    setIsPipWidgetOpen(true);
-                    showToast?.('OS Floating Window Active');
-                  }
-                }
-              }}
-              className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
-              title="Pop out into Always-on-Top OS Floating Window"
-            >
-              <ExternalLink size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
-              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomMicOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
-              title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
-            >
-              {isRoomMicOn ? <Mic size={13} /> : <MicOff size={13} />}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
-              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomCameraOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
-              title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
-            >
-              {isRoomCameraOn ? <Video size={13} /> : <VideoOff size={13} />}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
-              className="p-1.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-              title="Leave Meeting"
-            >
-              <PhoneOff size={13} />
-            </button>
-          </div>
-        </div>
+            {/* Streamlined macOS-Style Meeting Controls Bar */}
+            <div className="w-52 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] px-2.5 py-1.5 flex items-center justify-between">
+              {/* Live Duration */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 font-mono">{meetingDurationLabel || '00:00'}</span>
+              </div>
 
+              {/* Primary Control Actions */}
+              <div className="flex items-center gap-1">
+                {/* Expand / Open Room */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+                  className="p-1 rounded-lg text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  title="Open Meeting"
+                >
+                  <Maximize2 size={12} strokeWidth={1.6} />
+                </button>
+
+                {/* Mic */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${isRoomMicOn ? 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800' : 'text-rose-500 bg-rose-50 dark:bg-rose-950/50'}`}
+                  title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
+                >
+                  {isRoomMicOn ? <Mic size={12} strokeWidth={1.6} /> : <MicOff size={12} strokeWidth={1.6} />}
+                </button>
+
+                {/* Camera */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${isRoomCameraOn ? 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800' : 'text-rose-500 bg-rose-50 dark:bg-rose-950/50'}`}
+                  title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+                >
+                  {isRoomCameraOn ? <Video size={12} strokeWidth={1.6} /> : <VideoOff size={12} strokeWidth={1.6} />}
+                </button>
+
+                {/* More Options Menu (Secondary Actions: Annotations, OS Popout) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setIsPipMoreMenuOpen((prev) => !prev); }}
+                    className="p-1 rounded-lg text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                    title="More meeting tools"
+                  >
+                    <MoreHorizontal size={12} strokeWidth={1.6} />
+                  </button>
+
+                  {isPipMoreMenuOpen && (
+                    <div 
+                      className="absolute bottom-full right-0 mb-2 w-48 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl p-1 shadow-xl z-50 flex flex-col gap-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsWorkspaceAnnotationActive((prev) => !prev);
+                          setIsPipMoreMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <LaserPointerIcon size={13} strokeWidth={1.6} className="text-violet-600 dark:text-violet-400" />
+                        <span>{isWorkspaceAnnotationActive ? 'Hide Laser / Pen' : 'Laser / Annotations'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setIsPipMoreMenuOpen(false);
+                          if (isPipWidgetOpen) {
+                            setIsPipWidgetOpen(false);
+                            window.electronAPI?.closeFloatingPipWidget?.();
+                            showToast?.('Closed floating window');
+                          } else {
+                            if (window.electronAPI?.openFloatingPipWidget) {
+                              window.electronAPI.openFloatingPipWidget();
+                              setIsPipWidgetOpen(true);
+                              showToast?.('OS Floating Window Active');
+                            }
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
+                      >
+                        <ExternalLink size={13} strokeWidth={1.6} className="text-slate-500" />
+                        <span>Pop out OS Window</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* End / Leave Meeting */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
+                  className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  title="Leave Meeting"
+                >
+                  <PhoneOff size={12} strokeWidth={1.6} />
+                </button>
+              </div>
+            </div>
           </div>,
           document.body
         )}
