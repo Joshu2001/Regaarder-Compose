@@ -1267,17 +1267,17 @@ export default function RoomLandingPage({
               </header>
 
               {/* Main Continuous Room Canvas */}
-              <div className="flex-1 max-w-5xl w-full mx-auto px-6 sm:px-10 py-8 flex flex-col gap-6">
+              <div className="flex-1 max-w-4xl w-full mx-auto px-6 sm:px-8 pt-4 pb-8 flex flex-col gap-4">
                 
                 {/* 1. Date & Context Row (Directly integrated on Canvas) */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/60 dark:border-zinc-800/60">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
-                      <Calendar size={18} />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/60 dark:border-zinc-800/60">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                      <Calendar size={16} />
                     </div>
                     <div>
-                      <div className="text-lg font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Friday, Aug 28</div>
-                      <div className="text-xs text-slate-400">Today · 0 active sessions scheduled</div>
+                      <div className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Friday, Aug 28</div>
+                      <div className="text-[11px] text-slate-400">Today · 0 active sessions scheduled</div>
                     </div>
                   </div>
 
@@ -1296,7 +1296,7 @@ export default function RoomLandingPage({
                         key={item.date}
                         type="button"
                         onClick={() => setSelectedCalendarDay(item.date)}
-                        className={`flex flex-col items-center px-2.5 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                        className={`flex flex-col items-center px-2 py-1 rounded-lg text-center transition-all cursor-pointer ${
                           selectedCalendarDay === item.date
                             ? "bg-violet-600 text-white font-bold shadow-xs scale-105"
                             : item.isToday
@@ -1311,35 +1311,38 @@ export default function RoomLandingPage({
                   </div>
                 </div>
 
-                {/* 2. Integrated Security & Privacy Trust Line */}
-                <div className="flex items-center gap-2 px-1 text-xs text-slate-500 dark:text-zinc-400 font-medium">
-                  <Shield size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
-                  <span>End-to-end encrypted room with hardware acceleration. No one can join unless invited or admitted by host.</span>
+                {/* 2. Integrated Security & Privacy Trust Line (Quiet) */}
+                <div 
+                  className="flex items-center gap-1.5 px-0.5 text-[11.5px] text-slate-400 dark:text-zinc-500 font-medium select-none cursor-default hover:text-slate-600 dark:hover:text-zinc-400 transition-colors"
+                  title="Hardware accelerated peer connections with cryptographic session safety. No one can join unless invited or admitted by host."
+                >
+                  <Shield size={13} className="text-violet-500/80 dark:text-violet-400/80 shrink-0" />
+                  <span>Secure room · End-to-end encrypted</span>
                 </div>
 
-                {/* 3. Visually Elevated Central Meeting Stage (The Primary Hero Canvas) */}
-                <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[380px]">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 text-white flex items-center justify-center mb-4 shadow-lg shadow-violet-500/20 border border-white/20">
-                    <Video size={28} />
+                {/* 3. Visually Elevated Central Meeting Stage (Refined Proportions) */}
+                <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[300px]">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 text-white flex items-center justify-center mb-3.5 shadow-lg shadow-violet-500/20 border border-white/20">
+                    <Video size={24} />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mb-6">Schedule a meeting with your team or launch an instant collaborative sync.</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
                   
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setIsGreenRoomOpen(true)}
-                      className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-violet-600/25 transition-all flex items-center gap-2 cursor-pointer"
                     >
-                      <Plus size={16} strokeWidth={2.5} />
+                      <Plus size={15} strokeWidth={2.5} />
                       <span>Start an Instant Meeting</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsSchedulingModalOpen(true)}
-                      className="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 text-slate-700 dark:text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 text-slate-700 dark:text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
                     >
-                      <Calendar size={15} />
+                      <Calendar size={14} />
                       <span>Schedule for Later</span>
                     </button>
                   </div>
