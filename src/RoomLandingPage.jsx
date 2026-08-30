@@ -10,6 +10,161 @@ import { RoomIcon, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, Whiteboard
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 
 /**
+ * Native Apple-style Room Camera Icon
+ * Clean, recognizable, native video meeting symbol.
+ */
+export const NativeRoomCameraIcon = ({ size = 22, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <rect
+      x="2.5"
+      y="5.5"
+      width="13"
+      height="13"
+      rx="3.5"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M15.5 10.2L20.2 7.1C20.8 6.7 21.5 7.1 21.5 7.8V16.2C21.5 16.9 20.8 17.3 20.2 16.9L15.5 13.8"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="9" cy="12" r="2" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+/**
+ * Precision Studio Camera Iris & Optical Lens
+ * Circular 6-blade mechanical camera aperture with a glowing central optical element and tally light.
+ * Completely distinct from the top-left overlapping Room workspace badge.
+ */
+export const StudioCameraIcon = ({ size = 28, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <defs>
+      <linearGradient id="apertureGlassGradRoot" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.3" />
+        <stop offset="100%" stopColor="#6D28D9" stopOpacity="0.08" />
+      </linearGradient>
+      <linearGradient id="apertureCoreRoot" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8B5CF6" />
+        <stop offset="100%" stopColor="#5B21B6" />
+      </linearGradient>
+    </defs>
+    
+    {/* Outer Precision Lens Barrel Ring */}
+    <circle
+      cx="16"
+      cy="16"
+      r="13"
+      className="stroke-violet-600/80 dark:stroke-violet-400/80 fill-violet-50/30 dark:fill-violet-950/20"
+      strokeWidth="1.75"
+    />
+    
+    {/* 6 Optical Iris Aperture Blades */}
+    <path
+      d="M16 3.5 L24 16 L16 16 Z"
+      fill="url(#apertureGlassGradRoot)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M26.8 9.8 L20 22.9 L16 16 Z"
+      fill="url(#apertureGlassGradRoot)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M26.8 22.2 L12 22.9 L16 16 Z"
+      fill="url(#apertureGlassGradRoot)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M16 28.5 L8 16 L16 16 Z"
+      fill="url(#apertureGlassGradRoot)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M5.2 22.2 L12 9.1 L16 16 Z"
+      fill="url(#apertureGlassGradRoot)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M5.2 9.8 L20 9.1 L16 16 Z"
+      fill="url(#apertureGlassGradRoot)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+
+    {/* Center Optical Glass Core */}
+    <circle
+      cx="16"
+      cy="16"
+      r="4.5"
+      fill="url(#apertureCoreRoot)"
+    />
+
+    {/* Optical Lens Specular Glint */}
+    <circle
+      cx="14.7"
+      cy="14.7"
+      r="1.2"
+      fill="white"
+      fillOpacity="0.9"
+    />
+
+    {/* Hardware Center Stage Tally Dot */}
+    <circle
+      cx="16"
+      cy="6.2"
+      r="1"
+      className="fill-emerald-500 animate-pulse"
+    />
+  </svg>
+);
+
+/**
+ * Apple-Tier Frosted Glass Squircle Housing
+ */
+export const StudioLensHousing = ({ children, size = "w-[54px] h-[54px]" }) => (
+  <div className="relative flex items-center justify-center mb-4 select-none group">
+    {/* Dynamic Ambient Lavender Bloom */}
+    <div className="absolute inset-0 rounded-[22px] bg-violet-500/20 dark:bg-violet-400/25 blur-xl group-hover:blur-2xl transition-all duration-300 pointer-events-none" />
+    
+    {/* Apple-grade Glass Squircle Tile */}
+    <div className={`relative ${size} rounded-[20px] bg-linear-to-b from-white/95 via-violet-50/40 to-violet-100/50 dark:from-zinc-800/95 dark:via-zinc-850/90 dark:to-zinc-900/95 backdrop-blur-xl border border-white/90 dark:border-white/10 shadow-[0_10px_25px_-5px_rgba(109,40,217,0.14),0_2px_8px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.12)] flex items-center justify-center transition-all duration-200 group-hover:scale-[1.04]`}>
+      {children || <StudioCameraIcon size={28} />}
+    </div>
+  </div>
+);
+
+/**
  * Pixel-Perfect Room Workspace with Unified Ambient Lobby
  *
  * Implements the Apple-tier design specified in Image 2:
@@ -991,14 +1146,10 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                   /* PROGRESSIVE DISCLOSURE: INSTANT VS SCHEDULE OPTIONS       */
                   /* ========================================================= */
                   <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
-                    {/* Top Badge with Delicate Purple Sparkles (✦) */}
-                    <div className="relative mb-3">
-                      <div className="w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                        <Video size={22} strokeWidth={1.75} />
-                      </div>
-                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
-                      <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
-                    </div>
+                    {/* Concentric Studio Lens Housing */}
+                    <StudioLensHousing size="w-[56px] h-[56px]">
+                      <StudioCameraIcon size={28} />
+                    </StudioLensHousing>
 
                     {/* Typography Header */}
                     <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
@@ -1015,7 +1166,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                        <div className="w-8.5 h-8.5 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                           <Video size={16} strokeWidth={2.2} />
                         </div>
                         <div>
@@ -1035,7 +1186,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer mb-4"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                        <div className="w-8.5 h-8.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                           <Calendar size={15} strokeWidth={2.2} />
                         </div>
                         <div>
@@ -1060,20 +1211,14 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                   /* DEFAULT WELCOME TO ROOM LOBBY SCREEN                      */
                   /* ========================================================= */
                   <>
-                    {/* Top Badge with Delicate Purple Sparkles (✦) */}
-                    <div className="relative mb-3">
-                      <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-100/80 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                        <Users size={22} strokeWidth={1.75} />
-                      </div>
-                      {/* Floating sparkles */}
-                      <span className="absolute -top-1 -right-2 text-[10px] font-bold text-violet-400 animate-pulse">✦</span>
-                      <span className="absolute -top-1 -left-2 text-[9px] font-bold text-violet-300">✦</span>
-                      <span className="absolute -bottom-1 -right-1 text-[8px] font-bold text-violet-400">✦</span>
-                    </div>
+                    {/* Concentric Studio Lens Housing with Aperture Camera Glyph */}
+                    <StudioLensHousing size="w-[58px] h-[58px]">
+                      <StudioCameraIcon size={30} />
+                    </StudioLensHousing>
 
                     {/* Typography Header */}
                     <h2 className="text-[19px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
-                      Welcome to Room
+                      {t('room.welcomeToRoom') || 'Welcome to Room'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 mb-5 leading-normal">
                       {t('room.startOrJoinCode') || 'Start an instant meeting or join with a code.'}
@@ -1086,8 +1231,8 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       className="w-full p-3.5 bg-violet-50/80 hover:bg-violet-100/90 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 border border-violet-200/70 dark:border-violet-800/60 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                          <Plus size={16} strokeWidth={2.5} />
+                        <div className="w-8.5 h-8.5 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                          <Video size={16} strokeWidth={2.2} />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.startInstantMeeting') || 'Start an instant meeting'}</div>
@@ -1112,7 +1257,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                         className="w-full p-3.5 bg-slate-50/80 hover:bg-slate-100/90 dark:bg-zinc-850/60 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-2xs cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-violet-100/80 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 font-bold text-sm group-hover:scale-105 transition-transform">
+                          <div className="w-8.5 h-8.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 font-bold text-sm group-hover:scale-105 transition-transform">
                             <Hash size={15} strokeWidth={2.2} />
                           </div>
                           <div>
@@ -1197,6 +1342,7 @@ export default function RoomLandingPage({ onLaunch, showToast, onSwitchProductMo
                       </p>
                     </div>
                   </div>
+
 
                   <button
                     type="button"
