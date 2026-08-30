@@ -76,6 +76,18 @@ const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor)
   return <IconComp size={size} className={isDarkIcon ? 'text-slate-900' : 'text-white'} />;
 };
 
+
+const VisualEffectsIcon = ({ size = 16, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    {/* Prism / filter triangle */}
+    <path d="M8 2L14 13H2L8 2Z" />
+    {/* Refracted ray */}
+    <path d="M8 13l3 2" />
+    <path d="M8 13l-3 2" />
+    {/* Light beam inside */}
+    <line x1="8" y1="5" x2="8" y2="10" />
+  </svg>
+);
 const MeetingSummaryIcon = ({ size = 16, className = "", style = {} }) => (
   <svg 
     width={size} 
@@ -12737,6 +12749,7 @@ const DEFAULT_DECK_SLIDES = [
     return '';
   });
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
+  const [isVisualEffectsActive, setIsVisualEffectsActive] = useState(false);
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
   // Start both as false — requestMediaPermissions() will set them to true once the
   // browser grants access. This prevents the UI showing mic/camera as "on" with no stream.
@@ -82063,25 +82076,67 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MoreHorizontal size={18} strokeWidth={1.6} />
                           </button>
                           {isRoomStartMenuOpen && (
-                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-56 bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[24px] p-2 shadow-[0_32px_100px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-300 z-[50]">
-                              <div className="flex flex-col">
-                                <button onClick={() => { showToast('Audio & Video Settings opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <Settings size={16} strokeWidth={2} className="shrink-0" /> {t('room.audioVideo') || 'Audio & Video'}
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[220px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl border border-slate-200/60 dark:border-zinc-800/60 rounded-[20px] p-1.5 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[50]" onClick={e => e.stopPropagation()}>
+                              <div className="flex flex-col gap-0.5">
+
+                                {/* Audio & Video — opens settings sub-panel (navigation row) */}
+                                <button
+                                  type="button"
+                                  onClick={() => { setIsRoomStartMenuOpen(false); showToast('Audio & Video settings'); }}
+                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors w-full text-left cursor-pointer"
+                                >
+                                  <div className="w-7 h-7 rounded-[10px] bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60 transition-colors">
+                                    <Settings size={15} strokeWidth={1.7} className="text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+                                  </div>
+                                  <span className="flex-1 text-[13.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{t('room.audioVideo') || 'Audio & Video'}</span>
+                                  <ChevronRight size={14} className="text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors shrink-0" />
                                 </button>
-                                <button onClick={() => { showToast('Layout Options opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <LayoutGrid size={16} strokeWidth={2} className="shrink-0" /> {t('room.changeLayout') || 'Change Layout'}
+
+                                {/* Change Layout — navigation to layout picker */}
+                                <button
+                                  type="button"
+                                  onClick={() => { setIsRoomStartMenuOpen(false); showToast('Layout options'); }}
+                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors w-full text-left cursor-pointer"
+                                >
+                                  <div className="w-7 h-7 rounded-[10px] bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60 transition-colors">
+                                    <LayoutGrid size={15} strokeWidth={1.7} className="text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" />
+                                  </div>
+                                  <span className="flex-1 text-[13.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{t('room.changeLayout') || 'Change Layout'}</span>
+                                  <ChevronRight size={14} className="text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors shrink-0" />
                                 </button>
-                                <button onClick={() => { showToast('Visual Effects opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <Sparkles size={16} strokeWidth={2} className="shrink-0" /> {t('room.visualEffects') || 'Visual Effects'}
+
+                                {/* Visual Effects — toggleable active state */}
+                                <button
+                                  type="button"
+                                  onClick={() => { setIsVisualEffectsActive(prev => !prev); }}
+                                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer ${isVisualEffectsActive ? 'bg-violet-50 dark:bg-violet-950/40' : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/60'}`}
+                                >
+                                  <div className={`w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors ${isVisualEffectsActive ? 'bg-violet-100 dark:bg-violet-900/60' : 'bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60'}`}>
+                                    <VisualEffectsIcon size={15} className={`transition-colors ${isVisualEffectsActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400'}`} />
+                                  </div>
+                                  <span className={`flex-1 text-[13.5px] font-medium transition-colors ${isVisualEffectsActive ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300'}`}>
+                                    {t('room.visualEffects') || 'Visual Effects'}
+                                  </span>
+                                  {isVisualEffectsActive && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                  )}
                                 </button>
-                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
-                                <button onClick={() => { showToast('Captions enabled'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <MessageSquare size={16} strokeWidth={2} className="shrink-0" /> {t('room.turnOnCaptions') || 'Turn on Captions'}
+
+                                {/* Divider */}
+                                <div className="h-px bg-slate-100/80 dark:bg-zinc-800/80 mx-1.5 my-0.5" />
+
+                                {/* Report an Issue — destructive */}
+                                <button
+                                  type="button"
+                                  onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }}
+                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-red-50/80 dark:hover:bg-red-950/30 transition-colors w-full text-left cursor-pointer"
+                                >
+                                  <div className="w-7 h-7 rounded-[10px] bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+                                    <ShieldAlert size={15} strokeWidth={1.7} className="text-red-500 dark:text-red-400" />
+                                  </div>
+                                  <span className="flex-1 text-[13.5px] font-medium text-red-500 dark:text-red-400">{t('room.reportIssue') || 'Report an Issue'}</span>
                                 </button>
-                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
-                                <button onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-red-500 hover:bg-red-50/80 rounded-xl transition-colors w-full text-left">
-                                  <ShieldAlert size={16} strokeWidth={2} className="shrink-0" /> {t('room.reportIssue') || 'Report an Issue'}
-                                </button>
+
                               </div>
                             </div>
                           )}
