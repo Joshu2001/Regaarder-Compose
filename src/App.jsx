@@ -71758,6 +71758,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
       ) : productMode === 'room-landing' ? (
         <div className="fixed inset-0 z-[500] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
           <RoomLandingPage 
+            isDocumentImmersive={isDocumentImmersive}
+            onToggleImmersive={toggleDocumentImmersiveMode}
             showToast={showToast}
             onCallAi={callGemini}
             isScreenSharing={isScreenSharing}

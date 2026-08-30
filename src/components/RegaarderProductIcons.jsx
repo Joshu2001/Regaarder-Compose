@@ -132,6 +132,38 @@ export const SpatialApertureCameraSymbol = ({ size = 32, className = "", strokeW
   </svg>
 );
 
+
+export const SpatialApertureLensSymbol = ({ size = 32, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Outer Spatial Chamber Precision Geometry */}
+    <rect x="4.5" y="4.5" width="23" height="23" rx="6.5" stroke="currentColor" strokeWidth={strokeWidth} />
+    
+    {/* Concentric Spatial Aperture Ring 1 (Outer Field Ring) */}
+    <circle cx="16" cy="16" r="8" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray="3.5 2" />
+    
+    {/* Concentric Spatial Aperture Ring 2 (Core Focus Nexus) */}
+    <circle cx="16" cy="16" r="4.8" stroke="currentColor" strokeWidth={strokeWidth} />
+    
+    {/* Concentric Optical Focal Core (Illuminated Center Node) */}
+    <circle cx="16" cy="16" r="2.1" stroke="currentColor" strokeWidth={1.2} opacity="0.85" />
+    <circle cx="16" cy="16" r="0.9" fill="currentColor" />
+    
+    {/* Precision Alignment Cross-Ticks / Presence Orbiters */}
+    <line x1="16" y1="2" x2="16" y2="3.8" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
+    <line x1="16" y1="28.2" x2="16" y2="30" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
+    <line x1="2" y1="16" x2="3.8" y2="16" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
+    <line x1="28.2" y1="16" x2="30" y2="16" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.6" />
+  </svg>
+);
+
 export const RoomIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}

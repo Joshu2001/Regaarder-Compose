@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, SpatialApertureLensSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
@@ -25,6 +25,8 @@ import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
  * - Smooth transition from lobby into active meeting workspace
  */
 export default function RoomLandingPage({
+  isDocumentImmersive = false,
+  onToggleImmersive,
   onLaunch,
   showToast,
   onSwitchProductMode,
@@ -1264,6 +1266,21 @@ export default function RoomLandingPage({
                     <Plus size={15} strokeWidth={2.5} />
                     <span>New Meeting</span>
                   </button>
+
+                  {/* Immersive Mode Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={onToggleImmersive}
+                    className={`p-2 rounded-xl transition-all border cursor-pointer ${
+                      isDocumentImmersive
+                        ? "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800"
+                        : "text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 border-transparent"
+                    }`}
+                    title={isDocumentImmersive ? "Exit immersive mode" : "Enter immersive mode"}
+                    aria-label={isDocumentImmersive ? "Exit immersive mode" : "Enter immersive mode"}
+                  >
+                    {isDocumentImmersive ? <Minimize2 size={15} strokeWidth={1.75} /> : <Maximize2 size={15} strokeWidth={1.75} />}
+                  </button>
                 </div>
               </header>
 
@@ -1326,7 +1343,7 @@ export default function RoomLandingPage({
                   <div className="flex flex-col items-center -translate-y-3.5">
                     {/* Concept 1 — Spatial Aperture Lens Symbol (12-15% larger, delicate stroke) */}
                     <div className="w-[58px] h-[58px] rounded-2xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100/60 dark:border-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none shadow-2xs">
-                      <SpatialApertureCameraSymbol size={36} strokeWidth={1.4} />
+                      <SpatialApertureLensSymbol size={32} strokeWidth={1.5} />
                     </div>
                     <h3 className="text-[17px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
                     <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-[345px] leading-relaxed mx-auto mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
