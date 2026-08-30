@@ -1209,7 +1209,7 @@ export default function RoomLandingPage({
             <div className="w-full h-full flex flex-col bg-[#F9F9F8] dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 font-sans select-none overflow-y-auto">
               {/* Top Header Bar */}
               <header className="h-[68px] flex items-center justify-between px-8 border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 sticky top-0 z-30">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 select-none">
                   {/* App Switcher Button */}
                   <button
                     type="button"
@@ -1220,18 +1220,18 @@ export default function RoomLandingPage({
                       const rect = e.currentTarget.getBoundingClientRect();
                       if (onOpenWorkspaceSwitcher) onOpenWorkspaceSwitcher(rect);
                     }}
-                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-slate-50 text-slate-600 dark:text-zinc-300 hover:text-violet-600 transition-all cursor-pointer"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-slate-50 text-slate-600 dark:text-zinc-300 hover:text-violet-600 transition-all cursor-pointer shrink-0"
                     title="Switch Workspace App"
                   >
-                    <LayoutGrid size={15} />
+                    <LayoutGrid size={14} />
                   </button>
-                  <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md">
-                    <RoomIcon size={20} />
+                  {/* Restrained Room Line Icon */}
+                  <div className="w-7 h-7 rounded-lg bg-violet-50/80 dark:bg-violet-950/40 border border-violet-100/60 dark:border-violet-900/40 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                    <RoomIcon size={15} strokeWidth={1.75} />
                   </div>
-                  <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100">Room</span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 font-semibold">Workspace</span>
+                  <span className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">Room</span>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400 tracking-wide uppercase">Workspace</span>
                 </div>
-
                 {/* Quick Join / Action Header */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:ring-2 ring-violet-500/20 transition-all">
@@ -1322,8 +1322,8 @@ export default function RoomLandingPage({
 
                 {/* 3. Visually Elevated Central Meeting Stage (Refined Proportions) */}
                 <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[300px]">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 text-white flex items-center justify-center mb-3.5 shadow-lg shadow-violet-500/20 border border-white/20">
-                    <Video size={24} />
+                  <div className="w-13 h-13 w-[52px] h-[52px] rounded-2xl bg-violet-50/60 dark:bg-violet-950/30 border border-violet-100/50 dark:border-violet-900/30 text-violet-500 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none">
+                    <Video size={34} strokeWidth={1.4} />
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
                   <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
