@@ -16,15 +16,16 @@ export default function RoomAnnotationOverlay({
   const currentStrokeRef = useRef(null);
   const animFrameIdRef = useRef(null);
 
-  // Resize canvas to match container
+  // Resize canvas to fill full screen window viewport
   useEffect(() => {
     const updateCanvasSize = () => {
       const cvs = canvasRef.current;
-      if (!cvs || !cvs.parentElement) return;
-      const rect = cvs.parentElement.getBoundingClientRect();
-      if (cvs.width !== rect.width || cvs.height !== rect.height) {
-        cvs.width = rect.width;
-        cvs.height = rect.height;
+      if (!cvs) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (cvs.width !== w || cvs.height !== h) {
+        cvs.width = w;
+        cvs.height = h;
       }
     };
 
@@ -32,6 +33,34 @@ export default function RoomAnnotationOverlay({
     window.addEventListener('resize', updateCanvasSize);
     return () => window.removeEventListener('resize', updateCanvasSize);
   }, []);
+
+  // Continuous Laser Pointer Tracking on Mouse Move (Hover Mode)
+  useEffect(() => {
+    if (!isEnabled || activeTool !== 'laser') {
+      laserRef.current.active = false;
+      return;
+    }
+
+    const handleGlobalPointerMove = (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      laserRef.current = { x, y, active: true };
+      // Push trail point with decay properties
+      trailsRef.current.push({ x, y, alpha: 1.0, radius: 4.5, createdAt: Date.now() });
+    };
+
+    const handleGlobalPointerLeave = () => {
+      laserRef.current.active = false;
+    };
+
+    window.addEventListener('pointermove', handleGlobalPointerMove, { passive: true });
+    window.addEventListener('pointerleave', handleGlobalPointerLeave);
+
+    return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerleave', handleGlobalPointerLeave);
+    };
+  }, [isEnabled, activeTool]);
 
   // Main Render Loop (Laser Trails & Ephemeral Strokes)
   useEffect(() => {
@@ -58,13 +87,9 @@ export default function RoomAnnotationOverlay({
         ctx.lineJoin = 'round';
         ctx.lineWidth = stroke.width;
         ctx.strokeStyle = stroke.type === 'highlighter'
-          ? `rgba(250, 204, 21, ${opacity * 0.4})`
-          : `rgba(239, 68, 68, ${opacity})`;
+          ? `rgba(250, 204, 21, ${opacity * 0.45})`
+          : `rgba(139, 92, 246, ${opacity})`;
         
-        if (stroke.type === 'highlighter') {
-          ctx.globalCompositeOperation = 'source-over';
-        }
-
         ctx.beginPath();
         ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
         for (let i = 1; i < stroke.points.length; i++) {
@@ -75,14 +100,14 @@ export default function RoomAnnotationOverlay({
         return true;
       });
 
-      // 2. Draw Current Active Stroke
+      // 2. Draw Current Active Stroke (Pen or Highlighter)
       if (currentStrokeRef.current && currentStrokeRef.current.points.length > 1) {
         const s = currentStrokeRef.current;
         ctx.save();
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.lineWidth = s.width;
-        ctx.strokeStyle = s.type === 'highlighter' ? 'rgba(250, 204, 21, 0.45)' : s.color;
+        ctx.strokeStyle = s.type === 'highlighter' ? 'rgba(250, 204, 21, 0.45)' : '#8B5CF6';
         ctx.beginPath();
         ctx.moveTo(s.points[0].x, s.points[0].y);
         for (let i = 1; i < s.points.length; i++) {
@@ -94,16 +119,16 @@ export default function RoomAnnotationOverlay({
 
       // 3. Draw Laser Pointer & Motion Trails
       if (activeTool === 'laser') {
-        // Age trails
+        // Age and draw decaying trails
         trailsRef.current = trailsRef.current.filter((t) => {
-          t.alpha -= 0.04;
-          t.radius = Math.max(1, t.radius * 0.95);
+          t.alpha -= 0.035;
+          t.radius = Math.max(0.8, t.radius * 0.96);
           if (t.alpha <= 0) return false;
 
           ctx.save();
           ctx.beginPath();
           ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(239, 68, 68, ${t.alpha * 0.6})`;
+          ctx.fillStyle = `rgba(239, 68, 68, ${t.alpha * 0.55})`;
           ctx.shadowColor = '#EF4444';
           ctx.shadowBlur = 8;
           ctx.fill();
@@ -112,27 +137,27 @@ export default function RoomAnnotationOverlay({
         });
 
         // Draw Active Laser Dot
-        if (laserRef.current.active) {
+        if (laserRef.current.active && laserRef.current.x > 0 && laserRef.current.y > 0) {
           const { x, y } = laserRef.current;
           ctx.save();
 
-          // Outer Radiant Glow
-          const grad = ctx.createRadialGradient(x, y, 0, x, y, 20);
-          grad.addColorStop(0, 'rgba(239, 68, 68, 1)');
-          grad.addColorStop(0.3, 'rgba(239, 68, 68, 0.5)');
+          // Outer Radiant Ambient Halo
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, 22);
+          grad.addColorStop(0, 'rgba(239, 68, 68, 0.95)');
+          grad.addColorStop(0.35, 'rgba(239, 68, 68, 0.45)');
           grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
 
           ctx.beginPath();
-          ctx.arc(x, y, 20, 0, Math.PI * 2);
+          ctx.arc(x, y, 22, 0, Math.PI * 2);
           ctx.fillStyle = grad;
           ctx.fill();
 
-          // Core High-Intensity Bead
+          // Core High-Intensity Laser Bead
           ctx.beginPath();
           ctx.arc(x, y, 4.5, 0, Math.PI * 2);
           ctx.fillStyle = '#FFFFFF';
           ctx.shadowColor = '#EF4444';
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 14;
           ctx.fill();
 
           ctx.restore();
@@ -148,43 +173,29 @@ export default function RoomAnnotationOverlay({
     };
   }, [activeTool]);
 
+  // Handle Freehand Drawing (Pen / Highlighter)
   const handlePointerDown = (e) => {
-    if (!isEnabled || activeTool === 'cursor') return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    if (!isEnabled || (activeTool !== 'pen' && activeTool !== 'highlighter')) return;
+    const x = e.clientX;
+    const y = e.clientY;
 
-    if (activeTool === 'laser') {
-      laserRef.current = { x, y, active: true };
-      trailsRef.current.push({ x, y, time: Date.now() });
-    } else if (activeTool === 'pen' || activeTool === 'highlighter') {
-      currentStrokeRef.current = {
-        tool: activeTool,
-        color: activeTool === 'highlighter' ? '#FBBF24' : '#8B5CF6',
-        points: [{ x, y }]
-      };
-    }
+    currentStrokeRef.current = {
+      type: activeTool,
+      width: activeTool === 'highlighter' ? 18 : 3,
+      points: [{ x, y }]
+    };
   };
 
   const handlePointerMove = (e) => {
-    if (!isEnabled || activeTool === 'cursor') return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (activeTool === 'laser' && laserRef.current.active) {
-      laserRef.current = { x, y, active: true };
-      trailsRef.current.push({ x, y, time: Date.now() });
-    } else if (currentStrokeRef.current) {
-      currentStrokeRef.current.points.push({ x, y });
-    }
+    if (!isEnabled || !currentStrokeRef.current) return;
+    const x = e.clientX;
+    const y = e.clientY;
+    currentStrokeRef.current.points.push({ x, y });
   };
 
   const handlePointerUp = () => {
-    if (activeTool === 'laser') {
-      laserRef.current.active = false;
-    } else if (currentStrokeRef.current) {
-      currentStrokeRef.current.created = Date.now();
+    if (currentStrokeRef.current) {
+      currentStrokeRef.current.createdAt = Date.now();
       strokesRef.current.push(currentStrokeRef.current);
       currentStrokeRef.current = null;
     }
@@ -199,19 +210,21 @@ export default function RoomAnnotationOverlay({
 
   if (!isEnabled) return null;
 
+  const isDrawingTool = activeTool === 'pen' || activeTool === 'highlighter';
+
   return (
     <div
       className={`fixed inset-0 z-[9999990] pointer-events-none select-none ${className}`}
       style={{ touchAction: 'none' }}
     >
-      {/* Canvas for Live Render across full screen */}
+      {/* Canvas for Live Render across full screen viewport */}
       <canvas
         ref={canvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        className={`w-full h-full ${activeTool !== 'cursor' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
+        onPointerDown={isDrawingTool ? handlePointerDown : undefined}
+        onPointerMove={isDrawingTool ? handlePointerMove : undefined}
+        onPointerUp={isDrawingTool ? handlePointerUp : undefined}
+        onPointerCancel={isDrawingTool ? handlePointerUp : undefined}
+        className={`w-full h-full block ${isDrawingTool ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
       />
 
       {/* Floating Apple-Style Annotation Toolstrip (Fixed at top-center of viewport) */}
@@ -230,10 +243,10 @@ export default function RoomAnnotationOverlay({
         <button
           type="button"
           onClick={() => setActiveTool('laser')}
-          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'laser' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
-          title="Laser Pointer"
+          className={`px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'laser' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+          title="Live Laser Pointer (Hover & Move Mouse to Point, Tap Elements to Interact)"
         >
-          <LaserPointerIcon size={13} className={activeTool === 'laser' ? 'text-violet-400' : 'text-current'} strokeWidth={1.5} />
+          <LaserPointerIcon size={13} className={activeTool === 'laser' ? 'text-rose-400' : 'text-current'} strokeWidth={1.5} />
           <span className="text-[11px]">Laser</span>
         </button>
 
@@ -241,8 +254,8 @@ export default function RoomAnnotationOverlay({
         <button
           type="button"
           onClick={() => setActiveTool('pen')}
-          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'pen' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
-          title="Live Annotator (Strokes auto-fade after 2.5s)"
+          className={`px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'pen' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+          title="Live Annotator (Draw arrows or circles; strokes auto-fade after 2.5s)"
         >
           <PenTool size={12} className={activeTool === 'pen' ? 'text-violet-400' : ''} />
           <span className="text-[11px]">Pen</span>
@@ -252,8 +265,8 @@ export default function RoomAnnotationOverlay({
         <button
           type="button"
           onClick={() => setActiveTool('highlighter')}
-          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'highlighter' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
-          title="Highlighter"
+          className={`px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'highlighter' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+          title="Highlighter (Highlight text & elements; auto-fades after 2.5s)"
         >
           <Highlighter size={12} className={activeTool === 'highlighter' ? 'text-amber-400' : ''} />
           <span className="text-[11px]">Highlight</span>
@@ -265,7 +278,7 @@ export default function RoomAnnotationOverlay({
           type="button"
           onClick={clearAllAnnotations}
           className="p-1.5 rounded-xl text-white/40 hover:text-rose-400 hover:bg-white/10 transition-all cursor-pointer"
-          title="Clear all strokes"
+          title="Clear all annotations"
         >
           <Trash2 size={12} />
         </button>
