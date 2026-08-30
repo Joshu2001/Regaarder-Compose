@@ -76,6 +76,25 @@ const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor)
   return <IconComp size={size} className={isDarkIcon ? 'text-slate-900' : 'text-white'} />;
 };
 
+const MeetingNotesIcon = ({ size = 15, className = "", style = {} }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="1.75" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className} 
+    style={style}
+  >
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8.5v.5z" />
+    <path d="M8 10h8" />
+    <path d="M8 14h5" />
+  </svg>
+);
+
 const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <path d="M 3 19 C 7 19, 9 5, 14 5 C 18 5, 20 12, 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -5804,7 +5823,20 @@ const FullPageTemplateGallery = ({
 };
 
 const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
-  const [pos, setPos] = React.useState({ x: 24, y: 80 });
+  const [pos, setPos] = React.useState({ x: 24, y: 76 });
+  const [hasContent, setHasContent] = React.useState(false);
+  const checkNotesContent = () => {
+    if (notesCardRef?.current) {
+      const text = notesCardRef.current.innerText || notesCardRef.current.textContent || '';
+      setHasContent(text.replace(/\u200B/g, '').trim().length > 0);
+    }
+  };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      checkNotesContent();
+    }
+  }, [isOpen]);
   const [isDragging, setIsDragging] = React.useState(false);
   const [slashMenu, setSlashMenu] = React.useState({ open: false, x: 0, y: 0, filter: '', activeIdx: 0, savedRange: null });
   const [dragHandle, setDragHandle] = React.useState({ visible: false, top: 0, left: 0, node: null });
@@ -6144,17 +6176,36 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
         </>
       )}
 
-      <div className="fixed z-[100000] animate-in fade-in shadow-[0_24px_80px_-12px_rgba(0,0,0,0.18)] rounded-[24px] flex flex-col bg-white/95 backdrop-blur-[32px] border border-slate-200/60" style={{ width: 500, height: 600, left: pos.x, top: pos.y }}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50 bg-white/40 rounded-t-[24px] cursor-grab active:cursor-grabbing select-none" onPointerDown={handleHeaderPointerDown}>
-          <h2 className="text-[14px] font-semibold text-slate-800 flex items-center gap-2.5 pointer-events-none tracking-tight">
-            <FileText size={16} className="text-violet-500" /> Meeting Notes
+      <div className="fixed z-[100000] animate-in fade-in shadow-[0_18px_50px_-10px_rgba(0,0,0,0.12)] dark:shadow-[0_18px_50px_-10px_rgba(0,0,0,0.45)] rounded-[20px] flex flex-col bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800" style={{ width: 380, height: 'calc(100vh - 170px)', minHeight: 440, maxHeight: 680, left: pos.x, top: pos.y }}>
+        {/* Apple Utility Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/60 rounded-t-[20px] cursor-grab active:cursor-grabbing select-none" onPointerDown={handleHeaderPointerDown}>
+          <h2 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 flex items-center gap-2 pointer-events-none tracking-tight">
+            <MeetingNotesIcon size={15} className="text-violet-500 shrink-0" />
+            <span>Meeting Notes</span>
           </h2>
-          <div className="flex items-center gap-3 notes-no-drag">
-            <button className="px-3.5 py-1.5 bg-white text-slate-600 border border-slate-200/80 rounded-xl text-[11px] font-medium shadow-sm hover:shadow-md hover:text-slate-800 transition-all" onClick={() => alert('Notes saved to workspace.')}>Save to Docs</button>
-            <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all" onClick={onClose}><X size={14} /></button>
+          <div className="flex items-center gap-2 notes-no-drag">
+            <button 
+              type="button" 
+              className="px-2.5 py-1 bg-slate-100/90 dark:bg-zinc-800 hover:bg-slate-200/90 dark:hover:bg-zinc-700 active:scale-95 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-zinc-700/60 rounded-lg text-[11px] font-medium transition-all cursor-pointer shadow-2xs" 
+              onClick={() => {
+                if (typeof showToast === 'function') showToast('Notes saved to Docs');
+                else alert('Notes saved to workspace.');
+              }}
+            >
+              Save to Docs
+            </button>
+            <button 
+              type="button" 
+              className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-all cursor-pointer" 
+              onClick={onClose}
+              title="Close Notes"
+              aria-label="Close Notes"
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto notes-scroller group" id="notes-scroller">
+        <div className="flex-1 overflow-y-auto notes-scroller group relative" id="notes-scroller">
           <style>{`
             .notes-scroller { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.2s; }
             .notes-scroller:hover { scrollbar-color: rgba(148, 163, 184, 0.4) transparent; }
@@ -6163,19 +6214,40 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
             .notes-scroller::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; transition: background 0.2s; }
             .notes-scroller:hover::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); }
           `}</style>
-          <div className="min-h-full px-6 pt-5 pb-16">
+          
+          {/* Subtle Apple-style Empty State */}
+          {!hasContent && (
+            <div className="pointer-events-none absolute inset-x-5 top-5 flex flex-col items-start gap-1 select-none z-0">
+              <p className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-normal leading-relaxed">
+                Meeting notes will appear here as the conversation progresses.
+              </p>
+              <p className="text-[11px] text-slate-400/80 dark:text-zinc-500/80 flex items-center gap-1 mt-0.5">
+                Type <kbd className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 font-mono text-[9.5px] text-slate-500 dark:text-zinc-400 shadow-2xs">/</kbd> for formatting commands
+              </p>
+            </div>
+          )}
+
+          <div className="min-h-full px-5 pt-4 pb-14 relative z-10">
             <div
               ref={notesCardRef}
               contentEditable="true"
-suppressContentEditableWarning
+              suppressContentEditableWarning
               onClick={handleNotesClick}
-              onKeyDown={handleNotesKeyDown}
+              onKeyDown={(e) => {
+                handleNotesKeyDown(e);
+                setTimeout(checkNotesContent, 10);
+              }}
+              onInput={checkNotesContent}
+              onKeyUp={checkNotesContent}
               onMouseMove={handleEditorMouseMove}
               onMouseLeave={handleEditorMouseLeave}
               onMouseUp={handleEditorMouseUp}
-              onBlur={() => setSelToolbar({ open: false, x: 0, y: 0 })}
-              className={`w-full outline-none text-[15px] leading-[1.75] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-              data-placeholder="Type your notes here — use '/' for commands"
+              onBlur={() => {
+                setSelToolbar({ open: false, x: 0, y: 0 });
+                checkNotesContent();
+              }}
+              className={`w-full outline-none text-[14.5px] leading-[1.7] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+              data-placeholder=""
             />
           </div>
         </div>
@@ -47785,7 +47857,7 @@ const renderRoomTopHeader = () => (
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <FileText size={16} /> {t('room.notes') || 'Notes'}
+                <MeetingNotesIcon size={16} /> {t('room.notes') || 'Notes'}
               </button>
               <button 
                 onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
