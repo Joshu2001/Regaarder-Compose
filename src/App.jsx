@@ -47482,18 +47482,10 @@ const renderRoomTopHeader = () => (
           </button>
         </div>
 
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 select-none">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="3.5" fill="#A78BFA" />
-            <circle cx="12" cy="5.5" r="2.5" fill="#A78BFA" />
-            <circle cx="17.63" cy="8.75" r="2.5" fill="#A78BFA" />
-            <circle cx="17.63" cy="15.25" r="2.5" fill="#A78BFA" />
-            <circle cx="12" cy="18.5" r="2.5" fill="#A78BFA" />
-            <circle cx="6.37" cy="15.25" r="2.5" fill="#A78BFA" />
-            <circle cx="6.37" cy="8.75" r="2.5" fill="#A78BFA" />
-          </svg>
-          <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
+        {/* Room Brand Badge */}
+        <div className="flex items-center gap-2 select-none">
+          <RoomIcon size={20} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400 shrink-0" />
+          <span className="text-[17px] font-bold text-violet-600 dark:text-violet-400 tracking-tight font-sans">Room</span>
         </div>
 
         {/* Product Sync dropdown */}
@@ -81540,19 +81532,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.isYou ? (t('room.you') || 'You') : activeVideoSpeaker.name}</span>
                   </div>
 
-                  {/* Captions Overlay */}
+                  {/* Captions & Subtle Listening Indicator */}
                   {isRoomCaptionsEnabled && liveCaption.text && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[80%] max-w-2xl px-4 flex flex-col items-center">
-                      <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
-                        <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
-                          <span 
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-500 dark:bg-violet-400 animate-pulse' : 'bg-amber-400'}`} 
-                            title={isGeminiActive ? "AI Mode Active (Gemini)" : "Local Mode (Native Speech)"}
-                          />
-                          <span className="opacity-60 text-[13px] mr-2">{liveCaption.speaker}</span>
-                          {liveCaption.text}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 flex flex-col items-center">
+                      {liveCaption.text === 'Listening...' || liveCaption.speaker === 'System' ? (
+                        <div className="bg-black/35 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 border border-white/10 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span className="text-white/80 text-[11px] font-medium tracking-wide">AI · Listening</span>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="bg-black/60 backdrop-blur-xl rounded-2xl px-5 py-2.5 flex flex-col shadow-2xl border border-white/10 max-w-xl">
+                          <div className="text-white text-[13.5px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-400 animate-pulse' : 'bg-emerald-400'}`} />
+                            <span className="opacity-60 text-xs mr-1">{liveCaption.speaker}</span>
+                            <span>{liveCaption.text}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -81717,13 +81713,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
                       
                       {/* Toolbar */}
-                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-2xl px-5 py-2.5 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                      <div className="flex items-center gap-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-full px-4 py-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800">
                         <button
                           onClick={toggleRoomMic}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                             isRoomMicOn
-                              ? 'text-violet-500 hover:bg-violet-50'
-                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
                           }`}
                           title={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
                           aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
@@ -81733,10 +81729,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                         <button
                           onClick={toggleRoomCamera}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                             isRoomCameraOn
-                              ? 'text-violet-500 hover:bg-violet-50'
-                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
                           }`}
                           title={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
                           aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
@@ -81744,6 +81740,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                         </button>
+
+                        {/* People and Chat Quick Toggles with restrained active background */}
+                        <button
+                          type="button"
+                          onClick={() => setIsRoomLeftSidebarOpen(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                            isRoomLeftSidebarOpen 
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold ring-1 ring-slate-200/80 dark:ring-zinc-700/80' 
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700 hover:text-slate-800'
+                          }`}
+                          title="Toggle People Panel"
+                        >
+                          <Users size={18} strokeWidth={1.5} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsRoomRightSidebarOpen(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                            isRoomRightSidebarOpen 
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold ring-1 ring-slate-200/80 dark:ring-zinc-700/80' 
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700 hover:text-slate-800'
+                          }`}
+                          title="Toggle Chat Panel"
+                        >
+                          <MessageSquare size={18} strokeWidth={1.5} />
+                        </button>
+
                         {/* Progressive Disclosure Present Button */}
                         <div className="relative" ref={(node) => {
                           if (node && isRoomPresentPickerOpen) {
@@ -81927,11 +81950,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <button
                             type="button"
                             onClick={() => setIsRoomModelDropdownOpen(!isRoomModelDropdownOpen)}
-                            className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/80 dark:border-zinc-800 shadow-md hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
                           >
                             <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                             <span className="truncate max-w-[90px] text-[11.5px]">
-                              {selectedRoomAiModel === 'gemini-2.0-flash' ? 'Gemini 2.0' : selectedRoomAiModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : selectedRoomAiModel === 'claude-3-5-sonnet-20241022' ? 'Claude 3.5' : selectedRoomAiModel === 'gpt-4o' ? 'GPT-4o' : selectedRoomAiModel === 'deepseek-chat' ? 'DeepSeek V3' : selectedRoomAiModel}
+                              Room AI
                             </span>
                             <ChevronDown size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
                           </button>
@@ -82367,7 +82390,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-2xl overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[28px] overflow-hidden border border-slate-200/60 dark:border-zinc-800" style={{ left: '28px', top: '96px', width: '280px', height: (1 + roomParticipants.length <= 1) ? 'auto' : 'calc(100vh - 180px)', maxHeight: '680px' }}>
                   {renderRoomLeftSidebar()}
                 </div>
               </DraggablePanel>
@@ -82381,7 +82404,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-2xl overflow-hidden" style={{ right: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', zIndex: 40 }}>
+                <div className="absolute pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[28px] overflow-hidden border border-slate-200/60 dark:border-zinc-800" style={{ right: '28px', top: '96px', width: '280px', height: 'calc(100vh - 180px)', maxHeight: '680px', zIndex: 40 }}>
                   {renderRoomRightSidebar()}
                 </div>
               </DraggablePanel>

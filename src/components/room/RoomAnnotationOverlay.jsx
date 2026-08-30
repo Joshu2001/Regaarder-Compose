@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MousePointer, Sparkles, PenTool, Highlighter, Trash2 } from 'lucide-react';
+import { MousePointer, PenTool, Highlighter, Trash2 } from 'lucide-react';
+import { LaserPointerIcon } from '../RegaarderProductIcons';
 
 export default function RoomAnnotationOverlay({
   isEnabled = true,
@@ -147,96 +148,92 @@ export default function RoomAnnotationOverlay({
     };
   }, [activeTool]);
 
-  // Pointer Event Handlers
   const handlePointerDown = (e) => {
-    if (activeTool === 'cursor') return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (!isEnabled || activeTool === 'cursor') return;
+    const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     if (activeTool === 'laser') {
       laserRef.current = { x, y, active: true };
+      trailsRef.current.push({ x, y, time: Date.now() });
     } else if (activeTool === 'pen' || activeTool === 'highlighter') {
       currentStrokeRef.current = {
-        type: activeTool,
-        color: activeColor,
-        width: activeTool === 'highlighter' ? 18 : 3.5,
-        points: [{ x, y }],
-        createdAt: Date.now()
+        tool: activeTool,
+        color: activeTool === 'highlighter' ? '#FBBF24' : '#8B5CF6',
+        points: [{ x, y }]
       };
     }
   };
 
   const handlePointerMove = (e) => {
-    if (activeTool === 'cursor') return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (!isEnabled || activeTool === 'cursor') return;
+    const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (activeTool === 'laser') {
+    if (activeTool === 'laser' && laserRef.current.active) {
       laserRef.current = { x, y, active: true };
-      trailsRef.current.push({ x, y, alpha: 1, radius: 5 });
+      trailsRef.current.push({ x, y, time: Date.now() });
     } else if (currentStrokeRef.current) {
       currentStrokeRef.current.points.push({ x, y });
     }
   };
 
   const handlePointerUp = () => {
-    if (currentStrokeRef.current) {
-      currentStrokeRef.current.createdAt = Date.now();
+    if (activeTool === 'laser') {
+      laserRef.current.active = false;
+    } else if (currentStrokeRef.current) {
+      currentStrokeRef.current.created = Date.now();
       strokesRef.current.push(currentStrokeRef.current);
       currentStrokeRef.current = null;
     }
-    if (activeTool === 'laser') {
-      laserRef.current.active = false;
-    }
   };
 
-  const handlePointerLeave = () => {
-    handlePointerUp();
-    laserRef.current.active = false;
-  };
-
-  const clearAllAnnotations = (e) => {
-    e.stopPropagation();
+  const clearAllAnnotations = () => {
     strokesRef.current = [];
     trailsRef.current = [];
+    currentStrokeRef.current = null;
+    laserRef.current = { x: -100, y: -100, active: false };
   };
 
   if (!isEnabled) return null;
 
   return (
-    <div className={`absolute inset-0 pointer-events-none z-30 select-none ${className}`}>
-      {/* Interactive Drawing Canvas */}
+    <div
+      className={`absolute inset-0 z-30 pointer-events-none ${className}`}
+      style={{ touchAction: 'none' }}
+    >
+      {/* Canvas for Live Render */}
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        className={`w-full h-full block ${activeTool !== 'cursor' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
+        onPointerCancel={handlePointerUp}
+        className={`w-full h-full ${activeTool !== 'cursor' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
       />
 
       {/* Floating Apple-Style Annotation Toolstrip */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-1 bg-black/60 backdrop-blur-xl border border-white/15 px-2 py-1.5 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.3)] transition-all">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-1 bg-black/45 backdrop-blur-xl border border-white/15 px-2 py-1 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-all select-none">
         {/* Tool: Cursor */}
         <button
           type="button"
           onClick={() => setActiveTool('cursor')}
-          className={`p-1.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeTool === 'cursor' ? 'bg-white/25 text-white shadow-sm ring-1 ring-white/20' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+          className={`p-1.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeTool === 'cursor' ? 'bg-white/20 text-white shadow-xs ring-1 ring-white/30' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
           title="Normal Cursor"
         >
-          <MousePointer size={14} />
+          <MousePointer size={13} />
         </button>
 
-        {/* Tool: Glowing Laser Pointer */}
+        {/* Tool: Laser Pointer (Minimal custom laser glyph) */}
         <button
           type="button"
           onClick={() => setActiveTool('laser')}
-          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'laser' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
-          title="Laser Pointer (Live Glowing Dot & Trails)"
+          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'laser' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+          title="Laser Pointer"
         >
-          <Sparkles size={13} className={activeTool === 'laser' ? 'animate-pulse text-rose-200' : ''} />
+          <LaserPointerIcon size={13} className={activeTool === 'laser' ? 'text-violet-400' : 'text-current'} strokeWidth={1.5} />
           <span className="text-[11px]">Laser</span>
         </button>
 
@@ -244,10 +241,10 @@ export default function RoomAnnotationOverlay({
         <button
           type="button"
           onClick={() => setActiveTool('pen')}
-          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'pen' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30 ring-1 ring-violet-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'pen' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
           title="Live Annotator (Strokes auto-fade after 2.5s)"
         >
-          <PenTool size={13} />
+          <PenTool size={12} className={activeTool === 'pen' ? 'text-violet-400' : ''} />
           <span className="text-[11px]">Pen</span>
         </button>
 
@@ -255,22 +252,22 @@ export default function RoomAnnotationOverlay({
         <button
           type="button"
           onClick={() => setActiveTool('highlighter')}
-          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'highlighter' ? 'bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/30 font-bold' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+          className={`px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${activeTool === 'highlighter' ? 'bg-white/20 text-white ring-1 ring-white/30 shadow-xs' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
           title="Highlighter"
         >
-          <Highlighter size={13} />
+          <Highlighter size={12} className={activeTool === 'highlighter' ? 'text-amber-400' : ''} />
           <span className="text-[11px]">Highlight</span>
         </button>
 
         {/* Action: Clear */}
-        <div className="w-[1px] h-4 bg-white/20 mx-0.5" />
+        <div className="w-[1px] h-3.5 bg-white/15 mx-0.5" />
         <button
           type="button"
           onClick={clearAllAnnotations}
-          className="p-1.5 rounded-xl text-white/50 hover:text-rose-400 hover:bg-white/10 transition-all cursor-pointer"
+          className="p-1.5 rounded-xl text-white/40 hover:text-rose-400 hover:bg-white/10 transition-all cursor-pointer"
           title="Clear all strokes"
         >
-          <Trash2 size={13} />
+          <Trash2 size={12} />
         </button>
       </div>
     </div>

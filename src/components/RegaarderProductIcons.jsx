@@ -544,6 +544,34 @@ export const RegaarderNotificationIcon = ({ size = 16, className = "", strokeWid
 );
 
 
+export const LaserPointerIcon = ({ size = 16, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Thin diagonal laser beam */}
+    <path
+      d="M3 13L9.5 6.5"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Laser pointer target dot */}
+    <circle
+      cx="12.5"
+      cy="3.5"
+      r="1.6"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   History: RegaarderHistoryIcon,
   SaveCloud: RegaarderSaveCloudIcon,
@@ -573,7 +601,6 @@ export const RegaarderProductIconMap = {
   whiteboard: WhiteboardIcon,
   schedule: ScheduleIcon,
   memory: MemoryIcon,
-  tasks: TasksIcon,
   chat: ChatIcon,
   assist: AssistIcon,
   assistant: AssistIcon,
@@ -601,6 +628,8 @@ export const RegaarderProductIconMap = {
   People: PeopleIcon,
   user: PeopleIcon,
   users: PeopleIcon,
+  laser: LaserPointerIcon,
+  'laser-pointer': LaserPointerIcon,
 };
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {
