@@ -53,7 +53,8 @@ import {
   RegaarderHistoryIcon,
   RegaarderSaveCloudIcon,
   RegaarderNotificationIcon,
-  LaserPointerIcon
+  LaserPointerIcon,
+  PresentationIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
@@ -47711,7 +47712,7 @@ const renderRoomTopHeader = () => (
                 onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <MonitorPlay size={16} /> {t('room.present') || 'Present'}
+                <PresentationIcon size={16} /> {t('room.present') || 'Present'}
               </button>
               <button 
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
@@ -53309,7 +53310,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }`}
                               title="Enter presentation mode (Fullscreen)"
                             >
-                              <MonitorPlay size={14} />
+                              <PresentationIcon size={14} />
                               <span className="text-[11px] font-medium hidden sm:inline">Present</span>
                             </button>
                           </div>
@@ -81253,7 +81254,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         screenShareStream ? (
                           <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
       <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
-        <MonitorPlay size={34} className="text-violet-400" />
+        <PresentationIcon size={34} className="text-violet-400" />
       </div>
       <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
       <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
@@ -81421,7 +81422,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
       <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
-          <MonitorPlay size={30} className="text-white" />
+          <PresentationIcon size={30} className="text-white" />
         </div>
         
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
@@ -81894,7 +81895,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             title={(roomPresentedApp || isScreenSharing) ? (t('room.stopPresenting') || 'Stop Presenting') : (t('room.present') || 'Present')}
                             aria-label="Present in meeting"
                           >
-                            <MonitorPlay size={18} strokeWidth={1.5} />
+                            <PresentationIcon size={18} strokeWidth={1.5} />
                           </button>
 
                           {/* Present Mode Selection Popover — Apple Executive Tier Stacked List */}
@@ -81981,7 +81982,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
                                 <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                                  <MonitorPlay size={15} />
+                                  <PresentationIcon size={15} strokeWidth={1.6} />
                                 </div>
                                 <div className="min-w-0 text-left">
                                   <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.presentEntireScreen') || 'Share Entire Screen / Window'}</div>

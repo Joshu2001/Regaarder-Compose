@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon, PresentationIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
@@ -1242,7 +1242,7 @@ export default function RoomLandingPage({
                       }`}
                       title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen / Tab (Google Meet / Zoom style)"}
                     >
-                      <Share2 size={16} />
+                      <PresentationIcon size={16} strokeWidth={1.5} />
                     </button>
 
                     {/* Layout Toggles */}

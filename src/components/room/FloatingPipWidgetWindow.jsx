@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Maximize2, X, MonitorPlay, Users, Mic, MicOff, LayoutGrid, Monitor } from 'lucide-react';
-import { LaserPointerIcon } from '../RegaarderProductIcons';
+import { Maximize2, X, Users, Mic, MicOff, LayoutGrid, Monitor } from 'lucide-react';
+import { LaserPointerIcon, PresentationIcon } from '../RegaarderProductIcons';
 
 export default function FloatingPipWidgetWindow() {
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -181,7 +181,7 @@ export default function FloatingPipWidgetWindow() {
             {!hasFrames && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-zinc-950 text-zinc-400">
                 <div className="w-7 h-7 rounded-full bg-violet-600/30 text-violet-300 flex items-center justify-center mb-1 border border-violet-500/20 text-xs font-bold">
-                  <MonitorPlay size={13} />
+                  <PresentationIcon size={13} strokeWidth={1.5} />
                 </div>
                 <span className="text-[9px] font-medium text-zinc-400">Live preview active</span>
               </div>
@@ -345,7 +345,7 @@ export default function FloatingPipWidgetWindow() {
               onClick={handleReturnToApp}
               className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-semibold shadow-lg transition-all flex items-center gap-1 cursor-pointer"
             >
-              <MonitorPlay size={10} />
+              <PresentationIcon size={11} strokeWidth={1.5} />
               <span>Open Room</span>
             </button>
           </div>

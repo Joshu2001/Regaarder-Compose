@@ -201,6 +201,32 @@ export const WhiteboardIcon = ({ size = 24, className = "", strokeWidth = 1.6, .
   </svg>
 );
 
+export const PresentationIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Presentation screen outer frame */}
+    <rect x="3" y="3.5" width="18" height="12.5" rx="2" />
+    {/* Slide layout: leading visual block + 2-3 content lines */}
+    <rect x="5.5" y="6" width="3.5" height="3.5" rx="0.75" fill="currentColor" stroke="none" />
+    <line x1="11.5" y1="6.75" x2="18" y2="6.75" />
+    <line x1="11.5" y1="9.25" x2="18" y2="9.25" />
+    <line x1="5.5" y1="12.5" x2="18" y2="12.5" />
+    {/* Minimal presentation stand / easel feet */}
+    <line x1="12" y1="16" x2="12" y2="18.5" />
+    <path d="M8.5 21l3.5-2.5 3.5 2.5" />
+  </svg>
+);
+
 export const ScheduleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
@@ -616,8 +642,12 @@ export const RegaarderProductIconMap = {
   Slide: DeckIcon,
   slides: DeckIcon,
   Slides: DeckIcon,
-  presentation: DeckIcon,
-  Presentation: DeckIcon,
+  presentation: PresentationIcon,
+  Presentation: PresentationIcon,
+  present: PresentationIcon,
+  Present: PresentationIcon,
+  screenshare: PresentationIcon,
+  'screen-share': PresentationIcon,
   decks: DeckIcon,
   Decks: DeckIcon,
   docs: ComposeIcon,

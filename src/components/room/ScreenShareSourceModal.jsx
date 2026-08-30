@@ -6,7 +6,8 @@ import {
   ComposeIcon,
   SheetIcon,
   DeckIcon,
-  WhiteboardIcon
+  WhiteboardIcon,
+  PresentationIcon
 } from '../RegaarderProductIcons';
 
 // Refined presets with Apple-style titles, subtitles, and distinct brand icons
@@ -137,7 +138,7 @@ export default function ScreenShareSourceModal({ isOpen, onClose, onSelectSource
         <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center">
-              <ScreenShare size={16} />
+              <PresentationIcon size={16} strokeWidth={1.5} />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
