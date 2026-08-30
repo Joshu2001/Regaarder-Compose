@@ -80704,12 +80704,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }}
                     />
                   ))}
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
-                    className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
-                  >
-                    {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
-                  </button>
+                  {!screenShareStream && (
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
+                      className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20 cursor-pointer"
+                      title={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
+                      aria-label={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
+                    >
+                      {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
+                    </button>
+                  )}
                   <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
                     {(!isRoomMicOn && activeVideoSpeaker.isYou) ? (
                       <div className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
