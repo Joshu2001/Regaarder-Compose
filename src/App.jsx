@@ -7444,6 +7444,7 @@ function AppCore() {
     }
   };
 
+  const lastStageTapRef = useRef(0);
   const toggleVideoFullscreen = () => {
     const nextExpanded = !isVideoExpanded;
     setIsVideoExpanded(nextExpanded);
@@ -7452,6 +7453,24 @@ function AppCore() {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(()=>{});
       }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(()=>{});
+      }
+    }
+  };
+
+  const handleStageDoubleTap = (e) => {
+    const now = Date.now();
+    const timeDiff = now - (lastStageTapRef.current || 0);
+    if (timeDiff > 0 && timeDiff < 320) {
+      // Double tap detected
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      toggleVideoFullscreen();
+      lastStageTapRef.current = 0;
+    } else {
+      lastStageTapRef.current = now;
     }
   };
 
@@ -81108,14 +81127,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
           <div className={`w-full h-full relative flex items-center justify-center ${isVideoExpanded ? 'max-w-none bg-black' : 'max-w-[1640px]'}`}>
-            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-[#FBFBFA] dark:bg-zinc-950 border-none rounded-none'}`}>
+            <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-[#FBFBFA] dark:bg-zinc-950 border-none rounded-none'}`}>
               {!isVideoExpanded && renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
-              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${'rounded-none'}`}>
+              <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${'rounded-none'}`}>
 
               {/* Main Video Canvas or Embedded Presentation Stage */}
-              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
+              <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {roomPresentedApp ? (
                   /* Live Workspace Projector Stage — Projects Real App Viewports */
@@ -81339,6 +81358,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 /* Main Video Container */
                 <div 
                   onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} 
+                  onPointerDown={(e) => {
+                    // Ignore clicks on buttons/inputs
+                    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
+                    handleStageDoubleTap(e);
+                  }}
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
