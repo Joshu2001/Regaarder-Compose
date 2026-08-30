@@ -105,6 +105,33 @@ export const RoomSpatialPresenceSymbol = ({ size = 30, className = "", strokeWid
   </svg>
 );
 
+
+export const SpatialApertureCameraSymbol = ({ size = 32, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Geometric Spatial Camera Body */}
+    <rect x="3.5" y="7" width="17" height="15" rx="3.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    
+    {/* Forward Projecting Optical Lens Funnel */}
+    <path d="M20.5 11.5L27.5 7.5V21.5L20.5 17.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    
+    {/* 3-Ring Central Optical Aperture Nexus */}
+    <circle cx="12" cy="14.5" r="4.25" stroke="currentColor" strokeWidth={strokeWidth} />
+    <circle cx="12" cy="14.5" r="2.25" stroke="currentColor" strokeWidth={1.2} opacity="0.8" />
+    <circle cx="12" cy="14.5" r="0.9" fill="currentColor" />
+    
+    {/* Subtle Top Signal Broadcast Wavelet */}
+    <path d="M10 3.5C11.2 3.1 12.8 3.1 14 3.5" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.7" />
+  </svg>
+);
+
 export const RoomIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}

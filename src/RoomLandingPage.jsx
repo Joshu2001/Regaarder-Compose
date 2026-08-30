@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
@@ -1320,12 +1320,12 @@ export default function RoomLandingPage({
                   <span>Secure room · End-to-end encrypted</span>
                 </div>
 
-                {/* 3. Visually Elevated Central Meeting Stage (Custom Symbol & Optical Lift) */}
-                <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[300px]">
+                {/* 3. Fluid Immersive Central Meeting Stage */}
+                <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
                   <div className="flex flex-col items-center -translate-y-2">
-                    {/* Custom Branded Room Spatial Presence Mark */}
-                    <div className="w-[52px] h-[52px] rounded-2xl bg-violet-50/60 dark:bg-violet-950/30 border border-violet-100/50 dark:border-violet-900/30 text-violet-500 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none">
-                      <RoomSpatialPresenceSymbol size={30} strokeWidth={1.5} />
+                    {/* Concept 1 — Spatial Aperture Lens Symbol */}
+                    <div className="w-[54px] h-[54px] rounded-2xl bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100/60 dark:border-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-4 select-none pointer-events-none shadow-2xs">
+                      <SpatialApertureCameraSymbol size={32} strokeWidth={1.5} />
                     </div>
                     <h3 className="text-[17px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
                     <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-[345px] leading-relaxed mx-auto mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
