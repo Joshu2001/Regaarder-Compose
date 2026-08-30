@@ -47511,7 +47511,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
   };
   
 const renderRoomTopHeader = () => (
-    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative pt-2" style={{ zIndex: 999999 }}>
+    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative z-20 pt-2">
       <div className="flex items-center gap-6">
         {/* App Switcher Button */}
         <div className="relative z-[360] flex items-center">
@@ -47723,12 +47723,7 @@ const renderRoomTopHeader = () => (
               >
                 <Calendar size={16} /> {t('sidebar.schedule') || t('room.calendar') || 'Calendar'}
               </button>
-              <button 
-                onClick={() => { setIsRecordingModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
-              >
-                <Disc size={16} /> {t('room.recording') || 'Recording'}
-              </button>
+              
             </div>
           )}
         </div>
@@ -81230,7 +81225,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               {!isVideoExpanded && renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
-              <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${'rounded-none'}`}>
+              <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-visible bg-transparent ${'rounded-none'}`}>
 
               {/* Main Video Canvas or Embedded Presentation Stage */}
               <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
@@ -82083,7 +82078,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MoreHorizontal size={18} strokeWidth={1.6} />
                           </button>
                           {isRoomStartMenuOpen && (
-                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[248px] bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[100000]" onClick={e => e.stopPropagation()}>
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-3 w-[252px] max-h-[calc(100vh-190px)] overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[1000000]" onClick={e => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
 
                                 {/* ── Audio & Video ── */}
