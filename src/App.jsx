@@ -16140,10 +16140,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                         return;
                       }
                       if (item.mode === 'room') {
-                        setProductMode('room-landing');
-                        setLeftSidebarOpen(false);
-                        setRightSidebarOpen(false);
-                        showToast('Switched to Room');
+                        createRoomLandingExperience();
                         return;
                       }
                       if (item.mode === 'browser') {
@@ -31976,17 +31973,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       return;
     }
     if (tabKey === 'room') {
-      if (roomState === 'active' && roomPanelMode === 'expanded') {
-        setRoomPanelMode('docked');
-        if (document.exitFullscreen && document.fullscreenElement) {
-          document.exitFullscreen().catch(()=>{});
-        }
-      } else {
-        // Use startMeetingNow() so requestMediaPermissions() is always called
-        // and the camera/mic permission prompt fires every time a meeting opens.
-        // startMeetingNow() already calls enterFullscreen() internally.
-        startMeetingNow(generateRoomCode());
-      }
+      createRoomLandingExperience();
       return;
     }
     const shouldBeFullscreen = false; // We removed 'room' from here
@@ -33550,6 +33537,18 @@ Respond with valid JSON formatted like this:
     openCreationPicker();
   };
 
+  const createRoomLandingExperience = () => {
+    enterFullscreen();
+    setIsDocumentImmersive(true);
+    setCreationPickerOpen(false);
+    setProductMode('room-landing');
+    setLeftSidebarOpen(false);
+    setRightSidebarOpen(false);
+    setFocusedModule('room');
+    setRoomPanelMode('expanded');
+    showToast('Room workspace ready');
+  };
+
   const createRoomExperience = () => {
     enterFullscreen();
     setIsDocumentImmersive(true);
@@ -33641,9 +33640,7 @@ Respond with valid JSON formatted like this:
     }
 
     if (target === 'room') {
-      enterFullscreen();
-      setActivePrimaryNav('home');
-      setProductMode('room-landing');
+      createRoomLandingExperience();
       return;
     }
 
