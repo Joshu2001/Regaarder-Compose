@@ -81924,7 +81924,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MoreHorizontal size={18} strokeWidth={1.5} />
                           </button>
                           {isRoomStartMenuOpen && (
-                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[248px] bg-white/98 dark:bg-zinc-900/98 backdrop-blur-3xl border border-slate-200/60 dark:border-zinc-800/60 rounded-[20px] p-1.5 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.18)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[50]" onClick={e => e.stopPropagation()}>
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[248px] bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[50]" onClick={e => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
 
                                 {/* ── Audio & Video ── */}
@@ -81937,7 +81937,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <ChevronRight size={14} className={"transition-all shrink-0 " + (isAudioVideoPanelOpen ? "rotate-90 text-violet-400" : "text-slate-300 dark:text-zinc-600 group-hover:text-violet-400")} />
                                 </button>
                                 {isAudioVideoPanelOpen && (
-                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700/60 p-3 space-y-2.5 animate-in fade-in duration-150">
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-3 space-y-2.5 animate-in fade-in duration-150">
                                     <div className="space-y-1">
                                       <div className="flex items-center justify-between">
                                         <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Microphone</span>
@@ -81982,7 +81982,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <ChevronRight size={14} className={"transition-all shrink-0 " + (isLayoutPanelOpen ? "rotate-90 text-violet-400" : "text-slate-300 dark:text-zinc-600 group-hover:text-violet-400")} />
                                 </button>
                                 {isLayoutPanelOpen && (
-                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700/60 p-2.5 animate-in fade-in duration-150">
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-2.5 animate-in fade-in duration-150">
                                     <div className="grid grid-cols-3 gap-1.5">
                                       {[{ id: 'speaker', label: 'Speaker' }, { id: 'gallery', label: 'Gallery' }, { id: 'sidebar', label: 'Sidebar' }].map(layout => (
                                         <button key={layout.id} type="button" onClick={() => setRoomLayoutMode(layout.id)}
@@ -82005,7 +82005,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   {isVisualEffectsActive && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />}
                                 </button>
                                 {isVisualEffectsActive && (
-                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700/60 p-2.5 space-y-1 animate-in fade-in duration-150">
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-2.5 space-y-1 animate-in fade-in duration-150">
                                     {[{ id: 'none', label: 'No Effect' }, { id: 'blur', label: 'Blur Background' }, { id: 'virtual', label: 'Virtual Background' }].map(fx => (
                                       <button key={fx.id} type="button" onClick={() => setSelectedVisualEffect(fx.id)}
                                         className={"w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-[10px] text-[12px] font-medium transition-all cursor-pointer " + (selectedVisualEffect === fx.id ? "bg-violet-600 text-white" : "bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/30 border border-slate-200/60 dark:border-zinc-700/60")}>
