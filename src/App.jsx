@@ -6470,6 +6470,143 @@ const SummaryModal = ({
   );
 };
 
+
+const ReportIssueModal = ({ isOpen, onClose, showToast }) => {
+  const [category, setCategory] = useState('audio');
+  const [description, setDescription] = useState('');
+  const [includeLogs, setIncludeLogs] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const categories = [
+    { id: 'audio', label: 'Audio & Mic' },
+    { id: 'video', label: 'Video / Camera' },
+    { id: 'screen', label: 'Screen Share' },
+    { id: 'ai', label: 'Room AI' },
+    { id: 'other', label: 'Other' },
+  ];
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (!description.trim()) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setDescription('');
+      onClose();
+      showToast?.('Feedback submitted. Thank you for helping improve Room!');
+    }, 350);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] rounded-[20px] w-full max-w-[400px] overflow-hidden flex flex-col text-left select-text relative z-10" onClick={e => e.stopPropagation()}>
+        {/* Compact Apple Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-200/60 dark:border-red-800/60 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 shadow-2xs">
+              <ShieldAlert size={15} />
+            </div>
+            <div>
+              <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                Report an Issue
+              </h2>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+            title="Close"
+            aria-label="Close"
+          >
+            <X size={13} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-5 space-y-4 bg-white dark:bg-zinc-900 font-sans">
+          {/* Category Chips */}
+          <div>
+            <label className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block mb-2">
+              Issue Category
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((c) => {
+                const isSelected = category === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCategory(c.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-red-500 text-white font-semibold shadow-xs'
+                        : 'bg-slate-100/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-700 border border-slate-200/50 dark:border-zinc-700/60'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Description Textarea */}
+          <div>
+            <label className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block mb-1.5">
+              Description
+            </label>
+            <textarea
+              rows={4}
+              placeholder="Briefly describe what happened and steps to reproduce..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full text-xs bg-slate-50 dark:bg-zinc-800/70 border border-slate-200/90 dark:border-zinc-700/80 rounded-xl p-3 outline-none focus:border-red-400 dark:focus:border-red-500 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 resize-none font-sans leading-relaxed"
+            />
+          </div>
+
+          {/* Diagnostics toggle */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="diagnostic-logs"
+                checked={includeLogs}
+                onChange={(e) => setIncludeLogs(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-red-500 focus:ring-red-400 cursor-pointer"
+              />
+              <label htmlFor="diagnostic-logs" className="text-[11.5px] text-slate-600 dark:text-zinc-400 cursor-pointer">
+                Include room diagnostic snapshot
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-5 py-3.5 bg-slate-50/90 dark:bg-zinc-950/80 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!description.trim() || isSubmitting}
+            className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs active:scale-95 cursor-pointer flex items-center gap-1.5"
+          >
+            <span>{isSubmitting ? 'Submitting...' : 'Send Feedback'}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RecordingModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   return (
@@ -85551,6 +85688,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       />
       <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
       <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} />
+      <ReportIssueModal isOpen={isReportIssueModalOpen} onClose={() => setIsReportIssueModalOpen(false)} showToast={showToast} />
 
       {/* Sheets Fullscreen Presentation Mode Overlay */}
       {isSheetsPresentationMode && (
