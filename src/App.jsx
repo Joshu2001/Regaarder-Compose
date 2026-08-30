@@ -32948,13 +32948,18 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const enterFullscreen = () => {
     try {
-      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(true); } catch (e) {}
+      }
+      if (document.documentElement?.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       }
     } catch (e) {}
   };
 
   const createComposeExperience = (options = {}) => {
+    enterFullscreen();
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('compose');
@@ -32967,6 +32972,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createDeckExperience = () => {
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('deck');
@@ -32993,6 +32999,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createSheetsExperience = () => {
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
@@ -33372,6 +33379,7 @@ Respond with valid JSON formatted like this:
   };
 
   const createWhiteboardExperience = (initialTitle = '') => {
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
