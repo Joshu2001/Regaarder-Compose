@@ -75,6 +75,26 @@ const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor)
   return <IconComp size={size} className={isDarkIcon ? 'text-slate-900' : 'text-white'} />;
 };
 
+const MeetingSummaryIcon = ({ size = 16, className = "", style = {} }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="1.75" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className} 
+    style={style}
+  >
+    <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
+    <path d="M7.5 8.5h5" />
+    <path d="M7.5 12h9" />
+    <path d="M7.5 15.5h6.5" />
+    <path d="M16.5 7.5l.4.8.8.4-.8.4-.4.8-.4-.8-.8-.4.8-.4.4-.8z" />
+  </svg>
+);
 const MeetingNotesIcon = ({ size = 15, className = "", style = {} }) => (
   <svg 
     width={size} 
@@ -6287,74 +6307,123 @@ const SummaryModal = ({
     }
   };
 
+  const renderFormattedSummary = (text) => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    return (
+      <div className="space-y-2.5 text-[13px] leading-relaxed text-slate-700 dark:text-zinc-300">
+        {lines.map((line, idx) => {
+          const trimmed = line.trim();
+          if (!trimmed) return <div key={idx} className="h-1" />;
+          
+          if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ') || /^[0-9]+[\.\)]\s+[A-Z]/.test(trimmed)) {
+            const cleanHeading = trimmed.replace(/^#+\s*/, '').replace(/^[0-9]+[\.\)]\s*/, '');
+            return (
+              <div key={idx} className="pt-2 pb-0.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                <span>{cleanHeading}</span>
+              </div>
+            );
+          }
+          
+          if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+            const bulletText = trimmed.replace(/^[-*•]\s*/, '');
+            return (
+              <div key={idx} className="flex items-start gap-2 pl-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400/80 dark:bg-violet-500/80 mt-1.5 shrink-0" />
+                <span className="flex-1">{bulletText}</span>
+              </div>
+            );
+          }
+
+          if (trimmed.startsWith('**') && trimmed.includes(':')) {
+            return (
+              <div key={idx} className="font-medium text-slate-900 dark:text-zinc-100">
+                {trimmed.replace(/\*\*/g, '')}
+              </div>
+            );
+          }
+
+          return <p key={idx}>{trimmed}</p>;
+        })}
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
-      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_32px_120px_rgba(0,0,0,0.25)] rounded-[32px] w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] text-left select-text" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100 dark:border-zinc-800 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-              <RegaarderAiIcon size={20} />
+    <div className="fixed inset-0 z-[1000000] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white/98 dark:bg-zinc-900/98 border border-slate-200/80 dark:border-zinc-800 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.45)] rounded-[18px] w-full max-w-lg overflow-hidden flex flex-col max-h-[82vh] text-left select-text" onClick={e => e.stopPropagation()}>
+        {/* Compact Structured Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 shadow-2xs">
+              <MeetingSummaryIcon size={15} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+              <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
                 {t('room.liveSummary') || 'Live Meeting Summary'}
               </h2>
-              <div className="flex items-center gap-1.5 text-[11px] text-violet-600 dark:text-violet-400 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                <span>{liveTranscript.length} {t('room.transcriptCount') || 'Transcript Chunks'}</span>
+              <div className="flex items-center gap-1.5 text-[10.5px] text-zinc-500 dark:text-zinc-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{liveTranscript.length > 0 ? `${liveTranscript.length} ${t('room.transcriptCount') || 'Transcript Chunks'}` : 'Live Audio Stream Active'}</span>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/50 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 text-xs font-semibold transition-all cursor-pointer disabled:opacity-40"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/90 dark:bg-zinc-800 hover:bg-slate-200/90 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11px] font-medium transition-all cursor-pointer border border-slate-200/60 dark:border-zinc-700/60 active:scale-95 disabled:opacity-40 shadow-2xs"
             >
-              <RegaarderAiIcon size={13} className={isGenerating ? "animate-spin" : ""} />
+              <MeetingSummaryIcon size={12} className={isGenerating ? "animate-spin text-violet-500" : "text-violet-500"} />
               <span>{isGenerating ? (t('room.summaryGenerating') || 'Summarizing...') : (t('room.generateSummary') || 'Refresh')}</span>
             </button>
             <button 
+              type="button"
               onClick={onClose} 
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              title="Close"
+              aria-label="Close"
             >
-              <X size={16} />
+              <X size={13} strokeWidth={2} />
             </button>
           </div>
         </div>
 
         {/* Body Content */}
-        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1 space-y-4 font-sans">
+        <div className="px-5 py-4 overflow-y-auto thin-scrollbar flex-1 space-y-3 font-sans">
           {isGenerating ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-violet-600 dark:text-violet-400">
-              <RegaarderAiIcon size={28} className="animate-spin" />
-              <p className="text-xs font-semibold">{t('room.summaryGenerating') || 'Synthesizing meeting transcript...'}</p>
+            <div className="flex flex-col items-center justify-center py-10 gap-2.5 text-violet-600 dark:text-violet-400">
+              <div className="w-8 h-8 rounded-full bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center border border-violet-200/60 dark:border-violet-800/60">
+                <MeetingSummaryIcon size={16} className="animate-spin text-violet-600 dark:text-violet-400" />
+              </div>
+              <p className="text-xs font-medium text-slate-600 dark:text-zinc-400">{t('room.summaryGenerating') || 'Synthesizing meeting insights...'}</p>
             </div>
           ) : summaryData ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 text-xs text-slate-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                {summaryData}
-              </div>
+            <div className="p-3.5 rounded-[14px] bg-slate-50/60 dark:bg-zinc-850/60 border border-slate-200/60 dark:border-zinc-800">
+              {renderFormattedSummary(summaryData)}
             </div>
           ) : (
-            <div className="text-center py-10 px-4">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
-                <Mic size={18} />
+            <div className="text-center py-8 px-4 flex flex-col items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-violet-50/80 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-2.5 border border-violet-200/50 dark:border-violet-800/50">
+                <Mic size={16} />
               </div>
-              <p className="text-xs font-medium text-slate-600 dark:text-zinc-400">
-                {t('room.noTranscriptYet') || 'Start speaking to record audio and generate live summaries.'}
+              <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 mb-1">
+                Listening to the meeting…
+              </h3>
+              <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 max-w-[280px] leading-relaxed">
+                Your summary will appear here as the conversation develops.
               </p>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="px-7 py-4 bg-slate-50/80 dark:bg-zinc-850/80 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3 bg-slate-50/70 dark:bg-zinc-850/70 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
           <button 
             type="button"
             onClick={() => {
@@ -6364,7 +6433,7 @@ const SummaryModal = ({
               }
             }}
             disabled={!summaryData}
-            className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-700 rounded-xl transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3 py-1.5 text-[11.5px] font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer disabled:opacity-30"
           >
             {t('room.copyAnswer') || 'Copy Summary'}
           </button>
@@ -6378,9 +6447,9 @@ const SummaryModal = ({
               }
             }}
             disabled={!summaryData}
-            className="px-5 py-2 text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            className="px-3.5 py-1.5 text-[11.5px] font-medium text-white bg-violet-600 hover:bg-violet-700 active:scale-95 rounded-lg transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-30"
           >
-            <ComposeIcon size={14} />
+            <ComposeIcon size={13} />
             <span>{t('room.exportToCompose') || 'Export to Docs'}</span>
           </button>
         </div>
@@ -47795,7 +47864,7 @@ const renderRoomTopHeader = () => (
                 onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <Sparkles size={16} /> {t('room.summary') || 'Summary'}
+                <MeetingSummaryIcon size={16} /> {t('room.summary') || 'Summary'}
               </button>
               <button 
                 onClick={() => { setIsCalendarModalOpen(true); setIsMoreMenuOpen(false); }}
