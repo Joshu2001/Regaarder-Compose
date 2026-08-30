@@ -81465,7 +81465,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover object-center"
+              className={`w-full h-full object-cover object-center transition-all duration-300 ${selectedVisualEffect === 'blur' ? 'filter blur-[6px]' : selectedVisualEffect === 'virtual' ? 'filter contrast-110 saturate-110' : ''}`}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center relative select-none bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
@@ -81724,7 +81724,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     isDeleteZoneActive={isDeleteZoneActive} 
                     onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
                   >
-                    <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
+                    <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-[99999] transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
                       
                       {/* Toolbar */}
                       <div className="flex items-center gap-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-full px-4 py-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800">
@@ -81924,7 +81924,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MoreHorizontal size={18} strokeWidth={1.5} />
                           </button>
                           {isRoomStartMenuOpen && (
-                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[248px] bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[50]" onClick={e => e.stopPropagation()}>
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-[248px] bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[100000]" onClick={e => e.stopPropagation()}>
                               <div className="flex flex-col gap-0.5">
 
                                 {/* ── Audio & Video ── */}
@@ -81941,7 +81941,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <div className="space-y-1">
                                       <div className="flex items-center justify-between">
                                         <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Microphone</span>
-                                        <button type="button" onClick={() => setIsRoomMicOn(p => !p)} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomMicOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
+                                        <button type="button" onClick={toggleRoomMic} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomMicOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
                                           <span className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-200 " + (isRoomMicOn ? "left-[18px]" : "left-0.5")} />
                                         </button>
                                       </div>
@@ -81953,7 +81953,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <div className="space-y-1">
                                       <div className="flex items-center justify-between">
                                         <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Camera</span>
-                                        <button type="button" onClick={() => setIsRoomCameraOn(p => !p)} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomCameraOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
+                                        <button type="button" onClick={toggleRoomCamera} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomCameraOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
                                           <span className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-200 " + (isRoomCameraOn ? "left-[18px]" : "left-0.5")} />
                                         </button>
                                       </div>
@@ -81985,7 +81985,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-2.5 animate-in fade-in duration-150">
                                     <div className="grid grid-cols-3 gap-1.5">
                                       {[{ id: 'speaker', label: 'Speaker' }, { id: 'gallery', label: 'Gallery' }, { id: 'sidebar', label: 'Sidebar' }].map(layout => (
-                                        <button key={layout.id} type="button" onClick={() => setRoomLayoutMode(layout.id)}
+                                        <button key={layout.id} type="button" onClick={() => { setRoomLayoutMode(layout.id); showToast(`Layout switched to ${layout.label}`); }}
                                           className={"py-2 px-1 rounded-[10px] text-[11px] font-semibold transition-all cursor-pointer " + (roomLayoutMode === layout.id ? "bg-violet-600 text-white shadow-xs" : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 border border-slate-200/60 dark:border-zinc-700/60")}>
                                           {layout.label}
                                         </button>
@@ -82007,7 +82007,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {isVisualEffectsActive && (
                                   <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-2.5 space-y-1 animate-in fade-in duration-150">
                                     {[{ id: 'none', label: 'No Effect' }, { id: 'blur', label: 'Blur Background' }, { id: 'virtual', label: 'Virtual Background' }].map(fx => (
-                                      <button key={fx.id} type="button" onClick={() => setSelectedVisualEffect(fx.id)}
+                                      <button key={fx.id} type="button" onClick={() => { setSelectedVisualEffect(fx.id); showToast(`Visual effect: ${fx.label}`); }}
                                         className={"w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-[10px] text-[12px] font-medium transition-all cursor-pointer " + (selectedVisualEffect === fx.id ? "bg-violet-600 text-white" : "bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/30 border border-slate-200/60 dark:border-zinc-700/60")}>
                                         <span className="w-3 h-3 rounded-full border-2 border-current shrink-0" />
                                         {fx.label}
