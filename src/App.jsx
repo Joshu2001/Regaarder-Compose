@@ -12793,6 +12793,7 @@ const DEFAULT_DECK_SLIDES = [
   const [isRoomMicOn, setIsRoomMicOn] = useState(false);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(false);
   const isVideoOff = !isRoomCameraOn;
+  const [isWorkspaceAnnotationActive, setIsWorkspaceAnnotationActive] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
@@ -48311,6 +48312,23 @@ const renderRoomTopHeader = () => (
             <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
           </div>
           <div className="flex items-center gap-1.5">
+            {/* Toggle Laser / Screen Annotation Overlay */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsWorkspaceAnnotationActive((prev) => !prev);
+              }}
+              className={`p-1.5 rounded-xl text-xs transition-all cursor-pointer ${
+                isWorkspaceAnnotationActive 
+                  ? 'bg-violet-600 text-white shadow-xs scale-105' 
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300'
+              }`}
+              title={isWorkspaceAnnotationActive ? "Hide Laser / Annotations" : "Draw Laser Pointer / Annotate Screen"}
+            >
+              <LaserPointerIcon size={13} strokeWidth={1.6} />
+            </button>
+
             {/* Pop-Out OS PiP Window */}
             <button
               type="button"
@@ -48359,6 +48377,11 @@ const renderRoomTopHeader = () => (
             </button>
           </div>
         </div>
+
+        {/* Full-Screen Workspace Laser / Pen Annotation Layer */}
+        {isWorkspaceAnnotationActive && (
+          <RoomAnnotationOverlay isEnabled={true} />
+        )}
 
       </div>,
       document.body
