@@ -443,98 +443,8 @@ export default function RoomLandingPage({
   };
 
   return (
-    <div className="w-full h-full relative bg-[#F9F8F6] dark:bg-zinc-950 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] dark:from-zinc-900 dark:via-zinc-950 dark:to-black flex flex-col items-center justify-center font-sans overflow-hidden select-none p-2 md:p-4">
-      {/* Subtle vignette glow */}
-      <div className="absolute inset-0 bg-black/[0.02] dark:bg-white/[0.01] pointer-events-none" />
-
-      {/* Main Apple-Tier Floating Window Container */}
-      <div className="w-full h-full relative flex items-center justify-center max-w-[1640px] z-10">
-        <div className="w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] bg-white/70 dark:bg-zinc-900/80 border border-white/60 dark:border-zinc-800 rounded-[40px]">
-          
-          {/* Top-Left Crisp Workspace Switcher Icon Button (Always Accessible in Lobby & Room) */}
-          <div className="absolute top-5 left-7 z-[999] flex items-center gap-3 select-none pointer-events-auto">
-            <button
-              type="button"
-              data-workspace-switcher="true"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                if (onOpenWorkspaceSwitcher) {
-                  onOpenWorkspaceSwitcher(rect);
-                } else {
-                  setIsWorkspaceMenuOpen(prev => !prev);
-                }
-              }}
-              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/95 dark:bg-zinc-800/95 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-700/90 shadow-sm hover:bg-white dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer active:scale-95"
-              title="Switch Workspace App"
-            >
-              <LayoutGrid size={16} />
-            </button>
-
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-700/70 text-xs font-bold text-violet-600 dark:text-violet-400 shadow-2xs">
-              <RoomIcon size={16} strokeWidth={1.8} />
-              <span className="font-semibold text-xs">Room</span>
-            </div>
-
-            {/* Built-in Workspace Switcher Popover */}
-            {isWorkspaceMenuOpen && !onOpenWorkspaceSwitcher && (
-              <div 
-                className="absolute top-full left-0 mt-2 w-56 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150 text-left font-sans"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
-                  Workspaces
-                </div>
-                {[
-                  { id: 'compose', label: 'Docs', icon: ComposeIcon, color: 'text-violet-600' },
-                  { id: 'sheet', label: 'Sheets', icon: SheetIcon, color: 'text-emerald-600' },
-                  { id: 'deck', label: 'Decks', icon: DeckIcon, color: 'text-amber-600' },
-                  { id: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon, color: 'text-sky-600' },
-                  { id: 'room-landing', label: 'Room', icon: RoomIcon, color: 'text-violet-600', active: true },
-                  { id: 'browser', label: 'Research', icon: BrowserIcon, color: 'text-blue-600' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setIsWorkspaceMenuOpen(false);
-                      if (item.id === 'compose') {
-                        onSwitchProductMode ? onSwitchProductMode('compose') : (window.location.hash = '#compose');
-                      } else if (item.id === 'whiteboard') {
-                        onSwitchProductMode ? onSwitchProductMode('whiteboard') : (window.location.hash = '#whiteboard');
-                      } else if (item.id === 'sheet') {
-                        onSwitchProductMode ? onSwitchProductMode('sheet') : (window.location.hash = '#sheet');
-                      } else if (item.id === 'deck') {
-                        onSwitchProductMode ? onSwitchProductMode('deck') : (window.location.hash = '#deck');
-                      } else if (item.id === 'browser') {
-                        onSwitchProductMode ? onSwitchProductMode('browser') : (window.location.hash = '#browser');
-                      } else {
-                        onSwitchProductMode?.(item.id);
-                      }
-                    }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                      item.active
-                        ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
-                        : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100/70 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <item.icon size={16} strokeWidth={1.8} className={item.color} />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.active && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ========================================================================= */}
-          {/* ROOM WORKSPACE (Rendered in background, blurred when isLobby is true)     */}
-          {!isLobby ? (
+    <div className="w-full h-full min-h-screen bg-[#FBFBFA] dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 font-sans select-none flex flex-col overflow-hidden relative">
+      {!isLobby ? (
             <div className="w-full h-full flex flex-col transition-all duration-300 pointer-events-auto">
             
             {/* Top Header Bar */}
@@ -2146,8 +2056,6 @@ export default function RoomLandingPage({
             </div>
           )}
 
-        </div>
-      </div>
 
       {/* ========================================================================= */}
       {/* ROOM AI ASSISTANT MODAL (Live API Connected)                             */}
