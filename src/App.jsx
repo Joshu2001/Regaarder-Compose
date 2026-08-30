@@ -82316,182 +82316,246 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <form onSubmit={handleRoomAISubmit} className="flex-1 flex items-center gap-3 bg-white/90 backdrop-blur-2xl rounded-[32px] px-6 py-3.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
                           {roomAIModal.isOpen && !isRoomAiMinimized && (
                             <div 
-                              className={`absolute bottom-[calc(100%+14px)] z-[100] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_28px_90px_rgba(0,0,0,0.22)] rounded-[32px] p-5 md:p-6 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text resize overflow-auto thin-scrollbar ${
+                              className={`absolute bottom-[calc(100%+14px)] z-[100] bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_90px_-20px_rgba(0,0,0,0.7)] rounded-[18px] p-4 md:p-5 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text resize overflow-hidden thin-scrollbar ${
                                 isRoomAiExpanded 
-                                  ? 'left-[-120px] right-[-120px] min-h-[480px] max-h-[680px]' 
-                                  : 'left-0 right-0 min-h-[320px] max-h-[520px] min-w-[560px]'
+                                  ? 'left-[-120px] right-[-120px] min-h-[500px] max-h-[700px]' 
+                                  : 'left-0 right-0 min-h-[360px] max-h-[540px] min-w-[560px]'
                               }`}
-                              style={{ resize: 'both', minWidth: '480px', minHeight: '280px' }}
+                              style={{ resize: 'both', minWidth: '480px', minHeight: '320px' }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="flex items-center justify-between gap-3 mb-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                                      <RegaarderAiIcon size={20} />
-                                    </div>
-                                    <div>
-                                      <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                              {/* Apple Refined Header */}
+                              <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-[10px] bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-2xs shrink-0">
+                                    <RegaarderAiIcon size={16} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight truncate">
                                         {t('room.aiIntelligence') || 'Room AI Intelligence'}
                                       </h3>
-                                      <p className="text-[11px] text-violet-600 dark:text-violet-400 font-semibold flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                                        {t('room.sessionAnalysis') || 'Live Meeting Analysis'}
-                                      </p>
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 dark:bg-violet-950/70 text-violet-600 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/60 shrink-0">
+                                        {selectedRoomAiModel ? (typeof selectedRoomAiModel === 'object' ? selectedRoomAiModel.name : selectedRoomAiModel) : 'Cloud Engine'}
+                                      </span>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    {/* New Chat Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (roomAiThread.length > 0) {
-                                          setRoomAiHistory(prev => [{ id: Date.now(), title: roomAiThread[0]?.content?.slice(0, 30) || 'Session', thread: [...roomAiThread] }, ...prev]);
-                                        }
-                                        setRoomAiThread([]);
-                                        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
-                                        showToast?.('Started fresh chat');
-                                      }}
-                                      title={t('room.newChat') || 'New Chat'}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      <Plus size={15} />
-                                    </button>
-
-                                    {/* History Button */}
-                                    <div className="relative" ref={(node) => {
-                                      if (node && isRoomAiHistoryOpen) {
-                                        const handleOutsideHistory = (e) => {
-                                          if (!node.contains(e.target)) setIsRoomAiHistoryOpen(false);
-                                        };
-                                        document.addEventListener('pointerdown', handleOutsideHistory, { once: true });
-                                      }
-                                    }}>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setIsRoomAiHistoryOpen(prev => !prev);
-                                        }}
-                                        title={t('room.history') || 'Chat History'}
-                                        className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
-                                          isRoomAiHistoryOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300' : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                                        }`}
-                                      >
-                                        <Clock size={15} />
-                                      </button>
-                                      {isRoomAiHistoryOpen && (
-                                        <div className="absolute right-0 top-full mt-1.5 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-2 z-[200] animate-in fade-in zoom-in-95 font-sans">
-                                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                                            {t('room.history') || 'Past Threads'}
-                                          </div>
-                                          {roomAiHistory.length === 0 ? (
-                                            <div className="text-xs text-slate-400 px-2 py-3 text-center">No past threads yet</div>
-                                          ) : (
-                                            roomAiHistory.map(item => (
-                                              <button
-                                                key={item.id}
-                                                type="button"
-                                                onClick={() => {
-                                                  setRoomAiThread(item.thread);
-                                                  setRoomAIModal({ isOpen: true, prompt: item.thread[0]?.content, answer: item.thread.filter(m=>m.role==='assistant').pop()?.content || '' });
-                                                  setIsRoomAiHistoryOpen(false);
-                                                }}
-                                                className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 truncate"
-                                              >
-                                                {item.title}...
-                                              </button>
-                                            ))
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Copy Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const lastReply = roomAiThread.filter(m => m.role === 'assistant').pop()?.content || roomAIModal.answer;
-                                        if (lastReply) {
-                                          navigator.clipboard?.writeText(lastReply);
-                                          showToast?.(t('room.copied') || 'AI response copied to clipboard!');
-                                        }
-                                      }}
-                                      title={t('room.copyAnswer') || 'Copy Answer'}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      <Copy size={15} />
-                                    </button>
-
-                                    {/* Enlarge / Restore Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsRoomAiExpanded(!isRoomAiExpanded)}
-                                      title={isRoomAiExpanded ? (t('room.collapseModal') || 'Restore window') : (t('room.expandModal') || 'Expand window')}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      {isRoomAiExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-                                    </button>
-
-                                    {/* Minimize Button (─) */}
-                                    <button
-                                      type="button"
-                                      onClick={() => { setIsRoomAiMinimized(true); }}
-                                      title={t('room.minimize') || 'Minimize Chat'}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      <Minus size={15} strokeWidth={2.5} />
-                                    </button>
+                                    <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                      {t('room.sessionAnalysis') || 'Live Meeting Analysis'}
+                                    </p>
                                   </div>
                                 </div>
 
-                                {/* Multi-turn Conversation Stream */}
-                                <div className="flex-1 overflow-y-auto thin-scrollbar mb-3 space-y-3 pr-1 max-h-[360px] min-h-[140px]">
-                                  {roomAiThread.map((msg, idx) => (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* New Chat Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (roomAiThread.length > 0) {
+                                        setRoomAiHistory(prev => [{ id: Date.now(), title: roomAiThread[0]?.content?.slice(0, 30) || 'Session', thread: [...roomAiThread] }, ...prev]);
+                                      }
+                                      setRoomAiThread([]);
+                                      setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+                                      showToast?.('Started fresh chat');
+                                    }}
+                                    title={t('room.newChat') || 'New Chat'}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+
+                                  {/* History Button */}
+                                  <div className="relative" ref={(node) => {
+                                    if (node && isRoomAiHistoryOpen) {
+                                      const handleOutsideHistory = (e) => {
+                                        if (!node.contains(e.target)) setIsRoomAiHistoryOpen(false);
+                                      };
+                                      document.addEventListener('pointerdown', handleOutsideHistory, { once: true });
+                                    }
+                                  }}>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsRoomAiHistoryOpen(prev => !prev);
+                                      }}
+                                      title={t('room.history') || 'Chat History'}
+                                      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                                        isRoomAiHistoryOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300' : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                      }`}
+                                    >
+                                      <Clock size={14} />
+                                    </button>
+                                    {isRoomAiHistoryOpen && (
+                                      <div className="absolute right-0 top-full mt-1.5 w-60 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-2 z-[200] animate-in fade-in zoom-in-95 font-sans">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
+                                          {t('room.history') || 'Past Threads'}
+                                        </div>
+                                        {roomAiHistory.length === 0 ? (
+                                          <div className="text-xs text-slate-400 px-2 py-3 text-center">No past threads yet</div>
+                                        ) : (
+                                          roomAiHistory.map(item => (
+                                            <button
+                                              key={item.id}
+                                              type="button"
+                                              onClick={() => {
+                                                setRoomAiThread(item.thread);
+                                                setRoomAIModal({ isOpen: true, prompt: item.thread[0]?.content, answer: item.thread.filter(m=>m.role==='assistant').pop()?.content || '' });
+                                                setIsRoomAiHistoryOpen(false);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 truncate"
+                                            >
+                                              {item.title}...
+                                            </button>
+                                          ))
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Copy Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const lastAssistantMsg = [...roomAiThread].reverse().find(m => m.role === 'assistant');
+                                      if (lastAssistantMsg?.content) {
+                                        navigator.clipboard.writeText(lastAssistantMsg.content);
+                                        showToast?.(t('room.copied') || 'Copied answer to clipboard!');
+                                      }
+                                    }}
+                                    title={t('room.copyAnswer') || 'Copy Answer'}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <Copy size={14} />
+                                  </button>
+
+                                  {/* Enlarge / Restore Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsRoomAiExpanded(!isRoomAiExpanded)}
+                                    title={isRoomAiExpanded ? (t('room.collapseModal') || 'Restore window') : (t('room.expandModal') || 'Expand window')}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    {isRoomAiExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                                  </button>
+
+                                  {/* Close / Dismiss Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => { setRoomAIModal(prev => ({ ...prev, isOpen: false })); }}
+                                    title={t('common.close') || 'Close'}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <X size={14} strokeWidth={2} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Multi-turn Conversation Stream */}
+                              <div className="flex-1 overflow-y-auto thin-scrollbar mb-2 space-y-2.5 pr-1 max-h-[380px] min-h-[160px]">
+                                {roomAiThread.map((msg, idx) => {
+                                  const isError = msg.content && (msg.content.includes('Unable to reach') || msg.content.includes('Connection Refused') || msg.content.includes('Failed to generate'));
+                                  
+                                  if (isError) {
+                                    return (
+                                      <div key={idx} className="p-3.5 rounded-[14px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-amber-900 dark:text-amber-200 text-xs space-y-2 animate-in fade-in">
+                                        <div className="flex items-start gap-2.5">
+                                          <div className="w-5 h-5 rounded-md bg-amber-200/70 dark:bg-amber-900/60 flex items-center justify-center text-amber-800 dark:text-amber-200 shrink-0 font-bold text-[11px]">
+                                            !
+                                          </div>
+                                          <div className="min-w-0 leading-relaxed font-sans">
+                                            {msg.content}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-amber-200/60 dark:border-amber-900/40">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedRoomAiModel('gemini-2.5-flash');
+                                              showToast?.('Switched to Cloud Model (Gemini 2.5 Flash)');
+                                            }}
+                                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold transition-all cursor-pointer shadow-2xs"
+                                          >
+                                            Switch to Cloud AI
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
                                     <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                      <div className={`max-w-[90%] p-3.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
+                                      <div className={`max-w-[85%] p-3 rounded-[16px] text-xs leading-relaxed whitespace-pre-wrap ${
                                         msg.role === 'user'
-                                          ? 'bg-violet-600 text-white rounded-tr-xs font-medium shadow-xs'
-                                          : 'bg-violet-50/70 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 text-slate-800 dark:text-zinc-200 rounded-tl-xs'
+                                          ? 'bg-violet-600 text-white rounded-br-[4px] font-medium shadow-xs'
+                                          : 'bg-slate-50 dark:bg-zinc-800/80 border border-slate-100 dark:border-zinc-700/60 text-slate-800 dark:text-zinc-200 rounded-bl-[4px]'
                                       }`}>
                                         {msg.content}
                                       </div>
                                     </div>
-                                  ))}
+                                  );
+                                })}
 
-                                  {isRoomAILoading && (
-                                    <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400 text-xs font-semibold w-fit">
-                                      <RegaarderAiIcon size={14} className="animate-spin" />
-                                      <span>{t('room.aiAnalyzing') || 'Thinking...'}</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Inline Follow-up Reply Input Bar */}
-                                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800">
-                                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl px-3.5 py-2 border border-slate-200/80 dark:border-zinc-700/80 focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:border-violet-300">
-                                    <input
-                                      type="text"
-                                      value={roomAiFollowUpInput}
-                                      onChange={(e) => setRoomAiFollowUpInput(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                          e.preventDefault();
-                                          handleRoomAiFollowUpSubmit();
-                                        }
-                                      }}
-                                      placeholder={t('room.replyPlaceholder') || 'Reply to Room AI or ask a follow-up...'}
-                                      className="flex-1 text-xs text-slate-700 dark:text-zinc-200 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={handleRoomAiFollowUpSubmit}
-                                      disabled={!roomAiFollowUpInput.trim() || isRoomAILoading}
-                                      className="w-7 h-7 rounded-xl bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-violet-600 cursor-pointer shrink-0 shadow-xs"
-                                    >
-                                      <Send size={12} />
-                                    </button>
+                                {isRoomAILoading && (
+                                  <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-xs font-semibold w-fit border border-violet-100 dark:border-violet-900/40">
+                                    <RegaarderAiIcon size={14} className="animate-spin" />
+                                    <span>{t('room.aiAnalyzing') || 'Analyzing conversation...'}</span>
                                   </div>
+                                )}
+                              </div>
+
+                              {/* Suggested Prompt Action Chips */}
+                              <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar pb-2 pt-1 shrink-0">
+                                {[
+                                  'Summarize meeting so far',
+                                  'Extract key action items',
+                                  'What decisions were made?'
+                                ].map((suggestion, i) => (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => {
+                                      setRoomAiFollowUpInput(suggestion);
+                                      // Execute follow up prompt directly
+                                      setTimeout(() => {
+                                        const btn = document.getElementById('room-ai-followup-submit-btn');
+                                        if (btn) btn.click();
+                                      }, 50);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-slate-100/80 dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 text-slate-600 dark:text-zinc-300 text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap border border-slate-200/60 dark:border-zinc-700/60 shrink-0 shadow-2xs"
+                                  >
+                                    {suggestion}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Inline Follow-up Reply Input Bar */}
+                              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 shrink-0">
+                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/80 rounded-[14px] px-3.5 py-2 border border-slate-200/80 dark:border-zinc-700/80 focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:border-violet-300">
+                                  <input
+                                    type="text"
+                                    value={roomAiFollowUpInput}
+                                    onChange={(e) => setRoomAiFollowUpInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleRoomAiFollowUpSubmit();
+                                      }
+                                    }}
+                                    placeholder={t('room.replyPlaceholder') || 'Ask Room AI a question or follow-up...'}
+                                    className="flex-1 text-xs text-slate-800 dark:text-zinc-100 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500 font-sans"
+                                  />
+                                  <button
+                                    id="room-ai-followup-submit-btn"
+                                    type="button"
+                                    onClick={handleRoomAiFollowUpSubmit}
+                                    disabled={!roomAiFollowUpInput.trim() || isRoomAILoading}
+                                    className="w-7 h-7 rounded-[10px] bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:hover:bg-violet-600 cursor-pointer shrink-0 shadow-2xs"
+                                  >
+                                    <Send size={12} />
+                                  </button>
                                 </div>
+                              </div>
                             </div>
                           )}
                           {/* Hidden File Input for Device Uploads */}
