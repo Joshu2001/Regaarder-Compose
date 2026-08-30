@@ -1,8 +1,10 @@
+import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
+import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow';
 import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger Vercel Build Safely
+// Trigger HMR & Live Reload: 2026-08-28T00:51:30
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -84,6 +86,7 @@ const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
+import ScreenShareSourceModal from './components/room/ScreenShareSourceModal';
 import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
 import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
@@ -1726,7 +1729,7 @@ const SlashMenuPopover = React.forwardRef(({
               setInternalSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={t('slash.searchPlaceholder') || "Search commands…"}
+            placeholder={t('slash.searchPlaceholder') || "Search commands..."}
             className="w-full h-8 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans shadow-2xs"
           />
           {searchQuery && (
@@ -3245,6 +3248,7 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 };
 
 const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [invitedEmails, setInvitedEmails] = useState(new Set());
   const [isCopied, setIsCopied] = useState(false);
@@ -7262,9 +7266,10 @@ function AppCore() {
     color: randomColor({ luminosity: 'dark' }),
     avatar: ''
   }));
-  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 'you', name: 'You', isYou: true });
+  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: "you", name: "You", isYou: true });
   const [youTileSpeaker, setYouTileSpeaker] = useState(null);
   const [videoParticipants, setVideoParticipants] = useState([]);
+  const [isParticipantOverflowOpen, setIsParticipantOverflowOpen] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState({});
   const pcsRef = useRef({});
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
@@ -7453,7 +7458,7 @@ function AppCore() {
   const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
+  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(true);
   const [isGeminiActive, setIsGeminiActive] = useState(true);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
@@ -12791,6 +12796,8 @@ const DEFAULT_DECK_SLIDES = [
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
+  const [lastScreenShareFrameUrl, setLastScreenShareFrameUrl] = useState(null);
+  const [sharedSourceInfo, setSharedSourceInfo] = useState(null);
 
   const [isRoomRecording, setIsRoomRecording] = useState(false);
   const roomMediaRecorderRef = useRef(null);
@@ -13221,6 +13228,439 @@ const DEFAULT_DECK_SLIDES = [
   const [roomPresentAppSearch, setRoomPresentAppSearch] = useState('');
   const [roomPresentViewMode, setRoomPresentViewMode] = useState('clean'); // 'clean' | 'full' // 'docs' | 'sheets' | 'decks' | 'whiteboard' | 'screen' | null
   const [isRoomPresentPickerOpen, setIsRoomPresentPickerOpen] = useState(false);
+  const [isScreenSourceModalOpen, setIsScreenSourceModalOpen] = useState(false);
+  const [pipPosition, setPipPosition] = useState({ x: null, y: null });
+  const [lastPresentedMode, setLastPresentedMode] = useState('compose');
+  const pipDragContainerRef = useRef(null);
+
+  const handlePipPointerDown = (e) => {
+    if (e.target.closest('button')) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect = pipDragContainerRef.current ? pipDragContainerRef.current.getBoundingClientRect() : { left: window.innerWidth - 260, top: window.innerHeight - 200 };
+    const initialX = rect.left;
+    const initialY = rect.top;
+
+    const onPointerMove = (moveEvt) => {
+      const dx = moveEvt.clientX - startX;
+      const dy = moveEvt.clientY - startY;
+      setPipPosition({
+        x: Math.max(16, Math.min(window.innerWidth - 260, initialX + dx)),
+        y: Math.max(16, Math.min(window.innerHeight - 200, initialY + dy))
+      });
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  const startCleanDocCanvasStream = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    let isStreaming = true;
+
+    const renderFrame = () => {
+      if (!isStreaming) return;
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const pageWidth = 1080;
+      const pageHeight = 1400;
+      const startX = (canvas.width - pageWidth) / 2;
+      const startY = 40;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.06)';
+      ctx.shadowBlur = 24;
+      ctx.fillRect(startX, startY, pageWidth, pageHeight);
+      ctx.shadowBlur = 0;
+
+      // Header border
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(startX + 48, startY + 120);
+      const lines = rawText.split('\n');
+      let yOffset = startY + 165;
+      for (let i = 0; i < Math.min(lines.length, 32); i++) {
+        const line = lines[i];
+        if (line) {
+          ctx.fillText(line.substring(0, 85), startX + 48, yOffset);
+        }
+        yOffset += 30;
+      }
+
+      requestAnimationFrame(renderFrame);
+    };
+
+    renderFrame();
+
+    const stream = canvas.captureStream(30);
+    const [track] = stream.getVideoTracks();
+    if (track) {
+      const origStop = track.stop.bind(track);
+      track.stop = () => {
+        isStreaming = false;
+        origStop();
+      };
+      track.onended = () => {
+        setIsScreenSharing(false);
+        setScreenShareStream(null);
+        showToast('Screen sharing stopped');
+      };
+    }
+    return stream;
+  };
+
+  const nativePipVideoRef = useRef(null);
+  const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
+  const pipFramePumpRef = useRef(null);
+  const cropBoundsRef = useRef(null);
+  const pipOffscreenVideoRef = useRef(null);
+
+  // IPC Frame Pump: when pip widget is open, draw screenShareStream to an offscreen
+  // canvas every 33ms (~30 fps) and send JPEG data URLs to main.cjs which relays them
+  // to the floating pip window renderer. Bypasses disable-gpu black screen completely.
+  useEffect(() => {
+    if (!isPipWidgetOpen || !screenShareStream) {
+      if (pipFramePumpRef.current) {
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+      return;
+    }
+
+    // Reuse or create an offscreen video element to decode the stream
+    if (!pipOffscreenVideoRef.current) {
+      const vid = document.createElement('video');
+      vid.muted = true;
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.style.position = 'fixed';
+      vid.style.top = '0';
+      vid.style.left = '0';
+      vid.style.width = '640px';
+      vid.style.height = '360px';
+      vid.style.opacity = '0.001';
+      vid.style.pointerEvents = 'none';
+      vid.style.zIndex = '-999999';
+      document.body.appendChild(vid);
+      pipOffscreenVideoRef.current = vid;
+    }
+
+    const vid = pipOffscreenVideoRef.current;
+    if (vid.srcObject !== screenShareStream) {
+      vid.srcObject = screenShareStream;
+      vid.onloadedmetadata = () => {
+        vid.play().catch(() => {});
+      };
+      vid.play().catch(() => {});
+    }
+
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = 640;
+    offscreenCanvas.height = 360;
+    const ctx = offscreenCanvas.getContext('2d');
+
+    pipFramePumpRef.current = setInterval(() => {
+      if (!window.electronAPI?.sendPipFrame) return;
+      if (vid.readyState < 2 || vid.videoWidth === 0) return;
+      try {
+        const isConsole = (sharedSourceInfo?.name || '').toLowerCase().includes('mingw') || 
+                          (sharedSourceInfo?.name || '').toLowerCase().includes('cmd') || 
+                          (sharedSourceInfo?.name || '').toLowerCase().includes('bash');
+        
+        if (isConsole && vid.videoHeight > 100) {
+          // Cleanly crop out top titlebar and bottom Windows taskbar on console desktop captures
+          const topCrop = Math.round(vid.videoHeight * 0.026);
+          const bottomCrop = Math.round(vid.videoHeight * 0.055);
+          const sourceH = Math.max(10, vid.videoHeight - topCrop - bottomCrop);
+          ctx.drawImage(vid, 0, topCrop, vid.videoWidth, sourceH, 0, 0, 640, 360);
+        } else {
+          const bounds = cropBoundsRef.current;
+          if (bounds && bounds.width > 50 && bounds.height > 50 && vid.videoWidth > 0 && vid.videoHeight > 0) {
+            const scaleX = vid.videoWidth / (window.screen.width || 1920);
+            const scaleY = vid.videoHeight / (window.screen.height || 1080);
+            const sx = Math.max(0, Math.round(bounds.x * scaleX));
+            const sy = Math.max(0, Math.round(bounds.y * scaleY));
+            const sWidth = Math.min(vid.videoWidth - sx, Math.round(bounds.width * scaleX));
+            const sHeight = Math.min(vid.videoHeight - sy, Math.round(bounds.height * scaleY));
+            if (sWidth > 20 && sHeight > 20) {
+              ctx.drawImage(vid, sx, sy, sWidth, sHeight, 0, 0, 640, 360);
+            } else {
+              const taskbarH = Math.round(vid.videoHeight * 0.055);
+              const sourceH = Math.max(10, vid.videoHeight - taskbarH);
+              ctx.drawImage(vid, 0, 0, vid.videoWidth, sourceH, 0, 0, 640, 360);
+            }
+          } else {
+            // Always crop out the bottom Windows taskbar so the application window fills the screen cleanly
+            const taskbarH = Math.round(vid.videoHeight * 0.055);
+            const sourceH = Math.max(10, vid.videoHeight - taskbarH);
+            ctx.drawImage(vid, 0, 0, vid.videoWidth, sourceH, 0, 0, 640, 360);
+          }
+        }
+        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.85);
+        setLastScreenShareFrameUrl(jpegDataUrl);
+        window.electronAPI.sendPipFrame(jpegDataUrl);
+      } catch (e) {
+        // frame pump error
+      }
+    }, 33);
+
+    return () => {
+      if (pipFramePumpRef.current) {
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+    };
+  }, [isPipWidgetOpen, screenShareStream]);
+
+  // Listen for Cross-Process "Open Room" event from Floating PiP HUD
+  useEffect(() => {
+    if (window.electronAPI?.onNavigateToRoom) {
+      const unsub = window.electronAPI.onNavigateToRoom(() => {
+        setIsPipWidgetOpen(false);
+        window.electronAPI?.closeFloatingPipWidget?.();
+        setProductMode('room');
+        setRoomState('active');
+        setRoomPanelMode('expanded');
+        setFocusedModule('room');
+        setIsScreenSourceModalOpen(false);
+        if (window.__currentScreenShareStream) {
+          setScreenShareStream(window.__currentScreenShareStream);
+          setIsScreenSharing(true);
+        }
+      });
+      return () => unsub?.();
+    }
+  }, []);
+
+
+  const triggerNativePictureInPicture = async (streamToUse) => {
+    try {
+      const activeStream = streamToUse || screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
+      if (!activeStream) return false;
+
+      // Find any active playing video element on DOM first
+      const allVideos = Array.from(document.querySelectorAll('video'));
+      let vid = allVideos.find(v => v.srcObject === activeStream && v.videoWidth > 0) || allVideos[0];
+
+      if (!vid) {
+        vid = document.createElement('video');
+        vid.muted = true;
+        vid.autoplay = true;
+        vid.playsInline = true;
+        vid.width = 320;
+        vid.height = 180;
+        vid.style.position = 'fixed';
+        vid.style.bottom = '16px';
+        vid.style.right = '16px';
+        vid.style.zIndex = '999999';
+        vid.style.borderRadius = '16px';
+        vid.style.pointerEvents = 'none';
+        document.body.appendChild(vid);
+        nativePipVideoRef.current = vid;
+      }
+
+      if (vid.srcObject !== activeStream) {
+        vid.srcObject = activeStream;
+      }
+
+      await vid.play().catch(() => {});
+
+      // Wait for video frames to start rendering
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture().catch(() => {});
+      }
+
+      if (document.pictureInPictureEnabled && vid.requestPictureInPicture) {
+        await vid.requestPictureInPicture();
+        showToast?.('OS Always-on-Top PiP active over external apps');
+        return true;
+      }
+    } catch (err) {
+      console.warn('[Native PiP] Error activating Picture-in-Picture:', err);
+    }
+    return false;
+  };
+
+    const handleSelectScreenSource = async (selection) => {
+    try {
+      let stream = null;
+      let sourceId = selection.sourceId || selection.source?.id;
+
+      if (window.electronAPI?.getDesktopSources) {
+        const rawSources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (selection.type === 'clean-preset') {
+          const appWin = rawSources?.find(s => s.id?.startsWith('window:') && (s.name?.includes('Regaarder') || s.name?.includes('Compose') || s.name?.includes('Electron')));
+          sourceId = appWin ? appWin.id : (rawSources?.[0]?.id || selection.sourceId);
+        } else if (!sourceId && rawSources && rawSources.length > 0) {
+          sourceId = rawSources[0]?.id;
+        }
+
+        const primaryScreen = rawSources?.find(s => s.id?.startsWith('screen:')) || rawSources?.[0];
+        const winNameLower = (selection.preset?.name || selection.source?.name || '').toLowerCase();
+        const isConsoleWindow = winNameLower.includes('mingw') || winNameLower.includes('cmd') || winNameLower.includes('bash') || winNameLower.includes('powershell');
+
+        // Always stream the primary desktop screen on Windows to prevent DirectX window blackout
+        sourceId = primaryScreen ? primaryScreen.id : (selection.sourceId || selection.source?.id);
+
+        if (sourceId && (sourceId.startsWith('window:') || sourceId.startsWith('screen:'))) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                mandatory: {
+                  chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: sourceId,
+                  minWidth: 1280,
+                  maxWidth: 1920,
+                  minHeight: 720,
+                  maxHeight: 1080
+                }
+              }
+            });
+          } catch (e) {
+            console.warn('Primary stream acquisition failed, trying primaryScreen fallback:', e);
+            if (primaryScreen && sourceId !== primaryScreen.id) {
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  audio: false,
+                  video: {
+                    mandatory: {
+                      chromeMediaSource: 'desktop',
+                      chromeMediaSourceId: primaryScreen.id,
+                      minWidth: 1280,
+                      maxWidth: 1920,
+                      minHeight: 720,
+                      maxHeight: 1080
+                    }
+                  }
+                });
+              } catch (fallbackErr) {
+                console.warn('Fallback stream error:', fallbackErr);
+              }
+            }
+          }
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: 'always' },
+            audio: true
+          });
+        } catch (e) {
+          console.warn('getDisplayMedia failed:', e);
+        }
+      }
+
+      if (!stream) {
+        try {
+          const fallbackCanvas = document.createElement('canvas');
+          fallbackCanvas.width = 1280;
+          fallbackCanvas.height = 720;
+          const ctx = fallbackCanvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, 1280, 720);
+            ctx.fillStyle = '#a855f7';
+            ctx.font = 'bold 28px Inter, sans-serif';
+            ctx.fillText('Live Application Canvas Active', 400, 360);
+          }
+          stream = fallbackCanvas.captureStream ? fallbackCanvas.captureStream(15) : null;
+        } catch (canvasErr) {
+          console.warn('Canvas stream capture error:', canvasErr);
+        }
+      }
+
+      if (stream) {
+        const [track] = stream.getVideoTracks();
+        if (track) {
+          track.onended = () => {
+            // Guard against premature teardown during window minimize or backgrounding
+            if (!window.__currentScreenShareStream) {
+              setIsScreenSharing(false);
+              setScreenShareStream(null);
+              setSharedSourceInfo(null);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.('Screen sharing stopped');
+            }
+          };
+        }
+
+        if (typeof window !== 'undefined') {
+          window.__currentScreenShareStream = stream;
+        }
+        setScreenShareStream(stream);
+        setIsScreenSharing(true);
+        setSharedSourceInfo({
+          type: selection.type,
+          name: selection.preset?.name || selection.source?.name || 'Screen',
+          id: selection.sourceId || selection.source?.id
+        });
+      }
+
+      if (selection.type === 'clean-preset') {
+        const mode = selection.preset?.mode || 'compose';
+        setLastPresentedMode(mode);
+        setFocusedModule(mode);
+        setProductMode(mode);
+        setRoomState('active');
+        setRoomPanelMode('docked');
+        if (mode === 'compose') {
+          setActiveDocView('document');
+          setActiveRightTab('assistant');
+        }
+        setIsWhiteboardImmersive(false);
+        showToast?.(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
+      } else {
+        const winName = selection.source?.name || 'Selected Window';
+        showToast?.(`Sharing live window: ${winName}`);
+        setProductMode('room');
+        setRoomState('active');
+        setRoomPanelMode('expanded');
+        setFocusedModule('room');
+        setIsPipWidgetOpen(true);
+        const targetSourceId = selection.sourceId || selection.source?.id || '';
+        if (window.electronAPI?.focusExternalWindow) {
+          window.electronAPI.focusExternalWindow({ sourceId: targetSourceId, name: winName }).then(res => {
+            if (res?.bounds) {
+              cropBoundsRef.current = res.bounds;
+            } else {
+              cropBoundsRef.current = null;
+            }
+          }).catch(() => {
+            cropBoundsRef.current = null;
+          });
+        } else if (window.electronAPI?.minimizeMainWindow) {
+          cropBoundsRef.current = null;
+          window.electronAPI.minimizeMainWindow();
+        } else {
+          cropBoundsRef.current = null;
+        }
+        if (window.electronAPI?.openFloatingPipWidget) {
+          window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetSourceId });
+        } else {
+          triggerNativePictureInPicture(stream);
+        }
+      }
+    } catch (err) {
+      console.error('Real screen share error:', err);
+      showToast?.('Failed to start live stream: ' + err.message);
+    }
+  };
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
 
@@ -17372,13 +17812,13 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     };
   }, [activeDocId, roomId]);
 
-  // Synchronize meeting room video participants with Yjs awareness presence
+  // Synchronize meeting room video participants with Yjs awareness presence (Real peers only)
   useEffect(() => {
-    if (roomState !== 'active' || !roomId) {
+    if (roomState !== "active" || !roomId) {
       setVideoParticipants([]);
       setRoomParticipants([]);
+      setActiveVideoSpeaker({ id: "you", name: "You", isYou: true });
       setYouTileSpeaker(null);
-      setActiveVideoSpeaker({ id: 'you', name: 'You', isYou: true });
       return;
     }
 
@@ -17394,11 +17834,11 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           id: `client-${clientID}`,
           name: userName,
           isYou: false,
-          img: u.avatar || '',
-          color: u.color || '#7C3AED',
+          img: u.avatar || "",
+          color: u.color || "#7C3AED",
           isRoomMicOn: !!state.isRoomMicOn,
           isRoomCameraOn: !!state.isRoomCameraOn,
-          socketId: state.socketId || '',
+          socketId: state.socketId || "",
         });
       }
     });
@@ -17406,8 +17846,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     setRoomParticipants(() => {
       return onlineOthers.map(o => ({
         name: o.name,
-        sub: o.isRoomCameraOn ? 'Camera on' : 'Camera off',
-        state: 'idle',
+        sub: o.isRoomCameraOn ? "Camera on" : "Camera off",
+        state: "idle",
         activeMic: o.isRoomMicOn,
       }));
     });
@@ -17415,22 +17855,9 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     setActiveVideoSpeaker((prevActive) => {
       let nextActive = prevActive;
       if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
-        nextActive = { id: 'you', name: 'You', isYou: true };
+        nextActive = onlineOthers[0] || { id: "you", name: "You", isYou: true };
       }
-      
-      setVideoParticipants(() => {
-        const remainingOthers = onlineOthers.filter(o => o.id !== nextActive.id);
-        return remainingOthers;
-      });
-
-      setYouTileSpeaker(() => {
-        if (nextActive.isYou) {
-          return null;
-        } else {
-          return { id: 'you', name: 'You', isYou: true };
-        }
-      });
-
+      setVideoParticipants(() => onlineOthers.filter(o => o.id !== nextActive.id));
       return nextActive;
     });
   }, [awarenessUsers, roomId, roomState]);
@@ -31546,17 +31973,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       return;
     }
     if (tabKey === 'room') {
-      if (roomState === 'active' && roomPanelMode === 'expanded') {
-        setRoomPanelMode('docked');
-        if (document.exitFullscreen && document.fullscreenElement) {
-          document.exitFullscreen().catch(()=>{});
-        }
-      } else {
-        // Use startMeetingNow() so requestMediaPermissions() is always called
-        // and the camera/mic permission prompt fires every time a meeting opens.
-        // startMeetingNow() already calls enterFullscreen() internally.
-        startMeetingNow(generateRoomCode());
-      }
+      createRoomLandingExperience();
       return;
     }
     const shouldBeFullscreen = false; // We removed 'room' from here
@@ -32124,24 +32541,35 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const toggleRoomMic = async () => {
-    // Optimistically toggle the mic state immediately (like Zoom/Google Meet),
-    // so the UI responds instantly regardless of whether a real stream exists.
-    // Both isRoomMicOn and isMicMuted are kept in sync as inverses of each other
-    // because two different control bars reference each state.
     const nextOn = !isRoomMicOn;
     setIsRoomMicOn(nextOn);
     setIsMicMuted(!nextOn);
-    showToast(nextOn ? 'Microphone unmuted' : 'Microphone muted');
+    showToast(nextOn ? "Microphone unmuted (Captions active)" : "Microphone muted");
 
-    // If a real media stream is active, also enable/disable the actual audio track.
-    if (localStream && !mediaError) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = nextOn;
+    if (nextOn) {
+      try {
+        if (!localStream) {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setLocalStream(micStream);
+        } else {
+          const audioTracks = localStream.getAudioTracks();
+          if (audioTracks.length > 0) {
+            audioTracks.forEach(t => { t.enabled = true; });
+          } else {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const [audioTrack] = micStream.getAudioTracks();
+            if (audioTrack) localStream.addTrack(audioTrack);
+          }
+        }
+      } catch (err) {
+        console.warn("[Microphone] Error accessing audio hardware:", err);
+      }
+    } else {
+      if (localStream) {
+        localStream.getAudioTracks().forEach(t => { t.enabled = false; });
       }
     }
   };
-
   const toggleScreenShare = async () => {
     if (isScreenSharing && screenShareStream) {
       screenShareStream.getTracks().forEach((track) => track.stop());
@@ -32152,10 +32580,37 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
+      let stream = null;
+      if (window.electronAPI?.getDesktopSources) {
+        const sources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (sources && sources.length > 0) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sources[0].id,
+                minWidth: 1280,
+                maxWidth: 1920,
+                minHeight: 720,
+                maxHeight: 1080
+              }
+            }
+          });
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always' },
+          audio: false,
+        });
+      }
+
+      if (!stream) {
+        throw new Error('Screen capture not supported in this environment');
+      }
+
       const [track] = stream.getVideoTracks();
       if (track) {
         track.onended = () => {
@@ -32166,14 +32621,19 @@ Answer the user's question, provide an insightful summary, or explain the contex
       }
       setScreenShareStream(stream);
       setIsScreenSharing(true);
+      // content protection disabled for smooth screen capture
       showToast('Screen sharing started');
-    } catch (_err) {
-      // User cancelled or permission denied — silently ignore to avoid jarring error toasts.
-      showToast('Screen share cancelled.');
+    } catch (err) {
+      console.warn('Screen share cancelled or failed:', err);
+      if (err.name !== 'NotAllowedError') {
+        showToast('Screen share: ' + (err.message || 'Unable to access screen'));
+      } else {
+        showToast('Screen share cancelled.');
+      }
     }
   };
 
-  // Foolproof privacy: Ensure hardware is off if state is off.
+    // Foolproof privacy: Ensure hardware is off if state is off.
   useEffect(() => {
     if (!isRoomCameraOn && localStream) {
       localStream.getVideoTracks().forEach(t => t.stop());
@@ -32488,13 +32948,18 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const enterFullscreen = () => {
     try {
-      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(true); } catch (e) {}
+      }
+      if (document.documentElement?.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       }
     } catch (e) {}
   };
 
   const createComposeExperience = (options = {}) => {
+    enterFullscreen();
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('compose');
@@ -32507,12 +32972,16 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createDeckExperience = () => {
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('deck');
-    setFocusedModule('compose');
+    setFocusedModule('deck');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setDeckTitle('Untitled deck');
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
     setActiveDeckSlideId(1);
@@ -32530,12 +32999,16 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createSheetsExperience = () => {
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
-    setFocusedModule('compose');
+    setFocusedModule('sheets');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setSheetsTitle('Untitled Sheet');
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
@@ -32906,12 +33379,16 @@ Respond with valid JSON formatted like this:
   };
 
   const createWhiteboardExperience = (initialTitle = '') => {
+    setIsDocumentImmersive(true);
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
-    setFocusedModule('compose');
+    setFocusedModule('whiteboard');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
@@ -46716,13 +47193,18 @@ If requested to draw a chart or graph, append a structured action JSON block:
     // Only the local user (You) is always present. Remote participants would be
     // added here via WebRTC signalling in a real multi-user implementation.
     const youEntry = {
-      name: 'You',
-      sub: isRoomCameraOn ? (t('room.cameraOn') || 'Camera on') : (t('room.cameraOff') || 'Camera off'),
-      state: 'host',
+      name: "You",
+      sub: "Host",
+      role: "Host",
+      state: "host",
       activeMic: isRoomMicOn,
+      isSpeaking: isRoomMicOn,
+      img: "",
+      color: "#10B981"
     };
 
-    const allParticipants = [youEntry, ...roomParticipants];
+    const currentActiveOthers = [activeVideoSpeaker, ...videoParticipants].filter(p => !p.isYou && p.id !== "you");
+    const allParticipants = [youEntry, ...currentActiveOthers];
     const filtered = allParticipants.filter(p =>
       p.name.toLowerCase().includes((peopleSearchQuery || '').toLowerCase())
     );
@@ -47000,18 +47482,10 @@ const renderRoomTopHeader = () => (
           </button>
         </div>
 
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 select-none">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="3.5" fill="#A78BFA" />
-            <circle cx="12" cy="5.5" r="2.5" fill="#A78BFA" />
-            <circle cx="17.63" cy="8.75" r="2.5" fill="#A78BFA" />
-            <circle cx="17.63" cy="15.25" r="2.5" fill="#A78BFA" />
-            <circle cx="12" cy="18.5" r="2.5" fill="#A78BFA" />
-            <circle cx="6.37" cy="15.25" r="2.5" fill="#A78BFA" />
-            <circle cx="6.37" cy="8.75" r="2.5" fill="#A78BFA" />
-          </svg>
-          <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
+        {/* Room Brand Badge */}
+        <div className="flex items-center gap-2 select-none">
+          <RoomIcon size={20} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400 shrink-0" />
+          <span className="text-[17px] font-bold text-violet-600 dark:text-violet-400 tracking-tight font-sans">Room</span>
         </div>
 
         {/* Product Sync dropdown */}
@@ -47741,9 +48215,161 @@ const renderRoomTopHeader = () => (
     );
   };
 
+  const renderFloatingMeetingPipHud = () => {
+    if (typeof document === 'undefined') return null;
+    const shouldShow = (isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked') || (typeof window !== 'undefined' && window.__currentScreenShareStream)) && productMode !== 'room' && productMode !== 'room-landing';
+    if (!shouldShow) return null;
+
+    const activeStream = screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
+
+    return createPortal(
+      <div 
+        ref={pipDragContainerRef}
+        onPointerDown={handlePipPointerDown}
+        style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
+        className={`fixed ${pipPosition.x === null ? 'bottom-6 right-8' : ''} z-[999999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
+      >
+        {/* Floating Live Video Mini Preview Tile */}
+        <div 
+          onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+          className="w-56 h-36 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-700 shadow-[0_24px_60px_rgba(0,0,0,0.35)] relative group cursor-pointer hover:ring-2 ring-violet-500 transition-all duration-200"
+          title="Click to expand Room"
+        >
+          {/* Live Video Element */}
+          {activeStream ? (
+            <video 
+              ref={(node) => { 
+                if (node && activeStream) {
+                  if (node.srcObject !== activeStream) node.srcObject = activeStream;
+                  node.play?.().catch(() => {});
+                }
+              }} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-full object-contain bg-black" 
+            />
+          ) : localStream && isRoomCameraOn ? (
+            <video 
+              ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
+              <div className="w-9 h-9 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-sm font-bold border border-violet-500/30">
+                Y
+              </div>
+              <span className="text-[10px] font-medium text-zinc-400">Meeting in progress</span>
+            </div>
+          )}
+
+          {/* Floating Streaming Status Badge */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white border border-white/10 shadow-sm pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+            <span className="font-semibold text-[9.5px] tracking-wide uppercase truncate max-w-[120px]">{sharedSourceInfo?.name ? sharedSourceInfo.name : activeStream ? 'Streaming Live' : 'Live'}</span>
+          </div>
+
+          {/* OS Picture-in-Picture Popout Button */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const vidEl = pipDragContainerRef.current?.querySelector('video');
+                if (document.pictureInPictureElement) {
+                  await document.exitPictureInPicture();
+                  showToast?.('Exited Picture-in-Picture');
+                } else if (vidEl && document.pictureInPictureEnabled) {
+                  await vidEl.requestPictureInPicture();
+                  showToast?.('Floating OS Mini-Window Active');
+                }
+              } catch (err) {
+                console.warn('PiP error:', err);
+                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+              }
+            }}
+            className="absolute top-2 right-2 p-1 rounded-lg bg-black/75 hover:bg-black/90 text-white/90 hover:text-white border border-white/10 shadow-sm transition-all cursor-pointer z-20"
+            title="Pop out into Floating OS Window (Always on Top)"
+          >
+            <ExternalLink size={11} />
+          </button>
+
+          {/* Hover Overlay with Expand Action */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+            <Maximize2 size={15} />
+            <span>Return to Room</span>
+          </div>
+        </div>
+
+        {/* Meeting Controls Bar */}
+        <div className="w-56 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-2 px-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* Pop-Out OS PiP Window */}
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (isPipWidgetOpen) {
+                  setIsPipWidgetOpen(false);
+                  window.electronAPI?.closeFloatingPipWidget?.();
+                  showToast?.('Closed floating window');
+                } else {
+                  if (window.electronAPI?.openFloatingPipWidget) {
+                    window.electronAPI.openFloatingPipWidget();
+                    setIsPipWidgetOpen(true);
+                    showToast?.('OS Floating Window Active');
+                  }
+                }
+              }}
+              className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
+              title="Pop out into Always-on-Top OS Floating Window"
+            >
+              <ExternalLink size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
+              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomMicOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+              title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
+            >
+              {isRoomMicOn ? <Mic size={13} /> : <MicOff size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
+              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomCameraOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+              title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+            >
+              {isRoomCameraOn ? <Video size={13} /> : <VideoOff size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
+              className="p-1.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+              title="Leave Meeting"
+            >
+              <PhoneOff size={13} />
+            </button>
+          </div>
+        </div>
+
+      </div>,
+      document.body
+    );
+  };
+
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+        {/* Universal Floating Meeting PIP HUD across Sheets and Decks */}
+        {renderFloatingMeetingPipHud()}
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -70331,13 +70957,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
   };
 
   const getWorkspaceModuleStyle = (moduleName) => {
-    if (focusedModule === moduleName) {
+    if (
+      focusedModule === moduleName || 
+      (productMode === 'compose' && moduleName === 'compose') ||
+      (productMode === 'deck' && moduleName === 'deck') ||
+      (productMode === 'sheets' && moduleName === 'sheets')
+    ) {
       return {
-        position: 'absolute',
-        inset: '0',
+        position: 'relative',
+        width: '100%',
+        height: '100%',
         zIndex: 10,
-        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        transform: 'scale(1) translate3d(0,0,0)',
         opacity: 1,
         borderRadius: '0px',
       };
@@ -70363,9 +70993,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
     }
 
     return {
-      display: 'none',
-      opacity: 0,
-      pointerEvents: 'none',
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      opacity: 1,
     };
   };
 
@@ -70918,7 +71549,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="preview-owner-view">
                     <div
                       className="prose prose-sm max-w-none text-slate-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                      dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing or press / for commands...</p>' }}
                     />
                   </div>
                 </div>
@@ -71125,16 +71756,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
       ) : productMode === 'room-landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+        <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
           <RoomLandingPage 
+            isDocumentImmersive={isDocumentImmersive}
+            onToggleImmersive={toggleDocumentImmersiveMode}
             showToast={showToast}
             onCallAi={callGemini}
+            isScreenSharing={isScreenSharing}
+            setIsScreenSharing={setIsScreenSharing}
+            screenShareStream={screenShareStream}
+            setScreenShareStream={setScreenShareStream}
+            sharedSourceInfo={sharedSourceInfo}
+            setSharedSourceInfo={setSharedSourceInfo}
+            onSelectScreenSource={handleSelectScreenSource}
+            onOpenSourceModal={() => setIsScreenSourceModalOpen(true)}
             onSwitchProductMode={(mode) => {
               setProductMode(mode);
-              if (mode !== 'room' && mode !== 'room-landing') {
-                setFocusedModule('compose');
-                setDockedModules([]);
-                setRoomPanelMode('docked');
+              setRoomState('active');
+              setRoomPanelMode('docked');
+              setFocusedModule(mode);
+              if (mode === 'compose') {
+                setActiveDocView('document');
+                setActiveRightTab('assistant');
               }
               const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', whiteboard: 'Whiteboard', browser: 'Research' };
               showToast?.(`Switched to ${labelMap[mode] || mode}`);
@@ -71612,7 +72255,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div
           onMouseEnter={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(true); }}
           onMouseLeave={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(false); }}
-          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isWhiteboardWorkspace
               ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${
                   isWhiteboardTopNavRevealed 
@@ -74661,7 +75304,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
           
-          {(productMode === 'room' || productMode === 'room-landing') && (
         <div 
           className="flex-1 flex flex-col min-h-0 bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 cursor-pointer"
           style={getWorkspaceModuleStyle('compose')}
@@ -77468,7 +78110,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
             className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-all duration-200 ${
-              (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
+              (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
           >
           <div
@@ -80433,16 +81075,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
+        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${'p-0 bg-[#FBFBFA] dark:bg-zinc-950'}`}>
           {/* Subtle vignette/radial glow overlay */}
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
           <div className={`w-full h-full relative flex items-center justify-center ${isVideoExpanded ? 'max-w-none bg-black' : 'max-w-[1640px]'}`}>
-            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-white/70 border border-white/60 rounded-[40px]'}`}>
+            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-[#FBFBFA] dark:bg-zinc-950 border-none rounded-none'}`}>
               {!isVideoExpanded && renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
-              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${isVideoExpanded ? 'rounded-none' : 'rounded-t-[40px]'}`}>
+              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${'rounded-none'}`}>
 
               {/* Main Video Canvas or Embedded Presentation Stage */}
               <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
@@ -80452,7 +81094,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className={`w-full relative overflow-hidden bg-white dark:bg-[#121214] shadow-[0_32px_100px_rgba(0,0,0,0.14)] pointer-events-auto transition-all duration-500 border border-slate-200/80 dark:border-zinc-800 shrink flex-1 select-text flex flex-col z-10 ${
                     isVideoExpanded 
                       ? '!absolute !inset-0 !max-w-none !max-h-none z-20 rounded-none' 
-                      : 'max-w-[840px] max-h-[560px] min-h-[30vh] aspect-[16/10] rounded-[28px]'
+                      : 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] rounded-[32px]'
                   }`}>
                     {/* Presentation Control Banner */}
                     <div className="px-6 py-3 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0">
@@ -80519,25 +81161,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Interactive Live Working App Stage */}
                     <div className="flex-1 overflow-hidden bg-[#F7F7F9] dark:bg-[#121214] relative flex flex-col">
                       {roomPresentedApp === 'docs' ? (
-                        <div className="flex-1 overflow-auto bg-[#F7F7F9] dark:bg-[#121214] p-4 md:p-6 flex flex-col items-center">
-                          <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] rounded-[24px] border border-slate-200/60 dark:border-zinc-800 p-8 md:p-12 min-h-[460px] relative transition-all">
-                            <input
-                              type="text"
-                              value={docTitle || ''}
-                              onChange={(e) => setDocTitle(e.target.value)}
-                              placeholder="Untitled Document"
-                              className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white w-full bg-transparent border-none outline-none mb-4 font-sans"
-                            />
-                            <div 
-                              contentEditable
-                              suppressContentEditableWarning
-                              onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
-                              className="prose dark:prose-invert max-w-none text-[14px] leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[280px]"
-                            />
+                        screenShareStream ? (
+                          <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
+      <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
+        <MonitorPlay size={34} className="text-violet-400" />
+      </div>
+      <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
+      <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
+        Participants are viewing your live workspace. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+            setScreenShareStream(null);
+            setIsScreenSharing(false);
+            showToast?.('Stopped presenting');
+          }}
+          className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+        >
+          Stop Sharing
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setProductMode(lastPresentedMode || 'compose');
+            setRoomPanelMode('docked');
+          }}
+          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+        >
+          Return to Workspace
+        </button>
+      </div>
+    </div>
+                        ) : (
+                          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-zinc-900">
+                            <div className="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-4 shadow-xs">
+                              <ComposeIcon size={28} />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">{docTitle || 'Docs Workspace'}</h3>
+                            <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mb-5 leading-relaxed">
+                              Share your live Docs tab or window directly to the meeting stage with zero latency.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={toggleScreenShare}
+                              className="px-5 py-2.5 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Share2 size={14} />
+                              <span>Start Screen Sharing Docs</span>
+                            </button>
                           </div>
-                        </div>
+                        )
                       ) : roomPresentedApp === 'whiteboard' ? (
                         /* Live Interactive Whiteboard Stage */
                         <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none flex flex-col justify-center items-center">
@@ -80638,66 +81314,189 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-2xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
+    <RoomAnnotationOverlay isEnabled={true} />
                     
   {screenShareStream ? (
-    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center pointer-events-none" />
-  ) : activeVideoSpeaker.isYou ? (
-    <>
-      <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover object-center pointer-events-none ${isRoomCameraOn ? '' : 'hidden'}`} />
-      {!isRoomCameraOn && (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-          <div 
-            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
-            style={{
-              background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
-              border: '1px solid rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            Y
-          </div>
+    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-6 gap-4">
+      {/* Subtle Ambient Presentation Glow */}
+      <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute -top-12 -left-12 pointer-events-none" />
+
+      {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
+          <MonitorPlay size={30} className="text-white" />
         </div>
-      )}
-    </>
-  ) : (
-    <>
-      {!activeVideoSpeaker.isRoomCameraOn ? (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-          <div 
-            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
-            style={{
-              background: `linear-gradient(135deg, ${activeVideoSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-              border: '1px solid rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            {(activeVideoSpeaker.name || 'U').charAt(0).toUpperCase()}
-          </div>
+        
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Presentation Active</span>
         </div>
-      ) : (
-        <>
-          <video
-            ref={(node) => {
-              const stream = remoteStreams[activeVideoSpeaker.id];
-              if (node && stream && node.srcObject !== stream) {
-                node.srcObject = stream;
+
+        <h3 className="text-lg font-bold text-white tracking-tight mb-2">
+          You are presenting to everyone
+        </h3>
+        <p className="text-xs text-zinc-400 leading-relaxed mb-6 max-w-sm">
+          To avoid an infinite mirror effect, your screen is hidden here. Everyone in the meeting can see your live presentation.
+        </p>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+              if (typeof window !== "undefined") window.__currentScreenShareStream = null;
+              setScreenShareStream(null);
+              setIsScreenSharing(false);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.("Stopped presenting");
+            }}
+            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <PhoneOff size={14} />
+            <span>Stop presenting</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const winName = sharedSourceInfo?.name || "Selected Window";
+              const targetId = sharedSourceInfo?.id || "";
+              if (window.electronAPI?.openFloatingPipWidget) {
+                window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
+              }
+              if (window.electronAPI?.minimizeMainWindow) {
+                window.electronAPI.minimizeMainWindow();
               }
             }}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover object-center pointer-events-none"
-          />
-          {!remoteStreams[activeVideoSpeaker.id] && (
-            <img src={activeVideoSpeaker.img ? `${activeVideoSpeaker.img}?w=1200` : `https://i.pravatar.cc/150?u=${encodeURIComponent(activeVideoSpeaker.name)}`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center pointer-events-none" />
+            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <ExternalLink size={13} />
+            <span>Floating OS HUD</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Participants Gallery Filmstrip (Audience Presence) */}
+      <div className="w-full md:w-60 lg:w-64 shrink-0 flex flex-col gap-2.5 relative z-10 overflow-y-auto max-h-[75vh] pr-1 custom-scrollbar">
+        <div className="flex items-center justify-between px-1 mb-1">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Users size={12} className="text-violet-400" />
+            In Meeting ({videoParticipants.length + 1})
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 font-medium">Audience</span>
+        </div>
+
+        {/* You (Presenter) Tile */}
+        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-violet-500/40 shadow-lg group">
+          {localStream && isRoomCameraOn ? (
+            <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-950/60 to-zinc-900 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-md border border-white/20">
+                You
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-white truncate">You (Presenter)</span>
+            <div className="flex items-center gap-1">
+              {!isRoomMicOn && <MicOff size={11} className="text-rose-400" />}
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-600/80 text-white font-medium">Host</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Audience Attendees */}
+        {videoParticipants.map((p) => (
+          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-lg group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
+            {p.isRoomCameraOn && p.img ? (
+              <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md" style={{ background: p.color || "#6366F1" }}>
+                  {(p.name || "U").charAt(0).toUpperCase()}
+                </div>
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+              <span className="text-[11px] font-medium text-zinc-200 truncate">{p.name}</span>
+              <div className="flex items-center gap-1">
+                {p.isSpeaking && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                )}
+                {p.isRoomMicOn ? (
+                  <Mic size={11} className="text-emerald-400" />
+                ) : (
+                  <MicOff size={11} className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className="w-full h-full relative flex items-center justify-center bg-slate-950 overflow-hidden">
+      {activeVideoSpeaker.isYou ? (
+        <>
+          {isRoomCameraOn && localStream ? (
+            <video
+              ref={(node) => {
+                if (node && node.srcObject !== localStream) {
+                  node.srcObject = localStream;
+                }
+              }}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover object-center"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center relative select-none bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
+              {/* Ambient Apple Glow */}
+              <div className="w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl absolute pointer-events-none" />
+              
+              {/* Apple-Style Initials Avatar Glass Orb */}
+              <div className="relative z-10 w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center font-semibold text-white/95 shadow-2xl backdrop-blur-2xl border border-white/20 bg-gradient-to-tr from-emerald-600/90 via-teal-500/80 to-emerald-400/90 text-4xl md:text-5xl tracking-tight ring-4 ring-white/10 ring-offset-4 ring-offset-zinc-950">
+                Y
+              </div>
+              <div className="relative z-10 mt-5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white/80 text-xs font-medium tracking-wide flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>You (Camera Off)</span>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {remoteStreams[activeVideoSpeaker.id] && activeVideoSpeaker.isRoomCameraOn ? (
+            <video
+              ref={(node) => {
+                const stream = remoteStreams[activeVideoSpeaker.id];
+                if (node && stream && node.srcObject !== stream) {
+                  node.srcObject = stream;
+                }
+              }}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover object-center pointer-events-none"
+            />
+          ) : (
+            <img
+              src={activeVideoSpeaker.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop&q=80"}
+              alt={activeVideoSpeaker.name}
+              className="w-full h-full object-cover object-center pointer-events-none"
+            />
           )}
         </>
       )}
-    </>
+    </div>
   )}
-
-                  </div>
-                  
+  </div>
                   {/* Swipe Particle Trails */}
                   {swipeTrails.map(trail => (
                     <div 
@@ -80733,164 +81532,176 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.isYou ? (t('room.you') || 'You') : activeVideoSpeaker.name}</span>
                   </div>
 
-                  {/* Captions Overlay */}
+                  {/* Captions & Subtle Listening Indicator */}
                   {isRoomCaptionsEnabled && liveCaption.text && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[80%] max-w-2xl px-4 flex flex-col items-center">
-                      <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
-                        <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
-                          <span 
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-500 dark:bg-violet-400 animate-pulse' : 'bg-amber-400'}`} 
-                            title={isGeminiActive ? "AI Mode Active (Gemini)" : "Local Mode (Native Speech)"}
-                          />
-                          <span className="opacity-60 text-[13px] mr-2">{liveCaption.speaker}</span>
-                          {liveCaption.text}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 flex flex-col items-center">
+                      {liveCaption.text === 'Listening...' || liveCaption.speaker === 'System' ? (
+                        <div className="bg-black/35 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 border border-white/10 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span className="text-white/80 text-[11px] font-medium tracking-wide">AI · Listening</span>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="bg-black/60 backdrop-blur-xl rounded-2xl px-5 py-2.5 flex flex-col shadow-2xl border border-white/10 max-w-xl">
+                          <div className="text-white text-[13.5px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-400 animate-pulse' : 'bg-emerald-400'}`} />
+                            <span className="opacity-60 text-xs mr-1">{liveCaption.speaker}</span>
+                            <span>{liveCaption.text}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
                 )}
 
-                {/* Participant Thumbnail Strip */}
-                {(!isDistractionFreeMode && (videoParticipants.length > 0 || youTileSpeaker)) && (
-                  <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
+                {/* Participant Mounts & Interactive Overflow Card (Real Peers Only) */}
+                {!isDistractionFreeMode && videoParticipants && videoParticipants.length > 0 && (
+                  <div className={`flex justify-center gap-3.5 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
                     
-  {youTileSpeaker && (
-    <div 
-      onClick={() => {
-        const prevActive = activeVideoSpeaker;
-        setActiveVideoSpeaker(youTileSpeaker);
-        setYouTileSpeaker(prevActive);
-      }}
-      className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
-    >
-      {youTileSpeaker.isYou ? (
-        <>
-          <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover absolute inset-0 ${isRoomCameraOn ? '' : 'hidden'}`} />
-          {!isRoomCameraOn && (
-            <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
-                style={{
-                  background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                  border: '1px solid rgba(255, 255, 255, 0.15)'
-                }}
-              >
-                Y
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          {!youTileSpeaker.isRoomCameraOn ? (
-            <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
-                style={{
-                  background: `linear-gradient(135deg, ${youTileSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                  border: '1px solid rgba(255, 255, 255, 0.15)'
-                }}
-              >
-                {(youTileSpeaker.name || 'U').charAt(0).toUpperCase()}
-              </div>
-            </div>
-          ) : (
-            <>
-              <video
-                ref={(node) => {
-                  const stream = remoteStreams[youTileSpeaker.id];
-                  if (node && stream && node.srcObject !== stream) {
-                    node.srcObject = stream;
-                  }
-                }}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover absolute inset-0"
-              />
-              {!remoteStreams[youTileSpeaker.id] && (
-                <img src={youTileSpeaker.img ? `${youTileSpeaker.img}?w=300` : `https://i.pravatar.cc/150?u=${encodeURIComponent(youTileSpeaker.name)}`} alt={youTileSpeaker.name} className="w-full h-full object-cover absolute inset-0" />
-              )}
-            </>
-          )}
-        </>
-      )}
-      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-        <div className="flex items-center justify-between w-full relative z-10">
-          <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{youTileSpeaker.isYou ? (t('room.you') || 'You') : youTileSpeaker.name}</span>
-          {((youTileSpeaker.isYou && !isRoomMicOn) || (!youTileSpeaker.isYou && !youTileSpeaker.isRoomMicOn)) && (
-            <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />
-          )}
-        </div>
-      </div>
-    </div>
-  )}
-
-{videoParticipants.slice(0, 3).map((p, i) => (
+                    {/* Primary Visible Mounts (up to 3 slots) */}
+                    {videoParticipants.slice(0, 3).map((p, i) => (
                       <div 
                         key={p.id} 
                         onClick={() => {
-                          const newParticipants = [...videoParticipants];
-                          newParticipants[i] = activeVideoSpeaker;
+                          const prevActive = activeVideoSpeaker;
                           setActiveVideoSpeaker(p);
+                          const newParticipants = [...videoParticipants];
+                          newParticipants[i] = prevActive;
                           setVideoParticipants(newParticipants);
                         }}
-                        className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
+                        className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.02]"
                       >
-                        {!p.isRoomCameraOn ? (
-                          <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-                            <div 
-                              className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
-                              style={{
-                                background: `linear-gradient(135deg, ${p.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                                border: '1px solid rgba(255, 255, 255, 0.15)'
-                              }}
-                            >
-                              {(p.name || 'U').charAt(0).toUpperCase()}
-                            </div>
-                          </div>
+                        {p.isYou ? (
+                          <>
+                            {isRoomCameraOn && localStream ? (
+                              <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover absolute inset-0" />
+                            ) : (
+                              <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner bg-gradient-to-tr from-emerald-600 to-teal-400 text-xl border border-white/20">
+                                  Y
+                                </div>
+                              </div>
+                            )}
+                          </>
                         ) : (
                           <>
-                            <video
-                              ref={(node) => {
-                                const stream = remoteStreams[p.id];
-                                if (node && stream && node.srcObject !== stream) {
-                                  node.srcObject = stream;
-                                }
-                              }}
-                              autoPlay
-                              playsInline
-                              className="w-full h-full object-cover absolute inset-0"
-                            />
-                            {!remoteStreams[p.id] && (
-                              <img src={p.img ? `${p.img}?w=300` : `https://i.pravatar.cc/150?u=${encodeURIComponent(p.name)}`} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
+                            {remoteStreams[p.id] && p.isRoomCameraOn ? (
+                              <video
+                                ref={(node) => {
+                                  const stream = remoteStreams[p.id];
+                                  if (node && stream && node.srcObject !== stream) {
+                                    node.srcObject = stream;
+                                  }
+                                }}
+                                autoPlay
+                                playsInline
+                                className="w-full h-full object-cover absolute inset-0"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center absolute inset-0">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-md text-lg" style={{ background: p.color || "#6366F1" }}>
+                                  {(p.name || "U").charAt(0).toUpperCase()}
+                                </div>
+                              </div>
                             )}
                           </>
                         )}
                         
-                        {/* Name blur overlay */}
-                        <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+                        {/* Bottom Name & Mic Overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-[32%] bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-2.5">
                           <div className="flex items-center justify-between w-full relative z-10">
-                            <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{p.name}</span>
-                            {!p.isRoomMicOn && <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />}
+                            <span className="text-white/95 text-[11.5px] font-medium truncate drop-shadow-sm">{p.name}</span>
+                            {!p.isRoomMicOn && <MicOff size={11.5} className="text-white/70 shrink-0 drop-shadow-sm" />}
                           </div>
                         </div>
                       </div>
                     ))}
-                    
+
+                    {/* Interactive Frosted Overflow Card (+N / Show All) */}
                     {videoParticipants.length > 3 && (
-                      <>
-                        {/* Plus 3 indicator */}
-                        <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
-                            <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">+{videoParticipants.length - 3}</span>
-                          </div>
+                      <div 
+                        onClick={() => setIsParticipantOverflowOpen(prev => !prev)}
+                        className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/15 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.03] select-none"
+                        title="Click to view all overflowing participants"
+                      >
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/45 via-white/20 to-white/10 shadow-inner group-hover:bg-white/50 transition-colors">
+                          <span className="text-slate-800 text-[16px] font-bold drop-shadow-sm tracking-tight">+{videoParticipants.length - 3}</span>
+                          <span className="text-slate-600 text-[9px] font-semibold uppercase tracking-wider mt-0.5">Show all</span>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
+                {/* Expanded Overflow Participants Modal Overlay */}
+                {isParticipantOverflowOpen && (
+                  <div 
+                    onClick={() => setIsParticipantOverflowOpen(false)}
+                    className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200"
+                  >
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative w-full max-w-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-[32px] shadow-[0_32px_120px_rgba(0,0,0,0.25)] border border-white/20 p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 flex items-center justify-center">
+                            <Users size={16} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">All Meeting Participants</h3>
+                            <p className="text-[11px] text-slate-500 dark:text-zinc-400">Click any attendee to bring them to the main screen</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsParticipantOverflowOpen(false)}
+                          className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 transition-colors cursor-pointer"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
 
+                      {/* Participant Grid */}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto pr-1 thin-scrollbar py-2">
+                        {[activeVideoSpeaker, ...videoParticipants].map((p, idx) => (
+                          <div
+                            key={p.id || idx}
+                            onClick={() => {
+                              if (p.id !== activeVideoSpeaker.id) {
+                                const prevActive = activeVideoSpeaker;
+                                setActiveVideoSpeaker(p);
+                                const remaining = [prevActive, ...videoParticipants.filter(x => x.id !== p.id)];
+                                setVideoParticipants(remaining);
+                              }
+                              setIsParticipantOverflowOpen(false);
+                            }}
+                            className={`relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-900 border cursor-pointer group transition-all hover:scale-[1.03] ${p.id === activeVideoSpeaker.id ? "ring-2 ring-violet-500 border-violet-500 shadow-md" : "border-white/10 hover:border-violet-300"}`}
+                          >
+                            {p.isYou ? (
+                              <>
+                                {isRoomCameraOn && localStream ? (
+                                  <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-emerald-600 text-sm">Y</div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <img src={p.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"} alt={p.name} className="w-full h-full object-cover" />
+                            )}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-white truncate drop-shadow">{p.name}</span>
+                              {p.id === activeVideoSpeaker.id && (
+                                <span className="text-[8.5px] px-1 py-0.5 rounded bg-violet-600 text-white font-semibold">Active</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Bottom Control Section */}
                 {!isDistractionFreeMode && (
                   <DraggablePanel 
@@ -80902,13 +81713,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
                       
                       {/* Toolbar */}
-                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                      <div className="flex items-center gap-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-full px-4 py-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800">
                         <button
                           onClick={toggleRoomMic}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                             isRoomMicOn
-                              ? 'text-violet-500 hover:bg-violet-50'
-                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
                           }`}
                           title={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
                           aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
@@ -80918,10 +81729,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                         <button
                           onClick={toggleRoomCamera}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                             isRoomCameraOn
-                              ? 'text-violet-500 hover:bg-violet-50'
-                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
                           }`}
                           title={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
                           aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
@@ -80929,6 +81740,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                         </button>
+
+                        {/* People and Chat Quick Toggles with restrained active background */}
+                        <button
+                          type="button"
+                          onClick={() => setIsRoomLeftSidebarOpen(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                            isRoomLeftSidebarOpen 
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold ring-1 ring-slate-200/80 dark:ring-zinc-700/80' 
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700 hover:text-slate-800'
+                          }`}
+                          title="Toggle People Panel"
+                        >
+                          <Users size={18} strokeWidth={1.5} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsRoomRightSidebarOpen(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                            isRoomRightSidebarOpen 
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold ring-1 ring-slate-200/80 dark:ring-zinc-700/80' 
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700 hover:text-slate-800'
+                          }`}
+                          title="Toggle Chat Panel"
+                        >
+                          <MessageSquare size={18} strokeWidth={1.5} />
+                        </button>
+
                         {/* Progressive Disclosure Present Button */}
                         <div className="relative" ref={(node) => {
                           if (node && isRoomPresentPickerOpen) {
@@ -80944,10 +81782,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               e.stopPropagation();
                               if (roomPresentedApp || isScreenSharing) {
                                 setRoomPresentedApp(null);
-                                if (isScreenSharing) toggleScreenShare();
+                                if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+                                setScreenShareStream(null);
+                                setIsScreenSharing(false);
                                 showToast?.(t('room.stopPresenting') || 'Stopped presenting');
                               } else {
-                                setIsRoomPresentPickerOpen(prev => !prev);
+                                setIsScreenSourceModalOpen(true);
                               }
                             }}
                             className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer ${
@@ -81001,10 +81841,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <button
                                     key={app.id}
                                     type="button"
-                                    onClick={() => {
-                                      setRoomPresentedApp(app.id);
-                                      setProductMode(app.id === 'docs' ? 'compose' : app.id);
+                                    onPointerDown={async (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       setIsRoomPresentPickerOpen(false);
+                                      const targetMode = app.id === 'docs' ? 'compose' : app.id;
+                                      setFocusedModule(targetMode);
+                                      setProductMode(targetMode);
+                                      setActiveDocView('document');
+                                      setActiveRightTab('assistant');
+                                      setIsWhiteboardImmersive(false);
+                                      setRoomPanelMode('docked');
+                                      if (!isScreenSharing || !screenShareStream) {
+                                        toggleScreenShare();
+                                      }
                                       showToast?.(`Presenting ${app.name}`);
                                     }}
                                     className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-all text-left group cursor-pointer active:scale-[0.99]"
@@ -81028,9 +81878,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               {/* Native Display Media Screen Sharing */}
                               <button
                                 type="button"
-                                onClick={() => {
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   setIsRoomPresentPickerOpen(false);
-                                  toggleScreenShare();
+                                  setIsScreenSourceModalOpen(true);
                                 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
@@ -81098,11 +81950,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <button
                             type="button"
                             onClick={() => setIsRoomModelDropdownOpen(!isRoomModelDropdownOpen)}
-                            className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/80 dark:border-zinc-800 shadow-md hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
                           >
                             <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                             <span className="truncate max-w-[90px] text-[11.5px]">
-                              {selectedRoomAiModel === 'gemini-2.0-flash' ? 'Gemini 2.0' : selectedRoomAiModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : selectedRoomAiModel === 'claude-3-5-sonnet-20241022' ? 'Claude 3.5' : selectedRoomAiModel === 'gpt-4o' ? 'GPT-4o' : selectedRoomAiModel === 'deepseek-chat' ? 'DeepSeek V3' : selectedRoomAiModel}
+                              Room AI
                             </span>
                             <ChevronDown size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
                           </button>
@@ -81538,7 +82390,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[28px] overflow-hidden border border-slate-200/60 dark:border-zinc-800" style={{ left: '28px', top: '96px', width: '280px', height: (1 + roomParticipants.length <= 1) ? 'auto' : 'calc(100vh - 180px)', maxHeight: '680px' }}>
                   {renderRoomLeftSidebar()}
                 </div>
               </DraggablePanel>
@@ -81552,7 +82404,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', zIndex: 40 }}>
+                <div className="absolute pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[28px] overflow-hidden border border-slate-200/60 dark:border-zinc-800" style={{ right: '28px', top: '96px', width: '280px', height: 'calc(100vh - 180px)', maxHeight: '680px', zIndex: 40 }}>
                   {renderRoomRightSidebar()}
                 </div>
               </DraggablePanel>
@@ -81749,15 +82601,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {roomState === 'active' && mainView === 'document' && (
-        <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
-          <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
-          <button onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer">Return</button>
-          <button onClick={confirmLeaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Leave</button>
-        </div>
-      )}
+      {renderFloatingMeetingPipHud()}
 
+      <ScreenShareSourceModal
+        isOpen={isScreenSourceModalOpen}
+        onClose={() => setIsScreenSourceModalOpen(false)}
+        onSelectSource={handleSelectScreenSource}
+      />
       <input
         ref={meetingShareFileInputRef}
         type="file"
