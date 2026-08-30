@@ -7,10 +7,165 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, SpatialApertureLensSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
+
+/**
+ * Native Apple-style Room Camera Icon
+ * Clean, recognizable, native video meeting symbol.
+ */
+export const NativeRoomCameraIcon = ({ size = 22, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <rect
+      x="2.5"
+      y="5.5"
+      width="13"
+      height="13"
+      rx="3.5"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M15.5 10.2L20.2 7.1C20.8 6.7 21.5 7.1 21.5 7.8V16.2C21.5 16.9 20.8 17.3 20.2 16.9L15.5 13.8"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="9" cy="12" r="2" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+/**
+ * Precision Studio Camera Iris & Optical Lens
+ * Circular 6-blade mechanical camera aperture with a glowing central optical element and tally light.
+ * Completely distinct from the top-left overlapping Room workspace badge.
+ */
+export const StudioCameraIcon = ({ size = 28, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <defs>
+      <linearGradient id="apertureGlassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.3" />
+        <stop offset="100%" stopColor="#6D28D9" stopOpacity="0.08" />
+      </linearGradient>
+      <linearGradient id="apertureCore" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#8B5CF6" />
+        <stop offset="100%" stopColor="#5B21B6" />
+      </linearGradient>
+    </defs>
+    
+    {/* Outer Precision Lens Barrel Ring */}
+    <circle
+      cx="16"
+      cy="16"
+      r="13"
+      className="stroke-violet-600/80 dark:stroke-violet-400/80 fill-violet-50/30 dark:fill-violet-950/20"
+      strokeWidth="1.75"
+    />
+    
+    {/* 6 Optical Iris Aperture Blades */}
+    <path
+      d="M16 3.5 L24 16 L16 16 Z"
+      fill="url(#apertureGlassGrad)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M26.8 9.8 L20 22.9 L16 16 Z"
+      fill="url(#apertureGlassGrad)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M26.8 22.2 L12 22.9 L16 16 Z"
+      fill="url(#apertureGlassGrad)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M16 28.5 L8 16 L16 16 Z"
+      fill="url(#apertureGlassGrad)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M5.2 22.2 L12 9.1 L16 16 Z"
+      fill="url(#apertureGlassGrad)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+    <path
+      d="M5.2 9.8 L20 9.1 L16 16 Z"
+      fill="url(#apertureGlassGrad)"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      className="text-violet-600/60 dark:text-violet-400/60"
+    />
+
+    {/* Center Optical Glass Core */}
+    <circle
+      cx="16"
+      cy="16"
+      r="4.5"
+      fill="url(#apertureCore)"
+    />
+
+    {/* Optical Lens Specular Glint */}
+    <circle
+      cx="14.7"
+      cy="14.7"
+      r="1.2"
+      fill="white"
+      fillOpacity="0.9"
+    />
+
+    {/* Hardware Center Stage Tally Dot */}
+    <circle
+      cx="16"
+      cy="6.2"
+      r="1"
+      className="fill-emerald-500 animate-pulse"
+    />
+  </svg>
+);
+
+/**
+ * Apple-Tier Frosted Glass Squircle Housing
+ */
+export const StudioLensHousing = ({ children, size = "w-[54px] h-[54px]" }) => (
+  <div className="relative flex items-center justify-center mb-4 select-none group">
+    {/* Dynamic Ambient Lavender Bloom */}
+    <div className="absolute inset-0 rounded-[22px] bg-violet-500/20 dark:bg-violet-400/25 blur-xl group-hover:blur-2xl transition-all duration-300 pointer-events-none" />
+    
+    {/* Apple-grade Glass Squircle Tile */}
+    <div className={`relative ${size} rounded-[20px] bg-linear-to-b from-white/95 via-violet-50/40 to-violet-100/50 dark:from-zinc-800/95 dark:via-zinc-850/90 dark:to-zinc-900/95 backdrop-blur-xl border border-white/90 dark:border-white/10 shadow-[0_10px_25px_-5px_rgba(109,40,217,0.14),0_2px_8px_rgba(0,0,0,0.03),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.12)] flex items-center justify-center transition-all duration-200 group-hover:scale-[1.04]`}>
+      {children || <StudioCameraIcon size={28} />}
+    </div>
+  </div>
+);
 
 /**
  * Pixel-Perfect Room Workspace with Unified Ambient Lobby
@@ -79,9 +234,43 @@ export default function RoomLandingPage({
   }, [isScreenSharing, screenShareStream, sharedSourceInfo]);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
   const [isGreenRoomOpen, setIsGreenRoomOpen] = useState(false);
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState(28);
-  const [greenRoomCameraOn, setGreenRoomCameraOn] = useState(true);
-  const [greenRoomMicOn, setGreenRoomMicOn] = useState(true);
+  
+  // Real-time Live Calendar Dates
+  const [currentRealDate] = useState(() => new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => new Date());
+
+  // Dynamically compute the 7 days of the active week (Sunday through Saturday)
+  const currentWeekDays = React.useMemo(() => {
+    const now = currentRealDate;
+    const currentDayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+    const week = [];
+    const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - currentDayOfWeek + i);
+      week.push({
+        day: dayNames[i],
+        date: d.getDate(),
+        fullDate: d,
+        isToday: d.toDateString() === now.toDateString(),
+      });
+    }
+    return week;
+  }, [currentRealDate]);
+
+  const formattedSelectedHeading = React.useMemo(() => {
+    return selectedCalendarDate.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
+  }, [selectedCalendarDate]);
+
+  const isSelectedToday = selectedCalendarDate.toDateString() === currentRealDate.toDateString();
+
+  const [greenRoomCameraOn, setGreenRoomCameraOn] = useState(false);
+  const [greenRoomMicOn, setGreenRoomMicOn] = useState(false);
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isMeetingOptionsOpen, setIsMeetingOptionsOpen] = useState(false);
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
@@ -354,6 +543,8 @@ export default function RoomLandingPage({
 
   // Actions
   const handleStartInstantMeeting = () => {
+    setIsCameraOn(greenRoomCameraOn);
+    setIsMicOn(greenRoomMicOn);
     setIsLobby(false);
     showToast?.("Started instant meeting in Product Sync!");
     onLaunch?.({ type: 'action', name: 'Room' });
@@ -1209,9 +1400,9 @@ export default function RoomLandingPage({
 
           </div>
         ) : (
-            <div className="w-full h-full flex flex-col bg-[#F9F9F8] dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 font-sans select-none overflow-y-auto">
+            <div className="w-full h-full flex flex-col bg-[#FBFBFC] dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 font-sans select-none overflow-y-auto">
               {/* Top Header Bar */}
-              <header className="h-[68px] flex items-center justify-between px-8 border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 sticky top-0 z-30">
+              <header className="h-[64px] flex items-center justify-between px-8 border-b border-slate-200/50 dark:border-zinc-800/60 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 sticky top-0 z-30">
                 <div className="flex items-center gap-2.5 select-none">
                   {/* App Switcher Button */}
                   <button
@@ -1223,22 +1414,26 @@ export default function RoomLandingPage({
                       const rect = e.currentTarget.getBoundingClientRect();
                       if (onOpenWorkspaceSwitcher) onOpenWorkspaceSwitcher(rect);
                     }}
-                    className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 dark:bg-zinc-800/90 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-slate-50 text-slate-600 dark:text-zinc-300 hover:text-violet-600 transition-all cursor-pointer shrink-0"
+                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-850/90 border border-slate-200/70 dark:border-zinc-750 shadow-2xs hover:bg-slate-50 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 transition-all cursor-pointer shrink-0"
                     title="Switch Workspace App"
                   >
                     <LayoutGrid size={14} />
                   </button>
-                  {/* Restrained Room Line Icon */}
-                  <div className="w-7 h-7 rounded-lg bg-violet-50/80 dark:bg-violet-950/40 border border-violet-100/60 dark:border-violet-900/40 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-                    <RoomIcon size={15} strokeWidth={1.75} />
+
+                  {/* Cohesive Room Workspace Pill */}
+                  <div className="flex items-center gap-2 h-8 px-2.5 rounded-xl bg-white/80 dark:bg-zinc-850/80 border border-slate-200/60 dark:border-zinc-750 shadow-2xs">
+                    <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
+                      <RoomIcon size={13} strokeWidth={1.75} />
+                    </div>
+                    <span className="text-[13px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">Room</span>
+                    <span className="text-[9.5px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 tracking-wider uppercase">Workspace</span>
                   </div>
-                  <span className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">Room</span>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400 tracking-wide uppercase">Workspace</span>
                 </div>
-                {/* Quick Join / Action Header */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:ring-2 ring-violet-500/20 transition-all">
-                    <Keyboard size={15} className="text-slate-400 mr-2" />
+
+                {/* Quick Join / Action Header Controls */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center h-8.5 bg-slate-100/70 dark:bg-zinc-850/80 border border-slate-200/60 dark:border-zinc-700/60 rounded-xl px-3.5 py-1.5 focus-within:bg-white focus-within:ring-2 ring-violet-500/20 transition-all shadow-2xs">
+                    <Keyboard size={14} className="text-slate-400 mr-2 shrink-0" />
                     <input
                       type="text"
                       value={roomCodeInput}
@@ -1251,126 +1446,114 @@ export default function RoomLandingPage({
                       <button
                         type="button"
                         onClick={handleJoinWithCode}
-                        className="text-xs font-bold text-violet-600 hover:text-violet-700 ml-2 cursor-pointer"
+                        className="text-xs font-semibold text-violet-600 hover:text-violet-700 ml-2 cursor-pointer"
                       >
                         Join
                       </button>
                     )}
                   </div>
 
+                  {/* Top-Right "New Meeting" Action (Non-clipped, min-w-[128px], comfortable 18px padding) */}
                   <button
                     type="button"
-                    onClick={() => setIsGreenRoomOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                    onClick={() => setIsSchedulingModalOpen(true)}
+                    className="h-8.5 min-w-[128px] px-4.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0 select-none"
                   >
-                    <Plus size={15} strokeWidth={2.5} />
+                    <Video size={13} strokeWidth={2.2} className="shrink-0 text-slate-300 dark:text-zinc-700" />
                     <span>New Meeting</span>
-                  </button>
-
-                  {/* Immersive Mode Toggle Button */}
-                  <button
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      onToggleImmersive?.();
-                    }}
-                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all border cursor-pointer ${
-                      isDocumentImmersive
-                        ? "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-transparent"
-                    }`}
-                    title={isDocumentImmersive ? "Exit immersive mode" : "Enter immersive mode"}
-                    aria-label={isDocumentImmersive ? "Exit immersive mode" : "Enter immersive mode"}
-                  >
-                    {isDocumentImmersive ? <Minimize2 size={15} strokeWidth={1.75} /> : <Maximize2 size={15} strokeWidth={1.75} />}
                   </button>
                 </div>
               </header>
 
-              {/* Main Continuous Room Canvas */}
-              <div className="flex-1 max-w-4xl w-full mx-auto px-6 sm:px-8 pt-4 pb-8 flex flex-col gap-4">
+              {/* Main Continuous Room Canvas with +10px Top Breathing Room */}
+              <div className="flex-1 max-w-4xl w-full mx-auto px-6 sm:px-8 pt-10 pb-12 flex flex-col">
                 
-                {/* 1. Date & Context Row (Directly integrated on Canvas) */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/60 dark:border-zinc-800/60">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
-                      <Calendar size={16} />
+                {/* 1. Date & Context Row (Dynamic Live Device Time & Hierarchy) */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/50 dark:border-zinc-800/50">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-100/80 dark:bg-zinc-850/80 text-slate-500 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-750 flex items-center justify-center shadow-2xs">
+                      <Calendar size={18} strokeWidth={1.75} />
                     </div>
                     <div>
-                      <div className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Friday, Aug 28</div>
-                      <div className="text-[11px] text-slate-400">Today · 0 active sessions scheduled</div>
+                      <h1 className="text-[22px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-tight">
+                        {formattedSelectedHeading}
+                      </h1>
+                      <div className="text-[13px] text-slate-400 dark:text-zinc-500 font-normal mt-0.5">
+                        {isSelectedToday ? "Today · No meetings scheduled." : "No meetings scheduled."}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Integrated Week Day Strip */}
-                  <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-zinc-800/50 p-1 rounded-xl">
-                    {[
-                      { day: "SUN", date: 23 },
-                      { day: "MON", date: 24 },
-                      { day: "TUE", date: 25 },
-                      { day: "WED", date: 26 },
-                      { day: "THU", date: 27 },
-                      { day: "FRI", date: 28, isToday: true },
-                      { day: "SAT", date: 29 },
-                    ].map((item) => (
-                      <button
-                        key={item.date}
-                        type="button"
-                        onClick={() => setSelectedCalendarDay(item.date)}
-                        className={`flex flex-col items-center px-2 py-1 rounded-lg text-center transition-all cursor-pointer ${
-                          selectedCalendarDay === item.date
-                            ? "bg-violet-600 text-white font-bold shadow-xs scale-105"
-                            : item.isToday
-                            ? "bg-white dark:bg-zinc-800 text-violet-600 font-semibold shadow-2xs"
-                            : "text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/40"
-                        }`}
-                      >
-                        <span className="text-[9px] uppercase tracking-wider">{item.day}</span>
-                        <span className="text-xs font-bold">{item.date}</span>
-                      </button>
-                    ))}
+                  {/* Understated Dynamic Weekly Date Selector */}
+                  <div className="flex items-center gap-1 bg-slate-100/60 dark:bg-zinc-850/50 border border-slate-200/50 dark:border-zinc-800/50 p-1 rounded-2xl">
+                    {currentWeekDays.map((item) => {
+                      const isSelected = selectedCalendarDate.toDateString() === item.fullDate.toDateString();
+                      return (
+                        <button
+                          key={item.day + item.date}
+                          type="button"
+                          onClick={() => setSelectedCalendarDate(item.fullDate)}
+                          className={`flex flex-col items-center justify-center min-w-[42px] h-11 px-2.5 py-1 rounded-xl text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-violet-100/70 dark:bg-violet-950/60 border border-violet-300/80 dark:border-violet-700/70 shadow-none"
+                              : "border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
+                          }`}
+                        >
+                          <span className={`text-[9px] uppercase tracking-wider ${isSelected ? "text-violet-600 dark:text-violet-300 font-semibold" : "opacity-90"}`}>{item.day}</span>
+                          <span className={`text-xs ${isSelected ? "text-violet-700 dark:text-violet-200 font-bold" : "font-semibold"}`}>{item.date}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* 2. Integrated Security & Privacy Trust Line (Quiet) */}
+                {/* 2. Quiet Security & Privacy Trust Line */}
                 <div 
-                  className="flex items-center gap-1.5 px-0.5 text-[11.5px] text-slate-400 dark:text-zinc-500 font-medium select-none cursor-default hover:text-slate-600 dark:hover:text-zinc-400 transition-colors"
-                  title="Hardware accelerated peer connections with cryptographic session safety. No one can join unless invited or admitted by host."
+                  className="flex items-center gap-1.5 pt-2 text-[11.5px] text-slate-400 dark:text-zinc-500 font-normal select-none cursor-default"
+                  title="Hardware accelerated peer connections with cryptographic session safety."
                 >
-                  <Shield size={13} className="text-violet-500/80 dark:text-violet-400/80 shrink-0" />
-                  <span>Secure room · End-to-end encrypted</span>
+                  <Shield size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                  <span>Secure · End-to-end encrypted</span>
                 </div>
 
-                {/* 3. Visually Elevated Central Meeting Stage Card */}
-                <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-10 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[300px]">
-                  <div className="flex flex-col items-center -translate-y-[34px]">
-                    {/* Refined Spatial Aperture Lens Empty-State Visual */}
-                    <div className="w-[42px] h-[42px] rounded-xl bg-violet-50/80 dark:bg-violet-950/40 border border-violet-100/70 dark:border-violet-900/40 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-3.5 select-none pointer-events-none">
-                      <SpatialApertureLensSymbol size={25} strokeWidth={1.5} />
-                    </div>
-                    <h3 className="text-[17px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">No meetings scheduled for today</h3>
-                    <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-[345px] leading-relaxed mx-auto mb-5">Schedule a meeting with your team or launch an instant collaborative sync.</p>
-                    
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsGreenRoomOpen(true)}
-                        className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-violet-600/25 transition-all flex items-center gap-2 cursor-pointer"
-                      >
-                        <Plus size={15} strokeWidth={2.5} />
-                        <span>Start an Instant Meeting</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsSchedulingModalOpen(true)}
-                        className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 active:scale-95 text-slate-700 dark:text-zinc-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-                      >
-                        <Calendar size={14} />
-                        <span>Schedule for Later</span>
-                      </button>
-                    </div>
+                {/* 3. Empty State Shifted Upward ~40px with 44px Minimal Icon Container */}
+                <div className="flex-1 flex flex-col items-center justify-center -translate-y-16 py-12 text-center select-none">
+                  {/* Subtle 44px Native Room Camera Icon Container */}
+                  <div className="w-11 h-11 rounded-2xl bg-slate-100/70 dark:bg-zinc-850/60 border border-slate-200/50 dark:border-zinc-800/60 text-slate-500 dark:text-zinc-400 flex items-center justify-center mb-4">
+                    <NativeRoomCameraIcon size={20} />
+                  </div>
+
+                  <h2 className="text-[18px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight mb-1.5">
+                    No meetings today
+                  </h2>
+                  <p className="text-[13px] text-slate-500 dark:text-zinc-400 max-w-[340px] leading-relaxed mx-auto mb-6">
+                    Start a meeting now or schedule one for later.
+                  </p>
+                  
+                  {/* Two Clearly Distinct Actions with 12px Spacing */}
+                  <div className="flex items-center gap-3">
+                    {/* Primary Action: Start now */}
+                    <button
+                      type="button"
+                      onClick={() => setIsGreenRoomOpen(true)}
+                      className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Video size={14} strokeWidth={2.2} />
+                      <span>Start now</span>
+                    </button>
+
+                    {/* Secondary Action: Lighter Premium Schedule Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSchedulingModalOpen(true)}
+                      className="px-4.5 py-2.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 dark:bg-zinc-850 dark:hover:bg-zinc-800 active:scale-[0.98] text-slate-700 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-750 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Calendar size={14} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-400" />
+                      <span>Schedule</span>
+                    </button>
                   </div>
                 </div>
+
               </div>
               {/* APPLE-STYLE GREEN ROOM PRE-FLIGHT MODAL (SEAMLESS STAGING)                 */}
               {/* ========================================================================= */}
