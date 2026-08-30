@@ -1266,23 +1266,23 @@ export default function RoomLandingPage({
                 </div>
               </header>
 
-              {/* Main Landing Body */}
-              <div className="flex-1 max-w-5xl w-full mx-auto p-6 sm:p-10 flex flex-col gap-6">
+              {/* Main Continuous Room Canvas */}
+              <div className="flex-1 max-w-5xl w-full mx-auto px-6 sm:px-10 py-8 flex flex-col gap-6">
                 
-                {/* Calendar Date & Week Strip */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center">
-                      <Calendar size={16} />
+                {/* 1. Date & Context Row (Directly integrated on Canvas) */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/60 dark:border-zinc-800/60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                      <Calendar size={18} />
                     </div>
                     <div>
-                      <div className="text-base font-bold text-slate-900 dark:text-zinc-100">Friday, Aug 28</div>
-                      <div className="text-[11px] text-slate-400">Today · 0 active sessions scheduled</div>
+                      <div className="text-lg font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Friday, Aug 28</div>
+                      <div className="text-xs text-slate-400">Today · 0 active sessions scheduled</div>
                     </div>
                   </div>
 
-                  {/* Week Day Selector Strip (SUN 23 ... SAT 29) */}
-                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-800/60 p-1 rounded-xl border border-slate-200/50 dark:border-zinc-700/50">
+                  {/* Integrated Week Day Strip */}
+                  <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-zinc-800/50 p-1 rounded-xl">
                     {[
                       { day: "SUN", date: 23 },
                       { day: "MON", date: 24 },
@@ -1300,8 +1300,8 @@ export default function RoomLandingPage({
                           selectedCalendarDay === item.date
                             ? "bg-violet-600 text-white font-bold shadow-xs scale-105"
                             : item.isToday
-                            ? "bg-violet-50 dark:bg-violet-950/60 text-violet-600 font-semibold"
-                            : "text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50"
+                            ? "bg-white dark:bg-zinc-800 text-violet-600 font-semibold shadow-2xs"
+                            : "text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/40"
                         }`}
                       >
                         <span className="text-[9px] uppercase tracking-wider">{item.day}</span>
@@ -1311,19 +1311,14 @@ export default function RoomLandingPage({
                   </div>
                 </div>
 
-                {/* Security Trust Badge */}
-                <div className="flex items-center gap-3.5 bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 p-4 rounded-2xl">
-                  <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <Shield size={18} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs font-bold text-violet-950 dark:text-violet-200">Your meeting is protected</div>
-                    <div className="text-[11px] text-violet-700 dark:text-violet-300">End-to-end encrypted room with hardware acceleration. No one can join unless invited or admitted by host.</div>
-                  </div>
+                {/* 2. Integrated Security & Privacy Trust Line */}
+                <div className="flex items-center gap-2 px-1 text-xs text-slate-500 dark:text-zinc-400 font-medium">
+                  <Shield size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                  <span>End-to-end encrypted room with hardware acceleration. No one can join unless invited or admitted by host.</span>
                 </div>
 
-                {/* Empty State / Schedule Overview (Google Meet Style) */}
-                <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-xs text-center min-h-[340px]">
+                {/* 3. Visually Elevated Central Meeting Stage (The Primary Hero Canvas) */}
+                <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.03)] text-center min-h-[380px]">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 text-white flex items-center justify-center mb-4 shadow-lg shadow-violet-500/20 border border-white/20">
                     <Video size={28} />
                   </div>
@@ -1350,8 +1345,6 @@ export default function RoomLandingPage({
                   </div>
                 </div>
               </div>
-
-              {/* ========================================================================= */}
               {/* APPLE-STYLE GREEN ROOM PRE-FLIGHT MODAL (SEAMLESS STAGING)                 */}
               {/* ========================================================================= */}
               {isGreenRoomOpen && (
