@@ -52,7 +52,8 @@ import {
   RegaarderFitScreenIcon,
   RegaarderHistoryIcon,
   RegaarderSaveCloudIcon,
-  RegaarderNotificationIcon
+  RegaarderNotificationIcon,
+  LaserPointerIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
