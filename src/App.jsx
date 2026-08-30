@@ -47466,32 +47466,65 @@ If requested to draw a chart or graph, append a structured action JSON block:
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7 thin-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 thin-scrollbar">
           {roomChatMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
-                <MessageSquare size={20} className="text-slate-300" />
+            <div className="flex flex-col items-center justify-center h-full gap-2.5 text-center py-8">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-1">
+                <MessageSquare size={17} strokeWidth={1.6} />
               </div>
-              <p className="text-[13px] font-medium text-slate-400">{t('room.noMessages') || 'No messages yet'}</p>
-              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">{t('room.startConversation') || 'Start the conversation by sending a message.'}</p>
+              <p className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{t('room.noMessages') || 'No messages yet'}</p>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-relaxed max-w-[160px]">{t('room.startConversation') || 'Start the conversation by sending a message.'}</p>
             </div>
           ) : (
-            roomChatMessages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm ${msg.isSelf ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-500 border border-slate-100/50'}`}>
-                  {msg.isSelf ? 'Y' : msg.sender.charAt(0)}
-                </div>
-                <div className={`flex-1 min-w-0 flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'}`}>
-                  <div className={`flex items-baseline gap-2 mb-1 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
-                    <span className="text-[13px] font-semibold text-slate-800">{msg.sender}</span>
-                    <span className="text-[11px] font-medium text-slate-400">{msg.time}</span>
+            (() => {
+              const groups = [];
+              let curGroup = null;
+              roomChatMessages.forEach((msg) => {
+                if (curGroup && curGroup.sender === msg.sender && curGroup.isSelf === msg.isSelf) {
+                  curGroup.messages.push(msg);
+                  curGroup.time = msg.time || curGroup.time;
+                } else {
+                  curGroup = {
+                    id: msg.id,
+                    sender: msg.sender,
+                    isSelf: msg.isSelf,
+                    time: msg.time,
+                    messages: [msg]
+                  };
+                  groups.push(curGroup);
+                }
+              });
+              return groups.map((group) => (
+                <div key={group.id} className={`flex gap-2 ${group.isSelf ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {/* Avatar rendered ONCE per consecutive message group */}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 mt-0.5 select-none ${group.isSelf ? 'bg-violet-600 text-white shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60'}`}>
+                    {group.isSelf ? 'Y' : (group.sender ? group.sender.charAt(0).toUpperCase() : '?')}
                   </div>
-                  <div className={`px-4 py-2.5 rounded-2xl inline-block max-w-[85%] ${msg.isSelf ? 'bg-violet-50 text-violet-700 rounded-tr-sm' : 'bg-slate-50 text-slate-600 rounded-tl-sm border border-slate-100/50'}`}>
-                    <p className="text-[13px] font-normal leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                  <div className={`flex-1 min-w-0 flex flex-col ${group.isSelf ? 'items-end' : 'items-start'}`}>
+                    {/* Metadata header rendered ONCE per group */}
+                    <div className={`flex items-baseline gap-1.5 mb-1 px-0.5 ${group.isSelf ? 'flex-row-reverse' : ''}`}>
+                      <span className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">{group.sender}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">{group.time}</span>
+                    </div>
+                    {/* Consecutive message bubbles: tight gap */}
+                    <div className={`flex flex-col gap-1 w-full ${group.isSelf ? 'items-end' : 'items-start'}`}>
+                      {group.messages.map((m, idx) => (
+                        <div
+                          key={m.id || idx}
+                          className={`px-3 py-1.5 rounded-[14px] inline-block max-w-[88%] text-left text-xs leading-relaxed transition-colors select-text ${
+                            group.isSelf
+                              ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-900 dark:text-zinc-100 border border-violet-100/70 dark:border-violet-900/40'
+                              : 'bg-slate-50 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 border border-slate-200/60 dark:border-zinc-700/50'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ));
+            })()
           )}
           <div ref={roomChatEndRef} />
         </div>
@@ -81820,7 +81853,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
                           aria-pressed={!isRoomMicOn}
                         >
-                          {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
+                          {isRoomMicOn ? <Mic size={18} strokeWidth={1.6} /> : <MicOff size={18} strokeWidth={1.6} />}
                         </button>
                         <button
                           onClick={toggleRoomCamera}
@@ -81833,7 +81866,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
                           aria-pressed={!isRoomCameraOn}
                         >
-                          {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
+                          {isRoomCameraOn ? <Video size={18} strokeWidth={1.6} /> : <VideoOff size={18} strokeWidth={1.6} />}
                         </button>
 
                         {/* People and Chat Quick Toggles with restrained active background */}
@@ -81847,7 +81880,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`}
                           title="Toggle People Panel"
                         >
-                          <Users size={18} strokeWidth={1.5} />
+                          <Users size={18} strokeWidth={1.6} />
                         </button>
                         <button
                           type="button"
@@ -81859,7 +81892,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`}
                           title="Toggle Chat Panel"
                         >
-                          <MessageSquare size={18} strokeWidth={1.5} />
+                          <MessageSquare size={18} strokeWidth={1.6} />
                         </button>
 
                         {/* Progressive Disclosure Present Button */}
@@ -81895,7 +81928,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             title={(roomPresentedApp || isScreenSharing) ? (t('room.stopPresenting') || 'Stop Presenting') : (t('room.present') || 'Present')}
                             aria-label="Present in meeting"
                           >
-                            <PresentationIcon size={18} strokeWidth={1.5} />
+                            <PresentationIcon size={18} strokeWidth={1.6} />
                           </button>
 
                           {/* Present Mode Selection Popover — Apple Executive Tier Stacked List */}
@@ -82002,7 +82035,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             aria-haspopup="menu"
                             aria-expanded={isRoomStartMenuOpen}
                           >
-                            <MoreHorizontal size={18} strokeWidth={1.5} />
+                            <MoreHorizontal size={18} strokeWidth={1.6} />
                           </button>
                           {isRoomStartMenuOpen && (
                             <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-56 bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[24px] p-2 shadow-[0_32px_100px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-300 z-[50]">

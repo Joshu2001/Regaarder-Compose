@@ -1213,7 +1213,7 @@ export default function RoomLandingPage({
                       }`}
                       title={isMicOn ? "Mute Microphone" : "Unmute Microphone"}
                     >
-                      {isMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                      {isMicOn ? <Mic size={16} strokeWidth={1.6} /> : <MicOff size={16} strokeWidth={1.6} />}
                     </button>
 
                     {/* Camera Toggle */}
@@ -1229,7 +1229,7 @@ export default function RoomLandingPage({
                       }`}
                       title={isCameraOn ? "Turn off Camera" : "Turn on Camera"}
                     >
-                      {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                      {isCameraOn ? <Video size={16} strokeWidth={1.6} /> : <VideoOff size={16} strokeWidth={1.6} />}
                     </button>
 
                     {/* Screen Share (Native WebRTC Zoom / Meet style) */}
@@ -1242,7 +1242,7 @@ export default function RoomLandingPage({
                       }`}
                       title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen / Tab (Google Meet / Zoom style)"}
                     >
-                      <PresentationIcon size={16} strokeWidth={1.5} />
+                      <PresentationIcon size={16} strokeWidth={1.6} />
                     </button>
 
                     {/* Layout Toggles */}
@@ -1255,7 +1255,7 @@ export default function RoomLandingPage({
                       }`}
                       title="Toggle People Panel"
                     >
-                      <Users size={16} />
+                      <Users size={16} strokeWidth={1.6} />
                     </button>
 
                     <button 
@@ -1267,7 +1267,7 @@ export default function RoomLandingPage({
                       }`}
                       title="Toggle Chat Panel"
                     >
-                      <MessageSquare size={16} />
+                      <MessageSquare size={16} strokeWidth={1.6} />
                     </button>
 
                     {/* End Call Button */}
@@ -1276,7 +1276,7 @@ export default function RoomLandingPage({
                       className="p-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md transition-all active:scale-90"
                       title="Leave Room"
                     >
-                      <PhoneOff size={16} />
+                      <PhoneOff size={16} strokeWidth={1.6} />
                     </button>
                   </div>
 
@@ -1410,28 +1410,75 @@ export default function RoomLandingPage({
                   </div>
 
                   {/* Chat Messages List / Empty State */}
-                  <div className="flex-1 flex flex-col justify-center overflow-y-auto thin-scrollbar pr-1">
+                  <div className="flex-1 flex flex-col justify-start overflow-y-auto thin-scrollbar pr-1">
                     {chatMessages.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center text-center py-6">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-100/80 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2">
-                          <MessageSquare size={18} strokeWidth={1.5} />
+                      <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2">
+                          <MessageSquare size={16} strokeWidth={1.6} />
                         </div>
                         <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">No messages yet</span>
-                        <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 max-w-[170px] leading-relaxed">
+                        <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5 max-w-[170px] leading-relaxed">
                           Start the conversation by sending a message.
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-2.5">
-                        {chatMessages.map(msg => (
-                          <div key={msg.id} className="p-2.5 bg-slate-50 dark:bg-zinc-800/60 rounded-xl">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{msg.sender}</span>
-                              <span className="text-[10px] text-slate-400">{msg.time}</span>
+                      <div className="space-y-3.5 py-1">
+                        {(() => {
+                          const groups = [];
+                          let curGroup = null;
+                          chatMessages.forEach((msg) => {
+                            const isSelf = msg.sender === 'You' || msg.isSelf;
+                            if (curGroup && curGroup.sender === msg.sender && curGroup.isSelf === isSelf) {
+                              curGroup.messages.push(msg);
+                              curGroup.time = msg.time || curGroup.time;
+                            } else {
+                              curGroup = {
+                                id: msg.id,
+                                sender: msg.sender,
+                                isSelf,
+                                time: msg.time,
+                                messages: [msg]
+                              };
+                              groups.push(curGroup);
+                            }
+                          });
+                          return groups.map((group) => (
+                            <div key={group.id} className={`flex gap-2 ${group.isSelf ? 'flex-row-reverse' : 'flex-row'}`}>
+                              {/* Avatar rendered once per consecutive group */}
+                              <div className={`w-5.5 h-5.5 rounded-full flex items-center justify-center text-[9.5px] font-semibold shrink-0 mt-0.5 select-none ${
+                                group.isSelf 
+                                  ? 'bg-violet-600 text-white shadow-2xs' 
+                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60'
+                              }`}>
+                                {group.isSelf ? 'Y' : (group.sender ? group.sender.charAt(0).toUpperCase() : '?')}
+                              </div>
+
+                              <div className={`flex-1 min-w-0 flex flex-col ${group.isSelf ? 'items-end' : 'items-start'}`}>
+                                {/* Metadata header once per group */}
+                                <div className={`flex items-baseline gap-1.5 mb-1 px-0.5 ${group.isSelf ? 'flex-row-reverse' : ''}`}>
+                                  <span className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">{group.sender}</span>
+                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">{group.time}</span>
+                                </div>
+
+                                {/* Consecutive message bubbles: tight gap */}
+                                <div className={`flex flex-col gap-1 w-full ${group.isSelf ? 'items-end' : 'items-start'}`}>
+                                  {group.messages.map((m, idx) => (
+                                    <div 
+                                      key={m.id || idx} 
+                                      className={`px-3 py-1.5 rounded-[14px] inline-block max-w-[88%] text-left text-xs leading-relaxed transition-colors select-text ${
+                                        group.isSelf
+                                          ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-900 dark:text-zinc-100 border border-violet-100/70 dark:border-violet-900/40'
+                                          : 'bg-slate-50 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 border border-slate-200/60 dark:border-zinc-700/50'
+                                      }`}
+                                    >
+                                      <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
-                            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">{msg.text}</p>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     )}
                   </div>
