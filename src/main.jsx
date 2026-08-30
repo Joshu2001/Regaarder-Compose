@@ -46,13 +46,8 @@ class ErrorBoundary extends React.Component {
 }
 
 function RootApp() {
-  const [loading, setLoading] = useState(true);
-
   return (
-    <>
-      {loading && <SplashScreen durationMs={3000} onFinish={() => setLoading(false)} />}
-      <I18nProvider><App /></I18nProvider>
-    </>
+    <I18nProvider><App /></I18nProvider>
   );
 }
 
