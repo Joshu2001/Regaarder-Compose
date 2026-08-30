@@ -467,22 +467,38 @@ export default function RoomLandingPage({
   const [isRecording, setIsRecording] = useState(false);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
   const lastStageTapRef = useRef(0);
+  const lastToggleVideoFullscreenTimeRef = useRef(0);
 
   const toggleVideoFullscreen = () => {
+    const now = Date.now();
+    if (now - (lastToggleVideoFullscreenTimeRef.current || 0) < 350) {
+      return; // Debounce rapid duplicate invocations from pointerdown + dblclick
+    }
+    lastToggleVideoFullscreenTimeRef.current = now;
+
     const nextExpanded = !isVideoExpanded;
     setIsVideoExpanded(nextExpanded);
     if (nextExpanded) {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       }
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(true); } catch (e) {}
+      }
     } else {
       if (document.fullscreenElement && document.exitFullscreen) {
         document.exitFullscreen().catch(() => {});
+      }
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(false); } catch (e) {}
       }
     }
   };
 
   const handleStageDoubleTap = (e) => {
+    if (e?.pointerType && e.pointerType !== 'touch') {
+      return; // Mouse double-clicks are handled natively by onDoubleClick
+    }
     const now = Date.now();
     const timeDiff = now - (lastStageTapRef.current || 0);
     if (timeDiff > 0 && timeDiff < 320) {

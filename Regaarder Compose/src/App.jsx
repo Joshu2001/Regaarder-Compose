@@ -20324,13 +20324,6 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     const handleWindowFocus = () => {
       if (isFilePickerActiveRef.current) {
         isFilePickerActiveRef.current = false;
-        if (isDocumentImmersive && !document.fullscreenElement && wasNativeFullscreenRef.current) {
-          if (appShellRef.current?.requestFullscreen) {
-            appShellRef.current.requestFullscreen().catch(err => {
-              console.log('Could not re-request native fullscreen:', err);
-            });
-          }
-        }
       }
     };
 
@@ -31643,11 +31636,21 @@ Answer the user's question, provide an insightful summary, or explain the contex
     openLandingWorkspace(workspaceKey);
   };
 
+  const lastToggleImmersiveTimeRef = useRef(0);
+  const lastUniversalTapRef = useRef({ time: 0, x: 0, y: 0 });
+
   const toggleDocumentImmersiveMode = () => {
+    const now = Date.now();
+    if (now - (lastToggleImmersiveTimeRef.current || 0) < 350) {
+      return; // Debounce rapid consecutive triggers from pointer + dblclick
+    }
+    lastToggleImmersiveTimeRef.current = now;
+
     const entering = !isDocumentImmersive;
     if (entering) {
       setIsFocusMode(true);
       setIsDocumentImmersive(true);
+      enterFullscreen();
       if (appShellRef.current?.requestFullscreen) {
         appShellRef.current.requestFullscreen().then(() => {
           wasNativeFullscreenRef.current = true;
@@ -31658,17 +31661,41 @@ Answer the user's question, provide an insightful summary, or explain the contex
       }
       showToast(t('status.fullscreenEnabled') || 'Fullscreen mode enabled.');
     } else {
-      wasNativeFullscreenRef.current = false;
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch((err) => console.error('exitFullscreen error:', err));
-      }
-      setIsDocumentImmersive(false);
-      setIsFocusMode(false);
+      exitFullscreen();
       setPulseCycleActive(true);
-      showToast('Fullscreen mode disabled.');
+      showToast(t('status.fullscreenDisabled') || 'Fullscreen mode disabled.');
       // Close any open citation popover — its anchor rect is invalid after layout change.
       closeCitationPopover();
     }
+  };
+
+  const handleAppShellPointerDown = (e) => {
+    if (e.target.closest('button, input, textarea, a, select, [contenteditable="true"], [role="button"], [data-prevent-doubletap], table, td, th, [data-deck-element], canvas, .rdp, .tippy-box')) {
+      return;
+    }
+    if (productMode === 'landing') return;
+
+    const now = Date.now();
+    const prev = lastUniversalTapRef.current;
+    const timeDiff = now - prev.time;
+    const dist = Math.hypot((e.clientX || 0) - prev.x, (e.clientY || 0) - prev.y);
+
+    if (timeDiff > 0 && timeDiff < 350 && dist < 30) {
+      // Verified double tap gesture
+      e.preventDefault();
+      toggleDocumentImmersiveMode();
+      lastUniversalTapRef.current = { time: 0, x: 0, y: 0 };
+    } else {
+      lastUniversalTapRef.current = { time: now, x: e.clientX || 0, y: e.clientY || 0 };
+    }
+  };
+
+  const handleAppShellDoubleClick = (e) => {
+    if (e.target.closest('button, input, textarea, a, select, [contenteditable="true"], [role="button"], [data-prevent-doubletap], table, td, th, [data-deck-element], canvas, .rdp, .tippy-box')) {
+      return;
+    }
+    if (productMode === 'landing') return;
+    toggleDocumentImmersiveMode();
   };
 
   useEffect(() => {
@@ -33078,7 +33105,6 @@ Respond with valid JSON formatted like this:
   };
 
   const createDmExperience = () => {
-    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('dm');
     setRightSidebarOpen(false);
@@ -33112,6 +33138,8 @@ Respond with valid JSON formatted like this:
 
   const openLandingWorkspace = (destination) => {
     setCreationPickerOpen(false);
+    enterFullscreen();
+    setIsDocumentImmersive(true);
 
     let target = destination;
     if (typeof destination === 'object' && destination !== null) {
@@ -70437,7 +70465,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
   };
 
   return (
-    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
         {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
           if (!userState.user || !userState.pointer) return null;
