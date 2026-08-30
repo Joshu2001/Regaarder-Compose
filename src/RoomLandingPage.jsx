@@ -466,6 +466,34 @@ export default function RoomLandingPage({
   const screenShareVideoRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const lastStageTapRef = useRef(0);
+
+  const toggleVideoFullscreen = () => {
+    const nextExpanded = !isVideoExpanded;
+    setIsVideoExpanded(nextExpanded);
+    if (nextExpanded) {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  const handleStageDoubleTap = (e) => {
+    const now = Date.now();
+    const timeDiff = now - (lastStageTapRef.current || 0);
+    if (timeDiff > 0 && timeDiff < 320) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      toggleVideoFullscreen();
+      lastStageTapRef.current = 0;
+    } else {
+      lastStageTapRef.current = now;
+    }
+  };
 
   // Native WebRTC Screen Sharing (Google Meet / Zoom style) with Selective Source Modal
   const toggleScreenShare = () => {
@@ -815,11 +843,11 @@ export default function RoomLandingPage({
 
                 {/* Fullscreen / Expand Button */}
                 <button 
-                  onClick={() => setIsVideoExpanded(!isVideoExpanded)}
-                  className="w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-300 flex items-center justify-center hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors shadow-2xs"
-                  title="Toggle Layout"
+                  onClick={toggleVideoFullscreen}
+                  className="w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-300 flex items-center justify-center hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors shadow-2xs cursor-pointer"
+                  title={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
                 >
-                  <Maximize2 size={13} />
+                  {isVideoExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
                 </button>
 
                 {/* More Options */}
@@ -941,7 +969,20 @@ export default function RoomLandingPage({
                 
                 {/* Main Video Canvas Stage */}
                 <div className="w-full flex-1 flex items-center justify-center relative min-h-[300px]">
-                  <div className={`w-full ${isScreenSharing ? 'max-w-[1180px] h-full max-h-[82vh] min-h-[520px]' : 'max-w-[580px] aspect-[4/3]'} bg-slate-200/60 dark:bg-zinc-800/60 backdrop-blur-md rounded-[32px] border border-slate-300/40 dark:border-zinc-700/60 shadow-inner relative flex items-center justify-center overflow-hidden transition-all duration-300`}>
+                  <div 
+                    onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
+                    onPointerDown={(e) => {
+                      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
+                      handleStageDoubleTap(e);
+                    }}
+                    className={`w-full ${
+                      isVideoExpanded 
+                        ? '!fixed !inset-0 !max-w-none !max-h-none !h-screen !w-screen !rounded-none z-50 bg-black' 
+                        : isScreenSharing 
+                        ? 'max-w-[1180px] h-full max-h-[82vh] min-h-[520px] rounded-[32px]' 
+                        : 'max-w-[580px] aspect-[4/3] rounded-[32px]'
+                    } bg-slate-200/60 dark:bg-zinc-800/60 backdrop-blur-md border border-slate-300/40 dark:border-zinc-700/60 shadow-inner relative flex items-center justify-center overflow-hidden transition-all duration-300 select-none cursor-pointer`}
+                  >
                     
                     {/* Real Live Screen Share Video Feed with Live Preview Tile */}
                     {isScreenSharing ? (
@@ -1115,10 +1156,11 @@ export default function RoomLandingPage({
 
                     {/* Stage Overlay Expand / Maximize Button */}
                     <button 
-                      onClick={() => setIsVideoExpanded(!isVideoExpanded)}
-                      className="absolute top-4 right-4 p-2 rounded-full bg-black/20 text-white hover:bg-black/30 backdrop-blur-md transition-all border border-white/10 z-30"
+                      onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
+                      className="absolute top-4 right-4 p-2 rounded-full bg-black/20 text-white hover:bg-black/30 backdrop-blur-md transition-all border border-white/10 z-30 cursor-pointer"
+                      title={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
                     >
-                      <Maximize2 size={13} />
+                      {isVideoExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
                     </button>
 
                     {/* Microphone Status Pill */}
