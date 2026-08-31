@@ -72030,8 +72030,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {roomState === 'active' && roomPanelMode === 'expanded' && (productMode === 'room-landing' || productMode === 'room') ? (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
-          <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative">
+          <RegaarderComposeLanding
+            onLaunch={openLandingWorkspace}
+            onOpenWorkspaceSwitcher={(rect) => {
+              if (rect) setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
+            onSearchClick={() => {
+              closeTransientMenus();
+              setIsMemorySearchOpen(true);
+            }}
+            notifications={notifications}
+            onNotificationsClick={() => {
+              setReplaySpeedMenuOpen(false);
+              setNotificationsOpen((prev) => !prev);
+            }}
+            currentUser={currentUser}
+            onProfileClick={() => setComposeProfileMenuOpen((prev) => !prev)}
+            isDarkMode={isDarkMode}
+          />
         </div>
       ) : productMode === 'room-landing' ? (
         <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
