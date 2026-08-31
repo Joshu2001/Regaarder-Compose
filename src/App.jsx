@@ -4,7 +4,7 @@ import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger HMR & Live Reload: 2026-08-31T05:37:13.183Z
+// Trigger HMR & Live Reload: 2026-08-31T06:15:56.759Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -9205,6 +9205,7 @@ function AppCore() {
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckThemeDropdownOpen, setDeckThemeDropdownOpen] = useState(false);
   const [deckLayoutDropdownOpen, setDeckLayoutDropdownOpen] = useState(false);
+  const [deckLayoutFilterText, setDeckLayoutFilterText] = useState('');
   const [deckBrandKitDropdownOpen, setDeckBrandKitDropdownOpen] = useState(false);
   const [deckBgColorPickerOpen, setDeckBgColorPickerOpen] = useState(false);
   const [deckAiSuggestionsExpanded, setDeckAiSuggestionsExpanded] = useState(false);
@@ -35466,6 +35467,52 @@ Respond with a JSON array of slide objects matching the schema.`;
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
 
+  // Universal Double-Tap / Double-Click Exit for Deck Immersive & Presentation Modes
+  useEffect(() => {
+    if (!isDeckPresentationMode && !isDocumentImmersive) return;
+
+    const handleUniversalExit = (e) => {
+      if (e.target && e.target.closest && e.target.closest('button, input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
+      if (isDeckPresentationMode) {
+        setIsDeckPresentationMode(false);
+        setIsPresentingDeck(false);
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        showToast('Exited presentation mode');
+      } else if (isDocumentImmersive) {
+        toggleDocumentImmersiveMode();
+      }
+    };
+
+    let lastTapTime = 0;
+    let lastTapPos = { x: 0, y: 0 };
+    const handlePointerDown = (e) => {
+      if (e.target && e.target.closest && e.target.closest('button, input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
+      const now = Date.now();
+      const timeDiff = now - lastTapTime;
+      const dist = Math.hypot((e.clientX || 0) - lastTapPos.x, (e.clientY || 0) - lastTapPos.y);
+      if (timeDiff > 40 && timeDiff < 350 && dist < 35) {
+        lastTapTime = 0;
+        handleUniversalExit(e);
+      } else {
+        lastTapTime = now;
+        lastTapPos = { x: e.clientX || 0, y: e.clientY || 0 };
+      }
+    };
+
+    window.addEventListener('dblclick', handleUniversalExit, true);
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      window.removeEventListener('dblclick', handleUniversalExit, true);
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [isDeckPresentationMode, isDocumentImmersive]);
+
   // Animated Numeric Odometer Count-Up in Presentation Mode
   useEffect(() => {
     if (!isDeckPresentationMode) {
@@ -49268,9 +49315,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     )}
 
             {!isDeckPresentationMode && !isSheetsPresentationMode && (isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
-                    <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
+                    <aside className="w-[240px] relative z-30 border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
                       {/* Top Sidebar Action with Regaarder Apple-Style Split Layout Trigger */}
-                      <div className="h-16 px-3.5 border-b border-gray-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 relative">
+                      <div className="h-16 px-3.5 border-b border-gray-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 relative z-40">
                         <div className="w-full flex items-center bg-white dark:bg-zinc-800 border border-gray-200/90 dark:border-zinc-700 rounded-xl shadow-xs overflow-hidden">
                           <button
                             type="button"
@@ -49303,26 +49350,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           )}
                         </div>
 
-                        {/* Regaarder Apple-Style Slide Layout Picker Popover Menu */}
+                        {/* Regaarder Apple-Style Slide Layout Picker Popover Menu (Wider & Searchable) */}
                         {!isSheetsMode && deckLayoutDropdownOpen && (
                           <div 
                             onClick={(e) => e.stopPropagation()} 
-                            className="absolute top-[60px] left-3 right-3 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-800 rounded-2xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-150"
+                            className="absolute top-[60px] left-3 w-[300px] z-[100] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800 rounded-2xl shadow-2xl p-2 flex flex-col gap-1.5 text-xs animate-in fade-in zoom-in-95 duration-150"
                           >
-                            <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-zinc-800/80 flex items-center justify-between">
+                            <div className="px-2 py-1 border-b border-gray-100 dark:border-zinc-800/80 flex items-center justify-between">
                               <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400 flex items-center gap-1.5">
                                 <LayoutTemplate size={12} className="text-[#7C4DFF]" /> Slide Layouts
                               </span>
                               <button 
                                 type="button" 
-                                onClick={() => setDeckLayoutDropdownOpen(false)}
+                                onClick={() => {
+                                  setDeckLayoutDropdownOpen(false);
+                                  setDeckLayoutFilterText('');
+                                }}
                                 className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded cursor-pointer"
                               >
-                                <X size={11} />
+                                <X size={12} />
                               </button>
                             </div>
-                            <div className="flex flex-col gap-0.5 max-h-[260px] overflow-y-auto thin-scrollbar p-0.5">
-                              {DECK_LAYOUT_OPTIONS.map((layoutItem) => {
+
+                            {/* Apple-Style Layout Search Bar */}
+                            <div className="px-1 pt-0.5">
+                              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 focus-within:border-[#7C4DFF]/60 focus-within:ring-1 focus-within:ring-[#7C4DFF]/20 transition-all">
+                                <Search size={12} className="text-slate-400 shrink-0" />
+                                <input
+                                  type="text"
+                                  value={deckLayoutFilterText}
+                                  onChange={(e) => setDeckLayoutFilterText(e.target.value)}
+                                  placeholder="Search layouts (e.g. bento, metric)..."
+                                  className="w-full bg-transparent border-none text-[11px] text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none"
+                                  autoFocus
+                                />
+                                {deckLayoutFilterText && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeckLayoutFilterText('')}
+                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                                  >
+                                    <X size={10} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Layout Cards List */}
+                            <div className="flex flex-col gap-1 max-h-[290px] overflow-y-auto thin-scrollbar p-0.5">
+                              {DECK_LAYOUT_OPTIONS.filter((item) => {
+                                if (!deckLayoutFilterText.trim()) return true;
+                                const q = deckLayoutFilterText.toLowerCase();
+                                return item.label.toLowerCase().includes(q) || (item.desc && item.desc.toLowerCase().includes(q));
+                              }).map((layoutItem) => {
                                 const IconComp = layoutItem.icon || LayoutTemplate;
                                 return (
                                   <button
@@ -49331,23 +49411,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     onClick={() => {
                                       addDeckSlide(layoutItem.id);
                                       setDeckLayoutDropdownOpen(false);
+                                      setDeckLayoutFilterText('');
                                     }}
                                     className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 group transition-all flex items-start gap-2.5 cursor-pointer"
                                   >
-                                    <div className="w-6 h-6 rounded-lg bg-violet-100/70 dark:bg-violet-900/40 text-[#7C4DFF] dark:text-violet-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                                      <IconComp size={13} />
+                                    <div className="w-7 h-7 rounded-xl bg-violet-100/80 dark:bg-violet-900/40 text-[#7C4DFF] dark:text-violet-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform shadow-xs">
+                                      <IconComp size={14} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-[#7C4DFF] dark:group-hover:text-violet-300 transition-colors">
+                                      <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-[#7C4DFF] dark:group-hover:text-violet-300 transition-colors">
                                         {layoutItem.label}
                                       </div>
-                                      <div className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate leading-snug">
+                                      <div className="text-[10px] text-slate-400 dark:text-zinc-400 leading-snug">
                                         {layoutItem.desc}
                                       </div>
                                     </div>
                                   </button>
                                 );
                               })}
+                              {DECK_LAYOUT_OPTIONS.filter((item) => {
+                                if (!deckLayoutFilterText.trim()) return true;
+                                const q = deckLayoutFilterText.toLowerCase();
+                                return item.label.toLowerCase().includes(q) || (item.desc && item.desc.toLowerCase().includes(q));
+                              }).length === 0 && (
+                                <div className="py-6 text-center text-slate-400 dark:text-zinc-500 text-[11px]">
+                                  No slide layouts matching "{deckLayoutFilterText}"
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -67642,7 +67732,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <div className="flex flex-col items-center justify-center h-full w-full pointer-events-auto z-20 select-text">
                                           {!(activeDeckSlide?.shapes?.length || activeDeckSlide?.bentoCards?.length || activeDeckSlide?.images?.length || activeDeckSlide?.headline) && (
                                             <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-dashed border-white/15 text-center max-w-[420px] bg-black/10 backdrop-blur-xs animate-in fade-in">
-                                              <Sparkles size={22} className="text-[#7C4DFF]" />
                                               <h3 className={`text-sm font-semibold ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>Blank Regaarder Canvas</h3>
                                               <p className="text-[11px] text-slate-400 max-w-[320px]">
                                                 Double-click anywhere to type, press <code className="px-1.5 py-0.5 rounded bg-white/10 text-violet-300 font-mono text-[10px]">/</code> for instant AI widgets, or insert shapes from the toolbar.
