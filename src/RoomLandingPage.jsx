@@ -730,7 +730,7 @@ export default function RoomLandingPage({
                         { id: 'deck', label: 'Decks', icon: DeckIcon, color: 'text-amber-600' },
                         { id: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon, color: 'text-sky-600' },
                         { id: 'room-landing', label: 'Room', icon: RoomIcon, color: 'text-violet-600', active: true },
-                        { id: 'browser', label: 'Research', icon: BrowserIcon, color: 'text-blue-600' },
+                        { id: 'browser', label: 'Browser', icon: BrowserIcon, color: 'text-blue-600' },
                       ].map((item) => (
                         <button
                           key={item.id}
