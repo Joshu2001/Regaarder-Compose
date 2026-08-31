@@ -6,7 +6,11 @@ import {
   Bell,
   HelpCircle,
   MessageSquare,
-  Command
+  Command,
+  LogIn,
+  User,
+  Check,
+  Sparkles
 } from "lucide-react";
 import {
   ComposeIcon,
@@ -52,6 +56,8 @@ export default function RegaarderComposeLanding({
   const [legalModalTab, setLegalModalTab] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackCategory, setFeedbackCategory] = useState('Idea');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -118,41 +124,203 @@ export default function RegaarderComposeLanding({
         </button>
 
         {/* Right: Global Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 relative">
 
           {/* Search */}
           <button
             type="button"
             onClick={() => onSearchClick?.()}
             className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none"
-            title="Search Workspace"
+            title="Search Workspace (⌘K)"
           >
             <Search size={15} strokeWidth={1.6} />
           </button>
 
           {/* Notifications */}
-          <button
-            type="button"
-            onClick={() => onNotificationsClick?.()}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer relative outline-none focus:outline-none"
-            title="Notifications"
-          >
-            <Bell size={15} strokeWidth={1.6} />
-            {hasUnread && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-900 dark:bg-white ring-2 ring-white dark:ring-[#111111]" />
-            )}
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowProfileMenu(false);
+                if (onNotificationsClick) {
+                  onNotificationsClick();
+                } else {
+                  setShowNotificationsMenu(prev => !prev);
+                }
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer relative outline-none focus:outline-none"
+              title="Notifications"
+            >
+              <Bell size={15} strokeWidth={1.6} />
+              {hasUnread && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-900 dark:bg-white ring-2 ring-white dark:ring-[#111111]" />
+              )}
+            </button>
 
-          {/* Profile Avatar */}
-          <button
-            type="button"
-            onClick={() => onProfileClick?.()}
-            className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all hover:opacity-85 focus:outline-none ml-1 cursor-pointer"
-            style={{ backgroundColor: '#64748B' }}
-            title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
-          >
-            {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-          </button>
+            {/* Local Notifications Popover if not using parent modal */}
+            {showNotificationsMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowNotificationsMenu(false)}
+                />
+                <div
+                  className="absolute right-0 top-10 z-50 w-80 max-h-[380px] bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-xl p-3 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-150 font-sans"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Notifications</span>
+                    {hasUnread && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 font-medium">
+                        New
+                      </span>
+                    )}
+                  </div>
+                  <div className="overflow-y-auto max-h-[280px] thin-scrollbar space-y-1 py-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 dark:text-zinc-500 text-xs flex flex-col items-center gap-1.5">
+                        <Bell size={18} strokeWidth={1.5} className="opacity-40" />
+                        <span>You're all caught up</span>
+                      </div>
+                    ) : (
+                      notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`p-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                            item.unread
+                              ? 'bg-violet-50/70 dark:bg-violet-950/20 text-slate-800 dark:text-zinc-200 hover:bg-violet-100/70'
+                              : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                          }`}
+                        >
+                          <div className="font-medium text-[11.5px] mb-0.5">{item.title}</div>
+                          {item.detail && <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2">{item.detail}</div>}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* User / Sign-in Control */}
+          {currentUser ? (
+            <div className="relative ml-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNotificationsMenu(false);
+                  if (onProfileClick) {
+                    onProfileClick();
+                  } else {
+                    setShowProfileMenu(prev => !prev);
+                  }
+                }}
+                className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all hover:opacity-85 focus:outline-none cursor-pointer bg-slate-500"
+                title={`Profile: ${currentUser?.name || ''}`}
+              >
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+              </button>
+
+              {/* Profile Dropdown */}
+              {showProfileMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-10 z-50 w-60 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xl p-3.5 space-y-3 animate-in fade-in zoom-in-95 duration-150 font-sans"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold">
+                        {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">{currentUser?.name || 'User'}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{currentUser?.email || ''}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 text-[11px] text-slate-600 dark:text-zinc-300">
+                      <div className="flex justify-between py-0.5">
+                        <span className="text-slate-400">Account status</span>
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">Active</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.removeItem('rc.token');
+                          localStorage.removeItem('rc.user');
+                        } catch {}
+                        setShowProfileMenu(false);
+                        window.location.reload();
+                      }}
+                      className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-rose-600 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors cursor-pointer text-center"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="relative ml-1 flex items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onProfileClick) {
+                    onProfileClick();
+                  } else {
+                    setShowProfileMenu(prev => !prev);
+                  }
+                }}
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-medium hover:bg-black dark:hover:bg-zinc-100 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
+                title="Sign In or Create Account"
+              >
+                <LogIn size={12} strokeWidth={2} />
+                <span>Sign in</span>
+              </button>
+
+              {/* Guest / Sign-in options dropdown */}
+              {showProfileMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-10 z-50 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xl p-4 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150 font-sans"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center mx-auto text-sm font-semibold">
+                      <User size={18} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Welcome to Regaarder</div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug">
+                        Sign in to sync your work, collaborate, and access premium AI tools.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onProfileClick?.();
+                      }}
+                      className="w-full py-1.5 px-3 rounded-lg text-xs font-medium bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black transition-colors cursor-pointer shadow-xs"
+                    >
+                      Sign In / Sign Up
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
         </div>
       </header>
