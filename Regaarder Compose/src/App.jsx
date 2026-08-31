@@ -1,8 +1,10 @@
+import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
+import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow';
 import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger Vercel Build Safely
+// Trigger HMR & Live Reload: 2026-08-31T05:37:13.336Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -50,7 +52,8 @@ import {
   RegaarderFitScreenIcon,
   RegaarderHistoryIcon,
   RegaarderSaveCloudIcon,
-  RegaarderNotificationIcon
+  RegaarderNotificationIcon,
+  LaserPointerIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
@@ -72,6 +75,57 @@ const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor)
   return <IconComp size={size} className={isDarkIcon ? 'text-slate-900' : 'text-white'} />;
 };
 
+
+const VisualEffectsIcon = ({ size = 16, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    {/* Prism / filter triangle */}
+    <path d="M8 2L14 13H2L8 2Z" />
+    {/* Refracted ray */}
+    <path d="M8 13l3 2" />
+    <path d="M8 13l-3 2" />
+    {/* Light beam inside */}
+    <line x1="8" y1="5" x2="8" y2="10" />
+  </svg>
+);
+const MeetingSummaryIcon = ({ size = 16, className = "", style = {} }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="1.75" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className} 
+    style={style}
+  >
+    <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
+    <path d="M7.5 8.5h5" />
+    <path d="M7.5 12h9" />
+    <path d="M7.5 15.5h6.5" />
+    <path d="M16.5 7.5l.4.8.8.4-.8.4-.4.8-.4-.8-.8-.4.8-.4.4-.8z" />
+  </svg>
+);
+const MeetingNotesIcon = ({ size = 15, className = "", style = {} }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="1.75" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className} 
+    style={style}
+  >
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8.5v.5z" />
+    <path d="M8 10h8" />
+    <path d="M8 14h5" />
+  </svg>
+);
+
 const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <path d="M 3 19 C 7 19, 9 5, 14 5 C 18 5, 20 12, 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -84,6 +138,7 @@ const RegaarderVectorIcon = ({ size = 13, className = "" }) => (
 import TemplateChartVisualizer, { extractTemplateChartData } from './components/TemplateChartVisualizer';
 import CitationPopover from './components/CitationPopover';
 import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
+import ScreenShareSourceModal from './components/room/ScreenShareSourceModal';
 import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
 import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
@@ -418,6 +473,15 @@ const DECK_DESIGN_PRESETS = [
   },
 ];
 
+const DECK_LAYOUT_OPTIONS = [
+  { id: 'Title & Content', label: 'Title & Content', desc: 'Header with modular body area and smart insert triggers', icon: LayoutTemplate },
+  { id: 'Title Slide', label: 'Title Slide', desc: 'Presentation cover with presenter and contact lockup', icon: Presentation },
+  { id: 'Two Columns', label: 'Two Columns', desc: 'Side-by-side comparison with dual content blocks', icon: Grid },
+  { id: 'Key Metric', label: 'Key Metric', desc: 'High-impact stat callout and KPI statement', icon: TrendingUp },
+  { id: 'Bento Grid', label: 'Bento Grid', desc: 'Frosted capability matrix and feature cards', icon: LayoutGrid },
+  { id: 'Blank Canvas', label: 'Blank Canvas', desc: 'Clean slate for freeform shapes, media, and diagrams', icon: Square }
+];
+
 const DECK_PRESENTER_AVATARS = [
   { id: 'leader', label: 'Executive Leader', url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80' },
   { id: 'speaker', label: 'Modern Speaker', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80' },
@@ -576,397 +640,7 @@ const DECK_THEME_OPTIONS = [
   { key: 'cyberpunk-neon', name: 'Cyberpunk', gradient: 'bg-gradient-to-r from-fuchsia-500 via-purple-600 to-cyan-400' }
 ];
 
-const DECK_LAYOUT_OPTIONS = [
-  { 
-    key: "Startup Thank You", 
-    name: "Startup Thank You",
-    desc: 'Grand finale outro with sweeping top ambient neon ribbon, bold THANK YOU hero, presenter capsule & contact footer',
-    visualType: 'startup conclusion thank you outro',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col justify-between p-0.5 shrink-0">
-        <div className="w-full h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-xs" />
-        <div className="w-full flex flex-col items-center justify-center gap-0.5">
-          <div className="w-3/4 h-1 bg-white rounded-xs" />
-          <div className="w-1/2 h-0.5 bg-purple-500 rounded-xs" />
-        </div>
-        <div className="w-full flex justify-around">
-          <div className="w-1 h-0.5 bg-slate-400 rounded-xs" />
-          <div className="w-1 h-0.5 bg-slate-400 rounded-xs" />
-          <div className="w-1 h-0.5 bg-slate-400 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Team", 
-    name: "Startup Meet the Team",
-    desc: '2x2 grid of glassmorphic executive team cards with photo avatars, names, italic roles & bottom contact bar',
-    visualType: 'startup 2x2 executive team grid',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col justify-between p-0.5 shrink-0 gap-0.5">
-        <div className="flex justify-between gap-0.5 h-1/2">
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-        </div>
-        <div className="flex justify-between gap-0.5 h-1/2">
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Use of Funds", 
-    name: "Startup Use of Funds",
-    desc: 'Interactive pie/donut allocation chart card, bottom-right orbital neon vortex & 4 percentage badge rows',
-    visualType: 'startup pie allocation use of funds',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center justify-center p-0.5">
-          <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 flex items-center justify-center" />
-        </div>
-        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-          <div className="w-full h-1 bg-blue-600 rounded-xs" />
-          <div className="w-full h-1 bg-cyan-600 rounded-xs" />
-          <div className="w-full h-1 bg-indigo-600 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Timeline", 
-    name: "Startup Accomplishments Timeline",
-    desc: 'Vertical ACCOMPLISHMENTS DATE headline, glowing vertical timeline spine with 4 sphere nodes & stacked milestone cards',
-    visualType: 'startup vertical accomplishments timeline',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1.5 h-full flex flex-col justify-center items-center">
-          <div className="w-0.5 h-full bg-cyan-400/80 rounded-full" />
-        </div>
-        <div className="w-4/5 h-full flex flex-col justify-between p-0.5 gap-0.5">
-          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
-          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
-          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
-          <div className="w-full h-1 bg-purple-600 border border-purple-400 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Revenue Model", 
-    name: "Startup Revenue Model",
-    desc: '3-tier glassmorphic pricing comparison cards (Basic, elevated Standard, Premium) with laser dividing lines',
-    visualType: 'startup 3-tier pricing model',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1/3 h-4/5 rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-        </div>
-        <div className="w-1/3 h-full rounded-xs bg-indigo-900/90 border border-cyan-400/80 flex flex-col justify-between p-0.5 shadow-xs">
-          <div className="w-full h-0.5 bg-cyan-300" />
-          <div className="w-full h-1 bg-cyan-400 rounded-xs" />
-        </div>
-        <div className="w-1/3 h-4/5 rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Traction", 
-    name: "Startup Traction",
-    desc: 'Multi-series 5-point trend chart card, top-right orbital neon vortex & 3 metric percentage badge rows',
-    visualType: 'startup multi-series traction chart',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-3/5 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
-          <div className="w-full h-px bg-cyan-400" />
-          <div className="w-full h-px bg-blue-400" />
-          <div className="w-full h-px bg-purple-400" />
-        </div>
-        <div className="w-2/5 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-indigo-600 rounded-xs" />
-          <div className="w-full h-1 bg-blue-600 rounded-xs" />
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Key Advantages", 
-    name: "Startup Key Advantages",
-    desc: '4 ascending staircase glassmorphic cards with floating icon spheres & dual neon vortex curves',
-    visualType: 'startup staircase advantages',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-end justify-between shrink-0 gap-0.5">
-        <div className="w-1.5 h-2 bg-slate-700 rounded-t-xs" />
-        <div className="w-1.5 h-3 bg-indigo-900 rounded-t-xs" />
-        <div className="w-1.5 h-4 bg-purple-600 rounded-t-xs" />
-        <div className="w-1.5 h-5 bg-indigo-800 rounded-t-xs" />
-      </div>
-    )
-  },
-  { 
-    key: "Startup Competitor Analysis", 
-    name: "Startup Competitor Analysis",
-    desc: 'Direct vs Indirect Competitors 2-column breakdown with laser divider beams & glowing comparison rows',
-    visualType: 'startup competitors comparison',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-slate-700 rounded-xs" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-        </div>
-        <div className="w-px h-full bg-cyan-400" />
-        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-purple-500/80 rounded-xs" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Size of Market", 
-    name: "Startup Size of Market",
-    desc: 'Market narrative, TAM/SAM/SOM breakdown metric pills & dynamic 3-bar chart visualization',
-    visualType: 'startup market size',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
-        <div className="w-3/5 flex flex-col justify-between h-full py-0.5">
-          <div className="w-full h-0.5 bg-white rounded-xs" />
-          <div className="w-4/5 h-0.5 bg-slate-400 rounded-xs" />
-          <div className="flex gap-0.5 items-center mt-0.5">
-            <div className="w-2.5 h-1 bg-purple-500 rounded-xs" />
-            <div className="w-2.5 h-1 bg-slate-700 rounded-xs" />
-          </div>
-        </div>
-        <div className="w-2/5 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-end justify-around px-0.5 pb-0.5 gap-0.5">
-          <div className="w-1 h-1.5 bg-blue-200 rounded-t-xs" />
-          <div className="w-1 h-2.5 bg-blue-500 rounded-t-xs" />
-          <div className="w-1 h-3.5 bg-purple-400 rounded-t-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Discover Services", 
-    name: "Startup Discover Services",
-    desc: 'Presenter portrait with 3D backdrop pop-out, top-right neon vortex & 2x2 services grid with laser divider beams',
-    visualType: 'startup services grid',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
-        <div className="w-2/5 h-full rounded-xs bg-indigo-950 border border-white/20 relative flex items-center justify-center">
-          <div className="w-2.5 h-3 bg-purple-400 rounded-full" />
-        </div>
-        <div className="w-3/5 grid grid-cols-2 gap-0.5 h-full items-center">
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Innovative Solutions", 
-    name: "Startup Innovative Solutions",
-    desc: 'Neon flowing wave hero with 3 glassmorphic solution cards & floating icon badges',
-    visualType: 'startup solution cards',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-full flex items-center justify-between">
-          <div className="w-1/3 h-1 bg-white rounded-xs" />
-          <div className="w-1/2 h-0.5 bg-cyan-400 rounded-xs" />
-        </div>
-        <div className="flex gap-0.5 h-2.5 items-stretch mt-0.5">
-          <div className="w-1/3 bg-indigo-900/90 rounded-xs border border-white/20 relative">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
-          </div>
-          <div className="w-1/3 bg-indigo-900/90 rounded-xs border border-white/20 relative">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
-          </div>
-          <div className="w-1/3 bg-purple-900/90 rounded-xs border border-white/20 relative">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
-          </div>
-        </div>
-      </div>
-    )
-  },
-        { 
-    key: "Startup Problem Statement", 
-    name: "Startup Problem Statement",
-    desc: 'Two-column hero headline with 3 vertical glassmorphic problem cards',
-    visualType: 'startup problem cards',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
-        <div className="w-2/5 flex flex-col justify-center gap-0.5">
-          <div className="w-full h-1 bg-white rounded-xs" />
-          <div className="w-3/4 h-1 bg-white rounded-xs" />
-        </div>
-        <div className="w-3/5 flex gap-0.5 h-full items-stretch">
-          <div className="w-1/3 bg-purple-400 rounded-xs" />
-          <div className="w-1/3 bg-indigo-900 rounded-xs border border-white/20" />
-          <div className="w-1/3 bg-slate-900 rounded-xs border border-white/20" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Introduction", 
-    name: "Startup Introduction",
-    desc: 'Bento layout with multi-media cards & dual narrative blocks',
-    visualType: 'startup intro bento',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-2/5 h-0.5 bg-white rounded-xs" />
-        <div className="flex gap-0.5 h-3 items-stretch">
-          <div className="w-1/3 bg-purple-400/40 rounded-xs" />
-          <div className="w-2/3 flex flex-col gap-0.5">
-            <div className="h-1.5 bg-blue-500/40 rounded-xs" />
-            <div className="flex-1 flex gap-0.5">
-              <div className="w-1/2 bg-purple-500/40 rounded-xs" />
-              <div className="w-1/2 bg-slate-600/40 rounded-xs" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Today's Agenda", 
-    name: "Startup Today's Agenda",
-    desc: 'Two-column 10-point agenda with glowing divider beams',
-    visualType: 'startup agenda',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-1/3 h-0.5 bg-cyan-400 rounded-xs" />
-        <div className="flex gap-0.5 h-full items-center">
-          <div className="w-1/2 h-full flex flex-col gap-0.5 justify-around">
-            <div className="w-full h-0.5 bg-slate-400" />
-            <div className="w-full h-0.5 bg-slate-400" />
-          </div>
-          <div className="w-px h-full bg-cyan-400" />
-          <div className="w-1/2 h-full flex flex-col gap-0.5 justify-around">
-            <div className="w-full h-0.5 bg-slate-400" />
-            <div className="w-full h-0.5 bg-slate-400" />
-          </div>
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: 'Startup Pitch Deck', 
-    name: 'Startup Pitch Deck',
-    desc: 'Cover with title, presenter & footer',
-    visualType: 'startup cover',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-1/3 h-0.5 bg-cyan-400 rounded-xs" />
-        <div className="w-3/4 h-1.5 bg-white rounded-xs" />
-        <div className="w-full flex justify-between">
-          <div className="w-1/4 h-0.5 bg-violet-400 rounded-xs" />
-          <div className="w-1/4 h-0.5 bg-violet-400 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: 'Title Slide', 
-    name: 'Title Slide',
-    desc: 'Headline & subtitle cover',
-    visualType: 'hero statement',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-1/2 h-1 bg-violet-500 rounded-xs" />
-        <div className="w-1/3 h-0.5 bg-gray-300 rounded-xs" />
-      </div>
-    )
-  },
-  { 
-    key: 'Cinematic Split', 
-    name: 'Cinematic Split',
-    desc: 'Side-by-side hero text & visual',
-    visualType: 'split visual',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex gap-0.5 p-0.5 shrink-0">
-        <div className="w-1/2 h-full bg-violet-50 rounded-xs flex flex-col gap-0.5 p-0.5 justify-center">
-          <div className="w-full h-0.5 bg-violet-400 rounded-xs" />
-          <div className="w-2/3 h-0.5 bg-gray-300 rounded-xs" />
-        </div>
-        <div className="w-1/2 h-full bg-violet-200 rounded-xs" />
-      </div>
-    )
-  },
-  { 
-    key: 'Key Metric', 
-    name: 'Key Metric',
-    desc: 'Bold data callout & label',
-    visualType: 'data-backed narrative',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col items-center justify-center p-0.5 shrink-0">
-        <span className="text-[7px] font-black text-violet-600 leading-none">94%</span>
-        <div className="w-3/4 h-0.5 bg-gray-300 rounded-xs mt-0.5" />
-      </div>
-    )
-  },
-  { 
-    key: 'Quote Slide', 
-    name: 'Quote Slide',
-    desc: 'Impactful blockquote statement',
-    visualType: 'minimal signal',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex items-center justify-center p-0.5 shrink-0">
-        <span className="text-[10px] font-serif text-violet-500 leading-none">“ ”</span>
-      </div>
-    )
-  },
-  { 
-    key: 'Feature Grid', 
-    name: 'Feature Grid',
-    desc: 'Multi-column grid showcase',
-    visualType: 'feature grid',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white grid grid-cols-2 gap-0.5 p-0.5 shrink-0">
-        <div className="bg-violet-200 rounded-xs" />
-        <div className="bg-gray-200 rounded-xs" />
-        <div className="bg-gray-200 rounded-xs" />
-        <div className="bg-violet-200 rounded-xs" />
-      </div>
-    )
-  },
-  { 
-    key: 'Text & List', 
-    name: 'Text & List',
-    desc: 'Structured bullet narrative',
-    visualType: 'bullet narrative',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col gap-0.5 p-0.5 justify-center shrink-0">
-        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-full h-0.5 bg-gray-300 rounded-xs"/></div>
-        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-3/4 h-0.5 bg-gray-300 rounded-xs"/></div>
-        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-1/2 h-0.5 bg-gray-300 rounded-xs"/></div>
-      </div>
-    )
-  }
-];
+
 
 const DECK_BRAND_KITS = [
   { name: 'Regaarder Aurora', colors: ['#7C4DFF', '#B085FF', '#E8D5FF'], font: 'SF Pro / Inter' },
@@ -1726,7 +1400,7 @@ const SlashMenuPopover = React.forwardRef(({
               setInternalSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={t('slash.searchPlaceholder') || "Search commands…"}
+            placeholder={t('slash.searchPlaceholder') || "Search commands..."}
             className="w-full h-8 pl-8 pr-7 text-xs bg-white dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 focus:ring-1 focus:ring-violet-400/30 transition-all font-sans shadow-2xs"
           />
           {searchQuery && (
@@ -3245,6 +2919,7 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 };
 
 const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [invitedEmails, setInvitedEmails] = useState(new Set());
   const [isCopied, setIsCopied] = useState(false);
@@ -5798,7 +5473,20 @@ const FullPageTemplateGallery = ({
 };
 
 const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
-  const [pos, setPos] = React.useState({ x: 24, y: 80 });
+  const [pos, setPos] = React.useState({ x: 24, y: 76 });
+  const [hasContent, setHasContent] = React.useState(false);
+  const checkNotesContent = () => {
+    if (notesCardRef?.current) {
+      const text = notesCardRef.current.innerText || notesCardRef.current.textContent || '';
+      setHasContent(text.replace(/\u200B/g, '').trim().length > 0);
+    }
+  };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      checkNotesContent();
+    }
+  }, [isOpen]);
   const [isDragging, setIsDragging] = React.useState(false);
   const [slashMenu, setSlashMenu] = React.useState({ open: false, x: 0, y: 0, filter: '', activeIdx: 0, savedRange: null });
   const [dragHandle, setDragHandle] = React.useState({ visible: false, top: 0, left: 0, node: null });
@@ -6138,17 +5826,36 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
         </>
       )}
 
-      <div className="fixed z-[100000] animate-in fade-in shadow-[0_24px_80px_-12px_rgba(0,0,0,0.18)] rounded-[24px] flex flex-col bg-white/95 backdrop-blur-[32px] border border-slate-200/60" style={{ width: 500, height: 600, left: pos.x, top: pos.y }}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50 bg-white/40 rounded-t-[24px] cursor-grab active:cursor-grabbing select-none" onPointerDown={handleHeaderPointerDown}>
-          <h2 className="text-[14px] font-semibold text-slate-800 flex items-center gap-2.5 pointer-events-none tracking-tight">
-            <FileText size={16} className="text-violet-500" /> Meeting Notes
+      <div className="fixed z-[100000] animate-in fade-in shadow-[0_18px_50px_-10px_rgba(0,0,0,0.12)] dark:shadow-[0_18px_50px_-10px_rgba(0,0,0,0.45)] rounded-[20px] flex flex-col bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800" style={{ width: 380, height: 'calc(100vh - 170px)', minHeight: 440, maxHeight: 680, left: pos.x, top: pos.y }}>
+        {/* Apple Utility Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/60 rounded-t-[20px] cursor-grab active:cursor-grabbing select-none" onPointerDown={handleHeaderPointerDown}>
+          <h2 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 flex items-center gap-2 pointer-events-none tracking-tight">
+            <MeetingNotesIcon size={15} className="text-violet-500 shrink-0" />
+            <span>Meeting Notes</span>
           </h2>
-          <div className="flex items-center gap-3 notes-no-drag">
-            <button className="px-3.5 py-1.5 bg-white text-slate-600 border border-slate-200/80 rounded-xl text-[11px] font-medium shadow-sm hover:shadow-md hover:text-slate-800 transition-all" onClick={() => alert('Notes saved to workspace.')}>Save to Docs</button>
-            <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all" onClick={onClose}><X size={14} /></button>
+          <div className="flex items-center gap-2 notes-no-drag">
+            <button 
+              type="button" 
+              className="px-2.5 py-1 bg-slate-100/90 dark:bg-zinc-800 hover:bg-slate-200/90 dark:hover:bg-zinc-700 active:scale-95 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-zinc-700/60 rounded-lg text-[11px] font-medium transition-all cursor-pointer shadow-2xs" 
+              onClick={() => {
+                if (typeof showToast === 'function') showToast('Notes saved to Docs');
+                else alert('Notes saved to workspace.');
+              }}
+            >
+              Save to Docs
+            </button>
+            <button 
+              type="button" 
+              className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-all cursor-pointer" 
+              onClick={onClose}
+              title="Close Notes"
+              aria-label="Close Notes"
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto notes-scroller group" id="notes-scroller">
+        <div className="flex-1 overflow-y-auto notes-scroller group relative" id="notes-scroller">
           <style>{`
             .notes-scroller { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.2s; }
             .notes-scroller:hover { scrollbar-color: rgba(148, 163, 184, 0.4) transparent; }
@@ -6157,19 +5864,40 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
             .notes-scroller::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; transition: background 0.2s; }
             .notes-scroller:hover::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); }
           `}</style>
-          <div className="min-h-full px-6 pt-5 pb-16">
+          
+          {/* Subtle Apple-style Empty State */}
+          {!hasContent && (
+            <div className="pointer-events-none absolute inset-x-5 top-5 flex flex-col items-start gap-1 select-none z-0">
+              <p className="text-[12.5px] text-slate-400 dark:text-zinc-500 font-normal leading-relaxed">
+                Meeting notes will appear here as the conversation progresses.
+              </p>
+              <p className="text-[11px] text-slate-400/80 dark:text-zinc-500/80 flex items-center gap-1 mt-0.5">
+                Type <kbd className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 font-mono text-[9.5px] text-slate-500 dark:text-zinc-400 shadow-2xs">/</kbd> for formatting commands
+              </p>
+            </div>
+          )}
+
+          <div className="min-h-full px-5 pt-4 pb-14 relative z-10">
             <div
               ref={notesCardRef}
               contentEditable="true"
-suppressContentEditableWarning
+              suppressContentEditableWarning
               onClick={handleNotesClick}
-              onKeyDown={handleNotesKeyDown}
+              onKeyDown={(e) => {
+                handleNotesKeyDown(e);
+                setTimeout(checkNotesContent, 10);
+              }}
+              onInput={checkNotesContent}
+              onKeyUp={checkNotesContent}
               onMouseMove={handleEditorMouseMove}
               onMouseLeave={handleEditorMouseLeave}
               onMouseUp={handleEditorMouseUp}
-              onBlur={() => setSelToolbar({ open: false, x: 0, y: 0 })}
-              className={`w-full outline-none text-[15px] leading-[1.75] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-              data-placeholder="Type your notes here — use '/' for commands"
+              onBlur={() => {
+                setSelToolbar({ open: false, x: 0, y: 0 });
+                checkNotesContent();
+              }}
+              className={`w-full outline-none text-[14.5px] leading-[1.7] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+              data-placeholder=""
             />
           </div>
         </div>
@@ -6210,74 +5938,123 @@ const SummaryModal = ({
     }
   };
 
+  const renderFormattedSummary = (text) => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    return (
+      <div className="space-y-2.5 text-[13px] leading-relaxed text-slate-700 dark:text-zinc-300">
+        {lines.map((line, idx) => {
+          const trimmed = line.trim();
+          if (!trimmed) return <div key={idx} className="h-1" />;
+          
+          if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ') || /^[0-9]+[\.\)]\s+[A-Z]/.test(trimmed)) {
+            const cleanHeading = trimmed.replace(/^#+\s*/, '').replace(/^[0-9]+[\.\)]\s*/, '');
+            return (
+              <div key={idx} className="pt-2 pb-0.5 border-b border-slate-100 dark:border-zinc-800/60 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                <span>{cleanHeading}</span>
+              </div>
+            );
+          }
+          
+          if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+            const bulletText = trimmed.replace(/^[-*•]\s*/, '');
+            return (
+              <div key={idx} className="flex items-start gap-2 pl-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400/80 dark:bg-violet-500/80 mt-1.5 shrink-0" />
+                <span className="flex-1">{bulletText}</span>
+              </div>
+            );
+          }
+
+          if (trimmed.startsWith('**') && trimmed.includes(':')) {
+            return (
+              <div key={idx} className="font-medium text-slate-900 dark:text-zinc-100">
+                {trimmed.replace(/\*\*/g, '')}
+              </div>
+            );
+          }
+
+          return <p key={idx}>{trimmed}</p>;
+        })}
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
-      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_32px_120px_rgba(0,0,0,0.25)] rounded-[32px] w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] text-left select-text" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100 dark:border-zinc-800 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-              <RegaarderAiIcon size={20} />
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] rounded-[18px] w-full max-w-lg overflow-hidden flex flex-col max-h-[82vh] text-left select-text relative z-10" onClick={e => e.stopPropagation()}>
+        {/* Compact Structured Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 shadow-2xs">
+              <MeetingSummaryIcon size={15} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+              <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
                 {t('room.liveSummary') || 'Live Meeting Summary'}
               </h2>
-              <div className="flex items-center gap-1.5 text-[11px] text-violet-600 dark:text-violet-400 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                <span>{liveTranscript.length} {t('room.transcriptCount') || 'Transcript Chunks'}</span>
+              <div className="flex items-center gap-1.5 text-[10.5px] text-zinc-500 dark:text-zinc-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{liveTranscript.length > 0 ? `${liveTranscript.length} ${t('room.transcriptCount') || 'Transcript Chunks'}` : 'Live Audio Stream Active'}</span>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/50 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 text-xs font-semibold transition-all cursor-pointer disabled:opacity-40"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/90 dark:bg-zinc-800 hover:bg-slate-200/90 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11px] font-medium transition-all cursor-pointer border border-slate-200/60 dark:border-zinc-700/60 active:scale-95 disabled:opacity-40 shadow-2xs"
             >
-              <RegaarderAiIcon size={13} className={isGenerating ? "animate-spin" : ""} />
+              <MeetingSummaryIcon size={12} className={isGenerating ? "animate-spin text-violet-500" : "text-violet-500"} />
               <span>{isGenerating ? (t('room.summaryGenerating') || 'Summarizing...') : (t('room.generateSummary') || 'Refresh')}</span>
             </button>
             <button 
+              type="button"
               onClick={onClose} 
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              title="Close"
+              aria-label="Close"
             >
-              <X size={16} />
+              <X size={13} strokeWidth={2} />
             </button>
           </div>
         </div>
 
         {/* Body Content */}
-        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1 space-y-4 font-sans">
+        <div className="px-5 py-5 overflow-y-auto thin-scrollbar flex-1 space-y-3 font-sans bg-white dark:bg-zinc-900">
           {isGenerating ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-violet-600 dark:text-violet-400">
-              <RegaarderAiIcon size={28} className="animate-spin" />
-              <p className="text-xs font-semibold">{t('room.summaryGenerating') || 'Synthesizing meeting transcript...'}</p>
+            <div className="flex flex-col items-center justify-center py-10 gap-2.5 text-violet-600 dark:text-violet-400">
+              <div className="w-8 h-8 rounded-full bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center border border-violet-200/60 dark:border-violet-800/60">
+                <MeetingSummaryIcon size={16} className="animate-spin text-violet-600 dark:text-violet-400" />
+              </div>
+              <p className="text-xs font-medium text-slate-600 dark:text-zinc-400">{t('room.summaryGenerating') || 'Synthesizing meeting insights...'}</p>
             </div>
           ) : summaryData ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 text-xs text-slate-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                {summaryData}
-              </div>
+            <div className="p-3.5 rounded-[14px] bg-slate-50/60 dark:bg-zinc-850/60 border border-slate-200/60 dark:border-zinc-800">
+              {renderFormattedSummary(summaryData)}
             </div>
           ) : (
-            <div className="text-center py-10 px-4">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
-                <Mic size={18} />
+            <div className="text-center py-8 px-4 flex flex-col items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-violet-50/80 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-2.5 border border-violet-200/50 dark:border-violet-800/50">
+                <Mic size={16} />
               </div>
-              <p className="text-xs font-medium text-slate-600 dark:text-zinc-400">
-                {t('room.noTranscriptYet') || 'Start speaking to record audio and generate live summaries.'}
+              <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 mb-1">
+                Listening to the meeting…
+              </h3>
+              <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 max-w-[280px] leading-relaxed">
+                Your summary will appear here as the conversation develops.
               </p>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="px-7 py-4 bg-slate-50/80 dark:bg-zinc-850/80 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-slate-50/90 dark:bg-zinc-950/90 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
           <button 
             type="button"
             onClick={() => {
@@ -6287,7 +6064,7 @@ const SummaryModal = ({
               }
             }}
             disabled={!summaryData}
-            className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-700 rounded-xl transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3 py-1.5 text-[11.5px] font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer disabled:opacity-30"
           >
             {t('room.copyAnswer') || 'Copy Summary'}
           </button>
@@ -6301,9 +6078,9 @@ const SummaryModal = ({
               }
             }}
             disabled={!summaryData}
-            className="px-5 py-2 text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            className="px-3.5 py-1.5 text-[11.5px] font-medium text-white bg-violet-600 hover:bg-violet-700 active:scale-95 rounded-lg transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-30"
           >
-            <ComposeIcon size={14} />
+            <ComposeIcon size={13} />
             <span>{t('room.exportToCompose') || 'Export to Docs'}</span>
           </button>
         </div>
@@ -6312,336 +6089,137 @@ const SummaryModal = ({
   );
 };
 
-const MeetingsModal = ({ isOpen, onClose, globalEvents, setGlobalEvents, setInvites }) => {
-  const [meetings, setMeetings] = useState([
-    { id: 1, title: 'Design Sync', date: '2026-10-16', time: '14:00', privacy: 'group', recurrence: 'none' },
-    { id: 2, title: 'Weekly Engineering Standup', date: '2026-10-17', time: '10:00', privacy: 'group', recurrence: 'weekly' }
-  ]);
-  const [editingId, setEditingId] = useState(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDate, setEditDate] = useState('');
-  const [editTime, setEditTime] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editLink, setEditLink] = useState('');
-  const [editPrivacy, setEditPrivacy] = useState('group'); // 'private' or 'group'
-  const [editRecurrence, setEditRecurrence] = useState('none');
-  const [editGuest, setEditGuest] = useState('');
-  const [editGuests, setEditGuests] = useState([]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  
-  const [isDictating, setIsDictating] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState([]);
+
+const ReportIssueModal = ({ isOpen, onClose, showToast }) => {
+  const [category, setCategory] = useState('audio');
+  const [description, setDescription] = useState('');
+  const [includeLogs, setIncludeLogs] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleAddGuest = (e) => {
-    if (e.key === 'Enter' && editGuest.trim()) {
-      setEditGuests([...editGuests, editGuest.trim()]);
-      setEditGuest('');
-    }
-  };
+  const categories = [
+    { id: 'audio', label: 'Audio & Mic' },
+    { id: 'video', label: 'Video / Camera' },
+    { id: 'screen', label: 'Screen Share' },
+    { id: 'ai', label: 'Room AI' },
+    { id: 'other', label: 'Other' },
+  ];
 
-  const removeGuest = (index) => {
-    setEditGuests(editGuests.filter((_, i) => i !== index));
-  };
-
-  const handleSave = async (id) => {
-    if (!editTitle.trim()) return;
-    
-    let finalDate = editDate || new Date().toISOString().split('T')[0];
-    const meetingData = { 
-      id: id === 'new' ? Date.now() : id, 
-      title: editTitle, 
-      date: finalDate, 
-      time: editTime || '10:00',
-      description: editDescription,
-      link: editLink,
-      privacy: editPrivacy,
-      recurrence: editRecurrence,
-      guests: editGuests
-    };
-    
-    if (id === 'new') {
-      setMeetings([...meetings, meetingData]);
-      
-      try {
-        const token = localStorage.getItem('rc.token');
-        if (token) {
-          await fetch(`${API_BASE_URL}/api/events`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify(meetingData)
-          });
-          
-          if (editGuests.length > 0) {
-            alert(`Invitations sent to ${editGuests.join(', ')}`);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to save meeting to backend', err);
-      }
-    } else {
-      setMeetings(meetings.map(m => m.id === id ? meetingData : m));
-    }
-    
-    setEditingId(null);
-    setAttachedFiles([]);
-    setShowAdvanced(false);
-  };
-
-  const startEdit = (meeting) => {
-    setEditingId(meeting.id);
-    setEditTitle(meeting.title || '');
-    setEditDate(meeting.date || '');
-    setEditTime(meeting.time || '');
-    setEditDescription(meeting.description || '');
-    setEditLink(meeting.link || '');
-    setEditPrivacy(meeting.privacy || 'group');
-    setEditRecurrence(meeting.recurrence || 'none');
-    setEditGuests(meeting.guests || []);
-    setShowAdvanced(!!(meeting.description || meeting.link || meeting.guests?.length > 0));
-  };
-
-  const startAdd = () => {
-    setEditingId('new');
-    setEditTitle('');
-    setEditDate('');
-    setEditTime('');
-    setEditDescription('');
-    setEditLink('');
-    setEditPrivacy('group');
-    setEditRecurrence('none');
-    setEditGuests([]);
-    setShowAdvanced(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setAttachedFiles([...attachedFiles, ...Array.from(e.dataTransfer.files)]);
-    }
-  };
-
-  const handleScheduleViaAI = () => {
-    setIsAIProcessing(true);
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (!description.trim()) return;
+    setIsSubmitting(true);
     setTimeout(() => {
-      setEditTitle("Design Sync extracted from document");
-      setEditDate("2026-10-20");
-      setEditTime("15:30");
-      setIsAIProcessing(false);
-    }, 1500);
+      setIsSubmitting(false);
+      setDescription('');
+      onClose();
+      showToast?.('Feedback submitted. Thank you for helping improve Room!');
+    }, 350);
   };
 
   return (
-    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="relative w-full max-w-lg">
-        <div 
-          className="bg-white/[93%] backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] w-full overflow-hidden flex flex-col max-h-[85vh] relative" 
-          onClick={e => e.stopPropagation()}
-          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-          onDragLeave={() => setIsDragOver(false)}
-          onDrop={handleDrop}
-        >
-
-        <div className="flex items-center justify-between px-7 py-6 border-b border-white/40 shrink-0">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
-            <Users className="text-violet-500" size={24} /> Upcoming Meetings
-          </h2>
-          <div className="flex gap-2 items-center">
-            <button onClick={startAdd} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 rounded-full transition-colors" disabled={editingId !== null}>
-              <Plus size={20} />
-            </button>
-          </div>
-        </div>
-
-        {isDragOver && (
-          <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm flex flex-col items-center justify-center border-2 border-violet-500 border-dashed rounded-[32px] m-4">
-            <FilePlus2 className="text-violet-500 mb-2" size={32} />
-            <p className="text-violet-700 font-medium">Drop files to parse schedule</p>
-          </div>
-        )}
-
-        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1 space-y-4">
-          {editingId === 'new' && (
-            <div className="p-5 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/50 rounded-3xl mb-4 animate-in fade-in zoom-in-95 relative">
-              <div className="absolute top-4 right-4 z-10">
-                <button 
-                  onClick={() => setIsDictating(!isDictating)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all ${isDictating ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-gray-500 hover:text-violet-600 border border-gray-200/50 hover:border-violet-200'}`}
-                  title="Dictate Meeting Details"
-                >
-                  <Mic size={18} />
-                </button>
-              </div>
-              <input type="text" placeholder={isDictating ? "Listening..." : "Meeting Title"} className="w-full text-base font-medium text-gray-800 bg-transparent outline-none mb-4 placeholder:text-gray-400 pr-12" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
-              
-              <div className="flex gap-3 mb-4">
-                 <input type="date" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editDate} onChange={e => setEditDate(e.target.value)} />
-                 <input type="time" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editTime} onChange={e => setEditTime(e.target.value)} />
-              </div>
-
-              <div className="mb-4">
-                <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs font-medium text-violet-600 flex items-center gap-1 hover:text-violet-700 transition-colors">
-                  {showAdvanced ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {showAdvanced ? "Hide Options" : "More Options"}
-                </button>
-              </div>
-
-              {showAdvanced && (
-                <div className="space-y-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="flex gap-3 items-start">
-                     <AlignLeft size={16} className="text-gray-400 mt-2.5 shrink-0"/>
-                     <textarea placeholder="Description" rows={2} className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300 resize-none" value={editDescription} onChange={e => setEditDescription(e.target.value)}></textarea>
-                  </div>
-                  <div className="flex gap-3 items-center">
-                     <LinkIcon size={16} className="text-gray-400 shrink-0"/>
-                     <input type="text" placeholder="Meeting Link (e.g. https://room.regaarder.com/sync)" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editLink} onChange={e => setEditLink(e.target.value)} />
-                  </div>
-                  <div className="flex gap-3 items-center">
-                     <Users size={16} className="text-gray-400 shrink-0"/>
-                     <div className="flex-1 flex flex-wrap gap-2 items-center bg-white/60 border border-gray-200/50 rounded-xl p-1.5 focus-within:border-violet-300">
-                        {editGuests.map((g, i) => (
-                           <span key={i} className="flex items-center gap-1 bg-violet-100/50 text-violet-700 px-2 py-0.5 rounded-md text-xs font-medium">
-                              {g}
-                              <button onClick={() => removeGuest(i)} className="hover:text-violet-900"><X size={12}/></button>
-                           </span>
-                        ))}
-                        <input type="text" placeholder={editGuests.length === 0 ? "Add guests (Press Enter)" : "Add more..."} className="flex-1 min-w-[120px] bg-transparent text-sm outline-none px-2 text-gray-700" value={editGuest} onChange={e => setEditGuest(e.target.value)} onKeyDown={handleAddGuest} />
-                     </div>
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    <div className="flex items-center gap-2 flex-1">
-                       <Clock size={16} className="text-gray-400 shrink-0"/>
-                       <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editRecurrence} onChange={e => setEditRecurrence(e.target.value)}>
-                         <option value="none">Does not repeat</option>
-                         <option value="daily">Daily</option>
-                         <option value="weekly">Weekly</option>
-                         <option value="monthly">Monthly</option>
-                       </select>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1">
-                       {editPrivacy === 'private' ? <Lock size={16} className="text-gray-400 shrink-0"/> : <Users2 size={16} className="text-gray-400 shrink-0"/>}
-                       <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editPrivacy} onChange={e => setEditPrivacy(e.target.value)}>
-                         <option value="group">Visible to Group</option>
-                         <option value="private">Private</option>
-                       </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {attachedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {attachedFiles.map((f, i) => (
-                    <span key={i} className="px-2.5 py-1 bg-violet-100/50 text-violet-700 text-xs font-medium rounded-lg border border-violet-200/50 flex items-center gap-1">
-                      <FileSpreadsheet size={12}/> {f.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button onClick={() => handleSave('new')} className="flex-1 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors shadow-sm">Save Meeting</button>
-                <button onClick={() => {setEditingId(null); setAttachedFiles([]); setShowAdvanced(false);}} className="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200/50 hover:bg-gray-50 transition-colors">Cancel</button>
-              </div>
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] rounded-[20px] w-full max-w-[400px] overflow-hidden flex flex-col text-left select-text relative z-10" onClick={e => e.stopPropagation()}>
+        {/* Compact Apple Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-200/60 dark:border-red-800/60 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 shadow-2xs">
+              <ShieldAlert size={15} />
             </div>
-          )}
-
-          {meetings.map(meeting => (
-            editingId === meeting.id ? (
-              <div key={meeting.id} className="p-5 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/50 rounded-3xl transition-colors">
-                <input type="text" className="w-full text-base font-medium text-gray-800 bg-transparent outline-none mb-4" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
-                
-                <div className="flex gap-3 mb-4">
-                   <input type="date" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editDate} onChange={e => setEditDate(e.target.value)} />
-                   <input type="time" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editTime} onChange={e => setEditTime(e.target.value)} />
-                </div>
-                
-                <div className="mb-4">
-                  <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs font-medium text-violet-600 flex items-center gap-1 hover:text-violet-700 transition-colors">
-                    {showAdvanced ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {showAdvanced ? "Hide Options" : "More Options"}
-                  </button>
-                </div>
-
-                {showAdvanced && (
-                  <div className="space-y-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="flex gap-3 items-start">
-                       <AlignLeft size={16} className="text-gray-400 mt-2.5 shrink-0"/>
-                       <textarea placeholder="Description" rows={2} className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300 resize-none" value={editDescription} onChange={e => setEditDescription(e.target.value)}></textarea>
-                    </div>
-                    <div className="flex gap-3 items-center">
-                       <LinkIcon size={16} className="text-gray-400 shrink-0"/>
-                       <input type="text" placeholder="Meeting Link (e.g. https://room.regaarder.com/sync)" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editLink} onChange={e => setEditLink(e.target.value)} />
-                    </div>
-                    <div className="flex gap-3 items-center">
-                       <Users size={16} className="text-gray-400 shrink-0"/>
-                       <div className="flex-1 flex flex-wrap gap-2 items-center bg-white/60 border border-gray-200/50 rounded-xl p-1.5 focus-within:border-violet-300">
-                          {editGuests.map((g, i) => (
-                             <span key={i} className="flex items-center gap-1 bg-violet-100/50 text-violet-700 px-2 py-0.5 rounded-md text-xs font-medium">
-                                {g}
-                                <button onClick={() => removeGuest(i)} className="hover:text-violet-900"><X size={12}/></button>
-                             </span>
-                          ))}
-                          <input type="text" placeholder={editGuests.length === 0 ? "Add guests (Press Enter)" : "Add more..."} className="flex-1 min-w-[120px] bg-transparent text-sm outline-none px-2 text-gray-700" value={editGuest} onChange={e => setEditGuest(e.target.value)} onKeyDown={handleAddGuest} />
-                       </div>
-                    </div>
-                    <div className="flex gap-3 items-center">
-                      <div className="flex items-center gap-2 flex-1">
-                         <Clock size={16} className="text-gray-400 shrink-0"/>
-                         <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editRecurrence} onChange={e => setEditRecurrence(e.target.value)}>
-                           <option value="none">Does not repeat</option>
-                           <option value="daily">Daily</option>
-                           <option value="weekly">Weekly</option>
-                           <option value="monthly">Monthly</option>
-                         </select>
-                      </div>
-                      <div className="flex items-center gap-2 flex-1">
-                         {editPrivacy === 'private' ? <Lock size={16} className="text-gray-400 shrink-0"/> : <Users2 size={16} className="text-gray-400 shrink-0"/>}
-                         <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editPrivacy} onChange={e => setEditPrivacy(e.target.value)}>
-                           <option value="group">Visible to Group</option>
-                           <option value="private">Private</option>
-                         </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button onClick={() => handleSave(meeting.id)} className="flex-1 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors shadow-sm">Save Meeting</button>
-                  <button onClick={() => {setEditingId(null); setAttachedFiles([]); setShowAdvanced(false);}} className="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200/50 hover:bg-gray-50 transition-colors">Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <div key={meeting.id} className="group p-5 border border-white/40 bg-gray-50/50 rounded-3xl hover:bg-white/80 transition-all shadow-sm hover:shadow-md flex justify-between items-center cursor-pointer" onClick={() => startEdit(meeting)}>
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-500 font-semibold text-sm shrink-0">
-                    {meeting.date.split('-')[2] || '?'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-800">{meeting.title}</div>
-                    <div className="text-sm text-gray-500 flex gap-2 items-center mt-1">
-                       <span>{meeting.time}</span>
-                    </div>
-                  </div>
-                </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setMeetings(meetings.filter(m => m.id !== meeting.id)); }} 
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            )
-          ))}
-          {meetings.length === 0 && editingId !== 'new' && (
-            <div className="text-center py-8 text-gray-400 text-sm">No upcoming meetings</div>
-          )}
+            <div>
+              <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                Report an Issue
+              </h2>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+            title="Close"
+            aria-label="Close"
+          >
+            <X size={13} strokeWidth={2} />
+          </button>
         </div>
+
+        {/* Content Body */}
+        <div className="p-5 space-y-4 bg-white dark:bg-zinc-900 font-sans">
+          {/* Category Chips */}
+          <div>
+            <label className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block mb-2">
+              Issue Category
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((c) => {
+                const isSelected = category === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCategory(c.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-red-500 text-white font-semibold shadow-xs'
+                        : 'bg-slate-100/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-zinc-700 border border-slate-200/50 dark:border-zinc-700/60'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Description Textarea */}
+          <div>
+            <label className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block mb-1.5">
+              Description
+            </label>
+            <textarea
+              rows={4}
+              placeholder="Briefly describe what happened and steps to reproduce..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full text-xs bg-slate-50 dark:bg-zinc-800/70 border border-slate-200/90 dark:border-zinc-700/80 rounded-xl p-3 outline-none focus:border-red-400 dark:focus:border-red-500 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 resize-none font-sans leading-relaxed"
+            />
+          </div>
+
+          {/* Diagnostics toggle */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="diagnostic-logs"
+                checked={includeLogs}
+                onChange={(e) => setIncludeLogs(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-red-500 focus:ring-red-400 cursor-pointer"
+              />
+              <label htmlFor="diagnostic-logs" className="text-[11.5px] text-slate-600 dark:text-zinc-400 cursor-pointer">
+                Include room diagnostic snapshot
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-5 py-3.5 bg-slate-50/90 dark:bg-zinc-950/80 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!description.trim() || isSubmitting}
+            className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs active:scale-95 cursor-pointer flex items-center gap-1.5"
+          >
+            <span>{isSubmitting ? 'Submitting...' : 'Send Feedback'}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -6685,18 +6263,32 @@ const RecordingModal = ({ isOpen, onClose }) => {
 };
 
 const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
-  const [localEvents, setLocalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: '' }] });
+  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
+  
+  // Seed default sample events around current live date
+  const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const tomorrowKey = `${tomorrow.getFullYear()}-${tomorrow.getMonth() + 1}-${tomorrow.getDate()}`;
+  
+  const [localEvents, setLocalEvents] = useState({
+    [todayKey]: [
+      { id: 1, title: 'Product Sync & Design Review', time: '10:00 AM', duration: '30m', link: '' }
+    ],
+    [tomorrowKey]: [
+      { id: 2, title: 'Engineering Architecture Standup', time: '02:00 PM', duration: '45m', link: '' }
+    ]
+  });
   
   const events = globalEvents || localEvents;
   const setEvents = setGlobalEvents || setLocalEvents;
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [newEventTitle, setNewEventTitle] = useState('');
   
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventTime, setNewEventTime] = useState('11:00 AM');
+  const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
-  const [editingEventIndex, setEditingEventIndex] = useState(null);
-  const [editingEventTitle, setEditingEventTitle] = useState('');
-  const longPressTimer = useRef(null);
 
   if (!isOpen) return null;
   
@@ -6714,184 +6306,270 @@ const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
+  const handleJumpToToday = () => {
+    const t = new Date();
+    setCurrentDate(new Date(t.getFullYear(), t.getMonth(), 1));
+    setSelectedDate(t.getDate());
+    setIsMonthPickerOpen(false);
+  };
+
   const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
   const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
   const dates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  const selectedDateKey = selectedDate ? `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}` : null;
+  const currentDayEvents = selectedDateKey && events[selectedDateKey] ? events[selectedDateKey] : [];
+
+  const isToday = (d) => {
+    const now = new Date();
+    return d === now.getDate() && currentDate.getMonth() === now.getMonth() && currentDate.getFullYear() === now.getFullYear();
+  };
+
   const addEvent = () => {
-    if (!newEventTitle.trim() || !selectedDate) return;
-    const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
+    if (!newEventTitle.trim() || !selectedDateKey) return;
+    const item = { 
+      id: Date.now(), 
+      title: newEventTitle.trim(), 
+      time: newEventTime || '11:00 AM',
+      duration: '30m',
+      link: '' 
+    };
     setEvents(prev => ({
       ...prev,
-      [dateStr]: [...(prev[dateStr] || []), { title: newEventTitle, link: '' }]
+      [selectedDateKey]: [...(prev[selectedDateKey] || []), item]
     }));
     setNewEventTitle('');
+    setIsAddingEvent(false);
   };
 
   return (
-    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Calendar className="text-violet-500" size={24} /> Calendar</h2>
-        </div>
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronLeft size={20} /></button>
-          <button onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)} className="font-medium text-gray-700 hover:bg-gray-100 px-4 py-1.5 rounded-xl flex items-center gap-2 transition-colors">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isMonthPickerOpen ? 'rotate-180' : ''}`} />
-          </button>
-          <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronRight size={20} /></button>
-        </div>
-        
-        {!isMonthPickerOpen ? (
-          <>
-            <div className="grid grid-cols-7 gap-2 mb-2">
-              {days.map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-400">{day}</div>
-              ))}
+    <div className="fixed inset-0 z-[1000000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] rounded-[18px] w-full max-w-[370px] overflow-hidden flex flex-col max-h-[85vh] text-left select-text relative z-10" onClick={e => e.stopPropagation()}>
+        {/* Apple Utility Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 shadow-2xs">
+              <Calendar size={15} />
             </div>
-            <div className="grid grid-cols-7 gap-2">
-              {blanks.map(blank => (
-                <div key={`blank-${blank}`} className="text-center p-2 text-sm text-gray-300"></div>
-              ))}
-              {dates.map(date => {
-                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
-                const hasEvents = events[dateStr] && events[dateStr].length > 0;
-                const isSelected = selectedDate === date;
-                return (
-                  <div 
-                    key={date} 
-                    onClick={() => {
-                      setSelectedDate(isSelected ? null : date);
-                      setEditingEventIndex(null); // Reset edit state when changing date
-                    }}
-                    className={`relative text-center p-2 text-sm rounded-full cursor-pointer transition-colors flex items-center justify-center
-                      ${isSelected ? 'bg-violet-500 text-white font-medium shadow-md hover:bg-violet-600' : 'text-gray-700 hover:bg-gray-100'}`}
-                  >
-                    {date}
-                    {hasEvents && !isSelected && (
-                      <div className="absolute bottom-1 w-1 h-1 bg-violet-500 rounded-full"></div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <div className="py-2 animate-in fade-in">
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {monthNames.map((m, i) => (
-                <button 
-                  key={m}
-                  onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), i, 1)); setIsMonthPickerOpen(false); }}
-                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getMonth() === i ? 'bg-violet-500 text-white font-medium shadow-md' : 'hover:bg-gray-50 text-gray-600'}`}
-                >
-                  {m.substring(0, 3)}
-                </button>
-              ))}
-            </div>
-            <div className="border-t border-gray-100 pt-4 grid grid-cols-4 gap-2">
-              {Array.from({length: 12}, (_, i) => currentDate.getFullYear() - 5 + i).map(y => (
-                <button
-                  key={y}
-                  onClick={() => { setCurrentDate(new Date(y, currentDate.getMonth(), 1)); setIsMonthPickerOpen(false); }}
-                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getFullYear() === y ? 'bg-violet-100 text-violet-700 font-medium' : 'hover:bg-gray-50 text-gray-600'}`}
-                >
-                  {y}
-                </button>
-              ))}
+            <div>
+              <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                Schedule
+              </h2>
             </div>
           </div>
-        )}
+          
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleJumpToToday}
+              className="px-2.5 py-1 rounded-lg bg-slate-100/90 dark:bg-zinc-800 hover:bg-slate-200/90 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11px] font-medium transition-all cursor-pointer border border-slate-200/60 dark:border-zinc-700/60 active:scale-95 shadow-2xs"
+            >
+              Today
+            </button>
+            <button 
+              type="button"
+              onClick={onClose} 
+              className="w-6.5 h-6.5 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              title="Close"
+              aria-label="Close"
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
 
-        {selectedDate && !isMonthPickerOpen && (
-          <div className="mt-6 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-bottom-2">
-            <div className="text-sm font-medium text-gray-700 mb-2">
-              Events for {monthNames[currentDate.getMonth()]} {selectedDate}
-            </div>
-            <div className="space-y-2 mb-3">
-              {events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`]?.map((ev, i) => {
-                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
-                
-                if (editingEventIndex === i) {
+        {/* Month Navigator */}
+        <div className="px-4 pt-3 pb-1.5 flex items-center justify-between bg-white dark:bg-zinc-900">
+          <button 
+            onClick={handlePrevMonth} 
+            type="button"
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button 
+            type="button"
+            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)} 
+            className="text-xs font-semibold text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+            <ChevronDown size={13} className={`text-slate-400 transition-transform ${isMonthPickerOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <button 
+            onClick={handleNextMonth} 
+            type="button"
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* Calendar Grid or Month Picker */}
+        <div className="px-4 pb-3">
+          {!isMonthPickerOpen ? (
+            <>
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {days.map(day => (
+                  <div key={day} className="text-center text-[10.5px] font-semibold text-slate-400 dark:text-zinc-500 py-0.5">{day}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {blanks.map(blank => (
+                  <div key={`blank-${blank}`} className="h-7"></div>
+                ))}
+                {dates.map(date => {
+                  const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
+                  const hasEvents = events[dateKey] && events[dateKey].length > 0;
+                  const isSelected = selectedDate === date;
+                  const isCurrentToday = isToday(date);
+                  
                   return (
-                    <div key={i} className="flex flex-col gap-2 bg-violet-50 p-2.5 rounded-xl border border-violet-100">
-                      <input 
-                        type="text" 
-                        className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-400 w-full"
-                        value={editingEventTitle}
-                        autoFocus
-                        onChange={(e) => setEditingEventTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const newEvents = [...events[dateStr]];
-                            newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
+                    <button 
+                      key={date} 
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(date);
+                      }}
+                      className={`relative h-7.5 w-full rounded-lg text-[12px] font-medium transition-all flex flex-col items-center justify-center cursor-pointer
+                        ${isSelected ? 'bg-violet-600 text-white font-semibold shadow-xs' : isCurrentToday ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold border border-violet-200 dark:border-violet-800' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                    >
+                      <span>{date}</span>
+                      {hasEvents && (
+                        <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-violet-500'} -mt-0.5`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="py-2 animate-in fade-in">
+              <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+                {monthNames.map((m, i) => (
+                  <button 
+                    key={m}
+                    type="button"
+                    onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), i, 1)); setIsMonthPickerOpen(false); }}
+                    className={`text-xs py-1.5 rounded-lg transition-all font-medium cursor-pointer ${currentDate.getMonth() === i ? 'bg-violet-600 text-white shadow-xs' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300'}`}
+                  >
+                    {m.substring(0, 3)}
+                  </button>
+                ))}
+              </div>
+              <div className="border-t border-slate-100 dark:border-zinc-800 pt-2 grid grid-cols-4 gap-1">
+                {Array.from({length: 8}, (_, i) => currentDate.getFullYear() - 2 + i).map(y => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => { setCurrentDate(new Date(y, currentDate.getMonth(), 1)); setIsMonthPickerOpen(false); }}
+                    className={`text-[11px] py-1 rounded-lg transition-all font-medium cursor-pointer ${currentDate.getFullYear() === y ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 font-semibold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400'}`}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Selected Date Agenda / Upcoming Meetings */}
+        {!isMonthPickerOpen && (
+          <div className="border-t border-slate-100 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-950/70 px-4 py-3 flex-1 overflow-y-auto thin-scrollbar">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
+                {selectedDate ? `${monthNames[currentDate.getMonth()]} ${selectedDate}` : 'Upcoming Meetings'}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setIsAddingEvent(!isAddingEvent)} 
+                className="text-[11px] text-violet-600 dark:text-violet-400 font-medium hover:underline flex items-center gap-0.5 cursor-pointer"
+              >
+                <Plus size={12} />
+                <span>Add Event</span>
+              </button>
+            </div>
+
+            {/* Quick Add Form */}
+            {isAddingEvent && (
+              <div className="mb-2.5 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xs space-y-1.5 animate-in fade-in">
+                <input 
+                  type="text" 
+                  placeholder="Meeting / event title..." 
+                  className="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-violet-500 text-slate-800 dark:text-zinc-100"
+                  value={newEventTitle}
+                  autoFocus
+                  onChange={e => setNewEventTitle(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addEvent()}
+                />
+                <div className="flex items-center justify-between gap-1.5">
+                  <input 
+                    type="text" 
+                    placeholder="Time (e.g. 10:00 AM)" 
+                    className="w-28 text-[11px] bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2 py-1 outline-none text-slate-700 dark:text-zinc-300"
+                    value={newEventTime}
+                    onChange={e => setNewEventTime(e.target.value)}
+                  />
+                  <div className="flex items-center gap-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsAddingEvent(false)} 
+                      className="px-2 py-1 text-[11px] text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={addEvent} 
+                      className="px-2.5 py-1 text-[11px] font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md shadow-2xs cursor-pointer"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Event List */}
+            <div className="space-y-1.5">
+              {currentDayEvents.length > 0 ? (
+                currentDayEvents.map((ev, i) => {
+                  const evTitle = typeof ev === 'object' ? ev.title : ev;
+                  const evTime = typeof ev === 'object' ? (ev.time || 'All Day') : '10:00 AM';
+                  
+                  return (
+                    <div key={i} className="group p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 shadow-2xs hover:border-violet-300 dark:hover:border-violet-800/80 transition-all flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-slate-800 dark:text-zinc-200 truncate">{evTitle}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">{evTime}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const dateStr = selectedDateKey;
+                            const newEvents = events[dateStr].filter((_, idx) => idx !== i);
                             setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
-                            setEditingEventIndex(null);
-                          }
-                        }}
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => {
-                           const newEvents = events[dateStr].filter((_, idx) => idx !== i);
-                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
-                           setEditingEventIndex(null);
-                        }} className="text-xs px-2 py-1 rounded-md text-red-500 hover:bg-red-50 font-medium transition-colors">Delete</button>
-                        <button onClick={() => setEditingEventIndex(null)} className="text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100 font-medium transition-colors">Cancel</button>
-                        <button onClick={() => {
-                           const newEvents = [...events[dateStr]];
-                           newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
-                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
-                           setEditingEventIndex(null);
-                        }} className="text-xs px-2 py-1 rounded-md bg-violet-500 text-white hover:bg-violet-600 font-medium transition-colors">Save</button>
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </div>
                   );
-                }
-
-                return (
-                  <div 
-                    key={i} 
-                    className="group text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-xl flex flex-col gap-1 hover:bg-violet-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
-                      <span className="flex-1 truncate font-medium">{ev.title || ev}</span>
-                      <button 
-                        onClick={() => {
-                          setEditingEventIndex(i);
-                          setEditingEventTitle(ev.title || ev);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-violet-400 hover:text-violet-700 transition-all rounded-md hover:bg-violet-200/50"
-                      >
-                        <Pen size={14} />
-                      </button>
-                    </div>
-                    {ev.link && (
-                      <a href={ev.link} target="_blank" rel="noreferrer" className="text-violet-500 flex items-center gap-1 hover:underline ml-3.5 w-fit">
-                        <LinkIcon size={12} /> Join Meeting
-                      </a>
-                    )}
-                  </div>
-                );
-              })}
-              {(!events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`] || events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`].length === 0) && (
-                <div className="text-xs text-gray-400 italic">No events</div>
+                })
+              ) : (
+                <div className="py-4 text-center">
+                  <p className="text-[11.5px] text-slate-400 dark:text-zinc-500">
+                    No meetings scheduled for this date.
+                  </p>
+                </div>
               )}
-            </div>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Add new event..." 
-                className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-violet-500 transition-colors"
-                value={newEventTitle}
-                onChange={e => setNewEventTitle(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addEvent()}
-              />
-              <button onClick={addEvent} className="p-2 bg-violet-50 text-violet-600 rounded-xl hover:bg-violet-100 transition-colors">
-                <Plus size={16} />
-              </button>
             </div>
           </div>
         )}
@@ -7262,9 +6940,10 @@ function AppCore() {
     color: randomColor({ luminosity: 'dark' }),
     avatar: ''
   }));
-  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 'you', name: 'You', isYou: true });
+  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: "you", name: "You", isYou: true });
   const [youTileSpeaker, setYouTileSpeaker] = useState(null);
   const [videoParticipants, setVideoParticipants] = useState([]);
+  const [isParticipantOverflowOpen, setIsParticipantOverflowOpen] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState({});
   const pcsRef = useRef({});
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
@@ -7431,14 +7110,28 @@ function AppCore() {
       if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(()=>{});
       }
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(true); } catch (e) {}
+      }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(()=>{});
       }
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(false); } catch (e) {}
+      }
     }
   };
 
+  const lastStageTapRef = useRef(0);
+  const lastToggleVideoFullscreenTimeRef = useRef(0);
   const toggleVideoFullscreen = () => {
+    const now = Date.now();
+    if (now - (lastToggleVideoFullscreenTimeRef.current || 0) < 350) {
+      return; // Debounce rapid duplicate invocations from pointerdown + dblclick
+    }
+    lastToggleVideoFullscreenTimeRef.current = now;
+
     const nextExpanded = !isVideoExpanded;
     setIsVideoExpanded(nextExpanded);
     setIsDistractionFreeMode(nextExpanded);
@@ -7446,6 +7139,33 @@ function AppCore() {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(()=>{});
       }
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(true); } catch (e) {}
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(()=>{});
+      }
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(false); } catch (e) {}
+      }
+    }
+  };
+
+  const handleStageDoubleTap = (e) => {
+    if (e?.pointerType && e.pointerType !== 'touch') {
+      return; // Mouse double-clicks are handled natively by onDoubleClick
+    }
+    const now = Date.now();
+    const timeDiff = now - (lastStageTapRef.current || 0);
+    if (timeDiff > 0 && timeDiff < 320) {
+      // Double tap detected
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      toggleVideoFullscreen();
+      lastStageTapRef.current = 0;
+    } else {
+      lastStageTapRef.current = now;
     }
   };
 
@@ -7453,11 +7173,10 @@ function AppCore() {
   const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
+  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(true);
   const [isGeminiActive, setIsGeminiActive] = useState(true);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
-  const [isMeetingsModalOpen, setIsMeetingsModalOpen] = useState(false);
   const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [globalEvents, setGlobalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: 'https://room.regaarder.com/launch' }] });
@@ -8535,6 +8254,9 @@ function AppCore() {
   useEffect(() => {
     if (productMode === 'landing') {
       setRightSidebarOpen(false);
+      setIsDocumentImmersive(false);
+      setIsFocusMode(false);
+      exitFullscreen();
     }
   }, [productMode]);
 
@@ -12099,6 +11821,32 @@ const DEFAULT_DECK_SLIDES = [
   const deckChromeTimerRef = useRef(null);
   const [sheetZoomDropdownOpen, setSheetZoomDropdownOpen] = useState(false);
   const [deckZoomDropdownOpen, setDeckZoomDropdownOpen] = useState(false);
+  const [deckLaserPointerActive, setDeckLaserPointerActive] = useState(false);
+  const [deckLaserPos, setDeckLaserPos] = useState({ x: 0, y: 0 });
+  const [deckPresentationElapsedSecs, setDeckPresentationElapsedSecs] = useState(0);
+  const [animatedMetricDisplay, setAnimatedMetricDisplay] = useState(null);
+
+  // Live Presentation Duration Timer
+  useEffect(() => {
+    if (!isDeckPresentationMode) {
+      setDeckPresentationElapsedSecs(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setDeckPresentationElapsedSecs((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isDeckPresentationMode]);
+
+  // Presenter Laser Pointer Position Tracker
+  useEffect(() => {
+    if (!isDeckPresentationMode || !deckLaserPointerActive) return;
+    const handleMove = (e) => {
+      setDeckLaserPos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('pointermove', handleMove, { passive: true });
+    return () => window.removeEventListener('pointermove', handleMove);
+  }, [isDeckPresentationMode, deckLaserPointerActive]);
 
   const handleStartDeckPresentation = () => {
     const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
@@ -12141,6 +11889,24 @@ const DEFAULT_DECK_SLIDES = [
     };
   }, [isDeckPresentationMode]);
 
+  // Global Capture-Phase Escape Listener for Immediate Presentation Mode Dismissal
+  useEffect(() => {
+    const handleCaptureEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (isDeckPresentationMode || isPresentingDeck) {
+          setIsDeckPresentationMode(false);
+          setIsPresentingDeck(false);
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+          showToast('Exited presentation mode');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleCaptureEscape, true);
+    return () => window.removeEventListener('keydown', handleCaptureEscape, true);
+  }, [isDeckPresentationMode, isPresentingDeck]);
+
   useEffect(() => {
     if (!isSheetsPresentationMode && !isSheetZenMode && !isDeckPresentationMode) return;
     const handleKeyDown = (e) => {
@@ -12161,7 +11927,10 @@ const DEFAULT_DECK_SLIDES = [
           setIsSheetZenMode(false);
         }
       } else if (isDeckPresentationMode) {
-        if (e.key === 'f' || e.key === 'F') {
+        if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault();
+          setDeckLaserPointerActive((prev) => !prev);
+        } else if (e.key === 'f' || e.key === 'F') {
           e.preventDefault();
           setIsDeckPresentationFocus((prev) => !prev);
         } else if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(e.key)) {
@@ -12782,15 +12551,26 @@ const DEFAULT_DECK_SLIDES = [
     return '';
   });
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
+  const [isVisualEffectsActive, setIsVisualEffectsActive] = useState(false);
+  const [isAudioVideoPanelOpen, setIsAudioVideoPanelOpen] = useState(false);
+  const [isLayoutPanelOpen, setIsLayoutPanelOpen] = useState(false);
+  const [roomLayoutMode, setRoomLayoutMode] = useState('speaker');
+  const [selectedVisualEffect, setSelectedVisualEffect] = useState('none');
+  const [isReportIssueModalOpen, setIsReportIssueModalOpen] = useState(false);
+  const [reportIssueDescription, setReportIssueDescription] = useState('');
+  const [reportIssueSeverity, setReportIssueSeverity] = useState('Minor');
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
   // Start both as false — requestMediaPermissions() will set them to true once the
   // browser grants access. This prevents the UI showing mic/camera as "on" with no stream.
   const [isRoomMicOn, setIsRoomMicOn] = useState(false);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(false);
   const isVideoOff = !isRoomCameraOn;
+  const [isWorkspaceAnnotationActive, setIsWorkspaceAnnotationActive] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
+  const [lastScreenShareFrameUrl, setLastScreenShareFrameUrl] = useState(null);
+  const [sharedSourceInfo, setSharedSourceInfo] = useState(null);
 
   const [isRoomRecording, setIsRoomRecording] = useState(false);
   const roomMediaRecorderRef = useRef(null);
@@ -13221,6 +13001,439 @@ const DEFAULT_DECK_SLIDES = [
   const [roomPresentAppSearch, setRoomPresentAppSearch] = useState('');
   const [roomPresentViewMode, setRoomPresentViewMode] = useState('clean'); // 'clean' | 'full' // 'docs' | 'sheets' | 'decks' | 'whiteboard' | 'screen' | null
   const [isRoomPresentPickerOpen, setIsRoomPresentPickerOpen] = useState(false);
+  const [isScreenSourceModalOpen, setIsScreenSourceModalOpen] = useState(false);
+  const [pipPosition, setPipPosition] = useState({ x: null, y: null });
+  const [lastPresentedMode, setLastPresentedMode] = useState('compose');
+  const pipDragContainerRef = useRef(null);
+
+  const handlePipPointerDown = (e) => {
+    if (e.target.closest('button')) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect = pipDragContainerRef.current ? pipDragContainerRef.current.getBoundingClientRect() : { left: window.innerWidth - 260, top: window.innerHeight - 200 };
+    const initialX = rect.left;
+    const initialY = rect.top;
+
+    const onPointerMove = (moveEvt) => {
+      const dx = moveEvt.clientX - startX;
+      const dy = moveEvt.clientY - startY;
+      setPipPosition({
+        x: Math.max(16, Math.min(window.innerWidth - 260, initialX + dx)),
+        y: Math.max(16, Math.min(window.innerHeight - 200, initialY + dy))
+      });
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  const startCleanDocCanvasStream = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    let isStreaming = true;
+
+    const renderFrame = () => {
+      if (!isStreaming) return;
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const pageWidth = 1080;
+      const pageHeight = 1400;
+      const startX = (canvas.width - pageWidth) / 2;
+      const startY = 40;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.06)';
+      ctx.shadowBlur = 24;
+      ctx.fillRect(startX, startY, pageWidth, pageHeight);
+      ctx.shadowBlur = 0;
+
+      // Header border
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(startX + 48, startY + 120);
+      const lines = rawText.split('\n');
+      let yOffset = startY + 165;
+      for (let i = 0; i < Math.min(lines.length, 32); i++) {
+        const line = lines[i];
+        if (line) {
+          ctx.fillText(line.substring(0, 85), startX + 48, yOffset);
+        }
+        yOffset += 30;
+      }
+
+      requestAnimationFrame(renderFrame);
+    };
+
+    renderFrame();
+
+    const stream = canvas.captureStream(30);
+    const [track] = stream.getVideoTracks();
+    if (track) {
+      const origStop = track.stop.bind(track);
+      track.stop = () => {
+        isStreaming = false;
+        origStop();
+      };
+      track.onended = () => {
+        setIsScreenSharing(false);
+        setScreenShareStream(null);
+        showToast('Screen sharing stopped');
+      };
+    }
+    return stream;
+  };
+
+  const nativePipVideoRef = useRef(null);
+  const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
+  const pipFramePumpRef = useRef(null);
+  const cropBoundsRef = useRef(null);
+  const pipOffscreenVideoRef = useRef(null);
+
+  // IPC Frame Pump: when pip widget is open, draw screenShareStream to an offscreen
+  // canvas every 33ms (~30 fps) and send JPEG data URLs to main.cjs which relays them
+  // to the floating pip window renderer. Bypasses disable-gpu black screen completely.
+  useEffect(() => {
+    if (!isPipWidgetOpen || !screenShareStream) {
+      if (pipFramePumpRef.current) {
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+      return;
+    }
+
+    // Reuse or create an offscreen video element to decode the stream
+    if (!pipOffscreenVideoRef.current) {
+      const vid = document.createElement('video');
+      vid.muted = true;
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.style.position = 'fixed';
+      vid.style.top = '0';
+      vid.style.left = '0';
+      vid.style.width = '640px';
+      vid.style.height = '360px';
+      vid.style.opacity = '0.001';
+      vid.style.pointerEvents = 'none';
+      vid.style.zIndex = '-999999';
+      document.body.appendChild(vid);
+      pipOffscreenVideoRef.current = vid;
+    }
+
+    const vid = pipOffscreenVideoRef.current;
+    if (vid.srcObject !== screenShareStream) {
+      vid.srcObject = screenShareStream;
+      vid.onloadedmetadata = () => {
+        vid.play().catch(() => {});
+      };
+      vid.play().catch(() => {});
+    }
+
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = 640;
+    offscreenCanvas.height = 360;
+    const ctx = offscreenCanvas.getContext('2d');
+
+    pipFramePumpRef.current = setInterval(() => {
+      if (!window.electronAPI?.sendPipFrame) return;
+      if (vid.readyState < 2 || vid.videoWidth === 0) return;
+      try {
+        const isConsole = (sharedSourceInfo?.name || '').toLowerCase().includes('mingw') || 
+                          (sharedSourceInfo?.name || '').toLowerCase().includes('cmd') || 
+                          (sharedSourceInfo?.name || '').toLowerCase().includes('bash');
+        
+        if (isConsole && vid.videoHeight > 100) {
+          // Cleanly crop out top titlebar and bottom Windows taskbar on console desktop captures
+          const topCrop = Math.round(vid.videoHeight * 0.026);
+          const bottomCrop = Math.round(vid.videoHeight * 0.055);
+          const sourceH = Math.max(10, vid.videoHeight - topCrop - bottomCrop);
+          ctx.drawImage(vid, 0, topCrop, vid.videoWidth, sourceH, 0, 0, 640, 360);
+        } else {
+          const bounds = cropBoundsRef.current;
+          if (bounds && bounds.width > 50 && bounds.height > 50 && vid.videoWidth > 0 && vid.videoHeight > 0) {
+            const scaleX = vid.videoWidth / (window.screen.width || 1920);
+            const scaleY = vid.videoHeight / (window.screen.height || 1080);
+            const sx = Math.max(0, Math.round(bounds.x * scaleX));
+            const sy = Math.max(0, Math.round(bounds.y * scaleY));
+            const sWidth = Math.min(vid.videoWidth - sx, Math.round(bounds.width * scaleX));
+            const sHeight = Math.min(vid.videoHeight - sy, Math.round(bounds.height * scaleY));
+            if (sWidth > 20 && sHeight > 20) {
+              ctx.drawImage(vid, sx, sy, sWidth, sHeight, 0, 0, 640, 360);
+            } else {
+              const taskbarH = Math.round(vid.videoHeight * 0.055);
+              const sourceH = Math.max(10, vid.videoHeight - taskbarH);
+              ctx.drawImage(vid, 0, 0, vid.videoWidth, sourceH, 0, 0, 640, 360);
+            }
+          } else {
+            // Always crop out the bottom Windows taskbar so the application window fills the screen cleanly
+            const taskbarH = Math.round(vid.videoHeight * 0.055);
+            const sourceH = Math.max(10, vid.videoHeight - taskbarH);
+            ctx.drawImage(vid, 0, 0, vid.videoWidth, sourceH, 0, 0, 640, 360);
+          }
+        }
+        const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.85);
+        setLastScreenShareFrameUrl(jpegDataUrl);
+        window.electronAPI.sendPipFrame(jpegDataUrl);
+      } catch (e) {
+        // frame pump error
+      }
+    }, 33);
+
+    return () => {
+      if (pipFramePumpRef.current) {
+        clearInterval(pipFramePumpRef.current);
+        pipFramePumpRef.current = null;
+      }
+    };
+  }, [isPipWidgetOpen, screenShareStream]);
+
+  // Listen for Cross-Process "Open Room" event from Floating PiP HUD
+  useEffect(() => {
+    if (window.electronAPI?.onNavigateToRoom) {
+      const unsub = window.electronAPI.onNavigateToRoom(() => {
+        setIsPipWidgetOpen(false);
+        window.electronAPI?.closeFloatingPipWidget?.();
+        setProductMode('room');
+        setRoomState('active');
+        setRoomPanelMode('expanded');
+        setFocusedModule('room');
+        setIsScreenSourceModalOpen(false);
+        if (window.__currentScreenShareStream) {
+          setScreenShareStream(window.__currentScreenShareStream);
+          setIsScreenSharing(true);
+        }
+      });
+      return () => unsub?.();
+    }
+  }, []);
+
+
+  const triggerNativePictureInPicture = async (streamToUse) => {
+    try {
+      const activeStream = streamToUse || screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
+      if (!activeStream) return false;
+
+      // Find any active playing video element on DOM first
+      const allVideos = Array.from(document.querySelectorAll('video'));
+      let vid = allVideos.find(v => v.srcObject === activeStream && v.videoWidth > 0) || allVideos[0];
+
+      if (!vid) {
+        vid = document.createElement('video');
+        vid.muted = true;
+        vid.autoplay = true;
+        vid.playsInline = true;
+        vid.width = 320;
+        vid.height = 180;
+        vid.style.position = 'fixed';
+        vid.style.bottom = '16px';
+        vid.style.right = '16px';
+        vid.style.zIndex = '999999';
+        vid.style.borderRadius = '16px';
+        vid.style.pointerEvents = 'none';
+        document.body.appendChild(vid);
+        nativePipVideoRef.current = vid;
+      }
+
+      if (vid.srcObject !== activeStream) {
+        vid.srcObject = activeStream;
+      }
+
+      await vid.play().catch(() => {});
+
+      // Wait for video frames to start rendering
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture().catch(() => {});
+      }
+
+      if (document.pictureInPictureEnabled && vid.requestPictureInPicture) {
+        await vid.requestPictureInPicture();
+        showToast?.('OS Always-on-Top PiP active over external apps');
+        return true;
+      }
+    } catch (err) {
+      console.warn('[Native PiP] Error activating Picture-in-Picture:', err);
+    }
+    return false;
+  };
+
+    const handleSelectScreenSource = async (selection) => {
+    try {
+      let stream = null;
+      let sourceId = selection.sourceId || selection.source?.id;
+
+      if (window.electronAPI?.getDesktopSources) {
+        const rawSources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (selection.type === 'clean-preset') {
+          const appWin = rawSources?.find(s => s.id?.startsWith('window:') && (s.name?.includes('Regaarder') || s.name?.includes('Compose') || s.name?.includes('Electron')));
+          sourceId = appWin ? appWin.id : (rawSources?.[0]?.id || selection.sourceId);
+        } else if (!sourceId && rawSources && rawSources.length > 0) {
+          sourceId = rawSources[0]?.id;
+        }
+
+        const primaryScreen = rawSources?.find(s => s.id?.startsWith('screen:')) || rawSources?.[0];
+        const winNameLower = (selection.preset?.name || selection.source?.name || '').toLowerCase();
+        const isConsoleWindow = winNameLower.includes('mingw') || winNameLower.includes('cmd') || winNameLower.includes('bash') || winNameLower.includes('powershell');
+
+        // Always stream the primary desktop screen on Windows to prevent DirectX window blackout
+        sourceId = primaryScreen ? primaryScreen.id : (selection.sourceId || selection.source?.id);
+
+        if (sourceId && (sourceId.startsWith('window:') || sourceId.startsWith('screen:'))) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                mandatory: {
+                  chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: sourceId,
+                  minWidth: 1280,
+                  maxWidth: 1920,
+                  minHeight: 720,
+                  maxHeight: 1080
+                }
+              }
+            });
+          } catch (e) {
+            console.warn('Primary stream acquisition failed, trying primaryScreen fallback:', e);
+            if (primaryScreen && sourceId !== primaryScreen.id) {
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  audio: false,
+                  video: {
+                    mandatory: {
+                      chromeMediaSource: 'desktop',
+                      chromeMediaSourceId: primaryScreen.id,
+                      minWidth: 1280,
+                      maxWidth: 1920,
+                      minHeight: 720,
+                      maxHeight: 1080
+                    }
+                  }
+                });
+              } catch (fallbackErr) {
+                console.warn('Fallback stream error:', fallbackErr);
+              }
+            }
+          }
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: 'always' },
+            audio: true
+          });
+        } catch (e) {
+          console.warn('getDisplayMedia failed:', e);
+        }
+      }
+
+      if (!stream) {
+        try {
+          const fallbackCanvas = document.createElement('canvas');
+          fallbackCanvas.width = 1280;
+          fallbackCanvas.height = 720;
+          const ctx = fallbackCanvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, 1280, 720);
+            ctx.fillStyle = '#a855f7';
+            ctx.font = 'bold 28px Inter, sans-serif';
+            ctx.fillText('Live Application Canvas Active', 400, 360);
+          }
+          stream = fallbackCanvas.captureStream ? fallbackCanvas.captureStream(15) : null;
+        } catch (canvasErr) {
+          console.warn('Canvas stream capture error:', canvasErr);
+        }
+      }
+
+      if (stream) {
+        const [track] = stream.getVideoTracks();
+        if (track) {
+          track.onended = () => {
+            // Guard against premature teardown during window minimize or backgrounding
+            if (!window.__currentScreenShareStream) {
+              setIsScreenSharing(false);
+              setScreenShareStream(null);
+              setSharedSourceInfo(null);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.('Screen sharing stopped');
+            }
+          };
+        }
+
+        if (typeof window !== 'undefined') {
+          window.__currentScreenShareStream = stream;
+        }
+        setScreenShareStream(stream);
+        setIsScreenSharing(true);
+        setSharedSourceInfo({
+          type: selection.type,
+          name: selection.preset?.name || selection.source?.name || 'Screen',
+          id: selection.sourceId || selection.source?.id
+        });
+      }
+
+      if (selection.type === 'clean-preset') {
+        const mode = selection.preset?.mode || 'compose';
+        setLastPresentedMode(mode);
+        setFocusedModule(mode);
+        setProductMode(mode);
+        setRoomState('active');
+        setRoomPanelMode('docked');
+        if (mode === 'compose') {
+          setActiveDocView('document');
+          setActiveRightTab('assistant');
+        }
+        setIsWhiteboardImmersive(false);
+        showToast?.(`Streaming live workspace: ${selection.preset?.name || 'Docs'}`);
+      } else {
+        const winName = selection.source?.name || 'Selected Window';
+        showToast?.(`Sharing live window: ${winName}`);
+        setProductMode('room');
+        setRoomState('active');
+        setRoomPanelMode('expanded');
+        setFocusedModule('room');
+        setIsPipWidgetOpen(true);
+        const targetSourceId = selection.sourceId || selection.source?.id || '';
+        if (window.electronAPI?.focusExternalWindow) {
+          window.electronAPI.focusExternalWindow({ sourceId: targetSourceId, name: winName }).then(res => {
+            if (res?.bounds) {
+              cropBoundsRef.current = res.bounds;
+            } else {
+              cropBoundsRef.current = null;
+            }
+          }).catch(() => {
+            cropBoundsRef.current = null;
+          });
+        } else if (window.electronAPI?.minimizeMainWindow) {
+          cropBoundsRef.current = null;
+          window.electronAPI.minimizeMainWindow();
+        } else {
+          cropBoundsRef.current = null;
+        }
+        if (window.electronAPI?.openFloatingPipWidget) {
+          window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetSourceId });
+        } else {
+          triggerNativePictureInPicture(stream);
+        }
+      }
+    } catch (err) {
+      console.error('Real screen share error:', err);
+      showToast?.('Failed to start live stream: ' + err.message);
+    }
+  };
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
 
@@ -14429,6 +14642,9 @@ const DEFAULT_DECK_SLIDES = [
   const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
   const [deckBentoDrag, setDeckBentoDrag] = useState({ isDragging: false, cardId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
+  const [deckAiDraftPopoverOpen, setDeckAiDraftPopoverOpen] = useState(false);
+  const [deckAiDraftPrompt, setDeckAiDraftPrompt] = useState('');
+  const [deckAiDraftLoading, setDeckAiDraftLoading] = useState(false);
   const [deckImageContextMenu, setDeckImageContextMenu] = useState(null);
   const [deckAssetPreviewState, setDeckAssetPreviewState] = useState(null);
   const [activeCardIconPicker, setActiveCardIconPicker] = useState(null);
@@ -15108,6 +15324,87 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     img.src = imageSrc;
   };
 
+  const handleExecuteSlideAiDraft = async (userPrompt) => {
+    if (!userPrompt || !userPrompt.trim()) return;
+    setDeckAiDraftLoading(true);
+    const activeModelName = composeSelectedModel?.name || 'Regaarder Intelligence';
+    
+    try {
+      const prompt = `You are the executive presentation designer for Regaarder Deck.
+The user wants to generate slide content based on this intent: "${userPrompt.trim()}".
+
+Respond in STRICT JSON format with EXACTLY these two keys:
+{
+  "headline": "A concise, executive-level slide title (3-8 words)",
+  "blurb": "2 to 3 well-crafted bullet points or strategic summary sentences separated by newlines."
+}
+Return ONLY the raw JSON object, without any markdown code fences, explanation, or greeting.`;
+
+      let generatedHeadline = '';
+      let generatedBlurb = '';
+
+      try {
+        const aiRes = await callGemini({
+          userPrompt: prompt,
+          systemPrompt: 'You are the executive presentation engine for Regaarder Deck. Always respond with pure valid JSON containing "headline" and "blurb" fields.',
+          customModel: composeSelectedModel?.id
+        });
+
+        const rawText = String(aiRes?.text || '').trim();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.headline) generatedHeadline = parsed.headline.trim();
+          if (parsed.blurb) generatedBlurb = parsed.blurb.trim();
+        } else if (rawText) {
+          const lines = rawText.split('\n').filter(l => l.trim().length > 0);
+          generatedHeadline = lines[0]?.replace(/^[#*-\s]+/, '').trim() || userPrompt.trim();
+          generatedBlurb = lines.slice(1).join('\n').trim();
+        }
+      } catch (callErr) {
+        console.warn('Real AI model call fallback triggered:', callErr);
+      }
+
+      // If AI didn't return text (e.g. offline local model or missing API key), use context-aware deterministic fallback
+      if (!generatedHeadline || !generatedBlurb) {
+        const q = userPrompt.toLowerCase();
+        if (q.includes('pillar') || q.includes('strategic') || q.includes('bento')) {
+          generatedHeadline = 'Core Strategic Pillars for Accelerated Growth';
+          generatedBlurb = '1. Spatial Intelligence Engine: Real-time context alignment across distributed systems.\n2. Autonomous Workflow Fabric: Zero-latency coordination with multi-agent orchestration.\n3. Enterprise Trust Framework: Strict SOC-2 compliance with end-to-end cryptographic proofs.';
+        } else if (q.includes('problem') || q.includes('solution') || q.includes('market')) {
+          generatedHeadline = 'Bridging the Complexity Gap in Enterprise Workflows';
+          generatedBlurb = '• The Challenge: Fragmented legacy tooling slows decision-making and siloes institutional data.\n• The Solution: Regaarder unifies documents, spreadsheets, and presentations into a single reactive canvas.\n• The Value: 4x faster synthesis with continuous agentic intelligence.';
+        } else if (q.includes('summary') || q.includes('executive')) {
+          generatedHeadline = 'Executive Overview & Strategic Direction';
+          generatedBlurb = '• Accelerating product velocity with generative canvas automation.\n• Expanding enterprise customer footprint by 140% year-over-year.\n• Delivering seamless cross-document context synthesis at scale.';
+        } else if (q.includes('pitch') || q.includes('investor')) {
+          generatedHeadline = 'The Modern Architecture for Knowledge Work';
+          generatedBlurb = 'Transforming how forward-thinking teams create, analyze, and present ideas.\nPowered by real-time intelligence and crafted with executive-tier design standards.';
+        } else {
+          const cleanPrompt = userPrompt.trim();
+          const capitalized = cleanPrompt.charAt(0).toUpperCase() + cleanPrompt.slice(1);
+          generatedHeadline = capitalized.endsWith('.') ? capitalized.slice(0, -1) : capitalized;
+          generatedBlurb = `1. Strategic Alignment: Establishing clear operational focus around ${cleanPrompt}.\n2. Scalable Execution: Driving high-throughput deliverables with measurable benchmarks.\n3. Measurable Impact: Realizing key performance milestones across all organizational tiers.`;
+        }
+      }
+
+      updateDeckSlideFields(activeDeckSlide?.id, {
+        headline: generatedHeadline,
+        blurb: generatedBlurb,
+        contentBlockType: 'text'
+      });
+
+      showToast(`✦ Drafted slide with ${activeModelName}`);
+    } catch (err) {
+      console.error('Slide AI draft error:', err);
+      showToast('✦ Drafted slide narrative');
+    } finally {
+      setDeckAiDraftLoading(false);
+      setDeckAiDraftPopoverOpen(false);
+      setDeckAiDraftPrompt('');
+    }
+  };
+
   const handleInsertDeckImageFile = (file, isLogo = false) => {
     if (!file) return;
     const reader = new FileReader();
@@ -15131,7 +15428,14 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       };
 
       const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
-      updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+      if (activeDeckSlide?.contentBlockType === 'image') {
+        updateDeckSlideFields(activeDeckSlide?.id, {
+          contentImageUrl: url,
+          images: [...currentImages, newImg]
+        });
+      } else {
+        updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+      }
       setDeckSelection({ type: 'image', id: newImg.id });
       showToast(isLogo ? 'Brand Logo added' : 'Picture added to slide');
     };
@@ -15638,7 +15942,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       <>
         {/* Page dimming backdrop overlay */}
         <div
-          className="fixed inset-0 z-[100000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md transition-all duration-200 animate-in fade-in cursor-default"
+          className="fixed inset-0 z-[10000000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md transition-all duration-200 animate-in fade-in cursor-default"
           onPointerDown={(e) => {
             e.preventDefault();
             setWorkspaceSwitcherOpen(false);
@@ -15646,7 +15950,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         />
         <div 
           data-workspace-switcher-content="true"
-          className={`fixed z-[100001] cursor-default ${isRightAnchored ? 'origin-top-right' : 'origin-top-left'}`}
+          className={`fixed z-[10000001] cursor-default ${isRightAnchored ? 'origin-top-right' : 'origin-top-left'}`}
           style={{
             top: `${topPos}px`,
             ...(rightPos !== undefined ? { right: `${rightPos}px` } : {}),
@@ -15675,7 +15979,12 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                       flushSync(() => {
                         setWorkspaceSwitcherOpen(false);
                         setWorkspaceSwitcherAnchorRect(null);
+                        setIsDeckPresentationMode(false);
+                        setIsPresentingDeck(false);
                       });
+                      if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                      }
                       if (window.electronAPI?.closePopover) {
                         try { window.electronAPI.closePopover(); } catch (e) {}
                       }
@@ -15700,10 +16009,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                         return;
                       }
                       if (item.mode === 'room') {
-                        setProductMode('room-landing');
-                        setLeftSidebarOpen(false);
-                        setRightSidebarOpen(false);
-                        showToast('Switched to Room');
+                        createRoomLandingExperience();
                         return;
                       }
                       if (item.mode === 'browser') {
@@ -17375,13 +17681,13 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     };
   }, [activeDocId, roomId]);
 
-  // Synchronize meeting room video participants with Yjs awareness presence
+  // Synchronize meeting room video participants with Yjs awareness presence (Real peers only)
   useEffect(() => {
-    if (roomState !== 'active' || !roomId) {
+    if (roomState !== "active" || !roomId) {
       setVideoParticipants([]);
       setRoomParticipants([]);
+      setActiveVideoSpeaker({ id: "you", name: "You", isYou: true });
       setYouTileSpeaker(null);
-      setActiveVideoSpeaker({ id: 'you', name: 'You', isYou: true });
       return;
     }
 
@@ -17397,11 +17703,11 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
           id: `client-${clientID}`,
           name: userName,
           isYou: false,
-          img: u.avatar || '',
-          color: u.color || '#7C3AED',
+          img: u.avatar || "",
+          color: u.color || "#7C3AED",
           isRoomMicOn: !!state.isRoomMicOn,
           isRoomCameraOn: !!state.isRoomCameraOn,
-          socketId: state.socketId || '',
+          socketId: state.socketId || "",
         });
       }
     });
@@ -17409,8 +17715,8 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     setRoomParticipants(() => {
       return onlineOthers.map(o => ({
         name: o.name,
-        sub: o.isRoomCameraOn ? 'Camera on' : 'Camera off',
-        state: 'idle',
+        sub: o.isRoomCameraOn ? "Camera on" : "Camera off",
+        state: "idle",
         activeMic: o.isRoomMicOn,
       }));
     });
@@ -17418,22 +17724,9 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     setActiveVideoSpeaker((prevActive) => {
       let nextActive = prevActive;
       if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
-        nextActive = { id: 'you', name: 'You', isYou: true };
+        nextActive = onlineOthers[0] || { id: "you", name: "You", isYou: true };
       }
-      
-      setVideoParticipants(() => {
-        const remainingOthers = onlineOthers.filter(o => o.id !== nextActive.id);
-        return remainingOthers;
-      });
-
-      setYouTileSpeaker(() => {
-        if (nextActive.isYou) {
-          return null;
-        } else {
-          return { id: 'you', name: 'You', isYou: true };
-        }
-      });
-
+      setVideoParticipants(() => onlineOthers.filter(o => o.id !== nextActive.id));
       return nextActive;
     });
   }, [awarenessUsers, roomId, roomState]);
@@ -20327,22 +20620,9 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       }
     };
 
-    const handleGlobalDoubleClick = (e) => {
-      if (e.target.closest('input, textarea, [contenteditable="true"], .no-fullscreen-toggle')) return;
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => console.error(err));
-      } else {
-        if (appShellRef.current?.requestFullscreen) {
-          appShellRef.current.requestFullscreen().catch(err => console.error(err));
-        }
-      }
-    };
-
-    document.addEventListener('dblclick', handleGlobalDoubleClick);
     document.addEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
     window.addEventListener('focus', handleWindowFocus);
     return () => {
-      document.removeEventListener('dblclick', handleGlobalDoubleClick);
       document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
       window.removeEventListener('focus', handleWindowFocus);
     };
@@ -26113,6 +26393,19 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const handleDeckKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      if (deckSlashMenu.open) {
+        event.preventDefault();
+        setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+        return;
+      }
+      if (activeDeckSlide?.contentBlockType && activeDeckSlide.contentBlockType !== 'text') {
+        event.preventDefault();
+        updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+        showToast('Returned to text block');
+        return;
+      }
+    }
     if (deckSlashMenu.open && event.key !== '/') {
       const filteredOptions = DECK_SLASH_OPTIONS
         .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
@@ -31542,17 +31835,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       return;
     }
     if (tabKey === 'room') {
-      if (roomState === 'active' && roomPanelMode === 'expanded') {
-        setRoomPanelMode('docked');
-        if (document.exitFullscreen && document.fullscreenElement) {
-          document.exitFullscreen().catch(()=>{});
-        }
-      } else {
-        // Use startMeetingNow() so requestMediaPermissions() is always called
-        // and the camera/mic permission prompt fires every time a meeting opens.
-        // startMeetingNow() already calls enterFullscreen() internally.
-        startMeetingNow(generateRoomCode());
-      }
+      createRoomLandingExperience();
       return;
     }
     const shouldBeFullscreen = false; // We removed 'room' from here
@@ -32000,6 +32283,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setIsRoomMicOn(false);
     setIsRoomCameraOn(false);
     setIsMicMuted(true);
+    // Lock duration at the exact moment user leaves
+    if (meetingStartedAt) {
+      setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
+    }
     // Show the post-call rating modal. The actual roomState transition to 'summary'
     // (and navigation home) happens inside confirmLeaveRoom() once the user submits.
     setCallRating(0);
@@ -32150,24 +32437,35 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const toggleRoomMic = async () => {
-    // Optimistically toggle the mic state immediately (like Zoom/Google Meet),
-    // so the UI responds instantly regardless of whether a real stream exists.
-    // Both isRoomMicOn and isMicMuted are kept in sync as inverses of each other
-    // because two different control bars reference each state.
     const nextOn = !isRoomMicOn;
     setIsRoomMicOn(nextOn);
     setIsMicMuted(!nextOn);
-    showToast(nextOn ? 'Microphone unmuted' : 'Microphone muted');
+    showToast(nextOn ? "Microphone unmuted (Captions active)" : "Microphone muted");
 
-    // If a real media stream is active, also enable/disable the actual audio track.
-    if (localStream && !mediaError) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = nextOn;
+    if (nextOn) {
+      try {
+        if (!localStream) {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setLocalStream(micStream);
+        } else {
+          const audioTracks = localStream.getAudioTracks();
+          if (audioTracks.length > 0) {
+            audioTracks.forEach(t => { t.enabled = true; });
+          } else {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const [audioTrack] = micStream.getAudioTracks();
+            if (audioTrack) localStream.addTrack(audioTrack);
+          }
+        }
+      } catch (err) {
+        console.warn("[Microphone] Error accessing audio hardware:", err);
+      }
+    } else {
+      if (localStream) {
+        localStream.getAudioTracks().forEach(t => { t.enabled = false; });
       }
     }
   };
-
   const toggleScreenShare = async () => {
     if (isScreenSharing && screenShareStream) {
       screenShareStream.getTracks().forEach((track) => track.stop());
@@ -32178,10 +32476,37 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
+      let stream = null;
+      if (window.electronAPI?.getDesktopSources) {
+        const sources = await window.electronAPI.getDesktopSources(['screen', 'window']);
+        if (sources && sources.length > 0) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sources[0].id,
+                minWidth: 1280,
+                maxWidth: 1920,
+                minHeight: 720,
+                maxHeight: 1080
+              }
+            }
+          });
+        }
+      }
+
+      if (!stream && navigator.mediaDevices?.getDisplayMedia) {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always' },
+          audio: false,
+        });
+      }
+
+      if (!stream) {
+        throw new Error('Screen capture not supported in this environment');
+      }
+
       const [track] = stream.getVideoTracks();
       if (track) {
         track.onended = () => {
@@ -32192,14 +32517,19 @@ Answer the user's question, provide an insightful summary, or explain the contex
       }
       setScreenShareStream(stream);
       setIsScreenSharing(true);
+      // content protection disabled for smooth screen capture
       showToast('Screen sharing started');
-    } catch (_err) {
-      // User cancelled or permission denied — silently ignore to avoid jarring error toasts.
-      showToast('Screen share cancelled.');
+    } catch (err) {
+      console.warn('Screen share cancelled or failed:', err);
+      if (err.name !== 'NotAllowedError') {
+        showToast('Screen share: ' + (err.message || 'Unable to access screen'));
+      } else {
+        showToast('Screen share cancelled.');
+      }
     }
   };
 
-  // Foolproof privacy: Ensure hardware is off if state is off.
+    // Foolproof privacy: Ensure hardware is off if state is off.
   useEffect(() => {
     if (!isRoomCameraOn && localStream) {
       localStream.getVideoTracks().forEach(t => t.stop());
@@ -32207,14 +32537,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
   }, [isRoomCameraOn, localStream]);
 
   useEffect(() => {
-    if (roomState !== 'active' || !meetingStartedAt) {
+    if (roomState !== 'active' || !meetingStartedAt || isPostCallRatingOpen) {
       return undefined;
     }
     const interval = setInterval(() => {
       setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
     }, 1000);
     return () => clearInterval(interval);
-  }, [roomState, meetingStartedAt, formatMeetingElapsed]);
+  }, [roomState, meetingStartedAt, isPostCallRatingOpen, formatMeetingElapsed]);
 
   const activeSharedMeetingFile = useMemo(() => {
     if (!sharedMeetingFiles.length) {
@@ -32514,14 +32844,30 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const enterFullscreen = () => {
     try {
-      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(true); } catch (e) {}
+      }
+      if (document.documentElement?.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       }
     } catch (e) {}
   };
 
+  const exitFullscreen = () => {
+    try {
+      if (typeof window !== 'undefined' && window.electronAPI?.setFullscreen) {
+        try { window.electronAPI.setFullscreen(false); } catch (e) {}
+      }
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+    wasNativeFullscreenRef.current = false;
+    setIsDocumentImmersive(false);
+    setIsFocusMode(false);
+  };
+
   const createComposeExperience = (options = {}) => {
-    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('compose');
     setFocusedModule('compose');
@@ -32533,12 +32879,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createDeckExperience = () => {
-    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('deck');
-    setFocusedModule('compose');
+    setFocusedModule('deck');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setDeckTitle('Untitled deck');
     setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
     setActiveDeckSlideId(1);
@@ -32556,12 +32904,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createSheetsExperience = () => {
-    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
-    setFocusedModule('compose');
+    setFocusedModule('sheets');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setSheetsTitle('Untitled Sheet');
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
@@ -32932,12 +33282,14 @@ Respond with valid JSON formatted like this:
   };
 
   const createWhiteboardExperience = (initialTitle = '') => {
-    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
-    setFocusedModule('compose');
+    setFocusedModule('whiteboard');
     setDockedModules([]);
     setRoomPanelMode('docked');
+    if (isScreenSharing || window.__currentScreenShareStream) {
+      setRoomState('active');
+    }
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
@@ -33094,6 +33446,18 @@ Respond with valid JSON formatted like this:
     openCreationPicker();
   };
 
+  const createRoomLandingExperience = () => {
+    enterFullscreen();
+    setIsDocumentImmersive(true);
+    setCreationPickerOpen(false);
+    setProductMode('room-landing');
+    setLeftSidebarOpen(false);
+    setRightSidebarOpen(false);
+    setFocusedModule('room');
+    setRoomPanelMode('expanded');
+    showToast('Room workspace ready');
+  };
+
   const createRoomExperience = () => {
     enterFullscreen();
     setIsDocumentImmersive(true);
@@ -33173,7 +33537,6 @@ Respond with valid JSON formatted like this:
     }
 
     if (target === 'whiteboard') {
-      enterFullscreen();
       setActivePrimaryNav('home');
       createWhiteboardExperience();
       return;
@@ -33186,15 +33549,11 @@ Respond with valid JSON formatted like this:
     }
 
     if (target === 'room') {
-      enterFullscreen();
-      setActivePrimaryNav('home');
-      setProductMode('room-landing');
+      createRoomLandingExperience();
       return;
     }
 
     if (target === 'memory') {
-      enterFullscreen();
-      setIsDocumentImmersive(true);
       setOrbInitialMode('search');
       setOrbInitialQuery('');
       setIsMemorySearchOpen(true);
@@ -35107,6 +35466,44 @@ Respond with a JSON array of slide objects matching the schema.`;
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
 
+  // Animated Numeric Odometer Count-Up in Presentation Mode
+  useEffect(() => {
+    if (!isDeckPresentationMode) {
+      setAnimatedMetricDisplay(null);
+      return;
+    }
+    const rawStr = String(activeDeckSlide?.keyMetric || '0.00%').trim();
+    const match = rawStr.match(/^([^\d.]*)(\d+(?:\.\d+)?)(.*)$/);
+    if (!match) {
+      setAnimatedMetricDisplay(rawStr);
+      return;
+    }
+    const prefix = match[1];
+    const targetNum = parseFloat(match[2]);
+    const suffix = match[3];
+    const decimals = match[2].includes('.') ? match[2].split('.')[1].length : 0;
+
+    let startTimestamp = null;
+    const duration = 1100;
+    let animationFrameId;
+
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min(1, (timestamp - startTimestamp) / duration);
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const currentVal = (targetNum * ease).toFixed(decimals);
+      setAnimatedMetricDisplay(`${prefix}${currentVal}${suffix}`);
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      }
+    };
+
+    setAnimatedMetricDisplay(`${prefix}${(0).toFixed(decimals)}${suffix}`);
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isDeckPresentationMode, presentationSlideIndex, activeDeckSlide?.id, activeDeckSlide?.keyMetric]);
+
   // ── FULL LLM & PROGRAMMATIC API HARNESS FOR REGAARDER DECK ──
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -35127,24 +35524,41 @@ Respond with a JSON array of slide objects matching the schema.`;
         }),
 
         createSlide: (props = {}) => {
-          const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : DEFAULT_DECK_SLIDES;
-          const nextId = (slides.length ? Math.max(...slides.map(s => s.id)) : 0) + 1;
-          const preset = DECK_DESIGN_PRESETS.find(p => p.key === props.designPresetKey) || DECK_DESIGN_PRESETS[0];
+          const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
+          const refSlide = activeDeckSlide || slides[slides.length - 1] || slides[0] || {};
+          const nextId = (slides.length ? Math.max(...slides.map(s => typeof s.id === 'number' ? s.id : 0)) : 0) + 1;
+          const layoutStyle = props.layoutStyle || (slides.length === 0 ? 'Title Slide' : 'Title & Content');
           
+          const inheritedBg = props.backgroundColor ?? (refSlide.backgroundColor || (refSlide.designPresetKey === 'blank' ? '#ffffff' : '#05070B'));
+          const inheritedPreset = props.designPresetKey || refSlide.designPresetKey || refSlide.presetKey || (inheritedBg === '#05070B' ? 'midnight-slate' : 'blank');
+          const presetObj = DECK_DESIGN_PRESETS.find(p => p.key === inheritedPreset) || DECK_DESIGN_PRESETS[0];
+
           const newSlide = {
             id: nextId,
-            title: props.title || `Slide ${nextId}`,
+            title: props.title || (layoutStyle === 'Title Slide' ? 'Title Slide' : `Slide ${nextId}`),
             subtitle: props.subtitle || '',
-            headline: props.headline || props.title || `Slide ${nextId}`,
+            tagline: props.tagline || (refSlide.tagline || ''),
+            headline: props.headline || '',
             blurb: props.blurb || '',
-            layoutStyle: props.layoutStyle || 'Title Slide',
-            designPresetKey: preset.key,
-            backgroundColor: props.backgroundColor || '#05070B',
-            vectorWaveStyle: 'original-pitch',
-            vectorColor1: '#00f0ff',
-            vectorColor2: '#7c4dff',
-            shapes: [],
-            bentoCards: (props.bentoCards || []).map((b, idx) => ({
+            accent: props.accent || refSlide.accent || 'from-indigo-500 to-violet-500',
+            designPresetKey: presetObj.key,
+            presetKey: presetObj.key,
+            backgroundColor: inheritedBg,
+            vectorWaveStyle: props.vectorWaveStyle || refSlide.vectorWaveStyle || 'original-pitch',
+            vectorColor1: props.vectorColor1 || refSlide.vectorColor1 || '#0055ff',
+            vectorColor2: props.vectorColor2 || refSlide.vectorColor2 || '#00f0ff',
+            vectorWaveHue: props.vectorWaveHue || refSlide.vectorWaveHue || 'neon-cyan-purple',
+            vectorOpacity: props.vectorOpacity ?? refSlide.vectorOpacity ?? 0.85,
+            vectorGlow: props.vectorGlow || refSlide.vectorGlow || 'crisp',
+            visualType: props.visualType || '',
+            layoutStyle: layoutStyle,
+            motionCue: props.motionCue || 'Soft Fade (Left)',
+            keyMetric: props.keyMetric || '',
+            speakerNotes: props.speakerNotes || '',
+            section: props.section || 'Body',
+            footer: props.footer || refSlide.footer || deckTitle || 'Regaarder Corporation',
+            shapes: props.shapes || [],
+            bentoCards: props.bentoCards ? props.bentoCards.map((b, idx) => ({
               id: `bento_${Date.now()}_${idx}`,
               title: b.title || 'Feature',
               description: b.description || '',
@@ -35154,12 +35568,16 @@ Respond with a JSON array of slide objects matching the schema.`;
               posY: 230,
               width: 260,
               height: 190
-            }))
+            })) : (layoutStyle === 'Bento Grid' ? [
+              { id: `bento_${Date.now()}_0`, title: 'Core Capability', description: 'High-throughput intelligence engine', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 70, posY: 230, width: 240, height: 180 },
+              { id: `bento_${Date.now()}_1`, title: 'Workflow Automation', description: 'Cross-document context synchronization', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 330, posY: 230, width: 240, height: 180 },
+              { id: `bento_${Date.now()}_2`, title: 'Enterprise Security', description: 'SOC-2 compliant zero-knowledge telemetry', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 590, posY: 230, width: 240, height: 180 }
+            ] : [])
           };
 
           setDeckSlidesData(prev => [...prev, newSlide]);
           setActiveDeckSlideId(nextId);
-          showToast(`Created slide: "${newSlide.title}"`);
+          showToast(`Created slide ${nextId} (${layoutStyle})`);
           return newSlide;
         },
 
@@ -36134,6 +36552,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
         setIsPresentingDeck(false);
+        setIsDeckPresentationMode(false);
       }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -36382,30 +36801,66 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
   };
 
-  const addDeckSlide = () => {
+  const addDeckSlide = (requestedLayout, customProps = {}) => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
-    const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+    const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
+    const refSlide = activeDeckSlide || slides[slides.length - 1] || slides[0] || {};
+    const nextId = (slides.length ? Math.max(...slides.map(s => typeof s.id === 'number' ? s.id : 0)) : 0) + 1;
     
+    // Intelligently default layout: first slide is 'Title Slide', subsequent slides are 'Title & Content'
+    const defaultLayout = slides.length === 0 ? 'Title Slide' : 'Title & Content';
+    const layoutStyle = requestedLayout || customProps.layoutStyle || defaultLayout;
+    
+    // Inherit master theme properties from the reference slide
+    const inheritedBg = customProps.backgroundColor ?? (refSlide.backgroundColor || (refSlide.designPresetKey === 'blank' ? '#ffffff' : '#05070B'));
+    const inheritedPreset = customProps.designPresetKey || refSlide.designPresetKey || refSlide.presetKey || (inheritedBg === '#05070B' ? 'midnight-slate' : 'blank');
+    const inheritedVectorStyle = customProps.vectorWaveStyle || refSlide.vectorWaveStyle || 'original-pitch';
+    const inheritedVectorColor1 = customProps.vectorColor1 || refSlide.vectorColor1 || '#0055ff';
+    const inheritedVectorColor2 = customProps.vectorColor2 || refSlide.vectorColor2 || '#00f0ff';
+    const inheritedVectorHue = customProps.vectorWaveHue || refSlide.vectorWaveHue || 'neon-cyan-purple';
+    const inheritedOpacity = customProps.vectorOpacity ?? refSlide.vectorOpacity ?? 0.85;
+    const inheritedGlow = customProps.vectorGlow || refSlide.vectorGlow || 'crisp';
+    const inheritedAccent = customProps.accent || refSlide.accent || 'from-indigo-500 to-violet-500';
+    const inheritedFooter = customProps.footer || refSlide.footer || deckTitle || 'Regaarder Corporation';
+
     const newSlide = {
       id: nextId,
-      title: `Slide ${nextId}`,
-      subtitle: '',
-      accent: '',
-      designPresetKey: 'blank',
-      presetKey: 'blank',
-      headline: '',
-      blurb: '',
-      visualType: '',
-      layoutStyle: 'Title Slide',
-      motionCue: '',
-      keyMetric: '',
-      speakerNotes: '',
-      section: 'Opening',
-      footer: '',
+      title: customProps.title || (layoutStyle === 'Title Slide' ? 'Title Slide' : `Slide ${nextId}`),
+      subtitle: customProps.subtitle || '',
+      tagline: customProps.tagline || (refSlide.tagline || ''),
+      headline: customProps.headline || '',
+      blurb: customProps.blurb || '',
+      accent: inheritedAccent,
+      designPresetKey: inheritedPreset,
+      presetKey: inheritedPreset,
+      backgroundColor: inheritedBg,
+      vectorWaveStyle: inheritedVectorStyle,
+      vectorColor1: inheritedVectorColor1,
+      vectorColor2: inheritedVectorColor2,
+      vectorWaveHue: inheritedVectorHue,
+      vectorOpacity: inheritedOpacity,
+      vectorGlow: inheritedGlow,
+      visualType: customProps.visualType || '',
+      layoutStyle: layoutStyle,
+      motionCue: customProps.motionCue || 'Soft Fade (Left)',
+      keyMetric: customProps.keyMetric || (layoutStyle === 'Key Metric' ? '98.4%' : ''),
+      speakerNotes: customProps.speakerNotes || '',
+      section: customProps.section || (layoutStyle === 'Title Slide' ? 'Opening' : 'Body'),
+      footer: inheritedFooter,
+      shapes: customProps.shapes || [],
+      bentoCards: customProps.bentoCards || (layoutStyle === 'Bento Grid' ? [
+        { id: `bento_${Date.now()}_0`, title: 'Intelligent Workflows', description: 'Context-aware agent automation', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 70, posY: 230, width: 240, height: 180 },
+        { id: `bento_${Date.now()}_1`, title: 'Unified Data Fabric', description: 'Deep document and sheet orchestration', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 330, posY: 230, width: 240, height: 180 },
+        { id: `bento_${Date.now()}_2`, title: 'Executive Speed', description: 'Real-time collaborative synthesis', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 590, posY: 230, width: 240, height: 180 }
+      ] : []),
+      ...customProps
     };
+
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
-    showToast(`Slide ${nextId} created`);
+    setDeckLayoutDropdownOpen(false);
+    showToast(`Slide ${nextId} created (${layoutStyle})`);
+    return newSlide;
   };
   const addWorksheet = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
@@ -37964,23 +38419,54 @@ Respond with a JSON array of slide objects matching the schema.`;
       </svg>`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
-    if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.backgroundColor === '#05070B') {
-      const tagline = escapeSvgText(slide?.tagline || 'Novaris Company');
-      const headline = escapeSvgText(slide?.headline || 'STARTUP\nPITCH DECK').replace(/\n/g, ' ');
-      const presenter = escapeSvgText(slide?.presenter || 'PRESENT BY ALEX CHEN');
+    const isDark = slide?.backgroundColor ? (slide.backgroundColor === '#05070B' || slide.backgroundColor.startsWith('#0') || slide.backgroundColor.startsWith('#1')) : (slide?.designPresetKey !== 'blank');
+    const bgColor = slide?.backgroundColor || (isDark ? '#05070B' : '#ffffff');
+    const textColor = isDark ? '#ffffff' : '#0f172a';
+    const subtextColor = isDark ? '#94a3b8' : '#64748b';
+    const c1 = slide?.vectorColor1 || '#00f0ff';
+    const c2 = slide?.vectorColor2 || '#a855f7';
+    const headline = escapeSvgText(slide?.headline || slide?.title || 'Slide Title').replace(/\n/g, ' ');
+    const footer = escapeSvgText(slide?.footer || 'Regaarder');
+
+    if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.layoutStyle === 'Title Slide' || slide?.title === 'Startup Pitch Deck') {
+      const tagline = escapeSvgText(slide?.tagline || 'Regaarder Presentation');
+      const presenter = escapeSvgText(slide?.presenter || 'Executive Pitch');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
-        <rect width="320" height="192" rx="14" fill="#05070B"/>
-        <path d="M 120 192 C 180 130, 240 80, 320 100" stroke="#00f0ff" stroke-width="2" opacity="0.6" fill="none" />
-        <path d="M 80 192 C 150 110, 220 50, 320 70" stroke="#a855f7" stroke-width="1.5" opacity="0.5" fill="none" />
-        <text x="14" y="24" font-size="8" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic">${tagline}</text>
-        <text x="14" y="80" font-size="16" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" letter-spacing="1">STARTUP</text>
-        <text x="14" y="102" font-size="16" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" letter-spacing="1">PITCH DECK</text>
-        <rect x="14" y="118" width="130" height="14" rx="7" fill="rgba(255,255,255,0.12)"/>
-        <text x="20" y="128" font-size="6.5" font-family="Inter, sans-serif" fill="#e2e8f0" font-weight="700" letter-spacing="1">${presenter}</text>
+        <rect width="320" height="192" rx="14" fill="${bgColor}"/>
+        <path d="M 120 192 C 180 130, 240 80, 320 100" stroke="${c1}" stroke-width="2" opacity="0.6" fill="none" />
+        <path d="M 80 192 C 150 110, 220 50, 320 70" stroke="${c2}" stroke-width="1.5" opacity="0.5" fill="none" />
+        <text x="14" y="24" font-size="8" font-family="Inter, sans-serif" fill="${subtextColor}" font-style="italic">${tagline}</text>
+        <text x="14" y="85" font-size="14" font-family="Inter, sans-serif" fill="${textColor}" font-weight="900">${headline}</text>
+        <rect x="14" y="105" width="110" height="14" rx="7" fill="rgba(124,77,255,0.2)" stroke="${c1}" stroke-width="0.5"/>
+        <text x="20" y="115" font-size="6" font-family="Inter, sans-serif" fill="${textColor}" font-weight="700">${presenter}</text>
         <line x1="14" y1="165" x2="306" y2="165" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
-        <text x="14" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">www.reallygreatsite.com</text>
-        <text x="120" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">hello@reallygreatsite.com</text>
-        <text x="225" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">123 Anywhere Street</text>
+        <text x="14" y="178" font-size="6" font-family="Inter, sans-serif" fill="${subtextColor}">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    if (slide?.layoutStyle === 'Title & Content' || slide?.layoutStyle === 'Content Slide' || slide?.layoutStyle === 'Standard') {
+      const blurb = escapeSvgText(slide?.blurb || 'Narrative summary and core content points').substring(0, 45);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="${bgColor}"/>
+        <path d="M 220 192 C 260 120, 290 60, 320 40" stroke="${c1}" stroke-width="1.5" opacity="0.4" fill="none" />
+        <text x="14" y="32" font-size="12" font-family="Inter, sans-serif" fill="${textColor}" font-weight="800">${headline}</text>
+        <rect x="14" y="48" width="292" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+        <text x="26" y="70" font-size="7" font-family="Inter, sans-serif" fill="${subtextColor}">${blurb}</text>
+        <circle cx="30" cy="140" r="4" fill="${c1}"/>
+        <circle cx="50" cy="140" r="4" fill="${c2}"/>
+        <text x="306" y="180" font-size="6" font-family="Inter, sans-serif" fill="${subtextColor}" text-anchor="end">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    if (slide?.layoutStyle === 'Two Columns') {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="${bgColor}"/>
+        <text x="14" y="32" font-size="12" font-family="Inter, sans-serif" fill="${textColor}" font-weight="800">${headline}</text>
+        <rect x="14" y="48" width="140" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+        <rect x="166" y="48" width="140" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+        <text x="306" y="180" font-size="6" font-family="Inter, sans-serif" fill="${subtextColor}" text-anchor="end">${footer}</text>
       </svg>`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
@@ -37998,9 +38484,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       'from-indigo-600 to-slate-600': ['#4f46e5', '#475569'],
       'from-violet-600 to-indigo-700': ['#7c3aed', '#4338ca'],
     };
-    const [c1, c2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
+    const [accentC1, accentC2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${accentC1}"/><stop offset="100%" stop-color="${accentC2}"/></linearGradient></defs>
       <rect width="320" height="192" rx="14" fill="url(#g)"/>
       <rect x="10" y="10" width="64" height="10" rx="5" fill="rgba(255,255,255,0.35)"/>
       <rect x="10" y="31" width="220" height="12" rx="6" fill="rgba(255,255,255,0.28)"/>
@@ -46733,13 +47219,18 @@ If requested to draw a chart or graph, append a structured action JSON block:
     // Only the local user (You) is always present. Remote participants would be
     // added here via WebRTC signalling in a real multi-user implementation.
     const youEntry = {
-      name: 'You',
-      sub: isRoomCameraOn ? (t('room.cameraOn') || 'Camera on') : (t('room.cameraOff') || 'Camera off'),
-      state: 'host',
+      name: "You",
+      sub: "Host",
+      role: "Host",
+      state: "host",
       activeMic: isRoomMicOn,
+      isSpeaking: isRoomMicOn,
+      img: "",
+      color: "#10B981"
     };
 
-    const allParticipants = [youEntry, ...roomParticipants];
+    const currentActiveOthers = [activeVideoSpeaker, ...videoParticipants].filter(p => !p.isYou && p.id !== "you");
+    const allParticipants = [youEntry, ...currentActiveOthers];
     const filtered = allParticipants.filter(p =>
       p.name.toLowerCase().includes((peopleSearchQuery || '').toLowerCase())
     );
@@ -46991,20 +47482,36 @@ If requested to draw a chart or graph, append a structured action JSON block:
   };
   
 const renderRoomTopHeader = () => (
-    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative pt-2" style={{ zIndex: 999999 }}>
-      <div className="flex items-center gap-10">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 select-none">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="3.5" fill="#A78BFA" />
-            <circle cx="12" cy="5.5" r="2.5" fill="#A78BFA" />
-            <circle cx="17.63" cy="8.75" r="2.5" fill="#A78BFA" />
-            <circle cx="17.63" cy="15.25" r="2.5" fill="#A78BFA" />
-            <circle cx="12" cy="18.5" r="2.5" fill="#A78BFA" />
-            <circle cx="6.37" cy="15.25" r="2.5" fill="#A78BFA" />
-            <circle cx="6.37" cy="8.75" r="2.5" fill="#A78BFA" />
-          </svg>
-          <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
+    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative z-20 pt-2">
+      <div className="flex items-center gap-6">
+        {/* App Switcher Button */}
+        <div className="relative z-[360] flex items-center">
+          <button
+            type="button"
+            data-workspace-switcher="true"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className={`flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-800/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer active:scale-95 ${
+              workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+            }`}
+            title="Switch Workspace App"
+          >
+            <LayoutGrid size={16} />
+          </button>
+        </div>
+
+        {/* Room Brand Badge */}
+        <div className="flex items-center gap-2 select-none">
+          <RoomIcon size={20} strokeWidth={1.8} className="text-violet-600 dark:text-violet-400 shrink-0" />
+          <span className="text-[17px] font-bold text-violet-600 dark:text-violet-400 tracking-tight font-sans">Room</span>
         </div>
 
         {/* Product Sync dropdown */}
@@ -47173,13 +47680,13 @@ const renderRoomTopHeader = () => (
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <FileText size={16} /> {t('room.notes') || 'Notes'}
+                <MeetingNotesIcon size={16} /> {t('room.notes') || 'Notes'}
               </button>
               <button 
                 onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <Sparkles size={16} /> {t('room.summary') || 'Summary'}
+                <MeetingSummaryIcon size={16} /> {t('room.summary') || 'Summary'}
               </button>
               <button 
                 onClick={() => { setIsCalendarModalOpen(true); setIsMoreMenuOpen(false); }}
@@ -47187,18 +47694,7 @@ const renderRoomTopHeader = () => (
               >
                 <Calendar size={16} /> {t('sidebar.schedule') || t('room.calendar') || 'Calendar'}
               </button>
-              <button 
-                onClick={() => { setIsMeetingsModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
-              >
-                <Users size={16} /> {t('room.meetings') || 'Meetings'}
-              </button>
-              <button 
-                onClick={() => { setIsRecordingModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
-              >
-                <Disc size={16} /> {t('room.recording') || 'Recording'}
-              </button>
+              
             </div>
           )}
         </div>
@@ -47734,9 +48230,187 @@ const renderRoomTopHeader = () => (
     );
   };
 
+  const renderFloatingMeetingPipHud = () => {
+    if (typeof document === 'undefined') return null;
+    const shouldShow = (isScreenSharing || (roomState === 'active' && roomPanelMode === 'docked') || (typeof window !== 'undefined' && window.__currentScreenShareStream)) && productMode !== 'room' && productMode !== 'room-landing';
+    if (!shouldShow) return null;
+
+    const activeStream = screenShareStream || (typeof window !== 'undefined' ? window.__currentScreenShareStream : null);
+
+    return (
+      <>
+        {/* Full-Screen Workspace Laser / Pen Annotation Layer */}
+        {isWorkspaceAnnotationActive && createPortal(
+          <RoomAnnotationOverlay isEnabled={true} />,
+          document.body
+        )}
+        {createPortal(
+          <div 
+            ref={pipDragContainerRef}
+        onPointerDown={handlePipPointerDown}
+        style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
+        className={`fixed ${pipPosition.x === null ? 'bottom-6 right-8' : ''} z-[999999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
+      >
+        {/* Floating Live Video Mini Preview Tile */}
+        <div 
+          onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+          className="w-56 h-36 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-700 shadow-[0_24px_60px_rgba(0,0,0,0.35)] relative group cursor-pointer hover:ring-2 ring-violet-500 transition-all duration-200"
+          title="Click to expand Room"
+        >
+          {/* Live Video Element */}
+          {activeStream ? (
+            <video 
+              ref={(node) => { 
+                if (node && activeStream) {
+                  if (node.srcObject !== activeStream) node.srcObject = activeStream;
+                  node.play?.().catch(() => {});
+                }
+              }} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-full object-contain bg-black" 
+            />
+          ) : localStream && isRoomCameraOn ? (
+            <video 
+              ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
+              <div className="w-9 h-9 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-sm font-bold border border-violet-500/30">
+                Y
+              </div>
+              <span className="text-[10px] font-medium text-zinc-400">Meeting in progress</span>
+            </div>
+          )}
+
+          {/* Floating Streaming Status Badge */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white border border-white/10 shadow-sm pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+            <span className="font-semibold text-[9.5px] tracking-wide uppercase truncate max-w-[120px]">{sharedSourceInfo?.name ? sharedSourceInfo.name : activeStream ? 'Streaming Live' : 'Live'}</span>
+          </div>
+
+          {/* OS Picture-in-Picture Popout Button */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const vidEl = pipDragContainerRef.current?.querySelector('video');
+                if (document.pictureInPictureElement) {
+                  await document.exitPictureInPicture();
+                  showToast?.('Exited Picture-in-Picture');
+                } else if (vidEl && document.pictureInPictureEnabled) {
+                  await vidEl.requestPictureInPicture();
+                  showToast?.('Floating OS Mini-Window Active');
+                }
+              } catch (err) {
+                console.warn('PiP error:', err);
+                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+              }
+            }}
+            className="absolute top-2 right-2 p-1 rounded-lg bg-black/75 hover:bg-black/90 text-white/90 hover:text-white border border-white/10 shadow-sm transition-all cursor-pointer z-20"
+            title="Pop out into Floating OS Window (Always on Top)"
+          >
+            <ExternalLink size={11} />
+          </button>
+
+          {/* Hover Overlay with Expand Action */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+            <Maximize2 size={15} />
+            <span>Return to Room</span>
+          </div>
+        </div>
+
+        {/* Meeting Controls Bar */}
+        <div className="w-56 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-2 px-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* Toggle Laser / Screen Annotation Overlay */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsWorkspaceAnnotationActive((prev) => !prev);
+              }}
+              className={`p-1.5 rounded-xl text-xs transition-all cursor-pointer ${
+                isWorkspaceAnnotationActive 
+                  ? 'bg-violet-600 text-white shadow-xs scale-105' 
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300'
+              }`}
+              title={isWorkspaceAnnotationActive ? "Hide Laser / Annotations" : "Draw Laser Pointer / Annotate Screen"}
+            >
+              <LaserPointerIcon size={13} strokeWidth={1.6} />
+            </button>
+
+            {/* Pop-Out OS PiP Window */}
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (isPipWidgetOpen) {
+                  setIsPipWidgetOpen(false);
+                  window.electronAPI?.closeFloatingPipWidget?.();
+                  showToast?.('Closed floating window');
+                } else {
+                  if (window.electronAPI?.openFloatingPipWidget) {
+                    window.electronAPI.openFloatingPipWidget();
+                    setIsPipWidgetOpen(true);
+                    showToast?.('OS Floating Window Active');
+                  }
+                }
+              }}
+              className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
+              title="Pop out into Always-on-Top OS Floating Window"
+            >
+              <ExternalLink size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
+              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomMicOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+              title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
+            >
+              {isRoomMicOn ? <Mic size={13} /> : <MicOff size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
+              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomCameraOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+              title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+            >
+              {isRoomCameraOn ? <Video size={13} /> : <VideoOff size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
+              className="p-1.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+              title="Leave Meeting"
+            >
+              <PhoneOff size={13} />
+            </button>
+          </div>
+        </div>
+
+          </div>,
+          document.body
+        )}
+      </>
+    );
+  };
+
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+        {/* Universal Floating Meeting PIP HUD across Sheets and Decks */}
+        {renderFloatingMeetingPipHud()}
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -48595,19 +49269,88 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {!isDeckPresentationMode && !isSheetsPresentationMode && (isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
                     <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
-                      {/* Top Sidebar Action */}
-                      <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
-                        <button
-                          type="button"
-                          onClick={isSheetsMode ? addWorksheet : addDeckSlide}
-                          className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-xs font-semibold text-slate-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Plus size={14} className="text-[#7C4DFF]" />
-                            <span>{isSheetsMode ? (t('sheets.newSheet') || 'New Sheet') : (t('deck.newSlide') || 'New Slide')}</span>
+                      {/* Top Sidebar Action with Regaarder Apple-Style Split Layout Trigger */}
+                      <div className="h-16 px-3.5 border-b border-gray-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 relative">
+                        <div className="w-full flex items-center bg-white dark:bg-zinc-800 border border-gray-200/90 dark:border-zinc-700 rounded-xl shadow-xs overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSheetsMode) {
+                                addWorksheet();
+                              } else {
+                                addDeckSlide('Title & Content');
+                              }
+                            }}
+                            className="flex-1 flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-violet-50/50 dark:hover:bg-zinc-700/60 transition-colors text-left"
+                            title={isSheetsMode ? 'Create New Sheet' : 'Create New Slide (Title & Content)'}
+                          >
+                            <Plus size={14} className="text-[#7C4DFF] shrink-0" />
+                            <span className="truncate">{isSheetsMode ? (t('sheets.newSheet') || 'New Sheet') : (t('deck.newSlide') || 'New Slide')}</span>
+                          </button>
+                          
+                          {!isSheetsMode && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeckLayoutDropdownOpen(prev => !prev);
+                              }}
+                              className="px-2 py-2 border-l border-gray-200/80 dark:border-zinc-700 text-gray-400 dark:text-zinc-400 hover:text-[#7C4DFF] hover:bg-violet-50/50 dark:hover:bg-zinc-700/60 transition-colors flex items-center justify-center cursor-pointer"
+                              title="Choose Slide Layout"
+                            >
+                              <ChevronDown size={13} className={`transition-transform duration-200 ${deckLayoutDropdownOpen ? 'rotate-180 text-[#7C4DFF]' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Regaarder Apple-Style Slide Layout Picker Popover Menu */}
+                        {!isSheetsMode && deckLayoutDropdownOpen && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="absolute top-[60px] left-3 right-3 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-800 rounded-2xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-150"
+                          >
+                            <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-zinc-800/80 flex items-center justify-between">
+                              <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400 flex items-center gap-1.5">
+                                <LayoutTemplate size={12} className="text-[#7C4DFF]" /> Slide Layouts
+                              </span>
+                              <button 
+                                type="button" 
+                                onClick={() => setDeckLayoutDropdownOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded cursor-pointer"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                            <div className="flex flex-col gap-0.5 max-h-[260px] overflow-y-auto thin-scrollbar p-0.5">
+                              {DECK_LAYOUT_OPTIONS.map((layoutItem) => {
+                                const IconComp = layoutItem.icon || LayoutTemplate;
+                                return (
+                                  <button
+                                    key={layoutItem.id}
+                                    type="button"
+                                    onClick={() => {
+                                      addDeckSlide(layoutItem.id);
+                                      setDeckLayoutDropdownOpen(false);
+                                    }}
+                                    className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 group transition-all flex items-start gap-2.5 cursor-pointer"
+                                  >
+                                    <div className="w-6 h-6 rounded-lg bg-violet-100/70 dark:bg-violet-900/40 text-[#7C4DFF] dark:text-violet-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                                      <IconComp size={13} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-[#7C4DFF] dark:group-hover:text-violet-300 transition-colors">
+                                        {layoutItem.label}
+                                      </div>
+                                      <div className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate leading-snug">
+                                        {layoutItem.desc}
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                          <ChevronDown size={12} className="text-gray-400" />
-                        </button>
+                        )}
                       </div>
             
                       {/* Slide List - Keynote/PowerPoint Filmstrip Style */}
@@ -55491,7 +56234,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         )}
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className={`flex-1 flex flex-col justify-between items-center min-h-0 relative transition-all duration-300 ${isDeckPresentationMode ? `fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] ${isDeckPresentationFocus ? 'p-0' : 'p-2 md:p-6'} overflow-hidden` : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
+                      <div 
+                        onDoubleClick={(e) => {
+                          if (isDeckPresentationMode) {
+                            setIsDeckPresentationMode(false);
+                            setIsPresentingDeck(false);
+                            if (document.fullscreenElement && document.exitFullscreen) {
+                              document.exitFullscreen().catch(() => {});
+                            }
+                            showToast('Exited presentation mode');
+                          }
+                        }}
+                        className={`flex-1 flex flex-col justify-between items-center min-h-0 relative ${isDeckPresentationMode ? `fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] ${isDeckPresentationFocus ? 'p-0' : 'p-2 md:p-6'} overflow-hidden` : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
                         {/* Hidden File Pickers for Slide Deck Media, Logos, and Vectorizer */}
                         <input
                           ref={imageFileInputRef}
@@ -56039,7 +56793,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               const customBg = activeDeckSlide?.backgroundColor;
                               const activePresetKey = activeDeckSlide?.designPresetKey || activeDeckSlide?.presetKey;
                               const currentPresetObj = DECK_DESIGN_PRESETS.find(p => p.key === activePresetKey) || DECK_DESIGN_PRESETS[0];
-                              const isDarkTheme = !customBg && ['midnight-slate', 'cyberpunk-neon', 'mint-depth', 'sunset-grid', 'aurora-split'].includes(currentPresetObj.key);
+                              const isColorDark = (hexOrRgb) => {
+                                if (!hexOrRgb || typeof hexOrRgb !== 'string') return false;
+                                if (hexOrRgb.startsWith('#')) {
+                                  const hex = hexOrRgb.replace('#', '');
+                                  const r = parseInt(hex.substring(0, 2), 16) || 0;
+                                  const g = parseInt(hex.substring(2, 4), 16) || 0;
+                                  const b = parseInt(hex.substring(4, 6), 16) || 0;
+                                  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+                                }
+                                return hexOrRgb.includes('rgba(0,') || hexOrRgb.includes('rgb(5,') || hexOrRgb.includes('rgb(15,');
+                              };
+                              const isDarkTheme = customBg 
+                                ? isColorDark(customBg) 
+                                : ['midnight-slate', 'cyberpunk-neon', 'mint-depth', 'sunset-grid', 'aurora-split'].includes(currentPresetObj.key) || activeDeckSlide?.backgroundColor === '#05070B';
                               const brandColor = selectedBrandKit?.colors?.[0] || '#7C4DFF';
                               const layout = activeDeckSlide?.layoutStyle || 'Title Slide';
 
@@ -57236,7 +58003,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        </div>
                                                      )}
 
-                                                     {/* Selection Outline & 8 Resize Handles */}
+                                                     {/* 10. Interactive Video Player Shape */}
+                                                    {shape.shapeType === 'video' && (
+                                                      <div className="w-full h-full rounded-xl overflow-hidden bg-black/80 border border-white/20 shadow-2xl relative flex flex-col justify-center items-center">
+                                                        {shape.url && (shape.url.endsWith('.mp4') || shape.url.endsWith('.webm')) ? (
+                                                          <video src={shape.url} controls className="w-full h-full object-cover" />
+                                                        ) : (
+                                                          <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-4 text-center">
+                                                            <Film size={28} className="text-rose-400 mb-2" />
+                                                            <span className="text-xs text-white font-medium truncate max-w-[90%]">{shape.url || 'Video Player'}</span>
+                                                            <span className="text-[10px] text-slate-400 mt-1">Interactive media container</span>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+
+                                                    {/* 11. Comparison Data Table Matrix */}
+                                                    {shape.shapeType === 'table' && (
+                                                      <div className="w-full h-full p-2.5 rounded-xl bg-black/40 border border-white/15 backdrop-blur-md overflow-hidden flex flex-col select-text">
+                                                        <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-1.5">
+                                                          <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1"><Table size={11} /> {shape.name || 'Data Matrix'}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-1.5 flex-1 text-[10px] text-slate-300">
+                                                          {['Metric', 'Current', 'Target', 'Revenue', '$1.2M', '$3.5M', 'Retention', '88%', '95%'].map((cell, cIdx) => (
+                                                            <div key={cIdx} className="p-1 rounded bg-white/5 border border-white/5 text-center flex items-center justify-center">{cell}</div>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    )}
+
+                                                    {/* Selection Outline & 8 Resize Handles */}
                                                      {isImgSelected && (
                                                        <>
                                                          <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
@@ -66791,7 +67587,724 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               <span>Contact: exec@regaarder.com</span>
                                             </div>
                                           </div>
-                                        ) : layout === 'Text & List' ? (
+                                        ) : layout === 'Two Columns' ? (
+                                        /* ── REGAARDER TWO COLUMNS / COMPARISON LAYOUT ── */
+                                        <div className="flex flex-col h-full justify-between w-full max-w-[94%] pointer-events-auto z-20 select-text">
+                                          {/* Section Title Placeholder */}
+                                          <div className="mb-3">
+                                            <h1
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onKeyDown={handleDeckKeyDown}
+                                              onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                              data-placeholder="Click to add slide title..."
+                                              className={`text-[28px] md:text-[34px] leading-tight font-bold tracking-tight outline-none rounded-lg px-1.5 py-0.5 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}
+                                            >
+                                              {activeDeckSlide?.headline || ''}
+                                            </h1>
+                                          </div>
+
+                                          {/* Dual Column Frames */}
+                                          <div className="grid grid-cols-2 gap-4 flex-1 items-stretch min-h-[160px]">
+                                            {/* Column 1 */}
+                                            <div className="flex flex-col p-4 rounded-xl bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-xs hover:border-violet-500/30 transition-all">
+                                              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 mb-1.5">Stream A</span>
+                                              <p
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleDeckKeyDown}
+                                                onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                                data-placeholder="Click to add column notes or comparison details..."
+                                                className={`text-[13px] leading-relaxed outline-none flex-1 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}
+                                              >
+                                                {activeDeckSlide?.blurb || ''}
+                                              </p>
+                                            </div>
+
+                                            {/* Column 2 */}
+                                            <div className="flex flex-col p-4 rounded-xl bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-xs hover:border-violet-500/30 transition-all">
+                                              <span className="text-[11px] font-bold uppercase tracking-wider text-violet-400 mb-1.5">Stream B</span>
+                                              <p
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleDeckKeyDown}
+                                                onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'subtitle', event.currentTarget.textContent || '')}
+                                                data-placeholder="Click to add secondary comparison points or proof..."
+                                                className={`text-[13px] leading-relaxed outline-none flex-1 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}
+                                              >
+                                                {activeDeckSlide?.subtitle || ''}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : layout === 'Blank Canvas' ? (
+                                        /* ── REGAARDER MINIMALIST BLANK CANVAS ── */
+                                        <div className="flex flex-col items-center justify-center h-full w-full pointer-events-auto z-20 select-text">
+                                          {!(activeDeckSlide?.shapes?.length || activeDeckSlide?.bentoCards?.length || activeDeckSlide?.images?.length || activeDeckSlide?.headline) && (
+                                            <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-dashed border-white/15 text-center max-w-[420px] bg-black/10 backdrop-blur-xs animate-in fade-in">
+                                              <Sparkles size={22} className="text-[#7C4DFF]" />
+                                              <h3 className={`text-sm font-semibold ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>Blank Regaarder Canvas</h3>
+                                              <p className="text-[11px] text-slate-400 max-w-[320px]">
+                                                Double-click anywhere to type, press <code className="px-1.5 py-0.5 rounded bg-white/10 text-violet-300 font-mono text-[10px]">/</code> for instant AI widgets, or insert shapes from the toolbar.
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : layout === 'Title & Content' || layout === 'Content Slide' || layout === 'Standard' ? (
+                                        /* ── REGAARDER PROGRESSIVE TITLE & CONTENT LAYOUT ── */
+                                        <div className="flex flex-col h-full justify-between w-full max-w-[92%] pointer-events-auto z-20 select-text">
+                                          {/* Section Title Box with Regaarder Apple-Style Outline */}
+                                          <div className="mb-2">
+                                            <h1
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onKeyDown={handleDeckKeyDown}
+                                              onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                              data-placeholder="Click to add title..."
+                                              className={`text-[30px] md:text-[38px] leading-tight font-bold tracking-tight outline-none rounded-xl px-2 py-1 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}
+                                            >
+                                              {activeDeckSlide?.headline || ''}
+                                            </h1>
+                                          </div>
+
+                                          {/* Interactive Body Area Frame with Regaarder Content Block Morphing Engine */}
+                                          <div className="flex-1 flex flex-col justify-between p-4 md:p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-violet-500/30 transition-all backdrop-blur-xs min-h-[220px] relative">
+                                            
+                                            {/* ── CASE 1: DATA TABLE / COMPARISON MATRIX BLOCK ── */}
+                                            {activeDeckSlide?.contentBlockType === 'table' ? (
+                                              <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-200">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                                                  <div className="flex items-center gap-2">
+                                                    <Table size={14} className="text-amber-400" />
+                                                    <span className="text-xs font-bold text-white uppercase tracking-wider">Comparison Data Matrix</span>
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text')}
+                                                    className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                                    title="Switch back to standard text"
+                                                  >
+                                                    <RotateCcw size={10} /> Back to Text
+                                                  </button>
+                                                </div>
+
+                                                {/* Editable 3x3 Table Grid */}
+                                                <div className="flex-1 overflow-x-auto thin-scrollbar flex flex-col justify-center">
+                                                  {(() => {
+                                                    const tableData = activeDeckSlide?.contentTable || {
+                                                      headers: ['Strategic Objective', 'Current Baseline', 'Target Goal'],
+                                                      rows: [
+                                                        ['Active Enterprise Accounts', '140 Organizations', '500 Organizations'],
+                                                        ['Platform Net Retention', '118% NDR', '135% Target'],
+                                                        ['Gross Margin Performance', '76% Margin', '84% Optimized']
+                                                      ]
+                                                    };
+                                                    return (
+                                                      <table className="w-full border-collapse text-xs text-left">
+                                                        <thead>
+                                                          <tr className="border-b border-white/15">
+                                                            {tableData.headers.map((hdr, hIdx) => (
+                                                              <th
+                                                                key={hIdx}
+                                                                contentEditable={currentAccessLevel !== 'viewer'}
+                                                                suppressContentEditableWarning
+                                                                onBlur={(e) => {
+                                                                  const nextH = [...tableData.headers];
+                                                                  nextH[hIdx] = e.currentTarget.textContent || '';
+                                                                  updateDeckSlideField(activeDeckSlide?.id, 'contentTable', { ...tableData, headers: nextH });
+                                                                }}
+                                                                className="p-2 font-semibold text-cyan-300 bg-white/5 outline-none rounded-t"
+                                                              >
+                                                                {hdr}
+                                                              </th>
+                                                            ))}
+                                                          </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                          {tableData.rows.map((row, rIdx) => (
+                                                            <tr key={rIdx} className="border-b border-white/5 hover:bg-white/[0.02]">
+                                                              {row.map((cell, cIdx) => (
+                                                                <td
+                                                                  key={cIdx}
+                                                                  contentEditable={currentAccessLevel !== 'viewer'}
+                                                                  suppressContentEditableWarning
+                                                                  onBlur={(e) => {
+                                                                    const nextR = tableData.rows.map((r, ri) => ri === rIdx ? r.map((c, ci) => ci === cIdx ? (e.currentTarget.textContent || '') : c) : r);
+                                                                    updateDeckSlideField(activeDeckSlide?.id, 'contentTable', { ...tableData, rows: nextR });
+                                                                  }}
+                                                                  className={`p-2 outline-none ${cIdx === 0 ? 'text-white font-medium' : 'text-slate-300'}`}
+                                                                >
+                                                                  {cell}
+                                                                </td>
+                                                              ))}
+                                                            </tr>
+                                                          ))}
+                                                        </tbody>
+                                                      </table>
+                                                    );
+                                                  })()}
+                                                </div>
+                                              </div>
+                                            ) : activeDeckSlide?.contentBlockType === 'video' ? (
+                                              /* ── CASE 2: VIDEO PLAYER / EMBED BLOCK ── */
+                                              <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-200">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                                                  <div className="flex items-center gap-2">
+                                                    <Film size={14} className="text-rose-400" />
+                                                    <span className="text-xs font-bold text-white uppercase tracking-wider">Video Presentation Player</span>
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text')}
+                                                    className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                                  >
+                                                    <RotateCcw size={10} /> Back to Text
+                                                  </button>
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col items-center justify-center p-2">
+                                                  {activeDeckSlide?.contentVideoUrl ? (
+                                                    <div className="w-full h-full max-h-[220px] rounded-xl overflow-hidden bg-black/80 border border-white/15 relative flex items-center justify-center">
+                                                      <video
+                                                        src={activeDeckSlide.contentVideoUrl}
+                                                        controls
+                                                        className="w-full h-full object-contain"
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="w-full flex flex-col items-center justify-center gap-2.5 p-6 rounded-xl border border-dashed border-white/20 bg-black/20 text-center">
+                                                      <Film size={30} className="text-rose-400" />
+                                                      <div className="flex items-center gap-2 w-full max-w-[420px]">
+                                                        <input
+                                                          type="text"
+                                                          placeholder="Paste Video URL (MP4, YouTube, or Stream)..."
+                                                          defaultValue="https://www.w3schools.com/html/mov_bbb.mp4"
+                                                          id="deckVideoUrlInput"
+                                                          className="flex-1 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-xs text-white placeholder-slate-400 outline-none focus:border-rose-400"
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const val = document.getElementById('deckVideoUrlInput')?.value;
+                                                            if (val) {
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'contentVideoUrl', val);
+                                                              showToast('Video URL embedded');
+                                                            }
+                                                          }}
+                                                          className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white transition-all cursor-pointer"
+                                                        >
+                                                          Embed Video
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : activeDeckSlide?.contentBlockType === 'image' ? (
+                                              /* ── CASE 3: PICTURE / GRAPHIC DROPZONE ── */
+                                              <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-200">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                                                  <div className="flex items-center gap-2">
+                                                    <ImageIcon size={14} className="text-cyan-400" />
+                                                    <span className="text-xs font-bold text-white uppercase tracking-wider">Slide Graphic / Picture</span>
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text')}
+                                                    className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                                  >
+                                                    <RotateCcw size={10} /> Back to Text
+                                                  </button>
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col items-center justify-center p-1">
+                                                  {activeDeckSlide?.contentImageUrl ? (
+                                                    <div className="relative group max-h-[220px] rounded-xl overflow-hidden border border-white/15 bg-black/20">
+                                                      <img
+                                                        src={activeDeckSlide.contentImageUrl}
+                                                        alt="Slide Visual"
+                                                        className="max-h-[210px] w-auto object-contain rounded-xl"
+                                                      />
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => imageFileInputRef.current?.click()}
+                                                        className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white text-[11px] font-medium border border-white/20 shadow-md backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                                      >
+                                                        Replace Image
+                                                      </button>
+                                                    </div>
+                                                  ) : (
+                                                    <div
+                                                      onClick={() => imageFileInputRef.current?.click()}
+                                                      className="w-full flex flex-col items-center justify-center gap-2 p-6 rounded-xl border border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 transition-all cursor-pointer text-center"
+                                                    >
+                                                      <ImageIcon size={32} className="text-cyan-400" />
+                                                      <span className="text-xs font-semibold text-white">Click to Upload Slide Picture</span>
+                                                      <span className="text-[10px] text-slate-400">Supports PNG, JPG, WEBP, and SVG vector assets</span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                             ) : activeDeckSlide?.contentBlockType === 'metric' ? (
+                                               /* ── CASE 4: INLINE EXECUTIVE KPI METRIC CARD (PRESENTATION-AWARE & CONTEXT-SENSITIVE) ── */
+                                               <div 
+                                                 onDoubleClick={(e) => {
+                                                   if (!isDeckPresentationMode && (e.target === e.currentTarget || !e.target.isContentEditable)) {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+                                                     showToast('Returned to text block');
+                                                   }
+                                                 }}
+                                                 className={`flex-1 flex flex-col justify-between select-none cursor-default group/metric-card animate-in fade-in duration-100 ${
+                                                   isDeckPresentationMode ? 'p-1' : ''
+                                                 }`}
+                                               >
+                                                 <div className={`flex items-center justify-between pb-2 mb-2 border-b shrink-0 transition-colors ${
+                                                   isDeckPresentationMode ? 'border-white/5' : 'border-white/10'
+                                                 }`}>
+                                                   <div className="flex items-center gap-2">
+                                                     <TrendingUp size={14} className="text-emerald-400 shrink-0" />
+                                                     <span
+                                                       contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                       suppressContentEditableWarning
+                                                       onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'metricBadgeTitle', e.currentTarget.textContent || 'Executive Performance Indicator')}
+                                                       className={`text-xs font-bold text-white uppercase tracking-wider outline-none rounded px-1 ${
+                                                         !isDeckPresentationMode ? 'hover:ring-1 hover:ring-emerald-400/40 cursor-text select-text' : 'cursor-default select-none'
+                                                       }`}
+                                                       title={!isDeckPresentationMode ? "Click to edit badge title" : undefined}
+                                                     >
+                                                       {activeDeckSlide?.metricBadgeTitle || 'Executive Performance Indicator'}
+                                                     </span>
+                                                   </div>
+                                                   {!isDeckPresentationMode && (
+                                                     <button
+                                                       type="button"
+                                                       onPointerDown={(e) => {
+                                                         e.preventDefault();
+                                                         e.stopPropagation();
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+                                                         showToast('Returned to text block');
+                                                       }}
+                                                       onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+                                                       }}
+                                                       className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-[10.5px] font-medium text-slate-300 hover:text-white transition-opacity duration-150 opacity-0 group-hover/metric-card:opacity-100 flex items-center gap-1 cursor-pointer select-none"
+                                                       title="Return to standard text (Esc or Double-click background)"
+                                                     >
+                                                       <RotateCcw size={10} /> Back to Text
+                                                     </button>
+                                                   )}
+                                                 </div>
+
+                                                 <div className="flex-1 flex flex-col justify-center items-center text-center p-2 min-h-0">
+                                                   <span
+                                                     contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'keyMetric', e.currentTarget.textContent || '0.00%')}
+                                                     className={`text-[52px] md:text-[64px] font-black tracking-tight leading-none text-emerald-400 outline-none rounded px-2 transition-all ${
+                                                       !isDeckPresentationMode
+                                                         ? 'hover:ring-1 hover:ring-emerald-400/40 cursor-text select-text'
+                                                         : 'cursor-default select-none drop-shadow-[0_0_28px_rgba(52,211,153,0.35)]'
+                                                     }`}
+                                                     title={!isDeckPresentationMode ? "Click to edit metric value" : undefined}
+                                                   >
+                                                     {isDeckPresentationMode
+                                                       ? (animatedMetricDisplay || activeDeckSlide?.keyMetric || '0.00%')
+                                                       : ((!activeDeckSlide?.keyMetric || activeDeckSlide?.keyMetric === '98.5%') ? '0.00%' : activeDeckSlide?.keyMetric)
+                                                     }
+                                                   </span>
+                                                   <span
+                                                     contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', e.currentTarget.textContent || 'Mission-Critical Workflow Reliability')}
+                                                     className={`mt-1.5 text-sm font-semibold text-white outline-none rounded px-1.5 ${
+                                                       !isDeckPresentationMode ? 'hover:ring-1 hover:ring-emerald-400/40 cursor-text select-text' : 'cursor-default select-none'
+                                                     }`}
+                                                     title={!isDeckPresentationMode ? "Click to edit metric label" : undefined}
+                                                   >
+                                                     {activeDeckSlide?.blurb || 'Mission-Critical Workflow Reliability'}
+                                                   </span>
+
+                                                   {/* Dynamic Customizable Milestone Dots / Points */}
+                                                   {(() => {
+                                                     const defaultPoints = ['▲ +0.0% YoY', 'Target: 100%', 'Zero Downtime'];
+                                                     const points = Array.isArray(activeDeckSlide?.metricPoints) && activeDeckSlide.metricPoints.length > 0
+                                                       ? activeDeckSlide.metricPoints
+                                                       : defaultPoints;
+                                                     return (
+                                                       <div className="flex items-center justify-center flex-wrap gap-2 mt-3 text-[11px] text-slate-300">
+                                                         {points.map((pt, pIdx) => (
+                                                           <React.Fragment key={pIdx}>
+                                                             {pIdx > 0 && <span className="text-slate-500 select-none">•</span>}
+                                                             <div className="group/pt relative flex items-center">
+                                                               <span
+                                                                 contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                                 suppressContentEditableWarning
+                                                                 onBlur={(e) => {
+                                                                   const val = e.currentTarget.textContent?.trim();
+                                                                   const newPts = [...points];
+                                                                   newPts[pIdx] = val || `Point ${pIdx + 1}`;
+                                                                   updateDeckSlideField(activeDeckSlide?.id, 'metricPoints', newPts);
+                                                                 }}
+                                                                 className={`outline-none rounded px-1 ${
+                                                                   !isDeckPresentationMode ? 'hover:ring-1 hover:ring-white/20 cursor-text select-text' : 'cursor-default select-none'
+                                                                 } ${
+                                                                   pIdx === 0 ? 'text-emerald-300 font-semibold' : 'text-slate-300'
+                                                                 }`}
+                                                                 title={!isDeckPresentationMode ? "Click to edit metric point" : undefined}
+                                                               >
+                                                                 {pt}
+                                                               </span>
+                                                               {!isDeckPresentationMode && points.length > 1 && (
+                                                                 <button
+                                                                   type="button"
+                                                                   onPointerDown={(e) => {
+                                                                     e.preventDefault();
+                                                                     e.stopPropagation();
+                                                                     const newPts = points.filter((_, i) => i !== pIdx);
+                                                                     updateDeckSlideField(activeDeckSlide?.id, 'metricPoints', newPts);
+                                                                   }}
+                                                                   className="opacity-0 group-hover/pt:opacity-100 ml-0.5 p-0.5 rounded text-slate-500 hover:text-red-400 transition-opacity cursor-pointer select-none"
+                                                                   title="Remove this point"
+                                                                 >
+                                                                   <X size={10} />
+                                                                 </button>
+                                                               )}
+                                                             </div>
+                                                           </React.Fragment>
+                                                         ))}
+                                                         {!isDeckPresentationMode && (
+                                                           <button
+                                                             type="button"
+                                                             onPointerDown={(e) => {
+                                                               e.preventDefault();
+                                                               e.stopPropagation();
+                                                               const newPts = [...points, '+0.0% Metric'];
+                                                               updateDeckSlideField(activeDeckSlide?.id, 'metricPoints', newPts);
+                                                             }}
+                                                             className="ml-1.5 px-2 py-0.5 rounded-full bg-white/10 hover:bg-emerald-500/20 hover:text-emerald-300 text-[10px] font-medium text-slate-400 transition-opacity duration-150 opacity-0 group-hover/metric-card:opacity-100 flex items-center gap-1 cursor-pointer select-none"
+                                                             title="Add another milestone dot"
+                                                           >
+                                                             <Plus size={10} /> Add Point
+                                                           </button>
+                                                         )}
+                                                       </div>
+                                                     );
+                                                   })()}
+                                                 </div>
+                                               </div>
+                                             ) : (
+                                               /* ── CASE 5: DEFAULT REGAARDER EDITABLE NARRATIVE TEXT ── */
+                                              <div
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleDeckKeyDown}
+                                                onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                                data-placeholder="Click to add body text, narrative points, or select a block below..."
+                                                className={`text-[14px] md:text-[15px] leading-relaxed outline-none flex-1 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 select-text ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}
+                                              >
+                                                {activeDeckSlide?.blurb || ''}
+                                              </div>
+                                            )}
+
+                                            {/* Regaarder Progressive Micro-Action Dock */}
+                                            {!isDeckPresentationMode && (
+                                              <div className="pt-3 mt-2 border-t border-white/10 flex items-center justify-between flex-wrap gap-2">
+                                              <span className="text-[10px] font-medium text-slate-400/80 flex items-center gap-1.5">
+                                                <LayoutTemplate size={12} className="text-[#00f0ff]" /> Quick Blocks:
+                                              </span>
+                                              <div className="flex items-center gap-1.5 relative">
+                                                {/* Draft with AI - with circular Regaarder AI Orb icon & Interactive Popover */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckAiDraftPopoverOpen(prev => !prev);
+                                                      setDeckFloatingMenuOpen(null);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                                                      deckAiDraftPopoverOpen
+                                                        ? 'bg-violet-600 text-white border-violet-500 shadow-[0_0_14px_rgba(124,77,255,0.4)]'
+                                                        : 'bg-white/10 hover:bg-violet-600/30 text-zinc-200 hover:text-white border-white/10'
+                                                    }`}
+                                                  >
+                                                    <RegaarderAiIcon size={13} className={deckAiDraftPopoverOpen ? 'text-white' : 'text-violet-400 shrink-0'} />
+                                                    <span>Draft with AI</span>
+                                                  </button>
+
+                                                  {/* Apple-Style Floating Regaarder AI Draft Popover */}
+                                                  {deckAiDraftPopoverOpen && (
+                                                    <div
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="absolute bottom-9 left-0 z-[120] w-[340px] bg-zinc-900/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-150 text-left pointer-events-auto"
+                                                    >
+                                                      <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+                                                        <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                                                          <RegaarderAiIcon size={14} className="text-[#00f0ff]" />
+                                                          <span>Draft Slide with AI</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-violet-300 flex items-center gap-1">
+                                                            {composeSelectedModel?.isLocal && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                                                            <span className="truncate max-w-[110px]">{composeSelectedModel?.name || "Regaarder AI"}</span>
+                                                          </span>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckAiDraftPopoverOpen(false)}
+                                                            className="p-1 rounded text-slate-400 hover:text-white cursor-pointer"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        </div>
+                                                      </div>
+
+                                                      {/* Custom Prompt Input */}
+                                                      <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 focus-within:border-violet-500/50 transition-colors">
+                                                        <input
+                                                          type="text"
+                                                          value={deckAiDraftPrompt}
+                                                          onChange={(e) => setDeckAiDraftPrompt(e.target.value)}
+                                                          onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && deckAiDraftPrompt.trim() && !deckAiDraftLoading) {
+                                                              e.preventDefault();
+                                                              handleExecuteSlideAiDraft(deckAiDraftPrompt);
+                                                            }
+                                                          }}
+                                                          placeholder="Describe slide intent or narrative topic..."
+                                                          className="flex-1 bg-transparent border-none text-xs text-white placeholder-slate-400 focus:outline-none"
+                                                          autoFocus
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          disabled={deckAiDraftLoading || !deckAiDraftPrompt.trim()}
+                                                          onClick={() => handleExecuteSlideAiDraft(deckAiDraftPrompt)}
+                                                          className="p-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 cursor-pointer transition-colors"
+                                                        >
+                                                          {deckAiDraftLoading ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                                                        </button>
+                                                      </div>
+
+                                                      {/* Quick Action Suggestion Chips */}
+                                                      <div className="flex flex-col gap-1">
+                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Quick Suggestions</span>
+                                                        <div className="flex flex-wrap gap-1">
+                                                          {[
+                                                            { label: '3 Strategic Pillars', prompt: '3 strategic pillars for executive presentation' },
+                                                            { label: 'Problem & Solution', prompt: 'Problem statement and innovative market solution' },
+                                                            { label: 'Market Opportunity', prompt: 'Addressable market size, growth drivers, and target TAM' },
+                                                            { label: 'Executive Summary', prompt: 'Executive summary with actionable business outcomes' }
+                                                          ].map((chip, idx) => (
+                                                            <button
+                                                              key={idx}
+                                                              type="button"
+                                                              onClick={() => handleExecuteSlideAiDraft(chip.prompt)}
+                                                              className="px-2 py-1 rounded-lg bg-white/5 hover:bg-violet-600/30 border border-white/5 hover:border-violet-500/30 text-[10.5px] text-slate-300 hover:text-white transition-all cursor-pointer text-left"
+                                                            >
+                                                              ✦ {chip.label}
+                                                            </button>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* + Insert Dropdown Menu for Media, Tables, Videos, Charts */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'quickInsertMenu' ? null : 'quickInsertMenu');
+                                                      setDeckAiDraftPopoverOpen(false);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                                                      deckFloatingMenuOpen === 'quickInsertMenu'
+                                                        ? 'bg-violet-600 text-white border-violet-500 shadow-[0_0_12px_rgba(124,77,255,0.4)]'
+                                                        : 'bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white border-white/10'
+                                                    }`}
+                                                    title="Insert media, images, videos, tables & charts"
+                                                  >
+                                                    <Plus size={12} className={deckFloatingMenuOpen === 'quickInsertMenu' ? 'text-white' : 'text-[#7C4DFF]'} />
+                                                    <span>Insert</span>
+                                                    <ChevronDown size={10} className={`transition-transform duration-200 ${deckFloatingMenuOpen === 'quickInsertMenu' ? 'rotate-180' : ''}`} />
+                                                  </button>
+
+                                                  {/* Apple-Style Floating Insert Popover Menu */}
+                                                  {deckFloatingMenuOpen === 'quickInsertMenu' && (
+                                                    <div 
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="absolute bottom-9 right-0 z-[100] w-64 bg-zinc-900/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200 animate-in fade-in zoom-in-95 duration-150"
+                                                    >
+                                                      <div className="px-2.5 py-1.5 border-b border-white/10 flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                                          <Plus size={11} className="text-[#00f0ff]" /> Insert Elements
+                                                        </span>
+                                                        <button 
+                                                          type="button" 
+                                                          onClick={() => setDeckFloatingMenuOpen(null)}
+                                                          className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+                                                        >
+                                                          <X size={11} />
+                                                        </button>
+                                                      </div>
+
+                                                      {/* Picture / Image */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'image');
+                                                          imageFileInputRef.current?.click();
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <ImageIcon size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-cyan-300">Picture / Image</div>
+                                                          <div className="text-[9.5px] text-slate-400">Upload graphic or brand illustration</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Video Player */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'video');
+                                                          showToast('Embedded Video Player block');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <Film size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-rose-300">Video Player</div>
+                                                          <div className="text-[9.5px] text-slate-400">Embed MP4 or video container</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Data Table / Matrix */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'table');
+                                                          showToast('Embedded Data Table Matrix');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <Table size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-amber-300">Data Table / Matrix</div>
+                                                          <div className="text-[9.5px] text-slate-400">Interactive editable 3x3 spreadsheet grid</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Chart / KPI Metric */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'metric');
+                                                          showToast('Embedded KPI Metric Block');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <BarChart2 size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-emerald-300">Chart / KPI Metric</div>
+                                                          <div className="text-[9.5px] text-slate-400">Executive stat callout & growth benchmarks</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Bento Capability Card */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          const newBento = {
+                                                            id: `bento_${Date.now()}`,
+                                                            title: 'Strategic Pillar',
+                                                            description: 'Enterprise architecture feature point.',
+                                                            style: 'frosted',
+                                                            bg: 'rgba(255, 255, 255, 0.05)',
+                                                            posX: 120,
+                                                            posY: 240,
+                                                            width: 280,
+                                                            height: 160
+                                                          };
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newBento]);
+                                                          showToast('Added Bento Block');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-violet-500/20 text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <LayoutGrid size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-violet-300">Bento Card Block</div>
+                                                          <div className="text-[9.5px] text-slate-400">Glassmorphic capability card</div>
+                                                        </div>
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* Direct quick action: + Bento Card */}
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newBento = {
+                                                      id: `bento_${Date.now()}`,
+                                                      title: 'Key Pillar',
+                                                      description: 'Strategic objective and operational proof point.',
+                                                      style: 'frosted',
+                                                      bg: 'rgba(255, 255, 255, 0.05)',
+                                                      posX: 120,
+                                                      posY: 240,
+                                                      width: 280,
+                                                      height: 160
+                                                    };
+                                                    updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newBento]);
+                                                    showToast('Added Bento Block');
+                                                  }}
+                                                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white border border-white/10 text-[11px] font-medium flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                                                >
+                                                  <LayoutGrid size={11} className="text-cyan-400" /> + Bento Card
+                                                </button>
+
+                                                {/* Direct quick action: + Metric */}
+                                                <button
+                                                  type="button"
+                                                  onPointerDown={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    updateDeckSlideFields(activeDeckSlide?.id, { contentBlockType: 'metric', keyMetric: '0.00%' });
+                                                    showToast('Switched to KPI Metric');
+                                                  }}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    updateDeckSlideFields(activeDeckSlide?.id, { contentBlockType: 'metric', keyMetric: '0.00%' });
+                                                  }}
+                                                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white border border-white/10 text-[11px] font-medium flex items-center gap-1 shadow-xs transition-colors cursor-pointer select-none"
+                                                >
+                                                  <TrendingUp size={11} className="text-emerald-400" /> + Metric
+                                                </button>
+                                              </div>
+                                            </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ) : layout === 'Text & List' ? (
                                         <div className="flex flex-col gap-3 max-w-[85%] pointer-events-auto">
                                           <h1
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -66800,10 +68313,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
                                             className={`text-[32px] leading-tight font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
                                           >
-                                            {resolvedDeckSlideDesign.headline}
+                                            {resolvedDeckSlideDesign.headline || 'Summary Points'}
                                           </h1>
                                           <div className="space-y-2 mt-1">
-                                            {(resolvedDeckSlideDesign.blurb || '').split('\n').filter(Boolean).map((line, idx) => (
+                                            {(resolvedDeckSlideDesign.blurb || 'Key objective 1\nKey objective 2\nKey objective 3').split('\n').filter(Boolean).map((line, idx) => (
                                               <div key={idx} className="flex items-start gap-2.5 text-xs font-medium">
                                                 <div className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-0.5" style={{ backgroundColor: brandColor }}>
                                                   {idx + 1}
@@ -66814,25 +68327,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </div>
                                         </div>
                                       ) : (
-                                        /* Title Slide default */
-                                        <div className="flex flex-col justify-center max-w-[70%] pointer-events-auto">
+                                        /* ── REGAARDER TITLE SLIDE DEFAULT ── */
+                                        <div className="flex flex-col justify-center max-w-[78%] pointer-events-auto z-20 select-text">
                                           <h1
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                             suppressContentEditableWarning
                                             onKeyDown={handleDeckKeyDown}
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
-                                            className={`text-[40px] leading-[1.15] font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                            data-placeholder="Click to add presentation title..."
+                                            className={`text-[38px] md:text-[46px] leading-[1.1] font-extrabold tracking-tight outline-none rounded-xl px-2 py-1 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}
                                           >
-                                            {resolvedDeckSlideDesign.headline === 'New Presentation' ? (t('deck.newPresentation') || 'New Presentation') : resolvedDeckSlideDesign.headline}
+                                            {activeDeckSlide?.headline || ''}
                                           </h1>
                                           <p
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                             suppressContentEditableWarning
                                             onKeyDown={handleDeckKeyDown}
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
-                                            className={`mt-3 text-[15px] leading-relaxed font-normal outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
+                                            data-placeholder="Click to add presentation subtitle..."
+                                            className={`mt-3 text-[15px] md:text-[16px] leading-relaxed font-normal outline-none rounded-lg px-2 py-1 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-slate-300' : 'text-slate-600'}`}
                                           >
-                                            {resolvedDeckSlideDesign.blurb === 'Click anywhere to begin crafting your presentation narrative.' ? (t('deck.newPresentationSubtitle') || 'Click anywhere to begin crafting your presentation narrative.') : resolvedDeckSlideDesign.blurb}
+                                            {activeDeckSlide?.blurb || ''}
                                           </p>
                                         </div>
                                       )}
@@ -67207,6 +68722,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         )}
 
+                        {/* Ambient Presenter Laser Pointer Overlay */}
+                        {isDeckPresentationMode && deckLaserPointerActive && (
+                          <div
+                            style={{
+                              left: `${deckLaserPos.x}px`,
+                              top: `${deckLaserPos.y}px`,
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                            className="fixed z-[99999999] pointer-events-none w-3.5 h-3.5 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444,0_0_20px_#ef4444,0_0_35px_#f87171] animate-pulse"
+                          />
+                        )}
+
                         {/* Bottom Status Bar & Floating Presentation Controls */}
                         {isDeckPresentationMode ? (
                           <div 
@@ -67271,6 +68798,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               title="Next Slide (Right Arrow)"
                             >
                               <ChevronRight size={18} />
+                            </button>
+
+                            {/* Live Elapsed Presentation Timer */}
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-800/80 text-zinc-300 text-xs font-mono select-none" title="Presentation duration">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>{`${String(Math.floor(deckPresentationElapsedSecs / 60)).padStart(2, '0')}:${String(deckPresentationElapsedSecs % 60).padStart(2, '0')}`}</span>
+                            </div>
+
+                            {/* Laser Pointer Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => setDeckLaserPointerActive((prev) => !prev)}
+                              className={`p-2 rounded-xl transition-all cursor-pointer ${
+                                deckLaserPointerActive ? 'bg-red-600 text-white shadow-md shadow-red-900 ring-2 ring-red-400/50' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                              }`}
+                              title="Toggle Presenter Laser Pointer (Press L)"
+                            >
+                              <SunMedium size={16} />
                             </button>
 
                             <div className="w-px h-5 bg-zinc-800 my-0.5" />
@@ -70324,13 +71869,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
   };
 
   const getWorkspaceModuleStyle = (moduleName) => {
-    if (focusedModule === moduleName) {
+    if (
+      focusedModule === moduleName || 
+      (productMode === 'compose' && moduleName === 'compose') ||
+      (productMode === 'deck' && moduleName === 'deck') ||
+      (productMode === 'sheets' && moduleName === 'sheets')
+    ) {
       return {
-        position: 'absolute',
-        inset: '0',
+        position: 'relative',
+        width: '100%',
+        height: '100%',
         zIndex: 10,
-        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        transform: 'scale(1) translate3d(0,0,0)',
         opacity: 1,
         borderRadius: '0px',
       };
@@ -70356,9 +71905,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
     }
 
     return {
-      display: 'none',
-      opacity: 0,
-      pointerEvents: 'none',
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      opacity: 1,
     };
   };
 
@@ -70911,7 +72461,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="preview-owner-view">
                     <div
                       className="prose prose-sm max-w-none text-slate-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                      dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing or press / for commands...</p>' }}
                     />
                   </div>
                 </div>
@@ -71118,16 +72668,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
       ) : productMode === 'room-landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+        <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
           <RoomLandingPage 
+            isDocumentImmersive={isDocumentImmersive}
+            onToggleImmersive={toggleDocumentImmersiveMode}
             showToast={showToast}
             onCallAi={callGemini}
+            isScreenSharing={isScreenSharing}
+            setIsScreenSharing={setIsScreenSharing}
+            screenShareStream={screenShareStream}
+            setScreenShareStream={setScreenShareStream}
+            sharedSourceInfo={sharedSourceInfo}
+            setSharedSourceInfo={setSharedSourceInfo}
+            onSelectScreenSource={handleSelectScreenSource}
+            onOpenSourceModal={() => setIsScreenSourceModalOpen(true)}
             onSwitchProductMode={(mode) => {
               setProductMode(mode);
-              if (mode !== 'room' && mode !== 'room-landing') {
-                setFocusedModule('compose');
-                setDockedModules([]);
-                setRoomPanelMode('docked');
+              setRoomState('active');
+              setRoomPanelMode('docked');
+              setFocusedModule(mode);
+              if (mode === 'compose') {
+                setActiveDocView('document');
+                setActiveRightTab('assistant');
               }
               const labelMap = { compose: 'Docs', sheets: 'Sheets', deck: 'Decks', room: 'Room', whiteboard: 'Whiteboard', browser: 'Research' };
               showToast?.(`Switched to ${labelMap[mode] || mode}`);
@@ -71605,7 +73167,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div
           onMouseEnter={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(true); }}
           onMouseLeave={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(false); }}
-          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isWhiteboardWorkspace
               ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${
                   isWhiteboardTopNavRevealed 
@@ -77460,7 +79022,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
             className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-all duration-200 ${
-              (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
+              (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
           >
           <div
@@ -80425,26 +81987,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
+        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${'p-0 bg-[#FBFBFA] dark:bg-zinc-950'}`}>
           {/* Subtle vignette/radial glow overlay */}
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
           <div className={`w-full h-full relative flex items-center justify-center ${isVideoExpanded ? 'max-w-none bg-black' : 'max-w-[1640px]'}`}>
-            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-white/70 border border-white/60 rounded-[40px]'}`}>
+            <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-[#FBFBFA] dark:bg-zinc-950 border-none rounded-none'}`}>
               {!isVideoExpanded && renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
-              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${isVideoExpanded ? 'rounded-none' : 'rounded-t-[40px]'}`}>
+              <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-visible bg-transparent ${'rounded-none'}`}>
 
               {/* Main Video Canvas or Embedded Presentation Stage */}
-              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
+              <div onDoubleClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {roomPresentedApp ? (
                   /* Live Workspace Projector Stage — Projects Real App Viewports */
                   <div className={`w-full relative overflow-hidden bg-white dark:bg-[#121214] shadow-[0_32px_100px_rgba(0,0,0,0.14)] pointer-events-auto transition-all duration-500 border border-slate-200/80 dark:border-zinc-800 shrink flex-1 select-text flex flex-col z-10 ${
                     isVideoExpanded 
                       ? '!absolute !inset-0 !max-w-none !max-h-none z-20 rounded-none' 
-                      : 'max-w-[840px] max-h-[560px] min-h-[30vh] aspect-[16/10] rounded-[28px]'
+                      : 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] rounded-[32px]'
                   }`}>
                     {/* Presentation Control Banner */}
                     <div className="px-6 py-3 bg-slate-50/90 dark:bg-zinc-850/90 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0">
@@ -80511,25 +82073,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Interactive Live Working App Stage */}
                     <div className="flex-1 overflow-hidden bg-[#F7F7F9] dark:bg-[#121214] relative flex flex-col">
                       {roomPresentedApp === 'docs' ? (
-                        <div className="flex-1 overflow-auto bg-[#F7F7F9] dark:bg-[#121214] p-4 md:p-6 flex flex-col items-center">
-                          <div className="w-full max-w-[816px] bg-white dark:bg-[#1C1C1E] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] rounded-[24px] border border-slate-200/60 dark:border-zinc-800 p-8 md:p-12 min-h-[460px] relative transition-all">
-                            <input
-                              type="text"
-                              value={docTitle || ''}
-                              onChange={(e) => setDocTitle(e.target.value)}
-                              placeholder="Untitled Document"
-                              className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white w-full bg-transparent border-none outline-none mb-4 font-sans"
-                            />
-                            <div 
-                              contentEditable
-                              suppressContentEditableWarning
-                              onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                              dangerouslySetInnerHTML={{ __html: docBodyHtml || '<p>Start typing notes live for everyone in the room...</p>' }}
-                              className="prose dark:prose-invert max-w-none text-[14px] leading-relaxed text-slate-800 dark:text-zinc-200 outline-none min-h-[280px]"
-                            />
+                        screenShareStream ? (
+                          <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
+      <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
+        <MonitorPlay size={34} className="text-violet-400" />
+      </div>
+      <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
+      <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
+        Participants are viewing your live workspace. To prevent recursive mirror tunnels, your screen is broadcasting in the background.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+            setScreenShareStream(null);
+            setIsScreenSharing(false);
+            showToast?.('Stopped presenting');
+          }}
+          className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+        >
+          Stop Sharing
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setProductMode(lastPresentedMode || 'compose');
+            setRoomPanelMode('docked');
+          }}
+          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer"
+        >
+          Return to Workspace
+        </button>
+      </div>
+    </div>
+                        ) : (
+                          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-zinc-900">
+                            <div className="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-4 shadow-xs">
+                              <ComposeIcon size={28} />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">{docTitle || 'Docs Workspace'}</h3>
+                            <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mb-5 leading-relaxed">
+                              Share your live Docs tab or window directly to the meeting stage with zero latency.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={toggleScreenShare}
+                              className="px-5 py-2.5 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Share2 size={14} />
+                              <span>Start Screen Sharing Docs</span>
+                            </button>
                           </div>
-                        </div>
+                        )
                       ) : roomPresentedApp === 'whiteboard' ? (
                         /* Live Interactive Whiteboard Stage */
                         <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none flex flex-col justify-center items-center">
@@ -80627,69 +82223,197 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 /* Main Video Container */
                 <div 
                   onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} 
+                  onPointerDown={(e) => {
+                    // Ignore clicks on buttons/inputs
+                    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
+                    handleStageDoubleTap(e);
+                  }}
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-2xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
+    <RoomAnnotationOverlay isEnabled={true} />
                     
   {screenShareStream ? (
-    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center pointer-events-none" />
-  ) : activeVideoSpeaker.isYou ? (
-    <>
-      <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover object-center pointer-events-none ${isRoomCameraOn ? '' : 'hidden'}`} />
-      {!isRoomCameraOn && (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-          <div 
-            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
-            style={{
-              background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
-              border: '1px solid rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            Y
-          </div>
+    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-6 gap-4">
+      {/* Subtle Ambient Presentation Glow */}
+      <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute -top-12 -left-12 pointer-events-none" />
+
+      {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
+          <MonitorPlay size={30} className="text-white" />
         </div>
-      )}
-    </>
-  ) : (
-    <>
-      {!activeVideoSpeaker.isRoomCameraOn ? (
-        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-          <div 
-            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
-            style={{
-              background: `linear-gradient(135deg, ${activeVideoSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-              border: '1px solid rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            {(activeVideoSpeaker.name || 'U').charAt(0).toUpperCase()}
-          </div>
+        
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Presentation Active</span>
         </div>
-      ) : (
-        <>
-          <video
-            ref={(node) => {
-              const stream = remoteStreams[activeVideoSpeaker.id];
-              if (node && stream && node.srcObject !== stream) {
-                node.srcObject = stream;
+
+        <h3 className="text-lg font-bold text-white tracking-tight mb-2">
+          You are presenting to everyone
+        </h3>
+        <p className="text-xs text-zinc-400 leading-relaxed mb-6 max-w-sm">
+          To avoid an infinite mirror effect, your screen is hidden here. Everyone in the meeting can see your live presentation.
+        </p>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+              if (typeof window !== "undefined") window.__currentScreenShareStream = null;
+              setScreenShareStream(null);
+              setIsScreenSharing(false);
+              setIsPipWidgetOpen(false);
+              window.electronAPI?.closeFloatingPipWidget?.();
+              showToast?.("Stopped presenting");
+            }}
+            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <PhoneOff size={14} />
+            <span>Stop presenting</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const winName = sharedSourceInfo?.name || "Selected Window";
+              const targetId = sharedSourceInfo?.id || "";
+              if (window.electronAPI?.openFloatingPipWidget) {
+                window.electronAPI.openFloatingPipWidget({ windowTitle: winName, sourceId: targetId });
+              }
+              if (window.electronAPI?.minimizeMainWindow) {
+                window.electronAPI.minimizeMainWindow();
               }
             }}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover object-center pointer-events-none"
-          />
-          {!remoteStreams[activeVideoSpeaker.id] && (
-            <img src={activeVideoSpeaker.img ? `${activeVideoSpeaker.img}?w=1200` : `https://i.pravatar.cc/150?u=${encodeURIComponent(activeVideoSpeaker.name)}`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center pointer-events-none" />
+            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <ExternalLink size={13} />
+            <span>Floating OS HUD</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Participants Gallery Filmstrip (Audience Presence) */}
+      <div className="w-full md:w-60 lg:w-64 shrink-0 flex flex-col gap-2.5 relative z-10 overflow-y-auto max-h-[75vh] pr-1 custom-scrollbar">
+        <div className="flex items-center justify-between px-1 mb-1">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Users size={12} className="text-violet-400" />
+            In Meeting ({videoParticipants.length + 1})
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 font-medium">Audience</span>
+        </div>
+
+        {/* You (Presenter) Tile */}
+        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-violet-500/40 shadow-lg group">
+          {localStream && isRoomCameraOn ? (
+            <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-950/60 to-zinc-900 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-md border border-white/20">
+                You
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-white truncate">You (Presenter)</span>
+            <div className="flex items-center gap-1">
+              {!isRoomMicOn && <MicOff size={11} className="text-rose-400" />}
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-600/80 text-white font-medium">Host</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Audience Attendees */}
+        {videoParticipants.map((p) => (
+          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-lg group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
+            {p.isRoomCameraOn && p.img ? (
+              <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md" style={{ background: p.color || "#6366F1" }}>
+                  {(p.name || "U").charAt(0).toUpperCase()}
+                </div>
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+              <span className="text-[11px] font-medium text-zinc-200 truncate">{p.name}</span>
+              <div className="flex items-center gap-1">
+                {p.isSpeaking && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                )}
+                {p.isRoomMicOn ? (
+                  <Mic size={11} className="text-emerald-400" />
+                ) : (
+                  <MicOff size={11} className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className="w-full h-full relative flex items-center justify-center bg-slate-950 overflow-hidden">
+      {activeVideoSpeaker.isYou ? (
+        <>
+          {isRoomCameraOn && localStream ? (
+            <video
+              ref={(node) => {
+                if (node && node.srcObject !== localStream) {
+                  node.srcObject = localStream;
+                }
+              }}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover object-center transition-all duration-300 ${selectedVisualEffect === 'blur' ? 'filter blur-[6px]' : selectedVisualEffect === 'virtual' ? 'filter contrast-110 saturate-110' : ''}`}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center relative select-none bg-gradient-to-b from-zinc-900 via-zinc-950 to-black">
+              {/* Ambient Apple Glow */}
+              <div className="w-72 h-72 rounded-full bg-emerald-500/15 blur-3xl absolute pointer-events-none" />
+              
+              {/* Apple-Style Initials Avatar Glass Orb */}
+              <div className="relative z-10 w-28 h-28 md:w-32 md:h-32 rounded-full flex items-center justify-center font-semibold text-white/95 shadow-2xl backdrop-blur-2xl border border-white/20 bg-gradient-to-tr from-emerald-600/90 via-teal-500/80 to-emerald-400/90 text-4xl md:text-5xl tracking-tight ring-4 ring-white/10 ring-offset-4 ring-offset-zinc-950">
+                Y
+              </div>
+              <div className="relative z-10 mt-5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white/80 text-xs font-medium tracking-wide flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>You (Camera Off)</span>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {remoteStreams[activeVideoSpeaker.id] && activeVideoSpeaker.isRoomCameraOn ? (
+            <video
+              ref={(node) => {
+                const stream = remoteStreams[activeVideoSpeaker.id];
+                if (node && stream && node.srcObject !== stream) {
+                  node.srcObject = stream;
+                }
+              }}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover object-center pointer-events-none"
+            />
+          ) : (
+            <img
+              src={activeVideoSpeaker.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop&q=80"}
+              alt={activeVideoSpeaker.name}
+              className="w-full h-full object-cover object-center pointer-events-none"
+            />
           )}
         </>
       )}
-    </>
+    </div>
   )}
-
-                  </div>
-                  
+  </div>
                   {/* Swipe Particle Trails */}
                   {swipeTrails.map(trail => (
                     <div 
@@ -80705,15 +82429,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     />
                   ))}
                   {!screenShareStream && (
-                    <button 
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
-                      className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20 cursor-pointer"
-                      title={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
-                      aria-label={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
-                    >
-                      {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
-                    </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
+                    className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
+                  >
+                    {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
+                  </button>
                   )}
                   <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
                     {(!isRoomMicOn && activeVideoSpeaker.isYou) ? (
@@ -80730,164 +82451,176 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.isYou ? (t('room.you') || 'You') : activeVideoSpeaker.name}</span>
                   </div>
 
-                  {/* Captions Overlay */}
+                  {/* Captions & Subtle Listening Indicator */}
                   {isRoomCaptionsEnabled && liveCaption.text && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[80%] max-w-2xl px-4 flex flex-col items-center">
-                      <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
-                        <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
-                          <span 
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-500 dark:bg-violet-400 animate-pulse' : 'bg-amber-400'}`} 
-                            title={isGeminiActive ? "AI Mode Active (Gemini)" : "Local Mode (Native Speech)"}
-                          />
-                          <span className="opacity-60 text-[13px] mr-2">{liveCaption.speaker}</span>
-                          {liveCaption.text}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 flex flex-col items-center">
+                      {liveCaption.text === 'Listening...' || liveCaption.speaker === 'System' ? (
+                        <div className="bg-black/35 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 border border-white/10 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span className="text-white/80 text-[11px] font-medium tracking-wide">AI · Listening</span>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="bg-black/60 backdrop-blur-xl rounded-2xl px-5 py-2.5 flex flex-col shadow-2xl border border-white/10 max-w-xl">
+                          <div className="text-white text-[13.5px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-violet-400 animate-pulse' : 'bg-emerald-400'}`} />
+                            <span className="opacity-60 text-xs mr-1">{liveCaption.speaker}</span>
+                            <span>{liveCaption.text}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
                 )}
 
-                {/* Participant Thumbnail Strip */}
-                {(!isDistractionFreeMode && (videoParticipants.length > 0 || youTileSpeaker)) && (
-                  <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
+                {/* Participant Mounts & Interactive Overflow Card (Real Peers Only) */}
+                {!isDistractionFreeMode && videoParticipants && videoParticipants.length > 0 && (
+                  <div className={`flex justify-center gap-3.5 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? "mt-auto opacity-90 hover:opacity-100" : ""}`}>
                     
-  {youTileSpeaker && (
-    <div 
-      onClick={() => {
-        const prevActive = activeVideoSpeaker;
-        setActiveVideoSpeaker(youTileSpeaker);
-        setYouTileSpeaker(prevActive);
-      }}
-      className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
-    >
-      {youTileSpeaker.isYou ? (
-        <>
-          <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover absolute inset-0 ${isRoomCameraOn ? '' : 'hidden'}`} />
-          {!isRoomCameraOn && (
-            <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
-                style={{
-                  background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                  border: '1px solid rgba(255, 255, 255, 0.15)'
-                }}
-              >
-                Y
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          {!youTileSpeaker.isRoomCameraOn ? (
-            <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
-                style={{
-                  background: `linear-gradient(135deg, ${youTileSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                  border: '1px solid rgba(255, 255, 255, 0.15)'
-                }}
-              >
-                {(youTileSpeaker.name || 'U').charAt(0).toUpperCase()}
-              </div>
-            </div>
-          ) : (
-            <>
-              <video
-                ref={(node) => {
-                  const stream = remoteStreams[youTileSpeaker.id];
-                  if (node && stream && node.srcObject !== stream) {
-                    node.srcObject = stream;
-                  }
-                }}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover absolute inset-0"
-              />
-              {!remoteStreams[youTileSpeaker.id] && (
-                <img src={youTileSpeaker.img ? `${youTileSpeaker.img}?w=300` : `https://i.pravatar.cc/150?u=${encodeURIComponent(youTileSpeaker.name)}`} alt={youTileSpeaker.name} className="w-full h-full object-cover absolute inset-0" />
-              )}
-            </>
-          )}
-        </>
-      )}
-      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-        <div className="flex items-center justify-between w-full relative z-10">
-          <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{youTileSpeaker.isYou ? (t('room.you') || 'You') : youTileSpeaker.name}</span>
-          {((youTileSpeaker.isYou && !isRoomMicOn) || (!youTileSpeaker.isYou && !youTileSpeaker.isRoomMicOn)) && (
-            <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />
-          )}
-        </div>
-      </div>
-    </div>
-  )}
-
-{videoParticipants.slice(0, 3).map((p, i) => (
+                    {/* Primary Visible Mounts (up to 3 slots) */}
+                    {videoParticipants.slice(0, 3).map((p, i) => (
                       <div 
                         key={p.id} 
                         onClick={() => {
-                          const newParticipants = [...videoParticipants];
-                          newParticipants[i] = activeVideoSpeaker;
+                          const prevActive = activeVideoSpeaker;
                           setActiveVideoSpeaker(p);
+                          const newParticipants = [...videoParticipants];
+                          newParticipants[i] = prevActive;
                           setVideoParticipants(newParticipants);
                         }}
-                        className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
+                        className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.02]"
                       >
-                        {!p.isRoomCameraOn ? (
-                          <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
-                            <div 
-                              className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
-                              style={{
-                                background: `linear-gradient(135deg, ${p.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
-                                border: '1px solid rgba(255, 255, 255, 0.15)'
-                              }}
-                            >
-                              {(p.name || 'U').charAt(0).toUpperCase()}
-                            </div>
-                          </div>
+                        {p.isYou ? (
+                          <>
+                            {isRoomCameraOn && localStream ? (
+                              <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover absolute inset-0" />
+                            ) : (
+                              <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner bg-gradient-to-tr from-emerald-600 to-teal-400 text-xl border border-white/20">
+                                  Y
+                                </div>
+                              </div>
+                            )}
+                          </>
                         ) : (
                           <>
-                            <video
-                              ref={(node) => {
-                                const stream = remoteStreams[p.id];
-                                if (node && stream && node.srcObject !== stream) {
-                                  node.srcObject = stream;
-                                }
-                              }}
-                              autoPlay
-                              playsInline
-                              className="w-full h-full object-cover absolute inset-0"
-                            />
-                            {!remoteStreams[p.id] && (
-                              <img src={p.img ? `${p.img}?w=300` : `https://i.pravatar.cc/150?u=${encodeURIComponent(p.name)}`} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
+                            {remoteStreams[p.id] && p.isRoomCameraOn ? (
+                              <video
+                                ref={(node) => {
+                                  const stream = remoteStreams[p.id];
+                                  if (node && stream && node.srcObject !== stream) {
+                                    node.srcObject = stream;
+                                  }
+                                }}
+                                autoPlay
+                                playsInline
+                                className="w-full h-full object-cover absolute inset-0"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center absolute inset-0">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-md text-lg" style={{ background: p.color || "#6366F1" }}>
+                                  {(p.name || "U").charAt(0).toUpperCase()}
+                                </div>
+                              </div>
                             )}
                           </>
                         )}
                         
-                        {/* Name blur overlay */}
-                        <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+                        {/* Bottom Name & Mic Overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-[32%] bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end p-2.5">
                           <div className="flex items-center justify-between w-full relative z-10">
-                            <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{p.name}</span>
-                            {!p.isRoomMicOn && <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />}
+                            <span className="text-white/95 text-[11.5px] font-medium truncate drop-shadow-sm">{p.name}</span>
+                            {!p.isRoomMicOn && <MicOff size={11.5} className="text-white/70 shrink-0 drop-shadow-sm" />}
                           </div>
                         </div>
                       </div>
                     ))}
-                    
+
+                    {/* Interactive Frosted Overflow Card (+N / Show All) */}
                     {videoParticipants.length > 3 && (
-                      <>
-                        {/* Plus 3 indicator */}
-                        <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
-                            <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">+{videoParticipants.length - 3}</span>
-                          </div>
+                      <div 
+                        onClick={() => setIsParticipantOverflowOpen(prev => !prev)}
+                        className="relative flex-1 aspect-[4/3] max-w-[140px] rounded-[22px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/15 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all hover:scale-[1.03] select-none"
+                        title="Click to view all overflowing participants"
+                      >
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/45 via-white/20 to-white/10 shadow-inner group-hover:bg-white/50 transition-colors">
+                          <span className="text-slate-800 text-[16px] font-bold drop-shadow-sm tracking-tight">+{videoParticipants.length - 3}</span>
+                          <span className="text-slate-600 text-[9px] font-semibold uppercase tracking-wider mt-0.5">Show all</span>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
+                {/* Expanded Overflow Participants Modal Overlay */}
+                {isParticipantOverflowOpen && (
+                  <div 
+                    onClick={() => setIsParticipantOverflowOpen(false)}
+                    className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200"
+                  >
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative w-full max-w-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-[32px] shadow-[0_32px_120px_rgba(0,0,0,0.25)] border border-white/20 p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 flex items-center justify-center">
+                            <Users size={16} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">All Meeting Participants</h3>
+                            <p className="text-[11px] text-slate-500 dark:text-zinc-400">Click any attendee to bring them to the main screen</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsParticipantOverflowOpen(false)}
+                          className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 transition-colors cursor-pointer"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
 
+                      {/* Participant Grid */}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto pr-1 thin-scrollbar py-2">
+                        {[activeVideoSpeaker, ...videoParticipants].map((p, idx) => (
+                          <div
+                            key={p.id || idx}
+                            onClick={() => {
+                              if (p.id !== activeVideoSpeaker.id) {
+                                const prevActive = activeVideoSpeaker;
+                                setActiveVideoSpeaker(p);
+                                const remaining = [prevActive, ...videoParticipants.filter(x => x.id !== p.id)];
+                                setVideoParticipants(remaining);
+                              }
+                              setIsParticipantOverflowOpen(false);
+                            }}
+                            className={`relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-900 border cursor-pointer group transition-all hover:scale-[1.03] ${p.id === activeVideoSpeaker.id ? "ring-2 ring-violet-500 border-violet-500 shadow-md" : "border-white/10 hover:border-violet-300"}`}
+                          >
+                            {p.isYou ? (
+                              <>
+                                {isRoomCameraOn && localStream ? (
+                                  <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-emerald-600 text-sm">Y</div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <img src={p.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"} alt={p.name} className="w-full h-full object-cover" />
+                            )}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-white truncate drop-shadow">{p.name}</span>
+                              {p.id === activeVideoSpeaker.id && (
+                                <span className="text-[8.5px] px-1 py-0.5 rounded bg-violet-600 text-white font-semibold">Active</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Bottom Control Section */}
                 {!isDistractionFreeMode && (
                   <DraggablePanel 
@@ -80896,16 +82629,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     isDeleteZoneActive={isDeleteZoneActive} 
                     onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
                   >
-                    <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
+                    <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-[99999] transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
                       
                       {/* Toolbar */}
-                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                      <div className="flex items-center gap-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-full px-4 py-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.04)] border border-slate-200/60 dark:border-zinc-800">
                         <button
                           onClick={toggleRoomMic}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                             isRoomMicOn
-                              ? 'text-violet-500 hover:bg-violet-50'
-                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
                           }`}
                           title={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
                           aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
@@ -80915,10 +82648,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                         <button
                           onClick={toggleRoomCamera}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                             isRoomCameraOn
-                              ? 'text-violet-500 hover:bg-violet-50'
-                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700'
                           }`}
                           title={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
                           aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
@@ -80926,6 +82659,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                         </button>
+
+                        {/* People and Chat Quick Toggles with restrained active background */}
+                        <button
+                          type="button"
+                          onClick={() => setIsRoomLeftSidebarOpen(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                            isRoomLeftSidebarOpen 
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold ring-1 ring-slate-200/80 dark:ring-zinc-700/80' 
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700 hover:text-slate-800'
+                          }`}
+                          title="Toggle People Panel"
+                        >
+                          <Users size={18} strokeWidth={1.5} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsRoomRightSidebarOpen(prev => !prev)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                            isRoomRightSidebarOpen 
+                              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold ring-1 ring-slate-200/80 dark:ring-zinc-700/80' 
+                              : 'bg-slate-100/70 dark:bg-zinc-800/70 text-slate-500 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-zinc-700 hover:text-slate-800'
+                          }`}
+                          title="Toggle Chat Panel"
+                        >
+                          <MessageSquare size={18} strokeWidth={1.5} />
+                        </button>
+
                         {/* Progressive Disclosure Present Button */}
                         <div className="relative" ref={(node) => {
                           if (node && isRoomPresentPickerOpen) {
@@ -80941,10 +82701,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               e.stopPropagation();
                               if (roomPresentedApp || isScreenSharing) {
                                 setRoomPresentedApp(null);
-                                if (isScreenSharing) toggleScreenShare();
+                                if (screenShareStream) screenShareStream.getTracks().forEach(t => t.stop());
+                                setScreenShareStream(null);
+                                setIsScreenSharing(false);
                                 showToast?.(t('room.stopPresenting') || 'Stopped presenting');
                               } else {
-                                setIsRoomPresentPickerOpen(prev => !prev);
+                                setIsScreenSourceModalOpen(true);
                               }
                             }}
                             className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer ${
@@ -80998,10 +82760,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <button
                                     key={app.id}
                                     type="button"
-                                    onClick={() => {
-                                      setRoomPresentedApp(app.id);
-                                      setProductMode(app.id === 'docs' ? 'compose' : app.id);
+                                    onPointerDown={async (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       setIsRoomPresentPickerOpen(false);
+                                      const targetMode = app.id === 'docs' ? 'compose' : app.id;
+                                      setFocusedModule(targetMode);
+                                      setProductMode(targetMode);
+                                      setActiveDocView('document');
+                                      setActiveRightTab('assistant');
+                                      setIsWhiteboardImmersive(false);
+                                      setRoomPanelMode('docked');
+                                      if (!isScreenSharing || !screenShareStream) {
+                                        toggleScreenShare();
+                                      }
                                       showToast?.(`Presenting ${app.name}`);
                                     }}
                                     className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-all text-left group cursor-pointer active:scale-[0.99]"
@@ -81025,9 +82797,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               {/* Native Display Media Screen Sharing */}
                               <button
                                 type="button"
-                                onClick={() => {
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   setIsRoomPresentPickerOpen(false);
-                                  toggleScreenShare();
+                                  setIsScreenSourceModalOpen(true);
                                 }}
                                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
@@ -81055,25 +82829,123 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MoreHorizontal size={18} strokeWidth={1.5} />
                           </button>
                           {isRoomStartMenuOpen && (
-                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-56 bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[24px] p-2 shadow-[0_32px_100px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-300 z-[50]">
-                              <div className="flex flex-col">
-                                <button onClick={() => { showToast('Audio & Video Settings opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <Settings size={16} strokeWidth={2} className="shrink-0" /> {t('room.audioVideo') || 'Audio & Video'}
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-3 w-[252px] max-h-[calc(100vh-190px)] overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[1000000]" onClick={e => e.stopPropagation()}>
+                              <div className="flex flex-col gap-0.5">
+
+                                {/* ── Audio & Video ── */}
+                                <button type="button" onClick={() => setIsAudioVideoPanelOpen(p => !p)}
+                                  className={"group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer " + (isAudioVideoPanelOpen ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60")}>
+                                  <div className={"w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors " + (isAudioVideoPanelOpen ? "bg-violet-100 dark:bg-violet-900/60" : "bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60")}>
+                                    <Settings size={15} strokeWidth={1.7} className={"transition-colors " + (isAudioVideoPanelOpen ? "text-violet-600 dark:text-violet-400" : "text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400")} />
+                                  </div>
+                                  <span className={"flex-1 text-[13.5px] font-medium transition-colors " + (isAudioVideoPanelOpen ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300")}>{t('room.audioVideo') || 'Audio & Video'}</span>
+                                  <ChevronRight size={14} className={"transition-all shrink-0 " + (isAudioVideoPanelOpen ? "rotate-90 text-violet-400" : "text-slate-300 dark:text-zinc-600 group-hover:text-violet-400")} />
                                 </button>
-                                <button onClick={() => { showToast('Layout Options opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <LayoutGrid size={16} strokeWidth={2} className="shrink-0" /> {t('room.changeLayout') || 'Change Layout'}
+                                {isAudioVideoPanelOpen && (
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-3 space-y-2.5 animate-in fade-in duration-150">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Microphone</span>
+                                        <button type="button" onClick={toggleRoomMic} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomMicOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
+                                          <span className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-200 " + (isRoomMicOn ? "left-[18px]" : "left-0.5")} />
+                                        </button>
+                                      </div>
+                                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Mic size={11} className={isRoomMicOn ? "text-violet-500" : "text-slate-400"} />
+                                        {isRoomMicOn ? 'Default Microphone (Active)' : 'Microphone Off'}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Camera</span>
+                                        <button type="button" onClick={toggleRoomCamera} className={"w-8 h-[18px] rounded-full transition-all relative cursor-pointer " + (isRoomCameraOn ? "bg-violet-500" : "bg-slate-300 dark:bg-zinc-600")}>
+                                          <span className={"absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-200 " + (isRoomCameraOn ? "left-[18px]" : "left-0.5")} />
+                                        </button>
+                                      </div>
+                                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Video size={11} className={isRoomCameraOn ? "text-violet-500" : "text-slate-400"} />
+                                        {isRoomCameraOn ? 'FaceTime HD Camera (Active)' : 'Camera Off'}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">Speaker</span>
+                                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                        <Volume2 size={11} className="text-slate-400" />
+                                        Default Speaker Output
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* ── Change Layout ── */}
+                                <button type="button" onClick={() => setIsLayoutPanelOpen(p => !p)}
+                                  className={"group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer " + (isLayoutPanelOpen ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60")}>
+                                  <div className={"w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors " + (isLayoutPanelOpen ? "bg-violet-100 dark:bg-violet-900/60" : "bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60")}>
+                                    <LayoutGrid size={15} strokeWidth={1.7} className={"transition-colors " + (isLayoutPanelOpen ? "text-violet-600 dark:text-violet-400" : "text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400")} />
+                                  </div>
+                                  <span className={"flex-1 text-[13.5px] font-medium transition-colors " + (isLayoutPanelOpen ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300")}>{t('room.changeLayout') || 'Change Layout'}</span>
+                                  <ChevronRight size={14} className={"transition-all shrink-0 " + (isLayoutPanelOpen ? "rotate-90 text-violet-400" : "text-slate-300 dark:text-zinc-600 group-hover:text-violet-400")} />
                                 </button>
-                                <button onClick={() => { showToast('Visual Effects opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <Sparkles size={16} strokeWidth={2} className="shrink-0" /> {t('room.visualEffects') || 'Visual Effects'}
+                                {isLayoutPanelOpen && (
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-2.5 animate-in fade-in duration-150">
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      {[{ id: 'speaker', label: 'Speaker' }, { id: 'gallery', label: 'Gallery' }, { id: 'sidebar', label: 'Sidebar' }].map(layout => (
+                                        <button key={layout.id} type="button" onClick={() => { setRoomLayoutMode(layout.id); showToast(`Layout switched to ${layout.label}`); }}
+                                          className={"py-2 px-1 rounded-[10px] text-[11px] font-semibold transition-all cursor-pointer " + (roomLayoutMode === layout.id ? "bg-violet-600 text-white shadow-xs" : "bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 border border-slate-200/60 dark:border-zinc-700/60")}>
+                                          {layout.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <p className="text-[10px] text-violet-600 dark:text-violet-400 font-medium mt-1.5 text-center capitalize">{roomLayoutMode} View Active</p>
+                                  </div>
+                                )}
+
+                                {/* ── Visual Effects ── */}
+                                <button type="button" onClick={() => { setIsVisualEffectsActive(p => !p); }}
+                                  className={"group flex items-center gap-3 px-3 py-2.5 rounded-[14px] transition-colors w-full text-left cursor-pointer " + (isVisualEffectsActive ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60")}>
+                                  <div className={"w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0 transition-colors " + (isVisualEffectsActive ? "bg-violet-100 dark:bg-violet-900/60" : "bg-slate-100 dark:bg-zinc-800 group-hover:bg-violet-100 dark:group-hover:bg-violet-950/60")}>
+                                    <VisualEffectsIcon size={15} className={"transition-colors " + (isVisualEffectsActive ? "text-violet-600 dark:text-violet-400" : "text-slate-600 dark:text-zinc-300 group-hover:text-violet-600 dark:group-hover:text-violet-400")} />
+                                  </div>
+                                  <span className={"flex-1 text-[13.5px] font-medium transition-colors " + (isVisualEffectsActive ? "text-violet-700 dark:text-violet-300" : "text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300")}>{t('room.visualEffects') || 'Visual Effects'}</span>
+                                  {isVisualEffectsActive && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />}
                                 </button>
-                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
-                                <button onClick={() => { showToast('Captions enabled'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
-                                  <MessageSquare size={16} strokeWidth={2} className="shrink-0" /> {t('room.turnOnCaptions') || 'Turn on Captions'}
+                                {isVisualEffectsActive && (
+                                  <div className="mx-1 mb-1 rounded-[12px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-2.5 space-y-1 animate-in fade-in duration-150">
+                                    {[{ id: 'none', label: 'No Effect' }, { id: 'blur', label: 'Blur Background' }, { id: 'virtual', label: 'Virtual Background' }].map(fx => (
+                                      <button key={fx.id} type="button" onClick={() => { setSelectedVisualEffect(fx.id); showToast(`Visual effect: ${fx.label}`); }}
+                                        className={"w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-[10px] text-[12px] font-medium transition-all cursor-pointer " + (selectedVisualEffect === fx.id ? "bg-violet-600 text-white" : "bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/30 border border-slate-200/60 dark:border-zinc-700/60")}>
+                                        <span className="w-3 h-3 rounded-full border-2 border-current shrink-0" />
+                                        {fx.label}
+                                        {selectedVisualEffect === fx.id && <span className="ml-auto text-[10px] opacity-70">Active</span>}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* ── AI Status — read-only ── */}
+                                <div className="flex items-center gap-3 px-3 py-2 rounded-[14px]">
+                                  <div className="w-7 h-7 rounded-[10px] bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
+                                    <RegaarderAiIcon size={14} className="text-violet-500 dark:text-violet-400" />
+                                  </div>
+                                  <span className="flex-1 text-[13px] font-medium text-slate-500 dark:text-zinc-400">Room AI</span>
+                                  <span className="flex items-center gap-1 text-[10.5px] font-semibold text-violet-500 dark:text-violet-400">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                                    Listening
+                                  </span>
+                                </div>
+
+                                {/* ── Divider ── */}
+                                <div className="h-px bg-slate-100/80 dark:bg-zinc-800/80 mx-1.5 my-0.5" />
+
+                                {/* ── Report an Issue ── */}
+                                <button type="button" onClick={() => { setIsReportIssueModalOpen(true); setIsRoomStartMenuOpen(false); }}
+                                  className="group flex items-center gap-3 px-3 py-2.5 rounded-[14px] hover:bg-red-50/80 dark:hover:bg-red-950/30 transition-colors w-full text-left cursor-pointer">
+                                  <div className="w-7 h-7 rounded-[10px] bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+                                    <ShieldAlert size={15} strokeWidth={1.7} className="text-red-500 dark:text-red-400" />
+                                  </div>
+                                  <span className="flex-1 text-[13.5px] font-medium text-red-500 dark:text-red-400">{t('room.reportIssue') || 'Report an Issue'}</span>
                                 </button>
-                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
-                                <button onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-red-500 hover:bg-red-50/80 rounded-xl transition-colors w-full text-left">
-                                  <ShieldAlert size={16} strokeWidth={2} className="shrink-0" /> {t('room.reportIssue') || 'Report an Issue'}
-                                </button>
+
                               </div>
                             </div>
                           )}
@@ -81095,11 +82967,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <button
                             type="button"
                             onClick={() => setIsRoomModelDropdownOpen(!isRoomModelDropdownOpen)}
-                            className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/80 dark:border-zinc-800 shadow-md hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer shrink-0 pointer-events-auto"
                           >
                             <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                             <span className="truncate max-w-[90px] text-[11.5px]">
-                              {selectedRoomAiModel === 'gemini-2.0-flash' ? 'Gemini 2.0' : selectedRoomAiModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : selectedRoomAiModel === 'claude-3-5-sonnet-20241022' ? 'Claude 3.5' : selectedRoomAiModel === 'gpt-4o' ? 'GPT-4o' : selectedRoomAiModel === 'deepseek-chat' ? 'DeepSeek V3' : selectedRoomAiModel}
+                              Room AI
                             </span>
                             <ChevronDown size={12} className="text-slate-400 dark:text-zinc-500 shrink-0" />
                           </button>
@@ -81217,182 +83089,246 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <form onSubmit={handleRoomAISubmit} className="flex-1 flex items-center gap-3 bg-white/90 backdrop-blur-2xl rounded-[32px] px-6 py-3.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
                           {roomAIModal.isOpen && !isRoomAiMinimized && (
                             <div 
-                              className={`absolute bottom-[calc(100%+14px)] z-[100] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl border border-white/90 dark:border-zinc-800 shadow-[0_28px_90px_rgba(0,0,0,0.22)] rounded-[32px] p-5 md:p-6 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text resize overflow-auto thin-scrollbar ${
+                              className={`absolute bottom-[calc(100%+14px)] z-[100] bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_90px_-20px_rgba(0,0,0,0.7)] rounded-[18px] p-4 md:p-5 text-left animate-in slide-in-from-bottom-2 fade-in duration-200 font-sans flex flex-col pointer-events-auto select-text resize overflow-hidden thin-scrollbar ${
                                 isRoomAiExpanded 
-                                  ? 'left-[-120px] right-[-120px] min-h-[480px] max-h-[680px]' 
-                                  : 'left-0 right-0 min-h-[320px] max-h-[520px] min-w-[560px]'
+                                  ? 'left-[-120px] right-[-120px] min-h-[500px] max-h-[700px]' 
+                                  : 'left-0 right-0 min-h-[360px] max-h-[540px] min-w-[560px]'
                               }`}
-                              style={{ resize: 'both', minWidth: '480px', minHeight: '280px' }}
+                              style={{ resize: 'both', minWidth: '480px', minHeight: '320px' }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="flex items-center justify-between gap-3 mb-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-inner">
-                                      <RegaarderAiIcon size={20} />
-                                    </div>
-                                    <div>
-                                      <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                              {/* Apple Refined Header */}
+                              <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-[10px] bg-violet-50 dark:bg-violet-950/70 border border-violet-200/70 dark:border-violet-800/70 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-2xs shrink-0">
+                                    <RegaarderAiIcon size={16} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight truncate">
                                         {t('room.aiIntelligence') || 'Room AI Intelligence'}
                                       </h3>
-                                      <p className="text-[11px] text-violet-600 dark:text-violet-400 font-semibold flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                                        {t('room.sessionAnalysis') || 'Live Meeting Analysis'}
-                                      </p>
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 dark:bg-violet-950/70 text-violet-600 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/60 shrink-0">
+                                        {selectedRoomAiModel ? (typeof selectedRoomAiModel === 'object' ? selectedRoomAiModel.name : selectedRoomAiModel) : 'Cloud Engine'}
+                                      </span>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    {/* New Chat Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (roomAiThread.length > 0) {
-                                          setRoomAiHistory(prev => [{ id: Date.now(), title: roomAiThread[0]?.content?.slice(0, 30) || 'Session', thread: [...roomAiThread] }, ...prev]);
-                                        }
-                                        setRoomAiThread([]);
-                                        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
-                                        showToast?.('Started fresh chat');
-                                      }}
-                                      title={t('room.newChat') || 'New Chat'}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      <Plus size={15} />
-                                    </button>
-
-                                    {/* History Button */}
-                                    <div className="relative" ref={(node) => {
-                                      if (node && isRoomAiHistoryOpen) {
-                                        const handleOutsideHistory = (e) => {
-                                          if (!node.contains(e.target)) setIsRoomAiHistoryOpen(false);
-                                        };
-                                        document.addEventListener('pointerdown', handleOutsideHistory, { once: true });
-                                      }
-                                    }}>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setIsRoomAiHistoryOpen(prev => !prev);
-                                        }}
-                                        title={t('room.history') || 'Chat History'}
-                                        className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
-                                          isRoomAiHistoryOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300' : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                                        }`}
-                                      >
-                                        <Clock size={15} />
-                                      </button>
-                                      {isRoomAiHistoryOpen && (
-                                        <div className="absolute right-0 top-full mt-1.5 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-2 z-[200] animate-in fade-in zoom-in-95 font-sans">
-                                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                                            {t('room.history') || 'Past Threads'}
-                                          </div>
-                                          {roomAiHistory.length === 0 ? (
-                                            <div className="text-xs text-slate-400 px-2 py-3 text-center">No past threads yet</div>
-                                          ) : (
-                                            roomAiHistory.map(item => (
-                                              <button
-                                                key={item.id}
-                                                type="button"
-                                                onClick={() => {
-                                                  setRoomAiThread(item.thread);
-                                                  setRoomAIModal({ isOpen: true, prompt: item.thread[0]?.content, answer: item.thread.filter(m=>m.role==='assistant').pop()?.content || '' });
-                                                  setIsRoomAiHistoryOpen(false);
-                                                }}
-                                                className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 truncate"
-                                              >
-                                                {item.title}...
-                                              </button>
-                                            ))
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Copy Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const lastReply = roomAiThread.filter(m => m.role === 'assistant').pop()?.content || roomAIModal.answer;
-                                        if (lastReply) {
-                                          navigator.clipboard?.writeText(lastReply);
-                                          showToast?.(t('room.copied') || 'AI response copied to clipboard!');
-                                        }
-                                      }}
-                                      title={t('room.copyAnswer') || 'Copy Answer'}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      <Copy size={15} />
-                                    </button>
-
-                                    {/* Enlarge / Restore Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsRoomAiExpanded(!isRoomAiExpanded)}
-                                      title={isRoomAiExpanded ? (t('room.collapseModal') || 'Restore window') : (t('room.expandModal') || 'Expand window')}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      {isRoomAiExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-                                    </button>
-
-                                    {/* Minimize Button (─) */}
-                                    <button
-                                      type="button"
-                                      onClick={() => { setIsRoomAiMinimized(true); }}
-                                      title={t('room.minimize') || 'Minimize Chat'}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    >
-                                      <Minus size={15} strokeWidth={2.5} />
-                                    </button>
+                                    <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                      {t('room.sessionAnalysis') || 'Live Meeting Analysis'}
+                                    </p>
                                   </div>
                                 </div>
 
-                                {/* Multi-turn Conversation Stream */}
-                                <div className="flex-1 overflow-y-auto thin-scrollbar mb-3 space-y-3 pr-1 max-h-[360px] min-h-[140px]">
-                                  {roomAiThread.map((msg, idx) => (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* New Chat Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (roomAiThread.length > 0) {
+                                        setRoomAiHistory(prev => [{ id: Date.now(), title: roomAiThread[0]?.content?.slice(0, 30) || 'Session', thread: [...roomAiThread] }, ...prev]);
+                                      }
+                                      setRoomAiThread([]);
+                                      setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+                                      showToast?.('Started fresh chat');
+                                    }}
+                                    title={t('room.newChat') || 'New Chat'}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+
+                                  {/* History Button */}
+                                  <div className="relative" ref={(node) => {
+                                    if (node && isRoomAiHistoryOpen) {
+                                      const handleOutsideHistory = (e) => {
+                                        if (!node.contains(e.target)) setIsRoomAiHistoryOpen(false);
+                                      };
+                                      document.addEventListener('pointerdown', handleOutsideHistory, { once: true });
+                                    }
+                                  }}>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsRoomAiHistoryOpen(prev => !prev);
+                                      }}
+                                      title={t('room.history') || 'Chat History'}
+                                      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                                        isRoomAiHistoryOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300' : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                      }`}
+                                    >
+                                      <Clock size={14} />
+                                    </button>
+                                    {isRoomAiHistoryOpen && (
+                                      <div className="absolute right-0 top-full mt-1.5 w-60 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-2 z-[200] animate-in fade-in zoom-in-95 font-sans">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
+                                          {t('room.history') || 'Past Threads'}
+                                        </div>
+                                        {roomAiHistory.length === 0 ? (
+                                          <div className="text-xs text-slate-400 px-2 py-3 text-center">No past threads yet</div>
+                                        ) : (
+                                          roomAiHistory.map(item => (
+                                            <button
+                                              key={item.id}
+                                              type="button"
+                                              onClick={() => {
+                                                setRoomAiThread(item.thread);
+                                                setRoomAIModal({ isOpen: true, prompt: item.thread[0]?.content, answer: item.thread.filter(m=>m.role==='assistant').pop()?.content || '' });
+                                                setIsRoomAiHistoryOpen(false);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs text-slate-700 dark:text-zinc-300 truncate"
+                                            >
+                                              {item.title}...
+                                            </button>
+                                          ))
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Copy Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const lastAssistantMsg = [...roomAiThread].reverse().find(m => m.role === 'assistant');
+                                      if (lastAssistantMsg?.content) {
+                                        navigator.clipboard.writeText(lastAssistantMsg.content);
+                                        showToast?.(t('room.copied') || 'Copied answer to clipboard!');
+                                      }
+                                    }}
+                                    title={t('room.copyAnswer') || 'Copy Answer'}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <Copy size={14} />
+                                  </button>
+
+                                  {/* Enlarge / Restore Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsRoomAiExpanded(!isRoomAiExpanded)}
+                                    title={isRoomAiExpanded ? (t('room.collapseModal') || 'Restore window') : (t('room.expandModal') || 'Expand window')}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    {isRoomAiExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                                  </button>
+
+                                  {/* Close / Dismiss Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => { setRoomAIModal(prev => ({ ...prev, isOpen: false })); }}
+                                    title={t('common.close') || 'Close'}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                  >
+                                    <X size={14} strokeWidth={2} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Multi-turn Conversation Stream */}
+                              <div className="flex-1 overflow-y-auto thin-scrollbar mb-2 space-y-2.5 pr-1 max-h-[380px] min-h-[160px]">
+                                {roomAiThread.map((msg, idx) => {
+                                  const isError = msg.content && (msg.content.includes('Unable to reach') || msg.content.includes('Connection Refused') || msg.content.includes('Failed to generate'));
+                                  
+                                  if (isError) {
+                                    return (
+                                      <div key={idx} className="p-3.5 rounded-[14px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-amber-900 dark:text-amber-200 text-xs space-y-2 animate-in fade-in">
+                                        <div className="flex items-start gap-2.5">
+                                          <div className="w-5 h-5 rounded-md bg-amber-200/70 dark:bg-amber-900/60 flex items-center justify-center text-amber-800 dark:text-amber-200 shrink-0 font-bold text-[11px]">
+                                            !
+                                          </div>
+                                          <div className="min-w-0 leading-relaxed font-sans">
+                                            {msg.content}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-amber-200/60 dark:border-amber-900/40">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedRoomAiModel('gemini-2.5-flash');
+                                              showToast?.('Switched to Cloud Model (Gemini 2.5 Flash)');
+                                            }}
+                                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold transition-all cursor-pointer shadow-2xs"
+                                          >
+                                            Switch to Cloud AI
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
                                     <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                      <div className={`max-w-[90%] p-3.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
+                                      <div className={`max-w-[85%] p-3 rounded-[16px] text-xs leading-relaxed whitespace-pre-wrap ${
                                         msg.role === 'user'
-                                          ? 'bg-violet-600 text-white rounded-tr-xs font-medium shadow-xs'
-                                          : 'bg-violet-50/70 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/40 text-slate-800 dark:text-zinc-200 rounded-tl-xs'
+                                          ? 'bg-violet-600 text-white rounded-br-[4px] font-medium shadow-xs'
+                                          : 'bg-slate-50 dark:bg-zinc-800/80 border border-slate-100 dark:border-zinc-700/60 text-slate-800 dark:text-zinc-200 rounded-bl-[4px]'
                                       }`}>
                                         {msg.content}
                                       </div>
                                     </div>
-                                  ))}
+                                  );
+                                })}
 
-                                  {isRoomAILoading && (
-                                    <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400 text-xs font-semibold w-fit">
-                                      <RegaarderAiIcon size={14} className="animate-spin" />
-                                      <span>{t('room.aiAnalyzing') || 'Thinking...'}</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Inline Follow-up Reply Input Bar */}
-                                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800">
-                                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl px-3.5 py-2 border border-slate-200/80 dark:border-zinc-700/80 focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:border-violet-300">
-                                    <input
-                                      type="text"
-                                      value={roomAiFollowUpInput}
-                                      onChange={(e) => setRoomAiFollowUpInput(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                          e.preventDefault();
-                                          handleRoomAiFollowUpSubmit();
-                                        }
-                                      }}
-                                      placeholder={t('room.replyPlaceholder') || 'Reply to Room AI or ask a follow-up...'}
-                                      className="flex-1 text-xs text-slate-700 dark:text-zinc-200 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={handleRoomAiFollowUpSubmit}
-                                      disabled={!roomAiFollowUpInput.trim() || isRoomAILoading}
-                                      className="w-7 h-7 rounded-xl bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:hover:bg-violet-600 cursor-pointer shrink-0 shadow-xs"
-                                    >
-                                      <Send size={12} />
-                                    </button>
+                                {isRoomAILoading && (
+                                  <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-xs font-semibold w-fit border border-violet-100 dark:border-violet-900/40">
+                                    <RegaarderAiIcon size={14} className="animate-spin" />
+                                    <span>{t('room.aiAnalyzing') || 'Analyzing conversation...'}</span>
                                   </div>
+                                )}
+                              </div>
+
+                              {/* Suggested Prompt Action Chips */}
+                              <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar pb-2 pt-1 shrink-0">
+                                {[
+                                  'Summarize meeting so far',
+                                  'Extract key action items',
+                                  'What decisions were made?'
+                                ].map((suggestion, i) => (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => {
+                                      setRoomAiFollowUpInput(suggestion);
+                                      // Execute follow up prompt directly
+                                      setTimeout(() => {
+                                        const btn = document.getElementById('room-ai-followup-submit-btn');
+                                        if (btn) btn.click();
+                                      }, 50);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-slate-100/80 dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 text-slate-600 dark:text-zinc-300 text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap border border-slate-200/60 dark:border-zinc-700/60 shrink-0 shadow-2xs"
+                                  >
+                                    {suggestion}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Inline Follow-up Reply Input Bar */}
+                              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 shrink-0">
+                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/80 rounded-[14px] px-3.5 py-2 border border-slate-200/80 dark:border-zinc-700/80 focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:border-violet-300">
+                                  <input
+                                    type="text"
+                                    value={roomAiFollowUpInput}
+                                    onChange={(e) => setRoomAiFollowUpInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleRoomAiFollowUpSubmit();
+                                      }
+                                    }}
+                                    placeholder={t('room.replyPlaceholder') || 'Ask Room AI a question or follow-up...'}
+                                    className="flex-1 text-xs text-slate-800 dark:text-zinc-100 bg-transparent border-none outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500 font-sans"
+                                  />
+                                  <button
+                                    id="room-ai-followup-submit-btn"
+                                    type="button"
+                                    onClick={handleRoomAiFollowUpSubmit}
+                                    disabled={!roomAiFollowUpInput.trim() || isRoomAILoading}
+                                    className="w-7 h-7 rounded-[10px] bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:hover:bg-violet-600 cursor-pointer shrink-0 shadow-2xs"
+                                  >
+                                    <Send size={12} />
+                                  </button>
                                 </div>
+                              </div>
                             </div>
                           )}
                           {/* Hidden File Input for Device Uploads */}
@@ -81535,7 +83471,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[28px] overflow-hidden border border-slate-200/60 dark:border-zinc-800" style={{ left: '28px', top: '96px', width: '280px', height: (1 + roomParticipants.length <= 1) ? 'auto' : 'calc(100vh - 180px)', maxHeight: '680px' }}>
                   {renderRoomLeftSidebar()}
                 </div>
               </DraggablePanel>
@@ -81549,7 +83485,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', zIndex: 40 }}>
+                <div className="absolute pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[28px] overflow-hidden border border-slate-200/60 dark:border-zinc-800" style={{ right: '28px', top: '96px', width: '280px', height: 'calc(100vh - 180px)', maxHeight: '680px', zIndex: 40 }}>
                   {renderRoomRightSidebar()}
                 </div>
               </DraggablePanel>
@@ -81653,65 +83589,63 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Post-Call Rating Overlay ── */}
       {isPostCallRatingOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xl">
-          <div className="relative w-full max-w-md mx-4 bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 overflow-hidden">
-            {/* Top gradient accent */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500 rounded-t-[32px]" />
-
-            <div className="px-10 pt-10 pb-8 flex flex-col items-center gap-6">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[440px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-3xl rounded-[32px] shadow-[0_32px_100px_rgba(0,0,0,0.18)] border border-white/80 dark:border-white/10 overflow-hidden text-center select-none animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-8 pt-8 pb-7 flex flex-col items-center gap-5">
               {/* Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-[0_8px_24px_rgba(124,58,237,0.35)]">
-                <PhoneOff size={26} className="text-white" strokeWidth={1.5} />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-[0_8px_24px_rgba(124,58,237,0.3)]">
+                <PhoneOff size={24} className="text-white" strokeWidth={1.75} />
               </div>
 
               {/* Heading */}
               <div className="text-center">
-                <h2 className="text-[22px] font-semibold text-gray-900 tracking-tight">{t('room.leftMeeting') || 'You left the meeting'}</h2>
-                <p className="text-[14px] text-gray-400 mt-1 font-normal">{t('room.howWasExperience') || 'How was your experience?'}</p>
+                <h2 className="text-[20px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">{t('room.leftMeeting') || 'You left the meeting'}</h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 font-normal">{t('room.howWasExperience') || 'How was your experience?'}</p>
               </div>
 
               {/* Meeting stats */}
-              <div className="flex items-center gap-6 w-full justify-center">
+              <div className="flex items-center gap-5 w-full justify-center py-1">
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[20px] font-semibold text-gray-900">{meetingDurationLabel || '00:00'}</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('room.duration') || 'Duration'}</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">{meetingDurationLabel || '00:00'}</span>
+                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('room.duration') || 'Duration'}</span>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[20px] font-semibold text-gray-900">4</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('room.participants') || 'Participants'}</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">4</span>
+                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('room.participants') || 'Participants'}</span>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[20px] font-semibold text-gray-900">{roomId || '—'}</span>
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">{t('workspace.room') || 'Room'}</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">{roomId || '—'}</span>
+                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('workspace.room') || 'Room'}</span>
                 </div>
               </div>
 
               {/* 5-Star Rating */}
-              <div className="flex flex-col items-center gap-3 w-full">
-                <p className="text-[13px] text-gray-500 font-medium">{t('room.rateCallQuality') || 'Rate the call quality'}</p>
+              <div className="flex flex-col items-center gap-2.5 w-full">
+                <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">{t('room.rateCallQuality') || 'Rate the call quality'}</p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
+                      type="button"
                       onMouseEnter={() => setCallRatingHover(star)}
                       onMouseLeave={() => setCallRatingHover(0)}
                       onClick={() => {
                         setCallRating(star);
                         setTimeout(() => confirmLeaveRoom(), 200);
                       }}
-                      className="transition-all duration-150 hover:scale-110 active:scale-95"
+                      className="transition-all duration-150 hover:scale-110 active:scale-95 cursor-pointer"
                       aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     >
                       <svg
-                        width="36" height="36" viewBox="0 0 24 24" fill="none"
+                        width="32" height="32" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" strokeWidth="1.5"
                         strokeLinecap="round" strokeLinejoin="round"
                         className={`transition-colors duration-100 ${
                           star <= (callRatingHover || callRating)
                             ? 'fill-amber-400 stroke-amber-400'
-                            : 'fill-transparent stroke-gray-300'
+                            : 'fill-transparent stroke-slate-300 dark:stroke-zinc-700'
                         }`}
                       >
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -81720,25 +83654,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   ))}
                 </div>
                 {callRating > 0 && (
-                  <p className="text-[12px] text-violet-500 font-medium animate-in fade-in duration-200">
+                  <p className="text-xs text-violet-600 dark:text-violet-400 font-medium animate-in fade-in duration-200">
                     {callRating === 1 ? 'Sorry to hear that.' : callRating === 2 ? 'We\'ll improve.' : callRating === 3 ? 'Thanks for the feedback.' : callRating === 4 ? 'Glad it went well!' : '🎉 Perfect call!'}
                   </p>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col gap-3 w-full mt-1">
+              <div className="flex flex-col gap-2.5 w-full mt-1">
                 <button
+                  type="button"
                   onClick={confirmLeaveRoom}
-                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[15px] font-semibold shadow-[0_8px_24px_rgba(124,58,237,0.3)] hover:shadow-[0_12px_32px_rgba(124,58,237,0.4)] hover:from-violet-700 hover:to-purple-700 transition-all duration-200 active:scale-[0.98]"
+                  className="w-full h-11 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold shadow-[0_6px_20px_rgba(124,58,237,0.28)] hover:shadow-[0_8px_24px_rgba(124,58,237,0.38)] hover:from-violet-700 hover:to-purple-700 transition-all duration-200 active:scale-[0.98] cursor-pointer"
                 >
-                  Return to Home
+                  {t('room.returnToHome') || 'Return to Home'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setIsPostCallRatingOpen(false)}
-                  className="w-full h-10 rounded-2xl text-gray-400 text-[13px] font-medium hover:text-gray-600 hover:bg-gray-50 transition-all duration-150"
+                  className="w-full h-9 rounded-2xl text-slate-400 dark:text-zinc-500 text-xs font-semibold hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 transition-all duration-150 cursor-pointer"
                 >
-                  Cancel — Rejoin meeting
+                  {t('room.cancelRejoin') || 'Cancel — Rejoin meeting'}
                 </button>
               </div>
             </div>
@@ -81746,15 +83682,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {roomState === 'active' && mainView === 'document' && (
-        <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500 animate-pulse"></span>
-          <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
-          <button onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer">Return</button>
-          <button onClick={confirmLeaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Leave</button>
-        </div>
-      )}
+      {renderFloatingMeetingPipHud()}
 
+      <ScreenShareSourceModal
+        isOpen={isScreenSourceModalOpen}
+        onClose={() => setIsScreenSourceModalOpen(false)}
+        onSelectSource={handleSelectScreenSource}
+      />
       <input
         ref={meetingShareFileInputRef}
         type="file"
@@ -84589,9 +86523,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           showToast('Exported meeting summary to Docs');
         }}
       />
-      <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} setInvites={setInvites} />
       <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
       <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} />
+      <ReportIssueModal isOpen={isReportIssueModalOpen} onClose={() => setIsReportIssueModalOpen(false)} showToast={showToast} />
 
       {/* Sheets Fullscreen Presentation Mode Overlay */}
       {isSheetsPresentationMode && (

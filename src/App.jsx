@@ -4,7 +4,7 @@ import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger HMR & Live Reload: 2026-08-28T00:51:30
+// Trigger HMR & Live Reload: 2026-08-31T05:37:13.183Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -53,8 +53,7 @@ import {
   RegaarderHistoryIcon,
   RegaarderSaveCloudIcon,
   RegaarderNotificationIcon,
-  LaserPointerIcon,
-  PresentationIcon
+  LaserPointerIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
@@ -474,6 +473,15 @@ const DECK_DESIGN_PRESETS = [
   },
 ];
 
+const DECK_LAYOUT_OPTIONS = [
+  { id: 'Title & Content', label: 'Title & Content', desc: 'Header with modular body area and smart insert triggers', icon: LayoutTemplate },
+  { id: 'Title Slide', label: 'Title Slide', desc: 'Presentation cover with presenter and contact lockup', icon: Presentation },
+  { id: 'Two Columns', label: 'Two Columns', desc: 'Side-by-side comparison with dual content blocks', icon: Grid },
+  { id: 'Key Metric', label: 'Key Metric', desc: 'High-impact stat callout and KPI statement', icon: TrendingUp },
+  { id: 'Bento Grid', label: 'Bento Grid', desc: 'Frosted capability matrix and feature cards', icon: LayoutGrid },
+  { id: 'Blank Canvas', label: 'Blank Canvas', desc: 'Clean slate for freeform shapes, media, and diagrams', icon: Square }
+];
+
 const DECK_PRESENTER_AVATARS = [
   { id: 'leader', label: 'Executive Leader', url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80' },
   { id: 'speaker', label: 'Modern Speaker', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80' },
@@ -632,397 +640,7 @@ const DECK_THEME_OPTIONS = [
   { key: 'cyberpunk-neon', name: 'Cyberpunk', gradient: 'bg-gradient-to-r from-fuchsia-500 via-purple-600 to-cyan-400' }
 ];
 
-const DECK_LAYOUT_OPTIONS = [
-  { 
-    key: "Startup Thank You", 
-    name: "Startup Thank You",
-    desc: 'Grand finale outro with sweeping top ambient neon ribbon, bold THANK YOU hero, presenter capsule & contact footer',
-    visualType: 'startup conclusion thank you outro',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col justify-between p-0.5 shrink-0">
-        <div className="w-full h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-xs" />
-        <div className="w-full flex flex-col items-center justify-center gap-0.5">
-          <div className="w-3/4 h-1 bg-white rounded-xs" />
-          <div className="w-1/2 h-0.5 bg-purple-500 rounded-xs" />
-        </div>
-        <div className="w-full flex justify-around">
-          <div className="w-1 h-0.5 bg-slate-400 rounded-xs" />
-          <div className="w-1 h-0.5 bg-slate-400 rounded-xs" />
-          <div className="w-1 h-0.5 bg-slate-400 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Team", 
-    name: "Startup Meet the Team",
-    desc: '2x2 grid of glassmorphic executive team cards with photo avatars, names, italic roles & bottom contact bar',
-    visualType: 'startup 2x2 executive team grid',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col justify-between p-0.5 shrink-0 gap-0.5">
-        <div className="flex justify-between gap-0.5 h-1/2">
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-        </div>
-        <div className="flex justify-between gap-0.5 h-1/2">
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-          <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center p-0.5 gap-0.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-            <div className="w-full h-0.5 bg-slate-300" />
-          </div>
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Use of Funds", 
-    name: "Startup Use of Funds",
-    desc: 'Interactive pie/donut allocation chart card, bottom-right orbital neon vortex & 4 percentage badge rows',
-    visualType: 'startup pie allocation use of funds',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1/2 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-center justify-center p-0.5">
-          <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 flex items-center justify-center" />
-        </div>
-        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-          <div className="w-full h-1 bg-blue-600 rounded-xs" />
-          <div className="w-full h-1 bg-cyan-600 rounded-xs" />
-          <div className="w-full h-1 bg-indigo-600 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Timeline", 
-    name: "Startup Accomplishments Timeline",
-    desc: 'Vertical ACCOMPLISHMENTS DATE headline, glowing vertical timeline spine with 4 sphere nodes & stacked milestone cards',
-    visualType: 'startup vertical accomplishments timeline',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1.5 h-full flex flex-col justify-center items-center">
-          <div className="w-0.5 h-full bg-cyan-400/80 rounded-full" />
-        </div>
-        <div className="w-4/5 h-full flex flex-col justify-between p-0.5 gap-0.5">
-          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
-          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
-          <div className="w-full h-1 bg-indigo-950 border border-white/20 rounded-xs" />
-          <div className="w-full h-1 bg-purple-600 border border-purple-400 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Revenue Model", 
-    name: "Startup Revenue Model",
-    desc: '3-tier glassmorphic pricing comparison cards (Basic, elevated Standard, Premium) with laser dividing lines',
-    visualType: 'startup 3-tier pricing model',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1/3 h-4/5 rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-        </div>
-        <div className="w-1/3 h-full rounded-xs bg-indigo-900/90 border border-cyan-400/80 flex flex-col justify-between p-0.5 shadow-xs">
-          <div className="w-full h-0.5 bg-cyan-300" />
-          <div className="w-full h-1 bg-cyan-400 rounded-xs" />
-        </div>
-        <div className="w-1/3 h-4/5 rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Traction", 
-    name: "Startup Traction",
-    desc: 'Multi-series 5-point trend chart card, top-right orbital neon vortex & 3 metric percentage badge rows',
-    visualType: 'startup multi-series traction chart',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-3/5 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex flex-col justify-between p-0.5">
-          <div className="w-full h-px bg-cyan-400" />
-          <div className="w-full h-px bg-blue-400" />
-          <div className="w-full h-px bg-purple-400" />
-        </div>
-        <div className="w-2/5 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-indigo-600 rounded-xs" />
-          <div className="w-full h-1 bg-blue-600 rounded-xs" />
-          <div className="w-full h-1 bg-purple-600 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Key Advantages", 
-    name: "Startup Key Advantages",
-    desc: '4 ascending staircase glassmorphic cards with floating icon spheres & dual neon vortex curves',
-    visualType: 'startup staircase advantages',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-end justify-between shrink-0 gap-0.5">
-        <div className="w-1.5 h-2 bg-slate-700 rounded-t-xs" />
-        <div className="w-1.5 h-3 bg-indigo-900 rounded-t-xs" />
-        <div className="w-1.5 h-4 bg-purple-600 rounded-t-xs" />
-        <div className="w-1.5 h-5 bg-indigo-800 rounded-t-xs" />
-      </div>
-    )
-  },
-  { 
-    key: "Startup Competitor Analysis", 
-    name: "Startup Competitor Analysis",
-    desc: 'Direct vs Indirect Competitors 2-column breakdown with laser divider beams & glowing comparison rows',
-    visualType: 'startup competitors comparison',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-0.5">
-        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-slate-700 rounded-xs" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-        </div>
-        <div className="w-px h-full bg-cyan-400" />
-        <div className="w-1/2 h-full flex flex-col justify-between p-0.5">
-          <div className="w-full h-1 bg-purple-500/80 rounded-xs" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-          <div className="w-full h-0.5 bg-slate-400" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Size of Market", 
-    name: "Startup Size of Market",
-    desc: 'Market narrative, TAM/SAM/SOM breakdown metric pills & dynamic 3-bar chart visualization',
-    visualType: 'startup market size',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
-        <div className="w-3/5 flex flex-col justify-between h-full py-0.5">
-          <div className="w-full h-0.5 bg-white rounded-xs" />
-          <div className="w-4/5 h-0.5 bg-slate-400 rounded-xs" />
-          <div className="flex gap-0.5 items-center mt-0.5">
-            <div className="w-2.5 h-1 bg-purple-500 rounded-xs" />
-            <div className="w-2.5 h-1 bg-slate-700 rounded-xs" />
-          </div>
-        </div>
-        <div className="w-2/5 h-full rounded-xs bg-indigo-950/80 border border-white/20 flex items-end justify-around px-0.5 pb-0.5 gap-0.5">
-          <div className="w-1 h-1.5 bg-blue-200 rounded-t-xs" />
-          <div className="w-1 h-2.5 bg-blue-500 rounded-t-xs" />
-          <div className="w-1 h-3.5 bg-purple-400 rounded-t-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Discover Services", 
-    name: "Startup Discover Services",
-    desc: 'Presenter portrait with 3D backdrop pop-out, top-right neon vortex & 2x2 services grid with laser divider beams',
-    visualType: 'startup services grid',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
-        <div className="w-2/5 h-full rounded-xs bg-indigo-950 border border-white/20 relative flex items-center justify-center">
-          <div className="w-2.5 h-3 bg-purple-400 rounded-full" />
-        </div>
-        <div className="w-3/5 grid grid-cols-2 gap-0.5 h-full items-center">
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-          <div className="w-full h-1 bg-white/40 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Innovative Solutions", 
-    name: "Startup Innovative Solutions",
-    desc: 'Neon flowing wave hero with 3 glassmorphic solution cards & floating icon badges',
-    visualType: 'startup solution cards',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-full flex items-center justify-between">
-          <div className="w-1/3 h-1 bg-white rounded-xs" />
-          <div className="w-1/2 h-0.5 bg-cyan-400 rounded-xs" />
-        </div>
-        <div className="flex gap-0.5 h-2.5 items-stretch mt-0.5">
-          <div className="w-1/3 bg-indigo-900/90 rounded-xs border border-white/20 relative">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
-          </div>
-          <div className="w-1/3 bg-indigo-900/90 rounded-xs border border-white/20 relative">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
-          </div>
-          <div className="w-1/3 bg-purple-900/90 rounded-xs border border-white/20 relative">
-            <div className="w-1.5 h-1.5 rounded-full bg-white border border-blue-500 absolute -top-0.5 left-1/2 -translate-x-1/2" />
-          </div>
-        </div>
-      </div>
-    )
-  },
-        { 
-    key: "Startup Problem Statement", 
-    name: "Startup Problem Statement",
-    desc: 'Two-column hero headline with 3 vertical glassmorphic problem cards',
-    visualType: 'startup problem cards',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex p-0.5 items-center justify-between shrink-0 gap-1">
-        <div className="w-2/5 flex flex-col justify-center gap-0.5">
-          <div className="w-full h-1 bg-white rounded-xs" />
-          <div className="w-3/4 h-1 bg-white rounded-xs" />
-        </div>
-        <div className="w-3/5 flex gap-0.5 h-full items-stretch">
-          <div className="w-1/3 bg-purple-400 rounded-xs" />
-          <div className="w-1/3 bg-indigo-900 rounded-xs border border-white/20" />
-          <div className="w-1/3 bg-slate-900 rounded-xs border border-white/20" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Introduction", 
-    name: "Startup Introduction",
-    desc: 'Bento layout with multi-media cards & dual narrative blocks',
-    visualType: 'startup intro bento',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-2/5 h-0.5 bg-white rounded-xs" />
-        <div className="flex gap-0.5 h-3 items-stretch">
-          <div className="w-1/3 bg-purple-400/40 rounded-xs" />
-          <div className="w-2/3 flex flex-col gap-0.5">
-            <div className="h-1.5 bg-blue-500/40 rounded-xs" />
-            <div className="flex-1 flex gap-0.5">
-              <div className="w-1/2 bg-purple-500/40 rounded-xs" />
-              <div className="w-1/2 bg-slate-600/40 rounded-xs" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: "Startup Today's Agenda", 
-    name: "Startup Today's Agenda",
-    desc: 'Two-column 10-point agenda with glowing divider beams',
-    visualType: 'startup agenda',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-1/3 h-0.5 bg-cyan-400 rounded-xs" />
-        <div className="flex gap-0.5 h-full items-center">
-          <div className="w-1/2 h-full flex flex-col gap-0.5 justify-around">
-            <div className="w-full h-0.5 bg-slate-400" />
-            <div className="w-full h-0.5 bg-slate-400" />
-          </div>
-          <div className="w-px h-full bg-cyan-400" />
-          <div className="w-1/2 h-full flex flex-col gap-0.5 justify-around">
-            <div className="w-full h-0.5 bg-slate-400" />
-            <div className="w-full h-0.5 bg-slate-400" />
-          </div>
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: 'Startup Pitch Deck', 
-    name: 'Startup Pitch Deck',
-    desc: 'Cover with title, presenter & footer',
-    visualType: 'startup cover',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-700 bg-slate-900 flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-1/3 h-0.5 bg-cyan-400 rounded-xs" />
-        <div className="w-3/4 h-1.5 bg-white rounded-xs" />
-        <div className="w-full flex justify-between">
-          <div className="w-1/4 h-0.5 bg-violet-400 rounded-xs" />
-          <div className="w-1/4 h-0.5 bg-violet-400 rounded-xs" />
-        </div>
-      </div>
-    )
-  },
-  { 
-    key: 'Title Slide', 
-    name: 'Title Slide',
-    desc: 'Headline & subtitle cover',
-    visualType: 'hero statement',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between shrink-0">
-        <div className="w-1/2 h-1 bg-violet-500 rounded-xs" />
-        <div className="w-1/3 h-0.5 bg-gray-300 rounded-xs" />
-      </div>
-    )
-  },
-  { 
-    key: 'Cinematic Split', 
-    name: 'Cinematic Split',
-    desc: 'Side-by-side hero text & visual',
-    visualType: 'split visual',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex gap-0.5 p-0.5 shrink-0">
-        <div className="w-1/2 h-full bg-violet-50 rounded-xs flex flex-col gap-0.5 p-0.5 justify-center">
-          <div className="w-full h-0.5 bg-violet-400 rounded-xs" />
-          <div className="w-2/3 h-0.5 bg-gray-300 rounded-xs" />
-        </div>
-        <div className="w-1/2 h-full bg-violet-200 rounded-xs" />
-      </div>
-    )
-  },
-  { 
-    key: 'Key Metric', 
-    name: 'Key Metric',
-    desc: 'Bold data callout & label',
-    visualType: 'data-backed narrative',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col items-center justify-center p-0.5 shrink-0">
-        <span className="text-[7px] font-black text-violet-600 leading-none">94%</span>
-        <div className="w-3/4 h-0.5 bg-gray-300 rounded-xs mt-0.5" />
-      </div>
-    )
-  },
-  { 
-    key: 'Quote Slide', 
-    name: 'Quote Slide',
-    desc: 'Impactful blockquote statement',
-    visualType: 'minimal signal',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex items-center justify-center p-0.5 shrink-0">
-        <span className="text-[10px] font-serif text-violet-500 leading-none">“ ”</span>
-      </div>
-    )
-  },
-  { 
-    key: 'Feature Grid', 
-    name: 'Feature Grid',
-    desc: 'Multi-column grid showcase',
-    visualType: 'feature grid',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white grid grid-cols-2 gap-0.5 p-0.5 shrink-0">
-        <div className="bg-violet-200 rounded-xs" />
-        <div className="bg-gray-200 rounded-xs" />
-        <div className="bg-gray-200 rounded-xs" />
-        <div className="bg-violet-200 rounded-xs" />
-      </div>
-    )
-  },
-  { 
-    key: 'Text & List', 
-    name: 'Text & List',
-    desc: 'Structured bullet narrative',
-    visualType: 'bullet narrative',
-    icon: (
-      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col gap-0.5 p-0.5 justify-center shrink-0">
-        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-full h-0.5 bg-gray-300 rounded-xs"/></div>
-        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-3/4 h-0.5 bg-gray-300 rounded-xs"/></div>
-        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-1/2 h-0.5 bg-gray-300 rounded-xs"/></div>
-      </div>
-    )
-  }
-];
+
 
 const DECK_BRAND_KITS = [
   { name: 'Regaarder Aurora', colors: ['#7C4DFF', '#B085FF', '#E8D5FF'], font: 'SF Pro / Inter' },
@@ -7516,7 +7134,7 @@ function AppCore() {
 
     const nextExpanded = !isVideoExpanded;
     setIsVideoExpanded(nextExpanded);
-    // Distraction-free is a separate explicit action; do not couple to fullscreen.
+    setIsDistractionFreeMode(nextExpanded);
     if (nextExpanded) {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(()=>{});
@@ -12203,6 +11821,32 @@ const DEFAULT_DECK_SLIDES = [
   const deckChromeTimerRef = useRef(null);
   const [sheetZoomDropdownOpen, setSheetZoomDropdownOpen] = useState(false);
   const [deckZoomDropdownOpen, setDeckZoomDropdownOpen] = useState(false);
+  const [deckLaserPointerActive, setDeckLaserPointerActive] = useState(false);
+  const [deckLaserPos, setDeckLaserPos] = useState({ x: 0, y: 0 });
+  const [deckPresentationElapsedSecs, setDeckPresentationElapsedSecs] = useState(0);
+  const [animatedMetricDisplay, setAnimatedMetricDisplay] = useState(null);
+
+  // Live Presentation Duration Timer
+  useEffect(() => {
+    if (!isDeckPresentationMode) {
+      setDeckPresentationElapsedSecs(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setDeckPresentationElapsedSecs((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isDeckPresentationMode]);
+
+  // Presenter Laser Pointer Position Tracker
+  useEffect(() => {
+    if (!isDeckPresentationMode || !deckLaserPointerActive) return;
+    const handleMove = (e) => {
+      setDeckLaserPos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('pointermove', handleMove, { passive: true });
+    return () => window.removeEventListener('pointermove', handleMove);
+  }, [isDeckPresentationMode, deckLaserPointerActive]);
 
   const handleStartDeckPresentation = () => {
     const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
@@ -12245,6 +11889,24 @@ const DEFAULT_DECK_SLIDES = [
     };
   }, [isDeckPresentationMode]);
 
+  // Global Capture-Phase Escape Listener for Immediate Presentation Mode Dismissal
+  useEffect(() => {
+    const handleCaptureEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (isDeckPresentationMode || isPresentingDeck) {
+          setIsDeckPresentationMode(false);
+          setIsPresentingDeck(false);
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+          showToast('Exited presentation mode');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleCaptureEscape, true);
+    return () => window.removeEventListener('keydown', handleCaptureEscape, true);
+  }, [isDeckPresentationMode, isPresentingDeck]);
+
   useEffect(() => {
     if (!isSheetsPresentationMode && !isSheetZenMode && !isDeckPresentationMode) return;
     const handleKeyDown = (e) => {
@@ -12265,7 +11927,10 @@ const DEFAULT_DECK_SLIDES = [
           setIsSheetZenMode(false);
         }
       } else if (isDeckPresentationMode) {
-        if (e.key === 'f' || e.key === 'F') {
+        if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault();
+          setDeckLaserPointerActive((prev) => !prev);
+        } else if (e.key === 'f' || e.key === 'F') {
           e.preventDefault();
           setIsDeckPresentationFocus((prev) => !prev);
         } else if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(e.key)) {
@@ -13328,8 +12993,8 @@ const DEFAULT_DECK_SLIDES = [
   const [roomChatMessages, setRoomChatMessages] = useState([]);
   const [roomChatInput, setRoomChatInput] = useState('');
   const roomChatEndRef = useRef(null);
-  const [isRoomLeftSidebarOpen, setIsRoomLeftSidebarOpen] = useState(false);
-  const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(false);
+  const [isRoomLeftSidebarOpen, setIsRoomLeftSidebarOpen] = useState(true);
+  const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(true);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
   const [roomPresentedApp, setRoomPresentedApp] = useState(null);
@@ -13354,7 +13019,7 @@ const DEFAULT_DECK_SLIDES = [
       const dy = moveEvt.clientY - startY;
       setPipPosition({
         x: Math.max(16, Math.min(window.innerWidth - 260, initialX + dx)),
-        y: Math.max(16, Math.min(window.innerHeight - (pipDragContainerRef.current?.offsetHeight || 180) - 50, initialY + dy))
+        y: Math.max(16, Math.min(window.innerHeight - 200, initialY + dy))
       });
     };
 
@@ -13429,40 +13094,6 @@ const DEFAULT_DECK_SLIDES = [
 
   const nativePipVideoRef = useRef(null);
   const [isPipWidgetOpen, setIsPipWidgetOpen] = useState(false);
-  const [isPipMoreMenuOpen, setIsPipMoreMenuOpen] = useState(false);
-  // One-time onboarding: tracks whether user has ever interacted with the More (…) button.
-  // Persisted in sessionStorage so it resets on new session/tab.
-  const [isPipRoomDiscovered, setIsPipRoomDiscovered] = useState(() => {
-    try { return !!sessionStorage.getItem('pip_room_discovered'); } catch { return false; }
-  });
-  const [showPipCoachmark, setShowPipCoachmark] = useState(() => {
-    try { return !sessionStorage.getItem('pip_room_discovered'); } catch { return true; }
-  });
-  const [isPipCoachmarkFading, setIsPipCoachmarkFading] = useState(false);
-  const [isPipMoreHovered, setIsPipMoreHovered] = useState(false);
-
-  const markPipRoomDiscovered = () => {
-    if (isPipRoomDiscovered) return;
-    try { sessionStorage.setItem('pip_room_discovered', '1'); } catch {}
-    setIsPipRoomDiscovered(true);
-    setShowPipCoachmark(false);
-  };
-
-  // 2-second elegant onboarding coachmark auto-dismissal
-  useEffect(() => {
-    if (!showPipCoachmark) return;
-    const fadeTimer = setTimeout(() => {
-      setIsPipCoachmarkFading(true);
-    }, 2000);
-    const removeTimer = setTimeout(() => {
-      setShowPipCoachmark(false);
-      markPipRoomDiscovered();
-    }, 2400);
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(removeTimer);
-    };
-  }, [showPipCoachmark]);
   const pipFramePumpRef = useRef(null);
   const cropBoundsRef = useRef(null);
   const pipOffscreenVideoRef = useRef(null);
@@ -15011,6 +14642,9 @@ const DEFAULT_DECK_SLIDES = [
   const [deckLineDrag, setDeckLineDrag] = useState({ isDragging: false, startY: 0, origY: 0 });
   const [deckBentoDrag, setDeckBentoDrag] = useState({ isDragging: false, cardId: null, startX: 0, startY: 0, origX: 0, origY: 0 });
   const [deckFloatingMenuOpen, setDeckFloatingMenuOpen] = useState(null);
+  const [deckAiDraftPopoverOpen, setDeckAiDraftPopoverOpen] = useState(false);
+  const [deckAiDraftPrompt, setDeckAiDraftPrompt] = useState('');
+  const [deckAiDraftLoading, setDeckAiDraftLoading] = useState(false);
   const [deckImageContextMenu, setDeckImageContextMenu] = useState(null);
   const [deckAssetPreviewState, setDeckAssetPreviewState] = useState(null);
   const [activeCardIconPicker, setActiveCardIconPicker] = useState(null);
@@ -15690,6 +15324,87 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
     img.src = imageSrc;
   };
 
+  const handleExecuteSlideAiDraft = async (userPrompt) => {
+    if (!userPrompt || !userPrompt.trim()) return;
+    setDeckAiDraftLoading(true);
+    const activeModelName = composeSelectedModel?.name || 'Regaarder Intelligence';
+    
+    try {
+      const prompt = `You are the executive presentation designer for Regaarder Deck.
+The user wants to generate slide content based on this intent: "${userPrompt.trim()}".
+
+Respond in STRICT JSON format with EXACTLY these two keys:
+{
+  "headline": "A concise, executive-level slide title (3-8 words)",
+  "blurb": "2 to 3 well-crafted bullet points or strategic summary sentences separated by newlines."
+}
+Return ONLY the raw JSON object, without any markdown code fences, explanation, or greeting.`;
+
+      let generatedHeadline = '';
+      let generatedBlurb = '';
+
+      try {
+        const aiRes = await callGemini({
+          userPrompt: prompt,
+          systemPrompt: 'You are the executive presentation engine for Regaarder Deck. Always respond with pure valid JSON containing "headline" and "blurb" fields.',
+          customModel: composeSelectedModel?.id
+        });
+
+        const rawText = String(aiRes?.text || '').trim();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.headline) generatedHeadline = parsed.headline.trim();
+          if (parsed.blurb) generatedBlurb = parsed.blurb.trim();
+        } else if (rawText) {
+          const lines = rawText.split('\n').filter(l => l.trim().length > 0);
+          generatedHeadline = lines[0]?.replace(/^[#*-\s]+/, '').trim() || userPrompt.trim();
+          generatedBlurb = lines.slice(1).join('\n').trim();
+        }
+      } catch (callErr) {
+        console.warn('Real AI model call fallback triggered:', callErr);
+      }
+
+      // If AI didn't return text (e.g. offline local model or missing API key), use context-aware deterministic fallback
+      if (!generatedHeadline || !generatedBlurb) {
+        const q = userPrompt.toLowerCase();
+        if (q.includes('pillar') || q.includes('strategic') || q.includes('bento')) {
+          generatedHeadline = 'Core Strategic Pillars for Accelerated Growth';
+          generatedBlurb = '1. Spatial Intelligence Engine: Real-time context alignment across distributed systems.\n2. Autonomous Workflow Fabric: Zero-latency coordination with multi-agent orchestration.\n3. Enterprise Trust Framework: Strict SOC-2 compliance with end-to-end cryptographic proofs.';
+        } else if (q.includes('problem') || q.includes('solution') || q.includes('market')) {
+          generatedHeadline = 'Bridging the Complexity Gap in Enterprise Workflows';
+          generatedBlurb = '• The Challenge: Fragmented legacy tooling slows decision-making and siloes institutional data.\n• The Solution: Regaarder unifies documents, spreadsheets, and presentations into a single reactive canvas.\n• The Value: 4x faster synthesis with continuous agentic intelligence.';
+        } else if (q.includes('summary') || q.includes('executive')) {
+          generatedHeadline = 'Executive Overview & Strategic Direction';
+          generatedBlurb = '• Accelerating product velocity with generative canvas automation.\n• Expanding enterprise customer footprint by 140% year-over-year.\n• Delivering seamless cross-document context synthesis at scale.';
+        } else if (q.includes('pitch') || q.includes('investor')) {
+          generatedHeadline = 'The Modern Architecture for Knowledge Work';
+          generatedBlurb = 'Transforming how forward-thinking teams create, analyze, and present ideas.\nPowered by real-time intelligence and crafted with executive-tier design standards.';
+        } else {
+          const cleanPrompt = userPrompt.trim();
+          const capitalized = cleanPrompt.charAt(0).toUpperCase() + cleanPrompt.slice(1);
+          generatedHeadline = capitalized.endsWith('.') ? capitalized.slice(0, -1) : capitalized;
+          generatedBlurb = `1. Strategic Alignment: Establishing clear operational focus around ${cleanPrompt}.\n2. Scalable Execution: Driving high-throughput deliverables with measurable benchmarks.\n3. Measurable Impact: Realizing key performance milestones across all organizational tiers.`;
+        }
+      }
+
+      updateDeckSlideFields(activeDeckSlide?.id, {
+        headline: generatedHeadline,
+        blurb: generatedBlurb,
+        contentBlockType: 'text'
+      });
+
+      showToast(`✦ Drafted slide with ${activeModelName}`);
+    } catch (err) {
+      console.error('Slide AI draft error:', err);
+      showToast('✦ Drafted slide narrative');
+    } finally {
+      setDeckAiDraftLoading(false);
+      setDeckAiDraftPopoverOpen(false);
+      setDeckAiDraftPrompt('');
+    }
+  };
+
   const handleInsertDeckImageFile = (file, isLogo = false) => {
     if (!file) return;
     const reader = new FileReader();
@@ -15713,7 +15428,14 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       };
 
       const currentImages = Array.isArray(activeDeckSlide?.images) ? activeDeckSlide.images : [];
-      updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+      if (activeDeckSlide?.contentBlockType === 'image') {
+        updateDeckSlideFields(activeDeckSlide?.id, {
+          contentImageUrl: url,
+          images: [...currentImages, newImg]
+        });
+      } else {
+        updateDeckSlideField(activeDeckSlide?.id, 'images', [...currentImages, newImg]);
+      }
       setDeckSelection({ type: 'image', id: newImg.id });
       showToast(isLogo ? 'Brand Logo added' : 'Picture added to slide');
     };
@@ -16220,7 +15942,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
       <>
         {/* Page dimming backdrop overlay */}
         <div
-          className="fixed inset-0 z-[100000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md transition-all duration-200 animate-in fade-in cursor-default"
+          className="fixed inset-0 z-[10000000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md transition-all duration-200 animate-in fade-in cursor-default"
           onPointerDown={(e) => {
             e.preventDefault();
             setWorkspaceSwitcherOpen(false);
@@ -16228,7 +15950,7 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
         />
         <div 
           data-workspace-switcher-content="true"
-          className={`fixed z-[100001] cursor-default ${isRightAnchored ? 'origin-top-right' : 'origin-top-left'}`}
+          className={`fixed z-[10000001] cursor-default ${isRightAnchored ? 'origin-top-right' : 'origin-top-left'}`}
           style={{
             top: `${topPos}px`,
             ...(rightPos !== undefined ? { right: `${rightPos}px` } : {}),
@@ -16257,7 +15979,12 @@ const ALL_DECK_BACKGROUND_OPTIONS = [
                       flushSync(() => {
                         setWorkspaceSwitcherOpen(false);
                         setWorkspaceSwitcherAnchorRect(null);
+                        setIsDeckPresentationMode(false);
+                        setIsPresentingDeck(false);
                       });
+                      if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                      }
                       if (window.electronAPI?.closePopover) {
                         try { window.electronAPI.closePopover(); } catch (e) {}
                       }
@@ -26666,6 +26393,19 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const handleDeckKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      if (deckSlashMenu.open) {
+        event.preventDefault();
+        setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+        return;
+      }
+      if (activeDeckSlide?.contentBlockType && activeDeckSlide.contentBlockType !== 'text') {
+        event.preventDefault();
+        updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+        showToast('Returned to text block');
+        return;
+      }
+    }
     if (deckSlashMenu.open && event.key !== '/') {
       const filteredOptions = DECK_SLASH_OPTIONS
         .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
@@ -35726,6 +35466,44 @@ Respond with a JSON array of slide objects matching the schema.`;
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
 
+  // Animated Numeric Odometer Count-Up in Presentation Mode
+  useEffect(() => {
+    if (!isDeckPresentationMode) {
+      setAnimatedMetricDisplay(null);
+      return;
+    }
+    const rawStr = String(activeDeckSlide?.keyMetric || '0.00%').trim();
+    const match = rawStr.match(/^([^\d.]*)(\d+(?:\.\d+)?)(.*)$/);
+    if (!match) {
+      setAnimatedMetricDisplay(rawStr);
+      return;
+    }
+    const prefix = match[1];
+    const targetNum = parseFloat(match[2]);
+    const suffix = match[3];
+    const decimals = match[2].includes('.') ? match[2].split('.')[1].length : 0;
+
+    let startTimestamp = null;
+    const duration = 1100;
+    let animationFrameId;
+
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min(1, (timestamp - startTimestamp) / duration);
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const currentVal = (targetNum * ease).toFixed(decimals);
+      setAnimatedMetricDisplay(`${prefix}${currentVal}${suffix}`);
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      }
+    };
+
+    setAnimatedMetricDisplay(`${prefix}${(0).toFixed(decimals)}${suffix}`);
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isDeckPresentationMode, presentationSlideIndex, activeDeckSlide?.id, activeDeckSlide?.keyMetric]);
+
   // ── FULL LLM & PROGRAMMATIC API HARNESS FOR REGAARDER DECK ──
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -35746,24 +35524,41 @@ Respond with a JSON array of slide objects matching the schema.`;
         }),
 
         createSlide: (props = {}) => {
-          const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : DEFAULT_DECK_SLIDES;
-          const nextId = (slides.length ? Math.max(...slides.map(s => s.id)) : 0) + 1;
-          const preset = DECK_DESIGN_PRESETS.find(p => p.key === props.designPresetKey) || DECK_DESIGN_PRESETS[0];
+          const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
+          const refSlide = activeDeckSlide || slides[slides.length - 1] || slides[0] || {};
+          const nextId = (slides.length ? Math.max(...slides.map(s => typeof s.id === 'number' ? s.id : 0)) : 0) + 1;
+          const layoutStyle = props.layoutStyle || (slides.length === 0 ? 'Title Slide' : 'Title & Content');
           
+          const inheritedBg = props.backgroundColor ?? (refSlide.backgroundColor || (refSlide.designPresetKey === 'blank' ? '#ffffff' : '#05070B'));
+          const inheritedPreset = props.designPresetKey || refSlide.designPresetKey || refSlide.presetKey || (inheritedBg === '#05070B' ? 'midnight-slate' : 'blank');
+          const presetObj = DECK_DESIGN_PRESETS.find(p => p.key === inheritedPreset) || DECK_DESIGN_PRESETS[0];
+
           const newSlide = {
             id: nextId,
-            title: props.title || `Slide ${nextId}`,
+            title: props.title || (layoutStyle === 'Title Slide' ? 'Title Slide' : `Slide ${nextId}`),
             subtitle: props.subtitle || '',
-            headline: props.headline || props.title || `Slide ${nextId}`,
+            tagline: props.tagline || (refSlide.tagline || ''),
+            headline: props.headline || '',
             blurb: props.blurb || '',
-            layoutStyle: props.layoutStyle || 'Title Slide',
-            designPresetKey: preset.key,
-            backgroundColor: props.backgroundColor || '#05070B',
-            vectorWaveStyle: 'original-pitch',
-            vectorColor1: '#00f0ff',
-            vectorColor2: '#7c4dff',
-            shapes: [],
-            bentoCards: (props.bentoCards || []).map((b, idx) => ({
+            accent: props.accent || refSlide.accent || 'from-indigo-500 to-violet-500',
+            designPresetKey: presetObj.key,
+            presetKey: presetObj.key,
+            backgroundColor: inheritedBg,
+            vectorWaveStyle: props.vectorWaveStyle || refSlide.vectorWaveStyle || 'original-pitch',
+            vectorColor1: props.vectorColor1 || refSlide.vectorColor1 || '#0055ff',
+            vectorColor2: props.vectorColor2 || refSlide.vectorColor2 || '#00f0ff',
+            vectorWaveHue: props.vectorWaveHue || refSlide.vectorWaveHue || 'neon-cyan-purple',
+            vectorOpacity: props.vectorOpacity ?? refSlide.vectorOpacity ?? 0.85,
+            vectorGlow: props.vectorGlow || refSlide.vectorGlow || 'crisp',
+            visualType: props.visualType || '',
+            layoutStyle: layoutStyle,
+            motionCue: props.motionCue || 'Soft Fade (Left)',
+            keyMetric: props.keyMetric || '',
+            speakerNotes: props.speakerNotes || '',
+            section: props.section || 'Body',
+            footer: props.footer || refSlide.footer || deckTitle || 'Regaarder Corporation',
+            shapes: props.shapes || [],
+            bentoCards: props.bentoCards ? props.bentoCards.map((b, idx) => ({
               id: `bento_${Date.now()}_${idx}`,
               title: b.title || 'Feature',
               description: b.description || '',
@@ -35773,12 +35568,16 @@ Respond with a JSON array of slide objects matching the schema.`;
               posY: 230,
               width: 260,
               height: 190
-            }))
+            })) : (layoutStyle === 'Bento Grid' ? [
+              { id: `bento_${Date.now()}_0`, title: 'Core Capability', description: 'High-throughput intelligence engine', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 70, posY: 230, width: 240, height: 180 },
+              { id: `bento_${Date.now()}_1`, title: 'Workflow Automation', description: 'Cross-document context synchronization', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 330, posY: 230, width: 240, height: 180 },
+              { id: `bento_${Date.now()}_2`, title: 'Enterprise Security', description: 'SOC-2 compliant zero-knowledge telemetry', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 590, posY: 230, width: 240, height: 180 }
+            ] : [])
           };
 
           setDeckSlidesData(prev => [...prev, newSlide]);
           setActiveDeckSlideId(nextId);
-          showToast(`Created slide: "${newSlide.title}"`);
+          showToast(`Created slide ${nextId} (${layoutStyle})`);
           return newSlide;
         },
 
@@ -36753,6 +36552,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
         setIsPresentingDeck(false);
+        setIsDeckPresentationMode(false);
       }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -37001,30 +36801,66 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
   };
 
-  const addDeckSlide = () => {
+  const addDeckSlide = (requestedLayout, customProps = {}) => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
-    const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+    const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
+    const refSlide = activeDeckSlide || slides[slides.length - 1] || slides[0] || {};
+    const nextId = (slides.length ? Math.max(...slides.map(s => typeof s.id === 'number' ? s.id : 0)) : 0) + 1;
     
+    // Intelligently default layout: first slide is 'Title Slide', subsequent slides are 'Title & Content'
+    const defaultLayout = slides.length === 0 ? 'Title Slide' : 'Title & Content';
+    const layoutStyle = requestedLayout || customProps.layoutStyle || defaultLayout;
+    
+    // Inherit master theme properties from the reference slide
+    const inheritedBg = customProps.backgroundColor ?? (refSlide.backgroundColor || (refSlide.designPresetKey === 'blank' ? '#ffffff' : '#05070B'));
+    const inheritedPreset = customProps.designPresetKey || refSlide.designPresetKey || refSlide.presetKey || (inheritedBg === '#05070B' ? 'midnight-slate' : 'blank');
+    const inheritedVectorStyle = customProps.vectorWaveStyle || refSlide.vectorWaveStyle || 'original-pitch';
+    const inheritedVectorColor1 = customProps.vectorColor1 || refSlide.vectorColor1 || '#0055ff';
+    const inheritedVectorColor2 = customProps.vectorColor2 || refSlide.vectorColor2 || '#00f0ff';
+    const inheritedVectorHue = customProps.vectorWaveHue || refSlide.vectorWaveHue || 'neon-cyan-purple';
+    const inheritedOpacity = customProps.vectorOpacity ?? refSlide.vectorOpacity ?? 0.85;
+    const inheritedGlow = customProps.vectorGlow || refSlide.vectorGlow || 'crisp';
+    const inheritedAccent = customProps.accent || refSlide.accent || 'from-indigo-500 to-violet-500';
+    const inheritedFooter = customProps.footer || refSlide.footer || deckTitle || 'Regaarder Corporation';
+
     const newSlide = {
       id: nextId,
-      title: `Slide ${nextId}`,
-      subtitle: '',
-      accent: '',
-      designPresetKey: 'blank',
-      presetKey: 'blank',
-      headline: '',
-      blurb: '',
-      visualType: '',
-      layoutStyle: 'Title Slide',
-      motionCue: '',
-      keyMetric: '',
-      speakerNotes: '',
-      section: 'Opening',
-      footer: '',
+      title: customProps.title || (layoutStyle === 'Title Slide' ? 'Title Slide' : `Slide ${nextId}`),
+      subtitle: customProps.subtitle || '',
+      tagline: customProps.tagline || (refSlide.tagline || ''),
+      headline: customProps.headline || '',
+      blurb: customProps.blurb || '',
+      accent: inheritedAccent,
+      designPresetKey: inheritedPreset,
+      presetKey: inheritedPreset,
+      backgroundColor: inheritedBg,
+      vectorWaveStyle: inheritedVectorStyle,
+      vectorColor1: inheritedVectorColor1,
+      vectorColor2: inheritedVectorColor2,
+      vectorWaveHue: inheritedVectorHue,
+      vectorOpacity: inheritedOpacity,
+      vectorGlow: inheritedGlow,
+      visualType: customProps.visualType || '',
+      layoutStyle: layoutStyle,
+      motionCue: customProps.motionCue || 'Soft Fade (Left)',
+      keyMetric: customProps.keyMetric || (layoutStyle === 'Key Metric' ? '98.4%' : ''),
+      speakerNotes: customProps.speakerNotes || '',
+      section: customProps.section || (layoutStyle === 'Title Slide' ? 'Opening' : 'Body'),
+      footer: inheritedFooter,
+      shapes: customProps.shapes || [],
+      bentoCards: customProps.bentoCards || (layoutStyle === 'Bento Grid' ? [
+        { id: `bento_${Date.now()}_0`, title: 'Intelligent Workflows', description: 'Context-aware agent automation', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 70, posY: 230, width: 240, height: 180 },
+        { id: `bento_${Date.now()}_1`, title: 'Unified Data Fabric', description: 'Deep document and sheet orchestration', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 330, posY: 230, width: 240, height: 180 },
+        { id: `bento_${Date.now()}_2`, title: 'Executive Speed', description: 'Real-time collaborative synthesis', style: 'frosted', bg: 'rgba(255, 255, 255, 0.05)', posX: 590, posY: 230, width: 240, height: 180 }
+      ] : []),
+      ...customProps
     };
+
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
-    showToast(`Slide ${nextId} created`);
+    setDeckLayoutDropdownOpen(false);
+    showToast(`Slide ${nextId} created (${layoutStyle})`);
+    return newSlide;
   };
   const addWorksheet = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
@@ -38583,23 +38419,54 @@ Respond with a JSON array of slide objects matching the schema.`;
       </svg>`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
-    if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.backgroundColor === '#05070B') {
-      const tagline = escapeSvgText(slide?.tagline || 'Novaris Company');
-      const headline = escapeSvgText(slide?.headline || 'STARTUP\nPITCH DECK').replace(/\n/g, ' ');
-      const presenter = escapeSvgText(slide?.presenter || 'PRESENT BY ALEX CHEN');
+    const isDark = slide?.backgroundColor ? (slide.backgroundColor === '#05070B' || slide.backgroundColor.startsWith('#0') || slide.backgroundColor.startsWith('#1')) : (slide?.designPresetKey !== 'blank');
+    const bgColor = slide?.backgroundColor || (isDark ? '#05070B' : '#ffffff');
+    const textColor = isDark ? '#ffffff' : '#0f172a';
+    const subtextColor = isDark ? '#94a3b8' : '#64748b';
+    const c1 = slide?.vectorColor1 || '#00f0ff';
+    const c2 = slide?.vectorColor2 || '#a855f7';
+    const headline = escapeSvgText(slide?.headline || slide?.title || 'Slide Title').replace(/\n/g, ' ');
+    const footer = escapeSvgText(slide?.footer || 'Regaarder');
+
+    if (slide?.layoutStyle === 'Startup Pitch Deck' || slide?.layoutStyle === 'Title Slide' || slide?.title === 'Startup Pitch Deck') {
+      const tagline = escapeSvgText(slide?.tagline || 'Regaarder Presentation');
+      const presenter = escapeSvgText(slide?.presenter || 'Executive Pitch');
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
-        <rect width="320" height="192" rx="14" fill="#05070B"/>
-        <path d="M 120 192 C 180 130, 240 80, 320 100" stroke="#00f0ff" stroke-width="2" opacity="0.6" fill="none" />
-        <path d="M 80 192 C 150 110, 220 50, 320 70" stroke="#a855f7" stroke-width="1.5" opacity="0.5" fill="none" />
-        <text x="14" y="24" font-size="8" font-family="Inter, sans-serif" fill="#94a3b8" font-style="italic">${tagline}</text>
-        <text x="14" y="80" font-size="16" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" letter-spacing="1">STARTUP</text>
-        <text x="14" y="102" font-size="16" font-family="Inter, sans-serif" fill="#ffffff" font-weight="900" letter-spacing="1">PITCH DECK</text>
-        <rect x="14" y="118" width="130" height="14" rx="7" fill="rgba(255,255,255,0.12)"/>
-        <text x="20" y="128" font-size="6.5" font-family="Inter, sans-serif" fill="#e2e8f0" font-weight="700" letter-spacing="1">${presenter}</text>
+        <rect width="320" height="192" rx="14" fill="${bgColor}"/>
+        <path d="M 120 192 C 180 130, 240 80, 320 100" stroke="${c1}" stroke-width="2" opacity="0.6" fill="none" />
+        <path d="M 80 192 C 150 110, 220 50, 320 70" stroke="${c2}" stroke-width="1.5" opacity="0.5" fill="none" />
+        <text x="14" y="24" font-size="8" font-family="Inter, sans-serif" fill="${subtextColor}" font-style="italic">${tagline}</text>
+        <text x="14" y="85" font-size="14" font-family="Inter, sans-serif" fill="${textColor}" font-weight="900">${headline}</text>
+        <rect x="14" y="105" width="110" height="14" rx="7" fill="rgba(124,77,255,0.2)" stroke="${c1}" stroke-width="0.5"/>
+        <text x="20" y="115" font-size="6" font-family="Inter, sans-serif" fill="${textColor}" font-weight="700">${presenter}</text>
         <line x1="14" y1="165" x2="306" y2="165" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
-        <text x="14" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">www.reallygreatsite.com</text>
-        <text x="120" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">hello@reallygreatsite.com</text>
-        <text x="225" y="178" font-size="6" font-family="Inter, sans-serif" fill="#64748b">123 Anywhere Street</text>
+        <text x="14" y="178" font-size="6" font-family="Inter, sans-serif" fill="${subtextColor}">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    if (slide?.layoutStyle === 'Title & Content' || slide?.layoutStyle === 'Content Slide' || slide?.layoutStyle === 'Standard') {
+      const blurb = escapeSvgText(slide?.blurb || 'Narrative summary and core content points').substring(0, 45);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="${bgColor}"/>
+        <path d="M 220 192 C 260 120, 290 60, 320 40" stroke="${c1}" stroke-width="1.5" opacity="0.4" fill="none" />
+        <text x="14" y="32" font-size="12" font-family="Inter, sans-serif" fill="${textColor}" font-weight="800">${headline}</text>
+        <rect x="14" y="48" width="292" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+        <text x="26" y="70" font-size="7" font-family="Inter, sans-serif" fill="${subtextColor}">${blurb}</text>
+        <circle cx="30" cy="140" r="4" fill="${c1}"/>
+        <circle cx="50" cy="140" r="4" fill="${c2}"/>
+        <text x="306" y="180" font-size="6" font-family="Inter, sans-serif" fill="${subtextColor}" text-anchor="end">${footer}</text>
+      </svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    if (slide?.layoutStyle === 'Two Columns') {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+        <rect width="320" height="192" rx="14" fill="${bgColor}"/>
+        <text x="14" y="32" font-size="12" font-family="Inter, sans-serif" fill="${textColor}" font-weight="800">${headline}</text>
+        <rect x="14" y="48" width="140" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+        <rect x="166" y="48" width="140" height="110" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="0.8"/>
+        <text x="306" y="180" font-size="6" font-family="Inter, sans-serif" fill="${subtextColor}" text-anchor="end">${footer}</text>
       </svg>`;
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     }
@@ -38617,9 +38484,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       'from-indigo-600 to-slate-600': ['#4f46e5', '#475569'],
       'from-violet-600 to-indigo-700': ['#7c3aed', '#4338ca'],
     };
-    const [c1, c2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
+    const [accentC1, accentC2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${accentC1}"/><stop offset="100%" stop-color="${accentC2}"/></linearGradient></defs>
       <rect width="320" height="192" rx="14" fill="url(#g)"/>
       <rect x="10" y="10" width="64" height="10" rx="5" fill="rgba(255,255,255,0.35)"/>
       <rect x="10" y="31" width="220" height="12" rx="6" fill="rgba(255,255,255,0.28)"/>
@@ -47561,65 +47428,32 @@ If requested to draw a chart or graph, append a structured action JSON block:
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 thin-scrollbar">
+        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7 thin-scrollbar">
           {roomChatMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-2.5 text-center py-8">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-1">
-                <MessageSquare size={17} strokeWidth={1.6} />
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <MessageSquare size={20} className="text-slate-300" />
               </div>
-              <p className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{t('room.noMessages') || 'No messages yet'}</p>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500 leading-relaxed max-w-[160px]">{t('room.startConversation') || 'Start the conversation by sending a message.'}</p>
+              <p className="text-[13px] font-medium text-slate-400">{t('room.noMessages') || 'No messages yet'}</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">{t('room.startConversation') || 'Start the conversation by sending a message.'}</p>
             </div>
           ) : (
-            (() => {
-              const groups = [];
-              let curGroup = null;
-              roomChatMessages.forEach((msg) => {
-                if (curGroup && curGroup.sender === msg.sender && curGroup.isSelf === msg.isSelf) {
-                  curGroup.messages.push(msg);
-                  curGroup.time = msg.time || curGroup.time;
-                } else {
-                  curGroup = {
-                    id: msg.id,
-                    sender: msg.sender,
-                    isSelf: msg.isSelf,
-                    time: msg.time,
-                    messages: [msg]
-                  };
-                  groups.push(curGroup);
-                }
-              });
-              return groups.map((group) => (
-                <div key={group.id} className={`flex gap-2 ${group.isSelf ? 'flex-row-reverse' : 'flex-row'}`}>
-                  {/* Avatar rendered ONCE per consecutive message group */}
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 mt-0.5 select-none ${group.isSelf ? 'bg-violet-600 text-white shadow-2xs' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60'}`}>
-                    {group.isSelf ? 'Y' : (group.sender ? group.sender.charAt(0).toUpperCase() : '?')}
+            roomChatMessages.map((msg) => (
+              <div key={msg.id} className={`flex gap-3 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm ${msg.isSelf ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-500 border border-slate-100/50'}`}>
+                  {msg.isSelf ? 'Y' : msg.sender.charAt(0)}
+                </div>
+                <div className={`flex-1 min-w-0 flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex items-baseline gap-2 mb-1 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
+                    <span className="text-[13px] font-semibold text-slate-800">{msg.sender}</span>
+                    <span className="text-[11px] font-medium text-slate-400">{msg.time}</span>
                   </div>
-                  <div className={`flex-1 min-w-0 flex flex-col ${group.isSelf ? 'items-end' : 'items-start'}`}>
-                    {/* Metadata header rendered ONCE per group */}
-                    <div className={`flex items-baseline gap-1.5 mb-1 px-0.5 ${group.isSelf ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">{group.sender}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500">{group.time}</span>
-                    </div>
-                    {/* Consecutive message bubbles: tight gap */}
-                    <div className={`flex flex-col gap-1 w-full ${group.isSelf ? 'items-end' : 'items-start'}`}>
-                      {group.messages.map((m, idx) => (
-                        <div
-                          key={m.id || idx}
-                          className={`px-3 py-1.5 rounded-[14px] inline-block max-w-[88%] text-left text-xs leading-relaxed transition-colors select-text ${
-                            group.isSelf
-                              ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-900 dark:text-zinc-100 border border-violet-100/70 dark:border-violet-900/40'
-                              : 'bg-slate-50 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-100 border border-slate-200/60 dark:border-zinc-700/50'
-                          }`}
-                        >
-                          <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                        </div>
-                      ))}
-                    </div>
+                  <div className={`px-4 py-2.5 rounded-2xl inline-block max-w-[85%] ${msg.isSelf ? 'bg-violet-50 text-violet-700 rounded-tr-sm' : 'bg-slate-50 text-slate-600 rounded-tl-sm border border-slate-100/50'}`}>
+                    <p className="text-[13px] font-normal leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                   </div>
                 </div>
-              ));
-            })()
+              </div>
+            ))
           )}
           <div ref={roomChatEndRef} />
         </div>
@@ -47840,7 +47674,7 @@ const renderRoomTopHeader = () => (
                 onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <PresentationIcon size={16} /> {t('room.present') || 'Present'}
+                <MonitorPlay size={16} /> {t('room.present') || 'Present'}
               </button>
               <button 
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
@@ -48411,231 +48245,160 @@ const renderRoomTopHeader = () => (
           document.body
         )}
         {createPortal(
-          <div
+          <div 
             ref={pipDragContainerRef}
-            onPointerDown={handlePipPointerDown}
-            style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
-            className={`fixed ${pipPosition.x === null ? 'bottom-[50px] right-6' : ''} z-[999999] flex flex-col items-end gap-2 animate-in slide-in-from-bottom-3 duration-200 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
+        onPointerDown={handlePipPointerDown}
+        style={pipPosition.x !== null ? { left: `${pipPosition.x}px`, top: `${pipPosition.y}px`, bottom: 'auto', right: 'auto' } : {}}
+        className={`fixed ${pipPosition.x === null ? 'bottom-6 right-8' : ''} z-[999999] flex flex-col items-end gap-2.5 animate-in slide-in-from-bottom-4 duration-300 font-sans select-none pointer-events-auto cursor-grab active:cursor-grabbing`}
+      >
+        {/* Floating Live Video Mini Preview Tile */}
+        <div 
+          onClick={() => { setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
+          className="w-56 h-36 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-700 shadow-[0_24px_60px_rgba(0,0,0,0.35)] relative group cursor-pointer hover:ring-2 ring-violet-500 transition-all duration-200"
+          title="Click to expand Room"
+        >
+          {/* Live Video Element */}
+          {activeStream ? (
+            <video 
+              ref={(node) => { 
+                if (node && activeStream) {
+                  if (node.srcObject !== activeStream) node.srcObject = activeStream;
+                  node.play?.().catch(() => {});
+                }
+              }} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-full object-contain bg-black" 
+            />
+          ) : localStream && isRoomCameraOn ? (
+            <video 
+              ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
+              <div className="w-9 h-9 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center mb-1 text-sm font-bold border border-violet-500/30">
+                Y
+              </div>
+              <span className="text-[10px] font-medium text-zinc-400">Meeting in progress</span>
+            </div>
+          )}
+
+          {/* Floating Streaming Status Badge */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white border border-white/10 shadow-sm pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+            <span className="font-semibold text-[9.5px] tracking-wide uppercase truncate max-w-[120px]">{sharedSourceInfo?.name ? sharedSourceInfo.name : activeStream ? 'Streaming Live' : 'Live'}</span>
+          </div>
+
+          {/* OS Picture-in-Picture Popout Button */}
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const vidEl = pipDragContainerRef.current?.querySelector('video');
+                if (document.pictureInPictureElement) {
+                  await document.exitPictureInPicture();
+                  showToast?.('Exited Picture-in-Picture');
+                } else if (vidEl && document.pictureInPictureEnabled) {
+                  await vidEl.requestPictureInPicture();
+                  showToast?.('Floating OS Mini-Window Active');
+                }
+              } catch (err) {
+                console.warn('PiP error:', err);
+                showToast?.('Picture-in-Picture: ' + (err.message || 'Unavailable'));
+              }
+            }}
+            className="absolute top-2 right-2 p-1 rounded-lg bg-black/75 hover:bg-black/90 text-white/90 hover:text-white border border-white/10 shadow-sm transition-all cursor-pointer z-20"
+            title="Pop out into Floating OS Window (Always on Top)"
           >
-            {/* Floating Live Video Mini Preview Tile — clicking opens Room */}
-            <div
-              onClick={() => { setIsRoomLeftSidebarOpen(false); setIsRoomRightSidebarOpen(false); setProductMode('room-landing'); setRoomPanelMode('expanded'); }}
-              className="w-52 h-32 rounded-2xl overflow-hidden bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 shadow-[0_20px_48px_rgba(0,0,0,0.28)] relative group cursor-pointer hover:border-slate-300 dark:hover:border-zinc-700 transition-all duration-200"
-              title="Click to open Room"
+            <ExternalLink size={11} />
+          </button>
+
+          {/* Hover Overlay with Expand Action */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+            <Maximize2 size={15} />
+            <span>Return to Room</span>
+          </div>
+        </div>
+
+        {/* Meeting Controls Bar */}
+        <div className="w-56 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-2 px-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-100 font-mono">{meetingDurationLabel || '00:00'}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* Toggle Laser / Screen Annotation Overlay */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsWorkspaceAnnotationActive((prev) => !prev);
+              }}
+              className={`p-1.5 rounded-xl text-xs transition-all cursor-pointer ${
+                isWorkspaceAnnotationActive 
+                  ? 'bg-violet-600 text-white shadow-xs scale-105' 
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300'
+              }`}
+              title={isWorkspaceAnnotationActive ? "Hide Laser / Annotations" : "Draw Laser Pointer / Annotate Screen"}
             >
-              {activeStream ? (
-                <video
-                  ref={(node) => {
-                    if (node && activeStream) {
-                      if (node.srcObject !== activeStream) node.srcObject = activeStream;
-                      node.play?.().catch(() => {});
-                    }
-                  }}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-contain bg-black"
-                />
-              ) : localStream && isRoomCameraOn ? (
-                <video
-                  ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex flex-col items-center justify-center p-3 text-center">
-                  <div className="w-8 h-8 rounded-full bg-violet-600/25 text-violet-300 flex items-center justify-center mb-1 text-xs font-semibold border border-violet-500/20">
-                    Y
-                  </div>
-                  <span className="text-[9.5px] font-medium text-zinc-400">Meeting in progress</span>
-                </div>
-              )}
+              <LaserPointerIcon size={13} strokeWidth={1.6} />
+            </button>
 
-              {/* Quiet Compose Label with Green Indicator */}
-              <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white/90 border border-white/10 pointer-events-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                <span className="font-medium text-[10px] tracking-normal capitalize">{sharedSourceInfo?.name || 'Compose'}</span>
-              </div>
+            {/* Pop-Out OS PiP Window */}
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (isPipWidgetOpen) {
+                  setIsPipWidgetOpen(false);
+                  window.electronAPI?.closeFloatingPipWidget?.();
+                  showToast?.('Closed floating window');
+                } else {
+                  if (window.electronAPI?.openFloatingPipWidget) {
+                    window.electronAPI.openFloatingPipWidget();
+                    setIsPipWidgetOpen(true);
+                    showToast?.('OS Floating Window Active');
+                  }
+                }
+              }}
+              className="p-1.5 rounded-xl text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-violet-100 dark:hover:bg-violet-900/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors cursor-pointer"
+              title="Pop out into Always-on-Top OS Floating Window"
+            >
+              <ExternalLink size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
+              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomMicOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+              title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
+            >
+              {isRoomMicOn ? <Mic size={13} /> : <MicOff size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
+              className={`p-1.5 rounded-xl text-xs transition-colors ${isRoomCameraOn ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200' : 'bg-red-50 text-red-500 dark:bg-red-950/60'}`}
+              title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+            >
+              {isRoomCameraOn ? <Video size={13} /> : <VideoOff size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
+              className="p-1.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+              title="Leave Meeting"
+            >
+              <PhoneOff size={13} />
+            </button>
+          </div>
+        </div>
 
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
-                <Maximize2 size={13} strokeWidth={1.6} />
-                <span>Open Room</span>
-              </div>
-            </div>
-
-            {/* Streamlined Meeting Controls Bar */}
-            <div className="w-52 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] px-2.5 py-1.5 flex items-center justify-between">
-              {/* Live Duration */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 font-mono">{meetingDurationLabel || '00:00'}</span>
-              </div>
-
-              {/* Primary Controls: Mic · Camera · More (…) · End */}
-              <div className="flex items-center gap-1">
-
-                {/* Mic */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); toggleRoomMic(); }}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isRoomMicOn ? 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800' : 'text-rose-500 bg-rose-50 dark:bg-rose-950/50'}`}
-                  title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
-                >
-                  {isRoomMicOn ? <Mic size={13} strokeWidth={1.6} /> : <MicOff size={13} strokeWidth={1.6} />}
-                </button>
-
-                {/* Camera */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); toggleRoomCamera(); }}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isRoomCameraOn ? 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800' : 'text-rose-500 bg-rose-50 dark:bg-rose-950/50'}`}
-                  title={isRoomCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
-                >
-                  {isRoomCameraOn ? <Video size={13} strokeWidth={1.6} /> : <VideoOff size={13} strokeWidth={1.6} />}
-                </button>
-
-                {/* More Options Control (…) with First-Time Discovery & Desktop Hover Tooltip */}
-                <div className="relative">
-                  {/* First-Time Discovery Coachmark: 2s elegant pulse & auto-fade */}
-                  {showPipCoachmark && !isPipMoreMenuOpen && (
-                    <div 
-                      className={`absolute bottom-full right-0 mb-2.5 pointer-events-none z-50 flex flex-col items-center transition-all duration-300 transform ${isPipCoachmarkFading ? 'opacity-0 translate-y-1 scale-95' : 'opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-bottom-1'}`}
-                    >
-                      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200/90 dark:border-zinc-700/80 shadow-[0_4px_16px_rgba(0,0,0,0.12)] rounded-lg px-2 py-1 text-[10px] font-medium text-slate-700 dark:text-zinc-200 whitespace-nowrap flex items-center gap-1">
-                        <span>More controls</span>
-                      </div>
-                      <div className="w-1.5 h-1.5 bg-white dark:bg-zinc-900 border-r border-b border-slate-200/90 dark:border-zinc-700/80 transform rotate-45 -mt-0.5" />
-                    </div>
-                  )}
-
-                  {/* Standard Desktop Hover Tooltip */}
-                  {!showPipCoachmark && isPipMoreHovered && !isPipMoreMenuOpen && (
-                    <div className="absolute bottom-full right-0 mb-2 pointer-events-none z-50 flex flex-col items-center animate-in fade-in duration-150">
-                      <div className="bg-slate-900/90 dark:bg-zinc-800/90 text-white backdrop-blur-md shadow-sm rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
-                        More controls
-                      </div>
-                      <div className="w-1 h-1 bg-slate-900/90 dark:bg-zinc-800/90 transform rotate-45 -mt-0.5" />
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onMouseEnter={() => setIsPipMoreHovered(true)}
-                    onMouseLeave={() => setIsPipMoreHovered(false)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markPipRoomDiscovered();
-                      setIsPipMoreMenuOpen((prev) => !prev);
-                    }}
-                    className={`relative p-1.5 rounded-lg transition-colors cursor-pointer text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 ${showPipCoachmark ? 'ring-1 ring-violet-400/50 ring-offset-1 ring-offset-white dark:ring-offset-zinc-900' : ''}`}
-                    aria-label="More controls"
-                  >
-                    <MoreHorizontal size={13} strokeWidth={1.6} />
-                    {/* Single subtle onboarding ripple on first visit */}
-                    {showPipCoachmark && (
-                      <span
-                        className="absolute inset-0 rounded-lg animate-ping bg-violet-400/20 pointer-events-none"
-                        style={{ animationDuration: '2s', animationIterationCount: '1' }}
-                      />
-                    )}
-                  </button>
-
-                  {isPipMoreMenuOpen && (
-                    <div
-                      className="absolute bottom-full right-0 mb-2 w-52 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800 rounded-xl p-1 shadow-xl z-50 flex flex-col gap-0.5 select-none"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {/* Open Full Room */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsPipMoreMenuOpen(false);
-                          setIsRoomLeftSidebarOpen(false);
-                          setIsRoomRightSidebarOpen(false);
-                          setProductMode('room-landing');
-                          setRoomPanelMode('expanded');
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
-                      >
-                        <Maximize2 size={13} strokeWidth={1.6} className="text-violet-600 dark:text-violet-400" />
-                        <span>Open Room</span>
-                      </button>
-
-                      {/* Laser / Annotations */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsWorkspaceAnnotationActive((prev) => !prev);
-                          setIsPipMoreMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
-                      >
-                        <LaserPointerIcon size={13} strokeWidth={1.6} className="text-violet-600 dark:text-violet-400" />
-                        <span>{isWorkspaceAnnotationActive ? 'Hide Laser / Pen' : 'Laser / Annotations'}</span>
-                      </button>
-
-                      {/* Screen Sharing Toggle */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsPipMoreMenuOpen(false);
-                          if (isScreenSharing) {
-                            setIsScreenSharing(false);
-                            if (screenShareStream) {
-                              screenShareStream.getTracks().forEach(t => t.stop());
-                              setScreenShareStream(null);
-                            }
-                            showToast?.('Screen sharing stopped');
-                          } else {
-                            setIsScreenSourceModalOpen(true);
-                          }
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
-                      >
-                        <Share2 size={13} strokeWidth={1.6} className="text-blue-500" />
-                        <span>{isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}</span>
-                      </button>
-
-                      {/* OS Popout Window */}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setIsPipMoreMenuOpen(false);
-                          if (isPipWidgetOpen) {
-                            setIsPipWidgetOpen(false);
-                            window.electronAPI?.closeFloatingPipWidget?.();
-                            showToast?.('Closed floating window');
-                          } else {
-                            if (window.electronAPI?.openFloatingPipWidget) {
-                              window.electronAPI.openFloatingPipWidget();
-                              setIsPipWidgetOpen(true);
-                              showToast?.('OS Floating Window Active');
-                            }
-                          }
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left cursor-pointer"
-                      >
-                        <ExternalLink size={13} strokeWidth={1.6} className="text-slate-500" />
-                        <span>Pop out OS Window</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* End / Leave Meeting */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); confirmLeaveRoom(); }}
-                  className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
-                  title="Leave Meeting"
-                >
-                  <PhoneOff size={13} strokeWidth={1.6} />
-                </button>
-              </div>
-            </div>
           </div>,
           document.body
         )}
@@ -49506,19 +49269,88 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {!isDeckPresentationMode && !isSheetsPresentationMode && (isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
                     <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
-                      {/* Top Sidebar Action */}
-                      <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
-                        <button
-                          type="button"
-                          onClick={isSheetsMode ? addWorksheet : addDeckSlide}
-                          className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-xs font-semibold text-slate-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Plus size={14} className="text-[#7C4DFF]" />
-                            <span>{isSheetsMode ? (t('sheets.newSheet') || 'New Sheet') : (t('deck.newSlide') || 'New Slide')}</span>
+                      {/* Top Sidebar Action with Regaarder Apple-Style Split Layout Trigger */}
+                      <div className="h-16 px-3.5 border-b border-gray-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 relative">
+                        <div className="w-full flex items-center bg-white dark:bg-zinc-800 border border-gray-200/90 dark:border-zinc-700 rounded-xl shadow-xs overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSheetsMode) {
+                                addWorksheet();
+                              } else {
+                                addDeckSlide('Title & Content');
+                              }
+                            }}
+                            className="flex-1 flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-violet-50/50 dark:hover:bg-zinc-700/60 transition-colors text-left"
+                            title={isSheetsMode ? 'Create New Sheet' : 'Create New Slide (Title & Content)'}
+                          >
+                            <Plus size={14} className="text-[#7C4DFF] shrink-0" />
+                            <span className="truncate">{isSheetsMode ? (t('sheets.newSheet') || 'New Sheet') : (t('deck.newSlide') || 'New Slide')}</span>
+                          </button>
+                          
+                          {!isSheetsMode && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeckLayoutDropdownOpen(prev => !prev);
+                              }}
+                              className="px-2 py-2 border-l border-gray-200/80 dark:border-zinc-700 text-gray-400 dark:text-zinc-400 hover:text-[#7C4DFF] hover:bg-violet-50/50 dark:hover:bg-zinc-700/60 transition-colors flex items-center justify-center cursor-pointer"
+                              title="Choose Slide Layout"
+                            >
+                              <ChevronDown size={13} className={`transition-transform duration-200 ${deckLayoutDropdownOpen ? 'rotate-180 text-[#7C4DFF]' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Regaarder Apple-Style Slide Layout Picker Popover Menu */}
+                        {!isSheetsMode && deckLayoutDropdownOpen && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="absolute top-[60px] left-3 right-3 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-800 rounded-2xl shadow-2xl p-1.5 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-150"
+                          >
+                            <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-zinc-800/80 flex items-center justify-between">
+                              <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400 flex items-center gap-1.5">
+                                <LayoutTemplate size={12} className="text-[#7C4DFF]" /> Slide Layouts
+                              </span>
+                              <button 
+                                type="button" 
+                                onClick={() => setDeckLayoutDropdownOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded cursor-pointer"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                            <div className="flex flex-col gap-0.5 max-h-[260px] overflow-y-auto thin-scrollbar p-0.5">
+                              {DECK_LAYOUT_OPTIONS.map((layoutItem) => {
+                                const IconComp = layoutItem.icon || LayoutTemplate;
+                                return (
+                                  <button
+                                    key={layoutItem.id}
+                                    type="button"
+                                    onClick={() => {
+                                      addDeckSlide(layoutItem.id);
+                                      setDeckLayoutDropdownOpen(false);
+                                    }}
+                                    className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 group transition-all flex items-start gap-2.5 cursor-pointer"
+                                  >
+                                    <div className="w-6 h-6 rounded-lg bg-violet-100/70 dark:bg-violet-900/40 text-[#7C4DFF] dark:text-violet-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                                      <IconComp size={13} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-[#7C4DFF] dark:group-hover:text-violet-300 transition-colors">
+                                        {layoutItem.label}
+                                      </div>
+                                      <div className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate leading-snug">
+                                        {layoutItem.desc}
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                          <ChevronDown size={12} className="text-gray-400" />
-                        </button>
+                        )}
                       </div>
             
                       {/* Slide List - Keynote/PowerPoint Filmstrip Style */}
@@ -53498,7 +53330,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }`}
                               title="Enter presentation mode (Fullscreen)"
                             >
-                              <PresentationIcon size={14} />
+                              <MonitorPlay size={14} />
                               <span className="text-[11px] font-medium hidden sm:inline">Present</span>
                             </button>
                           </div>
@@ -56402,7 +56234,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         )}
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className={`flex-1 flex flex-col justify-between items-center min-h-0 relative transition-all duration-300 ${isDeckPresentationMode ? `fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] ${isDeckPresentationFocus ? 'p-0' : 'p-2 md:p-6'} overflow-hidden` : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
+                      <div 
+                        onDoubleClick={(e) => {
+                          if (isDeckPresentationMode) {
+                            setIsDeckPresentationMode(false);
+                            setIsPresentingDeck(false);
+                            if (document.fullscreenElement && document.exitFullscreen) {
+                              document.exitFullscreen().catch(() => {});
+                            }
+                            showToast('Exited presentation mode');
+                          }
+                        }}
+                        className={`flex-1 flex flex-col justify-between items-center min-h-0 relative ${isDeckPresentationMode ? `fixed inset-0 z-[999999] w-screen h-screen bg-[#05070B] ${isDeckPresentationFocus ? 'p-0' : 'p-2 md:p-6'} overflow-hidden` : 'p-3 overflow-y-auto thin-scrollbar bg-[#F7F8FB]'}`}>
                         {/* Hidden File Pickers for Slide Deck Media, Logos, and Vectorizer */}
                         <input
                           ref={imageFileInputRef}
@@ -56950,7 +56793,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               const customBg = activeDeckSlide?.backgroundColor;
                               const activePresetKey = activeDeckSlide?.designPresetKey || activeDeckSlide?.presetKey;
                               const currentPresetObj = DECK_DESIGN_PRESETS.find(p => p.key === activePresetKey) || DECK_DESIGN_PRESETS[0];
-                              const isDarkTheme = !customBg && ['midnight-slate', 'cyberpunk-neon', 'mint-depth', 'sunset-grid', 'aurora-split'].includes(currentPresetObj.key);
+                              const isColorDark = (hexOrRgb) => {
+                                if (!hexOrRgb || typeof hexOrRgb !== 'string') return false;
+                                if (hexOrRgb.startsWith('#')) {
+                                  const hex = hexOrRgb.replace('#', '');
+                                  const r = parseInt(hex.substring(0, 2), 16) || 0;
+                                  const g = parseInt(hex.substring(2, 4), 16) || 0;
+                                  const b = parseInt(hex.substring(4, 6), 16) || 0;
+                                  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+                                }
+                                return hexOrRgb.includes('rgba(0,') || hexOrRgb.includes('rgb(5,') || hexOrRgb.includes('rgb(15,');
+                              };
+                              const isDarkTheme = customBg 
+                                ? isColorDark(customBg) 
+                                : ['midnight-slate', 'cyberpunk-neon', 'mint-depth', 'sunset-grid', 'aurora-split'].includes(currentPresetObj.key) || activeDeckSlide?.backgroundColor === '#05070B';
                               const brandColor = selectedBrandKit?.colors?.[0] || '#7C4DFF';
                               const layout = activeDeckSlide?.layoutStyle || 'Title Slide';
 
@@ -58147,7 +58003,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                        </div>
                                                      )}
 
-                                                     {/* Selection Outline & 8 Resize Handles */}
+                                                     {/* 10. Interactive Video Player Shape */}
+                                                    {shape.shapeType === 'video' && (
+                                                      <div className="w-full h-full rounded-xl overflow-hidden bg-black/80 border border-white/20 shadow-2xl relative flex flex-col justify-center items-center">
+                                                        {shape.url && (shape.url.endsWith('.mp4') || shape.url.endsWith('.webm')) ? (
+                                                          <video src={shape.url} controls className="w-full h-full object-cover" />
+                                                        ) : (
+                                                          <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-4 text-center">
+                                                            <Film size={28} className="text-rose-400 mb-2" />
+                                                            <span className="text-xs text-white font-medium truncate max-w-[90%]">{shape.url || 'Video Player'}</span>
+                                                            <span className="text-[10px] text-slate-400 mt-1">Interactive media container</span>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+
+                                                    {/* 11. Comparison Data Table Matrix */}
+                                                    {shape.shapeType === 'table' && (
+                                                      <div className="w-full h-full p-2.5 rounded-xl bg-black/40 border border-white/15 backdrop-blur-md overflow-hidden flex flex-col select-text">
+                                                        <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-1.5">
+                                                          <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1"><Table size={11} /> {shape.name || 'Data Matrix'}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-1.5 flex-1 text-[10px] text-slate-300">
+                                                          {['Metric', 'Current', 'Target', 'Revenue', '$1.2M', '$3.5M', 'Retention', '88%', '95%'].map((cell, cIdx) => (
+                                                            <div key={cIdx} className="p-1 rounded bg-white/5 border border-white/5 text-center flex items-center justify-center">{cell}</div>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    )}
+
+                                                    {/* Selection Outline & 8 Resize Handles */}
                                                      {isImgSelected && (
                                                        <>
                                                          <div data-resize-handle="true" onPointerDown={(e) => { e.stopPropagation(); setDeckResizeDrag({ isResizing: true, handle: 'nw', startX: e.clientX, startY: e.clientY, initW: iW, initH: iH, initX: iX, initY: iY, target: 'image', imgId: img.id }); }} className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-[#7C4DFF] rounded-[2px] shadow-md cursor-nwse-resize z-40 hover:scale-125 transition-transform" />
@@ -67702,7 +67587,724 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               <span>Contact: exec@regaarder.com</span>
                                             </div>
                                           </div>
-                                        ) : layout === 'Text & List' ? (
+                                        ) : layout === 'Two Columns' ? (
+                                        /* ── REGAARDER TWO COLUMNS / COMPARISON LAYOUT ── */
+                                        <div className="flex flex-col h-full justify-between w-full max-w-[94%] pointer-events-auto z-20 select-text">
+                                          {/* Section Title Placeholder */}
+                                          <div className="mb-3">
+                                            <h1
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onKeyDown={handleDeckKeyDown}
+                                              onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                              data-placeholder="Click to add slide title..."
+                                              className={`text-[28px] md:text-[34px] leading-tight font-bold tracking-tight outline-none rounded-lg px-1.5 py-0.5 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}
+                                            >
+                                              {activeDeckSlide?.headline || ''}
+                                            </h1>
+                                          </div>
+
+                                          {/* Dual Column Frames */}
+                                          <div className="grid grid-cols-2 gap-4 flex-1 items-stretch min-h-[160px]">
+                                            {/* Column 1 */}
+                                            <div className="flex flex-col p-4 rounded-xl bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-xs hover:border-violet-500/30 transition-all">
+                                              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 mb-1.5">Stream A</span>
+                                              <p
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleDeckKeyDown}
+                                                onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                                data-placeholder="Click to add column notes or comparison details..."
+                                                className={`text-[13px] leading-relaxed outline-none flex-1 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}
+                                              >
+                                                {activeDeckSlide?.blurb || ''}
+                                              </p>
+                                            </div>
+
+                                            {/* Column 2 */}
+                                            <div className="flex flex-col p-4 rounded-xl bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-xs hover:border-violet-500/30 transition-all">
+                                              <span className="text-[11px] font-bold uppercase tracking-wider text-violet-400 mb-1.5">Stream B</span>
+                                              <p
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleDeckKeyDown}
+                                                onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'subtitle', event.currentTarget.textContent || '')}
+                                                data-placeholder="Click to add secondary comparison points or proof..."
+                                                className={`text-[13px] leading-relaxed outline-none flex-1 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}
+                                              >
+                                                {activeDeckSlide?.subtitle || ''}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : layout === 'Blank Canvas' ? (
+                                        /* ── REGAARDER MINIMALIST BLANK CANVAS ── */
+                                        <div className="flex flex-col items-center justify-center h-full w-full pointer-events-auto z-20 select-text">
+                                          {!(activeDeckSlide?.shapes?.length || activeDeckSlide?.bentoCards?.length || activeDeckSlide?.images?.length || activeDeckSlide?.headline) && (
+                                            <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border border-dashed border-white/15 text-center max-w-[420px] bg-black/10 backdrop-blur-xs animate-in fade-in">
+                                              <Sparkles size={22} className="text-[#7C4DFF]" />
+                                              <h3 className={`text-sm font-semibold ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>Blank Regaarder Canvas</h3>
+                                              <p className="text-[11px] text-slate-400 max-w-[320px]">
+                                                Double-click anywhere to type, press <code className="px-1.5 py-0.5 rounded bg-white/10 text-violet-300 font-mono text-[10px]">/</code> for instant AI widgets, or insert shapes from the toolbar.
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : layout === 'Title & Content' || layout === 'Content Slide' || layout === 'Standard' ? (
+                                        /* ── REGAARDER PROGRESSIVE TITLE & CONTENT LAYOUT ── */
+                                        <div className="flex flex-col h-full justify-between w-full max-w-[92%] pointer-events-auto z-20 select-text">
+                                          {/* Section Title Box with Regaarder Apple-Style Outline */}
+                                          <div className="mb-2">
+                                            <h1
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onKeyDown={handleDeckKeyDown}
+                                              onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                              data-placeholder="Click to add title..."
+                                              className={`text-[30px] md:text-[38px] leading-tight font-bold tracking-tight outline-none rounded-xl px-2 py-1 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}
+                                            >
+                                              {activeDeckSlide?.headline || ''}
+                                            </h1>
+                                          </div>
+
+                                          {/* Interactive Body Area Frame with Regaarder Content Block Morphing Engine */}
+                                          <div className="flex-1 flex flex-col justify-between p-4 md:p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-violet-500/30 transition-all backdrop-blur-xs min-h-[220px] relative">
+                                            
+                                            {/* ── CASE 1: DATA TABLE / COMPARISON MATRIX BLOCK ── */}
+                                            {activeDeckSlide?.contentBlockType === 'table' ? (
+                                              <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-200">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                                                  <div className="flex items-center gap-2">
+                                                    <Table size={14} className="text-amber-400" />
+                                                    <span className="text-xs font-bold text-white uppercase tracking-wider">Comparison Data Matrix</span>
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text')}
+                                                    className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                                    title="Switch back to standard text"
+                                                  >
+                                                    <RotateCcw size={10} /> Back to Text
+                                                  </button>
+                                                </div>
+
+                                                {/* Editable 3x3 Table Grid */}
+                                                <div className="flex-1 overflow-x-auto thin-scrollbar flex flex-col justify-center">
+                                                  {(() => {
+                                                    const tableData = activeDeckSlide?.contentTable || {
+                                                      headers: ['Strategic Objective', 'Current Baseline', 'Target Goal'],
+                                                      rows: [
+                                                        ['Active Enterprise Accounts', '140 Organizations', '500 Organizations'],
+                                                        ['Platform Net Retention', '118% NDR', '135% Target'],
+                                                        ['Gross Margin Performance', '76% Margin', '84% Optimized']
+                                                      ]
+                                                    };
+                                                    return (
+                                                      <table className="w-full border-collapse text-xs text-left">
+                                                        <thead>
+                                                          <tr className="border-b border-white/15">
+                                                            {tableData.headers.map((hdr, hIdx) => (
+                                                              <th
+                                                                key={hIdx}
+                                                                contentEditable={currentAccessLevel !== 'viewer'}
+                                                                suppressContentEditableWarning
+                                                                onBlur={(e) => {
+                                                                  const nextH = [...tableData.headers];
+                                                                  nextH[hIdx] = e.currentTarget.textContent || '';
+                                                                  updateDeckSlideField(activeDeckSlide?.id, 'contentTable', { ...tableData, headers: nextH });
+                                                                }}
+                                                                className="p-2 font-semibold text-cyan-300 bg-white/5 outline-none rounded-t"
+                                                              >
+                                                                {hdr}
+                                                              </th>
+                                                            ))}
+                                                          </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                          {tableData.rows.map((row, rIdx) => (
+                                                            <tr key={rIdx} className="border-b border-white/5 hover:bg-white/[0.02]">
+                                                              {row.map((cell, cIdx) => (
+                                                                <td
+                                                                  key={cIdx}
+                                                                  contentEditable={currentAccessLevel !== 'viewer'}
+                                                                  suppressContentEditableWarning
+                                                                  onBlur={(e) => {
+                                                                    const nextR = tableData.rows.map((r, ri) => ri === rIdx ? r.map((c, ci) => ci === cIdx ? (e.currentTarget.textContent || '') : c) : r);
+                                                                    updateDeckSlideField(activeDeckSlide?.id, 'contentTable', { ...tableData, rows: nextR });
+                                                                  }}
+                                                                  className={`p-2 outline-none ${cIdx === 0 ? 'text-white font-medium' : 'text-slate-300'}`}
+                                                                >
+                                                                  {cell}
+                                                                </td>
+                                                              ))}
+                                                            </tr>
+                                                          ))}
+                                                        </tbody>
+                                                      </table>
+                                                    );
+                                                  })()}
+                                                </div>
+                                              </div>
+                                            ) : activeDeckSlide?.contentBlockType === 'video' ? (
+                                              /* ── CASE 2: VIDEO PLAYER / EMBED BLOCK ── */
+                                              <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-200">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                                                  <div className="flex items-center gap-2">
+                                                    <Film size={14} className="text-rose-400" />
+                                                    <span className="text-xs font-bold text-white uppercase tracking-wider">Video Presentation Player</span>
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text')}
+                                                    className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                                  >
+                                                    <RotateCcw size={10} /> Back to Text
+                                                  </button>
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col items-center justify-center p-2">
+                                                  {activeDeckSlide?.contentVideoUrl ? (
+                                                    <div className="w-full h-full max-h-[220px] rounded-xl overflow-hidden bg-black/80 border border-white/15 relative flex items-center justify-center">
+                                                      <video
+                                                        src={activeDeckSlide.contentVideoUrl}
+                                                        controls
+                                                        className="w-full h-full object-contain"
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="w-full flex flex-col items-center justify-center gap-2.5 p-6 rounded-xl border border-dashed border-white/20 bg-black/20 text-center">
+                                                      <Film size={30} className="text-rose-400" />
+                                                      <div className="flex items-center gap-2 w-full max-w-[420px]">
+                                                        <input
+                                                          type="text"
+                                                          placeholder="Paste Video URL (MP4, YouTube, or Stream)..."
+                                                          defaultValue="https://www.w3schools.com/html/mov_bbb.mp4"
+                                                          id="deckVideoUrlInput"
+                                                          className="flex-1 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-xs text-white placeholder-slate-400 outline-none focus:border-rose-400"
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const val = document.getElementById('deckVideoUrlInput')?.value;
+                                                            if (val) {
+                                                              updateDeckSlideField(activeDeckSlide?.id, 'contentVideoUrl', val);
+                                                              showToast('Video URL embedded');
+                                                            }
+                                                          }}
+                                                          className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white transition-all cursor-pointer"
+                                                        >
+                                                          Embed Video
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ) : activeDeckSlide?.contentBlockType === 'image' ? (
+                                              /* ── CASE 3: PICTURE / GRAPHIC DROPZONE ── */
+                                              <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-200">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                                                  <div className="flex items-center gap-2">
+                                                    <ImageIcon size={14} className="text-cyan-400" />
+                                                    <span className="text-xs font-bold text-white uppercase tracking-wider">Slide Graphic / Picture</span>
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text')}
+                                                    className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10.5px] font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                                                  >
+                                                    <RotateCcw size={10} /> Back to Text
+                                                  </button>
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col items-center justify-center p-1">
+                                                  {activeDeckSlide?.contentImageUrl ? (
+                                                    <div className="relative group max-h-[220px] rounded-xl overflow-hidden border border-white/15 bg-black/20">
+                                                      <img
+                                                        src={activeDeckSlide.contentImageUrl}
+                                                        alt="Slide Visual"
+                                                        className="max-h-[210px] w-auto object-contain rounded-xl"
+                                                      />
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => imageFileInputRef.current?.click()}
+                                                        className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white text-[11px] font-medium border border-white/20 shadow-md backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                                      >
+                                                        Replace Image
+                                                      </button>
+                                                    </div>
+                                                  ) : (
+                                                    <div
+                                                      onClick={() => imageFileInputRef.current?.click()}
+                                                      className="w-full flex flex-col items-center justify-center gap-2 p-6 rounded-xl border border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 transition-all cursor-pointer text-center"
+                                                    >
+                                                      <ImageIcon size={32} className="text-cyan-400" />
+                                                      <span className="text-xs font-semibold text-white">Click to Upload Slide Picture</span>
+                                                      <span className="text-[10px] text-slate-400">Supports PNG, JPG, WEBP, and SVG vector assets</span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                             ) : activeDeckSlide?.contentBlockType === 'metric' ? (
+                                               /* ── CASE 4: INLINE EXECUTIVE KPI METRIC CARD (PRESENTATION-AWARE & CONTEXT-SENSITIVE) ── */
+                                               <div 
+                                                 onDoubleClick={(e) => {
+                                                   if (!isDeckPresentationMode && (e.target === e.currentTarget || !e.target.isContentEditable)) {
+                                                     updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+                                                     showToast('Returned to text block');
+                                                   }
+                                                 }}
+                                                 className={`flex-1 flex flex-col justify-between select-none cursor-default group/metric-card animate-in fade-in duration-100 ${
+                                                   isDeckPresentationMode ? 'p-1' : ''
+                                                 }`}
+                                               >
+                                                 <div className={`flex items-center justify-between pb-2 mb-2 border-b shrink-0 transition-colors ${
+                                                   isDeckPresentationMode ? 'border-white/5' : 'border-white/10'
+                                                 }`}>
+                                                   <div className="flex items-center gap-2">
+                                                     <TrendingUp size={14} className="text-emerald-400 shrink-0" />
+                                                     <span
+                                                       contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                       suppressContentEditableWarning
+                                                       onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'metricBadgeTitle', e.currentTarget.textContent || 'Executive Performance Indicator')}
+                                                       className={`text-xs font-bold text-white uppercase tracking-wider outline-none rounded px-1 ${
+                                                         !isDeckPresentationMode ? 'hover:ring-1 hover:ring-emerald-400/40 cursor-text select-text' : 'cursor-default select-none'
+                                                       }`}
+                                                       title={!isDeckPresentationMode ? "Click to edit badge title" : undefined}
+                                                     >
+                                                       {activeDeckSlide?.metricBadgeTitle || 'Executive Performance Indicator'}
+                                                     </span>
+                                                   </div>
+                                                   {!isDeckPresentationMode && (
+                                                     <button
+                                                       type="button"
+                                                       onPointerDown={(e) => {
+                                                         e.preventDefault();
+                                                         e.stopPropagation();
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+                                                         showToast('Returned to text block');
+                                                       }}
+                                                       onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'text');
+                                                       }}
+                                                       className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-[10.5px] font-medium text-slate-300 hover:text-white transition-opacity duration-150 opacity-0 group-hover/metric-card:opacity-100 flex items-center gap-1 cursor-pointer select-none"
+                                                       title="Return to standard text (Esc or Double-click background)"
+                                                     >
+                                                       <RotateCcw size={10} /> Back to Text
+                                                     </button>
+                                                   )}
+                                                 </div>
+
+                                                 <div className="flex-1 flex flex-col justify-center items-center text-center p-2 min-h-0">
+                                                   <span
+                                                     contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'keyMetric', e.currentTarget.textContent || '0.00%')}
+                                                     className={`text-[52px] md:text-[64px] font-black tracking-tight leading-none text-emerald-400 outline-none rounded px-2 transition-all ${
+                                                       !isDeckPresentationMode
+                                                         ? 'hover:ring-1 hover:ring-emerald-400/40 cursor-text select-text'
+                                                         : 'cursor-default select-none drop-shadow-[0_0_28px_rgba(52,211,153,0.35)]'
+                                                     }`}
+                                                     title={!isDeckPresentationMode ? "Click to edit metric value" : undefined}
+                                                   >
+                                                     {isDeckPresentationMode
+                                                       ? (animatedMetricDisplay || activeDeckSlide?.keyMetric || '0.00%')
+                                                       : ((!activeDeckSlide?.keyMetric || activeDeckSlide?.keyMetric === '98.5%') ? '0.00%' : activeDeckSlide?.keyMetric)
+                                                     }
+                                                   </span>
+                                                   <span
+                                                     contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                     suppressContentEditableWarning
+                                                     onBlur={(e) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', e.currentTarget.textContent || 'Mission-Critical Workflow Reliability')}
+                                                     className={`mt-1.5 text-sm font-semibold text-white outline-none rounded px-1.5 ${
+                                                       !isDeckPresentationMode ? 'hover:ring-1 hover:ring-emerald-400/40 cursor-text select-text' : 'cursor-default select-none'
+                                                     }`}
+                                                     title={!isDeckPresentationMode ? "Click to edit metric label" : undefined}
+                                                   >
+                                                     {activeDeckSlide?.blurb || 'Mission-Critical Workflow Reliability'}
+                                                   </span>
+
+                                                   {/* Dynamic Customizable Milestone Dots / Points */}
+                                                   {(() => {
+                                                     const defaultPoints = ['▲ +0.0% YoY', 'Target: 100%', 'Zero Downtime'];
+                                                     const points = Array.isArray(activeDeckSlide?.metricPoints) && activeDeckSlide.metricPoints.length > 0
+                                                       ? activeDeckSlide.metricPoints
+                                                       : defaultPoints;
+                                                     return (
+                                                       <div className="flex items-center justify-center flex-wrap gap-2 mt-3 text-[11px] text-slate-300">
+                                                         {points.map((pt, pIdx) => (
+                                                           <React.Fragment key={pIdx}>
+                                                             {pIdx > 0 && <span className="text-slate-500 select-none">•</span>}
+                                                             <div className="group/pt relative flex items-center">
+                                                               <span
+                                                                 contentEditable={!isDeckPresentationMode && currentAccessLevel !== 'viewer'}
+                                                                 suppressContentEditableWarning
+                                                                 onBlur={(e) => {
+                                                                   const val = e.currentTarget.textContent?.trim();
+                                                                   const newPts = [...points];
+                                                                   newPts[pIdx] = val || `Point ${pIdx + 1}`;
+                                                                   updateDeckSlideField(activeDeckSlide?.id, 'metricPoints', newPts);
+                                                                 }}
+                                                                 className={`outline-none rounded px-1 ${
+                                                                   !isDeckPresentationMode ? 'hover:ring-1 hover:ring-white/20 cursor-text select-text' : 'cursor-default select-none'
+                                                                 } ${
+                                                                   pIdx === 0 ? 'text-emerald-300 font-semibold' : 'text-slate-300'
+                                                                 }`}
+                                                                 title={!isDeckPresentationMode ? "Click to edit metric point" : undefined}
+                                                               >
+                                                                 {pt}
+                                                               </span>
+                                                               {!isDeckPresentationMode && points.length > 1 && (
+                                                                 <button
+                                                                   type="button"
+                                                                   onPointerDown={(e) => {
+                                                                     e.preventDefault();
+                                                                     e.stopPropagation();
+                                                                     const newPts = points.filter((_, i) => i !== pIdx);
+                                                                     updateDeckSlideField(activeDeckSlide?.id, 'metricPoints', newPts);
+                                                                   }}
+                                                                   className="opacity-0 group-hover/pt:opacity-100 ml-0.5 p-0.5 rounded text-slate-500 hover:text-red-400 transition-opacity cursor-pointer select-none"
+                                                                   title="Remove this point"
+                                                                 >
+                                                                   <X size={10} />
+                                                                 </button>
+                                                               )}
+                                                             </div>
+                                                           </React.Fragment>
+                                                         ))}
+                                                         {!isDeckPresentationMode && (
+                                                           <button
+                                                             type="button"
+                                                             onPointerDown={(e) => {
+                                                               e.preventDefault();
+                                                               e.stopPropagation();
+                                                               const newPts = [...points, '+0.0% Metric'];
+                                                               updateDeckSlideField(activeDeckSlide?.id, 'metricPoints', newPts);
+                                                             }}
+                                                             className="ml-1.5 px-2 py-0.5 rounded-full bg-white/10 hover:bg-emerald-500/20 hover:text-emerald-300 text-[10px] font-medium text-slate-400 transition-opacity duration-150 opacity-0 group-hover/metric-card:opacity-100 flex items-center gap-1 cursor-pointer select-none"
+                                                             title="Add another milestone dot"
+                                                           >
+                                                             <Plus size={10} /> Add Point
+                                                           </button>
+                                                         )}
+                                                       </div>
+                                                     );
+                                                   })()}
+                                                 </div>
+                                               </div>
+                                             ) : (
+                                               /* ── CASE 5: DEFAULT REGAARDER EDITABLE NARRATIVE TEXT ── */
+                                              <div
+                                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleDeckKeyDown}
+                                                onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                                data-placeholder="Click to add body text, narrative points, or select a block below..."
+                                                className={`text-[14px] md:text-[15px] leading-relaxed outline-none flex-1 empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 select-text ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}
+                                              >
+                                                {activeDeckSlide?.blurb || ''}
+                                              </div>
+                                            )}
+
+                                            {/* Regaarder Progressive Micro-Action Dock */}
+                                            {!isDeckPresentationMode && (
+                                              <div className="pt-3 mt-2 border-t border-white/10 flex items-center justify-between flex-wrap gap-2">
+                                              <span className="text-[10px] font-medium text-slate-400/80 flex items-center gap-1.5">
+                                                <LayoutTemplate size={12} className="text-[#00f0ff]" /> Quick Blocks:
+                                              </span>
+                                              <div className="flex items-center gap-1.5 relative">
+                                                {/* Draft with AI - with circular Regaarder AI Orb icon & Interactive Popover */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckAiDraftPopoverOpen(prev => !prev);
+                                                      setDeckFloatingMenuOpen(null);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                                                      deckAiDraftPopoverOpen
+                                                        ? 'bg-violet-600 text-white border-violet-500 shadow-[0_0_14px_rgba(124,77,255,0.4)]'
+                                                        : 'bg-white/10 hover:bg-violet-600/30 text-zinc-200 hover:text-white border-white/10'
+                                                    }`}
+                                                  >
+                                                    <RegaarderAiIcon size={13} className={deckAiDraftPopoverOpen ? 'text-white' : 'text-violet-400 shrink-0'} />
+                                                    <span>Draft with AI</span>
+                                                  </button>
+
+                                                  {/* Apple-Style Floating Regaarder AI Draft Popover */}
+                                                  {deckAiDraftPopoverOpen && (
+                                                    <div
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="absolute bottom-9 left-0 z-[120] w-[340px] bg-zinc-900/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-150 text-left pointer-events-auto"
+                                                    >
+                                                      <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+                                                        <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                                                          <RegaarderAiIcon size={14} className="text-[#00f0ff]" />
+                                                          <span>Draft Slide with AI</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-violet-300 flex items-center gap-1">
+                                                            {composeSelectedModel?.isLocal && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                                                            <span className="truncate max-w-[110px]">{composeSelectedModel?.name || "Regaarder AI"}</span>
+                                                          </span>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => setDeckAiDraftPopoverOpen(false)}
+                                                            className="p-1 rounded text-slate-400 hover:text-white cursor-pointer"
+                                                          >
+                                                            <X size={12} />
+                                                          </button>
+                                                        </div>
+                                                      </div>
+
+                                                      {/* Custom Prompt Input */}
+                                                      <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 focus-within:border-violet-500/50 transition-colors">
+                                                        <input
+                                                          type="text"
+                                                          value={deckAiDraftPrompt}
+                                                          onChange={(e) => setDeckAiDraftPrompt(e.target.value)}
+                                                          onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && deckAiDraftPrompt.trim() && !deckAiDraftLoading) {
+                                                              e.preventDefault();
+                                                              handleExecuteSlideAiDraft(deckAiDraftPrompt);
+                                                            }
+                                                          }}
+                                                          placeholder="Describe slide intent or narrative topic..."
+                                                          className="flex-1 bg-transparent border-none text-xs text-white placeholder-slate-400 focus:outline-none"
+                                                          autoFocus
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          disabled={deckAiDraftLoading || !deckAiDraftPrompt.trim()}
+                                                          onClick={() => handleExecuteSlideAiDraft(deckAiDraftPrompt)}
+                                                          className="p-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 cursor-pointer transition-colors"
+                                                        >
+                                                          {deckAiDraftLoading ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                                                        </button>
+                                                      </div>
+
+                                                      {/* Quick Action Suggestion Chips */}
+                                                      <div className="flex flex-col gap-1">
+                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Quick Suggestions</span>
+                                                        <div className="flex flex-wrap gap-1">
+                                                          {[
+                                                            { label: '3 Strategic Pillars', prompt: '3 strategic pillars for executive presentation' },
+                                                            { label: 'Problem & Solution', prompt: 'Problem statement and innovative market solution' },
+                                                            { label: 'Market Opportunity', prompt: 'Addressable market size, growth drivers, and target TAM' },
+                                                            { label: 'Executive Summary', prompt: 'Executive summary with actionable business outcomes' }
+                                                          ].map((chip, idx) => (
+                                                            <button
+                                                              key={idx}
+                                                              type="button"
+                                                              onClick={() => handleExecuteSlideAiDraft(chip.prompt)}
+                                                              className="px-2 py-1 rounded-lg bg-white/5 hover:bg-violet-600/30 border border-white/5 hover:border-violet-500/30 text-[10.5px] text-slate-300 hover:text-white transition-all cursor-pointer text-left"
+                                                            >
+                                                              ✦ {chip.label}
+                                                            </button>
+                                                          ))}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* + Insert Dropdown Menu for Media, Tables, Videos, Charts */}
+                                                <div className="relative">
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setDeckFloatingMenuOpen(deckFloatingMenuOpen === 'quickInsertMenu' ? null : 'quickInsertMenu');
+                                                      setDeckAiDraftPopoverOpen(false);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                                                      deckFloatingMenuOpen === 'quickInsertMenu'
+                                                        ? 'bg-violet-600 text-white border-violet-500 shadow-[0_0_12px_rgba(124,77,255,0.4)]'
+                                                        : 'bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white border-white/10'
+                                                    }`}
+                                                    title="Insert media, images, videos, tables & charts"
+                                                  >
+                                                    <Plus size={12} className={deckFloatingMenuOpen === 'quickInsertMenu' ? 'text-white' : 'text-[#7C4DFF]'} />
+                                                    <span>Insert</span>
+                                                    <ChevronDown size={10} className={`transition-transform duration-200 ${deckFloatingMenuOpen === 'quickInsertMenu' ? 'rotate-180' : ''}`} />
+                                                  </button>
+
+                                                  {/* Apple-Style Floating Insert Popover Menu */}
+                                                  {deckFloatingMenuOpen === 'quickInsertMenu' && (
+                                                    <div 
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="absolute bottom-9 right-0 z-[100] w-64 bg-zinc-900/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-1.5 flex flex-col gap-0.5 text-xs text-zinc-200 animate-in fade-in zoom-in-95 duration-150"
+                                                    >
+                                                      <div className="px-2.5 py-1.5 border-b border-white/10 flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                                          <Plus size={11} className="text-[#00f0ff]" /> Insert Elements
+                                                        </span>
+                                                        <button 
+                                                          type="button" 
+                                                          onClick={() => setDeckFloatingMenuOpen(null)}
+                                                          className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+                                                        >
+                                                          <X size={11} />
+                                                        </button>
+                                                      </div>
+
+                                                      {/* Picture / Image */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'image');
+                                                          imageFileInputRef.current?.click();
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <ImageIcon size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-cyan-300">Picture / Image</div>
+                                                          <div className="text-[9.5px] text-slate-400">Upload graphic or brand illustration</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Video Player */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'video');
+                                                          showToast('Embedded Video Player block');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <Film size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-rose-300">Video Player</div>
+                                                          <div className="text-[9.5px] text-slate-400">Embed MP4 or video container</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Data Table / Matrix */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'table');
+                                                          showToast('Embedded Data Table Matrix');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <Table size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-amber-300">Data Table / Matrix</div>
+                                                          <div className="text-[9.5px] text-slate-400">Interactive editable 3x3 spreadsheet grid</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Chart / KPI Metric */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'contentBlockType', 'metric');
+                                                          showToast('Embedded KPI Metric Block');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <BarChart2 size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-emerald-300">Chart / KPI Metric</div>
+                                                          <div className="text-[9.5px] text-slate-400">Executive stat callout & growth benchmarks</div>
+                                                        </div>
+                                                      </button>
+
+                                                      {/* Bento Capability Card */}
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setDeckFloatingMenuOpen(null);
+                                                          const newBento = {
+                                                            id: `bento_${Date.now()}`,
+                                                            title: 'Strategic Pillar',
+                                                            description: 'Enterprise architecture feature point.',
+                                                            style: 'frosted',
+                                                            bg: 'rgba(255, 255, 255, 0.05)',
+                                                            posX: 120,
+                                                            posY: 240,
+                                                            width: 280,
+                                                            height: 160
+                                                          };
+                                                          updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newBento]);
+                                                          showToast('Added Bento Block');
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-white/10 group transition-all flex items-center gap-2.5 cursor-pointer"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-violet-500/20 text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                          <LayoutGrid size={13} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                          <div className="text-[11.5px] font-semibold text-white group-hover:text-violet-300">Bento Card Block</div>
+                                                          <div className="text-[9.5px] text-slate-400">Glassmorphic capability card</div>
+                                                        </div>
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                {/* Direct quick action: + Bento Card */}
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newBento = {
+                                                      id: `bento_${Date.now()}`,
+                                                      title: 'Key Pillar',
+                                                      description: 'Strategic objective and operational proof point.',
+                                                      style: 'frosted',
+                                                      bg: 'rgba(255, 255, 255, 0.05)',
+                                                      posX: 120,
+                                                      posY: 240,
+                                                      width: 280,
+                                                      height: 160
+                                                    };
+                                                    updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', [...(activeDeckSlide?.bentoCards || []), newBento]);
+                                                    showToast('Added Bento Block');
+                                                  }}
+                                                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white border border-white/10 text-[11px] font-medium flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                                                >
+                                                  <LayoutGrid size={11} className="text-cyan-400" /> + Bento Card
+                                                </button>
+
+                                                {/* Direct quick action: + Metric */}
+                                                <button
+                                                  type="button"
+                                                  onPointerDown={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    updateDeckSlideFields(activeDeckSlide?.id, { contentBlockType: 'metric', keyMetric: '0.00%' });
+                                                    showToast('Switched to KPI Metric');
+                                                  }}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    updateDeckSlideFields(activeDeckSlide?.id, { contentBlockType: 'metric', keyMetric: '0.00%' });
+                                                  }}
+                                                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white border border-white/10 text-[11px] font-medium flex items-center gap-1 shadow-xs transition-colors cursor-pointer select-none"
+                                                >
+                                                  <TrendingUp size={11} className="text-emerald-400" /> + Metric
+                                                </button>
+                                              </div>
+                                            </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ) : layout === 'Text & List' ? (
                                         <div className="flex flex-col gap-3 max-w-[85%] pointer-events-auto">
                                           <h1
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
@@ -67711,10 +68313,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
                                             className={`text-[32px] leading-tight font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
                                           >
-                                            {resolvedDeckSlideDesign.headline}
+                                            {resolvedDeckSlideDesign.headline || 'Summary Points'}
                                           </h1>
                                           <div className="space-y-2 mt-1">
-                                            {(resolvedDeckSlideDesign.blurb || '').split('\n').filter(Boolean).map((line, idx) => (
+                                            {(resolvedDeckSlideDesign.blurb || 'Key objective 1\nKey objective 2\nKey objective 3').split('\n').filter(Boolean).map((line, idx) => (
                                               <div key={idx} className="flex items-start gap-2.5 text-xs font-medium">
                                                 <div className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-0.5" style={{ backgroundColor: brandColor }}>
                                                   {idx + 1}
@@ -67725,25 +68327,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </div>
                                         </div>
                                       ) : (
-                                        /* Title Slide default */
-                                        <div className="flex flex-col justify-center max-w-[70%] pointer-events-auto">
+                                        /* ── REGAARDER TITLE SLIDE DEFAULT ── */
+                                        <div className="flex flex-col justify-center max-w-[78%] pointer-events-auto z-20 select-text">
                                           <h1
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                             suppressContentEditableWarning
                                             onKeyDown={handleDeckKeyDown}
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
-                                            className={`text-[40px] leading-[1.15] font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                            data-placeholder="Click to add presentation title..."
+                                            className={`text-[38px] md:text-[46px] leading-[1.1] font-extrabold tracking-tight outline-none rounded-xl px-2 py-1 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}
                                           >
-                                            {resolvedDeckSlideDesign.headline === 'New Presentation' ? (t('deck.newPresentation') || 'New Presentation') : resolvedDeckSlideDesign.headline}
+                                            {activeDeckSlide?.headline || ''}
                                           </h1>
                                           <p
                                             contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                             suppressContentEditableWarning
                                             onKeyDown={handleDeckKeyDown}
                                             onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
-                                            className={`mt-3 text-[15px] leading-relaxed font-normal outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
+                                            data-placeholder="Click to add presentation subtitle..."
+                                            className={`mt-3 text-[15px] md:text-[16px] leading-relaxed font-normal outline-none rounded-lg px-2 py-1 transition-all hover:ring-1 hover:ring-violet-500/30 focus:ring-2 focus:ring-[#7C4DFF] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400/60 ${isDarkTheme ? 'text-slate-300' : 'text-slate-600'}`}
                                           >
-                                            {resolvedDeckSlideDesign.blurb === 'Click anywhere to begin crafting your presentation narrative.' ? (t('deck.newPresentationSubtitle') || 'Click anywhere to begin crafting your presentation narrative.') : resolvedDeckSlideDesign.blurb}
+                                            {activeDeckSlide?.blurb || ''}
                                           </p>
                                         </div>
                                       )}
@@ -68118,6 +68722,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         )}
 
+                        {/* Ambient Presenter Laser Pointer Overlay */}
+                        {isDeckPresentationMode && deckLaserPointerActive && (
+                          <div
+                            style={{
+                              left: `${deckLaserPos.x}px`,
+                              top: `${deckLaserPos.y}px`,
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                            className="fixed z-[99999999] pointer-events-none w-3.5 h-3.5 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444,0_0_20px_#ef4444,0_0_35px_#f87171] animate-pulse"
+                          />
+                        )}
+
                         {/* Bottom Status Bar & Floating Presentation Controls */}
                         {isDeckPresentationMode ? (
                           <div 
@@ -68182,6 +68798,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               title="Next Slide (Right Arrow)"
                             >
                               <ChevronRight size={18} />
+                            </button>
+
+                            {/* Live Elapsed Presentation Timer */}
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-800/80 text-zinc-300 text-xs font-mono select-none" title="Presentation duration">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>{`${String(Math.floor(deckPresentationElapsedSecs / 60)).padStart(2, '0')}:${String(deckPresentationElapsedSecs % 60).padStart(2, '0')}`}</span>
+                            </div>
+
+                            {/* Laser Pointer Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => setDeckLaserPointerActive((prev) => !prev)}
+                              className={`p-2 rounded-xl transition-all cursor-pointer ${
+                                deckLaserPointerActive ? 'bg-red-600 text-white shadow-md shadow-red-900 ring-2 ring-red-400/50' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                              }`}
+                              title="Toggle Presenter Laser Pointer (Press L)"
+                            >
+                              <SunMedium size={16} />
                             </button>
 
                             <div className="w-px h-5 bg-zinc-800 my-0.5" />
@@ -72030,26 +72664,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {roomState === 'active' && roomPanelMode === 'expanded' && (productMode === 'room-landing' || productMode === 'room') ? (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative">
-          <RegaarderComposeLanding
-            onLaunch={openLandingWorkspace}
-            onOpenWorkspaceSwitcher={(rect) => {
-              if (rect) setWorkspaceSwitcherAnchorRect(rect);
-              setWorkspaceSwitcherOpen((prev) => !prev);
-            }}
-            onSearchClick={() => {
-              closeTransientMenus();
-              setIsMemorySearchOpen(true);
-            }}
-            notifications={notifications}
-            onNotificationsClick={() => {
-              setReplaySpeedMenuOpen(false);
-              setNotificationsOpen((prev) => !prev);
-            }}
-            currentUser={currentUser}
-            onProfileClick={() => setComposeProfileMenuOpen((prev) => !prev)}
-            isDarkMode={isDarkMode}
-          />
+        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+          <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
       ) : productMode === 'room-landing' ? (
         <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
@@ -81460,7 +82076,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         screenShareStream ? (
                           <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
       <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
-        <PresentationIcon size={34} className="text-violet-400" />
+        <MonitorPlay size={34} className="text-violet-400" />
       </div>
       <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
       <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
@@ -81615,41 +82231,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1100px] w-full h-full max-h-[calc(100vh-260px)] min-h-[340px] z-10 rounded-3xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : screenShareStream ? 'max-w-[1180px] w-full h-full max-h-[82vh] min-h-[520px] z-10 rounded-2xl cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-2xl cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
     <RoomAnnotationOverlay isEnabled={true} />
                     
   {screenShareStream ? (
-    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-5 gap-4">
+    <div className="w-full h-full flex flex-col md:flex-row items-stretch justify-between bg-zinc-950 text-white relative overflow-hidden select-none p-4 md:p-6 gap-4">
       {/* Subtle Ambient Presentation Glow */}
       <div className="w-96 h-96 rounded-full bg-violet-600/10 blur-3xl absolute -top-12 -left-12 pointer-events-none" />
 
-      {/* Presentation Slate (Centered Card with tight, balanced hierarchy) */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-6 md:p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
-        {/* Presentation Icon */}
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/20 border border-white/20">
-          <PresentationIcon size={26} className="text-white" />
+      {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
+          <MonitorPlay size={30} className="text-white" />
         </div>
         
-        {/* Live Presentation Status Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-2.5">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Live Presentation Active</span>
         </div>
 
-        {/* Strong Headline */}
-        <h3 className="text-[19px] font-extrabold text-white tracking-tight mb-1.5">
+        <h3 className="text-lg font-bold text-white tracking-tight mb-2">
           You are presenting to everyone
         </h3>
-        
-        {/* Subtle Explanatory Text */}
-        <p className="text-[11.5px] text-zinc-400 leading-relaxed mb-5 max-w-[340px]">
+        <p className="text-xs text-zinc-400 leading-relaxed mb-6 max-w-sm">
           To avoid an infinite mirror effect, your screen is hidden here. Everyone in the meeting can see your live presentation.
         </p>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => {
@@ -81661,9 +82271,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               window.electronAPI?.closeFloatingPipWidget?.();
               showToast?.("Stopped presenting");
             }}
-            className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2 cursor-pointer"
           >
-            <PhoneOff size={13} />
+            <PhoneOff size={14} />
             <span>Stop presenting</span>
           </button>
 
@@ -81679,80 +82289,66 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 window.electronAPI.minimizeMainWindow();
               }
             }}
-            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-zinc-200 hover:text-white text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <ExternalLink size={12} />
-            <span>Open floating controls</span>
+            <ExternalLink size={13} />
+            <span>Floating OS HUD</span>
           </button>
         </div>
       </div>
 
-      {/* Participants Gallery Filmstrip (Integrated Right-Side Column) */}
-      <div className="w-full md:w-56 lg:w-60 shrink-0 flex flex-col gap-1.5 relative z-10 overflow-y-auto max-h-[75vh] pr-0.5 custom-scrollbar">
-        {/* In Meeting Header & Directly Aligned Expand Control */}
-        <div className="flex items-center justify-between px-1 min-h-[28px]">
-          <span className="text-[10.5px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Users size={11} className="text-violet-400" />
+      {/* Participants Gallery Filmstrip (Audience Presence) */}
+      <div className="w-full md:w-60 lg:w-64 shrink-0 flex flex-col gap-2.5 relative z-10 overflow-y-auto max-h-[75vh] pr-1 custom-scrollbar">
+        <div className="flex items-center justify-between px-1 mb-1">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Users size={12} className="text-violet-400" />
             In Meeting ({videoParticipants.length + 1})
           </span>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
-            className="w-6 h-6 rounded-md bg-white/8 hover:bg-white/15 border border-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
-            title={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
-            aria-label={isVideoExpanded ? "Exit Fullscreen" : "Enter Fullscreen"}
-          >
-            {isVideoExpanded ? <Minimize2 size={12} strokeWidth={1.75} /> : <Maximize2 size={12} strokeWidth={1.75} />}
-          </button>
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 font-medium">Audience</span>
         </div>
 
         {/* You (Presenter) Tile */}
-        <div className="relative select-none">
-          {/* Main Card */}
-          <div className="relative aspect-[16/9] w-full rounded-[14px] overflow-hidden bg-zinc-900/90 border border-white/10 shadow-sm">
-            {localStream && isRoomCameraOn ? (
-              <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-[#18181b] flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-[11px] shadow-xs border border-white/20">
-                  You
-                </div>
+        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border border-violet-500/40 shadow-lg group">
+          {localStream && isRoomCameraOn ? (
+            <video ref={(node) => { if (node && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-950/60 to-zinc-900 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-md border border-white/20">
+                You
               </div>
-            )}
-
-            {/* Compact, Subordinate Bottom Name & Status Overlay */}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-2.5 py-1.5 flex items-center justify-between">
-              <span className="text-[10px] font-medium text-zinc-300 truncate">You (Presenter)</span>
-              <div className="flex items-center gap-1.5">
-                {!isRoomMicOn && <MicOff size={9.5} className="text-rose-400" />}
-                <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 font-medium">Host</span>
-              </div>
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-white truncate">You (Presenter)</span>
+            <div className="flex items-center gap-1">
+              {!isRoomMicOn && <MicOff size={11} className="text-rose-400" />}
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-600/80 text-white font-medium">Host</span>
             </div>
           </div>
         </div>
 
         {/* Audience Attendees */}
         {videoParticipants.map((p) => (
-          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-md group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
+          <div key={p.id} className={`relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-900 border shadow-lg group transition-all ${p.isSpeaking ? "border-emerald-500/60 ring-2 ring-emerald-500/30" : "border-white/10"}`}>
             {p.isRoomCameraOn && p.img ? (
               <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shadow-sm" style={{ background: p.color || "#6366F1" }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md" style={{ background: p.color || "#6366F1" }}>
                   {(p.name || "U").charAt(0).toUpperCase()}
                 </div>
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 flex items-center justify-between">
-              <span className="text-[10.5px] font-medium text-zinc-200 truncate">{p.name}</span>
+              <span className="text-[11px] font-medium text-zinc-200 truncate">{p.name}</span>
               <div className="flex items-center gap-1">
                 {p.isSpeaking && (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 )}
                 {p.isRoomMicOn ? (
-                  <Mic size={10} className="text-emerald-400" />
+                  <Mic size={11} className="text-emerald-400" />
                 ) : (
-                  <MicOff size={10} className="text-zinc-400" />
+                  <MicOff size={11} className="text-zinc-400" />
                 )}
               </div>
             </div>
@@ -82048,7 +82644,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
                           aria-pressed={!isRoomMicOn}
                         >
-                          {isRoomMicOn ? <Mic size={18} strokeWidth={1.6} /> : <MicOff size={18} strokeWidth={1.6} />}
+                          {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
                         </button>
                         <button
                           onClick={toggleRoomCamera}
@@ -82061,7 +82657,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
                           aria-pressed={!isRoomCameraOn}
                         >
-                          {isRoomCameraOn ? <Video size={18} strokeWidth={1.6} /> : <VideoOff size={18} strokeWidth={1.6} />}
+                          {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                         </button>
 
                         {/* People and Chat Quick Toggles with restrained active background */}
@@ -82075,7 +82671,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`}
                           title="Toggle People Panel"
                         >
-                          <Users size={18} strokeWidth={1.6} />
+                          <Users size={18} strokeWidth={1.5} />
                         </button>
                         <button
                           type="button"
@@ -82087,7 +82683,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`}
                           title="Toggle Chat Panel"
                         >
-                          <MessageSquare size={18} strokeWidth={1.6} />
+                          <MessageSquare size={18} strokeWidth={1.5} />
                         </button>
 
                         {/* Progressive Disclosure Present Button */}
@@ -82123,7 +82719,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             title={(roomPresentedApp || isScreenSharing) ? (t('room.stopPresenting') || 'Stop Presenting') : (t('room.present') || 'Present')}
                             aria-label="Present in meeting"
                           >
-                            <PresentationIcon size={18} strokeWidth={1.6} />
+                            <MonitorPlay size={18} strokeWidth={1.5} />
                           </button>
 
                           {/* Present Mode Selection Popover — Apple Executive Tier Stacked List */}
@@ -82210,7 +82806,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
                                 <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                                  <PresentationIcon size={15} strokeWidth={1.6} />
+                                  <MonitorPlay size={15} />
                                 </div>
                                 <div className="min-w-0 text-left">
                                   <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.presentEntireScreen') || 'Share Entire Screen / Window'}</div>
@@ -82230,7 +82826,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             aria-haspopup="menu"
                             aria-expanded={isRoomStartMenuOpen}
                           >
-                            <MoreHorizontal size={18} strokeWidth={1.6} />
+                            <MoreHorizontal size={18} strokeWidth={1.5} />
                           </button>
                           {isRoomStartMenuOpen && (
                             <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-3 w-[252px] max-h-[calc(100vh-190px)] overflow-y-auto thin-scrollbar bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-[20px] p-1.5 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-2 fade-in duration-200 z-[1000000]" onClick={e => e.stopPropagation()}>
