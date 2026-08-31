@@ -3,7 +3,10 @@ import React, { useState } from "react";
 import {
   ChevronDown,
   Search,
-  Bell
+  Bell,
+  HelpCircle,
+  MessageSquare,
+  Command
 } from "lucide-react";
 import {
   ComposeIcon,
@@ -18,96 +21,17 @@ import {
 
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 import LegalPolicyModal from "./components/LegalPolicyModal";
+import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
 
 const products = [
-  { 
-    id: "compose",
-    title: "Docs", 
-    description: "Write and edit documents", 
-    icon: ComposeIcon,
-    theme: {
-      badgeBg: "bg-blue-500/10 dark:bg-blue-500/20",
-      badgeBorder: "border-blue-500/20 dark:border-blue-500/30",
-      iconColor: "text-blue-600 dark:text-blue-400"
-    }
-  },
-  { 
-    id: "deck",
-    title: "Deck", 
-    description: "Create presentations", 
-    icon: DeckIcon,
-    theme: {
-      badgeBg: "bg-amber-500/10 dark:bg-amber-500/20",
-      badgeBorder: "border-amber-500/20 dark:border-amber-500/30",
-      iconColor: "text-amber-600 dark:text-amber-400"
-    }
-  },
-  { 
-    id: "sheet",
-    title: "Sheet", 
-    description: "Manage spreadsheets", 
-    icon: SheetIcon,
-    theme: {
-      badgeBg: "bg-emerald-500/10 dark:bg-emerald-500/20",
-      badgeBorder: "border-emerald-500/20 dark:border-emerald-500/30",
-      iconColor: "text-emerald-600 dark:text-emerald-400"
-    }
-  },
-  { 
-    id: "room",
-    title: "Room", 
-    description: "Host meetings", 
-    icon: RoomIcon,
-    theme: {
-      badgeBg: "bg-violet-500/10 dark:bg-violet-500/20",
-      badgeBorder: "border-violet-500/20 dark:border-violet-500/30",
-      iconColor: "text-violet-600 dark:text-violet-400"
-    }
-  },
-  { 
-    id: "whiteboard",
-    title: "Whiteboard", 
-    description: "Brainstorm ideas", 
-    icon: WhiteboardIcon,
-    theme: {
-      badgeBg: "bg-sky-500/10 dark:bg-sky-500/20",
-      badgeBorder: "border-sky-500/20 dark:border-sky-500/30",
-      iconColor: "text-sky-600 dark:text-sky-400"
-    }
-  },
-  { 
-    id: "schedule",
-    title: "Schedule", 
-    description: "Manage calendar", 
-    icon: ScheduleIcon,
-    theme: {
-      badgeBg: "bg-rose-500/10 dark:bg-rose-500/20",
-      badgeBorder: "border-rose-500/20 dark:border-rose-500/30",
-      iconColor: "text-rose-600 dark:text-rose-400"
-    }
-  },
-  { 
-    id: "memory",
-    title: "Memory", 
-    description: "Access memories", 
-    icon: MemoryIcon,
-    theme: {
-      badgeBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
-      badgeBorder: "border-indigo-500/20 dark:border-indigo-500/30",
-      iconColor: "text-indigo-600 dark:text-indigo-400"
-    }
-  },
-  { 
-    id: "tasks",
-    title: "Tasks", 
-    description: "Track to-dos", 
-    icon: TasksIcon,
-    theme: {
-      badgeBg: "bg-teal-500/10 dark:bg-teal-500/20",
-      badgeBorder: "border-teal-500/20 dark:border-teal-500/30",
-      iconColor: "text-teal-600 dark:text-teal-400"
-    }
-  },
+  { id: "compose", title: "Docs", icon: ComposeIcon },
+  { id: "deck", title: "Deck", icon: DeckIcon },
+  { id: "sheet", title: "Sheet", icon: SheetIcon },
+  { id: "room", title: "Room", icon: RoomIcon },
+  { id: "whiteboard", title: "Whiteboard", icon: WhiteboardIcon },
+  { id: "schedule", title: "Schedule", icon: ScheduleIcon },
+  { id: "memory", title: "Memory", icon: MemoryIcon },
+  { id: "tasks", title: "Tasks", icon: TasksIcon },
 ];
 
 export default function RegaarderComposeLanding({
@@ -118,22 +42,57 @@ export default function RegaarderComposeLanding({
   notifications = [],
   currentUser = null,
   onProfileClick,
+  onOpenRecentModal,
+  onOpenHelp,
+  onOpenFeedback,
+  onOpenShortcuts,
   isDarkMode = false,
 }) {
   const { t } = useTranslation();
   const [legalModalTab, setLegalModalTab] = useState(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackCategory, setFeedbackCategory] = useState('Idea');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [hasRecentWork, setHasRecentWork] = useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("rc.savedDoc.")) {
+            try {
+              const raw = localStorage.getItem(key);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (isMeaningfulWork(parsed)) return true;
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+    return false;
+  });
 
   const hasUnread = notifications.some(n => n.unread);
 
   return (
     <div
-      className="w-full h-full relative overflow-hidden flex flex-col bg-[#FAFAFA] dark:bg-[#111111]"
+      className="w-full h-full relative overflow-hidden flex flex-col bg-[#fafbfc] dark:bg-[#0c0d0e]"
       style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, sans-serif" }}
     >
-      {/* Global Top Navigation Bar: Permeates and seamlessly blends into ambient canvas */}
-      <header className="h-14 flex items-center justify-between px-6 bg-transparent shrink-0 select-none z-30 relative">
+      {/* ── Subconscious Atmospheric Glow (Substantially toned down by ~65%, neutral canvas) ── */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-16 dark:opacity-10">
+        <div className="absolute -top-[15%] -left-[10%] w-[65%] h-[65%] rounded-full bg-sky-200/30 mix-blend-multiply filter blur-[140px] animate-blob" />
+        <div className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-indigo-200/25 mix-blend-multiply filter blur-[140px] animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-violet-200/20 mix-blend-multiply filter blur-[140px] animate-blob animation-delay-4000" />
+      </div>
 
-        {/* Left: Workspace Selector */}
+      {/* ── Global Navigation Bar ── */}
+      <header className="h-14 flex items-center justify-between px-6 sm:px-8 bg-transparent shrink-0 select-none z-30 relative">
+
+        {/* Left: Workspace Selector with Silhouette Mark */}
         <button
           type="button"
           data-workspace-switcher="true"
@@ -144,10 +103,10 @@ export default function RegaarderComposeLanding({
             onOpenWorkspaceSwitcher?.(rect);
           }}
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2.5 h-8 px-2.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer group"
+          className="flex items-center gap-2.5 h-8 px-2.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer group outline-none focus:outline-none"
           title="Switch Workspace"
         >
-          <RegaarderBrandIcon size={22} className="group-hover:scale-105 transition-transform duration-200" />
+          <RegaarderBrandIcon size={18} className="text-slate-900 dark:text-white group-hover:opacity-75 transition-opacity" />
           <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-[-0.01em]">
             Regaarder Workspace
           </span>
@@ -165,7 +124,7 @@ export default function RegaarderComposeLanding({
           <button
             type="button"
             onClick={() => onSearchClick?.()}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none"
             title="Search Workspace"
           >
             <Search size={15} strokeWidth={1.6} />
@@ -175,12 +134,12 @@ export default function RegaarderComposeLanding({
           <button
             type="button"
             onClick={() => onNotificationsClick?.()}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer relative"
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer relative outline-none focus:outline-none"
             title="Notifications"
           >
             <Bell size={15} strokeWidth={1.6} />
             {hasUnread && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#111111] animate-pulse" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-900 dark:bg-white ring-2 ring-white dark:ring-[#111111]" />
             )}
           </button>
 
@@ -188,8 +147,8 @@ export default function RegaarderComposeLanding({
           <button
             type="button"
             onClick={() => onProfileClick?.()}
-            className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-xs hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-700 focus:outline-none ml-1 cursor-pointer"
-            style={{ backgroundColor: currentUser ? '#8b5cf6' : '#64748B' }}
+            className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all hover:opacity-85 focus:outline-none ml-1 cursor-pointer"
+            style={{ backgroundColor: '#64748B' }}
             title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
           >
             {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
@@ -198,28 +157,37 @@ export default function RegaarderComposeLanding({
         </div>
       </header>
 
-      {/* Subtle Ambient Mesh Aura */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-35 dark:opacity-20">
-        <div className="absolute -top-[15%] left-[20%] w-[50%] h-[50%] rounded-full bg-blue-300/30 dark:bg-blue-600/15 mix-blend-multiply filter blur-[120px] animate-blob" />
-        <div className="absolute top-[20%] right-[15%] w-[45%] h-[45%] rounded-full bg-purple-300/30 dark:bg-purple-600/15 mix-blend-multiply filter blur-[120px] animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-[15%] left-[30%] w-[55%] h-[55%] rounded-full bg-pink-300/25 dark:bg-pink-600/15 mix-blend-multiply filter blur-[120px] animate-blob animation-delay-4000" />
-      </div>
+      {/* ── Main Content Stage ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-8 py-6 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center">
 
-      {/* Hub Content Stage */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-6 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[700px] mx-auto flex flex-col items-center">
+          {/*
+            ── Hero Section ──
+            Pure Apple typography & authoritative monochrome Regaarder brand glyph.
+          */}
+          <div className="text-center mb-8 sm:mb-9 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+            
+            {/* Minimal Regaarder Hero Mark */}
+            <div className="mb-2 sm:mb-2.5 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#18181b] border border-slate-200/40 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.02)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
+                <RegaarderBrandIcon size={21} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
+              </div>
+            </div>
 
-          {/* Executive Typography */}
-          <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <h1 className="text-[32px] sm:text-[38px] font-bold tracking-[-0.03em] text-slate-900 dark:text-white leading-[1.15] mb-2">
-              {t('landing.headline') || 'One workspace for all your office needs.'}
+            <h1 className="text-[28px] sm:text-[34px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2 text-balance max-w-2xl mx-auto">
+              {t('landing.headline') || 'Everything your team thinks, in one place.'}
             </h1>
-            <p className="text-[14px] sm:text-[14.5px] text-slate-600 dark:text-zinc-400 font-normal max-w-md mx-auto leading-relaxed">
-              {t('landing.subheadline') || 'Choose a product to start creating.'}
+            <p className="text-[14.5px] sm:text-[15px] text-slate-500 dark:text-zinc-400 font-normal max-w-md mx-auto leading-relaxed">
+              {t('landing.subheadline') || 'Open a product to start building.'}
             </p>
           </div>
 
-          {/* Apple-Tier Product Suite Grid */}
+          {/*
+            ── 4×2 Product Launcher Grid ──
+            - White/almost-white surfaces with subtle borders and very soft elevation.
+            - Dark navy labels and restrained purple accents on hover.
+            - Generous whitespace (p-6).
+          */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 w-full">
             {products.map((product, idx) => {
               const IconComp = product.icon;
@@ -229,15 +197,32 @@ export default function RegaarderComposeLanding({
                   type="button"
                   onClick={() => onLaunch?.({ type: 'action', name: product.id })}
                   style={{ animationDelay: `${idx * 25}ms` }}
-                  className="flex flex-col items-center justify-center gap-3 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.07] rounded-2xl py-5 px-4 shadow-[0_2px_8px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] hover:bg-white dark:hover:bg-[#252528] hover:border-slate-300 dark:hover:border-white/20 hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 group cursor-pointer"
+                  className={[
+                    "flex flex-col items-center justify-center gap-3",
+                    // Near-white surface
+                    "bg-white dark:bg-[#18181b]",
+                    // Subtle border and extremely soft elevation
+                    "border border-slate-200/40 dark:border-white/[0.04]",
+                    "rounded-2xl p-6",
+                    "shadow-[0_1px_3px_rgba(15,23,42,0.02)] dark:shadow-none",
+                    // Gentle hover state with restrained purple accent
+                    "hover:bg-white dark:hover:bg-[#1f1f23]",
+                    "hover:border-violet-200 dark:hover:border-violet-500/30",
+                    "hover:shadow-[0_8px_20px_-6px_rgba(15,23,42,0.06)] dark:hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.4)]",
+                    "hover:-translate-y-0.5",
+                    "active:scale-[0.985] active:translate-y-0",
+                    // Strict outline elimination
+                    "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
+                    "transition-all duration-200 group cursor-pointer animate-in fade-in slide-in-from-bottom-2",
+                  ].join(" ")}
                 >
-                  {/* Tinted Apple Squircle Icon Container */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-200 group-hover:scale-105 ${product.theme.badgeBg} ${product.theme.badgeBorder} ${product.theme.iconColor}`}>
-                    <IconComp size={22} strokeWidth={1.7} />
+                  {/* Bare vector icon with restrained purple hover */}
+                  <div className="text-slate-600 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200">
+                    <IconComp size={26} strokeWidth={1.5} />
                   </div>
-                  
-                  {/* Clean Product Label */}
-                  <span className="text-[13.5px] font-semibold tracking-[-0.01em] text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
+
+                  {/* Dark navy product label */}
+                  <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors duration-200">
                     {t('landing.' + product.id) || product.title}
                   </span>
                 </button>
@@ -245,28 +230,69 @@ export default function RegaarderComposeLanding({
             })}
           </div>
 
-          {/* Minimalist Apple-Style Footer */}
-          <div className="mt-12 flex items-center gap-5 text-[11.5px] text-slate-400 dark:text-zinc-500 select-none">
+          {/* ── Progressive Disclosure Recent Work Strip ── */}
+          <LandingRecentWorkStrip
+            onLaunch={onLaunch}
+            onOpenRecentModal={onOpenRecentModal}
+            onRecentCountChange={(count) => setHasRecentWork(count > 0)}
+          />
+
+          {/* ── Subtle Workspace Utility Layer ── */}
+          <div className={`${hasRecentWork ? "mt-6" : "mt-8 sm:mt-9"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>
+            <button
+              type="button"
+              onClick={() => onOpenHelp ? onOpenHelp() : onLaunch?.({ type: 'action', name: 'help' })}
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none group"
+            >
+              <HelpCircle size={13} strokeWidth={1.6} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span>{t('common.help') || 'Help'}</span>
+            </button>
+
+            <span className="w-1 h-1 rounded-full bg-slate-300/60 dark:bg-zinc-700/60" />
+
+            <button
+              type="button"
+              onClick={() => onOpenFeedback ? onOpenFeedback() : setShowFeedbackModal(true)}
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none group"
+            >
+              <MessageSquare size={13} strokeWidth={1.6} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span>{t('common.feedback') || 'Feedback'}</span>
+            </button>
+
+            <span className="w-1 h-1 rounded-full bg-slate-300/60 dark:bg-zinc-700/60" />
+
+            <button
+              type="button"
+              onClick={() => onOpenShortcuts ? onOpenShortcuts() : setShowShortcuts(true)}
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none group"
+            >
+              <Command size={13} strokeWidth={1.6} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span>{t('common.keyboardShortcuts') || 'Keyboard Shortcuts'}</span>
+            </button>
+          </div>
+
+          {/* ── Footer with Terms of Service, Privacy Policy & Legal ── */}
+          <div className="mt-8 sm:mt-9 flex items-center gap-5 sm:gap-6 text-[11px] sm:text-[11.5px] text-slate-400/70 dark:text-zinc-600 select-none">
             <button
               type="button"
               onClick={() => setLegalModalTab("terms")}
-              className="hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 text-[11.5px] font-normal"
+              className="hover:text-slate-600 dark:hover:text-zinc-400 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none"
             >
               {t('common.terms') || 'Terms of Service'}
             </button>
-            <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+            <span className="w-1 h-1 rounded-full bg-slate-300/50 dark:bg-zinc-800" />
             <button
               type="button"
               onClick={() => setLegalModalTab("privacy")}
-              className="hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 text-[11.5px] font-normal"
+              className="hover:text-slate-600 dark:hover:text-zinc-400 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none"
             >
               {t('common.privacy') || 'Privacy Policy'}
             </button>
-            <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+            <span className="w-1 h-1 rounded-full bg-slate-300/50 dark:bg-zinc-800" />
             <button
               type="button"
               onClick={() => setLegalModalTab("legal")}
-              className="hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 text-[11.5px] font-normal"
+              className="hover:text-slate-600 dark:hover:text-zinc-400 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none"
             >
               {t('common.legal') || 'Legal'}
             </button>
@@ -282,11 +308,154 @@ export default function RegaarderComposeLanding({
         onClose={() => setLegalModalTab(null)}
       />
 
+      {/* Keyboard Shortcuts Dialog */}
+      {showShortcuts && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25 dark:bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div 
+            className="bg-white dark:bg-[#18181b] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-800 dark:text-zinc-100">
+                <Command size={14} className="text-slate-500" />
+                <span>Keyboard Shortcuts</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowShortcuts(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 text-xs p-1 cursor-pointer bg-transparent border-none outline-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-600 dark:text-zinc-300">
+              <div className="flex items-center justify-between">
+                <span>Search Workspace</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">⌘K</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>New Document</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">⌘N</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Slash Commands & AI</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">/</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Switch Workspace</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">⌘O</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Apple-Style Feedback & Suggestions Dialog ── */}
+      {showFeedbackModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25 dark:bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setShowFeedbackModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-[#18181b] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100">
+                <MessageSquare size={15} className="text-violet-500" />
+                <span>Feedback & Suggestions</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFeedbackModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 text-xs p-1 cursor-pointer bg-transparent border-none outline-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {feedbackSubmitted ? (
+              <div className="py-6 text-center space-y-2">
+                <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-base">
+                  ✓
+                </div>
+                <div className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100">Thank you for your feedback!</div>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xs mx-auto">Your input helps shape the future of Regaarder.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFeedbackModal(false);
+                    setFeedbackSubmitted(false);
+                    setFeedbackText('');
+                  }}
+                  className="mt-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-1.5">
+                  {['Idea', 'Bug', 'Experience'].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setFeedbackCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+                        feedbackCategory === cat
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent'
+                          : 'bg-slate-50 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border-slate-200/60 dark:border-white/5 hover:bg-slate-100'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  rows={4}
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="Tell us what you love or what we can improve..."
+                  className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none font-sans leading-relaxed"
+                />
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowFeedbackModal(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!feedbackText.trim()}
+                    onClick={() => {
+                      if (!feedbackText.trim()) return;
+                      setFeedbackSubmitted(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
+                  >
+                    Submit Feedback
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Ambient Mesh Blob Keyframe Animations ── */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
           33% { transform: translate(25px, -35px) scale(1.05); }
-          66% { transform: translate(-15px, 15px) scale(0.95); }
+          66% { transform: translate(-15px, 15px) scale(0.96); }
           100% { transform: translate(0px, 0px) scale(1); }
         }
         .animate-blob {
