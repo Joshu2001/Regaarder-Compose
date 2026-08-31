@@ -34,6 +34,7 @@ import {
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
+import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
 import {
   ComposeIcon,
   DeckIcon,
@@ -8508,6 +8509,7 @@ function AppCore() {
         if (key && key.startsWith('rc.savedDoc.')) {
           try {
             const data = JSON.parse(localStorage.getItem(key));
+            if (!isMeaningfulWork(data)) continue;
             docs.push({
               id: Number(key.replace('rc.savedDoc.', '')),
               title: data.docTitle || data.title || 'Untitled Document',
@@ -19442,7 +19444,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const formatRelativeSavedLabel = (savedAt) => {
+    const formatRelativeSavedLabel = (savedAt) => {
     if (!userHasEnteredContentRef.current || !savedAt) {
       return t('saved.notSaved') || 'Not saved yet';
     }
@@ -20131,6 +20133,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     const payload = getDocumentPayload(activeDocId);
+    if (!isMeaningfulWork(payload)) {
+      return;
+    }
     const savedAt = Date.now();
     localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify({
       ...payload,
@@ -33899,6 +33904,11 @@ Respond with valid JSON formatted like this:
       case 'chat':
         setActivePrimaryNav('inbox');
         setActiveRightTab('chat');
+        break;
+      case 'help':
+        setActivePrimaryNav('home');
+        setActiveRightTab('help');
+        setRightPanelMaximized(false);
         break;
       case 'assistant':
       case 'more':
@@ -73569,7 +73579,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
-          <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
+          <RegaarderComposeLanding onLaunch={openLandingWorkspace} onOpenRecentModal={() => setRecentDocumentsModalOpen(true)} />
         </div>
       ) : productMode === 'room-landing' ? (
         <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
