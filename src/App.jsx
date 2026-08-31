@@ -16285,7 +16285,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                 { mode: 'deck', label: t('nav.deck') || 'Decks', desc: t('workspaceDesc.deck') || 'Slide & Presentation', icon: DeckIcon },
                 { mode: 'whiteboard', label: t('nav.whiteboard') || 'Whiteboard', desc: t('workspaceDesc.whiteboard') || 'Visual Canvas & Diagrams', icon: WhiteboardIcon },
                 { mode: 'room', label: t('nav.room') || 'Room', desc: t('workspaceDesc.room') || 'Team Video & Meetings', icon: RoomIcon },
-                { mode: 'browser', label: t('nav.browser') || 'Research', desc: t('workspaceDesc.browser') || 'AI Knowledge Browser', icon: BrowserIcon }
+                { mode: 'browser', label: t('nav.browser') || 'Browser', desc: t('workspaceDesc.browser') || 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isCurrent = productMode === item.mode;
@@ -48826,7 +48826,7 @@ const renderRoomTopHeader = () => (
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div ref={appShellRef} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {/* Universal Floating Meeting PIP HUD across Sheets and Decks */}
         {renderFloatingMeetingPipHud()}
         <div className="fixed inset-0 pointer-events-none z-[9999]">
@@ -48870,6 +48870,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <span>{toastMessage}</span>
           </div>
         )}
+
+        {/* Global Workspace Switcher Popover in Sheets & Decks */}
+        {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
 
         {renderCloseConfirmModal()}
 
