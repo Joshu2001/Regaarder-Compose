@@ -43,6 +43,7 @@ import {
   RegaarderNotificationIcon,
   LaserPointerIcon
 } from './components/RegaarderProductIcons';
+import RegaarderBrandIcon from './components/RegaarderBrandIcon';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
 import RoomLandingPage from './RoomLandingPage';
@@ -48481,8 +48482,8 @@ const renderRoomTopHeader = () => (
           {/* Integrated Brand Header */}
           <div className="flex flex-col items-center text-center gap-2">
             <div className="relative group cursor-pointer mb-1">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-xl shadow-pink-500/20 flex items-center justify-center transform group-hover:scale-105 transition-all duration-300">
-                <div className="w-6 h-6 bg-white rounded-full opacity-25 -translate-x-0.5 -translate-y-0.5" />
+              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-[#27272a] border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-center group-hover:border-violet-300 dark:group-hover:border-violet-500/40 transition-all duration-200">
+                <RegaarderBrandIcon size={22} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
             <h2 className="text-[20px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
@@ -73543,7 +73544,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
-          <RegaarderComposeLanding onLaunch={openLandingWorkspace} onOpenRecentModal={() => setRecentDocumentsModalOpen(true)} />
+          <RegaarderComposeLanding
+            onLaunch={openLandingWorkspace}
+            onOpenRecentModal={() => setRecentDocumentsModalOpen(true)}
+            onSearchClick={() => setIsMemorySearchOpen(true)}
+            onNotificationsClick={() => setNotificationsOpen(true)}
+            notifications={notifications}
+            currentUser={currentUser}
+            onProfileClick={() => {
+              if (currentUser) {
+                setComposeProfileMenuOpen(true);
+              } else {
+                setAuthModalOpen(true);
+              }
+            }}
+          />
         </div>
       ) : productMode === 'room-landing' ? (
         <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
