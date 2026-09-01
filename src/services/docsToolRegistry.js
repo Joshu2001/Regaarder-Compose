@@ -15,6 +15,7 @@
  */
 
 import * as docsCommandApi from './docsCommandApi.js';
+import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEngineHarness.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
@@ -397,6 +398,19 @@ export const CANONICAL_DOCS_TOOLS = [
   },
 
   // ── DECK & SLIDE TOOLS ───────────────────────────────────────────
+  ...DECK_LLM_TOOL_DEFINITIONS.map(tool => ({
+    name: tool.name,
+    label: tool.name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: tool.description,
+    mutatesDocument: !['deck_get_state', 'deck_run_audit'].includes(tool.name),
+    destructive: ['deck_delete_slide', 'deck_delete_bento_card', 'deck_delete_shape'].includes(tool.name),
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: ['deck_delete_slide', 'deck_delete_shape'].includes(tool.name),
+    parameters: tool.parameters || { type: 'object', properties: {} },
+    execute: async (params, context) => dispatchDeckToolCall(tool.name, params, context)
+  })),
   {
     name: 'get_deck_slides',
     label: 'Get Deck Slides',
@@ -412,8 +426,8 @@ export const CANONICAL_DOCS_TOOLS = [
       properties: {},
       required: []
     },
-    execute: async () => {
-      const slides = window.__REGAARDER_DECK_SLIDES__ || [];
+    execute: async (params, context) => {
+      const slides = window.__REGAARDER_DECK_SLIDES__ || (window.regaarderDeck?.getSlides ? window.regaarderDeck.getSlides() : []);
       return { success: true, data: { totalSlides: slides.length, slides } };
     }
   },
@@ -454,11 +468,11 @@ export const CANONICAL_DOCS_TOOLS = [
       },
       required: ['layoutStyle', 'headline']
     },
-    execute: async (params) => {
+    execute: async (params, context) => {
       if (window.__REGAARDER_ADD_DECK_SLIDE__) {
         return window.__REGAARDER_ADD_DECK_SLIDE__(params);
       }
-      return { success: true, message: 'Slide added to deck', data: params };
+      return dispatchDeckToolCall('deck_create_slide', { ...params, title: params.headline || 'Slide' }, context);
     }
   },
   {
@@ -483,11 +497,11 @@ export const CANONICAL_DOCS_TOOLS = [
       },
       required: ['slideId']
     },
-    execute: async (params) => {
+    execute: async (params, context) => {
       if (window.__REGAARDER_UPDATE_DECK_SLIDE__) {
         return window.__REGAARDER_UPDATE_DECK_SLIDE__(params.slideId, params.fields || params);
       }
-      return { success: true, message: 'Slide updated', data: params };
+      return dispatchDeckToolCall('deck_update_slide', { slideId: params.slideId, ...params.fields, headline: params.headline, tagline: params.tagline }, context);
     }
   },
   {
@@ -507,11 +521,11 @@ export const CANONICAL_DOCS_TOOLS = [
       },
       required: ['slideId']
     },
-    execute: async (params) => {
+    execute: async (params, context) => {
       if (window.__REGAARDER_DELETE_DECK_SLIDE__) {
         return window.__REGAARDER_DELETE_DECK_SLIDE__(params.slideId);
       }
-      return { success: true, message: 'Slide deleted', data: params };
+      return dispatchDeckToolCall('deck_delete_slide', { slideId: Number(params.slideId) }, context);
     }
   },
   {
@@ -538,6 +552,9 @@ export const CANONICAL_DOCS_TOOLS = [
     execute: async (params) => {
       if (window.__REGAARDER_LOAD_DECK_TEMPLATE__) {
         return window.__REGAARDER_LOAD_DECK_TEMPLATE__(params.templateName);
+      }
+      if (window.regaarderDeck?.loadTemplate) {
+        return window.regaarderDeck.loadTemplate(params.templateName);
       }
       return { success: true, message: `Applied template: ${params.templateName}`, data: params };
     }
@@ -613,10 +630,11 @@ export const CANONICAL_DOCS_TOOLS = [
     parameters: {
       type: 'object',
       properties: {
-        startRow: { type: 'number', description: 'Starting row index.' },
-        startCol: { type: 'number', description: 'Starting col index.' },
-        endRow: { type: 'number', description: 'Ending row index.' },
-        endCol: { type: 'number', description: 'Ending col index.' },
+        sheetId: { type: 'string', description: 'Optional ID of the target sheet.' },
+        startRow: { type: 'number', description: 'Starting row index (1-based).' },
+        startCol: { type: 'number', description: 'Starting col index (1-based).' },
+        endRow: { type: 'number', description: 'Ending row index (1-based).' },
+        endCol: { type: 'number', description: 'Ending col index (1-based).' },
         formatType: { type: 'string', enum: ['percentage', 'currency', 'number', 'dropdown', 'date'], description: 'Format type.' },
         options: { type: 'array', items: { type: 'string' }, description: 'Dropdown options if formatType is dropdown.' }
       },
@@ -625,6 +643,17 @@ export const CANONICAL_DOCS_TOOLS = [
     execute: async (params) => {
       if (window.__REGAARDER_FORMAT_SHEET_RANGE__) {
         return window.__REGAARDER_FORMAT_SHEET_RANGE__(params);
+      }
+      if (window.regaarderSpreadsheet?.formatCells) {
+        window.regaarderSpreadsheet.formatCells(
+          params.sheetId,
+          params.startRow,
+          params.startCol,
+          params.endRow,
+          params.endCol,
+          { format: params.formatType, options: params.options || [] }
+        );
+        return { success: true, message: `Formatted range (${params.startRow},${params.startCol}) to (${params.endRow},${params.endCol}) as ${params.formatType}.`, data: params };
       }
       return { success: true, message: 'Range formatted', data: params };
     }

@@ -23,11 +23,32 @@ export const getAvailableTools = (filterOptions = {}) => {
   switch (context) {
     case 'editing':
     case 'formatting':
-      return CANONICAL_DOCS_TOOLS.filter(t => t.category === DOCS_TOOL_CATEGORIES.DOCUMENT_TOOLS);
+    case 'docs':
+      return CANONICAL_DOCS_TOOLS.filter(t =>
+        t.category === DOCS_TOOL_CATEGORIES.DOCUMENT_TOOLS ||
+        t.category === DOCS_TOOL_CATEGORIES.ANALYSIS_TOOLS ||
+        t.category === DOCS_TOOL_CATEGORIES.APPLICATION_COMMANDS
+      );
     case 'analysis':
       return CANONICAL_DOCS_TOOLS.filter(t => t.category === DOCS_TOOL_CATEGORIES.ANALYSIS_TOOLS);
     case 'commands':
       return CANONICAL_DOCS_TOOLS.filter(t => t.category === DOCS_TOOL_CATEGORIES.APPLICATION_COMMANDS);
+    case 'deck':
+      return CANONICAL_DOCS_TOOLS.filter(t =>
+        t.category === DOCS_TOOL_CATEGORIES.DECK_TOOLS ||
+        t.category === DOCS_TOOL_CATEGORIES.TASKS_TOOLS
+      );
+    case 'sheets':
+      return CANONICAL_DOCS_TOOLS.filter(t =>
+        t.category === DOCS_TOOL_CATEGORIES.SHEET_TOOLS ||
+        t.category === DOCS_TOOL_CATEGORIES.TASKS_TOOLS
+      );
+    case 'tasks':
+      return CANONICAL_DOCS_TOOLS.filter(t => t.category === DOCS_TOOL_CATEGORIES.TASKS_TOOLS);
+    case 'rooms':
+      return CANONICAL_DOCS_TOOLS.filter(t => t.category === DOCS_TOOL_CATEGORIES.ROOMS_TOOLS);
+    case 'browser':
+      return CANONICAL_DOCS_TOOLS.filter(t => t.category === DOCS_TOOL_CATEGORIES.BROWSER_TOOLS);
     default:
       return CANONICAL_DOCS_TOOLS;
   }
