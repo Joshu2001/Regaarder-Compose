@@ -83244,7 +83244,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-        <AppleGestureOnboardingHotspots />
+        {productMode === 'compose' && (
+          <AppleGestureOnboardingHotspots />
+        )}
 
         {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
