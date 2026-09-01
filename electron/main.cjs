@@ -198,6 +198,23 @@ $ws.AppActivate('${targetName}')
     }
   });
 
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Enable Ctrl+R / Cmd+R / F5 for instant reload in dev
+    if ((input.control || input.meta) && input.key.toLowerCase() === 'r' && !input.alt) {
+      mainWindow.webContents.reload();
+      event.preventDefault();
+    }
+    if (input.key === 'F5') {
+      mainWindow.webContents.reload();
+      event.preventDefault();
+    }
+    // Enable Ctrl+Shift+I / F12 for DevTools
+    if (((input.control || input.meta) && input.shift && input.key.toLowerCase() === 'i') || input.key === 'F12') {
+      mainWindow.webContents.toggleDevTools();
+      event.preventDefault();
+    }
+  });
+
   const portsToTry = [
     process.env.VITE_DEV_SERVER_URL,
     'http://localhost:5173',
@@ -205,17 +222,28 @@ $ws.AppActivate('${targetName}')
     'http://localhost:5175'
   ].filter(Boolean);
 
-  const loadApp = (portIndex = 0, attemptsLeft = 10) => {
+  const loadApp = (portIndex = 0, attemptsLeft = 25) => {
     const currentUrl = portsToTry[portIndex % portsToTry.length];
     mainWindow.loadURL(currentUrl).then(() => {
       activeAppUrl = currentUrl;
+      console.log(`[Electron Main] Connected to dev server: ${currentUrl}`);
     }).catch(err => {
       if (attemptsLeft > 0) {
-        setTimeout(() => loadApp(portIndex + 1, attemptsLeft - 1), 400);
+        setTimeout(() => loadApp(portIndex + 1, attemptsLeft - 1), 500);
       } else {
         console.warn('[Electron Main] Dev server not active. Loading production dist/index.html...');
         mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).then(() => {
           activeAppUrl = `file://${path.join(__dirname, '../dist/index.html')}`;
+          const pollInterval = setInterval(async () => {
+            try {
+              const res = await fetch('http://localhost:5173');
+              if (res.ok) {
+                clearInterval(pollInterval);
+                console.log('[Electron Main] Dev server detected. Upgrading to http://localhost:5173...');
+                mainWindow.loadURL('http://localhost:5173');
+              }
+            } catch (_) {}
+          }, 2000);
         }).catch(loadErr => {
           console.error('[Electron Main] Failed to load dist/index.html:', loadErr);
         });
