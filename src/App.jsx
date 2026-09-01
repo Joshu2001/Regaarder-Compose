@@ -1,10 +1,10 @@
-import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
+﻿import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
 import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow';
 import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger HMR & Live Reload: 2026-08-31T08:49:53.532Z
+// Trigger HMR & Live Reload: 2026-08-31T08:49:53.912Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -26,6 +26,22 @@ import {
   UserPlus, ExternalLink, Link2 as LinkIcon, Link, Clock, Minimize2, Sidebar, Image as ImageIcon,
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, MoveHorizontal, Minus, Smile,
+  Square, Circle, Diamond, Triangle, Shapes, StickyNote,
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
+  FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
+  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
+import './thin-scrollbar.css';
+import StorageDataManagement from './components/StorageDataManagement';
+import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
+import RegaarderBrandIcon from './components/RegaarderBrandIcon';
+import RegaarderComposeLanding from './RegaarderComposeLanding';
+import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
+import {
+  ComposeIcon,
+  DeckIcon,
+  SheetIcon,
+  RoomIcon,
   WhiteboardIcon,
   ScheduleIcon,
   MemoryIcon,
@@ -43,9 +59,6 @@ import {
   RegaarderNotificationIcon,
   LaserPointerIcon
 } from './components/RegaarderProductIcons';
-import RegaarderBrandIcon from './components/RegaarderBrandIcon';
-import RegaarderComposeLanding from './RegaarderComposeLanding';
-import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
 import PopoverWindowContainer from './components/browser/PopoverWindowContainer';
@@ -7378,6 +7391,31 @@ function AppCore() {
       return false;
     }
   });
+  const [localOffloadConfig, setLocalOffloadConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_local_offload_config');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {
+      enabled: true,
+      mode: 'auto',
+      gpuLayers: 33,
+      threads: 4,
+      contextSize: 4096,
+      useMmap: true
+    };
+  });
+
+  const saveLocalOffloadConfig = (nextUpdates) => {
+    setLocalOffloadConfig((prev) => {
+      const merged = { ...prev, ...nextUpdates };
+      try {
+        localStorage.setItem('regaarder_local_offload_config', JSON.stringify(merged));
+      } catch (_) {}
+      return merged;
+    });
+  };
+
   const [aiProviderConfig, setAiProviderConfig] = useState(() => {
     try {
       const saved = localStorage.getItem('regaarder_ai_config');
@@ -14793,7 +14831,14 @@ const DEFAULT_DECK_SLIDES = [
       }
 
       if (resText) {
-        const formattedHtml = toParagraphHtml(resText);
+        const isAddTitleIntent = /\b(?:add|insert|generate|create|write)\s+(?:a\s+)?title\b/i.test(rawInstruction) || /\btitle\s+(?:this|the|for)\b/i.test(rawInstruction);
+        let formattedHtml = '';
+        if (isAddTitleIntent) {
+          const cleanTitle = resText.replace(/^#+\s*/, '').replace(/^[\"']+|[\"']+$/g, '').trim();
+          formattedHtml = `<h2 style="font-size:22px;font-weight:700;margin-top:16px;margin-bottom:8px;line-height:1.3;">${cleanTitle}</h2><p>${selText}</p>`;
+        } else {
+          formattedHtml = toParagraphHtml(resText);
+        }
         const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
         if (injected && blankBodyRef.current) {
           setDocBodyHtml(blankBodyRef.current.innerHTML);
@@ -21143,7 +21188,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     const isAncestorInside = Boolean(
       (bodyRoot && (bodyRoot.contains(targetNode) || targetNode.contains(bodyRoot))) ||
-      (docCard && docCard.contains(targetNode)) ||
       (notesCard && notesCard.contains(targetNode)) ||
       (targetNode.closest && targetNode.closest('[contenteditable="true"]'))
     );
@@ -22505,7 +22549,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       const range = getEditorSelectionRange();
       if (range && !range.collapsed) {
         const text = range.toString().trim();
-        if (text) {
+        const isChromeText = !text || 
+          text.includes('portrait (') || 
+          text.includes('landscape (') || 
+          /^BIUS/i.test(text);
+        if (text && !isChromeText) {
           setSelectedEditorText(truncateText(text, 180));
           selectedEditorTextRef.current = text;
           savedSelectionRef.current = range.cloneRange();
@@ -22520,7 +22568,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         }
       }
 
-      if (formattingMenuRef.current && formattingMenuRef.current.contains(document.activeElement)) {
+      const activeEl = document.activeElement;
+      if (
+        (formattingMenuRef.current && formattingMenuRef.current.contains(activeEl)) ||
+        (selectionActionMenuRef.current && selectionActionMenuRef.current.contains(activeEl)) ||
+        (chatInputRef.current && chatInputRef.current === activeEl) ||
+        (floatingPromptRef.current && floatingPromptRef.current === activeEl)
+      ) {
         return;
       }
 
@@ -24749,7 +24803,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
-      const localTimeout = setTimeout(() => localAbortController.abort(), 35000);
+      const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
       if (aiAbortControllerRef.current?.signal) {
         aiAbortControllerRef.current.signal.addEventListener('abort', () => {
           try { localAbortController.abort(); } catch (e) {}
@@ -24757,21 +24811,33 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       }
 
       try {
-        const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint.includes('11434');
-        const baseEndpoint = composeSelectedModel?.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
+        const activeEndpoint = localTargetModel?.endpoint || 'http://127.0.0.1:11434';
+        const activeProvider = localTargetModel?.provider || 'Ollama';
+        const activeModelId = localTargetModel?.id || 'gemma3:1b';
+        const isOllama = activeProvider === 'Ollama' || activeEndpoint.includes('11434');
+        const baseEndpoint = activeEndpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
           ? `${baseEndpoint}/api/generate`
-          : `${composeSelectedModel?.endpoint.endsWith('/v1') ? composeSelectedModel?.endpoint : composeSelectedModel?.endpoint + '/v1'}/chat/completions`;
+          : `${activeEndpoint.endsWith('/v1') ? activeEndpoint : activeEndpoint + '/v1'}/chat/completions`;
+
+        const isCustomOffload = localOffloadConfig?.mode === 'custom' && localOffloadConfig?.enabled;
+        const offloadOpts = isCustomOffload ? {
+          num_gpu: localOffloadConfig?.gpuLayers,
+          num_thread: localOffloadConfig?.threads,
+          num_ctx: localOffloadConfig?.contextSize,
+          use_mmap: localOffloadConfig?.useMmap
+        } : undefined;
 
         const requestBody = isOllama
           ? {
-              model: composeSelectedModel?.id,
+              model: activeModelId,
               prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
               format: schema ? 'json' : undefined,
               stream: false,
+              ...(offloadOpts ? { options: offloadOpts } : {})
             }
           : {
-              model: composeSelectedModel?.id || 'default',
+              model: activeModelId,
               messages: [
                 ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
                 { role: 'user', content: userPrompt }
@@ -24853,10 +24919,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               modelName: localTargetModel.name
             };
           }
-        } else {
+} else {
           const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
           return {
-            text: `⚠️ Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            error: `Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            isError: true,
             modelName: localTargetModel.name
           };
         }
@@ -24864,7 +24931,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         clearTimeout(localTimeout);
         console.warn('Local LLM call failed:', localErr);
         return {
-          text: `⚠️ Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
+          error: `Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
+          isError: true,
           modelName: localTargetModel.name
         };
       }
@@ -30034,7 +30102,7 @@ Return ONLY valid JSON matching the schema.`;
     
     const isBlankOrNewDoc = !blankBodyRef.current?.innerText || blankBodyRef.current.innerText.trim().length <= 35 || docTitle === 'Untitled Document' || !docTitle;
     const isExplicitArticleIntent = !isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText);
-    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose' || (source === 'chat' && isBlankOrNewDoc && isExplicitArticleIntent));
+    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose');
     const selectionScoped = Boolean(options.selectionScoped);
     const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
@@ -30488,11 +30556,24 @@ Return ONLY valid JSON matching the schema.`;
     } else {
       // productMode === 'compose' (Document Mode)
       if (blankBodyRef.current?.innerText && blankBodyRef.current.innerText.trim().length > 10) {
-        docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${blankBodyRef.current.innerText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
+        const rawCanvasText = blankBodyRef.current.innerText.trim();
+        const isCanvasAnError = rawCanvasText.startsWith('??') ||
+                                rawCanvasText.includes('Unable to reach local inference model') ||
+                                rawCanvasText.includes('Connection Refused') ||
+                                rawCanvasText.includes('Live AI request failed');
+        if (!isCanvasAnError) {
+          docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${rawCanvasText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
+        }
       }
     }
 
-    const groundedPrompt = `${promptText}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}${sheetContext}`;
+    const activeSelectionText = String(options.selectedScope || selectedEditorTextRef.current || selectedEditorText || '').trim();
+    let selectionContext = '';
+    if (activeSelectionText) {
+      selectionContext = `\n\n--- SPECIFIC USER-SELECTED HIGHLIGHT / EXCERPT ---\n"${activeSelectionText}"\n--- END USER-SELECTED HIGHLIGHT ---\n(CRITICAL: The user has explicitly highlighted the text above. Focus your response, rewrite, title, or answer specifically on this highlighted excerpt unless they explicitly ask about the entire document.)\n`;
+    }
+
+    const groundedPrompt = `${promptText}${selectionContext}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}${sheetContext}`;
     const composeFallbackAction = buildComposeFallbackAction({
       promptText,
       requestedFormat,
@@ -30510,7 +30591,7 @@ Return ONLY valid JSON matching the schema.`;
       return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
     };
 
-    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || isExplicitArticleIntent;
+    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating';
 
     let systemPrompt = '';
     let activeSchemaToUse = null;
@@ -30573,7 +30654,15 @@ Answer the user's question, provide an insightful summary, or explain the contex
       const rawModelText = String(modelResponse?.text || '').trim();
       const parsedData = modelResponse?.parsed || parseJsonSafely(rawModelText);
 
-      if (rawModelText || parsedData) {
+      const isResponseAnError = Boolean(
+        modelResponse?.isError ||
+        modelResponse?.error ||
+        rawModelText.startsWith('??') ||
+        rawModelText.includes('Unable to reach local inference model') ||
+        rawModelText.includes('Connection Refused')
+      );
+
+      if ((rawModelText || parsedData) && !isResponseAnError) {
         usedLiveModel = true;
         
         // Extract clean title and content (unwrapping any JSON envelopes like {"title": "...", "content": "..."})
@@ -30660,7 +30749,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
         }
 
         // Automatic Document Editor Rendering
-        const shouldInjectToEditor = (shouldBuildDocument || source === 'compose' || source === 'floating') && !isDeckGeneration;
+        const isErrorMessageContent = Boolean(
+          isResponseAnError ||
+          aiResponseText.startsWith('??') ||
+          aiResponseText.includes('Unable to reach local inference model') ||
+          aiResponseText.includes('Connection Refused') ||
+          aiResponseText.includes('Live AI request failed')
+        );
+        const shouldInjectToEditor = (shouldBuildDocument || source === 'compose' || source === 'floating') && !isDeckGeneration && !isErrorMessageContent;
 
         if (!docAction && shouldInjectToEditor && aiResponseText) {
           docAction = {
@@ -30750,7 +30846,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
     if (!usedLiveModel && !(shouldBuildDocument && (smartActionKey === 'toc' || smartActionKey === 'title-headers'))) {
       const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY or VITE_GEMINI_DEMO_API_KEY, billing, and model access.';
-      aiResponseText = composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`;
+      aiResponseText = (source === 'chat' && !forceDocBuild)
+        ? (liveModelError || lastAiError || 'Unable to get response from AI model. Please verify your local model or cloud API is running.')
+        : (composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`);
       trackMemoryAction('ai', 'Live AI request failed', {
         reason: failureReason,
       });
@@ -30932,7 +31030,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
     if (!prompt) return;
 
-    handleAISubmit(prompt, { source: 'chat', attachments: chatAttachments });
+    const activeSelection = (selectedEditorTextRef.current || selectedEditorText || '').trim();
+
+    handleAISubmit(prompt, { 
+      source: 'chat', 
+      attachments: chatAttachments,
+      selectedScope: activeSelection,
+      selectionScoped: Boolean(activeSelection)
+    });
     setChatInput('');
     setChatAttachments([]);
     setActiveAgentTag(null);
@@ -41010,7 +41115,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       })()}
 
                       {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
-                      {msg.sender !== 'user' && (
+                      {msg.sender !== 'user' && !msg.isError && !msg.text?.startsWith('??') && !msg.text?.includes('Unable to reach local inference model') && !msg.text?.includes('requires Ollama or LM Studio') && (
                         <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-between gap-2">
                           <button
                             type="button"
@@ -41365,8 +41470,29 @@ Respond with a JSON array of slide objects matching the schema.`;
                   )}
 
                   <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
-                    {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
+                    {(isDocContextActive || activeAgentTag || chatAttachments.length > 0 || Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim())) && (
                       <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                        {Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) && (
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-violet-200/80 dark:border-violet-800/60 bg-violet-50/90 dark:bg-violet-950/70 text-[11px] font-medium text-violet-700 dark:text-violet-300 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                            <Highlighter size={10.5} className="text-violet-500 shrink-0" />
+                            <span className="truncate max-w-[140px] font-sans text-[11px]">
+                              "{truncateText(selectedEditorText || selectedEditorTextRef.current, 36)}"
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEditorText('');
+                                selectedEditorTextRef.current = '';
+                                savedSelectionRef.current = null;
+                              }}
+                              className="ml-0.5 p-0.5 text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 rounded hover:bg-violet-200/50 dark:hover:bg-violet-900/50 transition-colors"
+                              title="Remove selection context"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        )}
                         {activeAgentTag && (
                           <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all animate-in fade-in zoom-in-95 duration-150">
                             <span className="font-mono text-[11px] font-semibold leading-tight">
@@ -45367,7 +45493,11 @@ Respond with a JSON array of slide objects matching the schema.`;
         let systemPrompt = '';
         let documentContext = '';
         if (blankBodyRef.current) {
-          documentContext = `\n\nActive Document Context:\n${blankBodyRef.current.innerText}`;
+          const rawDocText = (blankBodyRef.current.innerText || '').trim();
+          const isGenericDocText = /^(?:untitled(\s+(document|section|page))?|unsaved\s+draft|create\s+at\s+the\s+speed\s+of\s+thought\.?)$/i.test(rawDocText) || rawDocText.length < 5 || rawDocText.includes('Unable to reach local inference model');
+          if (!isGenericDocText) {
+            documentContext = `\n\nActive Document Context:\n${rawDocText}`;
+          }
         }
 
         if (routedAgent.includes('Presentation')) {
@@ -45389,23 +45519,38 @@ If requested to draw a chart or graph, append a structured action JSON block:
         let replyText = '';
 
         // Check if user selected a Local LLM (Ollama / LM Studio / llama.cpp)
-        if (composeSelectedModel.isLocal && composeSelectedModel?.endpoint) {
-          const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint.includes('11434');
-          const targetUrl = isOllama
-            ? `${composeSelectedModel?.endpoint.replace(/\/v1$/, '')}/api/chat`
-            : `${composeSelectedModel?.endpoint.endsWith('/v1') ? composeSelectedModel?.endpoint : composeSelectedModel?.endpoint + '/v1'}/chat/completions`;
+        if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
+          const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint?.includes('11434');
+          const baseEndpoint = composeSelectedModel?.endpoint?.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '') || 'http://127.0.0.1:11434';
+          const primaryUrl = isOllama
+            ? `${baseEndpoint}/api/chat`
+            : `${composeSelectedModel?.endpoint?.endsWith('/v1') ? composeSelectedModel?.endpoint : (composeSelectedModel?.endpoint || '') + '/v1'}/chat/completions`;
+          const fallbackUrl = isOllama
+            ? primaryUrl.replace('127.0.0.1', 'localhost')
+            : null;
 
-          const requestBody = isOllama
+          const isCustomOffload = localOffloadConfig?.mode === 'custom' && localOffloadConfig?.enabled;
+          const offloadOptions = isCustomOffload
             ? {
-                model: composeSelectedModel?.id,
+                num_gpu: localOffloadConfig?.gpuLayers,
+                num_thread: localOffloadConfig?.threads,
+                num_ctx: localOffloadConfig?.contextSize,
+                use_mmap: localOffloadConfig?.useMmap
+              }
+            : undefined;
+
+          const buildBody = (modelId) => isOllama
+            ? {
+                model: modelId,
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
                 ],
-                stream: false
+                stream: false,
+                ...(offloadOptions ? { options: offloadOptions } : {})
               }
             : {
-                model: composeSelectedModel?.id || 'default',
+                model: modelId || 'default',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
@@ -45413,13 +45558,41 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 stream: false
               };
 
-          const localRes = await fetch(targetUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
+          const dmAbortController = new AbortController();
+          const dmTimeoutId = setTimeout(() => dmAbortController.abort(), 240000);
 
-          if (!localRes.ok) throw new Error(`Local LLM error: HTTP ${localRes.status}`);
+          let localRes = null;
+          try {
+            localRes = await fetch(primaryUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(buildBody(composeSelectedModel?.id)),
+              signal: dmAbortController.signal
+            });
+          } catch (primaryErr) {
+            if (primaryErr.name === 'AbortError') throw primaryErr;
+            // Primary host refused ??retry on alternate host before failing
+            if (fallbackUrl && fallbackUrl !== primaryUrl) {
+              const retryController = new AbortController();
+              const retryTimeout = setTimeout(() => retryController.abort(), 240000);
+              try {
+                localRes = await fetch(fallbackUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(buildBody(composeSelectedModel?.id)),
+                  signal: retryController.signal
+                });
+              } finally {
+                clearTimeout(retryTimeout);
+              }
+            } else {
+              throw primaryErr;
+            }
+          } finally {
+            clearTimeout(dmTimeoutId);
+          }
+
+          if (!localRes.ok) throw new Error(`Local inference model returned HTTP ${localRes.status}. Verify Ollama is running and the model is loaded.`);
           const localData = await localRes.json();
 
           if (isOllama && localData.message?.content) {
@@ -45459,7 +45632,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
           const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
           return {
             ...prev,
-            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: localTargetModel.name }]
+            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: composeSelectedModel?.name || 'Local AI' }]
           };
         });
 
@@ -53811,6 +53984,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               >
                                 +
                               </button>
+                              <ChevronDown
+                                size={12}
+                                className={`cursor-pointer ${isDarkMode ? 'text-zinc-400 hover:text-zinc-200' : 'text-slate-500 hover:text-slate-800'}`}
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setSheetZoomDropdownOpen(prev => !prev);
+                                }}
+                              />
+                              {sheetZoomDropdownOpen && (
+                                <div className={`absolute right-0 bottom-full mb-2 z-[99999] w-28 backdrop-blur-xl border rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] p-1 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-100 select-none ${
+                                  isDarkMode ? 'bg-[#13131a]/95 border-zinc-800' : 'bg-white/95 border-slate-200'
+                                }`}>
+                                  {[50, 75, 90, 100, 110, 125, 150, 200].map((level) => (
+                                    <button
+                                      key={level}
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setSheetZoomLevel(level);
+                                        setSheetZoomDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${sheetZoomLevel === level ? (isDarkMode ? 'bg-violet-950/40 text-violet-400 font-bold' : 'bg-violet-50 text-violet-600 font-bold') : (isDarkMode ? 'text-zinc-400 hover:bg-zinc-800' : 'text-slate-600 hover:bg-slate-50')}`}
+                                    >
+                                      {level}%
                                     </button>
                                   ))}
                                 </div>
@@ -71871,6 +72068,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
                 <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
+                <button onClick={() => setSettingsTab('hardware_offload')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'hardware_offload' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Hardware & Offload</button>
                 <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
@@ -72263,6 +72461,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+              {settingsTab === 'hardware_offload' && (
+                <div className="max-w-[620px]">
+                  <LocalHardwareOffloadSettings
+                    localOffloadConfig={localOffloadConfig}
+                    saveLocalOffloadConfig={saveLocalOffloadConfig}
+                    showToast={showToast}
+                  />
                 </div>
               )}
               {settingsTab === 'storage' && (
@@ -74611,7 +74818,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   disabled={selectionAiLoading || !selectionAiPrompt.trim()}
-                  onClick={() => executeSelectionAiAction('custom', selectionAiPrompt)}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    if (!selectionAiLoading && selectionAiPrompt.trim()) {
+                      executeSelectionAiAction('custom', selectionAiPrompt);
+                    }
+                  }}
                   className="p-1 rounded-lg text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-950/60 disabled:opacity-40"
                 >
                   {selectionAiLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
@@ -75892,7 +76104,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const nextHeading = headingMeta[option] || headingMeta.Paragraph;
                                 setEditorHeading(option);
                                 
-                                const range = getEditorSelectionRange();
+                                if (savedSelectionRef.current) {
+                                  restoreSavedSelection();
+                                }
+                                const range = getEditorSelectionRange() || savedSelectionRef.current;
                                 const ancestor = range?.commonAncestorContainer;
                                 const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
                                 setActiveFontSize(nextHeading.size);
@@ -86914,6 +87129,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex flex-col gap-1.5 flex-1">
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
+                <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
+                <button onClick={() => setSettingsTab('hardware_offload')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'hardware_offload' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Hardware & Offload</button>
                 <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
@@ -87114,6 +87331,220 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
 
+              {settingsTab === 'ai_models' && (
+                <div className="max-w-[540px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 tracking-tight">AI & API Keys</h2>
+                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
+                      Browser-Stored
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-slate-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                    Provide your own API keys to run Gemini or Claude directly from your browser. Keys are securely stored in your local browser storage.
+                  </p>
+
+                  {/* Active AI Provider Switcher */}
+                  <div className="mb-6 p-1 bg-slate-100 dark:bg-zinc-800 rounded-xl flex items-center gap-1 border border-slate-200/80 dark:border-zinc-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveAiProviderConfig({ provider: 'gemini' });
+                        checkAiBackendStatus('gemini');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${aiProviderConfig.provider === 'gemini' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                    >
+                      <Sparkles size={14} className={aiProviderConfig.provider === 'gemini' ? 'text-violet-600' : 'text-slate-400'} />
+                      Google Gemini
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveAiProviderConfig({ provider: 'claude' });
+                        checkAiBackendStatus('claude');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${aiProviderConfig.provider === 'claude' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                    >
+                      <Cpu size={14} className={aiProviderConfig.provider === 'claude' ? 'text-amber-600' : 'text-slate-400'} />
+                      Anthropic Claude
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Google Gemini Configuration Card */}
+                    <div className={`p-5 rounded-2xl border transition-all ${aiProviderConfig.provider === 'gemini' ? 'bg-white dark:bg-zinc-900/90 border-violet-200 dark:border-violet-900/60 shadow-sm' : 'bg-slate-50/50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-800 opacity-70'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                            <Sparkles size={13} />
+                          </div>
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Google Gemini API Key</h3>
+                        </div>
+                        {aiProviderConfig.geminiApiKey ? (
+                          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Key Saved
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">Optional (Uses server key if empty)</span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-3">
+                        <input
+                          type={showGeminiKey ? 'text' : 'password'}
+                          value={aiProviderConfig.geminiApiKey || ''}
+                          onChange={(e) => saveAiProviderConfig({ geminiApiKey: e.target.value.trim() })}
+                          placeholder="Paste Gemini API Key (AIzaSy...)"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 pr-20 text-[13px] font-mono text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowGeminiKey(!showGeminiKey)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                            title={showGeminiKey ? 'Hide key' : 'Show key'}
+                          >
+                            {showGeminiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {aiProviderConfig.geminiApiKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveAiProviderConfig({ geminiApiKey: '' });
+                                showToast('Gemini API key cleared');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                              title="Clear Key"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Gemini Model Selector */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <label className="text-[12px] font-medium text-slate-600 dark:text-zinc-400">Gemini Model:</label>
+                        <select
+                          value={aiProviderConfig.geminiModel || 'gemini-2.5-flash'}
+                          onChange={(e) => saveAiProviderConfig({ geminiModel: e.target.value })}
+                          className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-500"
+                        >
+                          <option value="gemini-2.5-flash">gemini-2.5-flash (Fast & Recommended)</option>
+                          <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
+                          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                          <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Anthropic Claude Configuration Card */}
+                    <div className={`p-5 rounded-2xl border transition-all ${aiProviderConfig.provider === 'claude' ? 'bg-white dark:bg-zinc-900/90 border-amber-200 dark:border-amber-900/60 shadow-sm' : 'bg-slate-50/50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-800 opacity-70'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <Cpu size={13} />
+                          </div>
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Anthropic Claude API Key</h3>
+                        </div>
+                        {aiProviderConfig.claudeApiKey ? (
+                          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Key Saved
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">Optional</span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-3">
+                        <input
+                          type={showClaudeKey ? 'text' : 'password'}
+                          value={aiProviderConfig.claudeApiKey || ''}
+                          onChange={(e) => saveAiProviderConfig({ claudeApiKey: e.target.value.trim() })}
+                          placeholder="Paste Claude API Key (sk-ant-api03-...)"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 pr-20 text-[13px] font-mono text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowClaudeKey(!showClaudeKey)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                            title={showClaudeKey ? 'Hide key' : 'Show key'}
+                          >
+                            {showClaudeKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {aiProviderConfig.claudeApiKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveAiProviderConfig({ claudeApiKey: '' });
+                                showToast('Claude API key cleared');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                              title="Clear Key"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Claude Model Selector */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <label className="text-[12px] font-medium text-slate-600 dark:text-zinc-400">Claude Model:</label>
+                        <select
+                          value={aiProviderConfig.claudeModel || 'claude-3-7-sonnet-20250219'}
+                          onChange={(e) => saveAiProviderConfig({ claudeModel: e.target.value })}
+                          className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-amber-500"
+                        >
+                          <option value="claude-3-7-sonnet-20250219">claude-3-7-sonnet (Hybrid Reasoning)</option>
+                          <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet (Intelligent)</option>
+                          <option value="claude-3-5-haiku-20241022">claude-3-5-haiku (Fast)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Test Connection & Verification Card */}
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-2xl border border-slate-200/80 dark:border-zinc-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[12px] font-semibold text-slate-700 dark:text-zinc-300">
+                          Active: <span className="font-bold text-violet-600 dark:text-violet-400">{aiProviderConfig.provider === 'claude' ? 'Anthropic Claude' : 'Google Gemini'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={aiKeyStatus.testing}
+                          onClick={() => checkAiBackendStatus()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all shadow-xs disabled:opacity-50"
+                        >
+                          {aiKeyStatus.testing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                          Test Connection
+                        </button>
+                      </div>
+
+                      {aiKeyStatus.message && (
+                        <div className={`text-[12px] p-2.5 rounded-xl border flex items-start gap-2 ${aiKeyStatus.usable === true ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' : aiKeyStatus.usable === false ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'}`}>
+                          {aiKeyStatus.usable === true ? (
+                            <CheckCircle2 size={15} className="shrink-0 mt-0.5" />
+                          ) : aiKeyStatus.usable === false ? (
+                            <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                          ) : (
+                            <Loader2 size={15} className="shrink-0 mt-0.5 animate-spin" />
+                          )}
+                          <span className="leading-snug">{aiKeyStatus.message}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {settingsTab === 'hardware_offload' && (
+                <div className="max-w-[620px]">
+                  <LocalHardwareOffloadSettings
+                    localOffloadConfig={localOffloadConfig}
+                    saveLocalOffloadConfig={saveLocalOffloadConfig}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
               {settingsTab === 'storage' && (
                 <StorageDataManagement showToast={showToast} />
               )}
