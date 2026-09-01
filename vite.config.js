@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
+import fs from 'fs';
 
 function apiDevMiddlewarePlugin() {
   return {
@@ -81,7 +82,9 @@ export default defineConfig(({ mode }) => {
     plugins: [apiDevMiddlewarePlugin()],
     resolve: {
       alias: {
-        '@regaarder/ui': path.resolve(import.meta.dirname, '../packages/ui/src/index.js'),
+        '@regaarder/ui': fs.existsSync(path.resolve(import.meta.dirname, 'packages/ui/src/index.js'))
+          ? path.resolve(import.meta.dirname, 'packages/ui/src/index.js')
+          : path.resolve(import.meta.dirname, '../packages/ui/src/index.js'),
         canvg: path.resolve(import.meta.dirname, 'src/mock-canvg.js'),
       },
     },
