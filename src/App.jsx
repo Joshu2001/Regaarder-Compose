@@ -40023,33 +40023,6 @@ Respond with a JSON array of slide objects matching the schema.`;
         </button>
       )}
 
-      {/* Floating Re-open Icon when Right Sidebar is Closed */}
-      {productMode !== 'landing' && !shareModalOpen && !rightSidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setRightSidebarOpen(true)}
-          className="fixed z-[450] group flex items-center gap-1.5 h-8 px-2.5 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-700/80 shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600 transition-all duration-200 active:scale-95 cursor-pointer animate-in fade-in zoom-in-95"
-          style={{
-            top: '88px',
-            right: '16px'
-          }}
-          title={`Open ${activeRightTab === 'tasks' ? 'Tasks' : activeRightTab === 'history' ? 'History' : 'Assistant'}`}
-          aria-label={`Open ${activeRightTab || 'Assistant'}`}
-        >
-          {activeRightTab === 'tasks' ? (
-            <CheckSquare size={14} className="text-violet-500" />
-          ) : activeRightTab === 'history' ? (
-            <Clock size={14} className="text-violet-500" />
-          ) : (
-            <Sparkles size={14} className="text-violet-500" />
-          )}
-          <span className="text-[11px] font-medium tracking-tight">
-            {activeRightTab === 'tasks' ? 'Tasks' : activeRightTab === 'history' ? 'History' : 'Assistant'}
-          </span>
-          <ChevronLeft size={13} className="text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
-        </button>
-      )}
-
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
@@ -40068,9 +40041,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-13 flex items-center justify-between border-b border-slate-100/60 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3.5 shrink-0 gap-2">
+        <div className="h-13 flex items-center border-b border-slate-100/60 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3.5 shrink-0">
           <div
-            className="flex-1 min-w-0 py-1.5"
+            className="w-full min-w-0 py-1.5"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
@@ -40105,18 +40078,6 @@ Respond with a JSON array of slide objects matching the schema.`;
               })}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setRightSidebarOpen(false);
-              setRightPanelMaximized(false);
-            }}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors shrink-0 cursor-pointer"
-            title="Exit sidebar"
-            aria-label="Exit sidebar"
-          >
-            <X size={14} strokeWidth={2} />
-          </button>
         </div>
         )}
 
@@ -40724,14 +40685,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                       onClick={handleCreateNewChatTab}
                     >
                       <Plus size={13} strokeWidth={2} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Close panel"
-                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
-                      onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                    >
-                      <X size={13} strokeWidth={1.75} />
                     </button>
                   </div>
                 </div>
