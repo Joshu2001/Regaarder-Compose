@@ -12380,30 +12380,46 @@ const DEFAULT_DECK_SLIDES = [
   const scheduleTouchStartXRef = useRef(0);
   const scheduleTouchCurrentXRef = useRef(0);
 
-  // Track mouse movement to show/hide right sidebar expand handle
+  // Track mouse movement to show/hide right sidebar expand handle (Apple-style hover intent & scrollbar isolation)
   useEffect(() => {
+    let hoverDwellTimer = null;
+
     const handleMouseMove = (e) => {
-      // Exclude native scrollbar area (far right 18px), header area (top 56px), and footer status bar (bottom 44px)
-      const isOverScrollbar = e.clientX >= window.innerWidth - 18;
+      // Exclude scrollbar gutter (far right 20px), header area (top 56px), and footer status bar (bottom 44px)
+      const isOverScrollbar = e.clientX >= window.innerWidth - 20;
       const isOverHeaderOrFooter = e.clientY < 56 || e.clientY > window.innerHeight - 44;
-      const rightThreshold = window.innerWidth - 45;
-      if (e.clientX >= rightThreshold && !isOverScrollbar && !isOverHeaderOrFooter) {
-        setMiniSidebarDismissed(false);
-        setIsRightSideHovered(true);
-      } else if (e.clientX < rightThreshold - 20 || isOverHeaderOrFooter) {
-        // Generous grace latch so it stays stable while scrolling
-        if (!sidebarHoverTimerRef.current) {
-          sidebarHoverTimerRef.current = setTimeout(() => {
-            setIsRightSideHovered(false);
-            sidebarHoverTimerRef.current = null;
-          }, 350);
+      const rightThreshold = window.innerWidth - 48;
+
+      // In the lower canvas area where scrolling happens, isolate the scrollbar completely
+      const isInTriggerZone = e.clientX >= rightThreshold && !isOverScrollbar && !isOverHeaderOrFooter;
+
+      if (isInTriggerZone) {
+        if (!hoverDwellTimer) {
+          hoverDwellTimer = setTimeout(() => {
+            setMiniSidebarDismissed(false);
+            setIsRightSideHovered(true);
+            hoverDwellTimer = null;
+          }, 150); // 150ms Apple hover-intent dwell: fast sweeps to scrollbar will not pop open sidebar
+        }
+      } else {
+        if (hoverDwellTimer) {
+          clearTimeout(hoverDwellTimer);
+          hoverDwellTimer = null;
+        }
+        if (e.clientX < rightThreshold - 24 || isOverHeaderOrFooter || isOverScrollbar) {
+          if (!sidebarHoverTimerRef.current) {
+            sidebarHoverTimerRef.current = setTimeout(() => {
+              setIsRightSideHovered(false);
+              sidebarHoverTimerRef.current = null;
+            }, 250);
+          }
         }
       }
     };
 
     const handleKeyDown = (e) => {
-      // Ignore modifier keys alone
       if (['Control', 'Shift', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) return;
+      if (hoverDwellTimer) clearTimeout(hoverDwellTimer);
       setIsRightSideHovered(false);
     };
 
@@ -12411,6 +12427,7 @@ const DEFAULT_DECK_SLIDES = [
     window.addEventListener('keydown', handleKeyDown, { passive: true });
 
     return () => {
+      if (hoverDwellTimer) clearTimeout(hoverDwellTimer);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -40011,7 +40028,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             setRightSidebarOpen(false);
             setRightPanelMaximized(false);
           }}
-          className="fixed z-[450] group flex items-center justify-center w-8 h-8 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-700/80 shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600 transition-all duration-200 active:scale-95 cursor-pointer animate-in fade-in zoom-in-95"
+          className="fixed z-[450] group flex items-center justify-center w-8 h-8 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-700/80 shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600 transition-all duration-200 active:scale-95 cursor-pointer apple-floating-exit-btn"
           style={{
             top: '88px',
             right: `${(rightPanelMaximized ? 16 : ((rightSidebarWidth || 380) + 12))}px`
@@ -80335,9 +80352,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseMove={handleEditorMouseMove}
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-all duration-200 ${
+            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-[margin-right] duration-200 ease-out ${
               (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
+            style={{
+              marginRight: productMode !== 'landing' && rightSidebarOpen && !shareModalOpen && !rightPanelMaximized
+                ? `${rightSidebarWidth || 380}px`
+                : 0
+            }}
           >
           <div
             className="mx-auto"
