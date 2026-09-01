@@ -4,5 +4,8 @@
   "workspaces": [
     "packages/*",
     "Regaarder Compose"
-  ]
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=\"Regaarder Compose\""
+  }
 }
