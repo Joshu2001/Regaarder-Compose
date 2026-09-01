@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Native Local AI & Ollama Bridge
   listLocalModels: (params) => ipcRenderer.invoke('localAI:list-models', params),
   pullLocalModel: (params) => ipcRenderer.invoke('localAI:pull-model', params),
+  generateLocalAI: (params) => ipcRenderer.invoke('localAI:generate', params),
 
   // App UI Screen Capture — Video Agent real recording pipeline
   captureAppFrame: () => ipcRenderer.invoke('app:capture-frame'),

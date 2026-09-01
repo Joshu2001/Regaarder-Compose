@@ -310,7 +310,7 @@ export const BrowserResearchHome = ({
               setIsThemePopoverOpen(false);
               setIsPrivacyPopoverOpen(!isPrivacyPopoverOpen);
             }}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] text-slate-300 text-xs font-medium backdrop-blur-xl shadow-lg hover:border-violet-500/40 hover:bg-white/[0.07] transition-all cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.1] text-slate-300 text-xs font-medium backdrop-blur-xl shadow-lg hover:border-violet-500/40 hover:bg-white/[0.07] transition-all cursor-pointer"
           >
             <ShieldCheck size={14} className={isAnonymousMode ? 'text-emerald-400' : 'text-amber-400'} />
             <span className="tracking-wider uppercase font-semibold text-[10px]">

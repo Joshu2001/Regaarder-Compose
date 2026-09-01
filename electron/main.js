@@ -13,7 +13,7 @@ let browserViewManager = null;
 function createWindow() {
   const isDev = process.env.NODE_ENV !== 'production';
 
-  // Intercept headers for embedded browser views to resolve ERR_BLOCKED_BY_RESPONSE on sites like Google, YouTube, GitHub
+  // Intercept headers for embedded browser views and local inference daemons
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = Object.assign({}, details.responseHeaders);
 
@@ -27,6 +27,18 @@ function createWindow() {
         delete responseHeaders[header];
       }
     });
+
+    if (
+      details.url.includes('127.0.0.1:11434') ||
+      details.url.includes('localhost:11434') ||
+      details.url.includes(':1234') ||
+      details.url.includes(':8080')
+    ) {
+      responseHeaders['access-control-allow-origin'] = ['*'];
+      responseHeaders['access-control-allow-methods'] = ['GET, POST, PUT, DELETE, OPTIONS'];
+      responseHeaders['access-control-allow-headers'] = ['*'];
+      responseHeaders['access-control-allow-private-network'] = ['true'];
+    }
 
     callback({ cancel: false, responseHeaders });
   });

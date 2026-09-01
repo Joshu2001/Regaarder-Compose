@@ -61,7 +61,7 @@ export const BrowserTabBar = ({
   };
 
   return (
-    <div className="flex items-center gap-1.5 px-3 pt-1.5 pb-0 bg-[#D9DEE6] dark:bg-[#141416] border-b border-[#CBD1DC] dark:border-zinc-800/90 select-none shrink-0 z-30 relative">
+    <div className="flex items-center gap-1.5 px-3 pt-2 pb-0 bg-slate-200/70 dark:bg-[#111216] border-b border-slate-300/80 dark:border-white/[0.06] select-none shrink-0 z-30 relative backdrop-blur-md">
       {/* Tabs Container */}
       <div className="flex items-end gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
         {tabs.map((tab, index) => {
@@ -76,13 +76,13 @@ export const BrowserTabBar = ({
               }}
               className={`group relative flex items-center gap-2 px-3 py-1.5 min-w-[140px] max-w-[220px] shrink-0 rounded-t-lg rounded-b-none text-xs font-medium cursor-pointer transition-all duration-150 border ${
                 isActive
-                  ? 'bg-white dark:bg-[#1A1A1E] text-slate-900 dark:text-zinc-100 border-slate-300/80 dark:border-zinc-700/80 border-b-white dark:border-b-[#1A1A1E] -mb-[1px] shadow-xs z-10'
-                  : 'bg-transparent text-slate-600 dark:text-zinc-400 border-transparent hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-[#16171B] text-slate-900 dark:text-zinc-100 border-slate-300/70 dark:border-white/10 border-b-white dark:border-b-[#16171B] -mb-[1px] shadow-xs z-10'
+                  : 'bg-transparent text-slate-600 dark:text-zinc-400 border-transparent hover:bg-slate-300/50 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-zinc-200'
               }`}
             >
-              {/* Active Tab Top Inset 2px Regaarder Purple Accent Pill */}
+              {/* Active Tab Top Inset 2px Regaarder Purple Accent Outline */}
               {isActive && (
-                <div className="absolute top-0 left-3 right-3 h-[2px] rounded-full bg-violet-600 dark:bg-violet-400 shadow-xs" />
+                <div className="absolute top-0 left-2 right-2 h-[2px] rounded-full bg-violet-600 dark:bg-violet-400 shadow-2xs" />
               )}
 
               {/* Ultra-subtle Vertical Hairline Divider between inactive tabs */}
@@ -111,8 +111,8 @@ export const BrowserTabBar = ({
                   onPointerDown={(e) => e.stopPropagation()}
                   className={`p-0.5 rounded transition-colors shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto ${
                     isActive
-                      ? 'hover:bg-slate-200 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-zinc-300'
-                      : 'hover:bg-[#CBD1DC] dark:hover:bg-zinc-700 text-slate-500 dark:text-zinc-400'
+                      ? 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-zinc-300'
+                      : 'hover:bg-slate-300 dark:hover:bg-white/10 text-slate-500 dark:text-zinc-400'
                   }`}
                   title="Close tab"
                 >
@@ -128,7 +128,7 @@ export const BrowserTabBar = ({
           type="button"
           onClick={onNewTab}
           onPointerDown={(e) => e.preventDefault()}
-          className="flex items-center justify-center w-7 h-7 mb-1 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/70 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-1"
+          className="flex items-center justify-center w-7 h-7 mb-1 rounded-md text-slate-600 dark:text-zinc-400 hover:bg-slate-300/60 dark:hover:bg-white/[0.08] hover:text-slate-900 dark:hover:text-zinc-100 transition-colors shrink-0 cursor-pointer ml-1"
           title="Open new research tab"
         >
           <BrowserPlusIcon size={16} />

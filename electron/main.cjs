@@ -168,8 +168,9 @@ $ws.AppActivate('${targetName}')
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true
+      sandbox: false,
+      webSecurity: false,
+      allowRunningInsecureContent: true
     }
   });
 
@@ -449,6 +450,67 @@ ipcMain.handle('localAI:pull-model', async (event, { modelName, endpoint = 'http
   }
 });
 
+ipcMain.handle('localAI:generate', async (event, params) => {
+  const { endpoint = 'http://127.0.0.1:11434', model = 'gemma3:1b', prompt = '', systemPrompt = '', format, options } = params || {};
+  const targetEndpoints = [
+    endpoint,
+    endpoint && endpoint.includes('127.0.0.1') ? endpoint.replace('127.0.0.1', 'localhost') : (endpoint ? endpoint.replace('localhost', '127.0.0.1') : null),
+    'http://127.0.0.1:11434',
+    'http://localhost:11434'
+  ].filter(Boolean);
+
+  let lastError = 'Local inference server not reachable';
+
+  for (const ep of targetEndpoints) {
+    try {
+      const cleanEp = ep.replace(/\/+$/, '');
+      const isOllama = cleanEp.includes('11434') || !cleanEp.includes('/v1');
+      const targetUrl = isOllama ? `${cleanEp}/api/generate` : `${cleanEp.endsWith('/v1') ? cleanEp : cleanEp + '/v1'}/chat/completions`;
+
+      const requestBody = isOllama
+        ? {
+            model: model || 'gemma3:1b',
+            prompt: systemPrompt ? `${systemPrompt}\r\n\r\n${prompt}` : prompt,
+            format: format ? 'json' : undefined,
+            stream: false,
+            ...(options ? { options } : {})
+          }
+        : {
+            model: model || 'local-model',
+            messages: [
+              ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+              { role: 'user', content: prompt }
+            ],
+            stream: false,
+            response_format: format ? { type: 'json_object' } : undefined
+          };
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 180000);
+
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const data = await res.json();
+        const text = isOllama ? (data.response || data.message?.content || '') : (data.choices?.[0]?.message?.content || '');
+        return { success: true, text, raw: data };
+      } else {
+        lastError = `HTTP ${res.status}`;
+      }
+    } catch (e) {
+      lastError = e.message;
+    }
+  }
+
+  return { success: false, error: lastError };
+});
+
 process.on('uncaughtException', (err) => {
   console.error('[Electron Main] Uncaught Exception:', err);
 });
@@ -497,7 +559,7 @@ ipcMain.handle('native:start-dictation', async () => {
         [WinDictate]::Launch()
       `;
 
-      exec(`powershell -NoProfile -NonInteractive -Command "${triggerScript.replace(/\\r?\\n/g, ' ')}"`, (err) => {
+      exec(`powershell -NoProfile -NonInteractive -Command "${triggerScript.replace(/\\r?\\r\n/g, ' ')}"`, (err) => {
         if (err) console.warn('[Native Dictation] Windows trigger warning:', err);
       });
       return { success: true, platform: 'win32' };

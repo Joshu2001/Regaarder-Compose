@@ -117,9 +117,9 @@ export const BrowserToolbar = ({
   const currentInputFontSize = Math.max(11, Math.round(13 * ((browserFontSize || 100) / 100)));
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-[#EEF1F5] dark:bg-[#1A1A1E] border-b border-[#CBD1DC] dark:border-zinc-800/90 shrink-0 shadow-2xs font-sans select-none z-20">
+    <div className="flex items-center gap-3 px-4 py-2 bg-slate-100/90 dark:bg-[#16171B] border-b border-slate-200/80 dark:border-white/[0.06] shrink-0 shadow-2xs font-sans select-none z-20 backdrop-blur-md">
       {/* 1. NAVIGATION CONTROLS (← → ↻ ⌂) */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <button
           type="button"
           onPointerDown={(e) => {
@@ -127,7 +127,7 @@ export const BrowserToolbar = ({
             if (canGoBack) onGoBack();
           }}
           disabled={!canGoBack}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
           title="Back"
         >
           <BrowserBackIcon size={16} />
@@ -140,7 +140,7 @@ export const BrowserToolbar = ({
             if (canGoForward) onGoForward();
           }}
           disabled={!canGoForward}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
           title="Forward"
         >
           <BrowserForwardIcon size={16} />
@@ -153,7 +153,7 @@ export const BrowserToolbar = ({
             isLoading ? onStop() : onReload();
           }}
           disabled={isResearchHome}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer"
           title={isLoading ? 'Stop loading' : 'Reload page'}
         >
           {isLoading ? (
@@ -169,7 +169,7 @@ export const BrowserToolbar = ({
             e.preventDefault();
             onHome();
           }}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
           title="Go to Research Home"
         >
           <BrowserHomeIcon size={16} />
@@ -178,7 +178,7 @@ export const BrowserToolbar = ({
 
       {/* 2. REFINED OMNIBOX (36px Height, 10px Radius) */}
       <form onSubmit={handleSubmit} className="flex-1 min-w-[220px] max-w-2xl flex items-center">
-        <div className="group flex items-center gap-2 px-3.5 py-1 h-9 w-full rounded-lg bg-white/90 dark:bg-zinc-800/80 border border-slate-300/70 dark:border-zinc-700/70 focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/20 shadow-2xs transition-all duration-150">
+        <div className="group flex items-center gap-2 px-3.5 py-1 h-9 w-full rounded-lg bg-white/90 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 focus-within:bg-white dark:focus-within:bg-white/[0.08] focus-within:border-violet-500/60 focus-within:ring-1 focus-within:ring-violet-500/30 shadow-2xs transition-all duration-150">
           {/* Security / Search Icon */}
           <div className="shrink-0 flex items-center text-slate-400 dark:text-zinc-400">
             {isResearchHome ? (
@@ -265,14 +265,14 @@ export const BrowserToolbar = ({
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isBookmarked
               ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-500/30 ring-1 ring-violet-500/20'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] hover:text-violet-600 dark:hover:text-violet-400 border border-transparent'
           }`}
           title={isBookmarked ? 'Remove from Saved Research' : 'Save to Research'}
         >
           <BrowserBookmarkIcon size={16} filled={isBookmarked} />
         </button>
 
-        {/* Regaarder AI & Commands Button (Neutral idle, subtle purple hover, rich purple open, restrained pulse when processing) */}
+        {/* Regaarder AI & Commands Button (Outline active state, decoupled from side panel) */}
         <button
           ref={utilitiesBtnRef}
           type="button"
@@ -286,15 +286,15 @@ export const BrowserToolbar = ({
             }
           }}
           className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
-            isUtilitiesPopoverOpen || isSidePanelOpen
-              ? 'bg-violet-600 text-white border-violet-500 shadow-xs'
+            isUtilitiesPopoverOpen
+              ? 'bg-violet-600/15 text-violet-700 dark:text-violet-300 border-violet-500/50 shadow-xs ring-1 ring-violet-500/30'
               : isLoading
               ? 'animate-pulse bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30'
-              : 'bg-slate-200/50 dark:bg-zinc-800/50 text-slate-700 dark:text-zinc-300 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-300/40 dark:border-zinc-700/40 hover:border-violet-500/30'
+              : 'bg-white/60 dark:bg-white/[0.05] text-slate-700 dark:text-zinc-300 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-200 dark:border-white/10 hover:border-violet-500/30'
           }`}
           title="Regaarder Commands & Intelligence"
         >
-          <AgentsIcon size={15} className={isUtilitiesPopoverOpen || isSidePanelOpen ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
+          <AgentsIcon size={15} className={isUtilitiesPopoverOpen ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'} />
           <span className="hidden sm:inline font-semibold">Commands</span>
         </button>
 
@@ -311,8 +311,8 @@ export const BrowserToolbar = ({
           }}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isOverflowMenuOpen
-              ? 'bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 border border-slate-400/40 dark:border-zinc-600/40'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
+              ? 'bg-slate-200/90 dark:bg-white/15 text-slate-900 dark:text-zinc-100 border border-slate-300/60 dark:border-white/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
           }`}
           title="More options (Browser & System Settings)"
         >
@@ -332,8 +332,8 @@ export const BrowserToolbar = ({
           }}
           className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
             isWorkspaceSwitcherOpen
-              ? 'bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 border border-slate-400/40 dark:border-zinc-600/40'
-              : 'text-slate-600 dark:text-zinc-400 hover:bg-[#CBD1DC]/60 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
+              ? 'bg-slate-200/90 dark:bg-white/15 text-slate-900 dark:text-zinc-100 border border-slate-300/60 dark:border-white/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-200/80 dark:hover:bg-white/[0.08] hover:text-slate-900 dark:hover:text-zinc-100 border border-transparent'
           }`}
           title="Switch Workspace App"
         >
@@ -351,7 +351,7 @@ export const BrowserToolbar = ({
           className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
             isSidePanelOpen
               ? 'bg-violet-600/15 text-violet-700 dark:text-violet-300 border-violet-500/50 shadow-xs ring-1 ring-violet-500/30'
-              : 'bg-white/70 dark:bg-zinc-800/70 text-slate-700 dark:text-zinc-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-300/70 dark:border-zinc-700/70 hover:border-violet-500/40'
+              : 'bg-white/60 dark:bg-white/[0.05] text-slate-700 dark:text-zinc-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-200 dark:border-white/10 hover:border-violet-500/40'
           }`}
           title={isSidePanelOpen ? "Close AI Assistant" : "Open AI Assistant (Automate web tasks & scan history)"}
         >

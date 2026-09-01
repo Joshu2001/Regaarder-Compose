@@ -1,5 +1,55 @@
-﻿const GEMINI_ENV_KEYS = ['GEMINI_API_KEY', 'VITE_GEMINI_DEMO_API_KEY'];
+const GEMINI_ENV_KEYS = ['GEMINI_API_KEY', 'VITE_GEMINI_DEMO_API_KEY'];
 const ANTHROPIC_ENV_KEYS = ['ANTHROPIC_API_KEY', 'CLAUDE_API_KEY'];
+
+const probeLocalOllama = async () => {
+  const endpoints = ['http://127.0.0.1:11434/api/tags', 'http://localhost:11434/api/tags'];
+  for (const ep of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(ep, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        const models = Array.isArray(data.models) ? data.models : [];
+        if (models.length > 0) {
+          return {
+            online: true,
+            endpoint: ep.replace('/api/tags', ''),
+            models: models.map((m) => m.name),
+            activeModel: models[0].name,
+          };
+        }
+      }
+    } catch (_e) {}
+  }
+  return { online: false };
+};
+
+const probeLocalLmStudio = async () => {
+  const endpoints = ['http://127.0.0.1:1234/v1/models', 'http://localhost:1234/v1/models'];
+  for (const ep of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(ep, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        const models = Array.isArray(data.data) ? data.data : [];
+        if (models.length > 0) {
+          return {
+            online: true,
+            endpoint: ep.replace('/models', ''),
+            models: models.map((m) => m.id),
+            activeModel: models[0].id,
+          };
+        }
+      }
+    } catch (_e) {}
+  }
+  return { online: false };
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -12,8 +62,50 @@ export default async function handler(req, res) {
   res.setHeader('Expires', '0');
 
   const provider = (req.query?.provider || req.body?.provider || 'gemini').toLowerCase();
+
+  // 1. Explicit Local Model (Ollama / LM Studio) Probe
+  if (provider === 'ollama' || provider === 'lmstudio' || provider === 'local') {
+    if (provider === 'lmstudio') {
+      const lm = await probeLocalLmStudio();
+      if (lm.online) {
+        return res.status(200).json({
+          ok: true,
+          configured: true,
+          usable: true,
+          provider: 'lmstudio',
+          isLocal: true,
+          activeModel: lm.activeModel,
+          models: lm.models,
+          reason: `LM Studio is online with ${lm.models.join(', ')}.`,
+        });
+      }
+    }
+
+    const ollama = await probeLocalOllama();
+    if (ollama.online) {
+      return res.status(200).json({
+        ok: true,
+        configured: true,
+        usable: true,
+        provider: 'ollama',
+        isLocal: true,
+        activeModel: ollama.activeModel,
+        models: ollama.models,
+        reason: `Local Ollama is online with ${ollama.models.join(', ')}.`,
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      configured: false,
+      usable: false,
+      provider: provider,
+      isLocal: true,
+      reason: 'Local inference server (Ollama or LM Studio) is not reachable on localhost.',
+    });
+  }
   
-  // 1. Anthropic Claude Status Check
+  // 2. Anthropic Claude Status Check
   if (provider === 'claude' || provider === 'anthropic') {
     const customKey = String(
       req.body?.apiKey ||
@@ -36,6 +128,21 @@ export default async function handler(req, res) {
     }
 
     if (!apiKey) {
+      // Check local Ollama fallback if cloud key is not set
+      const local = await probeLocalOllama();
+      if (local.online) {
+        return res.status(200).json({
+          ok: true,
+          configured: true,
+          usable: true,
+          provider: 'ollama',
+          isLocal: true,
+          activeModel: local.activeModel,
+          models: local.models,
+          reason: `Anthropic key missing, but local Ollama is active with ${local.models.join(', ')}.`,
+        });
+      }
+
       return res.status(200).json({
         ok: true,
         configured: false,
@@ -94,7 +201,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. Google Gemini Status Check
+  // 3. Google Gemini Status Check
   const customGeminiKey = String(
     req.body?.apiKey ||
     req.query?.apiKey ||
@@ -117,6 +224,21 @@ export default async function handler(req, res) {
   }
 
   if (!geminiKey) {
+    // Check local Ollama fallback if cloud key is not set
+    const local = await probeLocalOllama();
+    if (local.online) {
+      return res.status(200).json({
+        ok: true,
+        configured: true,
+        usable: true,
+        provider: 'ollama',
+        isLocal: true,
+        activeModel: local.activeModel,
+        models: local.models,
+        reason: `Gemini key missing, but local Ollama is active with ${local.models.join(', ')}.`,
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       configured: false,

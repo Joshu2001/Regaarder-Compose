@@ -1,4 +1,4 @@
-﻿const FALLBACK_MODELS = ['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'];
+const FALLBACK_MODELS = ['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'];
 const ENV_KEY_CANDIDATES = ['ANTHROPIC_API_KEY', 'CLAUDE_API_KEY'];
 
 const COMPOSE_AGENT_SYSTEM_PROMPT = `You are Regaarder Compose Agent.
@@ -77,6 +77,59 @@ export default async function handler(req, res) {
   const body = readBody(req);
   const { apiKey, envKeyName } = resolveApiKey(req, body);
   if (!apiKey) {
+    try {
+      const ollamaProbe = await fetch('http://127.0.0.1:11434/api/tags');
+      if (ollamaProbe.ok) {
+        const ollamaData = await ollamaProbe.json();
+        const availableModels = (ollamaData.models || []).map((m) => m.name);
+        if (availableModels.length > 0) {
+          const selectedModel = availableModels.find((m) => m.includes('gemma') || m.includes('llama') || m.includes('lfm')) || availableModels[0];
+          const legacyPrompt = buildLegacyComposePrompt(body);
+          const isLegacyComposeMode = Boolean(legacyPrompt);
+          const userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';
+          let systemPrompt = String(body?.systemPrompt || '').trim() || (isLegacyComposeMode ? COMPOSE_AGENT_SYSTEM_PROMPT : '');
+          const wantsJson = Boolean(body?.schema || isLegacyComposeMode);
+
+          if (!userPrompt) {
+            return res.status(400).json({ ok: false, error: 'Missing userPrompt' });
+          }
+
+          const combinedPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
+          const genRes = await fetch('http://127.0.0.1:11434/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: selectedModel,
+              prompt: combinedPrompt,
+              format: wantsJson ? 'json' : undefined,
+              stream: false,
+            }),
+          });
+
+          if (genRes.ok) {
+            const genData = await genRes.json();
+            const text = String(genData.response || '').trim();
+            const parsed = wantsJson ? parseJsonSafely(text) : null;
+            const responsePayload = {
+              ok: true,
+              text,
+              parsed,
+              modelName: `Ollama (${selectedModel})`,
+              envKeyName: 'Local Ollama Instance',
+            };
+            if (isLegacyComposeMode) {
+              const actionPayload = parsed || parseJsonSafely(text) || {};
+              responsePayload.action = String(actionPayload?.action || 'general_chat');
+              responsePayload.targetText = String(actionPayload?.targetText || '');
+              responsePayload.replacementText = String(actionPayload?.replacementText || '');
+              responsePayload.explanation = String(actionPayload?.explanation || 'Processed command.');
+            }
+            return res.status(200).json(responsePayload);
+          }
+        }
+      }
+    } catch (_localErr) {}
+
     return res.status(500).json({
       ok: false,
       error: `Anthropic Claude API key is missing. Please configure your API key in Settings -> AI & API Keys or set ${ENV_KEY_CANDIDATES.join(' or ')} on the server.`,
