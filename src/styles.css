@@ -2753,3 +2753,37 @@ button.bg-violet-600,
 .halo-glow-violet {
   box-shadow: 0 0 60px color-mix(in srgb, var(--brand-color, #7c3aed) 30%, transparent) !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Floating Sidebar Exit Button — Apple-style entrance spring & gentle halo
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes apple-button-spring-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateX(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) translateX(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes apple-soft-halo {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 90, 207, 0.45), 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  45% {
+    box-shadow: 0 0 0 7px rgba(124, 90, 207, 0.18), 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 90, 207, 0), 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.apple-floating-exit-btn {
+  animation: apple-button-spring-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards, apple-soft-halo 1.3s ease-out 1 forwards;
+}
