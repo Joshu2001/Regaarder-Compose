@@ -163,7 +163,11 @@ import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './uti
 import AnalyticsHubUI from './analytics/AnalyticsHubUI';
 const API_BASE_URL = (typeof process !== 'undefined' && process.env?.VITE_COLLAB_SERVER_URL) || 
   (import.meta.env?.VITE_COLLAB_SERVER_URL) || 
-  (typeof window !== 'undefined' ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001') : 'http://localhost:3001');
+  (typeof window !== 'undefined' && window.location?.origin ? (
+    window.location.port === '5173' || window.location.port === '5174'
+      ? `${window.location.protocol}//${window.location.hostname}:3001`
+      : window.location.origin
+  ) : 'http://localhost:3001');
 
 function hexToRgb(hex) {
   if (!hex || typeof hex !== 'string') return { r: 124, g: 58, b: 237 };
@@ -7191,6 +7195,7 @@ function AppCore() {
     const fetchBackendData = async () => {
       const token = localStorage.getItem('rc.token');
       if (!token) return;
+      if (document.hidden) return; // Skip polling when minimized or in background (MED-06 fix)
       
       try {
         const eventsRes = await fetch(`${API_BASE_URL}/api/events`, {
@@ -7216,9 +7221,19 @@ function AppCore() {
     };
     fetchBackendData();
     
-    // Poll for new invites and events every 5 seconds
-    const intervalId = setInterval(fetchBackendData, 5000);
-    return () => clearInterval(intervalId);
+    // Adaptive polling: poll every 30s instead of 5s, and re-fetch immediately on window focus/visibility
+    const intervalId = setInterval(fetchBackendData, 30000);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchBackendData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -7416,10 +7431,22 @@ function AppCore() {
     });
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CRIT-03 Remediation: OS-Backed Hardware Encrypted Storage for API Keys
+  // ─────────────────────────────────────────────────────────────────────────
   const [aiProviderConfig, setAiProviderConfig] = useState(() => {
     try {
       const saved = localStorage.getItem('regaarder_ai_config');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          provider: parsed.provider || 'gemini',
+          geminiApiKey: '', // Kept in secure hardware store, never in plain-text localStorage
+          claudeApiKey: '',
+          geminiModel: parsed.geminiModel || 'gemini-2.5-flash',
+          claudeModel: parsed.claudeModel || 'claude-3-7-sonnet-20250219',
+        };
+      }
     } catch (_) {}
     return {
       provider: 'gemini',
@@ -7433,12 +7460,89 @@ function AppCore() {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showClaudeKey, setShowClaudeKey] = useState(false);
 
+  // Load and migrate API keys into secure storage on startup
+  useEffect(() => {
+    let isMounted = true;
+    const initSecureKeys = async () => {
+      let loadedGeminiKey = '';
+      let loadedClaudeKey = '';
+
+      // 1. Electron Hardware SafeStorage (DPAPI on Windows, Keychain on macOS)
+      if (window.electronAPI?.getSecret) {
+        try {
+          const resGemini = await window.electronAPI.getSecret('geminiApiKey');
+          const resClaude = await window.electronAPI.getSecret('claudeApiKey');
+          if (resGemini?.value) loadedGeminiKey = resGemini.value;
+          if (resClaude?.value) loadedClaudeKey = resClaude.value;
+        } catch (e) {
+          console.warn('[SecureStorage] Electron safeStorage read error:', e);
+        }
+      }
+
+      // 2. Legacy Plain-Text Migration: If existing keys were in localStorage, migrate and wipe plain text
+      try {
+        const legacyConfigRaw = localStorage.getItem('regaarder_ai_config');
+        if (legacyConfigRaw) {
+          const legacy = JSON.parse(legacyConfigRaw);
+          if (legacy.geminiApiKey && !loadedGeminiKey) {
+            loadedGeminiKey = legacy.geminiApiKey;
+            if (window.electronAPI?.storeSecret) {
+              await window.electronAPI.storeSecret('geminiApiKey', loadedGeminiKey);
+            }
+          }
+          if (legacy.claudeApiKey && !loadedClaudeKey) {
+            loadedClaudeKey = legacy.claudeApiKey;
+            if (window.electronAPI?.storeSecret) {
+              await window.electronAPI.storeSecret('claudeApiKey', loadedClaudeKey);
+            }
+          }
+          // Sanitize localStorage: strip plain-text keys immediately
+          if (legacy.geminiApiKey || legacy.claudeApiKey) {
+            const sanitized = { ...legacy };
+            delete sanitized.geminiApiKey;
+            delete sanitized.claudeApiKey;
+            localStorage.setItem('regaarder_ai_config', JSON.stringify(sanitized));
+          }
+        }
+      } catch (_e) {}
+
+      if (isMounted && (loadedGeminiKey || loadedClaudeKey)) {
+        setAiProviderConfig((prev) => ({
+          ...prev,
+          geminiApiKey: loadedGeminiKey || prev.geminiApiKey,
+          claudeApiKey: loadedClaudeKey || prev.claudeApiKey,
+        }));
+      }
+    };
+
+    initSecureKeys();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const saveAiProviderConfig = (updates) => {
     setAiProviderConfig((prev) => {
       const next = { ...prev, ...updates };
+
+      // Securely store credentials in OS hardware vault
+      if (updates.geminiApiKey !== undefined && window.electronAPI?.storeSecret) {
+        window.electronAPI.storeSecret('geminiApiKey', updates.geminiApiKey).catch(() => {});
+      }
+      if (updates.claudeApiKey !== undefined && window.electronAPI?.storeSecret) {
+        window.electronAPI.storeSecret('claudeApiKey', updates.claudeApiKey).catch(() => {});
+      }
+
+      // In localStorage, store non-secret preferences ONLY (models & active provider)
       try {
-        localStorage.setItem('regaarder_ai_config', JSON.stringify(next));
+        const safePreferences = {
+          provider: next.provider,
+          geminiModel: next.geminiModel,
+          claudeModel: next.claudeModel,
+        };
+        localStorage.setItem('regaarder_ai_config', JSON.stringify(safePreferences));
       } catch (_) {}
+
       return next;
     });
   };
@@ -8147,7 +8251,10 @@ function AppCore() {
   const [socketId, setSocketId] = useState('');
 
   useEffect(() => {
+    const token = localStorage.getItem('rc.token');
     socketRef.current = io(API_BASE_URL, {
+      auth: { token },
+      query: { token },
       reconnectionAttempts: 3,
       reconnectionDelay: 5000,
       timeout: 3000,
@@ -13545,7 +13652,7 @@ const DEFAULT_DECK_SLIDES = [
           }
         }
         const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.85);
-        setLastScreenShareFrameUrl(jpegDataUrl);
+        // HIGH-05 fix: Pipe frame directly via Electron IPC without triggering 30 FPS React root re-renders
         window.electronAPI.sendPipFrame(jpegDataUrl);
       } catch (e) {
         // frame pump error
@@ -17943,9 +18050,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const readyTimer = setTimeout(() => {
       setIsAwarenessReady(true);
     }, 400);
+    const userToken = localStorage.getItem('rc.token');
     const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + '/yjs';
     const roomName = roomId ? `compose-room-${roomId}` : `compose-room-${activeDocId || 'default'}`;
     providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current, {
+      params: userToken ? { token: userToken } : {},
       maxBackoffTime: 30000,
       resyncInterval: 0,
       disableBc: false
@@ -32856,8 +32965,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const generateRoomCode = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz';
-    const getStr = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
+    const randomBytes = new Uint8Array(10);
+    if (typeof window !== 'undefined' && window.crypto) {
+      window.crypto.getRandomValues(randomBytes);
+    } else {
+      for (let i = 0; i < 10; i++) randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+    const getStr = (start, len) => Array.from({ length: len }, (_, i) => chars[randomBytes[start + i] % chars.length]).join('');
+    return `${getStr(0, 3)}-${getStr(3, 4)}-${getStr(7, 3)}`;
   };
 
   const joinRoom = async (code) => {
@@ -48815,8 +48930,24 @@ const renderRoomTopHeader = () => (
     setAuthError('');
     setAuthLoading(true);
 
-    const mockEmail = `${provider}_user_${Math.floor(Math.random() * 10000)}@example.com`;
-    const mockName = provider === 'google' ? 'Google Developer' : 'Apple User';
+    // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
+    let deviceId = localStorage.getItem('rc.device_id');
+    if (!deviceId) {
+      const arr = new Uint8Array(8);
+      if (typeof window !== 'undefined' && window.crypto) {
+        window.crypto.getRandomValues(arr);
+      } else {
+        for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
+      }
+      deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('rc.device_id', deviceId);
+    }
+
+    const targetEmail = authEmail && authEmail.includes('@')
+      ? authEmail.trim().toLowerCase()
+      : `social_${provider}_${deviceId}@regaarder.local`;
+
+    const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
@@ -48824,8 +48955,8 @@ const renderRoomTopHeader = () => (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider,
-          email: mockEmail,
-          name: mockName
+          email: targetEmail,
+          name: targetName
         })
       });
 
@@ -48866,6 +48997,7 @@ const renderRoomTopHeader = () => (
           <button 
             type="button"
             onClick={() => setAuthModalOpen(false)}
+            aria-label="Close authentication modal"
             className="absolute top-5 right-5 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
             title="Close"
           >

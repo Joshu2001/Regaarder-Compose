@@ -109,4 +109,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Called on FloatingPipWidgetWindow unmount to clean up
   offPipFrame: () => ipcRenderer.removeAllListeners('pip:frame'),
+
+  // OS-Backed Hardware Safe Storage (DPAPI/Keychain) for Secrets & API Keys
+  isSecureStorageAvailable: () => ipcRenderer.invoke('secure:is-available'),
+  storeSecret: (key, value) => ipcRenderer.invoke('secure:store-secret', { key, value }),
+  getSecret: (key) => ipcRenderer.invoke('secure:get-secret', { key }),
+  deleteSecret: (key) => ipcRenderer.invoke('secure:delete-secret', { key }),
 });

@@ -232,6 +232,21 @@ export default function RoomLandingPage({
       setIsLobby(false);
     }
   }, [isScreenSharing, screenShareStream, sharedSourceInfo]);
+
+  // Cleanup WebRTC screen sharing tracks on unmount if managed locally (MED-03 fix)
+  const localStreamRef = useRef(localScreenShareStream);
+  localStreamRef.current = localScreenShareStream;
+  useEffect(() => {
+    return () => {
+      if (localStreamRef.current) {
+        try {
+          localStreamRef.current.getTracks().forEach(track => {
+            if (track.readyState === 'live') track.stop();
+          });
+        } catch (_e) {}
+      }
+    };
+  }, []);
   const [isEnteringCode, setIsEnteringCode] = useState(false);
   const [isGreenRoomOpen, setIsGreenRoomOpen] = useState(false);
   

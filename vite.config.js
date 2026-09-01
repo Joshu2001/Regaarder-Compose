@@ -100,9 +100,20 @@ export default defineConfig(({ mode }) => {
       include: ['canvg'],
     },
     build: {
-      minify: false,
-      chunkSizeWarningLimit: 5000,
+      minify: true,
+      chunkSizeWarningLimit: 3000,
       rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('exceljs')) return 'vendor-exceljs';
+              if (id.includes('pdfjs-dist')) return 'vendor-pdfjs';
+              if (id.includes('katex')) return 'vendor-katex';
+              if (id.includes('lucide-react')) return 'vendor-lucide';
+              if (id.includes('socket.io-client')) return 'vendor-socketio';
+            }
+          },
+        },
         onwarn(warning, warn) {
           if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && warning.message.includes('use client')) {
             return;

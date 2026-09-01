@@ -17,14 +17,40 @@ Your task is to take a user's natural language request or an image containing a 
 - Ensure complex symbols, integrals, summations, matrices, and greek letters are properly formatted.
 - Return strict JSON matching the schema.`;
 
-const resolveApiKey = () => {
+// In-memory sliding window rate limiter
+const rateLimitMap = new Map();
+const checkRateLimit = (ip, maxPerMinute = 20) => {
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const timestamps = (rateLimitMap.get(ip) || []).filter(t => now - t < windowMs);
+
+  if (timestamps.length >= maxPerMinute) {
+    rateLimitMap.set(ip, timestamps);
+    return false;
+  }
+
+  timestamps.push(now);
+  rateLimitMap.set(ip, timestamps);
+  return true;
+};
+
+const resolveApiKey = (req, body) => {
+  const customKey = String(
+    body?.apiKey ||
+    req?.headers?.['x-gemini-api-key'] ||
+    req?.headers?.['x-api-key'] ||
+    ''
+  ).trim();
+  if (customKey) {
+    return { apiKey: customKey, envKeyName: 'Client-Provided Key', isClientKey: true };
+  }
   for (const keyName of ENV_KEY_CANDIDATES) {
     const value = String(process.env[keyName] || '').trim();
     if (value) {
-      return { apiKey: value, envKeyName: keyName };
+      return { apiKey: value, envKeyName: keyName, isClientKey: false };
     }
   }
-  return { apiKey: '', envKeyName: '' };
+  return { apiKey: '', envKeyName: '', isClientKey: false };
 };
 
 const parseJsonSafely = (rawText) => {
@@ -63,15 +89,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const { apiKey, envKeyName } = resolveApiKey();
-  if (!apiKey) {
-    return res.status(500).json({
+  const body = typeof req.body === 'string' ? parseJsonSafely(req.body) || {} : req.body || {};
+  const { apiKey, envKeyName, isClientKey } = resolveApiKey(req, body);
+
+  // Rate limit guard: protect server shared quota from automated scraping or exhaustion
+  const clientIp = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  const maxRequests = isClientKey ? 60 : 20; // 60/min for client keys, 20/min for server shared quota
+  if (!checkRateLimit(clientIp, maxRequests)) {
+    return res.status(429).json({
       ok: false,
-      error: `Server is missing ${ENV_KEY_CANDIDATES.join(' or ')}.`,
+      error: 'Rate limit exceeded for Math AI generation. Please provide your own API key in Settings -> AI & API Keys or try again in a minute.'
     });
   }
 
-  const body = typeof req.body === 'string' ? parseJsonSafely(req.body) || {} : req.body || {};
+  if (!apiKey) {
+    return res.status(500).json({
+      ok: false,
+      error: `Server is missing ${ENV_KEY_CANDIDATES.join(' or ')}. Configure your API key in Settings -> AI & API Keys.`,
+    });
+  }
   const userPrompt = String(body?.prompt || '').trim() || 'Extract or generate the mathematical formula.';
   const attachments = normalizeAttachments(body?.attachments);
 
@@ -105,6 +141,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
       },
     );
 

@@ -18,27 +18,162 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const USERS_FILE = path.join(__dirname, 'users.json');
 
-// Initialize users database file
-if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2), 'utf8');
-}
-
-function readUsers() {
-  try {
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  } catch (e) {
-    return [];
-  }
-}
-
-function writeUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-}
-
-const hashPassword = (password) => crypto.createHash('sha256').update(password).digest('hex');
-
-// In-memory active session store (token -> user)
+// --- In-Memory Active Session Cache (token -> user) ---
 const activeSessions = new Map();
+
+// --- Secure Scrypt Password Hashing with Legacy SHA-256 Migration ---
+const hashPassword = async (password) => {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) return reject(err);
+      resolve(`scrypt:${salt}:${derivedKey.toString('hex')}`);
+    });
+  });
+};
+
+const verifyPassword = async (password, storedHash) => {
+  if (!storedHash || typeof storedHash !== 'string') return { valid: false, shouldUpgrade: false };
+
+  // Modern salted scrypt verification
+  if (storedHash.startsWith('scrypt:')) {
+    const parts = storedHash.split(':');
+    if (parts.length !== 3) return { valid: false, shouldUpgrade: false };
+    const [, salt, key] = parts;
+    return new Promise((resolve) => {
+      crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+        if (err) return resolve({ valid: false, shouldUpgrade: false });
+        const keyBuffer = Buffer.from(key, 'hex');
+        if (derivedKey.length !== keyBuffer.length) return resolve({ valid: false, shouldUpgrade: false });
+        const isValid = crypto.timingSafeEqual(derivedKey, keyBuffer);
+        resolve({ valid: isValid, shouldUpgrade: false });
+      });
+    });
+  }
+
+  // Legacy SHA-256 backward-compatibility with timing-safe comparison
+  const legacyHash = crypto.createHash('sha256').update(password).digest('hex');
+  if (legacyHash.length === storedHash.length) {
+    const isValid = crypto.timingSafeEqual(Buffer.from(legacyHash), Buffer.from(storedHash));
+    return { valid: isValid, shouldUpgrade: isValid };
+  }
+
+  return { valid: false, shouldUpgrade: false };
+};
+
+// --- SQLite Database Setup & User Migration ---
+let db;
+const initDatabase = async () => {
+  db = await open({
+    filename: path.join(__dirname, 'database.sqlite'),
+    driver: sqlite3.Database
+  });
+
+  await db.exec(`
+    PRAGMA foreign_keys = ON;
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      password_hash TEXT,
+      provider TEXT DEFAULT 'email',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      date TEXT,
+      title TEXT,
+      link TEXT,
+      time TEXT,
+      description TEXT,
+      privacy TEXT,
+      recurrence TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS invites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      sender TEXT,
+      title TEXT,
+      date TEXT,
+      time TEXT,
+      status TEXT DEFAULT 'pending'
+    );
+
+    CREATE TABLE IF NOT EXISTS documents (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT,
+      subtitle TEXT,
+      content TEXT,
+      initiatives TEXT,
+      appended_sections TEXT,
+      is_blank INTEGER DEFAULT 1,
+      created_at TEXT,
+      updated_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+    CREATE INDEX IF NOT EXISTS idx_events_user ON events(user_id);
+    CREATE INDEX IF NOT EXISTS idx_invites_user_status ON invites(user_id, status);
+    CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
+  `);
+
+  // Migrate legacy users.json into SQLite if present
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const fileData = fs.readFileSync(USERS_FILE, 'utf8');
+      const legacyUsers = JSON.parse(fileData);
+      if (Array.isArray(legacyUsers) && legacyUsers.length > 0) {
+        for (const u of legacyUsers) {
+          const existing = await db.get('SELECT id FROM users WHERE email = ?', [u.email.toLowerCase()]);
+          if (!existing) {
+            await db.run(
+              'INSERT INTO users (id, email, name, password_hash, provider, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+              [u.id, u.email.toLowerCase(), u.name || 'User', u.passwordHash || null, u.provider || 'email', u.createdAt || new Date().toISOString()]
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[DB Init] Error migrating legacy users.json:', err.message);
+  }
+
+  // Load existing persistent sessions into memory cache
+  try {
+    const existingSessions = await db.all(`
+      SELECT s.token, u.id, u.email, u.name, u.provider 
+      FROM sessions s 
+      JOIN users u ON s.user_id = u.id
+    `);
+    for (const row of existingSessions) {
+      activeSessions.set(row.token, {
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        provider: row.provider
+      });
+    }
+  } catch (err) {
+    console.warn('[DB Init] Error preloading sessions:', err.message);
+  }
+
+  console.log('[Database] SQLite initialized with tables, foreign keys, and indexes.');
+};
 
 const app = express();
 app.use(cors());
@@ -56,95 +191,192 @@ app.get('/api/mcp/tools', (req, res) => {
   });
 });
 
-// API Auth Routes
-app.post('/api/auth/register', (req, res) => {
-  const { email, password, name } = req.body;
+// Helper for standard JSON schema normalization in MCP
+function toStandardJsonSchema(schema) {
+  if (!schema || typeof schema !== 'object') return schema;
+  return schema;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API Auth Routes (SQLite Backed with Scrypt Hashing & Session Storage)
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password, name } = req.body || {};
   if (!email || !password || !name) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
-  const users = readUsers();
-  const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (existingUser) {
-    return res.status(400).json({ message: 'Email already registered.' });
+  const normalizedEmail = String(email).toLowerCase().trim();
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!EMAIL_REGEX.test(normalizedEmail)) {
+    return res.status(400).json({ message: 'Please enter a valid email address.' });
   }
 
-  const newUser = {
-    id: 'user_' + Date.now(),
-    email: email.toLowerCase(),
-    name,
-    passwordHash: hashPassword(password),
-    provider: 'email',
-    createdAt: new Date().toISOString()
-  };
+  if (String(password).length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+  }
 
-  users.push(newUser);
-  writeUsers(users);
+  try {
+    const existing = await db.get('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
+    if (existing) {
+      return res.status(400).json({ message: 'Email already registered.' });
+    }
 
-  // Auto-generate token on signup
-  const token = 'session_' + crypto.randomBytes(24).toString('hex');
-  const userResponse = { id: newUser.id, email: newUser.email, name: newUser.name, provider: 'email' };
-  activeSessions.set(token, userResponse);
+    const hashedPassword = await hashPassword(password);
+    const userId = 'user_' + Date.now();
+    const now = new Date().toISOString();
 
-  res.status(201).json({ token, user: userResponse });
+    await db.run(
+      'INSERT INTO users (id, email, name, password_hash, provider, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, normalizedEmail, String(name).trim().slice(0, 100), hashedPassword, 'email', now]
+    );
+
+    const token = 'session_' + crypto.randomBytes(32).toString('hex');
+    const userResponse = { id: userId, email: normalizedEmail, name: String(name).trim(), provider: 'email' };
+
+    await db.run(
+      'INSERT INTO sessions (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)',
+      [token, userId, Date.now() + 30 * 24 * 60 * 60 * 1000, now]
+    );
+    activeSessions.set(token, userResponse);
+
+    res.status(201).json({ token, user: userResponse });
+  } catch (err) {
+    console.error('[Auth Register Error]', err);
+    res.status(500).json({ message: 'Internal server error during registration.' });
+  }
 });
 
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required.' });
   }
 
-  const users = readUsers();
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (!user || user.passwordHash !== hashPassword(password)) {
-    return res.status(401).json({ message: 'Invalid email or password.' });
+  const normalizedEmail = String(email).toLowerCase().trim();
+  try {
+    const user = await db.get('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    const { valid, shouldUpgrade } = await verifyPassword(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    // Transparently upgrade legacy SHA-256 hashes to salted scrypt
+    if (shouldUpgrade) {
+      const upgradedHash = await hashPassword(password);
+      await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [upgradedHash, user.id]);
+      console.log(`[Security] Upgraded user password hash to scrypt for: ${user.email}`);
+    }
+
+    const token = 'session_' + crypto.randomBytes(32).toString('hex');
+    const userResponse = { id: user.id, email: user.email, name: user.name, provider: user.provider };
+    const now = new Date().toISOString();
+
+    await db.run(
+      'INSERT INTO sessions (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)',
+      [token, user.id, Date.now() + 30 * 24 * 60 * 60 * 1000, now]
+    );
+    activeSessions.set(token, userResponse);
+
+    res.json({ token, user: userResponse });
+  } catch (err) {
+    console.error('[Auth Login Error]', err);
+    res.status(500).json({ message: 'Internal server error during login.' });
   }
-
-  const token = 'session_' + crypto.randomBytes(24).toString('hex');
-  const userResponse = { id: user.id, email: user.email, name: user.name, provider: 'email' };
-  activeSessions.set(token, userResponse);
-
-  res.json({ token, user: userResponse });
 });
 
-app.post('/api/auth/social', (req, res) => {
-  const { provider, email, name } = req.body;
+app.post('/api/auth/social', async (req, res) => {
+  const { provider, email, name } = req.body || {};
   if (!provider || !email || !name) {
     return res.status(400).json({ message: 'Missing social profile fields.' });
   }
 
-  const users = readUsers();
-  let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-  if (!user) {
-    // Create new user for social signup
-    user = {
-      id: 'user_' + Date.now(),
-      email: email.toLowerCase(),
-      name,
-      provider,
-      createdAt: new Date().toISOString()
-    };
-    users.push(user);
-    writeUsers(users);
+  const normalizedProvider = String(provider).toLowerCase().trim();
+  if (!['google', 'apple'].includes(normalizedProvider)) {
+    return res.status(400).json({ message: 'Unsupported authentication provider.' });
   }
 
-  const token = 'session_' + crypto.randomBytes(24).toString('hex');
-  const userResponse = { id: user.id, email: user.email, name: user.name, provider };
-  activeSessions.set(token, userResponse);
+  const normalizedEmail = String(email).toLowerCase().trim();
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!EMAIL_REGEX.test(normalizedEmail)) {
+    return res.status(400).json({ message: 'Invalid email address format.' });
+  }
 
-  res.json({ token, user: userResponse });
+  try {
+    let user = await db.get('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+
+    if (user) {
+      // Security check: Prevent account hijacking if account was registered via email/password
+      if (user.provider === 'email') {
+        return res.status(409).json({
+          message: 'This email is registered with password sign-in. Please sign in with your email and password.'
+        });
+      }
+
+      // Security check: Prevent cross-provider takeover
+      if (user.provider !== normalizedProvider) {
+        const providerLabel = user.provider ? user.provider.charAt(0).toUpperCase() + user.provider.slice(1) : 'another provider';
+        return res.status(409).json({
+          message: `This email is already associated with ${providerLabel}. Please sign in with ${providerLabel}.`
+        });
+      }
+    } else {
+      // Create new user strictly for this social signup
+      const userId = 'user_' + Date.now();
+      const now = new Date().toISOString();
+      await db.run(
+        'INSERT INTO users (id, email, name, password_hash, provider, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, normalizedEmail, String(name).trim().slice(0, 100) || 'User', null, normalizedProvider, now]
+      );
+      user = { id: userId, email: normalizedEmail, name: String(name).trim() || 'User', provider: normalizedProvider };
+    }
+
+    const token = 'session_' + crypto.randomBytes(32).toString('hex');
+    const userResponse = { id: user.id, email: user.email, name: user.name, provider: user.provider };
+    const now = new Date().toISOString();
+
+    await db.run(
+      'INSERT INTO sessions (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)',
+      [token, user.id, Date.now() + 30 * 24 * 60 * 60 * 1000, now]
+    );
+    activeSessions.set(token, userResponse);
+
+    res.json({ token, user: userResponse });
+  } catch (err) {
+    console.error('[Auth Social Error]', err);
+    res.status(500).json({ message: 'Internal server error during social sign-in.' });
+  }
 });
 
-app.get('/api/auth/me', (req, res) => {
+app.get('/api/auth/me', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'No authorization token provided.' });
   }
 
   const token = authHeader.split(' ')[1];
-  const user = activeSessions.get(token);
+  let user = activeSessions.get(token);
+
+  if (!user && db) {
+    // Check persistent SQLite sessions table if not in memory cache
+    try {
+      const sessionRow = await db.get(`
+        SELECT u.id, u.email, u.name, u.provider 
+        FROM sessions s 
+        JOIN users u ON s.user_id = u.id 
+        WHERE s.token = ?
+      `, [token]);
+      if (sessionRow) {
+        user = { id: sessionRow.id, email: sessionRow.email, name: sessionRow.name, provider: sessionRow.provider };
+        activeSessions.set(token, user);
+      }
+    } catch (e) {}
+  }
 
   if (!user) {
     return res.status(401).json({ message: 'Session expired or invalid.' });
@@ -153,58 +385,42 @@ app.get('/api/auth/me', (req, res) => {
   res.json({ user });
 });
 
-// --- SQLite Database Setup ---
-let db;
-(async () => {
-  db = await open({
-    filename: path.join(__dirname, 'database.sqlite'),
-    driver: sqlite3.Database
-  });
+app.post('/api/auth/logout', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    activeSessions.delete(token);
+    if (db) {
+      await db.run('DELETE FROM sessions WHERE token = ?', [token]).catch(() => {});
+    }
+  }
+  res.json({ success: true, message: 'Logged out successfully.' });
+});
 
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT,
-      date TEXT,
-      title TEXT,
-      link TEXT,
-      time TEXT,
-      description TEXT,
-      privacy TEXT,
-      recurrence TEXT
-    );
-    CREATE TABLE IF NOT EXISTS invites (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT,
-      sender TEXT,
-      title TEXT,
-      date TEXT,
-      time TEXT,
-      status TEXT DEFAULT 'pending'
-    );
-    CREATE TABLE IF NOT EXISTS documents (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      title TEXT,
-      subtitle TEXT,
-      content TEXT,
-      initiatives TEXT,
-      appended_sections TEXT,
-      is_blank INTEGER DEFAULT 1,
-      created_at TEXT,
-      updated_at TEXT
-    );
-  `);
-})();
-
-// Authentication middleware for Meetings/Invites
-const requireAuth = (req, res, next) => {
+// Authentication middleware for Meetings/Invites/Documents
+const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
   const token = authHeader.split(' ')[1];
-  const user = activeSessions.get(token);
+  let user = activeSessions.get(token);
+
+  if (!user && db) {
+    try {
+      const sessionRow = await db.get(`
+        SELECT u.id, u.email, u.name, u.provider 
+        FROM sessions s 
+        JOIN users u ON s.user_id = u.id 
+        WHERE s.token = ?
+      `, [token]);
+      if (sessionRow) {
+        user = { id: sessionRow.id, email: sessionRow.email, name: sessionRow.name, provider: sessionRow.provider };
+        activeSessions.set(token, user);
+      }
+    } catch (e) {}
+  }
+
   if (!user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
@@ -217,7 +433,6 @@ app.get('/api/events', requireAuth, async (req, res) => {
   try {
     const events = await db.all('SELECT * FROM events WHERE user_id = ?', [req.user.id]);
     
-    // Group events by date format: { 'YYYY-MM-DD': [{ title, link, ... }] }
     const groupedEvents = {};
     events.forEach(e => {
       if (!groupedEvents[e.date]) groupedEvents[e.date] = [];
@@ -240,12 +455,8 @@ app.post('/api/events', requireAuth, async (req, res) => {
       [req.user.id, date, title, link || '', time || '', description || '', privacy || 'private', recurrence || 'none']
     );
     
-    // Simulate sending invites
     if (guests && guests.length > 0) {
-      // In a real app we'd map guest emails to user_ids, but for now we'll just insert an invite for the current user 
-      // or a mock target so it shows up in their notifications if they invite themselves for testing
       for (const guest of guests) {
-        // Here we just attach it to the current user so they can test it!
         await db.run(
           'INSERT INTO invites (user_id, sender, title, date, time) VALUES (?, ?, ?, ?, ?)',
           [req.user.id, 'You (To: ' + guest + ')', title, date, time || '']
@@ -274,15 +485,12 @@ app.post('/api/invites/:id/accept', requireAuth, async (req, res) => {
     const invite = await db.get('SELECT * FROM invites WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
     
-    // Create an event for the user
     await db.run(
       'INSERT INTO events (user_id, date, title, link, time) VALUES (?, ?, ?, ?, ?)',
       [req.user.id, invite.date, invite.title, '', invite.time]
     );
     
-    // Mark as accepted (or delete it)
     await db.run('DELETE FROM invites WHERE id = ?', [req.params.id]);
-    
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -424,16 +632,35 @@ app.delete('/api/documents/:id', requireAuth, async (req, res) => {
 
 const server = http.createServer(app);
 
-// Existing Socket.IO for AI Orchestration
+// ─────────────────────────────────────────────────────────────────────────────
+// Socket.IO with Authentication Guard for AI Orchestration
+// ─────────────────────────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+// Socket.IO authentication middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (token && activeSessions.has(token)) {
+    socket.user = activeSessions.get(token);
+  } else {
+    socket.user = null;
+  }
+  next();
+});
+
 io.on('connection', (socket) => {
-  console.log('Socket.IO Client connected:', socket.id);
+  console.log('Socket.IO Client connected:', socket.id, socket.user ? `(User: ${socket.user.email})` : '(Unauthenticated)');
 
   socket.on('start_agent_task', async (data) => {
-    const { intent, context } = data;
+    // Require authenticated session to trigger AI agent execution
+    if (!socket.user) {
+      socket.emit('agent_error', { message: 'Authentication required. Please sign in to run AI agent tasks.' });
+      return;
+    }
+
+    const { intent, context } = data || {};
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_DEMO_API_KEY;
     
     if (!apiKey) {
@@ -444,7 +671,7 @@ io.on('connection', (socket) => {
     try {
       await processAgentRequest(socket, intent, context, apiKey);
     } catch (err) {
-      console.error(err);
+      console.error('[Agent Task Error]', err);
       socket.emit('agent_error', { message: err.message });
     }
   });
@@ -454,7 +681,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// Yjs WebSocket Server for Real-Time Collaboration
+// ─────────────────────────────────────────────────────────────────────────────
+// Yjs WebSocket Server with Access Verification
+// ─────────────────────────────────────────────────────────────────────────────
 const wss = new WebSocketServer({ noServer: true });
 
 wss.on('connection', (ws, req) => {
@@ -463,18 +692,35 @@ wss.on('connection', (ws, req) => {
 });
 
 server.on('upgrade', (request, socket, head) => {
-  const pathname = request.url;
-  // Route Yjs connections to the WebSocket Server
+  const parsedUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  const pathname = parsedUrl.pathname;
+
+  // Route Yjs connections to the WebSocket Server with security check
   if (pathname.startsWith('/yjs')) {
+    const token = parsedUrl.searchParams.get('token');
+    const user = token ? activeSessions.get(token) : null;
+
+    // In production, require authenticated session
+    if (!user && process.env.NODE_ENV === 'production') {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
   }
-  // Otherwise, do not destroy the socket; Socket.io will handle it implicitly if it matches its path
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Agent OS Backend running on port ${PORT}`);
-  console.log(`Yjs Collaboration Server running on ws://localhost:${PORT}/yjs`);
+// Initialize database and start listening
+initDatabase().then(() => {
+  server.listen(PORT, () => {
+    console.log(`Agent OS Backend running on port ${PORT}`);
+    console.log(`Yjs Collaboration Server running on ws://localhost:${PORT}/yjs`);
+  });
+}).catch(err => {
+  console.error('[Fatal] Database initialization failed:', err);
+  process.exit(1);
 });

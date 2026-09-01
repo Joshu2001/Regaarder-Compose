@@ -8,6 +8,23 @@ If command says translate to a language, translate selected_text first; if missi
 When JSON output is requested, return strict JSON only matching the schema format:
 {"action": "string", "targetText": "string", "replacementText": "string", "explanation": "string"}`;
 
+// In-memory sliding window rate limiter
+const rateLimitMap = new Map();
+const checkRateLimit = (ip, maxPerMinute = 20) => {
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const timestamps = (rateLimitMap.get(ip) || []).filter(t => now - t < windowMs);
+
+  if (timestamps.length >= maxPerMinute) {
+    rateLimitMap.set(ip, timestamps);
+    return false;
+  }
+
+  timestamps.push(now);
+  rateLimitMap.set(ip, timestamps);
+  return true;
+};
+
 const resolveApiKey = (req, body) => {
   const customKey = String(
     body?.apiKey ||
@@ -17,15 +34,15 @@ const resolveApiKey = (req, body) => {
     ''
   ).trim();
   if (customKey) {
-    return { apiKey: customKey, envKeyName: 'Client-Provided Key' };
+    return { apiKey: customKey, envKeyName: 'Client-Provided Key', isClientKey: true };
   }
   for (const keyName of ENV_KEY_CANDIDATES) {
     const value = String(process.env[keyName] || '').trim();
     if (value) {
-      return { apiKey: value, envKeyName: keyName };
+      return { apiKey: value, envKeyName: keyName, isClientKey: false };
     }
   }
-  return { apiKey: '', envKeyName: '' };
+  return { apiKey: '', envKeyName: '', isClientKey: false };
 };
 
 const parseJsonSafely = (rawText) => {
@@ -75,10 +92,20 @@ export default async function handler(req, res) {
   }
 
   const body = readBody(req);
-  const { apiKey, envKeyName } = resolveApiKey(req, body);
+  const { apiKey, envKeyName, isClientKey } = resolveApiKey(req, body);
+
+  // Rate limit guard: protect server shared quota from automated scraping or exhaustion
+  const clientIp = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  const maxRequests = isClientKey ? 60 : 20; // 60/min for client keys, 20/min for server shared quota
+  if (!checkRateLimit(clientIp, maxRequests)) {
+    return res.status(429).json({
+      ok: false,
+      error: 'Rate limit exceeded for Claude AI generation. Please provide your own API key in Settings -> AI & API Keys or try again in a minute.'
+    });
+  }
   if (!apiKey) {
     try {
-      const ollamaProbe = await fetch('http://127.0.0.1:11434/api/tags');
+      const ollamaProbe = await fetch('http://127.0.0.1:11434/api/tags', { signal: AbortSignal.timeout(3000) });
       if (ollamaProbe.ok) {
         const ollamaData = await ollamaProbe.json();
         const availableModels = (ollamaData.models || []).map((m) => m.name);
@@ -178,6 +205,7 @@ export default async function handler(req, res) {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {

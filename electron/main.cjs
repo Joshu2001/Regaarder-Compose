@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, session, desktopCapturer } = require('electron');
+const { app, BrowserWindow, ipcMain, session, desktopCapturer, safeStorage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const BrowserViewManager = require('./browserViewManager.cjs');
 
 // Disable hardware acceleration to eliminate exit_code=34 Chromium GPU process crashes on Windows
@@ -17,20 +18,27 @@ let activeAppUrl = null;
 function createWindow() {
   const isDev = process.env.NODE_ENV !== 'production';
 
-  // Intercept headers for embedded browser views to resolve ERR_BLOCKED_BY_RESPONSE on sites like Google, YouTube, GitHub
+  // Intercept headers for embedded browser views to resolve ERR_BLOCKED_BY_RESPONSE on external sites like Google, YouTube, GitHub
+  // High Severity fix: NEVER strip CSP or framing headers from the main application origin (localhost or local file)!
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = Object.assign({}, details.responseHeaders);
 
-    Object.keys(responseHeaders).forEach((header) => {
-      const lower = header.toLowerCase();
-      if (
-        lower === 'x-frame-options' ||
-        lower === 'content-security-policy' ||
-        lower === 'content-security-policy-report-only'
-      ) {
-        delete responseHeaders[header];
-      }
-    });
+    const isAppOrigin = details.url.startsWith('http://localhost') || details.url.startsWith('file://');
+    const isEmbeddedSubframe = details.resourceType === 'subFrame';
+
+    // Only strip frame restrictions for external third-party sites embedded in subframes or browser views
+    if (!isAppOrigin || isEmbeddedSubframe) {
+      Object.keys(responseHeaders).forEach((header) => {
+        const lower = header.toLowerCase();
+        if (
+          lower === 'x-frame-options' ||
+          lower === 'content-security-policy' ||
+          lower === 'content-security-policy-report-only'
+        ) {
+          delete responseHeaders[header];
+        }
+      });
+    }
 
     callback({ cancel: false, responseHeaders });
   });
@@ -169,8 +177,8 @@ $ws.AppActivate('${targetName}')
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      webSecurity: false,
-      allowRunningInsecureContent: true
+      webSecurity: true,
+      allowRunningInsecureContent: false
     }
   });
 
@@ -732,6 +740,90 @@ ipcMain.handle('pip:return-to-room', async () => {
     mainWindow.webContents.send('pip:navigate-to-room');
   }
   return { success: true };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OS-Backed Secure Credential Storage via Electron safeStorage (DPAPI/Keychain)
+// ─────────────────────────────────────────────────────────────────────────────
+function getSecureStorePath() {
+  return path.join(app.getPath('userData'), 'regaarder_secure_vault.json');
+}
+
+function readSecureStore() {
+  try {
+    const vaultPath = getSecureStorePath();
+    if (fs.existsSync(vaultPath)) {
+      return JSON.parse(fs.readFileSync(vaultPath, 'utf8'));
+    }
+  } catch (err) {
+    console.warn('[SafeStorage] Error reading secure vault:', err.message);
+  }
+  return {};
+}
+
+function writeSecureStore(store) {
+  try {
+    const vaultPath = getSecureStorePath();
+    fs.writeFileSync(vaultPath, JSON.stringify(store, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[SafeStorage] Error persisting secure vault:', err.message);
+  }
+}
+
+ipcMain.handle('secure:is-available', async () => {
+  try {
+    return safeStorage.isEncryptionAvailable();
+  } catch (_e) {
+    return false;
+  }
+});
+
+ipcMain.handle('secure:store-secret', async (event, { key, value }) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    return { success: false, error: 'OS hardware encryption unavailable on this system' };
+  }
+  try {
+    const store = readSecureStore();
+    if (value === null || value === undefined || value === '') {
+      delete store[key];
+    } else {
+      const encryptedBuffer = safeStorage.encryptString(String(value));
+      store[key] = encryptedBuffer.toString('base64');
+    }
+    writeSecureStore(store);
+    return { success: true };
+  } catch (err) {
+    console.error('[SafeStorage] store-secret error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('secure:get-secret', async (event, { key }) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    return { success: false, value: null, error: 'OS hardware encryption unavailable on this system' };
+  }
+  try {
+    const store = readSecureStore();
+    const b64 = store[key];
+    if (!b64) return { success: true, value: null };
+    const buffer = Buffer.from(b64, 'base64');
+    const decrypted = safeStorage.decryptString(buffer);
+    return { success: true, value: decrypted };
+  } catch (err) {
+    console.error('[SafeStorage] get-secret error:', err);
+    return { success: false, value: null, error: err.message };
+  }
+});
+
+ipcMain.handle('secure:delete-secret', async (event, { key }) => {
+  try {
+    const store = readSecureStore();
+    delete store[key];
+    writeSecureStore(store);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 app.whenReady().then(() => {
