@@ -1,10 +1,10 @@
-﻿import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
+import RoomAnnotationOverlay from './components/room/RoomAnnotationOverlay';
 import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow';
 import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger HMR & Live Reload: 2026-08-31T08:49:53.912Z
+// Trigger HMR & Live Reload: 2026-09-01T12:05:41.838Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -8126,9 +8126,13 @@ function AppCore() {
     setComposeDetectedModels(found);
     setComposeIsScanning(false);
     if (found.length > 0) {
-      if (!composeSelectedModel?.isLocal) { updateSelectedModelGlobally(found[0]); }
+      if (!composeSelectedModel?.isLocal) {
+        updateSelectedModelGlobally(found[0]);
+      }
+      setAiBackendStatus({ state: 'ok', message: `Connected to local model (${found[0].name})` });
+      setAiKeyStatus({ testing: false, message: `Local model ${found[0].name} is active`, usable: true });
     }
-  }, []);
+  }, [composeSelectedModel?.isLocal]);
 
   useEffect(() => {
     scanComposeLocalModels();
@@ -24872,6 +24876,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       };
     }
 
+    // Auto-fallback: If no cloud API key is present and local models were detected, use local model
+    if (!localTargetModel && (!customApiKey && !aiProviderConfig?.geminiApiKey && !aiProviderConfig?.claudeApiKey) && composeDetectedModels?.length > 0) {
+      localTargetModel = composeDetectedModels[0];
+    }
+
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
       const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
@@ -24924,6 +24933,44 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         ];
 
         let localRes = null;
+
+        // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
+        if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
+          try {
+            const ipcRes = await window.electronAPI.generateLocalAI({
+              endpoint: activeEndpoint,
+              model: activeModelId,
+              prompt: userPrompt,
+              systemPrompt: fullSystemPrompt,
+              format: schema ? 'json' : undefined,
+              options: offloadOpts
+            });
+            if (ipcRes && ipcRes.success && ipcRes.text) {
+              clearTimeout(localTimeout);
+              const text = ipcRes.text.trim();
+              let parsed = null;
+              if (schema) {
+                parsed = parseJsonSafely(text);
+                if (!parsed) {
+                  const codeMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                  if (codeMatch) parsed = parseJsonSafely(codeMatch[1]);
+                }
+                if (!parsed) {
+                  const objMatch = text.match(/\{[\s\S]*\}/);
+                  if (objMatch) parsed = parseJsonSafely(objMatch[0]);
+                }
+              }
+              return {
+                text,
+                parsed,
+                modelName: localTargetModel.name
+              };
+            }
+          } catch (ipcErr) {
+            console.warn('[callGemini] Electron IPC generate error, falling back to fetch:', ipcErr);
+          }
+        }
+
         for (const host of candidateHosts) {
           try {
             const endpointUrl = isOllama ? `${host}/api/generate` : `${host.endsWith('/v1') ? host : host + '/v1'}/chat/completions`;
@@ -25092,10 +25139,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   const checkAiBackendStatus = async (providerOverride, keyOverride) => {
     try {
-      const activeProvider = providerOverride || aiProviderConfig?.provider || 'gemini';
+      const activeProvider = providerOverride || (composeSelectedModel?.isLocal ? 'ollama' : (aiProviderConfig?.provider || 'gemini'));
       const activeKey = keyOverride !== undefined ? keyOverride : (activeProvider === 'claude' ? aiProviderConfig?.claudeApiKey : aiProviderConfig?.geminiApiKey);
       
-      setAiKeyStatus({ testing: true, message: `Testing connection to ${activeProvider === 'claude' ? 'Claude' : 'Gemini'}...`, usable: null });
+      const testingTarget = activeProvider === 'ollama' || activeProvider === 'local' ? 'Local Ollama' : (activeProvider === 'claude' ? 'Claude' : 'Gemini');
+      setAiKeyStatus({ testing: true, message: `Testing connection to ${testingTarget}...`, usable: null });
       setAiBackendStatus({ state: 'checking', message: 'Checking backend status...' });
 
       const response = await fetch(`/api/ai-status?provider=${encodeURIComponent(activeProvider)}`, {
@@ -25115,8 +25163,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       }
 
       if (payload.configured && payload.usable) {
-        setAiBackendStatus({ state: 'ok', message: payload.reason || 'AI key is configured and usable.' });
+        setAiBackendStatus({ state: 'ok', message: payload.reason || 'AI engine is connected and ready.' });
         setAiKeyStatus({ testing: false, message: payload.reason || 'Connected successfully!', usable: true });
+        if (payload.isLocal && payload.activeModel && !composeSelectedModel?.isLocal) {
+          updateSelectedModelGlobally({
+            id: payload.activeModel,
+            name: payload.activeModel,
+            provider: 'Ollama',
+            endpoint: 'http://127.0.0.1:11434',
+            isLocal: true
+          });
+        }
       } else if (payload.configured) {
         setAiBackendStatus({ state: 'error', message: payload.reason || 'AI key is present but not usable.' });
         setAiKeyStatus({ testing: false, message: payload.reason || 'Invalid API key or model access restricted.', usable: false });
@@ -25125,8 +25182,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         setAiKeyStatus({ testing: false, message: payload.reason || 'API key is missing.', usable: false });
       }
     } catch (_error) {
-      setAiBackendStatus({ state: 'error', message: 'Could not reach /api/ai-status. Use `vercel dev` locally or deploy to Vercel.' });
-      setAiKeyStatus({ testing: false, message: 'Could not reach backend status endpoint.', usable: false });
+      if (composeSelectedModel?.isLocal || (composeDetectedModels && composeDetectedModels.length > 0)) {
+        setAiBackendStatus({ state: 'ok', message: `Connected to local model (${composeSelectedModel?.name || 'Local Ollama'})` });
+        setAiKeyStatus({ testing: false, message: 'Connected to local model', usable: true });
+      } else {
+        setAiBackendStatus({ state: 'error', message: 'Could not reach AI backend endpoint.' });
+        setAiKeyStatus({ testing: false, message: 'Could not reach backend status endpoint.', usable: false });
+      }
     }
   };
 
@@ -25134,10 +25196,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     checkAiBackendStatus();
   }, []);
 
-  const isLiveAiReady = aiBackendStatus.state === 'ok';
+  const isLiveAiReady = aiBackendStatus.state === 'ok'
+    || Boolean(composeSelectedModel?.isLocal)
+    || (composeDetectedModels && composeDetectedModels.length > 0)
+    || Boolean(aiProviderConfig?.geminiApiKey || aiProviderConfig?.claudeApiKey);
   const smartAssistDisabledReason = aiBackendStatus.state === 'checking'
     ? 'Checking AI backend...'
-    : (aiBackendStatus.message || 'AI backend is not ready. Run with `npm run dev:ai`.');
+    : (aiBackendStatus.message || 'AI model is not ready. Please verify your local Ollama server or configure an API key in Settings.');
 
   const memoryStats = useMemo(() => {
     const uploads = memoryEntries.filter((entry) => entry.type === 'upload').length;
@@ -40037,7 +40102,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
           
           {/* ACTIVE TAB: HISTORY */}
-          {(activeRightTab === 'history' || activeRightTab === 'ai-studio') && (
+          {activeRightTab === 'history' && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc] dark:bg-[#18181b]">
               {/* History Top Header */}
               <div className="px-4 py-3 border-b border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-2">
@@ -40369,6 +40434,22 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ACTIVE TAB: AI STUDIO / AGENTS */}
+          {activeRightTab === 'ai-studio' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b] overflow-hidden">
+              <ComposeAIStudio
+                documentText={docBodyHtml || blankBodyRef.current?.innerText || ''}
+                selectedText={selectedEditorTextRef.current || selectedEditorText || ''}
+                editorRef={blankBodyRef}
+                chatMessages={chatMessages}
+                isComposing={isComposing}
+                onRunAgent={(prompt, opts) => handleAISubmit(prompt, { source: 'chat', ...opts })}
+                showToast={showToast}
+                initialAgent="health"
+              />
             </div>
           )}
 
