@@ -10491,6 +10491,55 @@ const DEFAULT_DECK_SLIDES = [
   const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
   const [isHoverNavVisible, setIsHoverNavVisible] = useState(false);
   const [isWhiteboardTopNavHovered, setIsWhiteboardTopNavHovered] = useState(false);
+  const [isWhiteboardInitialPeek, setIsWhiteboardInitialPeek] = useState(false);
+  const whiteboardTopNavHideTimerRef = useRef(null);
+  const whiteboardInitialPeekTimerRef = useRef(null);
+  const prevWhiteboardModeRef = useRef(false);
+
+  const handleWhiteboardTopNavEnter = useCallback(() => {
+    if (whiteboardTopNavHideTimerRef.current) {
+      clearTimeout(whiteboardTopNavHideTimerRef.current);
+      whiteboardTopNavHideTimerRef.current = null;
+    }
+    setIsWhiteboardTopNavHovered(true);
+  }, []);
+
+  const handleWhiteboardTopNavLeave = useCallback(() => {
+    if (whiteboardTopNavHideTimerRef.current) {
+      clearTimeout(whiteboardTopNavHideTimerRef.current);
+    }
+    whiteboardTopNavHideTimerRef.current = setTimeout(() => {
+      setIsWhiteboardTopNavHovered(false);
+    }, 600);
+  }, []);
+
+  useEffect(() => {
+    const isWb = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
+    if (isWb && !prevWhiteboardModeRef.current) {
+      setIsWhiteboardTopNavHovered(false);
+      setIsWhiteboardInitialPeek(false);
+      if (whiteboardInitialPeekTimerRef.current) {
+        clearTimeout(whiteboardInitialPeekTimerRef.current);
+      }
+      const peekStart = setTimeout(() => {
+        setIsWhiteboardInitialPeek(true);
+        whiteboardInitialPeekTimerRef.current = setTimeout(() => {
+          setIsWhiteboardInitialPeek(false);
+        }, 1600);
+      }, 250);
+      prevWhiteboardModeRef.current = true;
+      return () => {
+        clearTimeout(peekStart);
+        if (whiteboardInitialPeekTimerRef.current) {
+          clearTimeout(whiteboardInitialPeekTimerRef.current);
+        }
+      };
+    } else if (!isWb) {
+      prevWhiteboardModeRef.current = false;
+      setIsWhiteboardInitialPeek(false);
+      setIsWhiteboardTopNavHovered(false);
+    }
+  }, [productMode, activeRightTab]);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -36851,7 +36900,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     const isSheetsMode = productMode === 'sheets';
     const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
-    const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || docMenuPos !== null;
+    const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || docMenuPos !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -74607,34 +74656,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Top Header & Document Tab Strip Auto-Hide Container for Whiteboard */}
         {isWhiteboardWorkspace && (
           <>
-            {/* Top trigger zone to smoothly reveal navigation when hovering near top edge */}
+            {/* Top proximity trigger zone to smoothly reveal navigation when hovering near top edge */}
             <div 
-              onMouseEnter={() => setIsWhiteboardTopNavHovered(true)} 
-              className="absolute top-0 left-0 right-0 h-6 z-[380] cursor-default pointer-events-auto" 
+              onMouseEnter={handleWhiteboardTopNavEnter} 
+              className="absolute top-0 left-0 right-0 h-10 z-[380] cursor-default pointer-events-auto" 
             />
 
             {/* Subtle floating title indicator when top nav is autohidden */}
             {!isWhiteboardTopNavRevealed && (
               <div
-                onMouseEnter={() => setIsWhiteboardTopNavHovered(true)}
-                onClick={() => setIsWhiteboardTopNavHovered(true)}
-                className="absolute top-2.5 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/pill animate-in fade-in slide-in-from-top-1"
+                onMouseEnter={handleWhiteboardTopNavEnter}
+                onClick={handleWhiteboardTopNavEnter}
+                className="absolute top-2 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/hud animate-in fade-in slide-in-from-top-1"
                 title="Hover or click to reveal workspace tabs, export, and controls"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
                 <span className="text-[11.5px] font-semibold tracking-tight">{(docTitle === 'Untitled Whiteboard' || !docTitle?.trim()) ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : docTitle}</span>
-                <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/pill:translate-y-0.5 transition-transform" />
+                <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/hud:translate-y-0.5 transition-transform" />
               </div>
             )}
           </>
         )}
 
         <div
-          onMouseEnter={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(true); }}
-          onMouseLeave={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(false); }}
-          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
+          onMouseEnter={handleWhiteboardTopNavEnter}
+          onMouseLeave={handleWhiteboardTopNavLeave}
+          className={`flex flex-col select-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isWhiteboardWorkspace
-              ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${
+              ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] ${
                   isWhiteboardTopNavRevealed 
                     ? 'translate-y-0 opacity-100 pointer-events-auto' 
                     : '-translate-y-full opacity-0 pointer-events-none'
@@ -77716,8 +77765,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   tabIndex={0}
                   onPaste={handleWhiteboardPaste}
                   onPointerMove={(e) => {
-                    if (e.clientY > 60 && isWhiteboardTopNavHovered) {
-                      setIsWhiteboardTopNavHovered(false);
+                    if (e.clientY < 44) {
+                      handleWhiteboardTopNavEnter();
+                    } else if (e.clientY > 100 && isWhiteboardTopNavHovered) {
+                      handleWhiteboardTopNavLeave();
                     }
                   }}
                   className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none" 
