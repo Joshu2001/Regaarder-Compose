@@ -14083,6 +14083,7 @@ const DEFAULT_DECK_SLIDES = [
   const [meetingConversationTab, setMeetingConversationTab] = useState('chat');
   const [meetingStartedAt, setMeetingStartedAt] = useState(null);
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
+  const [meetingEndedParticipantsCount, setMeetingEndedParticipantsCount] = useState(1);
   const [meetingSummary, setMeetingSummary] = useState(null);
   const [activeMeetingStageTab, setActiveMeetingStageTab] = useState('room');
   const [sharedMeetingFiles, setSharedMeetingFiles] = useState([]);
@@ -32846,6 +32847,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
+    setMeetingEndedParticipantsCount(1);
 
     // CRITICAL: Request camera/mic BEFORE entering fullscreen.
     // Browsers block getUserMedia() permission prompts while in fullscreen mode,
@@ -32982,6 +32984,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const leaveRoom = () => {
+    // Capture real participant count before stream shutdown
+    const activeRemoteCount = Math.max(
+      roomParticipants?.length || 0,
+      videoParticipants?.filter(p => p && !p.isYou && p.id !== 'you')?.length || 0
+    );
+    const totalParticipants = 1 + activeRemoteCount;
+    setMeetingEndedParticipantsCount(totalParticipants);
+
     // Stop all media streams immediately so camera/mic LED turns off.
     stopMediaStream();
     // Reset mic/camera UI state so they don't appear active after hanging up.
@@ -33004,7 +33014,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setMeetingSummary({
       roomCode: roomId,
       durationLabel: completedDuration,
-      participantsCount: 4,
+      participantsCount: meetingEndedParticipantsCount,
       decisions: [
         'Beta launch officially locked for May 15th.',
         'Marketing budget increased by 15% for initial push.',
@@ -85079,7 +85089,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">4</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">{meetingEndedParticipantsCount}</span>
                   <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('room.participants') || 'Participants'}</span>
                 </div>
                 <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
