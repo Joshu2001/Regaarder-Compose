@@ -501,26 +501,6 @@ export default function OrbDecideSynthesizer({
           </button>
         </div>
       </form>
-
-        {/* Quick Sample Prompts: Multi-line Wrapping to Prevent Truncation */}
-        <div className="flex flex-wrap items-center gap-1.5 mt-2.5 max-w-4xl mx-auto">
-          <span className="text-[10.5px] uppercase tracking-widest font-bold text-slate-700 dark:text-zinc-200 shrink-0 mr-1.5 select-none">
-            {t('orb.inquiries') || 'Inquiries:'}
-          </span>
-          {liveInquiries.map((prompt, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => {
-                setQuestion(prompt);
-                triggerSynthesize(prompt);
-              }}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100/90 dark:bg-zinc-800/70 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-left transition-colors cursor-pointer"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* ── Main Executive Reasoning Canvas ── */}
@@ -552,8 +532,8 @@ export default function OrbDecideSynthesizer({
           {/* Empty State */}
           {!activeQuery && !isSynthesizing && (
             <div className="flex flex-col items-center justify-center py-16 px-6 rounded-2xl bg-white/70 dark:bg-zinc-900/60 border border-black/[0.04] dark:border-white/[0.05] text-center shadow-2xs">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-50/90 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/40">
-                <OrbIcon size={20} />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-50/90 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/40 shadow-2xs">
+                <RegaarderAiIcon size={20} strokeWidth={2.0} />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100 mb-1">
                 {t('orb.strategicReasoning') || 'Strategic Reasoning System'}

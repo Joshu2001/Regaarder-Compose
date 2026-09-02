@@ -76,7 +76,7 @@ export default function OrbSearchResultsView({
       <div className={`flex items-center justify-between px-6 py-2.5 border-b shrink-0 ${
         highContrast
           ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-          : 'border-black/[0.04] dark:border-white/[0.04]'
+          : 'border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02]'
       }`}>
         <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar py-0.5">
           {Object.entries(WORKSPACE_LABELS).map(([key, label]) => {
@@ -253,10 +253,10 @@ export default function OrbSearchResultsView({
                   <button
                     type="button"
                     onClick={() => onSwitchToDecide && onSwitchToDecide('Synthesize key decisions across workspace')}
-                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-violet-500/10 hover:text-violet-600 text-slate-700 dark:text-zinc-300 text-xs font-semibold transition-colors cursor-pointer"
                   >
                     <span>Launch Decision Engine</span>
-                    <kbd className="text-[9.5px] font-mono text-emerald-600">⌘4</kbd>
+                    <kbd className="text-[9.5px] font-mono text-slate-400">⌘4</kbd>
                   </button>
                 </div>
               </div>
