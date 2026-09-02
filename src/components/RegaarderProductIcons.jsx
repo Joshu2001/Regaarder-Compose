@@ -637,6 +637,8 @@ export const RegaarderProductIconMap = {
   fitscreen: RegaarderFitScreenIcon,
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
+  relay: ChatIcon,
+  Relay: ChatIcon,
   browser: BrowserIcon,
   slide: DeckIcon,
   Slide: DeckIcon,

@@ -745,6 +745,7 @@ export default function RoomLandingPage({
                         { id: 'deck', label: 'Decks', icon: DeckIcon, color: 'text-amber-600' },
                         { id: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon, color: 'text-sky-600' },
                         { id: 'room-landing', label: 'Room', icon: RoomIcon, color: 'text-violet-600', active: true },
+                        { id: 'dm', label: 'Relay', icon: ChatIcon, color: 'text-indigo-600' },
                         { id: 'browser', label: 'Browser', icon: BrowserIcon, color: 'text-blue-600' },
                       ].map((item) => (
                         <button
@@ -760,6 +761,8 @@ export default function RoomLandingPage({
                               onSwitchProductMode ? onSwitchProductMode('sheet') : (window.location.hash = '#sheet');
                             } else if (item.id === 'deck') {
                               onSwitchProductMode ? onSwitchProductMode('deck') : (window.location.hash = '#deck');
+                            } else if (item.id === 'dm') {
+                              onSwitchProductMode ? onSwitchProductMode('dm') : (window.location.hash = '#dm');
                             } else if (item.id === 'browser') {
                               onSwitchProductMode ? onSwitchProductMode('browser') : (window.location.hash = '#browser');
                             } else {
