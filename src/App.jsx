@@ -9263,6 +9263,10 @@ function AppCore() {
     const handleGlobalEscape = (e) => {
       if (e.key === 'Escape') {
         setWorkspaceSwitcherOpen(false);
+        if (replayPanelOpen) {
+          setReplayPanelOpen(false);
+          setIsReplayPlaying(false);
+        }
         if (slashMenuRef.current?.open) {
           setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
         }
@@ -45198,21 +45202,11 @@ Respond with a JSON array of slide objects matching the schema.`;
   const sharedReplayPanel = (
     <React.Fragment>
         {replayPanelOpen && typeof document !== 'undefined' && createPortal(
-          <>
-            <div 
-              className="fixed inset-0 bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm z-[100000] transition-all duration-150 cursor-default animate-in fade-in"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setReplayPanelOpen(false);
-                setIsReplayPlaying(false);
-              }}
-            />
-            <div 
-              ref={replayPanelRef} 
-              className="fixed right-6 top-14 z-[100001] w-[380px] rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-5 select-none border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 text-slate-800 dark:text-zinc-100 animate-in zoom-in-[0.98] fade-in duration-100 ease-out font-sans text-left"
-              onPointerDown={(e) => e.stopPropagation()}
-            >
+          <div 
+            ref={replayPanelRef} 
+            className="fixed right-6 top-14 z-[100001] w-[380px] rounded-2xl bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-[0_24px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.65)] p-5 select-none border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 text-slate-800 dark:text-zinc-100 animate-in zoom-in-[0.98] fade-in duration-100 ease-out font-sans text-left"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
               {/* Header Section: Title, step info, and close button */}
               <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-slate-200/60 dark:border-zinc-800">
                 <div className="flex flex-col">
@@ -45364,8 +45358,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </div>
               )}
             </div>
-          </div>
-          </>,
+          </div>,
           document.fullscreenElement ?? document.body
         )}
     </React.Fragment>
