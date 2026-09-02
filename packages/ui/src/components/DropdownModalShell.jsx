@@ -48,42 +48,54 @@ export default function DropdownModalShell({
 
       {/* Main Glassmorphism Popover Container */}
       <div 
-        className={`fixed ${rightOffset} ${topOffset} ${zIndexModal} ${width} max-w-[calc(100vw-32px)] flex flex-col rounded-[24px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl font-sans text-left cursor-default origin-top-right ${allowOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} animate-in zoom-in-95 fade-in duration-150 ${className}`}
+        className={`fixed ${rightOffset} ${topOffset} ${zIndexModal} ${width} max-w-[calc(100vw-32px)] flex flex-col rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.16)] font-sans text-left cursor-default origin-top-right ${allowOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} animate-in zoom-in-[0.98] fade-in duration-100 ease-out ${className}`}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Hero Header */}
-        <div className="px-6 pt-5 pb-3.5 flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 shrink-0">
+        <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             {IconComponent && (
               React.isValidElement(IconComponent) ? (
                 IconComponent
               ) : (
-                <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                  <IconComponent size={15} className="text-slate-700 dark:text-zinc-300 stroke-[2]" />
+                <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center shrink-0 border border-violet-100 dark:border-violet-900/30">
+                  <IconComponent size={14} className="text-violet-600 dark:text-violet-400 stroke-[2]" />
                 </div>
               )
             )}
             <div className="min-w-0">
-              <h3 className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 leading-tight truncate">
+              <h3 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-zinc-100 leading-tight truncate">
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-[11px] text-slate-400 dark:text-zinc-400 font-medium truncate max-w-[280px] mt-0.5">
+                <p className="text-[11px] text-slate-400 dark:text-zinc-400 font-medium truncate max-w-[260px] mt-0.5">
                   {subtitle}
                 </p>
               )}
             </div>
           </div>
-          {headerExtra && (
-            <div className="flex items-center gap-2 shrink-0 ml-3">
-              {headerExtra}
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0 ml-3">
+            {headerExtra}
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose?.();
+              }}
+              className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Close"
+            >
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M1 1l10 10M11 1L1 11" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Body Content */}
         <div 
-          className={`${maxHeight} ${allowOverflowVisible ? 'overflow-visible' : 'overflow-y-auto thin-scrollbar'} px-5 pt-4 pb-3.5 space-y-4 flex-1`}
+          className={`${maxHeight} ${allowOverflowVisible ? 'overflow-visible' : 'overflow-y-auto thin-scrollbar'} px-5 pt-3.5 pb-3 space-y-3 flex-1`}
           style={allowOverflowVisible ? {} : { scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.25) transparent' }}
         >
           {children}
@@ -91,7 +103,7 @@ export default function DropdownModalShell({
 
         {/* Integrated Footer (optional) */}
         {footer && (
-          <div className="border-t border-slate-200/50 dark:border-zinc-800/80 px-6 py-3.5 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 backdrop-blur-md rounded-b-[24px] shrink-0">
+          <div className="border-t border-slate-200/50 dark:border-zinc-800/80 px-5 py-3 flex items-center justify-between bg-slate-50/60 dark:bg-zinc-900/60 backdrop-blur-md rounded-b-2xl shrink-0">
             {footer}
           </div>
         )}
