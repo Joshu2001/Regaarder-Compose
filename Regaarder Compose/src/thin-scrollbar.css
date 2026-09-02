@@ -1,14 +1,47 @@
-/* Thin, subtle scrollbar for icon rails and compact panels */
+/* Thin, elegant overlay scrollbar for editor viewports, icon rails, and compact panels */
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:double-button,
+::-webkit-scrollbar-button:vertical,
+::-webkit-scrollbar-button:horizontal,
+::-webkit-scrollbar-button:vertical:decrement,
+::-webkit-scrollbar-button:vertical:increment,
+::-webkit-scrollbar-button:horizontal:decrement,
+::-webkit-scrollbar-button:horizontal:increment,
+::-webkit-scrollbar-button:start,
+::-webkit-scrollbar-button:end,
+::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
 .thin-scrollbar,
 .regaarder-scrollbar {
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent !important;
-  transition: scrollbar-color 0.2s ease;
+  scrollbar-color: transparent transparent !important;
+  transition: scrollbar-color 0.25s ease;
 }
 
 .thin-scrollbar:hover,
-.regaarder-scrollbar:hover {
-  scrollbar-color: rgba(100, 116, 139, 0.65) transparent !important;
+.regaarder-scrollbar:hover,
+.thin-scrollbar:focus-within,
+.regaarder-scrollbar:focus-within {
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar,
@@ -32,26 +65,96 @@
 
 .thin-scrollbar::-webkit-scrollbar-thumb,
 .regaarder-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.35) !important;
+  background-color: transparent !important;
   border-radius: 9999px !important;
   border: 1px solid transparent !important;
   background-clip: padding-box !important;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.25s ease;
 }
 
 .thin-scrollbar:hover::-webkit-scrollbar-thumb,
-.regaarder-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 116, 139, 0.65) !important;
+.regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
+.thin-scrollbar:focus-within::-webkit-scrollbar-thumb,
+.regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.45) !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb:hover,
 .regaarder-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(71, 85, 105, 0.85) !important;
+  background-color: rgba(100, 116, 139, 0.75) !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb:active,
 .regaarder-scrollbar::-webkit-scrollbar-thumb:active {
-  background-color: rgba(51, 65, 85, 0.95) !important;
+  background-color: rgba(71, 85, 105, 0.95) !important;
+}
+
+/* Slash menu scrollbar: sleek floating overlay pill scrollbar in neutral grey */
+.slash-menu-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: transparent transparent !important;
+  transition: scrollbar-color 0.2s ease;
+}
+
+.slash-menu-scrollbar:hover,
+.slash-menu-scrollbar:focus-within {
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar {
+  width: 7px !important;
+  height: 7px !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: none !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent !important;
+  border-radius: 9999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  transition: background-color 0.2s ease;
+}
+
+.slash-menu-scrollbar:hover::-webkit-scrollbar-thumb,
+.slash-menu-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.45) !important;
+}
+
+.slash-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.75) !important;
+}
+
+.dark .slash-menu-scrollbar,
+.app-dark .slash-menu-scrollbar {
+  scrollbar-color: transparent transparent !important;
+}
+
+.dark .slash-menu-scrollbar:hover,
+.dark .slash-menu-scrollbar:focus-within,
+.app-dark .slash-menu-scrollbar:hover,
+.app-dark .slash-menu-scrollbar:focus-within {
+  scrollbar-color: rgba(212, 212, 216, 0.5) transparent !important;
+}
+
+.dark .slash-menu-scrollbar::-webkit-scrollbar-thumb,
+.app-dark .slash-menu-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent !important;
+}
+
+.dark .slash-menu-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .slash-menu-scrollbar:focus-within::-webkit-scrollbar-thumb,
+.app-dark .slash-menu-scrollbar:hover::-webkit-scrollbar-thumb,
+.app-dark .slash-menu-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(212, 212, 216, 0.4) !important;
+}
+
+.dark .slash-menu-scrollbar::-webkit-scrollbar-thumb:hover,
+.app-dark .slash-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(244, 244, 245, 0.75) !important;
 }
 
 /* Dark Mode Implementation */
@@ -67,6 +170,81 @@
 .app-dark .bg-violet-600, .app-dark .bg-violet-500 {
   filter: hue-rotate(180deg);
 }
+
+/* Editor scrollbar auto-dimming: completely invisible at rest, appears only on hover or when mouse is on right toolbar edge */
+.editor-auto-dim-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent !important;
+  transition: scrollbar-color 0.25s ease;
+}
+
+.editor-auto-dim-scrollbar:hover,
+.editor-auto-dim-scrollbar:focus,
+.editor-auto-dim-scrollbar:focus-within,
+.editor-auto-dim-scrollbar.scrollbar-visible {
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent !important;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.25s ease;
+}
+
+.editor-auto-dim-scrollbar:hover::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar:focus::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar:focus-within::-webkit-scrollbar-thumb,
+.editor-auto-dim-scrollbar.scrollbar-visible::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.45) !important;
+}
+
+.editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:hover,
+.editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(71, 85, 105, 0.85) !important;
+  scrollbar-color: rgba(71, 85, 105, 0.85) transparent !important;
+}
+
+.dark .thin-scrollbar::-webkit-scrollbar-thumb,
+.app-dark .thin-scrollbar::-webkit-scrollbar-thumb,
+.dark .regaarder-scrollbar::-webkit-scrollbar-thumb,
+.app-dark .regaarder-scrollbar::-webkit-scrollbar-thumb,
+.dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb,
+.app-dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent !important;
+}
+
+.dark .thin-scrollbar:hover::-webkit-scrollbar-thumb,
+.app-dark .thin-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
+.app-dark .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .editor-auto-dim-scrollbar:hover::-webkit-scrollbar-thumb,
+.app-dark .editor-auto-dim-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .editor-auto-dim-scrollbar.scrollbar-visible::-webkit-scrollbar-thumb,
+.app-dark .editor-auto-dim-scrollbar.scrollbar-visible::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.dark .thin-scrollbar::-webkit-scrollbar-thumb:hover,
+.app-dark .thin-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark .regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
+.app-dark .regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:hover,
+.app-dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+
 
 @keyframes deckBeamSpin {
   0% {

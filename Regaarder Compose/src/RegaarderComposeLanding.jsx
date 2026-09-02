@@ -1,9 +1,16 @@
 import { useTranslation } from './i18n';
 import React, { useState } from "react";
 import {
-  ChevronRight,
-  ChevronLeft,
-  X
+  ChevronDown,
+  Search,
+  Bell,
+  HelpCircle,
+  MessageSquare,
+  Command,
+  LogIn,
+  User,
+  Check,
+  Sparkles
 } from "lucide-react";
 import {
   ComposeIcon,
@@ -18,126 +25,442 @@ import {
 
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 import LegalPolicyModal from "./components/LegalPolicyModal";
+import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
 
 const products = [
-  { title: "Compose", description: "Write and edit documents", icon: ComposeIcon },
-  { title: "Deck", description: "Create presentations", icon: DeckIcon },
-  { title: "Sheet", description: "Manage spreadsheets", icon: SheetIcon },
-  { title: "Room", description: "Host meetings", icon: RoomIcon },
-  { title: "Whiteboard", description: "Brainstorm ideas", icon: WhiteboardIcon },
-  { title: "Schedule", description: "Manage calendar", icon: ScheduleIcon },
-  { title: "Memory", description: "Access memories", icon: MemoryIcon },
-  { title: "Tasks", description: "Track to-dos", icon: TasksIcon },
+  { id: "compose", title: "Docs", icon: ComposeIcon },
+  { id: "deck", title: "Deck", icon: DeckIcon },
+  { id: "sheet", title: "Sheet", icon: SheetIcon },
+  { id: "room", title: "Room", icon: RoomIcon },
+  { id: "whiteboard", title: "Whiteboard", icon: WhiteboardIcon },
+  { id: "schedule", title: "Schedule", icon: ScheduleIcon },
+  { id: "memory", title: "Memory", icon: MemoryIcon },
+  { id: "tasks", title: "Tasks", icon: TasksIcon },
 ];
 
-export default function RegaarderComposeLanding({ onLaunch }) {
+export default function RegaarderComposeLanding({
+  onLaunch,
+  onOpenWorkspaceSwitcher,
+  onSearchClick,
+  onNotificationsClick,
+  notifications = [],
+  currentUser = null,
+  onProfileClick,
+  onOpenRecentModal,
+  onOpenHelp,
+  onOpenFeedback,
+  onOpenShortcuts,
+  isDarkMode = false,
+}) {
   const { t } = useTranslation();
-  const [showNewMenu, setShowNewMenu] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const [legalModalTab, setLegalModalTab] = useState(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackCategory, setFeedbackCategory] = useState('Idea');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [hasRecentWork, setHasRecentWork] = useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("rc.savedDoc.")) {
+            try {
+              const raw = localStorage.getItem(key);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (isMeaningfulWork(parsed)) return true;
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+    return false;
+  });
 
-  const ITEMS_PER_PAGE = 8;
-  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
-
-  const displayedProducts = products.slice(
-    currentPage * ITEMS_PER_PAGE,
-    (currentPage + 1) * ITEMS_PER_PAGE
-  );
+  const hasUnread = notifications.some(n => n.unread);
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-white" style={{ fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
-      {/* Subtle Blurred Mesh Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-40">
-        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-blue-300/30 mix-blend-multiply filter blur-[100px] animate-blob" />
-        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-purple-300/30 mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-[20%] left-[20%] w-[80%] h-[80%] rounded-full bg-pink-300/30 mix-blend-multiply filter blur-[100px] animate-blob animation-delay-4000" />
+    <div
+      className="w-full h-full relative overflow-hidden flex flex-col bg-[#fafbfc] dark:bg-[#0c0d0e]"
+      style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, sans-serif" }}
+    >
+      {/* ── Subconscious Atmospheric Glow (Substantially toned down by ~65%, neutral canvas) ── */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-16 dark:opacity-10">
+        <div className="absolute -top-[15%] -left-[10%] w-[65%] h-[65%] rounded-full bg-sky-200/30 mix-blend-multiply filter blur-[140px] animate-blob" />
+        <div className="absolute top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-indigo-200/25 mix-blend-multiply filter blur-[140px] animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-violet-200/20 mix-blend-multiply filter blur-[140px] animate-blob animation-delay-4000" />
       </div>
 
-      <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center transition-all duration-700 ease-out">
-          
-          {/* Header */}
-          <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <div className="flex justify-center mb-6">
-              <RegaarderBrandIcon size={48} className="hover:scale-105 transition-transform duration-300" />
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-4">
-              {t('landing.headline') || 'One workspace for all your office needs.'}
-            </h1>
-            <p className="text-[15px] text-slate-600 font-medium max-w-lg mx-auto">
-              {t('landing.subheadline') || 'Choose a product to start creating.'}
-            </p>
-          </div>
+      {/* ── Global Navigation Bar ── */}
+      <header className="h-14 flex items-center justify-between px-6 sm:px-8 bg-transparent shrink-0 select-none z-30 relative">
 
-          {/* Product Suite Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full mb-8 relative min-h-[220px]">
-            {displayedProducts.map((product, idx) => (
-              <button
-                key={idx}
-                onClick={() => onLaunch?.({ type: 'action', name: product.title })}
-                style={{ animationDelay: `${idx * 40}ms` }}
-                className="flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl p-6 hover:bg-white hover:border-violet-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both"
-              >
-                <div className="text-slate-600 group-hover:text-violet-600 transition-colors">
-                  <product.icon size={26} strokeWidth={1.5} />
+        {/* Left: Workspace Selector with Silhouette Mark */}
+        <button
+          type="button"
+          data-workspace-switcher="true"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            onOpenWorkspaceSwitcher?.(rect);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-2.5 h-8 px-2.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer group outline-none focus:outline-none"
+          title="Switch Workspace"
+        >
+          <RegaarderBrandIcon size={18} className="text-slate-900 dark:text-white group-hover:opacity-75 transition-opacity" />
+          <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-[-0.01em]">
+            Regaarder Workspace
+          </span>
+          <ChevronDown
+            size={13}
+            strokeWidth={2}
+            className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors"
+          />
+        </button>
+
+        {/* Right: Global Controls */}
+        <div className="flex items-center gap-1.5 relative">
+
+          {/* Search */}
+          <button
+            type="button"
+            onClick={() => onSearchClick?.()}
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none"
+            title="Search Workspace (⌘K)"
+          >
+            <Search size={15} strokeWidth={1.6} />
+          </button>
+
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowProfileMenu(false);
+                if (onNotificationsClick) {
+                  onNotificationsClick();
+                } else {
+                  setShowNotificationsMenu(prev => !prev);
+                }
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer relative outline-none focus:outline-none"
+              title="Notifications"
+            >
+              <Bell size={15} strokeWidth={1.6} />
+              {hasUnread && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-900 dark:bg-white ring-2 ring-white dark:ring-[#111111]" />
+              )}
+            </button>
+
+            {/* Local Notifications Popover if not using parent modal */}
+            {showNotificationsMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowNotificationsMenu(false)}
+                />
+                <div
+                  className="absolute right-0 top-10 z-50 w-80 max-h-[380px] bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-xl p-3 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-150 font-sans"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Notifications</span>
+                    {hasUnread && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 font-medium">
+                        New
+                      </span>
+                    )}
+                  </div>
+                  <div className="overflow-y-auto max-h-[280px] thin-scrollbar space-y-1 py-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 dark:text-zinc-500 text-xs flex flex-col items-center gap-1.5">
+                        <Bell size={18} strokeWidth={1.5} className="opacity-40" />
+                        <span>You're all caught up</span>
+                      </div>
+                    ) : (
+                      notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`p-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                            item.unread
+                              ? 'bg-violet-50/70 dark:bg-violet-950/20 text-slate-800 dark:text-zinc-200 hover:bg-violet-100/70'
+                              : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                          }`}
+                        >
+                          <div className="font-medium text-[11.5px] mb-0.5">{item.title}</div>
+                          {item.detail && <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2">{item.detail}</div>}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-                <span className="text-sm font-semibold text-slate-800">{t('landing.' + product.title.toLowerCase()) || product.title}</span>
-              </button>
-            ))}
+              </>
+            )}
           </div>
 
-          {/* Carousel Indicators (If we had more than 8 products) */}
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2 mt-2">
-              <button 
-                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                disabled={currentPage === 0}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700 disabled:opacity-30 transition-colors"
+          {/* User / Sign-in Control */}
+          {currentUser ? (
+            <div className="relative ml-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNotificationsMenu(false);
+                  if (onProfileClick) {
+                    onProfileClick();
+                  } else {
+                    setShowProfileMenu(prev => !prev);
+                  }
+                }}
+                className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all hover:opacity-85 focus:outline-none cursor-pointer bg-slate-500"
+                title={`Profile: ${currentUser?.name || ''}`}
               >
-                <ChevronLeft size={16} />
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
               </button>
-              
-              <div className="flex gap-1.5">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`h-1.5 rounded-full transition-all duration-300 ${currentPage === i ? 'w-4 bg-slate-800' : 'w-1.5 bg-slate-300'}`} 
-                  />
-                ))}
-              </div>
 
-              <button 
-                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={currentPage === totalPages - 1}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700 disabled:opacity-30 transition-colors"
+              {/* Profile Dropdown */}
+              {showProfileMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-10 z-50 w-60 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xl p-3.5 space-y-3 animate-in fade-in zoom-in-95 duration-150 font-sans"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                      <div className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold">
+                        {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">{currentUser?.name || 'User'}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{currentUser?.email || ''}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 text-[11px] text-slate-600 dark:text-zinc-300">
+                      <div className="flex justify-between py-0.5">
+                        <span className="text-slate-400">Account status</span>
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">Active</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.removeItem('rc.token');
+                          localStorage.removeItem('rc.user');
+                        } catch {}
+                        setShowProfileMenu(false);
+                        window.location.reload();
+                      }}
+                      className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-rose-600 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors cursor-pointer text-center"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="relative ml-1 flex items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onProfileClick) {
+                    onProfileClick();
+                  } else {
+                    setShowProfileMenu(prev => !prev);
+                  }
+                }}
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-medium hover:bg-black dark:hover:bg-zinc-100 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
+                title="Sign In or Create Account"
               >
-                <ChevronRight size={16} />
+                <LogIn size={12} strokeWidth={2} />
+                <span>Sign in</span>
               </button>
+
+              {/* Guest / Sign-in options dropdown */}
+              {showProfileMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-10 z-50 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xl p-4 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150 font-sans"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center mx-auto text-sm font-semibold">
+                      <User size={18} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Welcome to Regaarder</div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug">
+                        Sign in to sync your work, collaborate, and access premium AI tools.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onProfileClick?.();
+                      }}
+                      className="w-full py-1.5 px-3 rounded-lg text-xs font-medium bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black transition-colors cursor-pointer shadow-xs"
+                    >
+                      Sign In / Sign Up
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {/* Footer with Terms of Service, Privacy Policy & Legal */}
-          <div className="mt-16 flex items-center gap-6 text-xs text-slate-400 select-none">
+        </div>
+      </header>
+
+      {/* ── Main Content Stage ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-8 py-6 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center">
+
+          {/*
+            ── Hero Section ──
+            Pure Apple typography & authoritative monochrome Regaarder brand glyph.
+          */}
+          <div className="text-center mb-8 sm:mb-9 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+            
+            {/* Minimal Regaarder Hero Mark */}
+            <div className="mb-2 sm:mb-2.5 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#18181b] border border-slate-200/40 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.02)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
+                <RegaarderBrandIcon size={21} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
+              </div>
+            </div>
+
+            <h1 className="text-[28px] sm:text-[34px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2 text-balance max-w-2xl mx-auto">
+              {t('landing.headline') || 'Everything your team thinks, in one place.'}
+            </h1>
+            <p className="text-[14.5px] sm:text-[15px] text-slate-500 dark:text-zinc-400 font-normal max-w-md mx-auto leading-relaxed">
+              {t('landing.subheadline') || 'Open a product to start building.'}
+            </p>
+          </div>
+
+          {/*
+            ── 4×2 Product Launcher Grid ──
+            - White/almost-white surfaces with subtle borders and very soft elevation.
+            - Dark navy labels and restrained purple accents on hover.
+            - Generous whitespace (p-6).
+          */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 w-full">
+            {products.map((product, idx) => {
+              const IconComp = product.icon;
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => onLaunch?.({ type: 'action', name: product.id })}
+                  style={{ animationDelay: `${idx * 25}ms` }}
+                  className={[
+                    "flex flex-col items-center justify-center gap-3",
+                    // Near-white surface
+                    "bg-white dark:bg-[#18181b]",
+                    // Subtle border and extremely soft elevation
+                    "border border-slate-200/40 dark:border-white/[0.04]",
+                    "rounded-2xl p-6",
+                    "shadow-[0_1px_3px_rgba(15,23,42,0.02)] dark:shadow-none",
+                    // Gentle hover state with restrained purple accent
+                    "hover:bg-white dark:hover:bg-[#1f1f23]",
+                    "hover:border-violet-200 dark:hover:border-violet-500/30",
+                    "hover:shadow-[0_8px_20px_-6px_rgba(15,23,42,0.06)] dark:hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.4)]",
+                    "hover:-translate-y-0.5",
+                    "active:scale-[0.985] active:translate-y-0",
+                    // Strict outline elimination
+                    "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
+                    "transition-all duration-200 group cursor-pointer animate-in fade-in slide-in-from-bottom-2",
+                  ].join(" ")}
+                >
+                  {/* Bare vector icon with restrained purple hover */}
+                  <div className="text-slate-600 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200">
+                    <IconComp size={26} strokeWidth={1.5} />
+                  </div>
+
+                  {/* Dark navy product label */}
+                  <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors duration-200">
+                    {t('landing.' + product.id) || product.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Progressive Disclosure Recent Work Strip ── */}
+          <LandingRecentWorkStrip
+            onLaunch={onLaunch}
+            onOpenRecentModal={onOpenRecentModal}
+            onRecentCountChange={(count) => setHasRecentWork(count > 0)}
+          />
+
+          {/* ── Subtle Workspace Utility Layer ── */}
+          <div className={`${hasRecentWork ? "mt-6" : "mt-8 sm:mt-9"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>
+            <button
+              type="button"
+              onClick={() => onOpenHelp ? onOpenHelp() : onLaunch?.({ type: 'action', name: 'help' })}
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none group"
+            >
+              <HelpCircle size={13} strokeWidth={1.6} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span>{t('common.help') || 'Help'}</span>
+            </button>
+
+            <span className="w-1 h-1 rounded-full bg-slate-300/60 dark:bg-zinc-700/60" />
+
+            <button
+              type="button"
+              onClick={() => onOpenFeedback ? onOpenFeedback() : setShowFeedbackModal(true)}
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none group"
+            >
+              <MessageSquare size={13} strokeWidth={1.6} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span>{t('common.feedback') || 'Feedback'}</span>
+            </button>
+
+            <span className="w-1 h-1 rounded-full bg-slate-300/60 dark:bg-zinc-700/60" />
+
+            <button
+              type="button"
+              onClick={() => onOpenShortcuts ? onOpenShortcuts() : setShowShortcuts(true)}
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none group"
+            >
+              <Command size={13} strokeWidth={1.6} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <span>{t('common.keyboardShortcuts') || 'Keyboard Shortcuts'}</span>
+            </button>
+          </div>
+
+          {/* ── Footer with Terms of Service, Privacy Policy & Legal ── */}
+          <div className="mt-8 sm:mt-9 flex items-center gap-5 sm:gap-6 text-[11px] sm:text-[11.5px] text-slate-400/70 dark:text-zinc-600 select-none">
             <button
               type="button"
               onClick={() => setLegalModalTab("terms")}
-              className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
+              className="hover:text-slate-600 dark:hover:text-zinc-400 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none"
             >
               {t('common.terms') || 'Terms of Service'}
             </button>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="w-1 h-1 rounded-full bg-slate-300/50 dark:bg-zinc-800" />
             <button
               type="button"
               onClick={() => setLegalModalTab("privacy")}
-              className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
+              className="hover:text-slate-600 dark:hover:text-zinc-400 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none"
             >
               {t('common.privacy') || 'Privacy Policy'}
             </button>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="w-1 h-1 rounded-full bg-slate-300/50 dark:bg-zinc-800" />
             <button
               type="button"
               onClick={() => setLegalModalTab("legal")}
-              className="hover:text-slate-700 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-normal"
+              className="hover:text-slate-600 dark:hover:text-zinc-400 transition-colors cursor-pointer bg-transparent border-none p-0 font-normal outline-none focus:outline-none"
             >
               {t('common.legal') || 'Legal'}
             </button>
@@ -153,17 +476,158 @@ export default function RegaarderComposeLanding({ onLaunch }) {
         onClose={() => setLegalModalTab(null)}
       />
 
+      {/* Keyboard Shortcuts Dialog */}
+      {showShortcuts && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25 dark:bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div 
+            className="bg-white dark:bg-[#18181b] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-800 dark:text-zinc-100">
+                <Command size={14} className="text-slate-500" />
+                <span>Keyboard Shortcuts</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowShortcuts(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 text-xs p-1 cursor-pointer bg-transparent border-none outline-none"
+              >
+                ✕
+              </button>
+            </div>
 
+            <div className="space-y-2.5 text-xs text-slate-600 dark:text-zinc-300">
+              <div className="flex items-center justify-between">
+                <span>Search Workspace</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">⌘K</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>New Document</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">⌘N</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Slash Commands & AI</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">/</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Switch Workspace</span>
+                <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 font-mono text-[11px] text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-white/10">⌘O</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* ── Apple-Style Feedback & Suggestions Dialog ── */}
+      {showFeedbackModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25 dark:bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setShowFeedbackModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-[#18181b] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100">
+                <MessageSquare size={15} className="text-violet-500" />
+                <span>Feedback & Suggestions</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFeedbackModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 text-xs p-1 cursor-pointer bg-transparent border-none outline-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {feedbackSubmitted ? (
+              <div className="py-6 text-center space-y-2">
+                <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-base">
+                  ✓
+                </div>
+                <div className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100">Thank you for your feedback!</div>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xs mx-auto">Your input helps shape the future of Regaarder.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFeedbackModal(false);
+                    setFeedbackSubmitted(false);
+                    setFeedbackText('');
+                  }}
+                  className="mt-2 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-1.5">
+                  {['Idea', 'Bug', 'Experience'].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setFeedbackCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+                        feedbackCategory === cat
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent'
+                          : 'bg-slate-50 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 border-slate-200/60 dark:border-white/5 hover:bg-slate-100'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  rows={4}
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="Tell us what you love or what we can improve..."
+                  className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none font-sans leading-relaxed"
+                />
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowFeedbackModal(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!feedbackText.trim()}
+                    onClick={() => {
+                      if (!feedbackText.trim()) return;
+                      setFeedbackSubmitted(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs cursor-pointer"
+                  >
+                    Submit Feedback
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Ambient Mesh Blob Keyframe Animations ── */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
+          33% { transform: translate(25px, -35px) scale(1.05); }
+          66% { transform: translate(-15px, 15px) scale(0.96); }
           100% { transform: translate(0px, 0px) scale(1); }
         }
         .animate-blob {
-          animation: blob 15s infinite alternate ease-in-out;
+          animation: blob 18s infinite alternate ease-in-out;
         }
         .animation-delay-2000 {
           animation-delay: 2s;

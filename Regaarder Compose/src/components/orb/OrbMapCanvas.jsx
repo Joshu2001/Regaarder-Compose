@@ -310,12 +310,12 @@ export default function OrbMapCanvas({
         className={`flex items-center justify-between px-7 py-3 border-b z-20 shrink-0 ${
           highContrast
             ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-            : 'border-black/[0.04] dark:border-white/[0.06] bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl'
+            : 'border-black/[0.04] dark:border-white/[0.06] bg-white/35 dark:bg-zinc-950/35 backdrop-blur-md'
         }`}
       >
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
-          <span className={`text-[11px] font-bold mr-2 uppercase tracking-wider ${
-            highContrast ? 'text-black dark:text-white' : 'text-slate-500 dark:text-zinc-400'
+          <span className={`text-[11px] uppercase tracking-widest mr-2 select-none ${
+            highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-700 dark:text-zinc-200'
           }`}>
             {t('orb.lenses') || 'Lenses:'}
           </span>
@@ -326,14 +326,14 @@ export default function OrbMapCanvas({
                 key={lens.id}
                 type="button"
                 onClick={() => onSelectLens(lens.id)}
-                className={`px-3.5 py-1.5 text-xs rounded-xl transition-all duration-150 whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1.5 text-xs rounded-xl transition-all duration-150 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? highContrast
                       ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
                       : 'border border-slate-300/90 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
                     : highContrast
                     ? 'border-2 border-transparent bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
-                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800/60 font-medium'
+                    : 'border border-transparent text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] font-medium'
                 }`}
                 title={lens.desc}
               >
@@ -345,26 +345,21 @@ export default function OrbMapCanvas({
 
         {/* Zoom, Gesture & Canvas controls */}
         <div className="flex items-center gap-1.5 shrink-0 pl-3">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-700/60 text-[11px] text-slate-600 dark:text-zinc-300 mr-1 shadow-2xs">
-            <Hand size={12} className={isDragging ? 'text-[#7C5ACF] animate-pulse' : 'text-slate-400'} />
-            <span className="font-medium">Hand Pan</span>
-          </div>
-
           <button
             type="button"
             onClick={() => setZoom(z => Math.max(0.35, z - 0.15))}
-            className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
+            className="w-7 h-7 rounded-full flex items-center justify-center border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
             title="Zoom Out"
           >
             <ZoomOut size={13} />
           </button>
-          <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-zinc-200 px-1">
+          <span className="text-xs font-mono font-medium text-slate-700 dark:text-zinc-300 px-1 min-w-[38px] text-center">
             {Math.round(zoom * 100)}%
           </span>
           <button
             type="button"
             onClick={() => setZoom(z => Math.min(2.5, z + 0.15))}
-            className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
+            className="w-7 h-7 rounded-full flex items-center justify-center border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
             title="Zoom In"
           >
             <ZoomIn size={13} />
@@ -372,7 +367,7 @@ export default function OrbMapCanvas({
           <button
             type="button"
             onClick={handleResetView}
-            className="p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs ml-0.5 cursor-pointer"
+            className="w-7 h-7 rounded-full flex items-center justify-center border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs ml-0.5 cursor-pointer"
             title="Reset Pan & Zoom"
           >
             <RefreshCw size={13} />
@@ -380,12 +375,13 @@ export default function OrbMapCanvas({
         </div>
       </div>
 
-      {/* ── Active Lens Contextual Description Banner ── */}
+      {/* ── Active Lens Contextual Description Pill (Compact & Shortened) ── */}
       <div className="absolute top-16 left-7 z-10 pointer-events-none">
-        <div className="px-4 py-2 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_rgba(0,0,0,0.06)] text-xs text-slate-800 dark:text-zinc-200 flex items-center gap-2.5">
-          <span className="w-2 h-2 rounded-full bg-[#7C5ACF]" />
-          <span className="font-semibold text-slate-900 dark:text-white">{activeLensMeta.label} Lens:</span>
-          <span className="text-slate-500 dark:text-zinc-400 font-normal">{activeLensMeta.desc}</span>
+        <div className="px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-black/[0.04] dark:border-white/[0.06] shadow-2xs text-xs flex items-center gap-2 w-fit">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#7C5ACF]" />
+          <span className="font-semibold text-slate-900 dark:text-zinc-100">{t('orb.lens.' + activeLensMeta.id) || activeLensMeta.label}</span>
+          <span className="text-slate-400 dark:text-zinc-500">·</span>
+          <span className="text-slate-600 dark:text-zinc-300 font-normal">{t('orb.lensDesc.' + activeLensMeta.id) || activeLensMeta.desc}</span>
         </div>
       </div>
 
@@ -820,18 +816,18 @@ export default function OrbMapCanvas({
         {/* ── Contextual Empty State when no links exist for this lens ── */}
         {links.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6 z-20">
-            <div className={`p-8 rounded-3xl text-center flex flex-col items-center max-w-sm pointer-events-auto shadow-2xl backdrop-blur-2xl ${
+            <div className={`p-8 rounded-2xl text-center flex flex-col items-center max-w-sm pointer-events-auto shadow-xl backdrop-blur-xl ${
               highContrast
                 ? 'bg-slate-950 border-2 border-slate-400 text-white'
-                : 'bg-slate-900/90 border border-white/15 text-white'
+                : 'bg-[#0e1117]/85 border border-white/[0.08] text-white'
             }`}>
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 mb-3 border border-white/10 text-[#a78bfa]">
-                <Network size={22} strokeWidth={1.8} />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-white/[0.06] mb-3 border border-white/[0.08] text-[#a78bfa]">
+                <Network size={20} strokeWidth={1.6} />
               </div>
               <h4 className={`text-sm mb-1 ${highContrast ? 'font-black text-white' : 'font-semibold text-white'}`}>
                 {t('orb.empty.' + activeLens + '.title') || LENS_EMPTY_STATES[activeLens]?.title || 'No Connected Relationships Yet'}
               </h4>
-              <p className={`text-xs leading-relaxed max-w-xs ${highContrast ? 'font-medium text-slate-200' : 'text-slate-300'}`}>
+              <p className={`text-xs leading-relaxed max-w-xs ${highContrast ? 'font-medium text-slate-200' : 'text-slate-400'}`}>
                 {t('orb.empty.' + activeLens + '.desc') || LENS_EMPTY_STATES[activeLens]?.desc || 'Relationships and linkages will appear as you cross-reference workspace artifacts.'}
               </p>
             </div>

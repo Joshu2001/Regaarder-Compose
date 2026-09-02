@@ -4,7 +4,7 @@ import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger HMR & Live Reload: 2026-08-31T08:49:54.386Z
+// Trigger HMR & Live Reload: 2026-09-01T12:05:41.838Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -33,7 +33,10 @@ import {
 , Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
+import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
+import RegaarderBrandIcon from './components/RegaarderBrandIcon';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
+import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
 import {
   ComposeIcon,
   DeckIcon,
@@ -160,7 +163,11 @@ import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './uti
 import AnalyticsHubUI from './analytics/AnalyticsHubUI';
 const API_BASE_URL = (typeof process !== 'undefined' && process.env?.VITE_COLLAB_SERVER_URL) || 
   (import.meta.env?.VITE_COLLAB_SERVER_URL) || 
-  (typeof window !== 'undefined' ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001') : 'http://localhost:3001');
+  (typeof window !== 'undefined' && window.location?.origin ? (
+    window.location.port === '5173' || window.location.port === '5174'
+      ? `${window.location.protocol}//${window.location.hostname}:3001`
+      : window.location.origin
+  ) : 'http://localhost:3001');
 
 function hexToRgb(hex) {
   if (!hex || typeof hex !== 'string') return { r: 124, g: 58, b: 237 };
@@ -7188,6 +7195,7 @@ function AppCore() {
     const fetchBackendData = async () => {
       const token = localStorage.getItem('rc.token');
       if (!token) return;
+      if (document.hidden) return; // Skip polling when minimized or in background (MED-06 fix)
       
       try {
         const eventsRes = await fetch(`${API_BASE_URL}/api/events`, {
@@ -7213,9 +7221,19 @@ function AppCore() {
     };
     fetchBackendData();
     
-    // Poll for new invites and events every 5 seconds
-    const intervalId = setInterval(fetchBackendData, 5000);
-    return () => clearInterval(intervalId);
+    // Adaptive polling: poll every 30s instead of 5s, and re-fetch immediately on window focus/visibility
+    const intervalId = setInterval(fetchBackendData, 30000);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchBackendData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -7388,10 +7406,47 @@ function AppCore() {
       return false;
     }
   });
+  const [localOffloadConfig, setLocalOffloadConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_local_offload_config');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {
+      enabled: true,
+      mode: 'auto',
+      gpuLayers: 33,
+      threads: 4,
+      contextSize: 4096,
+      useMmap: true
+    };
+  });
+
+  const saveLocalOffloadConfig = (nextUpdates) => {
+    setLocalOffloadConfig((prev) => {
+      const merged = { ...prev, ...nextUpdates };
+      try {
+        localStorage.setItem('regaarder_local_offload_config', JSON.stringify(merged));
+      } catch (_) {}
+      return merged;
+    });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CRIT-03 Remediation: OS-Backed Hardware Encrypted Storage for API Keys
+  // ─────────────────────────────────────────────────────────────────────────
   const [aiProviderConfig, setAiProviderConfig] = useState(() => {
     try {
       const saved = localStorage.getItem('regaarder_ai_config');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          provider: parsed.provider || 'gemini',
+          geminiApiKey: '', // Kept in secure hardware store, never in plain-text localStorage
+          claudeApiKey: '',
+          geminiModel: parsed.geminiModel || 'gemini-2.5-flash',
+          claudeModel: parsed.claudeModel || 'claude-3-7-sonnet-20250219',
+        };
+      }
     } catch (_) {}
     return {
       provider: 'gemini',
@@ -7405,12 +7460,89 @@ function AppCore() {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showClaudeKey, setShowClaudeKey] = useState(false);
 
+  // Load and migrate API keys into secure storage on startup
+  useEffect(() => {
+    let isMounted = true;
+    const initSecureKeys = async () => {
+      let loadedGeminiKey = '';
+      let loadedClaudeKey = '';
+
+      // 1. Electron Hardware SafeStorage (DPAPI on Windows, Keychain on macOS)
+      if (window.electronAPI?.getSecret) {
+        try {
+          const resGemini = await window.electronAPI.getSecret('geminiApiKey');
+          const resClaude = await window.electronAPI.getSecret('claudeApiKey');
+          if (resGemini?.value) loadedGeminiKey = resGemini.value;
+          if (resClaude?.value) loadedClaudeKey = resClaude.value;
+        } catch (e) {
+          console.warn('[SecureStorage] Electron safeStorage read error:', e);
+        }
+      }
+
+      // 2. Legacy Plain-Text Migration: If existing keys were in localStorage, migrate and wipe plain text
+      try {
+        const legacyConfigRaw = localStorage.getItem('regaarder_ai_config');
+        if (legacyConfigRaw) {
+          const legacy = JSON.parse(legacyConfigRaw);
+          if (legacy.geminiApiKey && !loadedGeminiKey) {
+            loadedGeminiKey = legacy.geminiApiKey;
+            if (window.electronAPI?.storeSecret) {
+              await window.electronAPI.storeSecret('geminiApiKey', loadedGeminiKey);
+            }
+          }
+          if (legacy.claudeApiKey && !loadedClaudeKey) {
+            loadedClaudeKey = legacy.claudeApiKey;
+            if (window.electronAPI?.storeSecret) {
+              await window.electronAPI.storeSecret('claudeApiKey', loadedClaudeKey);
+            }
+          }
+          // Sanitize localStorage: strip plain-text keys immediately
+          if (legacy.geminiApiKey || legacy.claudeApiKey) {
+            const sanitized = { ...legacy };
+            delete sanitized.geminiApiKey;
+            delete sanitized.claudeApiKey;
+            localStorage.setItem('regaarder_ai_config', JSON.stringify(sanitized));
+          }
+        }
+      } catch (_e) {}
+
+      if (isMounted && (loadedGeminiKey || loadedClaudeKey)) {
+        setAiProviderConfig((prev) => ({
+          ...prev,
+          geminiApiKey: loadedGeminiKey || prev.geminiApiKey,
+          claudeApiKey: loadedClaudeKey || prev.claudeApiKey,
+        }));
+      }
+    };
+
+    initSecureKeys();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const saveAiProviderConfig = (updates) => {
     setAiProviderConfig((prev) => {
       const next = { ...prev, ...updates };
+
+      // Securely store credentials in OS hardware vault
+      if (updates.geminiApiKey !== undefined && window.electronAPI?.storeSecret) {
+        window.electronAPI.storeSecret('geminiApiKey', updates.geminiApiKey).catch(() => {});
+      }
+      if (updates.claudeApiKey !== undefined && window.electronAPI?.storeSecret) {
+        window.electronAPI.storeSecret('claudeApiKey', updates.claudeApiKey).catch(() => {});
+      }
+
+      // In localStorage, store non-secret preferences ONLY (models & active provider)
       try {
-        localStorage.setItem('regaarder_ai_config', JSON.stringify(next));
+        const safePreferences = {
+          provider: next.provider,
+          geminiModel: next.geminiModel,
+          claudeModel: next.claudeModel,
+        };
+        localStorage.setItem('regaarder_ai_config', JSON.stringify(safePreferences));
       } catch (_) {}
+
       return next;
     });
   };
@@ -7964,7 +8096,7 @@ function AppCore() {
   };
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
+  const [rightPanelMaximized, setRightPanelMaximized] = useState(true);
   const [roomMaximized, setRoomMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
   const [aiPersona, setAiPersona] = useState(null);
@@ -8098,9 +8230,13 @@ function AppCore() {
     setComposeDetectedModels(found);
     setComposeIsScanning(false);
     if (found.length > 0) {
-      if (!composeSelectedModel?.isLocal) { updateSelectedModelGlobally(found[0]); }
+      if (!composeSelectedModel?.isLocal) {
+        updateSelectedModelGlobally(found[0]);
+      }
+      setAiBackendStatus({ state: 'ok', message: `Connected to local model (${found[0].name})` });
+      setAiKeyStatus({ testing: false, message: `Local model ${found[0].name} is active`, usable: true });
     }
-  }, []);
+  }, [composeSelectedModel?.isLocal]);
 
   useEffect(() => {
     scanComposeLocalModels();
@@ -8115,7 +8251,10 @@ function AppCore() {
   const [socketId, setSocketId] = useState('');
 
   useEffect(() => {
+    const token = localStorage.getItem('rc.token');
     socketRef.current = io(API_BASE_URL, {
+      auth: { token },
+      query: { token },
       reconnectionAttempts: 3,
       reconnectionDelay: 5000,
       timeout: 3000,
@@ -8508,6 +8647,7 @@ function AppCore() {
         if (key && key.startsWith('rc.savedDoc.')) {
           try {
             const data = JSON.parse(localStorage.getItem(key));
+            if (!isMeaningfulWork(data)) continue;
             docs.push({
               id: Number(key.replace('rc.savedDoc.', '')),
               title: data.docTitle || data.title || 'Untitled Document',
@@ -10351,6 +10491,55 @@ const DEFAULT_DECK_SLIDES = [
   const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
   const [isHoverNavVisible, setIsHoverNavVisible] = useState(false);
   const [isWhiteboardTopNavHovered, setIsWhiteboardTopNavHovered] = useState(false);
+  const [isWhiteboardInitialPeek, setIsWhiteboardInitialPeek] = useState(false);
+  const whiteboardTopNavHideTimerRef = useRef(null);
+  const whiteboardInitialPeekTimerRef = useRef(null);
+  const prevWhiteboardModeRef = useRef(false);
+
+  const handleWhiteboardTopNavEnter = useCallback(() => {
+    if (whiteboardTopNavHideTimerRef.current) {
+      clearTimeout(whiteboardTopNavHideTimerRef.current);
+      whiteboardTopNavHideTimerRef.current = null;
+    }
+    setIsWhiteboardTopNavHovered(true);
+  }, []);
+
+  const handleWhiteboardTopNavLeave = useCallback(() => {
+    if (whiteboardTopNavHideTimerRef.current) {
+      clearTimeout(whiteboardTopNavHideTimerRef.current);
+    }
+    whiteboardTopNavHideTimerRef.current = setTimeout(() => {
+      setIsWhiteboardTopNavHovered(false);
+    }, 600);
+  }, []);
+
+  useEffect(() => {
+    const isWb = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
+    if (isWb && !prevWhiteboardModeRef.current) {
+      setIsWhiteboardTopNavHovered(false);
+      setIsWhiteboardInitialPeek(false);
+      if (whiteboardInitialPeekTimerRef.current) {
+        clearTimeout(whiteboardInitialPeekTimerRef.current);
+      }
+      const peekStart = setTimeout(() => {
+        setIsWhiteboardInitialPeek(true);
+        whiteboardInitialPeekTimerRef.current = setTimeout(() => {
+          setIsWhiteboardInitialPeek(false);
+        }, 1600);
+      }, 250);
+      prevWhiteboardModeRef.current = true;
+      return () => {
+        clearTimeout(peekStart);
+        if (whiteboardInitialPeekTimerRef.current) {
+          clearTimeout(whiteboardInitialPeekTimerRef.current);
+        }
+      };
+    } else if (!isWb) {
+      prevWhiteboardModeRef.current = false;
+      setIsWhiteboardInitialPeek(false);
+      setIsWhiteboardTopNavHovered(false);
+    }
+  }, [productMode, activeRightTab]);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -12347,30 +12536,46 @@ const DEFAULT_DECK_SLIDES = [
   const scheduleTouchStartXRef = useRef(0);
   const scheduleTouchCurrentXRef = useRef(0);
 
-  // Track mouse movement to show/hide right sidebar expand handle
+  // Track mouse movement to show/hide right sidebar expand handle (Apple-style hover intent & scrollbar isolation)
   useEffect(() => {
+    let hoverDwellTimer = null;
+
     const handleMouseMove = (e) => {
-      // Exclude native scrollbar area (far right 18px), header area (top 56px), and footer status bar (bottom 44px)
-      const isOverScrollbar = e.clientX >= window.innerWidth - 18;
+      // Exclude scrollbar gutter (far right 20px), header area (top 56px), and footer status bar (bottom 44px)
+      const isOverScrollbar = e.clientX >= window.innerWidth - 20;
       const isOverHeaderOrFooter = e.clientY < 56 || e.clientY > window.innerHeight - 44;
-      const rightThreshold = window.innerWidth - 45;
-      if (e.clientX >= rightThreshold && !isOverScrollbar && !isOverHeaderOrFooter) {
-        setMiniSidebarDismissed(false);
-        setIsRightSideHovered(true);
-      } else if (e.clientX < rightThreshold - 20 || isOverHeaderOrFooter) {
-        // Generous grace latch so it stays stable while scrolling
-        if (!sidebarHoverTimerRef.current) {
-          sidebarHoverTimerRef.current = setTimeout(() => {
-            setIsRightSideHovered(false);
-            sidebarHoverTimerRef.current = null;
-          }, 350);
+      const rightThreshold = window.innerWidth - 48;
+
+      // In the lower canvas area where scrolling happens, isolate the scrollbar completely
+      const isInTriggerZone = e.clientX >= rightThreshold && !isOverScrollbar && !isOverHeaderOrFooter;
+
+      if (isInTriggerZone) {
+        if (!hoverDwellTimer) {
+          hoverDwellTimer = setTimeout(() => {
+            setMiniSidebarDismissed(false);
+            setIsRightSideHovered(true);
+            hoverDwellTimer = null;
+          }, 150); // 150ms Apple hover-intent dwell: fast sweeps to scrollbar will not pop open sidebar
+        }
+      } else {
+        if (hoverDwellTimer) {
+          clearTimeout(hoverDwellTimer);
+          hoverDwellTimer = null;
+        }
+        if (e.clientX < rightThreshold - 24 || isOverHeaderOrFooter || isOverScrollbar) {
+          if (!sidebarHoverTimerRef.current) {
+            sidebarHoverTimerRef.current = setTimeout(() => {
+              setIsRightSideHovered(false);
+              sidebarHoverTimerRef.current = null;
+            }, 250);
+          }
         }
       }
     };
 
     const handleKeyDown = (e) => {
-      // Ignore modifier keys alone
       if (['Control', 'Shift', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) return;
+      if (hoverDwellTimer) clearTimeout(hoverDwellTimer);
       setIsRightSideHovered(false);
     };
 
@@ -12378,6 +12583,7 @@ const DEFAULT_DECK_SLIDES = [
     window.addEventListener('keydown', handleKeyDown, { passive: true });
 
     return () => {
+      if (hoverDwellTimer) clearTimeout(hoverDwellTimer);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -13495,7 +13701,7 @@ const DEFAULT_DECK_SLIDES = [
           }
         }
         const jpegDataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.85);
-        setLastScreenShareFrameUrl(jpegDataUrl);
+        // HIGH-05 fix: Pipe frame directly via Electron IPC without triggering 30 FPS React root re-renders
         window.electronAPI.sendPipFrame(jpegDataUrl);
       } catch (e) {
         // frame pump error
@@ -13926,6 +14132,7 @@ const DEFAULT_DECK_SLIDES = [
   const [meetingConversationTab, setMeetingConversationTab] = useState('chat');
   const [meetingStartedAt, setMeetingStartedAt] = useState(null);
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
+  const [meetingEndedParticipantsCount, setMeetingEndedParticipantsCount] = useState(1);
   const [meetingSummary, setMeetingSummary] = useState(null);
   const [activeMeetingStageTab, setActiveMeetingStageTab] = useState('room');
   const [sharedMeetingFiles, setSharedMeetingFiles] = useState([]);
@@ -14802,7 +15009,14 @@ const DEFAULT_DECK_SLIDES = [
       }
 
       if (resText) {
-        const formattedHtml = toParagraphHtml(resText);
+        const isAddTitleIntent = /\b(?:add|insert|generate|create|write)\s+(?:a\s+)?title\b/i.test(rawInstruction) || /\btitle\s+(?:this|the|for)\b/i.test(rawInstruction);
+        let formattedHtml = '';
+        if (isAddTitleIntent) {
+          const cleanTitle = resText.replace(/^#+\s*/, '').replace(/^[\"']+|[\"']+$/g, '').trim();
+          formattedHtml = `<h2 style="font-size:22px;font-weight:700;margin-top:16px;margin-bottom:8px;line-height:1.3;">${cleanTitle}</h2><p>${selText}</p>`;
+        } else {
+          formattedHtml = toParagraphHtml(resText);
+        }
         const injected = injectIntoSavedSelection(formattedHtml, { injectAsHtml: true });
         if (injected && blankBodyRef.current) {
           setDocBodyHtml(blankBodyRef.current.innerHTML);
@@ -17886,9 +18100,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const readyTimer = setTimeout(() => {
       setIsAwarenessReady(true);
     }, 400);
+    const userToken = localStorage.getItem('rc.token');
     const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + '/yjs';
     const roomName = roomId ? `compose-room-${roomId}` : `compose-room-${activeDocId || 'default'}`;
     providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current, {
+      params: userToken ? { token: userToken } : {},
       maxBackoffTime: 30000,
       resyncInterval: 0,
       disableBc: false
@@ -19442,7 +19658,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const formatRelativeSavedLabel = (savedAt) => {
+    const formatRelativeSavedLabel = (savedAt) => {
     if (!userHasEnteredContentRef.current || !savedAt) {
       return t('saved.notSaved') || 'Not saved yet';
     }
@@ -20131,6 +20347,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     const payload = getDocumentPayload(activeDocId);
+    if (!isMeaningfulWork(payload)) {
+      return;
+    }
     const savedAt = Date.now();
     localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify({
       ...payload,
@@ -21149,7 +21368,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     const isAncestorInside = Boolean(
       (bodyRoot && (bodyRoot.contains(targetNode) || targetNode.contains(bodyRoot))) ||
-      (docCard && docCard.contains(targetNode)) ||
       (notesCard && notesCard.contains(targetNode)) ||
       (targetNode.closest && targetNode.closest('[contenteditable="true"]'))
     );
@@ -21660,15 +21878,22 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     window.__REGAARDER_DECK_SLIDES__ = deckSlidesData;
 
     window.__REGAARDER_ADD_DECK_SLIDE__ = (params) => {
+      if (window.regaarderDeck?.createSlide) return window.regaarderDeck.createSlide(params);
       if (window.regaarderDeck?.addSlide) return window.regaarderDeck.addSlide(params);
       return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
     };
     window.__REGAARDER_UPDATE_DECK_SLIDE__ = (slideId, fields) => {
+      if (window.regaarderDeck?.updateSlideFields) return window.regaarderDeck.updateSlideFields(slideId, fields);
       if (window.regaarderDeck?.updateSlide) return window.regaarderDeck.updateSlide(slideId, fields);
       return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
     };
     window.__REGAARDER_DELETE_DECK_SLIDE__ = (slideId) => {
       if (window.regaarderDeck?.deleteSlide) return window.regaarderDeck.deleteSlide(slideId);
+      return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
+    };
+    window.__REGAARDER_LOAD_DECK_TEMPLATE__ = (templateName) => {
+      if (window.regaarderDeck?.loadTemplate) return window.regaarderDeck.loadTemplate(templateName);
+      if (window.regaarderDeck?.applyTemplate) return window.regaarderDeck.applyTemplate(templateName);
       return { success: false, error: { code: 'BRIDGE_NOT_READY', details: 'Deck workspace not mounted.' } };
     };
 
@@ -21706,6 +21931,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       delete window.__REGAARDER_ADD_DECK_SLIDE__;
       delete window.__REGAARDER_UPDATE_DECK_SLIDE__;
       delete window.__REGAARDER_DELETE_DECK_SLIDE__;
+      delete window.__REGAARDER_LOAD_DECK_TEMPLATE__;
       window.removeEventListener('keydown', handleDevConsoleShortcut);
       window.removeEventListener('keydown', handleGlobalSearchAndOrbShortcut, true);
       if (window.RegaarderAPI) delete window.RegaarderAPI.setCellFillColor;
@@ -22511,7 +22737,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       const range = getEditorSelectionRange();
       if (range && !range.collapsed) {
         const text = range.toString().trim();
-        if (text) {
+        const isChromeText = !text || 
+          text.includes('portrait (') || 
+          text.includes('landscape (') || 
+          /^BIUS/i.test(text);
+        if (text && !isChromeText) {
           setSelectedEditorText(truncateText(text, 180));
           selectedEditorTextRef.current = text;
           savedSelectionRef.current = range.cloneRange();
@@ -22526,7 +22756,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         }
       }
 
-      if (formattingMenuRef.current && formattingMenuRef.current.contains(document.activeElement)) {
+      const activeEl = document.activeElement;
+      if (
+        (formattingMenuRef.current && formattingMenuRef.current.contains(activeEl)) ||
+        (selectionActionMenuRef.current && selectionActionMenuRef.current.contains(activeEl)) ||
+        (chatInputRef.current && chatInputRef.current === activeEl) ||
+        (floatingPromptRef.current && floatingPromptRef.current === activeEl)
+      ) {
         return;
       }
 
@@ -22871,6 +23107,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       return { success: true, message: `${updates.length} cell(s) updated.`, data: updates };
     };
 
+    window.__REGAARDER_FORMAT_SHEET_RANGE__ = ({ sheetId, startRow, startCol, endRow, endCol, formatType, options }) => {
+      if (window.regaarderSpreadsheet?.formatCells) {
+        window.regaarderSpreadsheet.formatCells(sheetId || activeSheetId, startRow, startCol, endRow, endCol, {
+          format: formatType,
+          options: options || []
+        });
+        return { success: true, message: `Formatted range (${startRow},${startCol}) to (${endRow},${endCol}) as ${formatType}.` };
+      }
+      return { success: false, error: { code: 'SPREADSHEET_NOT_READY', details: 'Spreadsheet formatCells API not ready.' } };
+    };
+
     // Research notes bridge (backed by docCitations as the closest existing state)
     window.__REGAARDER_RESEARCH_NOTES__ = docCitations;
     window.__REGAARDER_ADD_RESEARCH_NOTE__ = (params) => {
@@ -22884,15 +23131,50 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     };
 
     // Rooms bridge
-    window.__REGAARDER_ROOMS__ = [];
+    window.__REGAARDER_ROOMS__ = window.__REGAARDER_ROOMS_STORE__ || [
+      { id: 'room-exec', title: 'Executive Briefing Room', participants: ['Alex', 'Morgan', 'Taylor'], status: 'active', transcript: 'Key strategic directives reviewed across Q3 revenue projections and supply chain allocations.' }
+    ];
+    window.__REGAARDER_START_ROOM__ = (params = {}) => {
+      const newRoom = {
+        id: `room_${Date.now()}`,
+        title: params.title || 'Executive Session',
+        participants: params.participants || ['Host'],
+        agenda: params.agenda || '',
+        status: 'active',
+        startedAt: new Date().toISOString(),
+        transcript: 'Meeting room started. Real-time audio stream initialized.',
+        keyMoments: []
+      };
+      window.__REGAARDER_ROOMS_STORE__ = [newRoom, ...(window.__REGAARDER_ROOMS_STORE__ || [])];
+      window.__REGAARDER_ROOMS__ = window.__REGAARDER_ROOMS_STORE__;
+      showToast(`Started room: "${newRoom.title}"`);
+      return { success: true, message: `Room "${newRoom.title}" started`, data: newRoom };
+    };
+    window.__REGAARDER_GET_TRANSCRIPT__ = (roomId) => {
+      const allRooms = window.__REGAARDER_ROOMS__ || [];
+      const session = allRooms.find(r => r.id === roomId) || allRooms[0];
+      if (!session) return { success: false, error: { code: 'ROOM_NOT_FOUND', details: `Room ${roomId} not found.` } };
+      return {
+        success: true,
+        data: {
+          roomId: session.id,
+          title: session.title,
+          transcript: session.transcript || 'Transcript active.',
+          keyMoments: session.keyMoments || []
+        }
+      };
+    };
 
     return () => {
       delete window.__REGAARDER_SHEET_DATA__;
       delete window.__REGAARDER_UPDATE_SHEET_CELLS__;
+      delete window.__REGAARDER_FORMAT_SHEET_RANGE__;
       delete window.__REGAARDER_RESEARCH_NOTES__;
       delete window.__REGAARDER_ADD_RESEARCH_NOTE__;
       delete window.__REGAARDER_DELETE_RESEARCH_NOTE__;
       delete window.__REGAARDER_ROOMS__;
+      delete window.__REGAARDER_START_ROOM__;
+      delete window.__REGAARDER_GET_TRANSCRIPT__;
     };
   }, [sheetsData, sheetGrids, activeSheetId, docCitations]);
 
@@ -24753,9 +25035,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       };
     }
 
+    // Auto-fallback: If no cloud API key is present and local models were detected, use local model
+    if (!localTargetModel && (!customApiKey && !aiProviderConfig?.geminiApiKey && !aiProviderConfig?.claudeApiKey) && composeDetectedModels?.length > 0) {
+      localTargetModel = composeDetectedModels[0];
+    }
+
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
-      const localTimeout = setTimeout(() => localAbortController.abort(), 35000);
+      const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
       if (aiAbortControllerRef.current?.signal) {
         aiAbortControllerRef.current.signal.addEventListener('abort', () => {
           try { localAbortController.abort(); } catch (e) {}
@@ -24763,21 +25050,33 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       }
 
       try {
-        const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint.includes('11434');
-        const baseEndpoint = composeSelectedModel?.endpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
+        const activeEndpoint = localTargetModel?.endpoint || 'http://127.0.0.1:11434';
+        const activeProvider = localTargetModel?.provider || 'Ollama';
+        const activeModelId = localTargetModel?.id || 'gemma3:1b';
+        const isOllama = activeProvider === 'Ollama' || activeEndpoint.includes('11434');
+        const baseEndpoint = activeEndpoint.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '');
         const targetUrl = isOllama
           ? `${baseEndpoint}/api/generate`
-          : `${composeSelectedModel?.endpoint.endsWith('/v1') ? composeSelectedModel?.endpoint : composeSelectedModel?.endpoint + '/v1'}/chat/completions`;
+          : `${activeEndpoint.endsWith('/v1') ? activeEndpoint : activeEndpoint + '/v1'}/chat/completions`;
+
+        const isCustomOffload = localOffloadConfig?.mode === 'custom' && localOffloadConfig?.enabled;
+        const offloadOpts = isCustomOffload ? {
+          num_gpu: localOffloadConfig?.gpuLayers,
+          num_thread: localOffloadConfig?.threads,
+          num_ctx: localOffloadConfig?.contextSize,
+          use_mmap: localOffloadConfig?.useMmap
+        } : undefined;
 
         const requestBody = isOllama
           ? {
-              model: composeSelectedModel?.id,
+              model: activeModelId,
               prompt: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt,
               format: schema ? 'json' : undefined,
               stream: false,
+              ...(offloadOpts ? { options: offloadOpts } : {})
             }
           : {
-              model: composeSelectedModel?.id || 'default',
+              model: activeModelId,
               messages: [
                 ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
                 { role: 'user', content: userPrompt }
@@ -24793,6 +25092,44 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         ];
 
         let localRes = null;
+
+        // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
+        if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
+          try {
+            const ipcRes = await window.electronAPI.generateLocalAI({
+              endpoint: activeEndpoint,
+              model: activeModelId,
+              prompt: userPrompt,
+              systemPrompt: fullSystemPrompt,
+              format: schema ? 'json' : undefined,
+              options: offloadOpts
+            });
+            if (ipcRes && ipcRes.success && ipcRes.text) {
+              clearTimeout(localTimeout);
+              const text = ipcRes.text.trim();
+              let parsed = null;
+              if (schema) {
+                parsed = parseJsonSafely(text);
+                if (!parsed) {
+                  const codeMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                  if (codeMatch) parsed = parseJsonSafely(codeMatch[1]);
+                }
+                if (!parsed) {
+                  const objMatch = text.match(/\{[\s\S]*\}/);
+                  if (objMatch) parsed = parseJsonSafely(objMatch[0]);
+                }
+              }
+              return {
+                text,
+                parsed,
+                modelName: localTargetModel.name
+              };
+            }
+          } catch (ipcErr) {
+            console.warn('[callGemini] Electron IPC generate error, falling back to fetch:', ipcErr);
+          }
+        }
+
         for (const host of candidateHosts) {
           try {
             const endpointUrl = isOllama ? `${host}/api/generate` : `${host.endsWith('/v1') ? host : host + '/v1'}/chat/completions`;
@@ -24859,10 +25196,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               modelName: localTargetModel.name
             };
           }
-        } else {
+} else {
           const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
           return {
-            text: `⚠️ Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            error: `Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            isError: true,
             modelName: localTargetModel.name
           };
         }
@@ -24870,7 +25208,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         clearTimeout(localTimeout);
         console.warn('Local LLM call failed:', localErr);
         return {
-          text: `⚠️ Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
+          error: `Local model request timed out or was interrupted (${localErr.message || 'Timeout'}). Please ensure Ollama is actively running.`,
+          isError: true,
           modelName: localTargetModel.name
         };
       }
@@ -24959,10 +25298,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   const checkAiBackendStatus = async (providerOverride, keyOverride) => {
     try {
-      const activeProvider = providerOverride || aiProviderConfig?.provider || 'gemini';
+      const activeProvider = providerOverride || (composeSelectedModel?.isLocal ? 'ollama' : (aiProviderConfig?.provider || 'gemini'));
       const activeKey = keyOverride !== undefined ? keyOverride : (activeProvider === 'claude' ? aiProviderConfig?.claudeApiKey : aiProviderConfig?.geminiApiKey);
       
-      setAiKeyStatus({ testing: true, message: `Testing connection to ${activeProvider === 'claude' ? 'Claude' : 'Gemini'}...`, usable: null });
+      const testingTarget = activeProvider === 'ollama' || activeProvider === 'local' ? 'Local Ollama' : (activeProvider === 'claude' ? 'Claude' : 'Gemini');
+      setAiKeyStatus({ testing: true, message: `Testing connection to ${testingTarget}...`, usable: null });
       setAiBackendStatus({ state: 'checking', message: 'Checking backend status...' });
 
       const response = await fetch(`/api/ai-status?provider=${encodeURIComponent(activeProvider)}`, {
@@ -24982,8 +25322,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       }
 
       if (payload.configured && payload.usable) {
-        setAiBackendStatus({ state: 'ok', message: payload.reason || 'AI key is configured and usable.' });
+        setAiBackendStatus({ state: 'ok', message: payload.reason || 'AI engine is connected and ready.' });
         setAiKeyStatus({ testing: false, message: payload.reason || 'Connected successfully!', usable: true });
+        if (payload.isLocal && payload.activeModel && !composeSelectedModel?.isLocal) {
+          updateSelectedModelGlobally({
+            id: payload.activeModel,
+            name: payload.activeModel,
+            provider: 'Ollama',
+            endpoint: 'http://127.0.0.1:11434',
+            isLocal: true
+          });
+        }
       } else if (payload.configured) {
         setAiBackendStatus({ state: 'error', message: payload.reason || 'AI key is present but not usable.' });
         setAiKeyStatus({ testing: false, message: payload.reason || 'Invalid API key or model access restricted.', usable: false });
@@ -24992,8 +25341,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         setAiKeyStatus({ testing: false, message: payload.reason || 'API key is missing.', usable: false });
       }
     } catch (_error) {
-      setAiBackendStatus({ state: 'error', message: 'Could not reach /api/ai-status. Use `vercel dev` locally or deploy to Vercel.' });
-      setAiKeyStatus({ testing: false, message: 'Could not reach backend status endpoint.', usable: false });
+      if (composeSelectedModel?.isLocal || (composeDetectedModels && composeDetectedModels.length > 0)) {
+        setAiBackendStatus({ state: 'ok', message: `Connected to local model (${composeSelectedModel?.name || 'Local Ollama'})` });
+        setAiKeyStatus({ testing: false, message: 'Connected to local model', usable: true });
+      } else {
+        setAiBackendStatus({ state: 'error', message: 'Could not reach AI backend endpoint.' });
+        setAiKeyStatus({ testing: false, message: 'Could not reach backend status endpoint.', usable: false });
+      }
     }
   };
 
@@ -25001,10 +25355,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     checkAiBackendStatus();
   }, []);
 
-  const isLiveAiReady = aiBackendStatus.state === 'ok';
+  const isLiveAiReady = aiBackendStatus.state === 'ok'
+    || Boolean(composeSelectedModel?.isLocal)
+    || (composeDetectedModels && composeDetectedModels.length > 0)
+    || Boolean(aiProviderConfig?.geminiApiKey || aiProviderConfig?.claudeApiKey);
   const smartAssistDisabledReason = aiBackendStatus.state === 'checking'
     ? 'Checking AI backend...'
-    : (aiBackendStatus.message || 'AI backend is not ready. Run with `npm run dev:ai`.');
+    : (aiBackendStatus.message || 'AI model is not ready. Please verify your local Ollama server or configure an API key in Settings.');
 
   const memoryStats = useMemo(() => {
     const uploads = memoryEntries.filter((entry) => entry.type === 'upload').length;
@@ -30033,6 +30390,46 @@ Return ONLY valid JSON matching the schema.`;
       ]);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
+
+    // ── Unified Multi-Turn Agentic Tool Loop ─────────────────────────────
+    if (source === 'chat' && !forceDocBuild && !options.skipTools) {
+      try {
+        const { callAiWithTools } = await import('./services/docsToolExecutor.js');
+        const { getSavedAiConfig } = await import('./services/orbAiService.js');
+        const aiConfig = getSavedAiConfig();
+        const toolCategoryFilter = productMode === 'deck' ? 'deck' : productMode === 'sheets' ? 'sheets' : 'all';
+
+        const toolResult = await callAiWithTools(promptText, aiConfig, toolCategoryFilter, {
+          productMode,
+          activeSheetId,
+          activeDeckSlideId
+        }, { maxTurns: 4, signal: currentAbortController.signal });
+
+        if (toolResult && Array.isArray(toolResult.toolsExecuted) && toolResult.toolsExecuted.length > 0) {
+          toolResult.toolsExecuted.forEach(exec => {
+            showToast(`Executed: ${exec.toolName}`);
+          });
+
+          setChatMessages(prev => [
+            ...prev,
+            {
+              id: Date.now() + 1,
+              sender: 'ai',
+              text: toolResult.answer || 'Completed requested workspace actions.',
+              type: 'action_completed',
+              toolsExecuted: toolResult.toolsExecuted,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+          setIsComposing(false);
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+          return;
+        }
+      } catch (toolErr) {
+        if (toolErr?.name === 'AbortError') return;
+        console.warn('[handleAISubmit] Tool calling resolution bypassed:', toolErr);
+      }
+    }
     const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
     
     // Strict Guard: Identify informational, Q&A, review, or summarization queries
@@ -30040,7 +30437,7 @@ Return ONLY valid JSON matching the schema.`;
     
     const isBlankOrNewDoc = !blankBodyRef.current?.innerText || blankBodyRef.current.innerText.trim().length <= 35 || docTitle === 'Untitled Document' || !docTitle;
     const isExplicitArticleIntent = !isQueryOrSummary && /\b(write|create|draft|compose|generate|article|essay|post|letter|report|paragraph|content|guide|memo|story)\b/i.test(promptText);
-    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose' || (source === 'chat' && isBlankOrNewDoc && isExplicitArticleIntent));
+    const shouldBuildDocument = !isQueryOrSummary && (forceDocBuild || source === 'compose');
     const selectionScoped = Boolean(options.selectionScoped);
     const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
@@ -30494,11 +30891,24 @@ Return ONLY valid JSON matching the schema.`;
     } else {
       // productMode === 'compose' (Document Mode)
       if (blankBodyRef.current?.innerText && blankBodyRef.current.innerText.trim().length > 10) {
-        docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${blankBodyRef.current.innerText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
+        const rawCanvasText = blankBodyRef.current.innerText.trim();
+        const isCanvasAnError = rawCanvasText.startsWith('??') ||
+                                rawCanvasText.includes('Unable to reach local inference model') ||
+                                rawCanvasText.includes('Connection Refused') ||
+                                rawCanvasText.includes('Live AI request failed');
+        if (!isCanvasAnError) {
+          docContext = `\n\n--- ACTIVE DOCUMENT CONTENT ---\n${rawCanvasText.slice(0, 15000)}\n--- END DOCUMENT CONTENT ---\n`;
+        }
       }
     }
 
-    const groundedPrompt = `${promptText}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}${sheetContext}`;
+    const activeSelectionText = String(options.selectedScope || selectedEditorTextRef.current || selectedEditorText || '').trim();
+    let selectionContext = '';
+    if (activeSelectionText) {
+      selectionContext = `\n\n--- SPECIFIC USER-SELECTED HIGHLIGHT / EXCERPT ---\n"${activeSelectionText}"\n--- END USER-SELECTED HIGHLIGHT ---\n(CRITICAL: The user has explicitly highlighted the text above. Focus your response, rewrite, title, or answer specifically on this highlighted excerpt unless they explicitly ask about the entire document.)\n`;
+    }
+
+    const groundedPrompt = `${promptText}${selectionContext}${attachmentContext ? `\n\n${attachmentContext}` : ''}${deckContext}${docContext}${sheetContext}`;
     const composeFallbackAction = buildComposeFallbackAction({
       promptText,
       requestedFormat,
@@ -30516,7 +30926,7 @@ Return ONLY valid JSON matching the schema.`;
       return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
     };
 
-    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating' || isExplicitArticleIntent;
+    const isArticleWritingRequest = shouldBuildDocument || source === 'compose' || source === 'floating';
 
     let systemPrompt = '';
     let activeSchemaToUse = null;
@@ -30579,7 +30989,15 @@ Answer the user's question, provide an insightful summary, or explain the contex
       const rawModelText = String(modelResponse?.text || '').trim();
       const parsedData = modelResponse?.parsed || parseJsonSafely(rawModelText);
 
-      if (rawModelText || parsedData) {
+      const isResponseAnError = Boolean(
+        modelResponse?.isError ||
+        modelResponse?.error ||
+        rawModelText.startsWith('??') ||
+        rawModelText.includes('Unable to reach local inference model') ||
+        rawModelText.includes('Connection Refused')
+      );
+
+      if ((rawModelText || parsedData) && !isResponseAnError) {
         usedLiveModel = true;
         
         // Extract clean title and content (unwrapping any JSON envelopes like {"title": "...", "content": "..."})
@@ -30666,7 +31084,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
         }
 
         // Automatic Document Editor Rendering
-        const shouldInjectToEditor = (shouldBuildDocument || source === 'compose' || source === 'floating') && !isDeckGeneration;
+        const isErrorMessageContent = Boolean(
+          isResponseAnError ||
+          aiResponseText.startsWith('??') ||
+          aiResponseText.includes('Unable to reach local inference model') ||
+          aiResponseText.includes('Connection Refused') ||
+          aiResponseText.includes('Live AI request failed')
+        );
+        const shouldInjectToEditor = (shouldBuildDocument || source === 'compose' || source === 'floating') && !isDeckGeneration && !isErrorMessageContent;
 
         if (!docAction && shouldInjectToEditor && aiResponseText) {
           docAction = {
@@ -30756,7 +31181,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
     if (!usedLiveModel && !(shouldBuildDocument && (smartActionKey === 'toc' || smartActionKey === 'title-headers'))) {
       const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY or VITE_GEMINI_DEMO_API_KEY, billing, and model access.';
-      aiResponseText = composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`;
+      aiResponseText = (source === 'chat' && !forceDocBuild)
+        ? (liveModelError || lastAiError || 'Unable to get response from AI model. Please verify your local model or cloud API is running.')
+        : (composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`);
       trackMemoryAction('ai', 'Live AI request failed', {
         reason: failureReason,
       });
@@ -30938,7 +31365,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
     if (!prompt) return;
 
-    handleAISubmit(prompt, { source: 'chat', attachments: chatAttachments });
+    const activeSelection = (selectedEditorTextRef.current || selectedEditorText || '').trim();
+
+    handleAISubmit(prompt, { 
+      source: 'chat', 
+      attachments: chatAttachments,
+      selectedScope: activeSelection,
+      selectionScoped: Boolean(activeSelection)
+    });
     setChatInput('');
     setChatAttachments([]);
     setActiveAgentTag(null);
@@ -32462,6 +32896,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
+    setMeetingEndedParticipantsCount(1);
 
     // CRITICAL: Request camera/mic BEFORE entering fullscreen.
     // Browsers block getUserMedia() permission prompts while in fullscreen mode,
@@ -32581,8 +33016,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const generateRoomCode = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz';
-    const getStr = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
+    const randomBytes = new Uint8Array(10);
+    if (typeof window !== 'undefined' && window.crypto) {
+      window.crypto.getRandomValues(randomBytes);
+    } else {
+      for (let i = 0; i < 10; i++) randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+    const getStr = (start, len) => Array.from({ length: len }, (_, i) => chars[randomBytes[start + i] % chars.length]).join('');
+    return `${getStr(0, 3)}-${getStr(3, 4)}-${getStr(7, 3)}`;
   };
 
   const joinRoom = async (code) => {
@@ -32592,6 +33033,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const leaveRoom = () => {
+    // Capture real participant count before stream shutdown
+    const activeRemoteCount = Math.max(
+      roomParticipants?.length || 0,
+      videoParticipants?.filter(p => p && !p.isYou && p.id !== 'you')?.length || 0
+    );
+    const totalParticipants = 1 + activeRemoteCount;
+    setMeetingEndedParticipantsCount(totalParticipants);
+
     // Stop all media streams immediately so camera/mic LED turns off.
     stopMediaStream();
     // Reset mic/camera UI state so they don't appear active after hanging up.
@@ -32614,7 +33063,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setMeetingSummary({
       roomCode: roomId,
       durationLabel: completedDuration,
-      participantsCount: 4,
+      participantsCount: meetingEndedParticipantsCount,
       decisions: [
         'Beta launch officially locked for May 15th.',
         'Marketing budget increased by 15% for initial push.',
@@ -32869,6 +33318,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
   }, [sharedMeetingFiles, activeSharedMeetingFileId]);
 
   const handleRightSidebarTabsKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setRightSidebarOpen(false);
+      setRightPanelMaximized(false);
+      return;
+    }
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
       return;
     }
@@ -33899,6 +34354,11 @@ Respond with valid JSON formatted like this:
       case 'chat':
         setActivePrimaryNav('inbox');
         setActiveRightTab('chat');
+        break;
+      case 'help':
+        setActivePrimaryNav('home');
+        setActiveRightTab('help');
+        setRightPanelMaximized(false);
         break;
       case 'assistant':
       case 'more':
@@ -35884,6 +36344,17 @@ Respond with a JSON array of slide objects matching the schema.`;
           isPresentationFocus: isDeckPresentationFocus
         }),
 
+        addSlide: (props = {}) => window.regaarderDeck.createSlide(props),
+        updateSlide: (slideId, fieldsObj = {}) => window.regaarderDeck.updateSlideFields(slideId, fieldsObj),
+        loadTemplate: (templateName) => {
+          const templateSlides = JSON.parse(JSON.stringify(DEFAULT_DECK_SLIDES));
+          setDeckSlidesData(templateSlides);
+          setActiveDeckSlideId(templateSlides[0]?.id || 1);
+          showToast(`Loaded template: ${templateName || 'Business Plan Deck'}`);
+          return { success: true, message: `Loaded ${templateName || 'Business Plan Deck'}`, totalSlides: templateSlides.length };
+        },
+        applyTemplate: (templateName) => window.regaarderDeck.loadTemplate(templateName),
+
         createSlide: (props = {}) => {
           const slides = deckSlidesData && deckSlidesData.length ? deckSlidesData : (DEFAULT_DECK_SLIDES || []);
           const refSlide = activeDeckSlide || slides[slides.length - 1] || slides[0] || {};
@@ -36429,7 +36900,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     const isSheetsMode = productMode === 'sheets';
     const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
-    const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || docMenuPos !== null;
+    const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -39723,6 +40194,26 @@ Respond with a JSON array of slide objects matching the schema.`;
 
 
 
+      {/* Floating Exit Button for Right Sidebar (Apple-style floating drawer tab) */}
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
+        <button
+          type="button"
+          onClick={() => {
+            setRightSidebarOpen(false);
+            setRightPanelMaximized(false);
+          }}
+          className="fixed z-[450] group flex items-center justify-center w-8 h-8 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-700/80 shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600 transition-all duration-200 active:scale-95 cursor-pointer apple-floating-exit-btn"
+          style={{
+            top: '88px',
+            right: `${(rightPanelMaximized ? 16 : ((rightSidebarWidth || 380) + 12))}px`
+          }}
+          title="Exit sidebar (Esc)"
+          aria-label="Exit sidebar"
+        >
+          <X size={15} strokeWidth={2.2} className="transition-transform group-hover:rotate-90 duration-200" />
+        </button>
+      )}
+
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
@@ -39776,8 +40267,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 );
               })}
-  
-          </div>
+            </div>
           </div>
         </div>
         )}
@@ -39786,7 +40276,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
           
           {/* ACTIVE TAB: HISTORY */}
-          {(activeRightTab === 'history' || activeRightTab === 'ai-studio') && (
+          {activeRightTab === 'history' && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc] dark:bg-[#18181b]">
               {/* History Top Header */}
               <div className="px-4 py-3 border-b border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-2">
@@ -40121,6 +40611,22 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
+          {/* ACTIVE TAB: AI STUDIO / AGENTS */}
+          {activeRightTab === 'ai-studio' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b] overflow-hidden">
+              <ComposeAIStudio
+                documentText={docBodyHtml || blankBodyRef.current?.innerText || ''}
+                selectedText={selectedEditorTextRef.current || selectedEditorText || ''}
+                editorRef={blankBodyRef}
+                chatMessages={chatMessages}
+                isComposing={isComposing}
+                onRunAgent={(prompt, opts) => handleAISubmit(prompt, { source: 'chat', ...opts })}
+                showToast={showToast}
+                initialAgent="health"
+              />
+            </div>
+          )}
+
           {/* ACTIVE TAB: PROPERTIES */}
           {activeRightTab === 'properties' && (
             <div className={`flex-1 flex flex-col min-h-0 bg-[#f8fafc] ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-60 select-none' : ''}`}>
@@ -40370,14 +40876,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                       onClick={handleCreateNewChatTab}
                     >
                       <Plus size={13} strokeWidth={2} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Close panel"
-                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-700 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
-                      onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                    >
-                      <X size={13} strokeWidth={1.75} />
                     </button>
                   </div>
                 </div>
@@ -41011,7 +41509,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       })()}
 
                       {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
-                      {msg.sender !== 'user' && (
+                      {msg.sender !== 'user' && !msg.isError && !msg.text?.startsWith('??') && !msg.text?.includes('Unable to reach local inference model') && !msg.text?.includes('requires Ollama or LM Studio') && (
                         <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-between gap-2">
                           <button
                             type="button"
@@ -41366,8 +41864,29 @@ Respond with a JSON array of slide objects matching the schema.`;
                   )}
 
                   <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
-                    {(isDocContextActive || activeAgentTag || chatAttachments.length > 0) && (
+                    {(isDocContextActive || activeAgentTag || chatAttachments.length > 0 || Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim())) && (
                       <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
+                        {Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) && (
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 h-5.5 rounded-md border border-violet-200/80 dark:border-violet-800/60 bg-violet-50/90 dark:bg-violet-950/70 text-[11px] font-medium text-violet-700 dark:text-violet-300 shadow-2xs group relative transition-all animate-in fade-in zoom-in-95 duration-150">
+                            <Highlighter size={10.5} className="text-violet-500 shrink-0" />
+                            <span className="truncate max-w-[140px] font-sans text-[11px]">
+                              "{truncateText(selectedEditorText || selectedEditorTextRef.current, 36)}"
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEditorText('');
+                                selectedEditorTextRef.current = '';
+                                savedSelectionRef.current = null;
+                              }}
+                              className="ml-0.5 p-0.5 text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 rounded hover:bg-violet-200/50 dark:hover:bg-violet-900/50 transition-colors"
+                              title="Remove selection context"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        )}
                         {activeAgentTag && (
                           <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all animate-in fade-in zoom-in-95 duration-150">
                             <span className="font-mono text-[11px] font-semibold leading-tight">
@@ -44508,7 +45027,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
-                className={`fixed right-0 top-14 bottom-11 z-[365] group/sidebar border-l border-t border-b border-slate-200/70 dark:border-zinc-800/80 rounded-l-2xl bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-3 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
+                className={`fixed right-0 top-0 bottom-0 h-screen min-h-screen z-[365] group/sidebar border-l border-slate-200/70 dark:border-zinc-800/80 rounded-none bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl flex flex-col items-start px-2 py-3 gap-2 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.08)] ${
                   isRightSideHovered && !miniSidebarDismissed
                     ? 'translate-x-0 opacity-100 pointer-events-auto w-[58px] hover:w-[170px]'
                     : 'translate-x-full opacity-0 pointer-events-none w-[58px]'
@@ -45368,7 +45887,11 @@ Respond with a JSON array of slide objects matching the schema.`;
         let systemPrompt = '';
         let documentContext = '';
         if (blankBodyRef.current) {
-          documentContext = `\n\nActive Document Context:\n${blankBodyRef.current.innerText}`;
+          const rawDocText = (blankBodyRef.current.innerText || '').trim();
+          const isGenericDocText = /^(?:untitled(\s+(document|section|page))?|unsaved\s+draft|create\s+at\s+the\s+speed\s+of\s+thought\.?)$/i.test(rawDocText) || rawDocText.length < 5 || rawDocText.includes('Unable to reach local inference model');
+          if (!isGenericDocText) {
+            documentContext = `\n\nActive Document Context:\n${rawDocText}`;
+          }
         }
 
         if (routedAgent.includes('Presentation')) {
@@ -45390,23 +45913,38 @@ If requested to draw a chart or graph, append a structured action JSON block:
         let replyText = '';
 
         // Check if user selected a Local LLM (Ollama / LM Studio / llama.cpp)
-        if (composeSelectedModel.isLocal && composeSelectedModel?.endpoint) {
-          const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint.includes('11434');
-          const targetUrl = isOllama
-            ? `${composeSelectedModel?.endpoint.replace(/\/v1$/, '')}/api/chat`
-            : `${composeSelectedModel?.endpoint.endsWith('/v1') ? composeSelectedModel?.endpoint : composeSelectedModel?.endpoint + '/v1'}/chat/completions`;
+        if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
+          const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint?.includes('11434');
+          const baseEndpoint = composeSelectedModel?.endpoint?.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '') || 'http://127.0.0.1:11434';
+          const primaryUrl = isOllama
+            ? `${baseEndpoint}/api/chat`
+            : `${composeSelectedModel?.endpoint?.endsWith('/v1') ? composeSelectedModel?.endpoint : (composeSelectedModel?.endpoint || '') + '/v1'}/chat/completions`;
+          const fallbackUrl = isOllama
+            ? primaryUrl.replace('127.0.0.1', 'localhost')
+            : null;
 
-          const requestBody = isOllama
+          const isCustomOffload = localOffloadConfig?.mode === 'custom' && localOffloadConfig?.enabled;
+          const offloadOptions = isCustomOffload
             ? {
-                model: composeSelectedModel?.id,
+                num_gpu: localOffloadConfig?.gpuLayers,
+                num_thread: localOffloadConfig?.threads,
+                num_ctx: localOffloadConfig?.contextSize,
+                use_mmap: localOffloadConfig?.useMmap
+              }
+            : undefined;
+
+          const buildBody = (modelId) => isOllama
+            ? {
+                model: modelId,
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
                 ],
-                stream: false
+                stream: false,
+                ...(offloadOptions ? { options: offloadOptions } : {})
               }
             : {
-                model: composeSelectedModel?.id || 'default',
+                model: modelId || 'default',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: `${text}${documentContext}` }
@@ -45414,13 +45952,41 @@ If requested to draw a chart or graph, append a structured action JSON block:
                 stream: false
               };
 
-          const localRes = await fetch(targetUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
+          const dmAbortController = new AbortController();
+          const dmTimeoutId = setTimeout(() => dmAbortController.abort(), 240000);
 
-          if (!localRes.ok) throw new Error(`Local LLM error: HTTP ${localRes.status}`);
+          let localRes = null;
+          try {
+            localRes = await fetch(primaryUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(buildBody(composeSelectedModel?.id)),
+              signal: dmAbortController.signal
+            });
+          } catch (primaryErr) {
+            if (primaryErr.name === 'AbortError') throw primaryErr;
+            // Primary host refused ??retry on alternate host before failing
+            if (fallbackUrl && fallbackUrl !== primaryUrl) {
+              const retryController = new AbortController();
+              const retryTimeout = setTimeout(() => retryController.abort(), 240000);
+              try {
+                localRes = await fetch(fallbackUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(buildBody(composeSelectedModel?.id)),
+                  signal: retryController.signal
+                });
+              } finally {
+                clearTimeout(retryTimeout);
+              }
+            } else {
+              throw primaryErr;
+            }
+          } finally {
+            clearTimeout(dmTimeoutId);
+          }
+
+          if (!localRes.ok) throw new Error(`Local inference model returned HTTP ${localRes.status}. Verify Ollama is running and the model is loaded.`);
           const localData = await localRes.json();
 
           if (isOllama && localData.message?.content) {
@@ -45460,7 +46026,7 @@ If requested to draw a chart or graph, append a structured action JSON block:
           const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
           return {
             ...prev,
-            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: localTargetModel.name }]
+            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: composeSelectedModel?.name || 'Local AI' }]
           };
         });
 
@@ -48423,8 +48989,24 @@ const renderRoomTopHeader = () => (
     setAuthError('');
     setAuthLoading(true);
 
-    const mockEmail = `${provider}_user_${Math.floor(Math.random() * 10000)}@example.com`;
-    const mockName = provider === 'google' ? 'Google Developer' : 'Apple User';
+    // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
+    let deviceId = localStorage.getItem('rc.device_id');
+    if (!deviceId) {
+      const arr = new Uint8Array(8);
+      if (typeof window !== 'undefined' && window.crypto) {
+        window.crypto.getRandomValues(arr);
+      } else {
+        for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
+      }
+      deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('rc.device_id', deviceId);
+    }
+
+    const targetEmail = authEmail && authEmail.includes('@')
+      ? authEmail.trim().toLowerCase()
+      : `social_${provider}_${deviceId}@regaarder.local`;
+
+    const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
@@ -48432,8 +49014,8 @@ const renderRoomTopHeader = () => (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider,
-          email: mockEmail,
-          name: mockName
+          email: targetEmail,
+          name: targetName
         })
       });
 
@@ -48474,6 +49056,7 @@ const renderRoomTopHeader = () => (
           <button 
             type="button"
             onClick={() => setAuthModalOpen(false)}
+            aria-label="Close authentication modal"
             className="absolute top-5 right-5 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
             title="Close"
           >
@@ -48483,8 +49066,8 @@ const renderRoomTopHeader = () => (
           {/* Integrated Brand Header */}
           <div className="flex flex-col items-center text-center gap-2">
             <div className="relative group cursor-pointer mb-1">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-xl shadow-pink-500/20 flex items-center justify-center transform group-hover:scale-105 transition-all duration-300">
-                <div className="w-6 h-6 bg-white rounded-full opacity-25 -translate-x-0.5 -translate-y-0.5" />
+              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-[#27272a] border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-center group-hover:border-violet-300 dark:group-hover:border-violet-500/40 transition-all duration-200">
+                <RegaarderBrandIcon size={22} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
             <h2 className="text-[20px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
@@ -71896,6 +72479,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
                 <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
+                <button onClick={() => setSettingsTab('hardware_offload')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'hardware_offload' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Hardware & Offload</button>
                 <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
@@ -72288,6 +72872,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+              {settingsTab === 'hardware_offload' && (
+                <div className="max-w-[620px]">
+                  <LocalHardwareOffloadSettings
+                    localOffloadConfig={localOffloadConfig}
+                    saveLocalOffloadConfig={saveLocalOffloadConfig}
+                    showToast={showToast}
+                  />
                 </div>
               )}
               {settingsTab === 'storage' && (
@@ -73572,7 +74165,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
-          <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
+          <RegaarderComposeLanding
+            onLaunch={openLandingWorkspace}
+            onOpenRecentModal={() => setRecentDocumentsModalOpen(true)}
+            onSearchClick={() => setIsMemorySearchOpen(true)}
+            onNotificationsClick={() => setNotificationsOpen(true)}
+            notifications={notifications}
+            currentUser={currentUser}
+            onProfileClick={() => {
+              if (currentUser) {
+                setComposeProfileMenuOpen(true);
+              } else {
+                setAuthModalOpen(true);
+              }
+            }}
+          />
         </div>
       ) : productMode === 'room-landing' ? (
         <div className="fixed inset-0 z-[9998] flex flex-col min-w-0 bg-[#F9F9F8] dark:bg-zinc-950 overflow-hidden">
@@ -74049,34 +74656,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Top Header & Document Tab Strip Auto-Hide Container for Whiteboard */}
         {isWhiteboardWorkspace && (
           <>
-            {/* Top trigger zone to smoothly reveal navigation when hovering near top edge */}
+            {/* Top proximity trigger zone to smoothly reveal navigation when hovering near top edge */}
             <div 
-              onMouseEnter={() => setIsWhiteboardTopNavHovered(true)} 
-              className="absolute top-0 left-0 right-0 h-6 z-[380] cursor-default pointer-events-auto" 
+              onMouseEnter={handleWhiteboardTopNavEnter} 
+              className="absolute top-0 left-0 right-0 h-10 z-[380] cursor-default pointer-events-auto" 
             />
 
             {/* Subtle floating title indicator when top nav is autohidden */}
             {!isWhiteboardTopNavRevealed && (
               <div
-                onMouseEnter={() => setIsWhiteboardTopNavHovered(true)}
-                onClick={() => setIsWhiteboardTopNavHovered(true)}
-                className="absolute top-2.5 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/pill animate-in fade-in slide-in-from-top-1"
+                onMouseEnter={handleWhiteboardTopNavEnter}
+                onClick={handleWhiteboardTopNavEnter}
+                className="absolute top-2 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/hud animate-in fade-in slide-in-from-top-1"
                 title="Hover or click to reveal workspace tabs, export, and controls"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
                 <span className="text-[11.5px] font-semibold tracking-tight">{(docTitle === 'Untitled Whiteboard' || !docTitle?.trim()) ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : docTitle}</span>
-                <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/pill:translate-y-0.5 transition-transform" />
+                <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/hud:translate-y-0.5 transition-transform" />
               </div>
             )}
           </>
         )}
 
         <div
-          onMouseEnter={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(true); }}
-          onMouseLeave={() => { if (isWhiteboardWorkspace) setIsWhiteboardTopNavHovered(false); }}
-          className={`flex flex-col select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
+          onMouseEnter={handleWhiteboardTopNavEnter}
+          onMouseLeave={handleWhiteboardTopNavLeave}
+          className={`flex flex-col select-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isWhiteboardWorkspace
-              ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${
+              ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] ${
                   isWhiteboardTopNavRevealed 
                     ? 'translate-y-0 opacity-100 pointer-events-auto' 
                     : '-translate-y-full opacity-0 pointer-events-none'
@@ -74622,7 +75229,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   disabled={selectionAiLoading || !selectionAiPrompt.trim()}
-                  onClick={() => executeSelectionAiAction('custom', selectionAiPrompt)}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    if (!selectionAiLoading && selectionAiPrompt.trim()) {
+                      executeSelectionAiAction('custom', selectionAiPrompt);
+                    }
+                  }}
                   className="p-1 rounded-lg text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-950/60 disabled:opacity-40"
                 >
                   {selectionAiLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
@@ -75903,7 +76515,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const nextHeading = headingMeta[option] || headingMeta.Paragraph;
                                 setEditorHeading(option);
                                 
-                                const range = getEditorSelectionRange();
+                                if (savedSelectionRef.current) {
+                                  restoreSavedSelection();
+                                }
+                                const range = getEditorSelectionRange() || savedSelectionRef.current;
                                 const ancestor = range?.commonAncestorContainer;
                                 const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
                                 setActiveFontSize(nextHeading.size);
@@ -77150,8 +77765,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   tabIndex={0}
                   onPaste={handleWhiteboardPaste}
                   onPointerMove={(e) => {
-                    if (e.clientY > 60 && isWhiteboardTopNavHovered) {
-                      setIsWhiteboardTopNavHovered(false);
+                    if (e.clientY < 44) {
+                      handleWhiteboardTopNavEnter();
+                    } else if (e.clientY > 100 && isWhiteboardTopNavHovered) {
+                      handleWhiteboardTopNavLeave();
                     }
                   }}
                   className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#d4d4e8_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,#2a2a35_1px,transparent_0)] bg-[size:24px_24px] overflow-hidden select-none" 
@@ -79928,9 +80545,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseMove={handleEditorMouseMove}
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-all duration-200 ${
+            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-[margin-right] duration-200 ease-out ${
               (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
+            style={{
+              marginRight: productMode !== 'landing' && rightSidebarOpen && !shareModalOpen && !rightPanelMaximized
+                ? `${rightSidebarWidth || 380}px`
+                : 0
+            }}
           >
           <div
             className="mx-auto"
@@ -82622,7 +83244,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-        <AppleGestureOnboardingHotspots />
+        {productMode === 'compose' && (
+          <AppleGestureOnboardingHotspots />
+        )}
 
         {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
@@ -84518,7 +85142,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">4</span>
+                  <span className="text-[18px] font-bold text-slate-900 dark:text-zinc-100">{meetingEndedParticipantsCount}</span>
                   <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">{t('room.participants') || 'Participants'}</span>
                 </div>
                 <div className="w-px h-7 bg-slate-200/80 dark:bg-zinc-800" />
@@ -86925,6 +87549,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex flex-col gap-1.5 flex-1">
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
+                <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
+                <button onClick={() => setSettingsTab('hardware_offload')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'hardware_offload' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Hardware & Offload</button>
                 <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
@@ -87125,6 +87751,220 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
 
+              {settingsTab === 'ai_models' && (
+                <div className="max-w-[540px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 tracking-tight">AI & API Keys</h2>
+                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
+                      Browser-Stored
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-slate-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                    Provide your own API keys to run Gemini or Claude directly from your browser. Keys are securely stored in your local browser storage.
+                  </p>
+
+                  {/* Active AI Provider Switcher */}
+                  <div className="mb-6 p-1 bg-slate-100 dark:bg-zinc-800 rounded-xl flex items-center gap-1 border border-slate-200/80 dark:border-zinc-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveAiProviderConfig({ provider: 'gemini' });
+                        checkAiBackendStatus('gemini');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${aiProviderConfig.provider === 'gemini' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                    >
+                      <Sparkles size={14} className={aiProviderConfig.provider === 'gemini' ? 'text-violet-600' : 'text-slate-400'} />
+                      Google Gemini
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveAiProviderConfig({ provider: 'claude' });
+                        checkAiBackendStatus('claude');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${aiProviderConfig.provider === 'claude' ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'}`}
+                    >
+                      <Cpu size={14} className={aiProviderConfig.provider === 'claude' ? 'text-amber-600' : 'text-slate-400'} />
+                      Anthropic Claude
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Google Gemini Configuration Card */}
+                    <div className={`p-5 rounded-2xl border transition-all ${aiProviderConfig.provider === 'gemini' ? 'bg-white dark:bg-zinc-900/90 border-violet-200 dark:border-violet-900/60 shadow-sm' : 'bg-slate-50/50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-800 opacity-70'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                            <Sparkles size={13} />
+                          </div>
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Google Gemini API Key</h3>
+                        </div>
+                        {aiProviderConfig.geminiApiKey ? (
+                          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Key Saved
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">Optional (Uses server key if empty)</span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-3">
+                        <input
+                          type={showGeminiKey ? 'text' : 'password'}
+                          value={aiProviderConfig.geminiApiKey || ''}
+                          onChange={(e) => saveAiProviderConfig({ geminiApiKey: e.target.value.trim() })}
+                          placeholder="Paste Gemini API Key (AIzaSy...)"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 pr-20 text-[13px] font-mono text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowGeminiKey(!showGeminiKey)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                            title={showGeminiKey ? 'Hide key' : 'Show key'}
+                          >
+                            {showGeminiKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {aiProviderConfig.geminiApiKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveAiProviderConfig({ geminiApiKey: '' });
+                                showToast('Gemini API key cleared');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                              title="Clear Key"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Gemini Model Selector */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <label className="text-[12px] font-medium text-slate-600 dark:text-zinc-400">Gemini Model:</label>
+                        <select
+                          value={aiProviderConfig.geminiModel || 'gemini-2.5-flash'}
+                          onChange={(e) => saveAiProviderConfig({ geminiModel: e.target.value })}
+                          className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-violet-500"
+                        >
+                          <option value="gemini-2.5-flash">gemini-2.5-flash (Fast & Recommended)</option>
+                          <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
+                          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                          <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Anthropic Claude Configuration Card */}
+                    <div className={`p-5 rounded-2xl border transition-all ${aiProviderConfig.provider === 'claude' ? 'bg-white dark:bg-zinc-900/90 border-amber-200 dark:border-amber-900/60 shadow-sm' : 'bg-slate-50/50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-800 opacity-70'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <Cpu size={13} />
+                          </div>
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Anthropic Claude API Key</h3>
+                        </div>
+                        {aiProviderConfig.claudeApiKey ? (
+                          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> Key Saved
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">Optional</span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-3">
+                        <input
+                          type={showClaudeKey ? 'text' : 'password'}
+                          value={aiProviderConfig.claudeApiKey || ''}
+                          onChange={(e) => saveAiProviderConfig({ claudeApiKey: e.target.value.trim() })}
+                          placeholder="Paste Claude API Key (sk-ant-api03-...)"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 pr-20 text-[13px] font-mono text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowClaudeKey(!showClaudeKey)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+                            title={showClaudeKey ? 'Hide key' : 'Show key'}
+                          >
+                            {showClaudeKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {aiProviderConfig.claudeApiKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveAiProviderConfig({ claudeApiKey: '' });
+                                showToast('Claude API key cleared');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                              title="Clear Key"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Claude Model Selector */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                        <label className="text-[12px] font-medium text-slate-600 dark:text-zinc-400">Claude Model:</label>
+                        <select
+                          value={aiProviderConfig.claudeModel || 'claude-3-7-sonnet-20250219'}
+                          onChange={(e) => saveAiProviderConfig({ claudeModel: e.target.value })}
+                          className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-amber-500"
+                        >
+                          <option value="claude-3-7-sonnet-20250219">claude-3-7-sonnet (Hybrid Reasoning)</option>
+                          <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet (Intelligent)</option>
+                          <option value="claude-3-5-haiku-20241022">claude-3-5-haiku (Fast)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Test Connection & Verification Card */}
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-2xl border border-slate-200/80 dark:border-zinc-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[12px] font-semibold text-slate-700 dark:text-zinc-300">
+                          Active: <span className="font-bold text-violet-600 dark:text-violet-400">{aiProviderConfig.provider === 'claude' ? 'Anthropic Claude' : 'Google Gemini'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={aiKeyStatus.testing}
+                          onClick={() => checkAiBackendStatus()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all shadow-xs disabled:opacity-50"
+                        >
+                          {aiKeyStatus.testing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                          Test Connection
+                        </button>
+                      </div>
+
+                      {aiKeyStatus.message && (
+                        <div className={`text-[12px] p-2.5 rounded-xl border flex items-start gap-2 ${aiKeyStatus.usable === true ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' : aiKeyStatus.usable === false ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'}`}>
+                          {aiKeyStatus.usable === true ? (
+                            <CheckCircle2 size={15} className="shrink-0 mt-0.5" />
+                          ) : aiKeyStatus.usable === false ? (
+                            <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                          ) : (
+                            <Loader2 size={15} className="shrink-0 mt-0.5 animate-spin" />
+                          )}
+                          <span className="leading-snug">{aiKeyStatus.message}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {settingsTab === 'hardware_offload' && (
+                <div className="max-w-[620px]">
+                  <LocalHardwareOffloadSettings
+                    localOffloadConfig={localOffloadConfig}
+                    saveLocalOffloadConfig={saveLocalOffloadConfig}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
               {settingsTab === 'storage' && (
                 <StorageDataManagement showToast={showToast} />
               )}

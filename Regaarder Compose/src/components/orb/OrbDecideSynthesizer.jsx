@@ -7,9 +7,10 @@ import {
   GitBranch, Check, Compass, ShieldCheck, Loader2, ChevronDown,
   Settings, Server, Cpu, Sparkles, Wifi, WifiOff, X, Key, RefreshCw,
   ExternalLink, Eye, Maximize2, Minimize2, Network, Shield, Scale,
-  BookOpen, Target, Activity, AlertCircle, ArrowUpRight, Zap
+  BookOpen, Target, Activity, AlertCircle, ArrowUpRight, Zap, MessageSquare
 } from 'lucide-react';
-import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
+import { RegaarderProductIcon, RegaarderAiIcon, OrbIcon } from '../RegaarderProductIcons';
+import OrbDecideSelectionPill from './OrbDecideSelectionPill';
 import { synthesizeStrategicDecision } from '../../services/orbKnowledgeGraphService';
 import { 
   generateOrbDecisionSynthesis, 
@@ -50,9 +51,15 @@ export default function OrbDecideSynthesizer({
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [showConfidenceExplainer, setShowConfidenceExplainer] = useState(false);
+
+  // Text selection & Quote Reply state
+  const [selectionState, setSelectionState] = useState(null);
+  const [activeQuoteContext, setActiveQuoteContext] = useState(null);
   
   const timerRef = useRef(null);
   const modelPickerRef = useRef(null);
+  const decideContainerRef = useRef(null);
+  const queryInputRef = useRef(null);
 
   // Probe local inference servers (Ollama, LM Studio) on mount
   const refreshLocalServers = async () => {
@@ -98,6 +105,105 @@ export default function OrbDecideSynthesizer({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  // ── Highlight / Text Selection Detection ──
+  useEffect(() => {
+    const handleSelectionCheck = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+        return;
+      }
+      const text = selection.toString().trim();
+      if (text.length < 2) {
+        setSelectionState(null);
+        return;
+      }
+
+      // Ensure selection originated within the reasoning canvas
+      const anchorNode = selection.anchorNode;
+      if (!decideContainerRef.current || !anchorNode || !decideContainerRef.current.contains(anchorNode)) {
+        return;
+      }
+
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+
+        const centerX = rect.left + rect.width / 2;
+        const isFlipped = rect.top < 120;
+        const targetY = isFlipped ? rect.bottom : rect.top;
+        const clampedX = Math.max(190, Math.min(window.innerWidth - 190, centerX));
+
+        setSelectionState({
+          text,
+          x: clampedX,
+          y: targetY,
+          isFlipped
+        });
+      } catch (err) {
+        console.warn('Failed to calculate selection position:', err);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setTimeout(handleSelectionCheck, 30);
+    };
+
+    const handleDocPointerDown = (e) => {
+      // If clicking outside and selection is collapsed
+      const selection = window.getSelection();
+      if (selection && selection.isCollapsed) {
+        setSelectionState(null);
+      }
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('pointerup', handleMouseUp);
+    document.addEventListener('pointerdown', handleDocPointerDown);
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointerup', handleMouseUp);
+      document.removeEventListener('pointerdown', handleDocPointerDown);
+    };
+  }, []);
+
+  // Selection Action Handlers
+  const handleSelectionReply = (quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    setTimeout(() => {
+      queryInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleSelectionExplain = (quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    const prompt = `Explain the strategic significance, context, and implications of: "${quoteText}"`;
+    setQuestion(prompt);
+    triggerSynthesize(prompt);
+  };
+
+  const handleSelectionChallenge = (quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    const prompt = `Challenge this claim, stress-test the underlying assumptions, and evaluate counter-evidence for: "${quoteText}"`;
+    setQuestion(prompt);
+    triggerSynthesize(prompt);
+  };
+
+  const handleSelectionAskQuestion = (inquiryPrompt, quoteText) => {
+    setActiveQuoteContext(quoteText);
+    setSelectionState(null);
+    window.getSelection()?.removeAllRanges();
+    const combinedPrompt = `[Regarding "${quoteText}"]: ${inquiryPrompt}`;
+    setQuestion(inquiryPrompt);
+    triggerSynthesize(combinedPrompt);
+  };
 
   const synthesis = useMemo(() => {
     if (liveSynthesis) return liveSynthesis;
@@ -147,7 +253,11 @@ export default function OrbDecideSynthesizer({
 
   const handleQuerySubmit = (e) => {
     e?.preventDefault();
-    triggerSynthesize(question);
+    if (!question.trim()) return;
+    const finalQuery = activeQuoteContext 
+      ? `[Regarding "${activeQuoteContext}"]: ${question.trim()}`
+      : question.trim();
+    triggerSynthesize(finalQuery);
   };
 
   // Derive genuine inquiries from workspace entities
@@ -184,13 +294,21 @@ export default function OrbDecideSynthesizer({
   // Active Model Label
   const currentModelLabel = useMemo(() => {
     if (aiConfig.provider === 'ollama') {
-      return `Ollama (${aiConfig.ollamaModel || 'Local'})`;
+      const m = aiConfig.ollamaModel || 'gemma3:1b';
+      if (m.toLowerCase().includes('gemma3:1b') || m.toLowerCase().includes('gemma:1b')) return 'Gemma 3:1B';
+      if (m.toLowerCase().includes('gemma3:4b') || m.toLowerCase().includes('gemma:4b')) return 'Gemma 3:4B';
+      if (m.toLowerCase().includes('gemma3:12b') || m.toLowerCase().includes('gemma:12b')) return 'Gemma 3:12B';
+      if (m.toLowerCase().includes('gemma3:27b') || m.toLowerCase().includes('gemma:27b')) return 'Gemma 3:27B';
+      if (m.toLowerCase().includes('llama3.3')) return 'Llama 3.3';
+      if (m.toLowerCase().includes('llama3.2')) return 'Llama 3.2';
+      if (m.toLowerCase().includes('deepseek')) return 'DeepSeek R1';
+      return m;
     }
     if (aiConfig.provider === 'lmstudio') {
-      return `LM Studio (${aiConfig.lmstudioModel || 'Local'})`;
+      return aiConfig.lmstudioModel || 'LM Studio';
     }
     if (aiConfig.provider === 'custom') {
-      return `Custom LLM (${aiConfig.customModel || 'Local'})`;
+      return aiConfig.customModel || 'Custom LLM';
     }
     const found = CLOUD_AI_MODELS.find(m => m.id === (aiConfig.activeModel || aiConfig.geminiModel));
     return found ? found.name : 'Gemini 1.5 Pro';
@@ -210,38 +328,58 @@ export default function OrbDecideSynthesizer({
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-[#FAFAFC] dark:bg-[#0C0D11]">
-      {/* ── Query Bar Header: Airy & Floating with Model Selector ── */}
-      <div className="px-7 py-3.5 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/70 dark:bg-zinc-950/60 backdrop-blur-md shrink-0 relative z-30">
-        <form onSubmit={handleQuerySubmit} className="flex items-center gap-2.5 max-w-4xl mx-auto">
-          {/* Main Inquiry Input */}
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder={t('orb.decidePlaceholder') || "Ask an executive question or evaluate strategy..."}
-              className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
-            />
-          </div>
+    <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
+      {/* ── Query Bar Header: Airy & Floating with Flat Inline Model Selector ── */}
+      <div className="px-7 py-3.5 border-b border-black/[0.04] dark:border-white/[0.05] bg-white/35 dark:bg-zinc-950/35 backdrop-blur-md shrink-0 relative z-30">
+        <form onSubmit={handleQuerySubmit} className="flex flex-col gap-2 max-w-4xl mx-auto">
+          {/* Active Quoted Selection Context Pill */}
+          {activeQuoteContext && (
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-violet-50/90 dark:bg-violet-950/60 border border-violet-200/80 dark:border-violet-800/60 text-xs text-violet-950 dark:text-violet-200 animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7C5ACF] dark:bg-[#a78bfa] shrink-0" />
+                <span className="font-semibold text-[10.5px] uppercase tracking-wider text-[#7C5ACF] dark:text-[#a78bfa] shrink-0">
+                  Replying to Selection:
+                </span>
+                <span className="truncate text-[11.5px] text-slate-700 dark:text-zinc-300 font-normal">
+                  "{activeQuoteContext}"
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveQuoteContext(null)}
+                className="p-1 rounded-lg hover:bg-violet-200/60 dark:hover:bg-violet-900/60 text-violet-600 dark:text-violet-400 transition-colors cursor-pointer shrink-0 ml-2"
+                title="Remove quoted selection"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
 
-          {/* Model Selector Pill */}
-          <div className="relative shrink-0" ref={modelPickerRef}>
-            <button
-              type="button"
-              onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all text-xs font-medium cursor-pointer select-none ${
-                isModelPickerOpen
-                  ? 'border-[#7C5ACF] bg-white dark:bg-zinc-900 ring-2 ring-[#7C5ACF]/20 text-[#7C5ACF] dark:text-[#a78bfa]'
-                  : 'border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:border-slate-300 dark:hover:border-zinc-700'
-              }`}
-              title="Select AI Model or Local Inference Engine"
-            >
-              <span className={`w-2 h-2 rounded-full shrink-0 ${isLocalActive ? 'bg-emerald-500 animate-pulse' : 'bg-[#7C5ACF]'}`} />
-              <span className="truncate max-w-[130px] font-semibold">{currentModelLabel}</span>
-              <ChevronDown size={12} className={`text-slate-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`} />
-            </button>
+          <div className="flex items-center gap-2">
+            {/* Main Inquiry Input */}
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+              <input
+                ref={queryInputRef}
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder={activeQuoteContext ? (t('orb.askFollowUpInquiry') || "Ask a follow-up inquiry about this selection...") : (t('orb.decidePlaceholder') || "Ask an executive question or evaluate strategy...")}
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-[#7C5ACF] dark:focus:border-[#a78bfa] focus:shadow-[0_4px_16px_rgba(124,90,207,0.06)] transition-all"
+              />
+            </div>
+
+            {/* Model Selector: Flat Inline Text without Pill/Container */}
+            <div className="relative shrink-0" ref={modelPickerRef}>
+              <button
+                type="button"
+                onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
+                className="flex items-center gap-1 px-2 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer select-none"
+                title="Select AI Model or Local Inference Engine"
+              >
+                <span className="truncate max-w-[140px]">{currentModelLabel}</span>
+                <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`} />
+              </button>
 
             {/* Model Picker Menu */}
             {isModelPickerOpen && (
@@ -361,12 +499,13 @@ export default function OrbDecideSynthesizer({
               </>
             )}
           </button>
-        </form>
+        </div>
+      </form>
 
-        {/* Quick Sample Prompts */}
-        <div className="flex items-center gap-2 mt-2.5 max-w-4xl mx-auto overflow-x-auto thin-scrollbar pb-0.5">
-          <span className="text-[10.5px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500 shrink-0">
-            Inquiries:
+        {/* Quick Sample Prompts: Multi-line Wrapping to Prevent Truncation */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2.5 max-w-4xl mx-auto">
+          <span className="text-[10.5px] uppercase tracking-widest font-bold text-slate-700 dark:text-zinc-200 shrink-0 mr-1.5 select-none">
+            {t('orb.inquiries') || 'Inquiries:'}
           </span>
           {liveInquiries.map((prompt, idx) => (
             <button
@@ -376,7 +515,7 @@ export default function OrbDecideSynthesizer({
                 setQuestion(prompt);
                 triggerSynthesize(prompt);
               }}
-              className="px-3 py-1 rounded-lg text-xs font-medium bg-slate-100/80 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-zinc-700/70 whitespace-nowrap transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100/90 dark:bg-zinc-800/70 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-left transition-colors cursor-pointer"
             >
               {prompt}
             </button>
@@ -385,7 +524,7 @@ export default function OrbDecideSynthesizer({
       </div>
 
       {/* ── Main Executive Reasoning Canvas ── */}
-      <div className="flex-1 overflow-y-auto px-7 py-6 thin-scrollbar">
+      <div ref={decideContainerRef} className="flex-1 overflow-y-auto px-7 py-6 thin-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Active Synthesis Progress Indicator */}
           {isSynthesizing && (
@@ -412,9 +551,9 @@ export default function OrbDecideSynthesizer({
 
           {/* Empty State */}
           {!activeQuery && !isSynthesizing && (
-            <div className="flex flex-col items-center justify-center py-16 px-6 rounded-3xl bg-white dark:bg-zinc-900 border border-black/[0.04] dark:border-white/[0.05] text-center shadow-2xs">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-violet-50 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/40">
-                <Compass size={22} strokeWidth={1.8} />
+            <div className="flex flex-col items-center justify-center py-16 px-6 rounded-2xl bg-white/70 dark:bg-zinc-900/60 border border-black/[0.04] dark:border-white/[0.05] text-center shadow-2xs">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-50/90 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] mb-3.5 border border-violet-100 dark:border-violet-900/40">
+                <OrbIcon size={20} />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100 mb-1">
                 {t('orb.strategicReasoning') || 'Strategic Reasoning System'}
@@ -446,37 +585,66 @@ export default function OrbDecideSynthesizer({
           {synthesis && !isSynthesizing && (
             <div className="space-y-6 animate-in fade-in duration-200">
               {/* ── 1. DOMINANT DIRECT PROSE CONCLUSION (Executive Hero) ── */}
-              <div className="p-7 rounded-[22px] bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/90 shadow-[0_2px_14px_rgba(0,0,0,0.02)] space-y-4">
-                {/* Subtle Header */}
-                <div className="flex items-center justify-between border-b border-black/[0.03] dark:border-white/[0.03] pb-2.5">
-                  <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                    Strategic Conclusion
-                  </span>
-                </div>
-
-                {/* Large Uninterrupted Executive Prose Answer */}
-                <div className="prose prose-slate dark:prose-invert max-w-none text-[15px] leading-relaxed text-slate-900 dark:text-zinc-100 font-normal space-y-3.5 whitespace-pre-line">
-                  {synthesis.directAnswer || synthesis.recommendedCourse}
-                </div>
-
-                {/* Subdued Epistemic Metadata Footer */}
-                <div className="pt-3.5 border-t border-black/[0.04] dark:border-white/[0.04] flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500 dark:text-zinc-400">
-                  <div className="flex items-center gap-2.5">
-                    <span>Evidence strength · <strong className="text-slate-700 dark:text-zinc-200">{synthesis.confidence?.evidenceConfidence || 'HIGH'}</strong></span>
-                    <span className="text-slate-300 dark:text-zinc-700">•</span>
-                    <span>Strategic conclusion · <strong className="text-slate-700 dark:text-zinc-200">{synthesis.confidence?.conclusionConfidence || 'MEDIUM'}</strong></span>
-                    {synthesis.confidence?.supportQuality && (
-                      <>
-                        <span className="text-slate-300 dark:text-zinc-700">•</span>
-                        <span>Support quality · <strong className="text-slate-700 dark:text-zinc-200">{synthesis.confidence.supportQuality.replace('_', ' ')}</strong></span>
-                      </>
-                    )}
-                  </div>
-                  {synthesis.confidence?.rationale && (
-                    <span className="text-slate-400 dark:text-zinc-500 text-[10.5px] truncate max-w-sm" title={synthesis.confidence.rationale}>
-                      {synthesis.confidence.rationale}
+              <div className="p-7 rounded-[22px] bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/90 shadow-[0_2px_14px_rgba(0,0,0,0.02)] space-y-5">
+                {/* Epistemic Status & Confidence Header */}
+                <div className="flex items-center justify-between gap-4 border-b border-black/[0.04] dark:border-white/[0.04] pb-3.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      Strategic Conclusion
                     </span>
-                  )}
+                  </div>
+
+                  {/* Dual Confidence Pills */}
+                  <div className="flex items-center gap-2">
+                    {/* Support Quality */}
+                    {synthesis.confidence?.supportQuality && (
+                      <span className={`text-[10.5px] font-semibold px-2.5 py-0.8 rounded-lg ${
+                        synthesis.confidence.supportQuality === 'STRONGLY_EVIDENCED'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : synthesis.confidence.supportQuality === 'PARTIALLY_EVIDENCED'
+                          ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
+                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      }`}>
+                        {synthesis.confidence.supportQuality.replace('_', ' ')}
+                      </span>
+                    )}
+
+                    {/* Evidence Confidence */}
+                    <div 
+                      className="relative cursor-pointer"
+                      onClick={() => setShowConfidenceExplainer(!showConfidenceExplainer)}
+                      title="Click to inspect epistemic confidence breakdown"
+                    >
+                      <span className="text-[10.5px] font-semibold px-2.5 py-0.8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 transition-colors flex items-center gap-1">
+                        <span>Confidence:</span>
+                        <strong className="text-[#7C5ACF] dark:text-[#a78bfa]">
+                          {synthesis.confidence?.conclusionConfidence || 'MEDIUM'}
+                        </strong>
+                      </span>
+
+                      {/* Confidence Explainer Dropdown */}
+                      {showConfidenceExplainer && (
+                        <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-xl z-50 text-xs space-y-2">
+                          <div className="font-semibold text-slate-900 dark:text-zinc-100 flex items-center justify-between">
+                            <span>Epistemic Confidence Rationale</span>
+                            <X size={12} className="cursor-pointer text-slate-400" onClick={() => setShowConfidenceExplainer(false)} />
+                          </div>
+                          <div className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-relaxed">
+                            {synthesis.confidence?.rationale || 'Distinguishes verified source evidence from unvalidated strategic execution assumptions.'}
+                          </div>
+                          <div className="pt-1.5 border-t border-black/[0.04] dark:border-white/[0.04] text-[10.5px] text-slate-500 flex justify-between">
+                            <span>Evidence Record: <strong>{synthesis.confidence?.evidenceConfidence || 'HIGH'}</strong></span>
+                            <span>Strategy Feasibility: <strong>{synthesis.confidence?.conclusionConfidence || 'MEDIUM'}</strong></span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Natural Executive Prose Answer */}
+                <div className="prose prose-slate dark:prose-invert max-w-none text-[14.5px] leading-relaxed text-slate-800 dark:text-zinc-100 font-normal space-y-3 whitespace-pre-line">
+                  {synthesis.directAnswer || synthesis.recommendedCourse}
                 </div>
               </div>
 
@@ -1169,6 +1337,19 @@ export default function OrbDecideSynthesizer({
           </div>
         </div>
       )}
+
+      {/* ── Apple-Style Floating Selection Action Pill ── */}
+      <OrbDecideSelectionPill
+        selectionState={selectionState}
+        onReply={handleSelectionReply}
+        onExplain={handleSelectionExplain}
+        onChallenge={handleSelectionChallenge}
+        onAskQuestion={handleSelectionAskQuestion}
+        onDismiss={() => {
+          setSelectionState(null);
+          window.getSelection()?.removeAllRanges();
+        }}
+      />
     </div>
   );
 }

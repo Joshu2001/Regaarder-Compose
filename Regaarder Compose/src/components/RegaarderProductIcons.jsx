@@ -78,6 +78,83 @@ export const SheetIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
   </svg>
 );
 
+
+export const RoomSpatialPresenceSymbol = ({ size = 30, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Spatial Room Outer Chamber / Perspective Horizon */}
+    <rect x="4" y="5" width="17" height="14" rx="3.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+    
+    {/* Interlocking Collaborative Stage / Dynamic Presence Window */}
+    <rect x="11" y="13" width="17" height="14" rx="3.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+    
+    {/* Central Video Vision Lens / Optical Aperture */}
+    <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth={strokeWidth} />
+    <circle cx="16" cy="16" r="1.2" fill="currentColor" />
+    
+    {/* Presence Spatial Orbit Indicators */}
+    <circle cx="8.5" cy="9.5" r="1" fill="currentColor" />
+    <circle cx="23.5" cy="22.5" r="1" fill="currentColor" />
+  </svg>
+);
+
+
+export const SpatialApertureCameraSymbol = ({ size = 32, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Geometric Spatial Camera Body */}
+    <rect x="3.5" y="7" width="17" height="15" rx="3.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    
+    {/* Forward Projecting Optical Lens Funnel */}
+    <path d="M20.5 11.5L27.5 7.5V21.5L20.5 17.5" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    
+    {/* 3-Ring Central Optical Aperture Nexus */}
+    <circle cx="12" cy="14.5" r="4.25" stroke="currentColor" strokeWidth={strokeWidth} />
+    <circle cx="12" cy="14.5" r="2.25" stroke="currentColor" strokeWidth={1.2} opacity="0.8" />
+    <circle cx="12" cy="14.5" r="0.9" fill="currentColor" />
+    
+    {/* Subtle Top Signal Broadcast Wavelet */}
+    <path d="M10 3.5C11.2 3.1 12.8 3.1 14 3.5" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" opacity="0.7" />
+  </svg>
+);
+
+
+export const SpatialApertureLensSymbol = ({ size = 32, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Outer Spatial Chamber Precision Geometry */}
+    <rect x="4.5" y="4.5" width="23" height="23" rx="6.5" stroke="currentColor" strokeWidth={strokeWidth} />
+    
+    {/* Concentric Spatial Aperture Ring (Outer Field Ring) */}
+    <circle cx="16" cy="16" r="6.75" stroke="currentColor" strokeWidth={strokeWidth} />
+    
+    {/* Core Optical Focal Nexus */}
+    <circle cx="16" cy="16" r="3.2" stroke="currentColor" strokeWidth={strokeWidth} />
+    <circle cx="16" cy="16" r="1.1" fill="currentColor" />
+  </svg>
+);
+
 export const RoomIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
@@ -121,6 +198,32 @@ export const WhiteboardIcon = ({ size = 24, className = "", strokeWidth = 1.6, .
     {/* Creative mark: angled stroke to focal node */}
     <path d="M7.5 12.5L12.5 7.5" />
     <circle cx="15.5" cy="7.5" r="1.25" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const PresentationIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Presentation screen outer frame */}
+    <rect x="3" y="3.5" width="18" height="12.5" rx="2" />
+    {/* Slide layout: leading visual block + 2-3 content lines */}
+    <rect x="5.5" y="6" width="3.5" height="3.5" rx="0.75" fill="currentColor" stroke="none" />
+    <line x1="11.5" y1="6.75" x2="18" y2="6.75" />
+    <line x1="11.5" y1="9.25" x2="18" y2="9.25" />
+    <line x1="5.5" y1="12.5" x2="18" y2="12.5" />
+    {/* Minimal presentation stand / easel feet */}
+    <line x1="12" y1="16" x2="12" y2="18.5" />
+    <path d="M8.5 21l3.5-2.5 3.5 2.5" />
   </svg>
 );
 
@@ -317,7 +420,7 @@ export const BrowserIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
-export const OrbIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+export const OrbIcon = ({ size = 24, className = "", strokeWidth = 1.5, ...props }) => (
   <svg
     width={size}
     height={size}
@@ -331,8 +434,8 @@ export const OrbIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props
     {...props}
   >
     {/* Concentric orbital rings symbolizing cross-workspace intelligence */}
-    <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(-30 12 12)" />
-    <ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(30 12 12)" opacity="0.6" />
+    <ellipse cx="12" cy="12" rx="8.5" ry="4.25" transform="rotate(-30 12 12)" />
+    <ellipse cx="12" cy="12" rx="8.5" ry="4.25" transform="rotate(30 12 12)" />
     {/* Focal intelligence core */}
     <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
     {/* Cross-context connection nodes */}
@@ -467,6 +570,34 @@ export const RegaarderNotificationIcon = ({ size = 16, className = "", strokeWid
 );
 
 
+export const LaserPointerIcon = ({ size = 16, className = "", strokeWidth = 1.5, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    {/* Thin diagonal laser beam */}
+    <path
+      d="M3 13L9.5 6.5"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Laser pointer target dot */}
+    <circle
+      cx="12.5"
+      cy="3.5"
+      r="1.6"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   History: RegaarderHistoryIcon,
   SaveCloud: RegaarderSaveCloudIcon,
@@ -496,7 +627,6 @@ export const RegaarderProductIconMap = {
   whiteboard: WhiteboardIcon,
   schedule: ScheduleIcon,
   memory: MemoryIcon,
-  tasks: TasksIcon,
   chat: ChatIcon,
   assist: AssistIcon,
   assistant: AssistIcon,
@@ -512,8 +642,12 @@ export const RegaarderProductIconMap = {
   Slide: DeckIcon,
   slides: DeckIcon,
   Slides: DeckIcon,
-  presentation: DeckIcon,
-  Presentation: DeckIcon,
+  presentation: PresentationIcon,
+  Presentation: PresentationIcon,
+  present: PresentationIcon,
+  Present: PresentationIcon,
+  screenshare: PresentationIcon,
+  'screen-share': PresentationIcon,
   decks: DeckIcon,
   Decks: DeckIcon,
   docs: ComposeIcon,
@@ -524,6 +658,8 @@ export const RegaarderProductIconMap = {
   People: PeopleIcon,
   user: PeopleIcon,
   users: PeopleIcon,
+  laser: LaserPointerIcon,
+  'laser-pointer': LaserPointerIcon,
 };
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {

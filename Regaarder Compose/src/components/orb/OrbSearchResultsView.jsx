@@ -5,7 +5,7 @@ import {
   Table, Presentation, Video, CheckSquare, Calendar, Globe,
   CornerDownRight, User, Hash, Clock, Layers, HelpCircle, Compass
 } from 'lucide-react';
-import { RegaarderProductIcon, RegaarderAiIcon } from '../RegaarderProductIcons';
+import { RegaarderProductIcon, RegaarderAiIcon, OrbIcon } from '../RegaarderProductIcons';
 
 export const WORKSPACE_LABELS = {
   all: 'All Intelligence',
@@ -71,14 +71,14 @@ export default function OrbSearchResultsView({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#F7F8FA] dark:bg-[#0E1015]">
-      {/* ── Sub-header with Workspace Filters ── */}
-      <div className={`flex items-center justify-between px-7 py-3 border-b shrink-0 ${
+    <div className="flex flex-col h-full overflow-hidden bg-transparent">
+      {/* ── Sub-header with Flattened Workspace Filters ── */}
+      <div className={`flex items-center justify-between px-6 py-2.5 border-b shrink-0 ${
         highContrast
           ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-          : 'border-black/[0.04] dark:border-white/[0.05] bg-white/60 dark:bg-zinc-950/40 backdrop-blur-md'
+          : 'border-black/[0.04] dark:border-white/[0.04]'
       }`}>
-        <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
+        <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar py-0.5">
           {Object.entries(WORKSPACE_LABELS).map(([key, label]) => {
             const isActive = workspaceFilter === key;
             return (
@@ -86,14 +86,14 @@ export default function OrbSearchResultsView({
                 key={key}
                 type="button"
                 onClick={() => onSelectWorkspaceFilter(key)}
-                className={`px-3.5 py-1.5 text-[13px] rounded-xl transition-all duration-150 whitespace-nowrap cursor-pointer select-none ${
+                className={`px-3 py-1.5 text-xs rounded-lg transition-all duration-150 whitespace-nowrap cursor-pointer select-none ${
                   isActive
                     ? highContrast
                       ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                      : 'border border-slate-300/90 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
+                      : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs'
                     : highContrast
-                    ? 'border-2 border-transparent bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
-                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/80 dark:hover:bg-zinc-800/50 font-medium'
+                    ? 'border-2 border-transparent text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
+                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                 }`}
               >
                 {t('orb.workspaceLabels.' + key) || label}
@@ -102,88 +102,66 @@ export default function OrbSearchResultsView({
           })}
         </div>
 
-        <div className={`text-xs shrink-0 pl-3 ${highContrast ? 'font-bold text-slate-800 dark:text-zinc-200' : 'font-medium text-slate-500 dark:text-zinc-400'}`}>
-          {results.length} connected item{results.length === 1 ? '' : 's'}
+        <div className={`text-[11px] shrink-0 pl-3 ${highContrast ? 'font-bold text-slate-800 dark:text-zinc-200' : 'font-medium text-slate-400 dark:text-zinc-500'}`}>
+          {results.length} item{results.length === 1 ? '' : 's'}
         </div>
       </div>
 
-      {/* ── Results Container: Floating Island Cards ── */}
-      <div className="flex-1 overflow-y-auto p-7 space-y-5 thin-scrollbar">
-        {/* Suggested Strategic Inquiries Card or Empty State */}
-        {(() => {
-          if (results.length === 0 || !suggestedQuestions || suggestedQuestions.length === 0) {
-            return (
-              <div className={`p-6 rounded-[24px] border text-center select-none ${
-                highContrast
-                  ? 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-black dark:text-white'
-                  : 'border-slate-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 shadow-[0_2px_12px_rgba(0,0,0,0.02)]'
-              }`}>
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-0.5">
-                  <RegaarderAiIcon size={13} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
-                  <span>No suggestions yet</span>
-                </div>
-                <p className="text-xs text-slate-400 dark:text-zinc-500">
-                  Create a document or spreadsheet to generate automated strategic inquiries.
-                </p>
-              </div>
-            );
-          }
+      {/* ── Results Container ── */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 thin-scrollbar">
+        {/* Suggested Inquiries (rendered only when results exist) */}
+        {results.length > 0 && suggestedQuestions && suggestedQuestions.length > 0 && (() => {
           const primaryInquiries = suggestedQuestions.slice(0, 2);
           const secondaryInquiries = suggestedQuestions.slice(2);
 
           return (
-            <div className={`p-6 rounded-[24px] ${
+            <div className={`p-4 rounded-xl ${
               highContrast
                 ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-200/50 dark:border-zinc-800/80'
+                : 'bg-white/60 dark:bg-zinc-900/60 border border-black/[0.04] dark:border-white/[0.06] shadow-2xs'
             }`}>
-              <div className={`flex items-center gap-2 mb-3.5 text-[13.5px] ${
-                highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-800 dark:text-zinc-200'
+              <div className={`flex items-center gap-1.5 mb-2.5 text-xs ${
+                highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-700 dark:text-zinc-300'
               }`}>
-                <RegaarderAiIcon size={15} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
-                <span>Suggested Strategic Inquiries</span>
+                <RegaarderAiIcon size={14} className="text-[#7C5ACF] dark:text-[#a78bfa]" />
+                <span>Suggested Inquiries</span>
               </div>
 
               {/* Primary AI Recommendations */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <div className="flex flex-col sm:flex-row gap-2 mb-2">
                 {primaryInquiries.map((q, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => onSwitchToDecide(q)}
-                    className={`group flex-1 flex items-center justify-between p-3.5 rounded-xl transition-all text-left cursor-pointer ${
+                    className={`group flex-1 flex items-center justify-between p-2.5 rounded-lg transition-all text-left cursor-pointer ${
                       highContrast
                         ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-600 font-bold text-black dark:text-white'
-                        : 'bg-slate-50/70 dark:bg-zinc-800/40 border border-slate-100/90 dark:border-zinc-800/80 hover:bg-slate-100/80 dark:hover:bg-zinc-800/70 text-slate-800 dark:text-zinc-100'
+                        : 'bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-100/90 dark:border-zinc-800/80 hover:bg-slate-100 dark:hover:bg-zinc-800/70 text-slate-800 dark:text-zinc-100'
                     }`}
                   >
-                    <div className="flex items-start gap-2.5 min-w-0 pr-2">
-                      <span className="text-[10.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-zinc-700/60 text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
-                        Suggested
-                      </span>
-                      <span className="text-[13.5px] font-medium leading-snug">{q}</span>
-                    </div>
-                    <ArrowRight size={13} className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <span className="text-xs font-medium leading-snug pr-2 truncate">{q}</span>
+                    <ArrowRight size={12} className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all shrink-0" />
                   </button>
                 ))}
               </div>
 
-              {/* Lighter Secondary Inquiries */}
+              {/* Secondary Inquiries */}
               {secondaryInquiries.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+                <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-black/[0.03] dark:border-white/[0.04]">
                   {secondaryInquiries.map((q, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => onSwitchToDecide(q)}
-                      className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all text-left cursor-pointer ${
+                      className={`group flex items-center gap-1 px-2.5 py-1 text-[11.5px] rounded-lg transition-all text-left cursor-pointer ${
                         highContrast
                           ? 'font-bold text-slate-900 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-900 border border-slate-300'
-                          : 'font-normal text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-700/60 hover:text-slate-900 dark:hover:text-white border border-slate-200/50 dark:border-zinc-700/40'
+                          : 'font-normal text-slate-600 dark:text-zinc-400 bg-slate-50/60 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700/60 hover:text-slate-900 dark:hover:text-white border border-slate-200/40 dark:border-zinc-700/30'
                       }`}
                     >
-                      <span className="truncate max-w-md">{q}</span>
-                      <ArrowRight size={11} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
+                      <span className="truncate max-w-xs">{q}</span>
+                      <ArrowRight size={10} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white transition-all shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -192,42 +170,42 @@ export default function OrbSearchResultsView({
           );
         })()}
 
-        {/* Results List or Contextual Empty State */}
+        {/* Central Primary Empty State or Results List */}
         {results.length === 0 ? (() => {
           const emptyInfo = FILTER_EMPTY_STATES[workspaceFilter] || FILTER_EMPTY_STATES.all;
           const targetWorkspace = workspaceFilter !== 'all' ? workspaceFilter : 'compose';
           return (
-            <div className="flex flex-col items-center justify-center py-20 px-6 text-center max-w-md mx-auto">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
+            <div className="flex flex-col items-center justify-center py-24 px-6 text-center max-w-sm mx-auto">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3.5 ${
                 highContrast
                   ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-400 text-black dark:text-white'
-                  : 'bg-white dark:bg-zinc-800/80 border border-slate-200/60 text-slate-500 dark:text-zinc-400 shadow-xs'
+                  : 'bg-slate-100/70 dark:bg-zinc-800/60 border border-black/[0.04] dark:border-white/[0.06] text-slate-500 dark:text-zinc-400 shadow-2xs'
               }`}>
                 {workspaceFilter !== 'all' ? (
-                  <RegaarderProductIcon name={workspaceFilter} size={24} />
+                  <RegaarderProductIcon name={workspaceFilter} size={22} />
                 ) : (
-                  <Compass size={26} strokeWidth={1.5} />
+                  <Compass size={22} strokeWidth={1.6} />
                 )}
               </div>
-              <h3 className={`text-base mb-1.5 ${
+              <h3 className={`text-sm mb-1 ${
                 highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
               }`}>
-                {query ? `No matching content for "${query}"` : emptyInfo.title}
+                {query ? (t('orb.noResultsFor', { query }) || `No results for "${query}"`) : (t('orb.searchEmpty.' + workspaceFilter + '.title') || emptyInfo.title)}
               </h3>
-              <p className={`text-xs leading-relaxed mb-5 ${
+              <p className={`text-xs leading-relaxed mb-4 ${
                 highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
               }`}>
                 {query
-                  ? 'No documents, formulas, or tasks in your workspace match this search term. Add or import relevant notes to search them here.'
-                  : emptyInfo.desc}
+                  ? (t('orb.noMatchingFound') || 'No matching documents, formulas, or tasks found in this workspace.')
+                  : (t('orb.searchEmpty.' + workspaceFilter + '.desc') || emptyInfo.desc)}
               </p>
               {!query && onNavigateToWorkspace && (
                 <button
                   type="button"
                   onClick={() => onNavigateToWorkspace({ workspace: targetWorkspace })}
-                  className="px-4 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/60 hover:bg-[#7C5ACF] text-[#7C5ACF] dark:text-[#a78bfa] hover:text-white border border-violet-100 dark:border-violet-900/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-zinc-100 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  <span>Open {WORKSPACE_LABELS[workspaceFilter] || 'Workspace'}</span>
+                  <span>{workspaceFilter === 'all' ? (t('orb.buildIntelligence') || 'Build Intelligence →') : (t('orb.createWorkspace', { name: t('orb.workspaceLabels.' + workspaceFilter) || WORKSPACE_LABELS[workspaceFilter] || 'Document' }) || `Create ${WORKSPACE_LABELS[workspaceFilter] || 'Document'}`)}</span>
                   <ArrowRight size={12} />
                 </button>
               )}
@@ -243,14 +221,14 @@ export default function OrbSearchResultsView({
                 key={entity.id}
                 onMouseEnter={() => onSelectIndex && onSelectIndex(idx)}
                 onClick={() => onSelectIndex && onSelectIndex(idx)}
-                className={`group relative flex flex-col p-6 rounded-[24px] transition-all duration-200 cursor-pointer ${
+                className={`group relative flex flex-col p-5 rounded-xl transition-all duration-150 cursor-pointer ${
                   isSelected
                     ? highContrast
-                      ? 'bg-white dark:bg-zinc-950 border-2 border-black dark:border-white ring-2 ring-black dark:ring-white shadow-md -translate-y-0.5'
-                      : 'bg-white dark:bg-zinc-900 ring-2 ring-[#7C5ACF]/40 dark:ring-[#a78bfa]/50 shadow-[0_12px_36px_rgba(0,0,0,0.08)] -translate-y-0.5 border border-transparent'
+                      ? 'bg-white dark:bg-zinc-950 border-2 border-black dark:border-white ring-2 ring-black dark:ring-white shadow-md'
+                      : 'bg-white dark:bg-zinc-800 ring-1 ring-slate-300 dark:ring-zinc-600 shadow-sm border border-slate-200/80 dark:border-zinc-700'
                     : highContrast
                     ? 'bg-white dark:bg-zinc-950 border-2 border-slate-400 dark:border-zinc-600 shadow-sm'
-                    : 'bg-white dark:bg-zinc-900 shadow-[0_2px_16px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(0,0,0,0.06)] border border-slate-200/50 dark:border-zinc-800/80'
+                    : 'bg-white/80 dark:bg-zinc-800/60 shadow-2xs hover:bg-white dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60'
                 }`}
               >
                 {/* Header Row: Neutral Product Icon + Title + Workspace Badge */}

@@ -22,16 +22,25 @@ import {
   PenTool,
   Lock,
 } from "lucide-react";
+import {
+  ComposeIcon,
+  DeckIcon,
+  SheetIcon,
+  RoomIcon,
+  ScheduleIcon,
+  MemoryIcon,
+  TasksIcon
+} from "./components/RegaarderProductIcons";
 
 const sidebarItems = [
-  { icon: PenTool, label: "Compose", key: "compose", active: true },
-  { icon: Sparkles, label: "Deck", key: "deck" },
-  { icon: Database, label: "Sheets", key: "sheets" },
-  { icon: CalendarDays, label: "Schedule", key: "calendar" },
-  { icon: CheckSquare, label: "Tasks", key: "tasks" },
-  { icon: Video, label: "Room", key: "room" },
+  { icon: ComposeIcon, label: "Compose", key: "compose", active: true },
+  { icon: DeckIcon, label: "Deck", key: "deck" },
+  { icon: SheetIcon, label: "Sheets", key: "sheets" },
+  { icon: ScheduleIcon, label: "Schedule", key: "calendar" },
+  { icon: TasksIcon, label: "Tasks", key: "tasks" },
+  { icon: RoomIcon, label: "Room", key: "room" },
   { icon: Users2, label: "People", key: "people" },
-  { icon: Database, label: "Memory", key: "memory" },
+  { icon: MemoryIcon, label: "Memory", key: "memory" },
   { icon: MoreHorizontal, label: "More", key: "more" },
 ];
 

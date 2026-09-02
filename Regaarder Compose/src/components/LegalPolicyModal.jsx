@@ -206,21 +206,22 @@ function PrivacyPolicyContent() {
       </section>
 
       <section className="space-y-2">
-        <h4 className="font-semibold text-slate-900 text-sm">4. Data Subject Rights (GDPR & CCPA)</h4>
+        <h4 className="font-semibold text-slate-900 text-sm">4. Data Subject Rights & Granular Storage Controls (GDPR & CCPA)</h4>
         <p>
-          Regardless of your jurisdiction, Regaarder provides universal privacy controls:
+          Regardless of your jurisdiction, Regaarder provides comprehensive, user-directed privacy controls directly inside <strong>Settings &gt; Storage &amp; Data Management</strong>:
         </p>
         <ul className="list-disc pl-5 space-y-1 text-slate-600">
-          <li><strong>Right to Access & Portability:</strong> Export all workspace documents, sheets, and project history in standard formats at any time.</li>
-          <li><strong>Right to Rectification:</strong> Update or correct profile and organization details instantly.</li>
-          <li><strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> Request full account and workspace data purging within 30 days.</li>
+          <li><strong>Granular Device &amp; Cloud Erasure (GDPR Art. 17 - &quot;Right to be Forgotten&quot;):</strong> Users may selectively purge specific categories of data at any time—including workspace documents, AI conversation logs, extracted memories, personal profile information, API credentials, and local caches—without delay.</li>
+          <li><strong>Data Portability &amp; Archive Export (GDPR Art. 20):</strong> Export your complete structured data archive in machine-readable JSON format with a single click before initiating any data deletion.</li>
+          <li><strong>Right to Access &amp; Inspection (GDPR Art. 15):</strong> Inspect exact real-time byte sizes and item counts stored locally across each functional category.</li>
+          <li><strong>Right to Rectification:</strong> Instantly update, edit, or replace profile details and configuration secrets across the platform.</li>
         </ul>
       </section>
 
       <section className="space-y-2">
         <h4 className="font-semibold text-slate-900 text-sm">5. Contact Our Data Protection Team</h4>
         <p>
-          If you have questions regarding our privacy practices or wish to exercise your rights, please reach out to <span className="font-medium text-slate-900">privacy@regaarder.com</span>.
+          If you have questions regarding our privacy practices, automated erasure mechanics, or wish to exercise statutory rights, please reach out to <span className="font-medium text-slate-900">privacy@regaarder.com</span>.
         </p>
       </section>
     </div>

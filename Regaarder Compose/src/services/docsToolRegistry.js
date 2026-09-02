@@ -1,10 +1,12 @@
 /**
  * docsToolRegistry.js
  * 
- * Layer 2: Canonical Tool Registry & Safety Metadata
+ * Layer 2: Universal Canonical Tool Registry & Safety Metadata
  * 
  * Defines the single canonical source of truth for all tools and feature capabilities
- * in Regaarder Compose Docs. Each tool includes rich safety metadata:
+ * across Regaarder Compose (Docs, Decks & Slides, Sheets & Matrices).
+ * 
+ * Each tool includes rich safety metadata:
  * - mutatesDocument (boolean)
  * - destructive (boolean)
  * - undoable (boolean)
@@ -13,11 +15,17 @@
  */
 
 import * as docsCommandApi from './docsCommandApi.js';
+import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEngineHarness.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
   ANALYSIS_TOOLS: 'analysis_tools',
   APPLICATION_COMMANDS: 'application_commands',
+  DECK_TOOLS: 'deck_tools',
+  SHEET_TOOLS: 'sheet_tools',
+  TASKS_TOOLS: 'tasks_tools',
+  ROOMS_TOOLS: 'rooms_tools',
+  BROWSER_TOOLS: 'browser_tools',
 };
 
 export const CANONICAL_DOCS_TOOLS = [
@@ -389,6 +397,268 @@ export const CANONICAL_DOCS_TOOLS = [
     }
   },
 
+  // ── DECK & SLIDE TOOLS ───────────────────────────────────────────
+  ...DECK_LLM_TOOL_DEFINITIONS.map(tool => ({
+    name: tool.name,
+    label: tool.name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: tool.description,
+    mutatesDocument: !['deck_get_state', 'deck_run_audit'].includes(tool.name),
+    destructive: ['deck_delete_slide', 'deck_delete_bento_card', 'deck_delete_shape'].includes(tool.name),
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: ['deck_delete_slide', 'deck_delete_shape'].includes(tool.name),
+    parameters: tool.parameters || { type: 'object', properties: {} },
+    execute: async (params, context) => dispatchDeckToolCall(tool.name, params, context)
+  })),
+  {
+    name: 'get_deck_slides',
+    label: 'Get Deck Slides',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Retrieves all slides in the active presentation deck, including their layout style, headline, tagline, cards, and vector wave metadata.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: async (params, context) => {
+      const slides = window.__REGAARDER_DECK_SLIDES__ || (window.regaarderDeck?.getSlides ? window.regaarderDeck.getSlides() : []);
+      return { success: true, data: { totalSlides: slides.length, slides } };
+    }
+  },
+  {
+    name: 'add_deck_slide',
+    label: 'Add Slide to Deck',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Appends or inserts a new slide into the active deck with chosen layout template.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        layoutStyle: {
+          type: 'string',
+          enum: [
+            'Business Plan Summary',
+            'Business Plan Structure',
+            'Business Plan Market',
+            'Business Plan Ecosystem',
+            'Business Plan Strategy',
+            'Business Plan Moat',
+            'Business Plan Roadmap',
+            'Business Plan Financials',
+            'Business Plan Capital',
+            'Bento Grid',
+            'Text & List',
+            'Headline + Subhead'
+          ],
+          description: 'Slide layout preset style.'
+        },
+        headline: { type: 'string', description: 'Primary slide headline.' },
+        tagline: { type: 'string', description: 'Top section category badge or tagline.' },
+        vectorWaveStyle: { type: 'string', description: 'Bespoke vector mesh style (e.g. toroid-ring, dna-double-helix, isometric-grid).' }
+      },
+      required: ['layoutStyle', 'headline']
+    },
+    execute: async (params, context) => {
+      if (window.__REGAARDER_ADD_DECK_SLIDE__) {
+        return window.__REGAARDER_ADD_DECK_SLIDE__(params);
+      }
+      return dispatchDeckToolCall('deck_create_slide', { ...params, title: params.headline || 'Slide' }, context);
+    }
+  },
+  {
+    name: 'update_deck_slide',
+    label: 'Update Slide Properties',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Updates content, headlines, card text, colors, or vector wave styling on a specific slide.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        slideId: { type: 'string', description: 'Unique ID of target slide.' },
+        headline: { type: 'string', description: 'Updated headline.' },
+        tagline: { type: 'string', description: 'Updated tagline.' },
+        footer: { type: 'string', description: 'Updated footer note.' },
+        vectorWaveStyle: { type: 'string', description: 'Updated vector mesh artwork style.' },
+        fields: { type: 'object', description: 'Arbitrary slide key/value properties to update.' }
+      },
+      required: ['slideId']
+    },
+    execute: async (params, context) => {
+      if (window.__REGAARDER_UPDATE_DECK_SLIDE__) {
+        return window.__REGAARDER_UPDATE_DECK_SLIDE__(params.slideId, params.fields || params);
+      }
+      return dispatchDeckToolCall('deck_update_slide', { slideId: params.slideId, ...params.fields, headline: params.headline, tagline: params.tagline }, context);
+    }
+  },
+  {
+    name: 'delete_deck_slide',
+    label: 'Delete Slide',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Deletes a slide from the presentation deck by slide ID.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        slideId: { type: 'string', description: 'Unique ID of slide to remove.' }
+      },
+      required: ['slideId']
+    },
+    execute: async (params, context) => {
+      if (window.__REGAARDER_DELETE_DECK_SLIDE__) {
+        return window.__REGAARDER_DELETE_DECK_SLIDE__(params.slideId);
+      }
+      return dispatchDeckToolCall('deck_delete_slide', { slideId: Number(params.slideId) }, context);
+    }
+  },
+  {
+    name: 'apply_deck_template',
+    label: 'Apply Full Deck Template',
+    category: DOCS_TOOL_CATEGORIES.DECK_TOOLS,
+    description: 'Loads a complete multi-slide presentation template suite into the active project.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        templateName: {
+          type: 'string',
+          enum: ['Business Plan Deck (10)', 'Startup Pitch Deck (10)', 'All Hands Company Meeting', 'Quarterly Earnings Report'],
+          description: 'Name of the template suite to apply.'
+        }
+      },
+      required: ['templateName']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_LOAD_DECK_TEMPLATE__) {
+        return window.__REGAARDER_LOAD_DECK_TEMPLATE__(params.templateName);
+      }
+      if (window.regaarderDeck?.loadTemplate) {
+        return window.regaarderDeck.loadTemplate(params.templateName);
+      }
+      return { success: true, message: `Applied template: ${params.templateName}`, data: params };
+    }
+  },
+
+  // ── SHEET & MATRIX TOOLS ─────────────────────────────────────────
+  {
+    name: 'get_sheet_data',
+    label: 'Get Sheet Grid Data',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Retrieves current spreadsheet dimensions, column headers, cell values, formulas, and selection coordinates.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: async () => {
+      const sheetData = window.__REGAARDER_SHEET_DATA__ || {};
+      return { success: true, data: sheetData };
+    }
+  },
+  {
+    name: 'update_sheet_cells',
+    label: 'Batch Update Sheet Cells',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Updates values, formulas, or formatting across specific cell coordinates in the active spreadsheet.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        updates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              row: { type: 'number', description: 'Row index (0-based).' },
+              col: { type: 'number', description: 'Column index (0-based).' },
+              value: { type: 'string', description: 'Cell value or formula (e.g. =SUM(A1:A10)).' }
+            },
+            required: ['row', 'col', 'value']
+          },
+          description: 'Array of cell update operations.'
+        }
+      },
+      required: ['updates']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_UPDATE_SHEET_CELLS__) {
+        return window.__REGAARDER_UPDATE_SHEET_CELLS__(params.updates);
+      }
+      return { success: true, message: 'Sheet cells updated', data: params };
+    }
+  },
+  {
+    name: 'format_sheet_range',
+    label: 'Format Sheet Range',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Applies cell data validation, percentage formatting, dropdown choice lists, or styling across a range of cells.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Optional ID of the target sheet.' },
+        startRow: { type: 'number', description: 'Starting row index (1-based).' },
+        startCol: { type: 'number', description: 'Starting col index (1-based).' },
+        endRow: { type: 'number', description: 'Ending row index (1-based).' },
+        endCol: { type: 'number', description: 'Ending col index (1-based).' },
+        formatType: { type: 'string', enum: ['percentage', 'currency', 'number', 'dropdown', 'date'], description: 'Format type.' },
+        options: { type: 'array', items: { type: 'string' }, description: 'Dropdown options if formatType is dropdown.' }
+      },
+      required: ['startRow', 'startCol', 'endRow', 'endCol', 'formatType']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_FORMAT_SHEET_RANGE__) {
+        return window.__REGAARDER_FORMAT_SHEET_RANGE__(params);
+      }
+      if (window.regaarderSpreadsheet?.formatCells) {
+        window.regaarderSpreadsheet.formatCells(
+          params.sheetId,
+          params.startRow,
+          params.startCol,
+          params.endRow,
+          params.endCol,
+          { format: params.formatType, options: params.options || [] }
+        );
+        return { success: true, message: `Formatted range (${params.startRow},${params.startCol}) to (${params.endRow},${params.endCol}) as ${params.formatType}.`, data: params };
+      }
+      return { success: true, message: 'Range formatted', data: params };
+    }
+  },
+
   // ── APPLICATION COMMANDS ─────────────────────────────────────────
   {
     name: 'export_document',
@@ -419,6 +689,286 @@ export const CANONICAL_DOCS_TOOLS = [
           timestamp: new Date().toISOString()
         }
       };
+    }
+  },
+
+  // ── TASKS & INITIATIVES TOOLS ────────────────────────────────────
+  {
+    name: 'get_tasks',
+    label: 'Get All Tasks',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Retrieves all tasks and initiatives in the active project, including title, status, priority, assignee, and due date.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        filter: {
+          type: 'string',
+          enum: ['all', 'active', 'completed', 'overdue'],
+          description: 'Filter tasks by status. Defaults to all.'
+        }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      const tasks = window.__REGAARDER_TASKS__ || [];
+      const filter = params.filter || 'all';
+      const filtered = filter === 'all' ? tasks : tasks.filter(t => {
+        if (filter === 'active') return t.status !== 'Done' && t.status !== 'Completed';
+        if (filter === 'completed') return t.status === 'Done' || t.status === 'Completed';
+        if (filter === 'overdue') return t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done';
+        return true;
+      });
+      return { success: true, data: { total: filtered.length, tasks: filtered } };
+    }
+  },
+  {
+    name: 'add_task',
+    label: 'Add Task',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Creates a new task or initiative in the active project with specified title, priority, assignee, and due date.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Task title.' },
+        priority: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'Task priority level.' },
+        status: { type: 'string', enum: ['Not Started', 'In Progress', 'Done', 'Blocked'], description: 'Initial task status.' },
+        assignee: { type: 'string', description: 'Assignee name or ID.' },
+        dueDate: { type: 'string', description: 'ISO 8601 due date string (e.g. 2025-09-01).' },
+        notes: { type: 'string', description: 'Optional task notes or description.' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_ADD_TASK__) {
+        return window.__REGAARDER_ADD_TASK__(params);
+      }
+      return { success: true, message: 'Task created', data: { ...params, id: `task_${Date.now()}` } };
+    }
+  },
+  {
+    name: 'update_task',
+    label: 'Update Task',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Updates an existing task property such as status, priority, assignee, due date, or title.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'The unique ID of the task to update.' },
+        title: { type: 'string', description: 'Updated task title.' },
+        status: { type: 'string', enum: ['Not Started', 'In Progress', 'Done', 'Blocked'], description: 'Updated status.' },
+        priority: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'Updated priority.' },
+        assignee: { type: 'string', description: 'Updated assignee.' },
+        dueDate: { type: 'string', description: 'Updated ISO 8601 due date.' }
+      },
+      required: ['taskId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_UPDATE_TASK__) {
+        return window.__REGAARDER_UPDATE_TASK__(params.taskId, params);
+      }
+      return { success: true, message: 'Task updated', data: params };
+    }
+  },
+  {
+    name: 'delete_task',
+    label: 'Delete Task',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Permanently deletes a task by its ID from the active project.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Unique ID of the task to delete.' }
+      },
+      required: ['taskId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_DELETE_TASK__) {
+        return window.__REGAARDER_DELETE_TASK__(params.taskId);
+      }
+      return { success: true, message: 'Task deleted', data: params };
+    }
+  },
+
+  // ── ROOMS & MEETING TOOLS ────────────────────────────────────────
+  {
+    name: 'get_room_sessions',
+    label: 'Get Room Sessions',
+    category: DOCS_TOOL_CATEGORIES.ROOMS_TOOLS,
+    description: 'Retrieves all active and recent Room meeting sessions, including title, participants, status, and start time.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        filter: {
+          type: 'string',
+          enum: ['all', 'active', 'recent'],
+          description: 'Filter by session status. Defaults to all.'
+        }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      const rooms = window.__REGAARDER_ROOMS__ || [];
+      const filter = params.filter || 'all';
+      const filtered = filter === 'active'
+        ? rooms.filter(r => r.status === 'live' || r.status === 'active')
+        : rooms;
+      return { success: true, data: { total: filtered.length, sessions: filtered } };
+    }
+  },
+  {
+    name: 'get_meeting_transcript',
+    label: 'Get Meeting Transcript',
+    category: DOCS_TOOL_CATEGORIES.ROOMS_TOOLS,
+    description: 'Retrieves the full recorded transcript and key moment summary for a specific Room meeting session.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        roomId: { type: 'string', description: 'The unique room session ID.' }
+      },
+      required: ['roomId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_GET_TRANSCRIPT__) {
+        return window.__REGAARDER_GET_TRANSCRIPT__(params.roomId);
+      }
+      const rooms = window.__REGAARDER_ROOMS__ || [];
+      const session = rooms.find(r => r.id === params.roomId);
+      if (!session) return { success: false, error: { code: 'ROOM_NOT_FOUND', details: `Room ${params.roomId} not found.` } };
+      return { success: true, data: { roomId: params.roomId, title: session.title, transcript: session.transcript || 'Transcript not yet available.', keyMoments: session.keyMoments || [] } };
+    }
+  },
+  {
+    name: 'start_room',
+    label: 'Start Room Session',
+    category: DOCS_TOOL_CATEGORIES.ROOMS_TOOLS,
+    description: 'Creates and starts a new Room meeting session with specified title and participant list.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Meeting room title.' },
+        participants: { type: 'array', items: { type: 'string' }, description: 'List of participant names or email addresses.' },
+        agenda: { type: 'string', description: 'Optional meeting agenda.' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_START_ROOM__) {
+        return window.__REGAARDER_START_ROOM__(params);
+      }
+      return { success: true, message: `Room "${params.title}" started`, data: { ...params, id: `room_${Date.now()}`, status: 'active' } };
+    }
+  },
+
+  // ── BROWSER RESEARCH & NOTES TOOLS ───────────────────────────────
+  {
+    name: 'get_research_notes',
+    label: 'Get Research Notes',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Retrieves all saved web research notes, citations, and source bookmarks from the Browser workspace.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Optional keyword to filter notes by title or content.' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      const notes = window.__REGAARDER_RESEARCH_NOTES__ || [];
+      const filtered = params.query
+        ? notes.filter(n => (n.title + ' ' + n.content).toLowerCase().includes(params.query.toLowerCase()))
+        : notes;
+      return { success: true, data: { total: filtered.length, notes: filtered } };
+    }
+  },
+  {
+    name: 'add_research_note',
+    label: 'Add Research Note',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Saves a new research note or web citation to the Browser workspace.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Note or citation title.' },
+        content: { type: 'string', description: 'Note body text or citation excerpt.' },
+        sourceUrl: { type: 'string', description: 'Source URL for the citation.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags for categorization.' }
+      },
+      required: ['title', 'content']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_ADD_RESEARCH_NOTE__) {
+        return window.__REGAARDER_ADD_RESEARCH_NOTE__(params);
+      }
+      return { success: true, message: 'Research note saved', data: { ...params, id: `note_${Date.now()}`, savedAt: new Date().toISOString() } };
+    }
+  },
+  {
+    name: 'delete_research_note',
+    label: 'Delete Research Note',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Deletes a saved research note by its ID from the Browser workspace.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        noteId: { type: 'string', description: 'Unique ID of the note to delete.' }
+      },
+      required: ['noteId']
+    },
+    execute: async (params) => {
+      if (window.__REGAARDER_DELETE_RESEARCH_NOTE__) {
+        return window.__REGAARDER_DELETE_RESEARCH_NOTE__(params.noteId);
+      }
+      return { success: true, message: 'Research note deleted', data: params };
     }
   }
 ];

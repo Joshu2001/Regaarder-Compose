@@ -46,7 +46,7 @@ export default function SplashScreen({ onFinish, durationMs = 3000 }) {
       {/* Center Brand Icon with Apple-style subtle breathing micro-interaction */}
       <div className="relative z-10 flex flex-col items-center justify-center">
         <div className="relative transform transition-transform duration-1000 animate-pulse hover:scale-105">
-          <RegaarderBrandIcon size={72} className="shadow-2xl shadow-pink-500/40" />
+          <RegaarderBrandIcon size={72} className="text-slate-900 dark:text-white drop-shadow-sm" />
         </div>
       </div>
     </div>

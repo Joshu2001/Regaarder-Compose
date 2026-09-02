@@ -1001,6 +1001,8 @@ export function extractLiveEntitiesFromWorkspace({
   tasks = [],
   scheduleItems = [],
   scheduleAgendaItems = [],
+  whiteboardWidgets = [],
+  whiteboardShapes = [],
   meetings = []
 } = {}) {
   const liveEntities = [];
@@ -1246,6 +1248,41 @@ export function extractLiveEntitiesFromWorkspace({
         }
       }
     });
+  }
+
+  // 7. Ingest Whiteboard Canvas (Sticky notes, idea widgets, diagrams, shapes)
+  const wbItems = [...(whiteboardWidgets || []), ...(whiteboardShapes || [])];
+  if (Array.isArray(wbItems) && wbItems.length > 0) {
+    const textItems = wbItems
+      .map(w => (w.text || w.content || w.label || w.title || '').trim())
+      .filter(t => t.length > 3 && !['sticky note', 'new shape', 'text', 'untitled'].includes(t.toLowerCase()));
+    
+    if (textItems.length > 0) {
+      const wbEntityId = `live_whiteboard_active`;
+      const fullWbText = textItems.join(' • ');
+      const metrics = extractNumericMetrics(fullWbText);
+      const keywords = Array.from(new Set(extractTokens('Whiteboard Canvas ' + fullWbText))).slice(0, 8);
+
+      liveEntities.push({
+        id: wbEntityId,
+        type: 'whiteboard',
+        workspace: 'whiteboard',
+        title: 'Strategy Whiteboard Canvas',
+        author: 'You',
+        authorRole: 'Collaborator',
+        updatedAt: new Date().toISOString(),
+        project: 'Visual Brainstorming',
+        tags: ['Whiteboard', 'Brainstorm', 'Diagram', ...keywords],
+        excerpt: `Whiteboard canvas containing ${textItems.length} sticky note(s) and brainstorming node(s).`,
+        content: `Whiteboard Canvas. Sticky notes and diagrams: ${fullWbText}`,
+        metrics,
+        metadata: {
+          isLive: true,
+          itemCount: textItems.length,
+          metrics
+        }
+      });
+    }
   }
 
   // ─── AUTOMATIC MULTI-DIMENSIONAL RELATIONSHIP DISCOVERY ──────────────────

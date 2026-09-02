@@ -1,58 +1,57 @@
+import { extractLiveEntitiesFromWorkspace } from './orbKnowledgeGraphService';
+
 /**
- * orbWorkspaceRAG.js
- * Cross-workspace Retrieval-Augmented Generation context builder for Regaarder Orb.
+ * Orb Workspace RAG & Agent Context Provider
+ * Extracts and compiles multi-app context (Docs, Sheets, Decks, Tasks, Schedule)
+ * whenever @orb or /orb is invoked in AI chat, Smart Assist, or document editing.
  */
 
-export function hasOrbMention(text) {
-  if (!text || typeof text !== "string") return false;
-  return /\b(?:orb|@orb|\/orb|cross-workspace|all workspace|across all)\b/i.test(text);
-}
+export function buildOrbWorkspacePromptContext(liveWorkspaceContext = {}) {
+  const { liveEntities = [], liveEdges = [] } = extractLiveEntitiesFromWorkspace(liveWorkspaceContext);
 
-export function buildOrbWorkspacePromptContext(ctx = {}) {
-  if (!ctx || typeof ctx !== "object") return "";
+  if (!liveEntities || liveEntities.length === 0) {
+    return '\n[ORB WORKSPACE CONTEXT: Workspace is currently empty. No documents, sheets, or tasks found.]';
+  }
 
   const sections = [];
+  sections.push('\n=== [ORB CROSS-WORKSPACE INTELLIGENCE CONTEXT] ===');
+  sections.push('Ground your answer strictly using the following live workspace artifacts:\n');
 
-  if (ctx.docTitle || ctx.docBodyHtml) {
-    const plainDoc = (ctx.docBodyHtml || "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    sections.push(`[Compose Document: "${ctx.docTitle || "Untitled"}" (ID: ${ctx.activeDocId || "active"})]\nContent: ${plainDoc.slice(0, 3000)}`);
-  }
-
-  if (ctx.sheetGrids && typeof ctx.sheetGrids === "object") {
-    const activeSheet = ctx.sheetGrids[ctx.activeSheetId] || Object.values(ctx.sheetGrids)[0];
-    if (activeSheet) {
-      sections.push(`[Spreadsheet: "${ctx.sheetsTitle || "Sheet 1"}" (ID: ${ctx.activeSheetId || "active"})]\nData snippet: ${JSON.stringify(activeSheet).slice(0, 2500)}`);
+  liveEntities.forEach((entity, idx) => {
+    const ws = (entity.workspace || entity.type || 'app').toUpperCase();
+    const title = entity.title || 'Untitled';
+    const author = entity.author ? ` (Author: ${entity.author})` : '';
+    const content = entity.content || entity.excerpt || '';
+    
+    let extraMeta = '';
+    if (entity.metadata?.hasFormulas && entity.metadata.formulas?.length) {
+      extraMeta = `\n  - Cell Formulas: ${entity.metadata.formulas.map(f => `${f.coord}: ${f.formula}`).join(' | ')}`;
     }
+    if (entity.metadata?.priority || entity.metadata?.status) {
+      extraMeta = `\n  - Priority: ${entity.metadata.priority || 'Normal'}, Status: ${entity.metadata.status || 'Active'}`;
+    }
+    if (entity.metadata?.time) {
+      extraMeta = `\n  - Scheduled Time: ${entity.metadata.time}`;
+    }
+
+    sections.push(`[${idx + 1}] [${ws}] "${title}"${author}\n  Content / Excerpt: ${content}${extraMeta}`);
+  });
+
+  if (liveEdges && liveEdges.length > 0) {
+    sections.push('\n--- DISCOVERED CROSS-ARTIFACT RELATIONSHIPS ---');
+    liveEdges.slice(0, 15).forEach((edge, i) => {
+      sections.push(`- (${i + 1}) ${edge.label || edge.relationType} [${edge.epistemicStatus || 'verified'}]`);
+    });
   }
 
-  if (Array.isArray(ctx.deckSlidesData) && ctx.deckSlidesData.length > 0) {
-    const slideSummary = ctx.deckSlidesData
-      .slice(0, 8)
-      .map((s, idx) => `Slide ${idx + 1}: ${s.title || s.headline || "Slide"} - ${s.blurb || s.subtitle || ""}`)
-      .join("\n");
-    sections.push(`[Deck Presentation: "${ctx.deckTitle || "Pitch Deck"}"]\n${slideSummary}`);
-  }
+  sections.push('=== [END ORB WORKSPACE CONTEXT] ===\n');
+  return sections.join('\n');
+}
 
-  if (Array.isArray(ctx.tasks) && ctx.tasks.length > 0) {
-    const taskSummary = ctx.tasks
-      .slice(0, 10)
-      .map((t) => `- [${t.completed ? "x" : " "}] ${t.title || t.text || t.name}`)
-      .join("\n");
-    sections.push(`[Tasks & Initiatives]\n${taskSummary}`);
-  }
-
-  if (Array.isArray(ctx.scheduleAgendaItems) && ctx.scheduleAgendaItems.length > 0) {
-    const agendaSummary = ctx.scheduleAgendaItems
-      .slice(0, 8)
-      .map((item) => `- ${item.time || ""}: ${item.title || item.name || "Event"}`)
-      .join("\n");
-    sections.push(`[Schedule & Agenda]\n${agendaSummary}`);
-  }
-
-  if (sections.length === 0) return "";
-
-  return `--- CROSS-WORKSPACE ORB CONTEXT ---\n${sections.join("\n\n")}\n--- END ORB CONTEXT ---`;
+/**
+ * Check if a prompt references @orb or /orb
+ */
+export function hasOrbMention(text) {
+  if (!text || typeof text !== 'string') return false;
+  return /(@orb|\/orb|\borb\b\s+intelligence|\bworkspace\s+context\b)/i.test(text);
 }

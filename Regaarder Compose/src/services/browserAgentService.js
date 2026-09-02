@@ -14,10 +14,24 @@ const PROXIES = [
 ];
 
 async function fetchWithFallbackProxies(targetUrl) {
+  // MED-04 fix: Attempt direct fetch first with a short timeout.
+  // In Electron or for CORS-permissive resources (e.g. Wikipedia API), direct fetch avoids leaking queries to public proxies.
+  try {
+    const directRes = await fetch(targetUrl, { signal: AbortSignal.timeout(6000) });
+    if (directRes.ok) {
+      const text = await directRes.text();
+      if (text && text.length > 50) return text;
+    }
+  } catch (_e) {}
+
+  // Fallback to CORS proxies only if direct fetch fails (e.g. browser environment without CORS headers)
   for (const proxyGen of PROXIES) {
     try {
       const pUrl = proxyGen(targetUrl);
-      const res = await fetch(pUrl, { headers: { 'Accept': 'application/xml, text/xml, text/html, application/json' } });
+      const res = await fetch(pUrl, {
+        headers: { 'Accept': 'application/xml, text/xml, text/html, application/json' },
+        signal: AbortSignal.timeout(8000)
+      });
       if (res.ok) {
         if (pUrl.includes('allorigins.win')) {
           const data = await res.json();
@@ -31,12 +45,6 @@ async function fetchWithFallbackProxies(targetUrl) {
       console.warn('[BrowserAgent] Proxy attempt fallback:', e);
     }
   }
-
-  // Direct fetch fallback
-  try {
-    const directRes = await fetch(targetUrl);
-    if (directRes.ok) return await directRes.text();
-  } catch (_e) {}
 
   return null;
 }

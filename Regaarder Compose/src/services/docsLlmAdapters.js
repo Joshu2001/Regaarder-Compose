@@ -1,10 +1,10 @@
 /**
  * docsLlmAdapters.js
  * 
- * Layer 4: Provider-Specific LLM Adapters
+ * Layer 4: Provider-Specific Universal LLM Adapters
  * 
  * Converts canonical tool definitions into provider-compliant tool schemas for:
- * - OpenAI Function Calling
+ * - OpenAI Function Calling / Ollama Tool Calling
  * - Google Gemini Function Declarations
  * - Anthropic Claude Tools API
  * 
@@ -16,8 +16,8 @@ import { CANONICAL_DOCS_TOOLS } from './docsToolRegistry.js';
 /**
  * Returns raw canonical tool schemas
  */
-export const getCanonicalToolSchemas = () => {
-  return CANONICAL_DOCS_TOOLS.map(t => ({
+export const getCanonicalToolSchemas = (tools = CANONICAL_DOCS_TOOLS) => {
+  return tools.map(t => ({
     name: t.name,
     label: t.label,
     category: t.category,
@@ -34,7 +34,7 @@ export const getCanonicalToolSchemas = () => {
 };
 
 /**
- * Converts Canonical Registry into OpenAI Tools Format
+ * Converts Canonical Registry into OpenAI / Ollama Tools Format
  */
 export const toOpenAITools = (tools = CANONICAL_DOCS_TOOLS) => {
   return tools.map(t => ({
@@ -74,17 +74,20 @@ export const toAnthropicTools = (tools = CANONICAL_DOCS_TOOLS) => {
 /**
  * Generates comprehensive System Prompt Teaching Documentation for LLMs
  */
-export const getDocsToolSystemPrompt = (tools = CANONICAL_DOCS_TOOLS) => {
-  let prompt = `# Regaarder Compose Docs — Semantic Document Tools Catalog\n\n`;
-  prompt += `You are an AI Document Agent embedded inside Regaarder Compose Docs. You control the document state using the following semantic tools. Never attempt direct UI manipulation; invoke the appropriate tool by name.\n\n`;
+export const getUniversalToolSystemPrompt = (tools = CANONICAL_DOCS_TOOLS) => {
+  let prompt = `# Regaarder Operating System — Universal AI Agent Tools Catalog\n\n`;
+  prompt += `You are an embedded AI Specialist inside Regaarder Compose (controlling Docs, Presentation Decks & Slides, and Spreadsheet Matrices).\n`;
+  prompt += `You interact with the workspace state strictly through the structured semantic tools below. Do not attempt direct DOM manipulation; emit valid tool calls by name.\n\n`;
 
   tools.forEach(t => {
     prompt += `### Tool: \`${t.name}\` (${t.label})\n`;
     prompt += `- **Category**: ${t.category}\n`;
     prompt += `- **Description**: ${t.description}\n`;
-    prompt += `- **Safety Metadata**: Mutates Document: \`${t.mutatesDocument}\` | Destructive: \`${t.destructive}\` | Undoable: \`${t.undoable}\` | Requires Selection: \`${t.requiresSelection}\`\n`;
+    prompt += `- **Safety Metadata**: Mutates State: \`${t.mutatesDocument}\` | Destructive: \`${t.destructive}\` | Undoable: \`${t.undoable}\`\n`;
     prompt += `- **Parameters Schema**:\n\`\`\`json\n${JSON.stringify(t.parameters, null, 2)}\n\`\`\`\n\n`;
   });
 
   return prompt;
 };
+
+export const getDocsToolSystemPrompt = getUniversalToolSystemPrompt;

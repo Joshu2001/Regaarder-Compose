@@ -194,15 +194,14 @@ export async function generateOrbDecisionSynthesis({
   const systemPrompt = `You are Orb, the Executive Cross-Workspace Strategic Reasoning System in Regaarder.
 CORE PRINCIPLE: "The answer is the product. Evidence explains it. Visuals reveal structure. Challenge improves it. Actions operationalize it."
 
-Your objective is to interrogate workspace business data, identify mathematical discrepancies, challenge unvalidated assumptions, and remove uncertainty for executive decision-makers.
+Your objective is to maximize the amount of uncertainty you remove for the user. Answer the question directly with concrete facts and numbers from the indexed artifacts.
 
-MANDATORY REASONING DIRECTIVES:
-1. MATHEMATICAL SANITY CHECK: If the user asks for a percentage or quantitative growth (e.g. "increase revenue by 40%"), calculate the baseline math ($9.2M * 1.40 = $12.88M ARR) and compare it against the workspace strategy target ($14.5M ARR = +57.6%). LEAD YOUR ANSWER IMMEDIATELY WITH THIS TARGET DISCREPANCY.
-2. ZERO CONSULTING FLUFF: Every sentence must contain a concrete fact, a causal relationship, a quantified implication, an explicit assumption, or a decision. Banned phrases: "strategic engagements", "executive time-alignment driven offerings", "transformative expansion", "revenue streams across segments".
-3. STRICT SOURCE FIDELITY: Distinguish Addressable Market (TAM / ACV pool, e.g. $3.2B) from company revenue targets ($14.5M). NEVER state TAM as an ARR target. Never invent fictional timelines (e.g. "6-month roadmap") unless explicitly in the text.
-4. RECONCILE CONTRADICTIONS: Expose capital overruns ($2.8M vs $3.0M) and compliance date conflicts (Nov 1 vs Nov 15 SOC 2).
-5. INTERROGATE ASSUMPTIONS: Highlight missing sales economics (pipeline coverage, win rate, sales cycle, quota).
-6. Return ONLY a valid JSON object.`;
+RULES:
+1. ANSWER DIRECTLY: Provide an actual, natural-language executive answer in 1-3 paragraphs. Do NOT repeat or echo instructions or placeholder text.
+2. EPISTEMIC GROUNDING: Explicitly quote numbers, dates, and titles from the workspace.
+3. CONTRADICTIONS: Reconcile differences across documents (such as budget mismatches or timeline conflicts).
+4. NO INVENTED NUMBERS: Only state metrics present in the artifacts; label derived calculations as derived.
+5. Return ONLY a valid JSON object.`;
 
   const userPrompt = `USER QUESTION: "${queryText}"
 
@@ -574,3 +573,327 @@ function parseJsonSafely(rawText) {
     return null;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// callAiProvider — Unified Single-Call Primitive with Tool Schema Injection
+//
+// Sends a messages array to the active LLM provider with canonical tool schemas
+// included in the API payload. Returns a normalised response shape so the
+// callAiWithTools resolution loop can operate provider-agnostically.
+//
+// Response shape:
+//   { type: 'text', content: string }
+//   { type: 'tool_call', toolCalls: [{id, name, arguments}], rawAssistantMessage: any }
+// ─────────────────────────────────────────────────────────────────────────────
+export async function callAiProvider(messages = [], aiConfig = {}, availableTools = [], options = {}) {
+  const { signal } = options;
+
+  // Convert canonical tools to provider-specific schema format
+  const toOpenAIFormat = (tools) => tools.map(t => ({
+    type: 'function',
+    function: { name: t.name, description: t.description, parameters: t.parameters }
+  }));
+
+  const toGeminiFormat = (tools) => ({
+    functionDeclarations: tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters
+    }))
+  });
+
+  const toAnthropicFormat = (tools) => tools.map(t => ({
+    name: t.name,
+    description: t.description,
+    input_schema: t.parameters
+  }));
+
+  // Helper: extract system message and user messages separately for providers that need split
+  const systemMsg = messages.find(m => m.role === 'system')?.content || '';
+  const conversationMessages = messages.filter(m => m.role !== 'system');
+
+  const provider = aiConfig.provider || 'gemini';
+
+  // ── 1. GOOGLE GEMINI DIRECT API ──────────────────────────────────────────
+  if (provider === 'gemini' && aiConfig.geminiApiKey) {
+    try {
+      const model = aiConfig.geminiModel || 'gemini-1.5-pro';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${aiConfig.geminiApiKey}`;
+
+      // Convert messages to Gemini contents format
+      const contents = conversationMessages.map(m => {
+        if (m.role === 'tool') {
+          return {
+            role: 'user',
+            parts: [{ functionResponse: { name: m.name, response: { content: m.content } } }]
+          };
+        }
+        if (m.role === 'assistant' && m.tool_calls) {
+          // Model's function call turn — already structured as parts
+          return { role: 'model', parts: m.tool_calls };
+        }
+        return {
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content || '' }]
+        };
+      }).filter(c => c.parts.length > 0);
+
+      const body = {
+        system_instruction: systemMsg ? { parts: [{ text: systemMsg }] } : undefined,
+        contents,
+        generationConfig: { temperature: 0.15 },
+        ...(availableTools.length > 0 && { tools: [toGeminiFormat(availableTools)] })
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const candidate = data.candidates?.[0]?.content;
+        if (!candidate) return null;
+
+        // Check for function call parts
+        const funcParts = (candidate.parts || []).filter(p => p.functionCall);
+        if (funcParts.length > 0) {
+          return {
+            type: 'tool_call',
+            toolCalls: funcParts.map((p, i) => ({
+              id: `gemini_call_${i}`,
+              name: p.functionCall.name,
+              arguments: p.functionCall.args || {}
+            })),
+            rawAssistantMessage: candidate.parts
+          };
+        }
+
+        const textContent = (candidate.parts || []).map(p => p.text || '').join('');
+        return { type: 'text', content: textContent };
+      }
+    } catch (err) {
+      console.warn('[callAiProvider] Gemini direct API failed:', err);
+    }
+  }
+
+  // ── 2. ANTHROPIC CLAUDE (direct API key) ─────────────────────────────────
+  if ((provider === 'claude' || provider === 'anthropic') && aiConfig.claudeApiKey) {
+    try {
+      const model = aiConfig.claudeModel || 'claude-3-5-sonnet-20241022';
+
+      // Claude requires tool results as user messages with special content blocks
+      const claudeMessages = conversationMessages.map(m => {
+        if (m.role === 'tool') {
+          return {
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: m.tool_call_id || m.name,
+              content: m.content
+            }]
+          };
+        }
+        if (m.role === 'assistant' && m.tool_calls) {
+          return { role: 'assistant', content: m.tool_calls };
+        }
+        return { role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content || '' };
+      });
+
+      const body = {
+        model,
+        max_tokens: 4096,
+        system: systemMsg || undefined,
+        messages: claudeMessages,
+        ...(availableTools.length > 0 && { tools: toAnthropicFormat(availableTools) })
+      };
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': aiConfig.claudeApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(body),
+        signal
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const toolUseBlocks = (data.content || []).filter(b => b.type === 'tool_use');
+        if (toolUseBlocks.length > 0) {
+          return {
+            type: 'tool_call',
+            toolCalls: toolUseBlocks.map(b => ({
+              id: b.id,
+              name: b.name,
+              arguments: b.input || {}
+            })),
+            rawAssistantMessage: data.content
+          };
+        }
+        const textBlock = (data.content || []).find(b => b.type === 'text');
+        return { type: 'text', content: textBlock?.text || '' };
+      }
+    } catch (err) {
+      console.warn('[callAiProvider] Claude direct API failed:', err);
+    }
+  }
+
+  // ── 3. OPENAI / DEEPSEEK DIRECT API ──────────────────────────────────────
+  const isOpenAI = provider === 'openai';
+  const isDeepSeek = provider === 'deepseek';
+
+  if ((isOpenAI && aiConfig.openaiApiKey) || (isDeepSeek && aiConfig.deepseekApiKey)) {
+    try {
+      const endpoint = isDeepSeek
+        ? 'https://api.deepseek.com/v1/chat/completions'
+        : 'https://api.openai.com/v1/chat/completions';
+      const apiKey = isDeepSeek ? aiConfig.deepseekApiKey : aiConfig.openaiApiKey;
+      const model = isDeepSeek
+        ? (aiConfig.deepseekModel || 'deepseek-chat')
+        : (aiConfig.openaiModel || 'gpt-4o');
+
+      const body = {
+        model,
+        messages,
+        temperature: 0.15,
+        ...(availableTools.length > 0 && { tools: toOpenAIFormat(availableTools), tool_choice: 'auto' })
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(body),
+        signal
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const choice = data.choices?.[0];
+        if (!choice) return null;
+
+        const assistantMsg = choice.message;
+        if (assistantMsg?.tool_calls?.length > 0) {
+          return {
+            type: 'tool_call',
+            toolCalls: assistantMsg.tool_calls.map(tc => ({
+              id: tc.id,
+              name: tc.function.name,
+              arguments: tc.function.arguments
+            })),
+            rawAssistantMessage: assistantMsg.tool_calls
+          };
+        }
+
+        return { type: 'text', content: assistantMsg?.content || '' };
+      }
+    } catch (err) {
+      console.warn('[callAiProvider] OpenAI/DeepSeek direct API failed:', err);
+    }
+  }
+
+  // ── 4. OLLAMA LOCAL ───────────────────────────────────────────────────────
+  if (provider === 'ollama') {
+    try {
+      const endpoint = (aiConfig.ollamaEndpoint || 'http://localhost:11434').replace(/\/+$/, '');
+      const model = aiConfig.ollamaModel || 'llama3:latest';
+
+      const body = {
+        model,
+        messages,
+        stream: false,
+        ...(availableTools.length > 0 && { tools: toOpenAIFormat(availableTools) })
+      };
+
+      const res = await fetch(`${endpoint}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const msg = data.message;
+        if (msg?.tool_calls?.length > 0) {
+          return {
+            type: 'tool_call',
+            toolCalls: msg.tool_calls.map((tc, i) => ({
+              id: `ollama_call_${i}`,
+              name: tc.function?.name,
+              arguments: tc.function?.arguments || {}
+            })),
+            rawAssistantMessage: msg.tool_calls
+          };
+        }
+        return { type: 'text', content: msg?.content || '' };
+      }
+    } catch (err) {
+      console.warn('[callAiProvider] Ollama local API failed:', err);
+    }
+  }
+
+  // ── 5. LM STUDIO / CUSTOM OPENAI-COMPATIBLE ──────────────────────────────
+  if (provider === 'lmstudio' || provider === 'custom') {
+    try {
+      const endpoint = (provider === 'lmstudio'
+        ? (aiConfig.lmstudioEndpoint || 'http://localhost:1234/v1')
+        : (aiConfig.customEndpoint || 'http://localhost:8000/v1')
+      ).replace(/\/+$/, '');
+      const model = provider === 'lmstudio'
+        ? (aiConfig.lmstudioModel || 'local-model')
+        : (aiConfig.customModel || 'default');
+      const apiKey = provider === 'custom' ? aiConfig.customApiKey : 'lm-studio';
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+      const body = {
+        model,
+        messages,
+        temperature: 0.15,
+        ...(availableTools.length > 0 && { tools: toOpenAIFormat(availableTools), tool_choice: 'auto' })
+      };
+
+      const res = await fetch(`${endpoint}/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const choice = data.choices?.[0];
+        if (!choice) return null;
+
+        const assistantMsg = choice.message;
+        if (assistantMsg?.tool_calls?.length > 0) {
+          return {
+            type: 'tool_call',
+            toolCalls: assistantMsg.tool_calls.map(tc => ({
+              id: tc.id,
+              name: tc.function?.name,
+              arguments: tc.function?.arguments
+            })),
+            rawAssistantMessage: assistantMsg.tool_calls
+          };
+        }
+        return { type: 'text', content: assistantMsg?.content || '' };
+      }
+    } catch (err) {
+      console.warn('[callAiProvider] LM Studio/Custom local API failed:', err);
+    }
+  }
+
+  // No provider succeeded — return null so the caller can handle gracefully
+  return null;
+}
+

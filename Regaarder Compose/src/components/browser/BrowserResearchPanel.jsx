@@ -4534,95 +4534,99 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
 
                                  {/* Action chips row */}
                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        if (msg.actionPlan?.actions?.length > 0) {
+                                          handleStartSpotlightTour(msg.actionPlan, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
+                                        } else {
+                                          setActivePromptMode((prev) => (prev === 'tour' ? null : 'tour'));
+                                          textareaRef.current?.focus();
+                                          if (showToast) showToast('Spotlight Tour mode armed — type your request');
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 rounded-md border text-[10.5px] font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                                        activePromptMode === 'tour'
+                                          ? 'bg-violet-600/25 border-violet-400/80 text-violet-100 shadow-[0_0_10px_rgba(139,92,246,0.3)] ring-1 ring-violet-400/30'
+                                          : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-white/20 text-slate-300 hover:text-white'
+                                      }`}
+                                      title="Launch live interactive visual walkthrough on page"
+                                    >
+                                      <Compass size={11} className={activePromptMode === 'tour' ? 'text-violet-300' : 'text-slate-400'} />
+                                      <span>Spotlight Tour</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        if (msg.actionPlan?.actions?.length > 0) {
+                                          handleRecordVideoTutorial(msg.actionPlan, `Walkthrough: ${summary?.domain || 'Page'}`);
+                                        } else {
+                                          setActivePromptMode((prev) => (prev === 'video' ? null : 'video'));
+                                          textareaRef.current?.focus();
+                                          if (showToast) showToast('Video Tutorial mode armed — type your request');
+                                        }
+                                      }}
+                                      disabled={isRecordingTutorial}
+                                      className={`px-2.5 py-1 rounded-md border text-[10.5px] font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                                        activePromptMode === 'video'
+                                          ? 'bg-violet-600/25 border-violet-400/80 text-violet-100 shadow-[0_0_10px_rgba(139,92,246,0.3)] ring-1 ring-violet-400/30'
+                                          : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-white/20 text-slate-300 hover:text-white'
+                                      }`}
+                                      title="Record live 60FPS video walkthrough tutorial"
+                                    >
+                                      <Video size={11} className={isRecordingTutorial ? 'text-rose-400 animate-spin' : 'text-slate-400'} />
+                                      <span>{isRecordingTutorial ? 'Recording...' : 'Video Tutorial'}</span>
+                                    </button>
                                    <button
                                      type="button"
                                      onPointerDown={(e) => {
                                        e.preventDefault();
-                                       if (msg.actionPlan?.actions?.length > 0) {
-                                         handleStartSpotlightTour(msg.actionPlan, `Guide: ${summary?.domain || 'Interactive Steps'}`, msg.text);
-                                       } else {
-                                         setActivePromptMode((prev) => (prev === 'tour' ? null : 'tour'));
-                                         textareaRef.current?.focus();
-                                         if (showToast) showToast('Spotlight Tour mode armed — type your request');
-                                       }
+                                       handleExecuteQuickTool('sheet', getLensText(msg.text), idx);
                                      }}
-                                     className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm ${
-                                       activePromptMode === 'tour'
-                                         ? 'bg-violet-600/30 border-violet-400 text-violet-100 shadow-[0_0_10px_rgba(139,92,246,0.5)] ring-1 ring-violet-400/40'
-                                         : 'bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/40 text-violet-200'
-                                     }`}
-                                     title="Launch live interactive visual walkthrough on page"
+                                     className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-[10.5px] font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                                     title="Convert extracted content into a dynamic Sheet"
                                    >
-                                     <Compass size={10} className="text-violet-400" />
-                                     <span>Spotlight Tour</span>
+                                     <SheetIcon size={11} className="text-emerald-400" />
+                                     <span>Convert to Sheet</span>
                                    </button>
                                    <button
                                      type="button"
                                      onPointerDown={(e) => {
                                        e.preventDefault();
-                                       if (msg.actionPlan?.actions?.length > 0) {
-                                         handleRecordVideoTutorial(msg.actionPlan, `Walkthrough: ${summary?.domain || 'Page'}`);
-                                       } else {
-                                         setActivePromptMode((prev) => (prev === 'video' ? null : 'video'));
-                                         textareaRef.current?.focus();
-                                         if (showToast) showToast('Video Tutorial mode armed — type your request');
-                                       }
+                                       handleExecuteQuickTool('compose', getLensText(msg.text), idx);
                                      }}
-                                     disabled={isRecordingTutorial}
-                                     className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-sm ${
-                                       activePromptMode === 'video'
-                                         ? 'bg-rose-500/30 border-rose-400 text-rose-100 shadow-[0_0_10px_rgba(244,63,94,0.5)] ring-1 ring-rose-400/40'
-                                         : 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-200'
-                                     }`}
-                                     title="Record live 60FPS video walkthrough tutorial"
+                                     className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-[10.5px] font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                                     title="Create an executive document brief in Compose"
                                    >
-                                     <Video size={10} className={isRecordingTutorial ? 'text-rose-400 animate-spin' : 'text-rose-300'} />
-                                     <span>{isRecordingTutorial ? 'Recording...' : 'Video Tutorial'}</span>
+                                     <ComposeIcon size={11} className="text-violet-400" />
+                                     <span>Create Doc Brief</span>
                                    </button>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      handleExecuteQuickTool('sheet', getLensText(msg.text), idx);
-                                    }}
-                                    className="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                                  >
-                                    <SheetIcon size={10} />
-                                    <span>Convert to Sheet</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      handleExecuteQuickTool('compose', getLensText(msg.text), idx);
-                                    }}
-                                    className="px-2 py-0.5 rounded-md bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/25 text-violet-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                                  >
-                                    <ComposeIcon size={10} />
-                                    <span>Create Doc Brief</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      handleExecuteQuickTool('whiteboard', getLensText(msg.text), idx);
-                                    }}
-                                    className="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                                  >
-                                    <WhiteboardIcon size={10} />
-                                    <span>Diagram to Canvas</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      handleExecuteQuickTool('deck', getLensText(msg.text), idx);
-                                    }}
-                                    className="px-2 py-0.5 rounded-md bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 text-[10px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-                                  >
-                                    <DeckIcon size={10} />
-                                    <span>Generate Deck</span>
-                                  </button>
+                                   <button
+                                     type="button"
+                                     onPointerDown={(e) => {
+                                       e.preventDefault();
+                                       handleExecuteQuickTool('whiteboard', getLensText(msg.text), idx);
+                                     }}
+                                     className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-[10.5px] font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                                     title="Diagram structured insights onto Whiteboard"
+                                   >
+                                     <WhiteboardIcon size={11} className="text-amber-400" />
+                                     <span>Diagram to Canvas</span>
+                                   </button>
+                                   <button
+                                     type="button"
+                                     onPointerDown={(e) => {
+                                       e.preventDefault();
+                                       handleExecuteQuickTool('deck', getLensText(msg.text), idx);
+                                     }}
+                                     className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white text-[10.5px] font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                                     title="Generate presentation slide deck from research"
+                                   >
+                                     <DeckIcon size={11} className="text-sky-400" />
+                                     <span>Generate Deck</span>
+                                   </button>
 
                                   {/* 3-Dot Overflow Actions Menu */}
                                   <div data-action-dropdown="true" className="relative">
@@ -5314,9 +5318,9 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
                   </div>
                 )}
 
-                {/* Quick Action Suggestion Chips / Pills */}
-                <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-0.5 overflow-x-auto no-scrollbar">
-                  {/* /tour Mode Pill */}
+                {/* Quick Action Suggestion Chips - Apple-Tier Rounded Rectangles */}
+                <div className="flex items-center gap-1.5 px-2.5 pt-2 pb-1 overflow-x-auto no-scrollbar">
+                  {/* /tour Mode Tag */}
                   <button
                     type="button"
                     onPointerDown={(e) => {
@@ -5324,18 +5328,18 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
                       setActivePromptMode((prev) => (prev === 'tour' ? null : 'tour'));
                       chatInputRef.current?.focus();
                     }}
-                    className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-mono transition-all cursor-pointer shrink-0 border flex items-center gap-1 ${
+                    className={`px-2 py-0.5 rounded-md text-[9.5px] font-mono transition-all cursor-pointer shrink-0 border flex items-center gap-1 shadow-2xs ${
                       activePromptMode === 'tour'
-                        ? 'bg-violet-600/35 border-violet-400 text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.6)] font-semibold scale-105 ring-1 ring-violet-400/50'
-                        : 'bg-white/[0.04] hover:bg-violet-500/20 text-slate-400 hover:text-violet-200 border-white/[0.08] hover:border-violet-500/30'
+                        ? 'bg-violet-600/30 border-violet-400 text-violet-100 shadow-[0_0_10px_rgba(139,92,246,0.3)] font-semibold ring-1 ring-violet-400/40'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 border-white/[0.08] hover:border-white/20'
                     }`}
                     title="Toggle Interactive Spotlight Tour Mode"
                   >
-                    <Compass size={9} className={activePromptMode === 'tour' ? 'text-violet-300' : 'text-slate-400'} />
+                    <Compass size={10} className={activePromptMode === 'tour' ? 'text-violet-300' : 'text-slate-400'} />
                     <span>/tour</span>
                   </button>
 
-                  {/* /video Mode Pill */}
+                  {/* /video Mode Tag */}
                   <button
                     type="button"
                     onPointerDown={(e) => {
@@ -5343,14 +5347,14 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
                       setActivePromptMode((prev) => (prev === 'video' ? null : 'video'));
                       chatInputRef.current?.focus();
                     }}
-                    className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-mono transition-all cursor-pointer shrink-0 border flex items-center gap-1 ${
+                    className={`px-2 py-0.5 rounded-md text-[9.5px] font-mono transition-all cursor-pointer shrink-0 border flex items-center gap-1 shadow-2xs ${
                       activePromptMode === 'video'
-                        ? 'bg-rose-500/35 border-rose-400 text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.6)] font-semibold scale-105 ring-1 ring-rose-400/50'
-                        : 'bg-white/[0.04] hover:bg-rose-500/20 text-slate-400 hover:text-rose-200 border-white/[0.08] hover:border-rose-500/30'
+                        ? 'bg-violet-600/30 border-violet-400 text-violet-100 shadow-[0_0_10px_rgba(139,92,246,0.3)] font-semibold ring-1 ring-violet-400/40'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 border-white/[0.08] hover:border-white/20'
                     }`}
                     title="Toggle Live Video Tutorial Recording Mode"
                   >
-                    <Video size={9} className={activePromptMode === 'video' ? 'text-rose-300' : 'text-slate-400'} />
+                    <Video size={10} className={activePromptMode === 'video' ? 'text-violet-300' : 'text-slate-400'} />
                     <span>/video</span>
                   </button>
 
@@ -5367,7 +5371,7 @@ DO NOT output: {"actions": [{"action": "search", "query": "..."}, {"action": "su
                         e.preventDefault();
                         handleSendMessage(chip.prompt);
                       }}
-                      className="px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-violet-500/20 text-slate-400 hover:text-violet-200 border border-white/[0.08] hover:border-violet-500/30 text-[9.5px] font-mono transition-all cursor-pointer shrink-0"
+                      className="px-2 py-0.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 border border-white/[0.08] hover:border-white/20 text-[9.5px] font-mono transition-all cursor-pointer shrink-0 shadow-2xs"
                     >
                       {chip.label}
                     </button>
