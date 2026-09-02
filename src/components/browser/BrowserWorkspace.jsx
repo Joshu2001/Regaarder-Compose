@@ -905,6 +905,7 @@ export const BrowserWorkspace = ({
         onSelectTab={handleSelectTab}
         onCloseTab={handleCloseTab}
         onNewTab={() => handleNewTab(DEFAULT_RESEARCH_URL)}
+        onGoHome={() => onSwitchProductMode && onSwitchProductMode('landing')}
       />
 
       {/* Executive Navigation Toolbar */}

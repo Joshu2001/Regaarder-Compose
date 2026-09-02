@@ -18378,6 +18378,19 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTopHeaderHovered, setIsTopHeaderHovered] = useState(false);
+  const [isHeaderMoreMenuOpen, setIsHeaderMoreMenuOpen] = useState(false);
+  const headerMoreMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isHeaderMoreMenuOpen) return;
+    const handleOutsidePointerDown = (e) => {
+      if (headerMoreMenuRef.current && !headerMoreMenuRef.current.contains(e.target)) {
+        setIsHeaderMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsidePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown, true);
+  }, [isHeaderMoreMenuOpen]);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
@@ -23874,6 +23887,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   };
 
   const closeTransientMenus = () => {
+    setIsHeaderMoreMenuOpen(false);
     setOpenDropdown(null);
     setTextStyleMenuOpen(false);
     setComposeExportMenuOpen(false);
@@ -33499,6 +33513,18 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (targetDoc.whiteboardWidgets !== undefined) setWhiteboardWidgets(targetDoc.whiteboardWidgets || []);
     if (targetDoc.whiteboardStrokes !== undefined) setWhiteboardStrokes(targetDoc.whiteboardStrokes || []);
     if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
+
+    if (productMode === 'landing') {
+      if (targetDoc.mode) {
+        setProductMode(targetDoc.mode);
+      } else if (targetDoc.sheetsData) {
+        setProductMode('sheets');
+      } else if (targetDoc.deckSlidesData) {
+        setProductMode('deck');
+      } else {
+        setProductMode('compose');
+      }
+    }
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
@@ -34471,9 +34497,12 @@ Respond with valid JSON formatted like this:
 
   const commitRenameDocument = (docId) => {
     const nextTitle = renameDocValue.trim();
-    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle } : doc)));
+    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
     if (activeDocId === docId) {
       setDocTitle(nextTitle);
+      if (isSheetsMode) {
+        setSheetsTitle(nextTitle);
+      }
     }
     setRenamingDocId(null);
     setRenameDocValue('');
@@ -49542,157 +49571,274 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           {!isSheetsPresentationMode && !isDeckPresentationMode && (
-            <div data-sheets-toolbar="true" className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
+            <div data-sheets-toolbar="true" onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-11 flex items-center justify-between px-3 border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/85 dark:bg-[#111111]/90 backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 gap-2 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
             }`}>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isSheetsMode) {
-                    setSheetsSidebarOpen((prev) => !prev);
-                  } else if (productMode === 'deck') {
-                    setDeckSlidesPanelOpen((prev) => !prev);
-                  } else {
-                    setLeftSidebarOpen((prev) => !prev);
-                  }
-                }}
-                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
-                title={
-                  isSheetsMode 
-                    ? (sheetsSidebarOpen ? "Hide sheets sidebar" : "Show sheets sidebar")
-                    : productMode === 'deck'
-                      ? (deckSlidesPanelOpen ? "Hide slide deck" : "Show slide deck")
-                      : (leftSidebarOpen ? "Hide navigation sidebar" : "Show navigation sidebar")
-                }
-              >
-                {isSheetsMode
-                  ? (sheetsSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                  : productMode === 'deck'
-                    ? (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                    : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                }
-              </button>
-
-              {/* App Switcher Button */}
-              <div className="relative z-[360] flex items-center">
+              {/* Left Section: Sidebar Toggle, App Switcher, Dedicated Home Tab */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
-                  data-workspace-switcher="true"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setWorkspaceSwitcherAnchorRect(rect);
-                    setWorkspaceSwitcherOpen((prev) => !prev);
+                  onClick={() => {
+                    if (isSheetsMode) {
+                      setSheetsSidebarOpen((prev) => !prev);
+                    } else if (productMode === 'deck') {
+                      setDeckSlidesPanelOpen((prev) => !prev);
+                    } else {
+                      setLeftSidebarOpen((prev) => !prev);
+                    }
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
-                    workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
-                  }`}
-                  title="Switch Workspace App"
+                  className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
+                  title={
+                    isSheetsMode 
+                      ? (sheetsSidebarOpen ? "Hide sheets sidebar" : "Show sheets sidebar")
+                      : productMode === 'deck'
+                        ? (deckSlidesPanelOpen ? "Hide slide deck" : "Show slide deck")
+                        : (leftSidebarOpen ? "Hide navigation sidebar" : "Show navigation sidebar")
+                  }
                 >
-                  <LayoutGrid size={15} />
+                  {isSheetsMode
+                    ? (sheetsSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />)
+                    : productMode === 'deck'
+                      ? (deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />)
+                      : (leftSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />)
+                  }
                 </button>
-              </div>
 
-              {isSheetsMode ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    {isEditingUnsavedDraftName ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        value={sheetsTitle}
-                        onChange={(event) => setSheetsTitle(event.target.value)}
-                        onBlur={() => setIsEditingUnsavedDraftName(false)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === 'Escape') {
-                            e.preventDefault();
-                            setIsEditingUnsavedDraftName(false);
-                          }
-                        }}
-                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
-                        placeholder={t('sheets.untitledSheet') || "Untitled Sheet"}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingUnsavedDraftName(true)}
-                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 hover:text-slate-600 dark:hover:text-zinc-300 px-1 py-0.5 rounded text-left truncate transition-colors"
-                        title="Double-click or tap to rename"
-                      >
-                        {(sheetsTitle === 'Untitled Sheet' || !sheetsTitle?.trim()) ? (t('sheets.untitledSheet') || 'Untitled Sheet') : sheetsTitle}
-                      </button>
-                    )}
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
-                      <Cloud size={14} /> {savedStatusLabel}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-3 hidden sm:flex">
-                    <Cloud size={14} /> {savedStatusLabel}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={undoDocumentChange}
-                  disabled={!canUndo}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    canUndo
-                      ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                      : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                  }`}
-                  title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
-                >
-                  <Undo2 size={15} strokeWidth={1.5} />
-                </button>
-                <button
-                  onClick={redoDocumentChange}
-                  disabled={!canRedo}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    canRedo
-                      ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                      : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                  }`}
-                  title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
-                >
-                  <Redo2 size={15} strokeWidth={1.5} />
-                </button>
-                <button
-                  onClick={openReplayPanel}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                  title={t('toolbar.editReplay') || "Open edit replay"}
-                >
-                  <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
-                </button>
-{/* Preserved save action: auto-saved continuously & Ctrl+S */}
+                {/* App Switcher Button */}
+                <div className="relative z-[360] flex items-center">
+                  <button
+                    type="button"
+                    data-workspace-switcher="true"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setWorkspaceSwitcherAnchorRect(rect);
+                      setWorkspaceSwitcherOpen((prev) => !prev);
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
+                      workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+                    }`}
+                    title="Switch Workspace App"
+                  >
+                    <LayoutGrid size={15} />
+                  </button>
+                </div>
 
-{/* Orb intelligence accessible via global ⌘K shortcut */}
+                <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
+                {/* Dedicated Home Tab (pinned before all document tabs, like WPS/browsers) */}
                 <button
                   type="button"
                   onClick={() => {
                     closeTransientMenus();
-                    setIsMemorySearchOpen(true);
+                    setProductMode('landing');
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
-                  title="Search Workspace (⌘K / Ctrl+K)"
+                  className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    productMode === 'landing'
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                      : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+                  }`}
+                  title="Go to Home Dashboard"
                 >
-                  <Search size={15} strokeWidth={1.5} />
+                  <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                  <span>Home</span>
                 </button>
               </div>
 
-              {/* Export Dropdown Button */}
+              {/* Center Section: Document Tab Strip */}
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
+                {orderedDocuments.map((doc, docIndex) => {
+                const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
+                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
+                const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
+                  ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
+                  : (isSheetsMode && activeDocId === doc.id && sheetsTitle?.trim() && sheetsTitle !== 'Untitled Sheet'
+                      ? sheetsTitle
+                      : (!isDefaultTitle ? doc.title : defaultName));
+                const isActive = activeDocId === doc.id;
+
+                return (
+                  <div
+                    key={doc.id}
+                    onClick={() => switchDocument(doc.id)}
+                    onDoubleClick={(event) => {
+                      event.stopPropagation();
+                      setRenamingDocId(doc.id);
+                      setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
+                    }}
+                    className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                      isActive 
+                        ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
+                        : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    {renamingDocId === doc.id ? (
+                      <input
+                        autoFocus
+                        value={renameDocValue}
+                        onChange={(e) => setRenameDocValue(e.target.value)}
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            commitRenameDocument(doc.id);
+                          }
+                          if (event.key === 'Escape') {
+                            setRenamingDocId(null);
+                            setRenameDocValue('');
+                          }
+                        }}
+                        onBlur={() => commitRenameDocument(doc.id)}
+                        className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                      />
+                    ) : (
+                      <span className="max-w-[160px] truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
+                    )}
+                    <button
+                      data-doc-menu-root
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeTransientMenus();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
+                        setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                      }}
+                      className="p-0.5 rounded hover:bg-gray-100 shrink-0"
+                      title="Document actions"
+                    >
+                      <MoreHorizontal size={12} />
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        requestCloseDocument(doc.id);
+                      }}
+                      className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
+                      title="Close document"
+                    >
+                      <X size={12} />
+                    </button>
+                    {openDocMenuId === doc.id && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDocMenuId(null);
+                          }}
+                        />
+                        <div
+                          style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                          className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                          data-doc-menu-root
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('rename', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>{t('common.rename') || 'Rename'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('save', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Save size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Save</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('share', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Users2 size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Share</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDocumentAction('pin', doc.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>{doc.pinned ? 'Unpin' : 'Pin'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setMergeSheetSourceDocId(doc.id);
+                                setMergeSheetModalOpen(true);
+                                setOpenDocMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                            >
+                              <Layers size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                              <span>Merge Sheet</span>
+                            </button>
+                          </div>
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full my-0.5" />
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDocumentAction('close', doc.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
+                          >
+                            <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
+                            <span>Close</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                onClick={createItemForCurrentContext}
+                className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                title="Create new item"
+                aria-label="Create new item"
+              >
+                <Plus size={14} strokeWidth={1.5} />
+              </button>
+              </div>
+
+              {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
+              <div className="flex items-center gap-2">
+                {/* Peripheral Actions (Export, Share, ... More Menu) - Fades on work, reveals on hover */}
+                <div className={`flex items-center gap-2 transition-all duration-200 ${
+                  (isTopHeaderHovered || (isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                    ? 'opacity-100 pointer-events-auto' 
+                    : 'opacity-0 pointer-events-none'
+                }`}>
+                  {/* Export Dropdown Button */}
               <div className="relative export-menu-container">
                 <button
                   onClick={() => {
@@ -49854,305 +50000,221 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   )}
                 </div>
 
-                  {/* Dark Mode Toggle Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsDarkMode((prev) => !prev)}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                    title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                    aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                  >
-                    {isDarkMode ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
-                  </button>
-
-                  {/* Local User Profile Avatar Button */}
-                  <div className="relative" ref={profileMenuRef}>
+                  <div className="relative" ref={headerMoreMenuRef}>
                     <button
                       type="button"
-                      onClick={() => setProfileMenuOpen(prev => !prev)}
-                      className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-tr from-violet-500 via-purple-500 to-cyan-400 hover:scale-105 transition-all shadow-xs focus:outline-none cursor-pointer flex items-center justify-center"
-                      title={currentUser ? `Profile: ${currentUser.name}` : 'Sign In'}
-                    >
-                      <div className="w-full h-full rounded-full bg-slate-900 dark:bg-zinc-950 flex items-center justify-center text-white text-[11px] font-bold">
-                        {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
-                    </button>
-
-
-                    {/* Profile Dropdown Menu */}
-                    {profileMenuOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-[490] bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
-                          onClick={() => setProfileMenuOpen(false)}
-                        />
-                        <div className="absolute right-0 top-9 z-[500] w-[240px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 font-sans animate-in fade-in zoom-in-95 duration-150">
-                          {currentUser ? (
-                            // Logged In State
-                            <div className="flex flex-col gap-3">
-                              <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                                <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-inner">
-                                  {currentUser.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser.name}</span>
-                                  <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser.email}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
-                                <div className="flex justify-between">
-                                  <span>Sign-in Provider</span>
-                                  <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser.provider}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Status</span>
-                                  <span className="font-medium text-violet-600 dark:text-violet-400">Authenticated ✓</span>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  localStorage.removeItem('rc.token');
-                                  localStorage.removeItem('rc.user');
-                                  setCurrentUser(null);
-                                  setProfileMenuOpen(false);
-                                  showToast('Disconnected successfully');
-                                }}
-                                className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
-                              >
-                                Disconnect Account
-                              </button>
-                            </div>
-                          ) : (
-                            // Guest State (Apple Refined - No Sparkle Icon)
-                            <div className="flex flex-col items-center text-center py-1 px-1 gap-2.5">
-                              <div className="relative my-0.5 group cursor-default">
-                                <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs flex items-center justify-center font-semibold text-[15px] transition-transform duration-200 group-hover:scale-105">
-                                  G
-                                </div>
-                              </div>
-                              <div className="flex flex-col items-center">
-                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">{t('auth.guestMode') || 'Guest Mode'}</span>
-                                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
-                                  {t('auth.guestModeDesc') || 'Sign in to sync your work, collaborate, and access premium AI tools.'}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProfileMenuOpen(false);
-                                  setAuthModalOpen(true);
-                                }}
-                                className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
-                              >
-                                {t('auth.signIn') || 'Sign In'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="relative" ref={notificationsPanelRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplaySpeedMenuOpen(false);
-                        setNotificationsOpen((prev) => !prev);
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        setIsHeaderMoreMenuOpen(prev => !prev);
                       }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
-                      title="Notifications"
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-colors cursor-pointer relative ${
+                        isHeaderMoreMenuOpen ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : ''
+                      }`}
+                      title="More Options"
                     >
-                      <RegaarderNotificationIcon size={16} strokeWidth={1.6} />
+                      <MoreHorizontal size={15} />
                       {notifications.some(n => n.unread) && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 ring-1 ring-white dark:ring-zinc-900 animate-pulse" />
                       )}
                     </button>
-                    {notificationsOpen && renderNotificationsDropdownContent()}
-                  </div>
-
-                  {/* Settings Button */}
-                  <button
-                    type="button"
-                    onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                    title="Settings"
-                  >
-                    <Settings size={16} />
-                  </button>
-                </div>
-            </div>
-          )}
-
-          {/* Document Tab Strip - visible when not in presentation mode and not in Zen mode */}
-          {!isSheetsPresentationMode && !isDeckPresentationMode && !isSheetZenMode && (
-            <div data-sheets-toolbar="true" className="h-10 border-b border-slate-200/50 dark:border-[#333333] px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-[#111111] relative z-[140] min-w-0 shrink-0 select-none">
-              {orderedDocuments.map((doc, docIndex) => {
-                const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
-                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
-                const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
-                  ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
-                  : (!isDefaultTitle ? doc.title : defaultName);
-                const isActive = activeDocId === doc.id;
-
-                return (
-                  <div
-                    key={doc.id}
-                    onClick={() => switchDocument(doc.id)}
-                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-[#1e1e1e] border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-[#1e1e1e]/60 hover:border-gray-200'}`}
-                  >
-                    {renamingDocId === doc.id ? (
-                      <input
-                        autoFocus
-                        value={renameDocValue}
-                        onChange={(e) => setRenameDocValue(e.target.value)}
-                        onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault();
-                            commitRenameDocument(doc.id);
-                          }
-                          if (event.key === 'Escape') {
-                            setRenamingDocId(null);
-                            setRenameDocValue('');
-                          }
-                        }}
-                        onBlur={() => commitRenameDocument(doc.id)}
-                        className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
-                      />
-                    ) : (
-                      <span className="max-w-[160px] truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
-                    )}
-                    <button
-                      data-doc-menu-root
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        closeTransientMenus();
-                        const rect = event.currentTarget.getBoundingClientRect();
-                        setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
-                        setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
-                      }}
-                      className="p-0.5 rounded hover:bg-gray-100 shrink-0"
-                      title="Document actions"
-                    >
-                      <MoreHorizontal size={12} />
-                    </button>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        requestCloseDocument(doc.id);
-                      }}
-                      className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
-                      title="Close document"
-                    >
-                      <X size={12} />
-                    </button>
-                    {openDocMenuId === doc.id && (
+                    {isHeaderMoreMenuOpen && (
                       <>
                         <div
-                          className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                          onClick={(e) => {
+                          className="fixed inset-0 z-[490] bg-black/15 dark:bg-black/45 backdrop-blur-[2px] transition-opacity animate-in fade-in"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            setOpenDocMenuId(null);
+                            setIsHeaderMoreMenuOpen(false);
                           }}
                         />
                         <div
-                          style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
-                          className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
-                          data-doc-menu-root
+                          className="absolute right-0 top-10 z-[500] w-80 border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-2xl p-2.5 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
                         >
-                          <div className="flex flex-col gap-0.5">
+                          {/* User Profile / Account Quick Card */}
+                          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                              {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                                {currentUser ? currentUser.name : (t('auth.guestMode') || 'Guest User')}
+                              </span>
+                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                {currentUser ? (currentUser.email || 'Signed in') : 'Local workspace session'}
+                              </span>
+                            </div>
                             <button
                               type="button"
                               onPointerDown={(e) => {
-                                e.preventDefault();
                                 e.stopPropagation();
-                                handleDocumentAction('rename', doc.id);
+                                setIsHeaderMoreMenuOpen(false);
+                                if (currentUser) {
+                                  setProfileMenuOpen(true);
+                                } else {
+                                  setAuthModalOpen(true);
+                                }
                               }}
-                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/60 transition-colors shrink-0 cursor-pointer"
                             >
-                              <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span>{t('common.rename') || 'Rename'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDocumentAction('save', doc.id);
-                              }}
-                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                            >
-                              <Save size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span>Save</span>
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDocumentAction('share', doc.id);
-                              }}
-                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                            >
-                              <Users2 size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span>Share</span>
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDocumentAction('pin', doc.id);
-                              }}
-                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                            >
-                              <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span>{doc.pinned ? 'Unpin' : 'Pin'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setMergeSheetSourceDocId(doc.id);
-                                setMergeSheetModalOpen(true);
-                                setOpenDocMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                            >
-                              <Layers size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
-                              <span>Merge Sheet</span>
+                              {currentUser ? 'Account' : 'Sign In'}
                             </button>
                           </div>
-                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full my-0.5" />
+
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+
+                          {/* Workspace Search (⌘K) - Two-Line Descriptive Item */}
                           <button
                             type="button"
                             onPointerDown={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
-                              handleDocumentAction('close', doc.id);
+                              setIsHeaderMoreMenuOpen(false);
+                              setIsMemorySearchOpen(true);
                             }}
-                            className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
                           >
-                            <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
-                            <span>Close</span>
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Search size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Workspace Search</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">⌘K</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Full-text semantic search across all docs, sheets & memory</span>
+                            </div>
+                          </button>
+
+                          {/* Edit Replay - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              openReplayPanel();
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderHistoryIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">{t('toolbar.editReplay') || 'Edit Replay'}</span>
+                                <span className="text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800/60 px-1.5 py-0.5 rounded">Timeline</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Scrub and replay revisions like an interactive video</span>
+                            </div>
+                          </button>
+
+                          {/* Notifications - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setNotificationsOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderNotificationIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Notifications</span>
+                                {notifications.some(n => n.unread) && (
+                                  <span className="text-[9px] font-bold text-white bg-violet-600 px-1.5 py-0.5 rounded-full">New</span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Collaboration alerts & workspace activity</span>
+                            </div>
+                          </button>
+
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+
+                          {/* Appearance (Theme) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsDarkMode(prev => !prev);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              {isDarkMode ? <Sun size={15} className="text-amber-500" /> : <Moon size={15} className="text-indigo-500" />}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Appearance</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium capitalize">{isDarkMode ? 'Dark' : 'Light'}</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">{isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}</span>
+                            </div>
+                          </button>
+
+                          {/* Preferences & Settings - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setSettingsModalOpen(true);
+                              setSettingsTab('personalization');
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Settings size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Preferences & Settings</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Personalization, AI providers & shortcut controls</span>
+                            </div>
                           </button>
                         </div>
                       </>
                     )}
                   </div>
-                );
-              })}
-              <button
-                type="button"
-                onClick={createItemForCurrentContext}
-                className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-                title="Create new item"
-                aria-label="Create new item"
-              >
-                <Plus size={14} strokeWidth={1.5} />
-              </button>
+                </div>
+
+                {/* Subtle Vertical Divider */}
+                <div className={`h-4 w-px bg-slate-200/80 dark:bg-zinc-800 transition-opacity duration-200 ${
+                  (isTopHeaderHovered || (isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                    ? 'opacity-100'
+                    : 'opacity-0'
+                }`} />
+
+                {/* Permanent In-Flow Safety: Undo & Redo (Anchored at Extreme Right Edge) */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={undoDocumentChange}
+                    disabled={!canUndo}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      canUndo
+                        ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                        : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                    }`}
+                    title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
+                  >
+                    <Undo2 size={15} strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={redoDocumentChange}
+                    disabled={!canRedo}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      canRedo
+                        ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                        : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                    }`}
+                    title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
+                  >
+                    <Redo2 size={15} strokeWidth={1.5} />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -74713,10 +74775,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {isWhiteboardWorkspace && (
           <>
             {/* Top proximity trigger zone to smoothly reveal navigation when hovering near top edge */}
-            <div 
-              onMouseEnter={handleWhiteboardTopNavEnter} 
-              className="absolute top-0 left-0 right-0 h-10 z-[380] cursor-default pointer-events-auto" 
-            />
+            {!isWhiteboardTopNavRevealed && (
+              <div 
+                onMouseEnter={handleWhiteboardTopNavEnter} 
+                className="absolute top-0 left-0 right-0 h-10 z-[380] pointer-events-auto" 
+              />
+            )}
 
             {/* Subtle floating title indicator when top nav is autohidden */}
             {!isWhiteboardTopNavRevealed && (
@@ -74748,7 +74812,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }`}
         >
         {/* Top Header */}
-        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85 backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
+        <div onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85 backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -74835,55 +74899,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={undoDocumentChange}
-                disabled={!canUndo}
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  canUndo
-                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                }`}
-                title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
-              >
-                <Undo2 size={15} strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={redoDocumentChange}
-                disabled={!canRedo}
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  canRedo
-                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                }`}
-                title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
-              >
-                <Redo2 size={15} strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={openReplayPanel}
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                title="Open edit replay"
-              >
-                <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
-              </button>
-{/* Preserved save action: auto-saved continuously & Ctrl+S */}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setIsMemorySearchOpen(true);
-                  }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
-                  title="Search Workspace (⌘K / Ctrl+K)"
-                >
-                  <Search size={15} strokeWidth={1.5} />
-                </button>
-
-            </div>
-            {/* Export Dropdown Button in Top Header */}
+          {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
+          <div className="flex items-center gap-2">
+            {/* Peripheral Actions (Export, Share, ... More Menu) - Fades on work, reveals on hover */}
+            <div className={`flex items-center gap-2 transition-all duration-200 ${
+              (isTopHeaderHovered || composeExportMenuOpen || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                ? 'opacity-100 pointer-events-auto' 
+                : 'opacity-0 pointer-events-none'
+            }`}>
+              {/* Export Dropdown Button in Top Header */}
             {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
               <div className="relative export-menu-container">
                 <button
@@ -75095,130 +75119,220 @@ if (productMode === 'deck' || productMode === 'sheets') {
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsDarkMode((prev) => !prev)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDarkMode ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
-            </button>
+            <div className="relative" ref={headerMoreMenuRef}>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        setIsHeaderMoreMenuOpen(prev => !prev);
+                      }}
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-colors cursor-pointer relative ${
+                        isHeaderMoreMenuOpen ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : ''
+                      }`}
+                      title="More Options"
+                    >
+                      <MoreHorizontal size={15} />
+                      {notifications.some(n => n.unread) && (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 ring-1 ring-white dark:ring-zinc-900 animate-pulse" />
+                      )}
+                    </button>
+                    {isHeaderMoreMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-[490] bg-black/15 dark:bg-black/45 backdrop-blur-[2px] transition-opacity animate-in fade-in"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsHeaderMoreMenuOpen(false);
+                          }}
+                        />
+                        <div
+                          className="absolute right-0 top-10 z-[500] w-80 border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-2xl p-2.5 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                        >
+                          {/* User Profile / Account Quick Card */}
+                          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                              {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                                {currentUser ? currentUser.name : (t('auth.guestMode') || 'Guest User')}
+                              </span>
+                              <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">
+                                {currentUser ? (currentUser.email || 'Signed in') : 'Local workspace session'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                setIsHeaderMoreMenuOpen(false);
+                                if (currentUser) {
+                                  setProfileMenuOpen(true);
+                                } else {
+                                  setAuthModalOpen(true);
+                                }
+                              }}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/60 transition-colors shrink-0 cursor-pointer"
+                            >
+                              {currentUser ? 'Account' : 'Sign In'}
+                            </button>
+                          </div>
 
-            {/* Local User Profile Avatar Button */}
-            <div className="relative font-sans" ref={composeProfileMenuRef}>
-              <button
-                type="button"
-                onClick={() => setComposeProfileMenuOpen(prev => !prev)}
-                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-sm focus:outline-none ${(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-800'}`}
-                style={{
-                  backgroundColor: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '#f97316' : (currentUser ? '#8b5cf6' : '#64748B'),
-                }}
-                title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
-              >
-                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-              </button>
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
 
-              {/* Profile Dropdown Menu */}
-              {composeProfileMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-[490] bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
-                    onClick={() => setComposeProfileMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 top-9 z-[500] w-[240px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 font-sans animate-in fade-in zoom-in-95 duration-150">
-                  {currentUser ? (
-                    // Logged In State
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                        <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-inner">
-                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                          {/* Workspace Search (⌘K) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setIsMemorySearchOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Search size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Workspace Search</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">⌘K</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Full-text semantic search across all docs, sheets & memory</span>
+                            </div>
+                          </button>
+
+                          {/* Edit Replay - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              openReplayPanel();
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderHistoryIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">{t('toolbar.editReplay') || 'Edit Replay'}</span>
+                                <span className="text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800/60 px-1.5 py-0.5 rounded">Timeline</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Scrub and replay revisions like an interactive video</span>
+                            </div>
+                          </button>
+
+                          {/* Notifications - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setNotificationsOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderNotificationIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Notifications</span>
+                                {notifications.some(n => n.unread) && (
+                                  <span className="text-[9px] font-bold text-white bg-violet-600 px-1.5 py-0.5 rounded-full">New</span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Collaboration alerts & workspace activity</span>
+                            </div>
+                          </button>
+
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+
+                          {/* Appearance (Theme) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsDarkMode(prev => !prev);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              {isDarkMode ? <Sun size={15} className="text-amber-500" /> : <Moon size={15} className="text-indigo-500" />}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Appearance</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium capitalize">{isDarkMode ? 'Dark' : 'Light'}</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">{isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}</span>
+                            </div>
+                          </button>
+
+                          {/* Preferences & Settings - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setSettingsModalOpen(true);
+                              setSettingsTab('personalization');
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Settings size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Preferences & Settings</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Personalization, AI providers & shortcut controls</span>
+                            </div>
+                          </button>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser?.name || ''}</span>
-                          <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser?.email || ''}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
-                        <div className="flex justify-between">
-                          <span>Sign-in Provider</span>
-                          <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser?.provider || ''}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Status</span>
-                          <span className="font-medium text-violet-600 dark:text-violet-400">Authenticated ✓</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          localStorage.removeItem('rc.token');
-                          localStorage.removeItem('rc.user');
-                          setCurrentUser(null);
-                          setComposeProfileMenuOpen(false);
-                          showToast('Disconnected successfully');
-                        }}
-                        className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
-                      >
-                        Disconnect Account
-                      </button>
-                    </div>
-                  ) : (
-                    // Guest State (Apple Refined - No Sparkle Icon)
-                    <div className="flex flex-col items-center text-center py-1 px-1 gap-2.5">
-                      <div className="relative my-0.5 group cursor-default">
-                        <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs flex items-center justify-center font-semibold text-[15px] transition-transform duration-200 group-hover:scale-105">
-                          G
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">{t('auth.guestMode') || 'Guest Mode'}</span>
-                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
-                          {t('auth.guestModeDesc') || 'Sign in to sync your work, collaborate, and access premium AI tools.'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setComposeProfileMenuOpen(false);
-                          setAuthModalOpen(true);
-                        }}
-                        className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
-                      >
-                        {t('auth.signIn') || 'Sign In'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                </>
-              )}
+                      </>
+                    )}
+                  </div>
             </div>
 
-            <div className="relative" ref={notificationsPanelRef}>
+            {/* Subtle Vertical Divider */}
+            <div className={`h-4 w-px bg-slate-200/80 dark:bg-zinc-800 transition-opacity duration-200 ${
+              (isTopHeaderHovered || composeExportMenuOpen || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                ? 'opacity-100'
+                : 'opacity-0'
+            }`} />
+
+            {/* Permanent In-Flow Safety: Undo & Redo (Anchored at Extreme Right Edge) */}
+            <div className="flex items-center gap-0.5 shrink-0">
               <button
-                type="button"
-                onClick={() => {
-                  setReplaySpeedMenuOpen(false);
-                  setNotificationsOpen((prev) => !prev);
-                }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
-                title="Notifications"
+                onClick={undoDocumentChange}
+                disabled={!canUndo}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  canUndo
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
               >
-                <Bell size={16} strokeWidth={1.5} />
-                {notifications.some(n => n.unread) && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
-                )}
+                <Undo2 size={15} strokeWidth={1.5} />
               </button>
-              {notificationsOpen && renderNotificationsDropdownContent()}
+              <button
+                onClick={redoDocumentChange}
+                disabled={!canRedo}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  canRedo
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
+              >
+                <Redo2 size={15} strokeWidth={1.5} />
+              </button>
             </div>
-            {/* Settings Button */}
-            <button
-              type="button"
-              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-              title="Settings"
-            >
-              <Settings size={16} />
-            </button>
           </div>
         </div>
 
@@ -76288,6 +76402,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
             ref={topDocTabsContainerRef}
             className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-1"
           >
+            {/* Dedicated Home Tab */}
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setProductMode('landing');
+              }}
+              className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                productMode === 'landing'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                  : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+              }`}
+              title="Go to Home Dashboard"
+            >
+              <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+              <span>Home</span>
+            </button>
             {orderedDocuments.map((doc, docIndex) => {
               const rawTitle = doc.title?.trim();
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
@@ -76298,7 +76429,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div
                   key={doc.id}
                   onClick={() => switchDocument(doc.id)}
-                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-300 dark:border-zinc-600 text-violet-600 dark:text-violet-400 shadow-xs font-semibold' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60 hover:border-slate-200'}`}
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
+                    setRenamingDocId(doc.id);
+                    setRenameDocValue(doc.title || '');
+                  }}
+                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    isActive 
+                      ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
+                      : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
+                  }`}
                 >
                   {renamingDocId === doc.id ? (
                     <input

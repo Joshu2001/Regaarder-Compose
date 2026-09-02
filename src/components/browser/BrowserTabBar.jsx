@@ -1,3 +1,4 @@
+import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import React from 'react';
 import { BrowserPlusIcon, BrowserCloseIcon, BrowserReloadIcon, BrowserSearchWebIcon } from './RegaarderBrowserIcons';
 import { AgentsIcon, SheetIcon, ComposeIcon } from '../RegaarderProductIcons';
@@ -16,7 +17,8 @@ export const BrowserTabBar = ({
   activeTabId,
   onSelectTab,
   onCloseTab,
-  onNewTab
+  onNewTab,
+  onGoHome
 }) => {
 
   const getTabIcon = (tab) => {
@@ -64,6 +66,18 @@ export const BrowserTabBar = ({
     <div className="flex items-center gap-1.5 px-3 pt-2 pb-0 bg-slate-200/70 dark:bg-[#111216] border-b border-slate-300/80 dark:border-white/[0.06] select-none shrink-0 z-30 relative backdrop-blur-md">
       {/* Tabs Container */}
       <div className="flex items-end gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
+        {onGoHome && (
+          <button
+            type="button"
+            onClick={onGoHome}
+            onPointerDown={(e) => e.preventDefault()}
+            className="group relative flex items-center gap-1.5 px-2.5 py-1.5 mb-1 rounded-md text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-white/80 dark:hover:bg-white/[0.08] hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer shrink-0"
+            title="Go to Home Dashboard"
+          >
+            <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+            <span>Home</span>
+          </button>
+        )}
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
           const isNextActive = index < tabs.length - 1 && tabs[index + 1].id === activeTabId;
@@ -76,7 +90,7 @@ export const BrowserTabBar = ({
               }}
               className={`group relative flex items-center gap-2 px-3 py-1.5 min-w-[140px] max-w-[220px] shrink-0 rounded-t-lg rounded-b-none text-xs font-medium cursor-pointer transition-all duration-150 border ${
                 isActive
-                  ? 'bg-white dark:bg-[#16171B] text-slate-900 dark:text-zinc-100 border-slate-300/70 dark:border-white/10 border-b-white dark:border-b-[#16171B] -mb-[1px] shadow-xs z-10'
+                  ? 'bg-white dark:bg-[#16171B] text-slate-900 dark:text-zinc-100 border-slate-300/70 dark:border-white/10 border-b-white dark:border-b-[#16171B] -mb-[1px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] z-10'
                   : 'bg-transparent text-slate-600 dark:text-zinc-400 border-transparent hover:bg-slate-300/50 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-zinc-200'
               }`}
             >
