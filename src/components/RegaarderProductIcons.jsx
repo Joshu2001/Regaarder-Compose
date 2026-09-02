@@ -662,9 +662,54 @@ export const RegaarderProductIconMap = {
   'laser-pointer': LaserPointerIcon,
 };
 
+/**
+ * Regaarder Quick Action / Speed Kinetic Glyph
+ * Metaphor: Geometric sharp kinetic spark with dual 1.6px optical speed facets
+ */
+export const RegaarderQuickActionIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polygon points="13 2 4 13 11 13 10 22 20 10 13 10 14 2" />
+  </svg>
+);
+
+/**
+ * Regaarder Tactile Haptic / Micro-Interaction Icon
+ * Metaphor: Central haptic core with concentric acoustic feedback ripples
+ */
+export const RegaarderHapticIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+    <path d="M6 8a8 8 0 0 1 12 0" />
+    <path d="M6 16a8 8 0 0 0 12 0" />
+  </svg>
+);
+
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {
   const IconComponent = RegaarderProductIconMap[name] || ComposeIcon;
   return <IconComponent size={size} className={className} strokeWidth={strokeWidth} {...props} />;
 };
 
 export default RegaarderProductIcon;
+

@@ -2,9 +2,9 @@ import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw,
-  Sparkles, Clock, FileText, Database, ShieldCheck, Compass,
+  Clock, FileText, Database, ShieldCheck, Compass,
   Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
-  Tag, Lightbulb, Zap, HelpCircle
+  Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -24,7 +24,9 @@ import {
   OrbIcon,
   RegaarderAiIcon,
   RegaarderHistoryIcon,
-  RegaarderProductIcon
+  RegaarderProductIcon,
+  RegaarderQuickActionIcon,
+  RegaarderHapticIcon
 } from '../RegaarderProductIcons';
 
 // Helper component to highlight matched text
@@ -156,27 +158,138 @@ const COMPACT_QUICK_ACTIONS = [
   }
 ];
 
-// Suggested Ask AI prompt queries
+// Suggested Ask Memory prompt queries
 const SUGGESTED_AI_PROMPTS = [
   "Summarize key decisions across recent documents",
   "Review open financial models and spreadsheet metrics",
-  "Apply workspace brand guidelines to my recent presentation",
+  "Apply active brand guidelines to my recent presentation",
   "Show high-priority tasks and upcoming deadlines"
+];
+
+// Pre-built Executive Agentic Personas (Claude / ChatGPT style)
+const PRESET_PERSONAS = [
+  {
+    id: 'peter-thiel',
+    name: 'Peter Thiel',
+    badge: 'Contrarian & Zero-to-One',
+    instructions: 'Challenge conventional consensus. Demand secret truths, network effects, and proprietary durability. Avoid corporate buzzwords, incrementalism, and cosmetic fluff.'
+  },
+  {
+    id: 'steve-jobs',
+    name: 'Steve Jobs',
+    badge: 'Apple Product Minimalist',
+    instructions: 'Focus ruthlessly on elegance, taste, and restraint. Eliminate unnecessary UI clutter. Demand seamless craftsmanship, refined typography, and emotional user delight.'
+  },
+  {
+    id: 'quant-analyst',
+    name: 'Quant Analyst',
+    badge: 'Wall Street Metric Rigor',
+    instructions: 'Analyze spreadsheet formulas, financial margins, and unit economics with strict mathematical rigor. Every statement must be backed by data and formulas.'
+  },
+  {
+    id: 'executive-editor',
+    name: 'Executive Editor',
+    badge: 'Concise & Structured',
+    instructions: 'Communicate with executive brevity. Use clean tables, bold takeaways, and actionable bullet points. Cut preamble and redundant text.'
+  }
 ];
 
 // Default executive brand rules and styling guidelines
 const INITIAL_BRAND_RULES = [
-  { id: 'rule-font', label: 'Primary Typography', value: 'Inter & SF Pro System Font', category: 'styling' },
-  { id: 'rule-color', label: 'Brand Color', value: 'Regaarder Violet (#7C3AED)', category: 'styling' },
-  { id: 'rule-tone', label: 'Voice & Tone', value: 'Executive, concise, and analytical', category: 'guideline' },
-  { id: 'rule-grid', label: 'Design System', value: '8pt Precision Matrix • 16px Corners', category: 'styling' }
+  { id: 'rule-font', label: 'Primary Typography', value: 'Inter & SF Pro System Font', category: 'typography' },
+  { id: 'rule-color', label: 'Brand Color', value: 'Regaarder Violet (#7C3AED)', category: 'palette' },
+  { id: 'rule-tone', label: 'Voice & Tone', value: 'Executive, concise, and analytical', category: 'voice' },
+  { id: 'rule-grid', label: 'Design System', value: '8pt Precision Matrix • 16px Corners', category: 'layout' }
 ];
+
+// Semantic Markdown Parser: Decomposes Markdown documents into categorized individual memory cards
+function parseMarkdownToGuidelines(markdownText) {
+  if (!markdownText || typeof markdownText !== 'string') return [];
+  
+  const lines = markdownText.split(/\r?\n/);
+  const guidelines = [];
+  let currentCategory = 'guideline';
+
+  const categoryKeywords = {
+    typography: /(typography|font|type|typeface|text style|heading)/i,
+    palette: /(color|palette|hex|swatch|accent|theme|styling)/i,
+    voice: /(voice|tone|persona|communication|style guide|author)/i,
+    rules: /(rule|do'?s?|don'?t?s?|guideline|instruction|constraint|requirement|never|always)/i,
+    layout: /(layout|grid|spacing|margin|padding|radius|dimension|matrix)/i
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i].trim();
+    if (!rawLine) continue;
+
+    // Check header line for category context (# Typography, ## Brand Colors, etc.)
+    const headerMatch = rawLine.match(/^#{1,4}\s+(.+)$/);
+    if (headerMatch) {
+      const headerTitle = headerMatch[1].trim();
+      for (const [cat, regex] of Object.entries(categoryKeywords)) {
+        if (regex.test(headerTitle)) {
+          currentCategory = cat;
+          break;
+        }
+      }
+      continue;
+    }
+
+    // Check key: value pairs (e.g. "**Primary Color:** #7C3AED", "- Font: Inter", "Tone: Concise")
+    const kvMatch = rawLine.match(/^[-*•]?\s*\*{0,2}([^:*]+)\*{0,2}\s*:\s*(.+)$/);
+    if (kvMatch) {
+      const label = kvMatch[1].trim().replace(/\*{1,2}/g, '');
+      const value = kvMatch[2].trim().replace(/\*{1,2}/g, '');
+      if (label.length > 0 && value.length > 0) {
+        let cat = currentCategory;
+        for (const [c, regex] of Object.entries(categoryKeywords)) {
+          if (regex.test(label) || regex.test(value)) {
+            cat = c;
+            break;
+          }
+        }
+        guidelines.push({
+          id: 'rule-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          label,
+          value,
+          category: cat,
+          source: 'md-extract'
+        });
+        continue;
+      }
+    }
+
+    // Check bullet points or numbered lists
+    const bulletMatch = rawLine.match(/^[-*•\d.]+\s+(.+)$/);
+    if (bulletMatch) {
+      const statement = bulletMatch[1].trim();
+      if (statement.length > 5) {
+        let cat = currentCategory;
+        if (/always|never|must|should|don't|do not/i.test(statement)) {
+          cat = 'rules';
+        }
+        const words = statement.split(' ');
+        const label = words.slice(0, 3).join(' ');
+        const value = words.slice(3).join(' ') || statement;
+        guidelines.push({
+          id: 'rule-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          label: label.charAt(0).toUpperCase() + label.slice(1),
+          value: value,
+          category: cat,
+          source: 'md-extract'
+        });
+      }
+    }
+  }
+
+  return guidelines;
+}
 
 // Ambient learned user habits across workspace
 const LEARNED_HABITS = [
   { id: 'h-1', title: 'Calculations', desc: 'Frequently inspects SUM & AVERAGE formulas in Sheets', icon: SheetIcon },
   { id: 'h-2', title: 'Export Habits', desc: 'Prefers Excel (.xlsx) and clean PDF with dark backdrops', icon: ComposeIcon },
-  { id: 'h-3', title: 'Micro-Interactions', desc: 'Uses 100ms transitions and unblurred live canvas inspectors', icon: Sparkles }
+  { id: 'h-3', title: 'Micro-Interactions', desc: 'Uses 100ms transitions and unblurred live canvas inspectors', icon: RegaarderHapticIcon }
 ];
 
 export default function GlobalWorkspaceSearchModal({
@@ -204,6 +317,19 @@ export default function GlobalWorkspaceSearchModal({
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
 
+  // Active Agentic Persona State
+  const [activePersona, setActivePersona] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_active_persona');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to load active persona:', e);
+    }
+    return PRESET_PERSONAS[0];
+  });
+
+  const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
+
   // Workspace Brand Rules & Guidelines state (persisted in localStorage)
   const [brandRules, setBrandRules] = useState(() => {
     try {
@@ -218,9 +344,10 @@ export default function GlobalWorkspaceSearchModal({
     return INITIAL_BRAND_RULES;
   });
 
-  const [isAddingRule, setIsAddingRule] = useState(false);
-  const [newRuleLabel, setNewRuleLabel] = useState('');
-  const [newRuleValue, setNewRuleValue] = useState('');
+  // Markdown Upload & Edit Modal State
+  const [isMdModalOpen, setIsMdModalOpen] = useState(false);
+  const [mdInputText, setMdInputText] = useState('');
+  const fileInputRef = useRef(null);
 
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
@@ -233,6 +360,15 @@ export default function GlobalWorkspaceSearchModal({
       console.warn('Failed to persist brand rules:', e);
     }
   }, [brandRules]);
+
+  // Save active persona to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('regaarder_active_persona', JSON.stringify(activePersona));
+    } catch (e) {
+      console.warn('Failed to persist active persona:', e);
+    }
+  }, [activePersona]);
 
   // Build the complete searchable workspace index strictly from real state
   const workspaceIndex = useMemo(() => {
@@ -271,7 +407,8 @@ export default function GlobalWorkspaceSearchModal({
       setSelectedIndex(0);
       setAiResponse(null);
       setAiLoading(false);
-      setIsAddingRule(false);
+      setIsMdModalOpen(false);
+      setIsPersonaMenuOpen(false);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [isOpen, initialQuery, initialMode, initialFilter, isDeck]);
@@ -292,27 +429,44 @@ export default function GlobalWorkspaceSearchModal({
 
   if (!isOpen) return null;
 
-  // Add a new brand rule or guideline
-  const handleAddBrandRule = () => {
-    if (!newRuleLabel.trim() || !newRuleValue.trim()) return;
-    const newRule = {
-      id: 'rule-' + Date.now(),
-      label: newRuleLabel.trim(),
-      value: newRuleValue.trim(),
-      category: 'custom'
+  // Handle Markdown file upload from disk
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        const extracted = parseMarkdownToGuidelines(content);
+        if (extracted.length > 0) {
+          setBrandRules(prev => [...prev, ...extracted]);
+          setIsMdModalOpen(false);
+        } else {
+          setMdInputText(content);
+        }
+      }
     };
-    setBrandRules(prev => [...prev, newRule]);
-    setNewRuleLabel('');
-    setNewRuleValue('');
-    setIsAddingRule(false);
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
-  // Remove a brand rule
+  // Handle applying pasted Markdown into individual extracted guidelines
+  const handleApplyPastedMarkdown = () => {
+    if (!mdInputText.trim()) return;
+    const extracted = parseMarkdownToGuidelines(mdInputText);
+    if (extracted.length > 0) {
+      setBrandRules(prev => [...prev, ...extracted]);
+      setMdInputText('');
+      setIsMdModalOpen(false);
+    }
+  };
+
+  // Remove an individual guideline
   const handleRemoveBrandRule = (ruleId) => {
     setBrandRules(prev => prev.filter(r => r.id !== ruleId));
   };
 
-  // Execute AI Workspace Synthesis with brand memory context
+  // Execute AI Workspace Synthesis with persona and extracted brand memory context
   const handleRunAiSynthesis = async (promptQuery) => {
     const targetQ = promptQuery || query;
     if (!targetQ || !targetQ.trim()) return;
@@ -320,9 +474,8 @@ export default function GlobalWorkspaceSearchModal({
     setAiLoading(true);
     setAiResponse(null);
     try {
-      // Append ambient brand guidelines context into synthesis payload
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
-      const contextualQuery = `${targetQ} (Active Brand & Memory Context: ${brandContextSnippet})`;
+      const contextualQuery = `[Agentic Persona: ${activePersona.name} (${activePersona.badge}) - Instruction: ${activePersona.instructions}] [Workspace Brand Rules: ${brandContextSnippet}] Query: ${targetQ}`;
 
       const result = await synthesizeWorkspaceKnowledge({
         query: contextualQuery,
@@ -365,6 +518,10 @@ export default function GlobalWorkspaceSearchModal({
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      if (isMdModalOpen) {
+        setIsMdModalOpen(false);
+        return;
+      }
       onClose();
       return;
     }
@@ -410,7 +567,7 @@ export default function GlobalWorkspaceSearchModal({
     setTimeout(() => setCopiedAi(false), 2000);
   };
 
-  // Semi-transparent frosted Apple glass surface with 36px backdrop blur
+  // Frosted Apple glass surface with 36px backdrop blur
   const backdropClasses = 'bg-slate-900/35 dark:bg-black/60 backdrop-blur-[24px]';
   const surfaceClasses = 'bg-white/[0.88] dark:bg-[#14161f]/[0.88] backdrop-blur-[36px] rounded-2xl shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06]';
   const categoryBarClasses = 'bg-white/[0.45] dark:bg-black/[0.22] border-b border-black/[0.05] dark:border-white/[0.07]';
@@ -435,7 +592,7 @@ export default function GlobalWorkspaceSearchModal({
         <div className="h-[62px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
           {mode === 'ai' ? (
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs ring-1 ring-violet-500/30">
-              <Sparkles size={15} strokeWidth={2.2} className="animate-pulse" />
+              <RegaarderAiIcon size={16} strokeWidth={2.0} />
             </div>
           ) : (
             <Search size={19} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
@@ -453,13 +610,13 @@ export default function GlobalWorkspaceSearchModal({
             }}
             placeholder={
               mode === 'ai' 
-                ? (t('search.askAnything') || 'Ask AI Memory across workspace files, guidelines & habits…') 
+                ? (t('search.askAnything') || `Ask Memory as ${activePersona.name} across workspace files & guidelines…`) 
                 : (t('search.searchAnything') || 'Search anything across workspace memory…')
             }
             className="flex-1 bg-transparent border-none outline-none text-[15.5px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
           />
 
-          {/* Right Action Controls: Clear Input & Apple Dual Mode Switcher */}
+          {/* Right Action Controls: Clear, Persona Switcher & Apple Dual Switch */}
           <div className="flex items-center gap-2.5 shrink-0 select-none">
             {query && (
               <button
@@ -476,7 +633,7 @@ export default function GlobalWorkspaceSearchModal({
               </button>
             )}
 
-            {/* ── Apple-Style Segmented Mode Switcher (Search vs Ask AI Memory) ── */}
+            {/* ── Apple-Style Segmented Mode Switcher: Search vs Ask Memory with Regaarder Signature Orbit ── */}
             <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06]">
               <button
                 type="button"
@@ -507,12 +664,12 @@ export default function GlobalWorkspaceSearchModal({
                     : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-500/10'
                 }`}
               >
-                <Sparkles size={12} strokeWidth={2.2} className={mode === 'ai' ? 'text-amber-200 animate-pulse' : 'text-violet-500'} />
-                <span>✦ Ask AI Memory</span>
+                <RegaarderAiIcon size={13} strokeWidth={2.0} className={mode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                <span>Ask Memory</span>
               </button>
             </div>
 
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs ml-1">
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs ml-0.5">
               ESC
             </kbd>
           </div>
@@ -537,7 +694,7 @@ export default function GlobalWorkspaceSearchModal({
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
                     isActive
                       ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
-                      : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
+                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                   }`}
                 >
                   <Icon size={13} strokeWidth={1.7} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
@@ -547,29 +704,61 @@ export default function GlobalWorkspaceSearchModal({
             })}
           </div>
 
-          {/* Result Count */}
-          {mode === 'search' && query.trim() && searchResults.length > 0 && (
-            <div className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 pl-3 shrink-0 whitespace-nowrap">
-              {searchResults.length} {searchResults.length === 1 ? (t('common.item') || 'result') : (t('common.items') || 'results')}
-            </div>
-          )}
+          {/* Persona Selector Badge */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsPersonaMenuOpen(prev => !prev)}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 text-violet-700 dark:text-violet-300 text-[11px] font-semibold transition-colors cursor-pointer"
+              title="Active Agentic Persona"
+            >
+              <UserCheck size={11} strokeWidth={2.2} />
+              <span>Persona: {activePersona.name}</span>
+              <ChevronDown size={10} className={`transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-          {/* AI Mode indicator */}
-          {mode === 'ai' && (
-            <div className="text-[10.5px] font-medium text-violet-600 dark:text-violet-400 flex items-center gap-1.5 pl-3 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-              <span>Workspace Intelligence Active</span>
-            </div>
-          )}
+            {isPersonaMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 font-mono">
+                  Select Cognitive Persona
+                </div>
+                {PRESET_PERSONAS.map((p) => {
+                  const isSel = activePersona.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setActivePersona(p);
+                        setIsPersonaMenuOpen(false);
+                      }}
+                      className={`w-full flex items-start gap-2 p-2 rounded-lg text-left transition-colors cursor-pointer ${
+                        isSel ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <div className="w-5 h-5 rounded flex items-center justify-center bg-violet-500/15 text-violet-700 dark:text-violet-300 font-bold text-[9.5px] shrink-0 mt-0.5 font-mono">
+                        {p.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold">{p.name}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{p.badge}</div>
+                      </div>
+                      {isSel && <Check size={12} className="text-violet-600 mt-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ── Surface Body (Search Mode vs Ask AI Mode) ── */}
+        {/* ── Surface Body (Search Mode vs Ask Memory Mode) ── */}
         <div
           ref={resultsContainerRef}
           className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
         >
           {/* ══════════════════════════════════════════════════════════
-              MODE A: ASK AI WORKSPACE SYNTHESIS
+              MODE A: ASK MEMORY WORKSPACE SYNTHESIS
              ══════════════════════════════════════════════════════════ */}
           {mode === 'ai' && (
             <div className="space-y-4">
@@ -579,14 +768,19 @@ export default function GlobalWorkspaceSearchModal({
                   <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent border border-violet-500/20 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center shadow-xs">
-                        <Sparkles size={16} strokeWidth={2.2} />
+                        <RegaarderAiIcon size={18} strokeWidth={2.0} />
                       </div>
                       <div>
-                        <h4 className="text-[13px] font-bold text-slate-900 dark:text-zinc-100">
-                          Workspace Knowledge & Brand Intelligence
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100">
+                            Workspace Intelligence & Persona Layer
+                          </h4>
+                          <span className="text-[9.5px] font-bold uppercase px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-mono">
+                            {activePersona.name} Active
+                          </span>
+                        </div>
                         <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
-                          Cross-synthesizes all documents, spreadsheets, slides, guidelines, and habit records.
+                          Synthesizes documents, calculation formulas, slide decks, and active brand rules.
                         </p>
                       </div>
                     </div>
@@ -594,7 +788,7 @@ export default function GlobalWorkspaceSearchModal({
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
-                      <Sparkles size={12} className="text-violet-600 dark:text-violet-400" />
+                      <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
                       <span>Suggested Knowledge Queries</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -621,14 +815,14 @@ export default function GlobalWorkspaceSearchModal({
 
               {aiLoading && (
                 <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white animate-spin shadow-md">
-                    <RefreshCw size={18} strokeWidth={2.2} />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <RegaarderAiIcon size={20} strokeWidth={2.0} className="animate-spin" />
                   </div>
                   <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
-                    Synthesizing Workspace Memory & Guidelines…
+                    Synthesizing Workspace Memory as {activePersona.name}…
                   </div>
                   <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
-                    Analyzing documents, calculation models, slide decks, and active brand rules for &ldquo;{query}&rdquo;
+                    Analyzing documents, spreadsheet formulas, slide decks, and active brand guidelines for &ldquo;{query}&rdquo;
                   </p>
                 </div>
               )}
@@ -638,9 +832,9 @@ export default function GlobalWorkspaceSearchModal({
                   <div className="p-4.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Sparkles size={14} className="text-violet-600 dark:text-violet-400" />
+                        <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
                         <span className="text-[10.5px] font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wider font-mono">
-                          AI Executive Synthesis
+                          Executive Synthesis ({activePersona.name})
                         </span>
                       </div>
                       <button
@@ -698,10 +892,10 @@ export default function GlobalWorkspaceSearchModal({
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
             <div className="space-y-5">
-              {/* Primary Quick Action Chips */}
+              {/* Primary Quick Action Chips with Custom Regaarder Kinetic Glyph */}
               <div>
                 <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
-                  <Zap size={13} className="text-violet-600 dark:text-violet-400" />
+                  <RegaarderQuickActionIcon size={13} className="text-violet-600 dark:text-violet-400" />
                   <span>{t('quickActions.title') || 'Quick Actions'}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -746,62 +940,54 @@ export default function GlobalWorkspaceSearchModal({
 
               {/* ── Executive Workspace Ambient Memory & Brand Rules Card ── */}
               <div className="rounded-xl bg-white/70 dark:bg-zinc-800/50 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs">
-                {/* Header with Title and Add Guideline Trigger */}
+                {/* Header with Title and Add / Upload Guideline Triggers */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
                   <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-300 font-mono">
                     <Palette size={13} className="text-violet-600 dark:text-violet-400" />
                     <span>Workspace Brand Guidelines & Learned Habits</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingRule(prev => !prev)}
-                    className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 px-2 py-0.5 rounded-md hover:bg-violet-500/10 transition-colors cursor-pointer"
-                  >
-                    <Plus size={11} strokeWidth={2.5} />
-                    <span>{isAddingRule ? 'Cancel' : 'Add Guideline'}</span>
-                  </button>
-                </div>
-
-                {/* Inline Guideline Addition Form */}
-                {isAddingRule && (
-                  <div className="p-3 bg-violet-50/40 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/40 flex flex-col sm:flex-row items-center gap-2 animate-in fade-in duration-100">
+                  <div className="flex items-center gap-2">
+                    {/* Hidden file input for .MD upload */}
                     <input
-                      type="text"
-                      placeholder="Rule Title (e.g. Header Color, Logo Font)"
-                      value={newRuleLabel}
-                      onChange={(e) => setNewRuleLabel(e.target.value)}
-                      className="flex-1 w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Value (e.g. #7C3AED, Helvetica Neue)"
-                      value={newRuleValue}
-                      onChange={(e) => setNewRuleValue(e.target.value)}
-                      className="flex-1 w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".md,.markdown,.txt"
+                      onChange={handleFileUpload}
+                      className="hidden"
                     />
                     <button
                       type="button"
-                      onClick={handleAddBrandRule}
-                      className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shrink-0 shadow-xs cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 px-2 py-0.5 rounded-md hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
+                      title="Upload a .md file to semantically extract guidelines"
                     >
-                      Save to Memory
+                      <FileUp size={11} strokeWidth={2.0} />
+                      <span>Upload .MD</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsMdModalOpen(true)}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 px-2 py-0.5 rounded-md hover:bg-violet-500/10 transition-colors cursor-pointer"
+                    >
+                      <Plus size={11} strokeWidth={2.5} />
+                      <span>Add / Paste MD</span>
                     </button>
                   </div>
-                )}
+                </div>
 
                 {/* Divided Inset Grid: Brand Guidelines on Left, Learned Habits on Right */}
                 <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-black/[0.05] dark:divide-white/[0.06]">
-                  {/* Left Column: Brand & Style Rules */}
+                  {/* Left Column: Brand & Style Rules (Parsed into individual modular cards) */}
                   <div className="p-3.5 space-y-2">
                     <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
                       <span>Active Brand Guidelines</span>
-                      <span>{brandRules.length} Rules</span>
+                      <span>{brandRules.length} Extracted Rules</span>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 max-h-[175px] overflow-y-auto thin-scrollbar pr-0.5">
                       {brandRules.map((rule) => (
                         <div
                           key={rule.id}
-                          className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] transition-colors"
+                          className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 truncate">
@@ -811,16 +997,14 @@ export default function GlobalWorkspaceSearchModal({
                               {rule.value}
                             </span>
                           </div>
-                          {rule.category === 'custom' && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveBrandRule(rule.id)}
-                              className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
-                              title="Delete rule"
-                            >
-                              <Trash2 size={11} />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBrandRule(rule.id)}
+                            className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0 ml-1 cursor-pointer"
+                            title="Delete rule"
+                          >
+                            <Trash2 size={11} />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1091,6 +1275,65 @@ export default function GlobalWorkspaceSearchModal({
           </div>
         </div>
       </div>
+
+      {/* ── Semantic Markdown Input Modal ── */}
+      {isMdModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100010] bg-black/45 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setIsMdModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-violet-600" />
+                <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                  Import Guidelines or Agentic Rules
+                </h4>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsMdModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              Paste your company guidelines, design system rules, or custom persona prompt. Regaarder will semantically parse and extract individual memory cards.
+            </p>
+
+            <textarea
+              rows={8}
+              value={mdInputText}
+              onChange={(e) => setMdInputText(e.target.value)}
+              placeholder={`# Typography\n- Font: Inter, -apple-system\n\n# Brand Colors\n- Primary: #7C3AED\n- Surface: #FFFFFF\n\n# Constraints\n- Always format numbers with %\n- Never use pill-shaped buttons`}
+              className="w-full text-xs font-mono p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500 resize-none leading-relaxed"
+            />
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMdModalOpen(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyPastedMarkdown}
+                disabled={!mdInputText.trim()}
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-all disabled:opacity-40 cursor-pointer"
+              >
+                Decompose & Save to Memory
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
