@@ -2,7 +2,9 @@ import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw,
-  Sparkles, Clock, FileText, Database, ShieldCheck, Compass
+  Sparkles, Clock, FileText, Database, ShieldCheck, Compass,
+  Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
+  Tag, Lightbulb, Zap, HelpCircle
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -154,16 +156,30 @@ const COMPACT_QUICK_ACTIONS = [
   }
 ];
 
-// Suggested Ask AI prompt queries for Deck mode
+// Suggested Ask AI prompt queries
 const SUGGESTED_AI_PROMPTS = [
   "Summarize key decisions across recent documents",
-  "What are the active milestones and deliverables?",
-  "Review open items in my workspace memory",
+  "Review open financial models and spreadsheet metrics",
+  "Apply workspace brand guidelines to my recent presentation",
   "Show high-priority tasks and upcoming deadlines"
 ];
 
-export default function GlobalWorkspaceSearchModal({
+// Default executive brand rules and styling guidelines
+const INITIAL_BRAND_RULES = [
+  { id: 'rule-font', label: 'Primary Typography', value: 'Inter & SF Pro System Font', category: 'styling' },
+  { id: 'rule-color', label: 'Brand Color', value: 'Regaarder Violet (#7C3AED)', category: 'styling' },
+  { id: 'rule-tone', label: 'Voice & Tone', value: 'Executive, concise, and analytical', category: 'guideline' },
+  { id: 'rule-grid', label: 'Design System', value: '8pt Precision Matrix • 16px Corners', category: 'styling' }
+];
 
+// Ambient learned user habits across workspace
+const LEARNED_HABITS = [
+  { id: 'h-1', title: 'Calculations', desc: 'Frequently inspects SUM & AVERAGE formulas in Sheets', icon: SheetIcon },
+  { id: 'h-2', title: 'Export Habits', desc: 'Prefers Excel (.xlsx) and clean PDF with dark backdrops', icon: ComposeIcon },
+  { id: 'h-3', title: 'Micro-Interactions', desc: 'Uses 100ms transitions and unblurred live canvas inspectors', icon: Sparkles }
+];
+
+export default function GlobalWorkspaceSearchModal({
   isOpen,
   onClose,
   initialQuery = '',
@@ -188,8 +204,35 @@ export default function GlobalWorkspaceSearchModal({
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
 
+  // Workspace Brand Rules & Guidelines state (persisted in localStorage)
+  const [brandRules, setBrandRules] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_workspace_brand_rules');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load brand rules:', e);
+    }
+    return INITIAL_BRAND_RULES;
+  });
+
+  const [isAddingRule, setIsAddingRule] = useState(false);
+  const [newRuleLabel, setNewRuleLabel] = useState('');
+  const [newRuleValue, setNewRuleValue] = useState('');
+
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
+
+  // Save brand rules to localStorage on update
+  useEffect(() => {
+    try {
+      localStorage.setItem('regaarder_workspace_brand_rules', JSON.stringify(brandRules));
+    } catch (e) {
+      console.warn('Failed to persist brand rules:', e);
+    }
+  }, [brandRules]);
 
   // Build the complete searchable workspace index strictly from real state
   const workspaceIndex = useMemo(() => {
@@ -228,6 +271,7 @@ export default function GlobalWorkspaceSearchModal({
       setSelectedIndex(0);
       setAiResponse(null);
       setAiLoading(false);
+      setIsAddingRule(false);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [isOpen, initialQuery, initialMode, initialFilter, isDeck]);
@@ -248,7 +292,27 @@ export default function GlobalWorkspaceSearchModal({
 
   if (!isOpen) return null;
 
-  // Execute AI Workspace Synthesis
+  // Add a new brand rule or guideline
+  const handleAddBrandRule = () => {
+    if (!newRuleLabel.trim() || !newRuleValue.trim()) return;
+    const newRule = {
+      id: 'rule-' + Date.now(),
+      label: newRuleLabel.trim(),
+      value: newRuleValue.trim(),
+      category: 'custom'
+    };
+    setBrandRules(prev => [...prev, newRule]);
+    setNewRuleLabel('');
+    setNewRuleValue('');
+    setIsAddingRule(false);
+  };
+
+  // Remove a brand rule
+  const handleRemoveBrandRule = (ruleId) => {
+    setBrandRules(prev => prev.filter(r => r.id !== ruleId));
+  };
+
+  // Execute AI Workspace Synthesis with brand memory context
   const handleRunAiSynthesis = async (promptQuery) => {
     const targetQ = promptQuery || query;
     if (!targetQ || !targetQ.trim()) return;
@@ -256,8 +320,12 @@ export default function GlobalWorkspaceSearchModal({
     setAiLoading(true);
     setAiResponse(null);
     try {
+      // Append ambient brand guidelines context into synthesis payload
+      const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
+      const contextualQuery = `${targetQ} (Active Brand & Memory Context: ${brandContextSnippet})`;
+
       const result = await synthesizeWorkspaceKnowledge({
-        query: targetQ,
+        query: contextualQuery,
         activeFilter,
         workspaceIndex,
         onCallAi
@@ -342,35 +410,35 @@ export default function GlobalWorkspaceSearchModal({
     setTimeout(() => setCopiedAi(false), 2000);
   };
 
-  // Semi-transparent glass surface (rgba 0.78) with 28px backdrop blur and restrained white border
-  const backdropClasses = 'bg-slate-900/30 dark:bg-black/55 backdrop-blur-[28px]';
-  const surfaceClasses = 'bg-white/[0.78] dark:bg-[#12141a]/[0.80] backdrop-blur-[28px] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.45)] border border-white/60 dark:border-white/[0.12] ring-1 ring-black/[0.04] dark:ring-white/[0.05]';
-  const categoryBarClasses = 'bg-white/[0.4] dark:bg-black/[0.2] border-b border-black/[0.04] dark:border-white/[0.06]';
-  const footerClasses = 'bg-white/[0.45] dark:bg-black/[0.25] border-t border-black/[0.04] dark:border-white/[0.06]';
+  // Semi-transparent frosted Apple glass surface with 36px backdrop blur
+  const backdropClasses = 'bg-slate-900/35 dark:bg-black/60 backdrop-blur-[24px]';
+  const surfaceClasses = 'bg-white/[0.88] dark:bg-[#14161f]/[0.88] backdrop-blur-[36px] rounded-2xl shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06]';
+  const categoryBarClasses = 'bg-white/[0.45] dark:bg-black/[0.22] border-b border-black/[0.05] dark:border-white/[0.07]';
+  const footerClasses = 'bg-white/[0.45] dark:bg-black/[0.25] border-t border-black/[0.05] dark:border-white/[0.07]';
 
   const currentEmptyState = EMPTY_STATE_CONFIG[activeFilter] || EMPTY_STATE_CONFIG.all;
   const EmptyIcon = currentEmptyState.icon;
 
   return (
     <div
-      className={`fixed inset-0 z-[100000] flex items-start justify-center pt-[9vh] sm:pt-[11vh] px-4 pb-6 animate-in fade-in duration-150 select-none ${backdropClasses}`}
+      className={`fixed inset-0 z-[100000] flex items-start justify-center pt-[7vh] sm:pt-[9vh] px-4 pb-6 animate-in fade-in duration-150 select-none ${backdropClasses}`}
       onClick={onClose}
       onKeyDown={handleKeyDown}
       style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
     >
-      {/* ── Search Surface Shell (840px wide, 610px high, 16px radius) ── */}
+      {/* ── Search Surface Shell (920px wide, 650px high, 16px radius) ── */}
       <div
-        className={`w-[840px] max-w-[95vw] h-[610px] max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
+        className={`w-[920px] max-w-[95vw] h-[650px] max-h-[88vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Dominant Search / Header (58px height) ── */}
-        <div className="h-[58px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
+        {/* ── Dominant Search / Header (62px height) ── */}
+        <div className="h-[62px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
           {mode === 'ai' ? (
-            <div className="w-6 h-6 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
-              <RegaarderAiIcon size={14} strokeWidth={1.8} />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs ring-1 ring-violet-500/30">
+              <Sparkles size={15} strokeWidth={2.2} className="animate-pulse" />
             </div>
           ) : (
-            <Search size={18} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+            <Search size={19} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
           )}
 
           <input
@@ -383,32 +451,16 @@ export default function GlobalWorkspaceSearchModal({
                 setAiResponse(null);
               }
             }}
-            placeholder={mode === 'ai' ? (t('search.askAnything') || 'Ask anything across workspace memory…') : (t('search.searchAnything') || 'Search anything in your workspace…')}
-            className="flex-1 bg-transparent border-none outline-none text-[15px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
+            placeholder={
+              mode === 'ai' 
+                ? (t('search.askAnything') || 'Ask AI Memory across workspace files, guidelines & habits…') 
+                : (t('search.searchAnything') || 'Search anything across workspace memory…')
+            }
+            className="flex-1 bg-transparent border-none outline-none text-[15.5px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
           />
 
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2 shrink-0 select-none">
-            {/* ✦ AI Mode Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                const nextMode = mode === 'ai' ? 'search' : 'ai';
-                setMode(nextMode);
-                setAiResponse(null);
-                setTimeout(() => inputRef.current?.focus(), 20);
-              }}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-all duration-150 active:scale-95 cursor-pointer ${
-                mode === 'ai'
-                  ? 'bg-violet-600 text-white font-semibold shadow-2xs border border-violet-500'
-                  : 'bg-violet-500/10 hover:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/20 font-medium'
-              }`}
-              title={mode === 'ai' ? "Switch back to file search" : "Switch to AI knowledge synthesis"}
-            >
-              <RegaarderAiIcon size={12} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
-              <span>{mode === 'ai' ? 'Ask AI' : '✦ AI'}</span>
-            </button>
-
+          {/* Right Action Controls: Clear Input & Apple Dual Mode Switcher */}
+          <div className="flex items-center gap-2.5 shrink-0 select-none">
             {query && (
               <button
                 type="button"
@@ -420,11 +472,47 @@ export default function GlobalWorkspaceSearchModal({
                 className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
                 title="Clear input"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             )}
 
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs">
+            {/* ── Apple-Style Segmented Mode Switcher (Search vs Ask AI Memory) ── */}
+            <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06]">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('search');
+                  setAiResponse(null);
+                  setTimeout(() => inputRef.current?.focus(), 20);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                  mode === 'search'
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-xs ring-1 ring-black/[0.06] dark:ring-white/[0.08]'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                }`}
+              >
+                <Search size={12} strokeWidth={2} className={mode === 'search' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                <span>Search</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('ai');
+                  setTimeout(() => inputRef.current?.focus(), 20);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                  mode === 'ai'
+                    ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 text-white shadow-xs ring-1 ring-violet-500/50'
+                    : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-500/10'
+                }`}
+              >
+                <Sparkles size={12} strokeWidth={2.2} className={mode === 'ai' ? 'text-amber-200 animate-pulse' : 'text-violet-500'} />
+                <span>✦ Ask AI Memory</span>
+              </button>
+            </div>
+
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs ml-1">
               ESC
             </kbd>
           </div>
@@ -448,7 +536,7 @@ export default function GlobalWorkspaceSearchModal({
                   }}
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
                     isActive
-                      ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs'
+                      ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
                       : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                   }`}
                 >
@@ -470,7 +558,7 @@ export default function GlobalWorkspaceSearchModal({
           {mode === 'ai' && (
             <div className="text-[10.5px] font-medium text-violet-600 dark:text-violet-400 flex items-center gap-1.5 pl-3 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-              <span>Workspace Context Layer</span>
+              <span>Workspace Intelligence Active</span>
             </div>
           )}
         </div>
@@ -486,52 +574,71 @@ export default function GlobalWorkspaceSearchModal({
           {mode === 'ai' && (
             <div className="space-y-4">
               {!aiResponse && !aiLoading && (
-                <div className="space-y-3 py-1">
-                  <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
-                    <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
-                    <span>Suggested Prompts</span>
+                <div className="space-y-4 py-1">
+                  {/* Executive AI Intro Banner */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent border border-violet-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center shadow-xs">
+                        <Sparkles size={16} strokeWidth={2.2} />
+                      </div>
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-900 dark:text-zinc-100">
+                          Workspace Knowledge & Brand Intelligence
+                        </h4>
+                        <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Cross-synthesizes all documents, spreadsheets, slides, guidelines, and habit records.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setQuery(promptText);
-                          handleRunAiSynthesis(promptText);
-                        }}
-                        className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-violet-500/30"
-                      >
-                        <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
-                          {promptText}
-                        </span>
-                        <ArrowRight size={12} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
-                      </button>
-                    ))}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
+                      <Sparkles size={12} className="text-violet-600 dark:text-violet-400" />
+                      <span>Suggested Knowledge Queries</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setQuery(promptText);
+                            handleRunAiSynthesis(promptText);
+                          }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-violet-500/30"
+                        >
+                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
+                            {promptText}
+                          </span>
+                          <ArrowRight size={12} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
               {aiLoading && (
                 <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                  <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center text-violet-600 dark:text-violet-400 animate-spin shadow-2xs border border-violet-200/50 dark:border-violet-800/40">
-                    <RefreshCw size={16} />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white animate-spin shadow-md">
+                    <RefreshCw size={18} strokeWidth={2.2} />
                   </div>
-                  <div className="text-[14px] font-bold text-slate-800 dark:text-zinc-100">
-                    Synthesizing cross-workspace memory…
+                  <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
+                    Synthesizing Workspace Memory & Guidelines…
                   </div>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm">
-                    Analyzing documents, spreadsheet models, slides, and transcripts for &ldquo;{query}&rdquo;
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
+                    Analyzing documents, calculation models, slide decks, and active brand rules for &ldquo;{query}&rdquo;
                   </p>
                 </div>
               )}
 
               {aiResponse && !aiLoading && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <div className="p-4 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3">
+                  <div className="p-4.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
+                        <Sparkles size={14} className="text-violet-600 dark:text-violet-400" />
                         <span className="text-[10.5px] font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wider font-mono">
                           AI Executive Synthesis
                         </span>
@@ -539,7 +646,7 @@ export default function GlobalWorkspaceSearchModal({
                       <button
                         type="button"
                         onClick={handleCopyAiResponse}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
                       >
                         {copiedAi ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
                         <span>{copiedAi ? 'Copied' : 'Copy'}</span>
@@ -587,14 +694,14 @@ export default function GlobalWorkspaceSearchModal({
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE - EMPTY QUERY (Quick Actions & Real Items)
+              MODE B: SEARCH MODE - EMPTY QUERY (Quick Actions, Brand Rules, Habits & Real Items)
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
-            <div className="space-y-4">
-              {/* Compact Quick Action Chips */}
+            <div className="space-y-5">
+              {/* Primary Quick Action Chips */}
               <div>
                 <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
-                  <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
+                  <Zap size={13} className="text-violet-600 dark:text-violet-400" />
                   <span>{t('quickActions.title') || 'Quick Actions'}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -619,7 +726,7 @@ export default function GlobalWorkspaceSearchModal({
                         className={`group flex items-center justify-between px-3 py-2 rounded-[10px] text-left transition-all duration-150 cursor-pointer ${
                           isSelected
                             ? 'bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-600 text-slate-900 dark:text-white shadow-xs ring-1 ring-black/[0.04] dark:ring-white/[0.08]'
-                            : 'bg-white/[0.55] dark:bg-zinc-800/[0.45] backdrop-blur-md hover:bg-white/80 dark:hover:bg-zinc-800/80 border border-white/70 dark:border-white/[0.08] hover:border-slate-200/80 dark:hover:border-zinc-700 text-slate-700 dark:text-zinc-300 shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
+                            : 'bg-white/[0.60] dark:bg-zinc-800/[0.45] backdrop-blur-md hover:bg-white/80 dark:hover:bg-zinc-800/80 border border-white/70 dark:border-white/[0.08] hover:border-slate-200/80 dark:hover:border-zinc-700 text-slate-700 dark:text-zinc-300 shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -634,6 +741,121 @@ export default function GlobalWorkspaceSearchModal({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* ── Executive Workspace Ambient Memory & Brand Rules Card ── */}
+              <div className="rounded-xl bg-white/70 dark:bg-zinc-800/50 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs">
+                {/* Header with Title and Add Guideline Trigger */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-300 font-mono">
+                    <Palette size={13} className="text-violet-600 dark:text-violet-400" />
+                    <span>Workspace Brand Guidelines & Learned Habits</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingRule(prev => !prev)}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 px-2 py-0.5 rounded-md hover:bg-violet-500/10 transition-colors cursor-pointer"
+                  >
+                    <Plus size={11} strokeWidth={2.5} />
+                    <span>{isAddingRule ? 'Cancel' : 'Add Guideline'}</span>
+                  </button>
+                </div>
+
+                {/* Inline Guideline Addition Form */}
+                {isAddingRule && (
+                  <div className="p-3 bg-violet-50/40 dark:bg-violet-950/20 border-b border-violet-200/50 dark:border-violet-800/40 flex flex-col sm:flex-row items-center gap-2 animate-in fade-in duration-100">
+                    <input
+                      type="text"
+                      placeholder="Rule Title (e.g. Header Color, Logo Font)"
+                      value={newRuleLabel}
+                      onChange={(e) => setNewRuleLabel(e.target.value)}
+                      className="flex-1 w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value (e.g. #7C3AED, Helvetica Neue)"
+                      value={newRuleValue}
+                      onChange={(e) => setNewRuleValue(e.target.value)}
+                      className="flex-1 w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddBrandRule}
+                      className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors shrink-0 shadow-xs cursor-pointer"
+                    >
+                      Save to Memory
+                    </button>
+                  </div>
+                )}
+
+                {/* Divided Inset Grid: Brand Guidelines on Left, Learned Habits on Right */}
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-black/[0.05] dark:divide-white/[0.06]">
+                  {/* Left Column: Brand & Style Rules */}
+                  <div className="p-3.5 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
+                      <span>Active Brand Guidelines</span>
+                      <span>{brandRules.length} Rules</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {brandRules.map((rule) => (
+                        <div
+                          key={rule.id}
+                          className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 truncate">
+                              {rule.label}:
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                              {rule.value}
+                            </span>
+                          </div>
+                          {rule.category === 'custom' && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveBrandRule(rule.id)}
+                              className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
+                              title="Delete rule"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Learned User Habits */}
+                  <div className="p-3.5 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
+                      <span>Ambient Learned Habits</span>
+                      <span>Live Intelligence</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {LEARNED_HABITS.map((habit) => {
+                        const HabitIcon = habit.icon;
+                        return (
+                          <div
+                            key={habit.id}
+                            className="flex items-start gap-2.5 py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
+                          >
+                            <div className="w-5 h-5 rounded flex items-center justify-center bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+                              <HabitIcon size={11} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 truncate">
+                                {habit.title}
+                              </div>
+                              <div className="text-[10px] text-slate-400 dark:text-zinc-500 leading-tight">
+                                {habit.desc}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -701,8 +923,8 @@ export default function GlobalWorkspaceSearchModal({
                 </div>
               ) : (
                 /* ── Context-Aware Minimal Apple Empty State ── */
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-xl bg-white/60 dark:bg-zinc-800/40 border border-black/[0.05] dark:border-white/[0.06] my-1">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2.5 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+                <div className="flex flex-col items-center justify-center py-8 px-4 text-center rounded-xl bg-white/60 dark:bg-zinc-800/40 border border-black/[0.05] dark:border-white/[0.06] my-1">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
                     <EmptyIcon size={16} strokeWidth={1.6} />
                   </div>
                   <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200 mb-1">
@@ -863,8 +1085,9 @@ export default function GlobalWorkspaceSearchModal({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
-            <span>{t('search.footerBrand') || 'Regaarder Context Search'}</span>
+          <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+            <span>{t('search.footerBrand') || 'Regaarder Workspace Memory Hub'}</span>
           </div>
         </div>
       </div>
