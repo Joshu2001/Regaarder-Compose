@@ -21,7 +21,7 @@ import {
   File, User, PenTool, Pen, PenLine, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   List, ListOrdered, Bold, Italic, Underline, Strikethrough, Type, X, ChevronDown, ChevronUp, Disc,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
-  AlertTriangle, MonitorPlay, MessageCircle, FileQuestion, HelpCircle, LifeBuoy,
+  AlertTriangle, Monitor, MessageCircle, FileQuestion, HelpCircle, LifeBuoy,
   Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, ExternalLink, Link2 as LinkIcon, Link, Clock, Minimize2, Sidebar, Image as ImageIcon,
   FileEdit, CheckCircle2, Users2, Archive,
@@ -15147,7 +15147,7 @@ const DEFAULT_DECK_SLIDES = [
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
-  const [sheetToolbarTab, setSheetToolbarTab] = useState(null);
+  const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
   const [docToolbarTab, setDocToolbarTab] = useState('Write');
   const [deckToolbarTab, setDeckToolbarTab] = useState('Create');
   const [deckReviewActiveModal, setDeckReviewActiveModal] = useState(null);
@@ -33690,7 +33690,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
-    setSheetToolbarTab(null);
+    setSheetToolbarTab('Data');
     setHasImportedData(false);
     setSelectedDatasets([]);
     showToast('Sheets workspace ready');
@@ -48647,7 +48647,7 @@ const renderRoomTopHeader = () => (
                 onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
-                <MonitorPlay size={16} /> {t('room.present') || 'Present'}
+                <Monitor size={16} /> {t('room.present') || 'Present'}
               </button>
               <button 
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
@@ -50662,8 +50662,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
                         <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-20 shrink-0 transition-all duration-200">
-                      {/* Top Row: Navigation Tabs & Collapse/Expand Button */}
-                      <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+                      {/* Top Row: Navigation Tabs & View Controls + Collapse Toggle */}
+                      <div className="flex items-center justify-between gap-3 text-[13px] font-medium tracking-wide text-[#374151]">
                         {/* Apple Segmented Control Track */}
                         <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
                           {['Data', 'Templates', 'Analyze', 'Visualize', 'View'].map((tab) => (
@@ -50676,6 +50676,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }
                                 if (tab === 'Data') {
                                   setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
+                                } else if (tab === 'Visualize') {
+                                  setSheetToolbarTab(sheetToolbarTab === 'Visualize' ? null : 'Visualize');
+                                  setShowTemplateChart(true);
+                                  showToast('Visualize tools & live charts ready');
                                 } else {
                                   setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
                                   showToast(`${tab} tools ready`);
@@ -50691,24 +50695,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </button>
                           ))}
                         </div>
-                        {/* Collapse / Expand Toggle Button */}
-                        <button
-                          type="button"
-                          onClick={() => setIsSheetToolbarCollapsed((prev) => !prev)}
-                          className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
-                          title={isSheetToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
-                        >
-                          <span>{isSheetToolbarCollapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse')}</span>
-                          <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isSheetToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
-                        </button>
-                      </div>
 
-                      {/* Toolbar Details (Sub-tabs & Formatting Tools) shown when expanded */}
-                      {!isSheetToolbarCollapsed && (
-                        <>
-                          {/* Sub-tab actions */}
-                          {sheetToolbarTab === 'View' ? (
-                            <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 pt-2 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
+                        {/* Right Section: Inline View Controls (when on View) + Collapse Toggle */}
+                        <div className="flex items-center gap-2">
+                          {sheetToolbarTab === 'View' && (
+                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-150">
                               {/* Gridlines Dropdown */}
                               <GridlinesDropdownToolbarControl
                                 showGridLines={showGridLines}
@@ -50760,8 +50751,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast={showToast}
                               />
                             </div>
-                          ) : null}
+                          )}
 
+                          {/* Collapse / Expand Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setIsSheetToolbarCollapsed((prev) => !prev)}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/60 shadow-2xs cursor-pointer"
+                            title={isSheetToolbarCollapsed ? "Expand toolbar details" : "Collapse toolbar details"}
+                          >
+                            <span>{isSheetToolbarCollapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse')}</span>
+                            <ChevronDown size={13} className={`transition-transform duration-200 ease-out ${isSheetToolbarCollapsed ? '' : 'rotate-180 text-violet-600'}`} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Toolbar Details (Formatting Tools) shown when expanded */}
+                      {!isSheetToolbarCollapsed && (
+                        <>
                           {/* Bottom Row: Cell Formatting Tools */}
                           {sheetToolbarTab !== 'Data' && sheetToolbarTab !== 'Templates' && sheetToolbarTab !== 'Analyze' && (
                             <>
@@ -53475,7 +53482,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 );
                                 if (tableIntersections.length > 0) {
                                    const table = tableIntersections[tableIntersections.length - 1];
-                                   const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.blue;
+                                   const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.purple;
                                    const isHeader = rowIndex + 1 === table.startRow;
                                    computedFormat.fill = cellFormat.fill || cellFormat.highlight || (isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg));
                                    computedFormat.color = cellFormat.color || (isHeader ? preset.headerColor : '#333');
@@ -53520,7 +53527,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ...customBorders,
                                       borderRightWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'))),
                                       borderBottomWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'))),
-                                      borderColor: computedFormat.borderColor ? computedFormat.borderColor : (tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0'))),
+                                      borderColor: computedFormat.borderColor ? computedFormat.borderColor : (tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.purple.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0'))),
                                       zIndex: shadowStyle.zIndex !== undefined ? shadowStyle.zIndex : ((tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : (computedFormat.rowSpan || computedFormat.colSpan ? 20 : undefined))
                                     }}
                                     onContextMenu={(e) => {
@@ -54050,7 +54057,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex });
                                         }}
                                       >
-                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}>
+                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.purple).border }}>
                                           <path d="M12 21l-12-18h24z"/>
                                         </svg>
                                       </div>
@@ -54061,7 +54068,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         height="8" 
                                         viewBox="0 0 8 8" 
                                         className="absolute bottom-0 right-0 cursor-se-resize z-20 select-none"
-                                        style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}
+                                        style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.purple).border }}
                                         onMouseDown={(e) => {
                                           e.stopPropagation();
                                           e.preventDefault();
@@ -54082,7 +54089,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     )}
                                     {isBottomRightCorner && (
                                       <div 
-                                        className="absolute -bottom-[2.75px] -right-[2.75px] w-[5.5px] h-[5.5px] rounded-[1px] z-30 cursor-crosshair hover:scale-125 transition-transform" 
+                                        className="absolute -bottom-[2px] -right-[2px] w-[4px] h-[4px] rounded-[1px] z-30 cursor-crosshair ring-1 ring-white/90 dark:ring-zinc-950/90 shadow-xs hover:scale-125 transition-transform select-none" 
                                         style={{ backgroundColor: selectionBorderColor }}
                                       />
                                     )}
@@ -54223,6 +54230,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
 
                     {showTemplateChart && (
+                        <div className="h-full shrink-0 flex animate-in slide-in-from-right-4 fade-in duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
                         <TemplateChartVisualizer
                           activeSheetGrid={activeSheetGrid}
                           activeSheetId={activeSheetId}
@@ -54235,6 +54243,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           showToast={showToast}
                           isDarkMode={isDarkMode}
                         />
+                        </div>
                       )}
                     </div>
                     </div>)}
@@ -54445,7 +54454,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }`}
                               title="Enter presentation mode (Fullscreen)"
                             >
-                              <MonitorPlay size={14} />
+                              <Monitor size={14} />
                               <span className="text-[11px] font-medium hidden sm:inline">Present</span>
                             </button>
                           </div>
@@ -83607,7 +83616,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         screenShareStream ? (
                           <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black relative overflow-hidden items-center justify-center p-8 select-none text-center">
       <div className="w-20 h-20 rounded-3xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-5 shadow-2xl shadow-violet-500/20 animate-pulse">
-        <MonitorPlay size={34} className="text-violet-400" />
+        <Monitor size={34} className="text-violet-400" />
       </div>
       <h3 className="text-base font-bold text-white mb-1.5">You are presenting to everyone</h3>
       <p className="text-xs text-slate-400 max-w-[380px] leading-relaxed mb-6">
@@ -83775,7 +83784,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Google Meet-Style Presenter Slate (Left / Center Stage) */}
       <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-2xl shadow-2xl">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25 border border-white/20">
-          <MonitorPlay size={30} className="text-white" />
+          <Monitor size={30} className="text-white" />
         </div>
         
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
@@ -84250,7 +84259,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             title={(roomPresentedApp || isScreenSharing) ? (t('room.stopPresenting') || 'Stop Presenting') : (t('room.present') || 'Present')}
                             aria-label="Present in meeting"
                           >
-                            <MonitorPlay size={18} strokeWidth={1.5} />
+                            <Monitor size={18} strokeWidth={1.5} />
                           </button>
 
                           {/* Present Mode Selection Popover — Apple Executive Tier Stacked List */}
@@ -84337,7 +84346,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition-colors text-xs font-semibold cursor-pointer"
                               >
                                 <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                                  <MonitorPlay size={15} />
+                                  <Monitor size={15} />
                                 </div>
                                 <div className="min-w-0 text-left">
                                   <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">{t('room.presentEntireScreen') || 'Share Entire Screen / Window'}</div>
