@@ -200,6 +200,7 @@ export default function ShareModal({
 
   const formatOptions = [
     { value: 'Compose (.cmp)', label: 'Regaarder (.cmp)' },
+    { value: 'Excel (.xlsx)', label: 'Excel (.xlsx)' },
     { value: 'PDF', label: 'PDF Document (.pdf)' },
     { value: 'DOC (Word-compatible)', label: 'Word (.docx)' },
     { value: 'Markdown', label: 'Markdown (.md)' },
@@ -247,8 +248,8 @@ export default function ShareModal({
       width="w-[380px]"
       topOffset="top-12"
       rightOffset="right-4"
-      zIndexBackdrop="z-[510]"
-      zIndexModal="z-[520]"
+      zIndexBackdrop="z-[100000]"
+      zIndexModal="z-[100001]"
       allowOverflowVisible={true}
       footer={modalFooter}
     >

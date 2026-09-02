@@ -9162,21 +9162,11 @@ function AppCore() {
     };
 
     const handleOutsideClick = (e) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
-        setShareModalOpen(false);
-      }
-      if (composeShareMenuRef.current && !composeShareMenuRef.current.contains(e.target)) {
-        setShareModalOpen(false);
-      }
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setProfileMenuOpen(false);
       }
       if (composeProfileMenuRef.current && !composeProfileMenuRef.current.contains(e.target)) {
         setComposeProfileMenuOpen(false);
-      }
-      if (replayPanelRef.current && !replayPanelRef.current.contains(e.target)) {
-        setReplayPanelOpen(false);
-        setIsReplayPlaying(false);
       }
       if (emojiControlsRef.current && !emojiControlsRef.current.contains(e.target)) {
         setActiveEmojiEl(null);
@@ -34939,14 +34929,15 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const openShareModal = (docId) => {
+    const isSheet = productMode === 'sheets';
     const target = getDocumentPayload(docId);
     const base = `${window.location.origin}${window.location.pathname}`;
     setShareTargetDocId(docId);
-    setShareTargetDocTitle(target.title?.trim() || docTitle?.trim() || 'Untitled Document');
+    setShareTargetDocTitle(isSheet ? (sheetsTitle?.trim() || 'Untitled Sheet') : (target.title?.trim() || docTitle?.trim() || 'Untitled Document'));
     setShareDestination('friends');
-    setShareFormat('Compose (.cmp)');
+    setShareFormat(isSheet ? 'Excel (.xlsx)' : 'Compose (.cmp)');
     setShareAccess('Viewer');
-    setShareLink(`${base}?doc=${docId}&access=viewer`);
+    setShareLink(`${base}?doc=${docId || (isSheet ? 'sheet' : 'doc')}&access=viewer`);
     closeTransientMenus();
     setRightSidebarOpen(false);
     setShareModalOpen(true);
@@ -45206,20 +45197,48 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const sharedReplayPanel = (
     <React.Fragment>
-        {replayPanelOpen && (
-          <div 
-            ref={replayPanelRef} 
-            className="absolute right-6 top-16 z-[260] w-[380px] rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_32px_64px_-16px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] p-6 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] animate-in fade-in zoom-in-95 select-none border border-slate-200/50 dark:border-zinc-800 text-slate-800 dark:text-zinc-100"
-          >
-            {/* Header Section: Title, and lightweight step information */}
-            <div className="flex flex-col gap-1 mb-6 text-center">
-              <h4 className="text-[14px] font-bold text-slate-800 tracking-tight">{t('replay.title') || 'Edit Replay'}</h4>
-              <p className="text-[11px] font-semibold text-slate-400">
-                {replayTimeline.length
-                  ? (t('replay.stepOf', { current: replayIndex === null ? replayTimeline.length : replayIndex + 1, total: replayTimeline.length }) || `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`)
-                  : (t('replay.noHistory') || 'No edit history yet')}
-              </p>
-            </div>
+        {replayPanelOpen && typeof document !== 'undefined' && createPortal(
+          <>
+            <div 
+              className="fixed inset-0 bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm z-[100000] transition-all duration-150 cursor-default animate-in fade-in"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setReplayPanelOpen(false);
+                setIsReplayPlaying(false);
+              }}
+            />
+            <div 
+              ref={replayPanelRef} 
+              className="fixed right-6 top-14 z-[100001] w-[380px] rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-5 select-none border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 text-slate-800 dark:text-zinc-100 animate-in zoom-in-[0.98] fade-in duration-100 ease-out font-sans text-left"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {/* Header Section: Title, step info, and close button */}
+              <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-slate-200/60 dark:border-zinc-800">
+                <div className="flex flex-col">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{t('replay.title') || 'Edit Replay'}</h4>
+                  <p className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+                    {replayTimeline.length
+                      ? (t('replay.stepOf', { current: replayIndex === null ? replayTimeline.length : replayIndex + 1, total: replayTimeline.length }) || `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`)
+                      : (t('replay.noHistory') || 'No edit history yet')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setReplayPanelOpen(false);
+                    setIsReplayPlaying(false);
+                  }}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M1 1l10 10M11 1L1 11" />
+                  </svg>
+                </button>
+              </div>
 
             {/* Scrubber Area: Range Slider and Labels */}
             <div className="mb-6">
@@ -45346,6 +45365,8 @@ Respond with a JSON array of slide objects matching the schema.`;
               )}
             </div>
           </div>
+          </>,
+          document.fullscreenElement ?? document.body
         )}
     </React.Fragment>
   );
@@ -49442,6 +49463,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {/* Universal Floating Meeting PIP HUD across Sheets and Decks */}
         {renderFloatingMeetingPipHud()}
+        {renderNotificationsDropdownContent()}
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -49946,13 +49968,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="relative font-sans" ref={shareMenuRef}>
                 <button
                   type="button"
-                  onClick={() => {
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     if (!shareModalOpen) {
-                      openShareModal(activeDocId || documents[0]?.id);
+                      openShareModal(isSheetsMode ? 'sheet' : (activeDocId || documents[0]?.id));
                     } else {
                       setShareModalOpen(false);
                     }
                   }}
+                  onClick={(e) => e.stopPropagation()}
                   data-share="true"
                   className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
                   style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
@@ -85411,6 +85436,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {renderFloatingMeetingPipHud()}
+        {renderNotificationsDropdownContent()}
 
       <ScreenShareSourceModal
         isOpen={isScreenSourceModalOpen}
