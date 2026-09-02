@@ -27883,8 +27883,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (productMode === 'sheets' && sheetSlashMenuRef.current?.open) {
         const activeSheetMenu = sheetSlashMenuRef.current;
         const target = event.target;
-        if (target && target.id === 'ai-chat-input') {
-          return; // only let standard chat boxes handle their own typing
+        if (target && (target.id === 'ai-chat-input' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('.search-box'))) {
+          return; // let input and search boxes handle their typing directly
         }
 
         const filteredOptions = getFilteredSheetSlashOptions(activeSheetMenu.filterText, copiedCellStyle);
@@ -28019,26 +28019,33 @@ Generate the updated output according to the instruction. Preserve layout and ta
         // normal typing. Only handle non-input targets here (e.g., grid container focus).
         if (productMode === 'sheets') {
           const target = event.target;
-          // Let chat/comment boxes, textareas, and cell inputs handle themselves
           if (target && (
             target.id === 'ai-chat-input' ||
             target.tagName === 'TEXTAREA' ||
-            target.tagName === 'INPUT' ||
             target.closest('.inline-ai-prompt-box')
           )) {
             return;
           }
           event.preventDefault();
 
-          // Grid container is focused (no specific cell input) — center the menu
+          const r = selectedSheetCell?.row || 1;
+          const c = selectedSheetCell?.col || 1;
+          const cellEl = document.querySelector(`[data-sheet-cell="${r}-${c}"]`) || target;
+          const rect = cellEl && cellEl.getBoundingClientRect ? cellEl.getBoundingClientRect() : null;
+          const menuHeight = 360;
+
+          let left = rect ? Math.max(16, Math.min(window.innerWidth - 340, rect.left)) : window.innerWidth / 2 - 160;
+          let top = rect ? (rect.bottom + menuHeight > window.innerHeight ? 'auto' : `${rect.bottom + 2}px`) : `${window.innerHeight / 3}px`;
+          let bottom = rect ? (rect.bottom + menuHeight > window.innerHeight ? `${Math.max(8, window.innerHeight - rect.top + 4)}px` : 'auto') : 'auto';
+
           setSheetSlashMenu({ 
             open: true, 
-            left: event.target ? event.target.getBoundingClientRect().left : window.innerWidth / 2, 
-            top: event.target ? `${event.target.getBoundingClientRect().bottom}px` : `${window.innerHeight / 2}px`,
-            bottom: 'auto',
+            left, 
+            top,
+            bottom,
             filterText: '', 
             activeIndex: 0, 
-            anchorCell: selectedSheetCell 
+            anchorCell: { row: r, col: c }
           });
           return;
         }
@@ -53516,6 +53523,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
+                                    data-sheet-cell={`${num}-${colIndex + 1}`}
                                     className={`relative transition-colors ${cellBg}`}
                                     style={{ 
                                       height: computedFormat.rowSpan ? '100%' : rowHeight, 
@@ -53990,17 +53998,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             e.preventDefault();
                                             const rect = e.target.getBoundingClientRect();
                                             const menuHeight = 360;
-                                            let top;
-                                            let bottom = 'auto';
-                                            if (rect.bottom + menuHeight > window.innerHeight) {
-                                              bottom = `${window.innerHeight - rect.top + 4}px`;
-                                              top = 'auto';
-                                            } else {
-                                              top = `${rect.bottom + 2}px`;
-                                            }
+                                            let left = Math.max(16, Math.min(window.innerWidth - 340, rect.left));
+                                            let top = rect.bottom + menuHeight > window.innerHeight ? 'auto' : `${rect.bottom + 2}px`;
+                                            let bottom = rect.bottom + menuHeight > window.innerHeight ? `${Math.max(8, window.innerHeight - rect.top + 4)}px` : 'auto';
                                             setSheetSlashMenu({
                                               open: true,
-                                              left: rect.left,
+                                              left,
                                               top,
                                               bottom,
                                               filterText: '',
@@ -85280,7 +85283,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {productMode === 'sheets' && sheetSlashMenu.open && (
         <SlashMenuPopover
           ref={sheetSlashMenuContainerRef}
-          options={getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle)}
+          options={SHEET_SLASH_OPTIONS}
           selectedIndex={sheetSlashMenu.activeIndex}
           onSelectOption={(opt) => {
             executeSheetSlashCommand(opt.key);
