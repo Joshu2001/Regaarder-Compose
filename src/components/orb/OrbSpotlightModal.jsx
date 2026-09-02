@@ -19,7 +19,7 @@ import {
 } from '../../services/orbKnowledgeGraphService';
 
 export const ORB_MODES = [
-  { id: 'search', label: 'Intelligence Search', icon: Search, shortcut: '⌘1' },
+  { id: 'search', label: 'Search', icon: Search, shortcut: '⌘1' },
   { id: 'map', label: 'Map (Graph)', icon: Network, shortcut: '⌘2' },
   { id: 'understand', label: 'Understand', icon: Layers, shortcut: '⌘3' },
   { id: 'decide', label: 'Decide', icon: RegaarderAiIcon, shortcut: '⌘4' },

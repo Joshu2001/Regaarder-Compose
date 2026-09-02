@@ -8,14 +8,14 @@ import {
 import { RegaarderProductIcon, RegaarderAiIcon, OrbIcon } from '../RegaarderProductIcons';
 
 export const WORKSPACE_LABELS = {
-  all: 'All Intelligence',
+  all: 'All',
   compose: 'Docs',
   sheets: 'Sheets',
   deck: 'Decks',
-  room: 'Room / Meetings',
+  room: 'Rooms',
   tasks: 'Tasks',
   schedule: 'Schedule',
-  browser: 'Research'
+  browser: 'Notes'
 };
 
 export const FILTER_EMPTY_STATES = {
@@ -90,13 +90,13 @@ export default function OrbSearchResultsView({
                   isActive
                     ? highContrast
                       ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                      : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
+                      : 'border border-slate-200/90 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
                     : highContrast
                     ? 'border-2 border-transparent text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
-                    : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
+                    : 'border border-transparent text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.05] font-medium'
                 }`}
               >
-                {t('orb.workspaceLabels.' + key) || label}
+                {label}
               </button>
             );
           })}
@@ -263,17 +263,19 @@ export default function OrbSearchResultsView({
 
               {/* Quick Navigation Cue */}
               {onNavigateToWorkspace && (
-                <div className="p-3.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-800/40 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-white/70 dark:bg-zinc-800/50 border border-black/[0.06] dark:border-white/[0.08] shadow-xs flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
-                    <span className="text-xs text-slate-700 dark:text-zinc-300 font-medium">
+                    <div className="w-6 h-6 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                      <RegaarderAiIcon size={13} strokeWidth={2.0} />
+                    </div>
+                    <span className="text-xs text-slate-600 dark:text-zinc-300 font-medium">
                       Create or edit documents, calculation sheets, and slides to expand live intelligence topology.
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => onNavigateToWorkspace({ workspace: 'compose' })}
-                    className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer shrink-0"
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-zinc-100 text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer shrink-0 ml-3"
                   >
                     <span>Open Docs</span>
                     <ArrowRight size={11} />
