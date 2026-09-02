@@ -45438,7 +45438,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             }}
           />
         </main>
-        {renderWorkspaceSwitcherDropdownContent()}
+        {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}
         {sharedRightPanels}
       </div>
@@ -47726,8 +47726,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center mb-3">
                     <MessageCircle size={18} />
                   </div>
-                  <div className="text-sm font-semibold text-gray-900 mb-1">DMs</div>
-                  <p className="text-xs text-gray-600">Dedicated team chat workspace with searchable conversation intelligence.</p>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Relay</div>
+                  <p className="text-xs text-gray-600">Dedicated team messaging and AI coordination with searchable conversation intelligence.</p>
                 </button>
               </div>
             </div>
@@ -71953,10 +71953,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center mb-3 shadow-md shadow-indigo-950/30 group-hover:scale-105 transition-transform duration-200">
                     <MessageCircle size={19} />
                   </div>
-                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">DMs</div>
-                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Team chat and specialized multi-agent conversation hubs.</p>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">Relay</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Team messaging and specialized multi-agent conversation hubs.</p>
                 </div>
-                <div className="mt-3 text-[10.5px] font-semibold text-indigo-600 dark:text-indigo-400">Open Chat →</div>
+                <div className="mt-3 text-[10.5px] font-semibold text-indigo-600 dark:text-indigo-400">Open Relay →</div>
               </button>
             </div>
           </div>
