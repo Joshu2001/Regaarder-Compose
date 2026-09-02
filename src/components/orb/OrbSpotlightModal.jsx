@@ -201,7 +201,7 @@ export default function OrbSpotlightModal({
             {/* Orb Brand Mark */}
             <div className="flex items-center gap-2.5">
               <div className="w-8.5 h-8.5 rounded-xl bg-violet-50/90 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100/90 dark:border-violet-800/60 flex items-center justify-center shadow-2xs">
-                <OrbIcon size={19} />
+                <RegaarderAiIcon size={19} strokeWidth={2.0} />
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm tracking-tight ${isHighContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'}`}>
@@ -231,7 +231,7 @@ export default function OrbSpotlightModal({
                       isActive
                         ? isHighContrast
                           ? 'border-2 border-slate-900 bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                          : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                          : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
                         : isHighContrast
                         ? 'border border-transparent text-slate-900 dark:text-zinc-100 hover:border-slate-400 font-bold'
                         : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'

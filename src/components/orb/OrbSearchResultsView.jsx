@@ -90,7 +90,7 @@ export default function OrbSearchResultsView({
                   isActive
                     ? highContrast
                       ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                      : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                      : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
                     : highContrast
                     ? 'border-2 border-transparent text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
                     : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
@@ -140,28 +140,24 @@ export default function OrbSearchResultsView({
                         : 'bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-100/90 dark:border-zinc-800/80 hover:bg-slate-100 dark:hover:bg-zinc-800/70 text-slate-800 dark:text-zinc-100'
                     }`}
                   >
-                    <span className="text-xs font-medium leading-snug pr-2 truncate">{q}</span>
-                    <ArrowRight size={12} className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <span className="text-xs font-medium truncate">{q}</span>
+                    <ArrowRight size={12} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white transition-all shrink-0" />
                   </button>
                 ))}
               </div>
 
               {/* Secondary Inquiries */}
               {secondaryInquiries.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-black/[0.03] dark:border-white/[0.04]">
+                <div className="flex flex-wrap gap-1.5 pt-1">
                   {secondaryInquiries.map((q, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => onSwitchToDecide(q)}
-                      className={`group flex items-center gap-1 px-2.5 py-1 text-[11.5px] rounded-lg transition-all text-left cursor-pointer ${
-                        highContrast
-                          ? 'font-bold text-slate-900 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-900 border border-slate-300'
-                          : 'font-normal text-slate-600 dark:text-zinc-400 bg-slate-50/60 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700/60 hover:text-slate-900 dark:hover:text-white border border-slate-200/40 dark:border-zinc-700/30'
-                      }`}
+                      className="px-2.5 py-1 rounded-md text-[11px] font-normal text-slate-600 dark:text-zinc-400 bg-slate-50/60 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700/60 hover:text-slate-900 dark:hover:text-white border border-slate-200/40 dark:border-zinc-700/30 transition-all flex items-center gap-1 cursor-pointer"
                     >
                       <span className="truncate max-w-xs">{q}</span>
-                      <ArrowRight size={10} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white transition-all shrink-0" />
+                      <ArrowRight size={10} className="text-slate-400" />
                     </button>
                   ))}
                 </div>
@@ -171,47 +167,122 @@ export default function OrbSearchResultsView({
         })()}
 
         {/* Central Primary Empty State or Results List */}
-        {results.length === 0 ? (() => {
-          const emptyInfo = FILTER_EMPTY_STATES[workspaceFilter] || FILTER_EMPTY_STATES.all;
-          const targetWorkspace = workspaceFilter !== 'all' ? workspaceFilter : 'compose';
-          return (
-            <div className="flex flex-col items-center justify-center py-24 px-6 text-center max-w-sm mx-auto">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3.5 ${
-                highContrast
-                  ? 'bg-slate-100 dark:bg-zinc-900 border-2 border-slate-400 text-black dark:text-white'
-                  : 'bg-slate-100/70 dark:bg-zinc-800/60 border border-black/[0.04] dark:border-white/[0.06] text-slate-500 dark:text-zinc-400 shadow-2xs'
-              }`}>
-                {workspaceFilter !== 'all' ? (
-                  <RegaarderProductIcon name={workspaceFilter} size={22} />
-                ) : (
-                  <Compass size={22} strokeWidth={1.6} />
-                )}
+        {results.length === 0 ? (
+          query ? (
+            /* Active Query with No Matches */
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3.5 bg-slate-100/70 dark:bg-zinc-800/60 border border-black/[0.04] dark:border-white/[0.06] text-slate-400 dark:text-zinc-500 shadow-2xs">
+                <Compass size={22} strokeWidth={1.6} />
               </div>
-              <h3 className={`text-sm mb-1 ${
-                highContrast ? 'font-black text-black dark:text-white' : 'font-semibold text-slate-900 dark:text-zinc-100'
-              }`}>
-                {query ? (t('orb.noResultsFor', { query }) || `No results for "${query}"`) : (t('orb.searchEmpty.' + workspaceFilter + '.title') || emptyInfo.title)}
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 mb-1">
+                {t('orb.noResultsFor', { query }) || `No results for "${query}"`}
               </h3>
-              <p className={`text-xs leading-relaxed mb-4 ${
-                highContrast ? 'text-slate-800 dark:text-zinc-300 font-medium' : 'text-slate-500 dark:text-zinc-400'
-              }`}>
-                {query
-                  ? (t('orb.noMatchingFound') || 'No matching documents, formulas, or tasks found in this workspace.')
-                  : (t('orb.searchEmpty.' + workspaceFilter + '.desc') || emptyInfo.desc)}
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
+                {t('orb.noMatchingFound') || 'No matching documents, formulas, or tasks found in this workspace.'}
               </p>
-              {!query && onNavigateToWorkspace && (
-                <button
-                  type="button"
-                  onClick={() => onNavigateToWorkspace({ workspace: targetWorkspace })}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-zinc-100 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                >
-                  <span>{workspaceFilter === 'all' ? (t('orb.buildIntelligence') || 'Build Intelligence →') : (t('orb.createWorkspace', { name: t('orb.workspaceLabels.' + workspaceFilter) || WORKSPACE_LABELS[workspaceFilter] || 'Document' }) || `Create ${WORKSPACE_LABELS[workspaceFilter] || 'Document'}`)}</span>
-                  <ArrowRight size={12} />
-                </button>
+            </div>
+          ) : (
+            /* Empty Query: Apple Executive 3-Pillar Live Intelligence Overview */
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {/* Pillar 1: Knowledge Graph Topology */}
+                <div className="p-4 rounded-xl bg-white/70 dark:bg-zinc-800/50 border border-black/[0.06] dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                      <Network size={16} strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">
+                        Knowledge Graph Topology
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                        Maps semantic neural connections across documents, sheets, slides, and transcript notes.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchToMap && onSwitchToMap({ id: 'graph-overview' })}
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-violet-500/10 hover:text-violet-600 text-slate-700 dark:text-zinc-300 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <span>Explore Graph Canvas</span>
+                    <kbd className="text-[9.5px] font-mono text-slate-400">⌘2</kbd>
+                  </button>
+                </div>
+
+                {/* Pillar 2: Evidence & Citation Provenance */}
+                <div className="p-4 rounded-xl bg-white/70 dark:bg-zinc-800/50 border border-black/[0.06] dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <Layers size={16} strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">
+                        Evidence & Provenance
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                        Inspect verified citations, cell formula links, and connection evidence without hallucination.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchToUnderstand && onSwitchToUnderstand({ id: 'evidence-overview' })}
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-blue-500/10 hover:text-blue-600 text-slate-700 dark:text-zinc-300 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <span>Inspect Evidence</span>
+                    <kbd className="text-[9.5px] font-mono text-slate-400">⌘3</kbd>
+                  </button>
+                </div>
+
+                {/* Pillar 3: Multi-Source Decision Engine */}
+                <div className="p-4 rounded-xl bg-white/70 dark:bg-zinc-800/50 border border-black/[0.06] dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <RegaarderAiIcon size={16} strokeWidth={2.0} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">
+                        Decision Synthesizer
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                        Run multi-source reasoning to distill trade-offs, financial metrics, and executive action items.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchToDecide && onSwitchToDecide('Synthesize key decisions across workspace')}
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <span>Launch Decision Engine</span>
+                    <kbd className="text-[9.5px] font-mono text-emerald-600">⌘4</kbd>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Navigation Cue */}
+              {onNavigateToWorkspace && (
+                <div className="p-3.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-800/40 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
+                    <span className="text-xs text-slate-700 dark:text-zinc-300 font-medium">
+                      Create or edit documents, calculation sheets, and slides to expand live intelligence topology.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToWorkspace({ workspace: 'compose' })}
+                    className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer shrink-0"
+                  >
+                    <span>Open Docs</span>
+                    <ArrowRight size={11} />
+                  </button>
+                </div>
               )}
             </div>
-          );
-        })() : (
+          )
+        ) : (
           results.map(({ entity, relevanceScore, relevanceRationale, connectedCount }, idx) => {
             const cleanRationale = relevanceRationale?.replace(/organizational memory/gi, 'workspace intelligence') || 'Indexed workspace entity across connected documents and models.';
             const isSelected = selectedIndex === idx;

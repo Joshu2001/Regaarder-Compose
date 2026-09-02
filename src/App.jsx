@@ -16487,7 +16487,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           <div className="w-[216px] rounded-xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-2xl p-1.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
             <div className="flex flex-col gap-0.5">
               {[
-                { mode: 'orb', label: t('nav.orb') || 'Orb', desc: t('workspaceDesc.orb') || 'Unified Intelligence Layer', icon: OrbIcon },
+                { mode: 'orb', label: t('nav.orb') || 'Orb', desc: t('workspaceDesc.orb') || 'Unified Intelligence Layer', icon: RegaarderAiIcon },
                 { mode: 'compose', label: t('nav.docs') || 'Docs', desc: t('workspaceDesc.compose') || 'AI Document Editor', icon: ComposeIcon },
                 { mode: 'sheets', label: t('nav.sheets') || 'Sheets', desc: t('workspaceDesc.sheets') || 'Grid & Data Analysis', icon: SheetIcon },
                 { mode: 'deck', label: t('nav.deck') || 'Decks', desc: t('workspaceDesc.deck') || 'Slide & Presentation', icon: DeckIcon },
@@ -16577,6 +16577,38 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   </button>
                 );
               })}
+            </div>
+
+            {/* Ambient Intelligence: Memory Hub Fast-lane */}
+            <div className="pt-1 mt-1 border-t border-black/[0.06] dark:border-white/[0.08]">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setWorkspaceSwitcherOpen(false);
+                  setWorkspaceSwitcherAnchorRect(null);
+                  setIsMemorySearchOpen(true);
+                }}
+                className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-violet-50/80 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-900 dark:hover:text-violet-200"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-violet-50 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100 dark:border-violet-900/40">
+                    <MemoryIcon size={14} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[12.5px] font-semibold leading-tight truncate">
+                      Memory Hub
+                    </span>
+                    <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                      Guidelines & Habits
+                    </span>
+                  </div>
+                </div>
+                <kbd className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06]">
+                  ⌘K
+                </kbd>
+              </button>
             </div>
           </div>
         </div>

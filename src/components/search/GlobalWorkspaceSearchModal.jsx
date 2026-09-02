@@ -82,6 +82,12 @@ const SUGGESTED_AI_PROMPTS = [
 // Pre-built Executive Agentic Personas (Claude / ChatGPT style)
 const INITIAL_PRESET_PERSONAS = [
   {
+    id: 'polymath-genius',
+    name: 'Universal Polymath',
+    badge: 'Executive Genius & Synthesizer',
+    instructions: 'High-agency polymath intelligence with cross-disciplinary mastery across mathematics, architecture, typography, and strategy. Answers with first-principles clarity, zero corporate fluff, verified spreadsheet metrics, and flawless executive synthesis.'
+  },
+  {
     id: 'peter-thiel',
     name: 'Peter Thiel',
     badge: 'Contrarian & Zero-to-One',
