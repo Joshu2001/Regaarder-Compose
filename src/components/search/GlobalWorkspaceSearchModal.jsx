@@ -5,7 +5,7 @@ import {
   Clock, FileText, Database, ShieldCheck, Compass,
   Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
   Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown,
-  Sparkles
+  Edit3, RotateCcw
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -71,50 +71,6 @@ const FILTER_TABS = [
   { id: 'people', label: 'People', icon: PeopleIcon }
 ];
 
-// Compact primary quick action chips with native Regaarder SVG product icons
-const COMPACT_QUICK_ACTIONS = [
-  {
-    id: 'action-new-doc',
-    type: 'action',
-    workspace: 'compose',
-    title: 'New Document',
-    targetWorkspace: 'compose',
-    shortcut: '⌘N',
-    actionType: 'new_doc',
-    icon: ComposeIcon
-  },
-  {
-    id: 'action-new-sheet',
-    type: 'action',
-    workspace: 'sheets',
-    title: 'New Spreadsheet',
-    targetWorkspace: 'sheets',
-    shortcut: '⌘⇧S',
-    actionType: 'new_sheet',
-    icon: SheetIcon
-  },
-  {
-    id: 'action-new-deck',
-    type: 'action',
-    workspace: 'deck',
-    title: 'New Presentation',
-    targetWorkspace: 'deck',
-    shortcut: '⌘⇧P',
-    actionType: 'new_deck',
-    icon: DeckIcon
-  },
-  {
-    id: 'action-new-room',
-    type: 'action',
-    workspace: 'room',
-    title: 'Start Room',
-    targetWorkspace: 'room',
-    shortcut: '⌘M',
-    actionType: 'new_room',
-    icon: RoomIcon
-  }
-];
-
 // Suggested Ask Memory prompt queries
 const SUGGESTED_AI_PROMPTS = [
   "Summarize key decisions across recent documents",
@@ -124,12 +80,12 @@ const SUGGESTED_AI_PROMPTS = [
 ];
 
 // Pre-built Executive Agentic Personas (Claude / ChatGPT style)
-const PRESET_PERSONAS = [
+const INITIAL_PRESET_PERSONAS = [
   {
     id: 'peter-thiel',
     name: 'Peter Thiel',
     badge: 'Contrarian & Zero-to-One',
-    instructions: 'Challenge conventional consensus. Demand secret truths, network effects, and proprietary durability. Avoid corporate buzzwords, incrementalism, and cosmetic fluff.'
+    instructions: 'Challenge conventional consensus. Demand secret truths, network effects, and proprietary durability. Avoid corporate buzzwords, cosmetic fluff, and incrementalism.'
   },
   {
     id: 'steve-jobs',
@@ -244,8 +200,8 @@ function parseMarkdownToGuidelines(markdownText) {
 
 // Ambient learned user habits across workspace
 const LEARNED_HABITS = [
-  { id: 'h-1', title: 'Calculations', desc: 'Frequently inspects SUM & AVERAGE formulas in Sheets', icon: SheetIcon },
-  { id: 'h-2', title: 'Export Habits', desc: 'Prefers Excel (.xlsx) and clean PDF with dark backdrops', icon: ComposeIcon },
+  { id: 'h-1', title: 'Calculations Engine', desc: 'Frequently inspects SUM & AVERAGE formulas in Sheets', icon: SheetIcon },
+  { id: 'h-2', title: 'Export Preferences', desc: 'Prefers Excel (.xlsx) and clean PDF with dark backdrops', icon: ComposeIcon },
   { id: 'h-3', title: 'Micro-Interactions', desc: 'Uses 100ms transitions and unblurred live canvas inspectors', icon: RegaarderHapticIcon }
 ];
 
@@ -259,8 +215,7 @@ export default function GlobalWorkspaceSearchModal({
   productMode = 'compose',
   onCallAi = null,
   liveWorkspaceContext = {},
-  onNavigateToEntity,
-  onQuickAction
+  onNavigateToEntity
 }) {
   const isDeck = productMode === 'deck';
   const [mode, setMode] = useState(isDeck ? (initialMode || 'search') : 'search');
@@ -274,6 +229,20 @@ export default function GlobalWorkspaceSearchModal({
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
 
+  // Persona list (supports custom on-device edits)
+  const [personas, setPersonas] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_personas_list');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load custom personas:', e);
+    }
+    return INITIAL_PRESET_PERSONAS;
+  });
+
   // Active Agentic Persona State
   const [activePersona, setActivePersona] = useState(() => {
     try {
@@ -282,10 +251,16 @@ export default function GlobalWorkspaceSearchModal({
     } catch (e) {
       console.warn('Failed to load active persona:', e);
     }
-    return PRESET_PERSONAS[0];
+    return INITIAL_PRESET_PERSONAS[0];
   });
 
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
+
+  // Edit Persona Modal State
+  const [isEditPersonaModalOpen, setIsEditPersonaModalOpen] = useState(false);
+  const [editingPersonaName, setEditingPersonaName] = useState('');
+  const [editingPersonaBadge, setEditingPersonaBadge] = useState('');
+  const [editingPersonaInstructions, setEditingPersonaInstructions] = useState('');
 
   // Workspace Brand Rules & Guidelines state (persisted on device in localStorage)
   const [brandRules, setBrandRules] = useState(() => {
@@ -309,7 +284,7 @@ export default function GlobalWorkspaceSearchModal({
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
 
-  // Save brand rules to localStorage on update
+  // Persist brand rules to localStorage on update
   useEffect(() => {
     try {
       localStorage.setItem('regaarder_workspace_brand_rules', JSON.stringify(brandRules));
@@ -318,7 +293,7 @@ export default function GlobalWorkspaceSearchModal({
     }
   }, [brandRules]);
 
-  // Save active persona to localStorage
+  // Persist active persona to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('regaarder_active_persona', JSON.stringify(activePersona));
@@ -326,6 +301,15 @@ export default function GlobalWorkspaceSearchModal({
       console.warn('Failed to persist active persona:', e);
     }
   }, [activePersona]);
+
+  // Persist personas list to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('regaarder_personas_list', JSON.stringify(personas));
+    } catch (e) {
+      console.warn('Failed to persist personas list:', e);
+    }
+  }, [personas]);
 
   // Build the complete searchable workspace index strictly from real state
   const workspaceIndex = useMemo(() => {
@@ -347,10 +331,7 @@ export default function GlobalWorkspaceSearchModal({
   const flatSelectableItems = useMemo(() => {
     if (mode === 'ai') return [];
     if (!query.trim()) {
-      return [
-        ...COMPACT_QUICK_ACTIONS.map((a) => ({ type: 'action', data: a })),
-        ...searchResults.slice(0, 10).map((r) => ({ type: 'entity', data: r.entity }))
-      ];
+      return searchResults.slice(0, 10).map((r) => ({ type: 'entity', data: r.entity }));
     }
     return searchResults.map((r) => ({ type: 'entity', data: r.entity }));
   }, [query, searchResults, mode]);
@@ -366,11 +347,12 @@ export default function GlobalWorkspaceSearchModal({
       setAiLoading(false);
       setIsMdModalOpen(false);
       setIsPersonaMenuOpen(false);
+      setIsEditPersonaModalOpen(false);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [isOpen, initialQuery, initialMode, initialFilter, isDeck]);
 
-  // Pre-fill raw Markdown text from device when opening the modal
+  // Pre-fill raw Markdown text from device when opening the markdown modal
   useEffect(() => {
     if (isMdModalOpen && !mdInputText) {
       try {
@@ -398,6 +380,37 @@ export default function GlobalWorkspaceSearchModal({
 
   if (!isOpen) return null;
 
+  // Open the persona customization modal prefilled with the active persona
+  const handleOpenEditPersona = (personaToEdit = activePersona) => {
+    setEditingPersonaName(personaToEdit.name);
+    setEditingPersonaBadge(personaToEdit.badge);
+    setEditingPersonaInstructions(personaToEdit.instructions);
+    setIsEditPersonaModalOpen(true);
+    setIsPersonaMenuOpen(false);
+  };
+
+  // Save customized persona prompt to device
+  const handleSaveCustomPersona = () => {
+    if (!editingPersonaName.trim() || !editingPersonaInstructions.trim()) return;
+    const updatedPersona = {
+      ...activePersona,
+      name: editingPersonaName.trim(),
+      badge: editingPersonaBadge.trim() || 'Custom Lens',
+      instructions: editingPersonaInstructions.trim()
+    };
+    setActivePersona(updatedPersona);
+    setPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+    setIsEditPersonaModalOpen(false);
+  };
+
+  // Reset active persona instructions to defaults
+  const handleResetActivePersona = () => {
+    const original = INITIAL_PRESET_PERSONAS.find(p => p.id === activePersona.id) || INITIAL_PRESET_PERSONAS[0];
+    setEditingPersonaName(original.name);
+    setEditingPersonaBadge(original.badge);
+    setEditingPersonaInstructions(original.instructions);
+  };
+
   // Handle Markdown file upload from disk with 100% on-device persistence
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -424,7 +437,7 @@ export default function GlobalWorkspaceSearchModal({
     e.target.value = '';
   };
 
-  // Handle applying pasted Markdown into individual extracted guidelines with on-device persistence
+  // Handle applying pasted Markdown into individual extracted guidelines
   const handleApplyPastedMarkdown = () => {
     if (!mdInputText.trim()) return;
     try {
@@ -473,21 +486,12 @@ export default function GlobalWorkspaceSearchModal({
     }
   };
 
-  // Handle opening an entity or executing a quick action
+  // Handle opening an entity
   const handleActivateItem = (item) => {
     if (!item) return;
-    if (item.type === 'action') {
-      const act = item.data;
-      if (onQuickAction) {
-        onQuickAction(act);
-      } else if (onNavigateToEntity) {
-        onNavigateToEntity({ workspace: act.targetWorkspace, actionType: act.actionType });
-      }
-    } else {
-      const entity = item.type === 'entity' ? item.data : item;
-      if (onNavigateToEntity) {
-        onNavigateToEntity(entity);
-      }
+    const entity = item.type === 'entity' ? item.data : item;
+    if (onNavigateToEntity) {
+      onNavigateToEntity(entity);
     }
     onClose();
   };
@@ -496,6 +500,10 @@ export default function GlobalWorkspaceSearchModal({
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      if (isEditPersonaModalOpen) {
+        setIsEditPersonaModalOpen(false);
+        return;
+      }
       if (isMdModalOpen) {
         setIsMdModalOpen(false);
         return;
@@ -608,7 +616,7 @@ export default function GlobalWorkspaceSearchModal({
             className="flex-1 bg-transparent border-none outline-none text-[15.5px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
           />
 
-          {/* Right Action Controls: Clear, Persona Switcher & Apple Dual Switch */}
+          {/* Right Action Controls: Clear & Apple Dual Switch */}
           <div className="flex items-center gap-2.5 shrink-0 select-none">
             {query && (
               <button
@@ -667,9 +675,10 @@ export default function GlobalWorkspaceSearchModal({
           </div>
         </div>
 
-        {/* ── Category Navigation Tabs (Apple-style Slightly Rounded Rectangles with Outlines, NO Pills) ── */}
-        <div className={`flex items-center justify-between px-5 py-2 shrink-0 overflow-x-auto no-scrollbar gap-2 select-none ${categoryBarClasses}`}>
-          <div className="flex items-center gap-1 min-w-max">
+        {/* ── Category Navigation Tabs (Clean unclipped split bar) ── */}
+        <div className={`flex items-center justify-between px-5 py-2 shrink-0 gap-3 select-none ${categoryBarClasses}`}>
+          {/* Scrollable category tabs */}
+          <div className="flex items-center gap-1 min-w-0 overflow-x-auto no-scrollbar">
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab.id;
               const Icon = tab.icon;
@@ -683,7 +692,7 @@ export default function GlobalWorkspaceSearchModal({
                       handleRunAiSynthesis(query);
                     }
                   }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
                       ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
                       : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
@@ -696,25 +705,33 @@ export default function GlobalWorkspaceSearchModal({
             })}
           </div>
 
-          {/* Persona Selector Badge */}
-          <div className="relative">
+          {/* Persona Selector Badge - Strictly Anchored, Shrink-0, Never Clipped */}
+          <div className="relative shrink-0 pr-0.5">
             <button
               type="button"
               onClick={() => setIsPersonaMenuOpen(prev => !prev)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/25 text-violet-700 dark:text-violet-300 text-[11.5px] font-semibold transition-colors cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/25 text-violet-700 dark:text-violet-300 text-[11.5px] font-semibold transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
               title="Active Agentic Persona"
             >
               <UserCheck size={12} strokeWidth={2.2} />
               <span>Active Lens: {activePersona.name}</span>
-              <ChevronDown size={10} className={`transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={11} className={`transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isPersonaMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-68 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 font-mono">
-                  Select Cognitive Lens
+              <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
+                <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                  <span>Select Cognitive Lens</span>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditPersona(activePersona)}
+                    className="text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit3 size={10} />
+                    <span>Edit Prompt</span>
+                  </button>
                 </div>
-                {PRESET_PERSONAS.map((p) => {
+                {personas.map((p) => {
                   const isSel = activePersona.id === p.id;
                   return (
                     <button
@@ -880,170 +897,201 @@ export default function GlobalWorkspaceSearchModal({
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE - EMPTY QUERY (Unified Streamlined Layout)
+              MODE B: SEARCH MODE - EMPTY QUERY (Unified 3-Pillar Executive Architecture)
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
             <div className="space-y-4">
-              {/* Primary Quick Actions: Sleek Unified Apple Segmented Strip */}
-              <div className="rounded-xl bg-white/60 dark:bg-zinc-800/40 border border-black/[0.05] dark:border-white/[0.06] p-1.5 shadow-2xs">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-                  {COMPACT_QUICK_ACTIONS.map((action, idx) => {
-                    const isSelected = selectedIndex === idx;
-                    const ActionIcon = action.icon;
-                    const workspaceBadgeColors = {
-                      compose: 'text-blue-600 dark:text-blue-400 bg-blue-500/10',
-                      sheets: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
-                      deck: 'text-violet-600 dark:text-violet-400 bg-violet-500/10',
-                      room: 'text-rose-600 dark:text-rose-400 bg-rose-500/10'
-                    };
-                    const badgeClass = workspaceBadgeColors[action.workspace] || 'text-violet-600 dark:text-violet-400 bg-violet-500/10';
-
-                    return (
-                      <button
-                        key={action.id}
-                        type="button"
-                        data-selected={isSelected}
-                        onClick={() => handleActivateItem({ type: 'action', data: action })}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all duration-150 cursor-pointer ${
-                          isSelected
-                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs ring-1 ring-black/[0.06] dark:ring-white/[0.08]'
-                            : 'hover:bg-white/70 dark:hover:bg-zinc-800/70 text-slate-700 dark:text-zinc-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${badgeClass}`}>
-                            <ActionIcon size={11} strokeWidth={1.8} />
-                          </div>
-                          <span className="text-[11.5px] font-medium tracking-tight truncate">
-                            {t('quickActions.' + (action.id === 'action-new-doc' ? 'newDoc' : action.id === 'action-new-sheet' ? 'newSheet' : action.id === 'action-new-deck' ? 'newDeck' : 'startRoom')) || action.title}
-                          </span>
-                        </div>
-                        <kbd className="text-[9px] font-mono text-slate-400 dark:text-zinc-500 px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.05] ml-1 shrink-0">
-                          {action.shortcut}
-                        </kbd>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ── Executive Hero Card: Workspace Brand Guidelines & Ambient Memory ── */}
-              <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs">
-                {/* Header with Title, Rule Counter and Upload / Paste Triggers */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
-                  <div className="flex items-center gap-2">
-                    <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-200 font-mono">
-                      Workspace Memory & Guidelines
-                    </span>
-                    <span className="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 font-semibold">
-                      {brandRules.length} Active Rules
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Hidden file input for .MD upload */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".md,.markdown,.txt"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 px-2.5 py-1 rounded-md hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors cursor-pointer border border-black/[0.04] dark:border-white/[0.05]"
-                      title="Upload a .md file to semantically extract guidelines on device"
-                    >
-                      <FileUp size={11} strokeWidth={2.0} />
-                      <span>Upload .MD</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsMdModalOpen(true)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-                    >
-                      <Plus size={11} strokeWidth={2.5} />
-                      <span>Add / Paste MD</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Divided Inset Grid: Brand Guidelines on Left, Learned Habits on Right */}
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-black/[0.05] dark:divide-white/[0.06]">
-                  {/* Left Column: Brand & Style Rules */}
-                  <div className="p-3.5 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
-                      <span>Brand & Design System Tokens</span>
-                      <span>On-Device Storage</span>
+              {/* ── 3-Pillar Executive Memory Grid ── */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                
+                {/* ── Pillar 1: Brand & Design System Tokens ── */}
+                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <Palette size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        Brand Rules
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 font-semibold">
+                        {brandRules.length}
+                      </span>
                     </div>
-                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto thin-scrollbar pr-0.5">
-                      {brandRules.map((rule) => (
-                        <div
-                          key={rule.id}
-                          className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".md,.markdown,.txt"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1 rounded hover:bg-black/[0.04] text-slate-500 hover:text-violet-600 transition-colors cursor-pointer"
+                        title="Upload .MD file"
+                      >
+                        <FileUp size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsMdModalOpen(true)}
+                        className="p-1 rounded hover:bg-black/[0.04] text-violet-600 hover:text-violet-700 transition-colors cursor-pointer"
+                        title="Add or Paste MD"
+                      >
+                        <Plus size={13} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3 space-y-1.5 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                    {brandRules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="flex items-start justify-between p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
+                      >
+                        <div className="min-w-0 flex-1 pr-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
                             {rule.category && (
-                              <span className={`text-[8.5px] font-bold uppercase font-mono px-1 py-0.2 rounded border ${getCategoryBadge(rule.category)}`}>
+                              <span className={`text-[8px] font-bold uppercase font-mono px-1 py-0.2 rounded border ${getCategoryBadge(rule.category)}`}>
                                 {rule.category}
                               </span>
                             )}
-                            <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 truncate">
-                              {rule.label}:
-                            </span>
-                            <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
-                              {rule.value}
+                            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">
+                              {rule.label}
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveBrandRule(rule.id)}
-                            className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0 ml-1 cursor-pointer"
-                            title="Delete rule"
-                          >
-                            <Trash2 size={11} />
-                          </button>
+                          <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-tight">
+                            {rule.value}
+                          </div>
                         </div>
-                      ))}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBrandRule(rule.id)}
+                          className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0 cursor-pointer"
+                          title="Delete rule"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Pillar 2: Ambient Learned Habits ── */}
+                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        Ambient Habits
+                      </span>
                     </div>
+                    <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live
+                    </span>
                   </div>
 
-                  {/* Right Column: Learned User Habits */}
-                  <div className="p-3.5 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
-                      <span>Ambient Learned Habits</span>
-                      <span>Live Intelligence</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {LEARNED_HABITS.map((habit) => {
-                        const HabitIcon = habit.icon;
-                        return (
-                          <div
-                            key={habit.id}
-                            className="flex items-start gap-2.5 py-2 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
-                          >
-                            <div className="w-5 h-5 rounded flex items-center justify-center bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
-                              <HabitIcon size={11} />
+                  <div className="p-3 space-y-2 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                    {LEARNED_HABITS.map((habit) => {
+                      const HabitIcon = habit.icon;
+                      return (
+                        <div
+                          key={habit.id}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
+                        >
+                          <div className="w-6 h-6 rounded flex items-center justify-center bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+                            <HabitIcon size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11.5px] font-bold text-slate-800 dark:text-zinc-200 truncate">
+                              {habit.title}
                             </div>
-                            <div className="min-w-0">
-                              <div className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 truncate">
-                                {habit.title}
-                              </div>
-                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 leading-tight mt-0.5">
-                                {habit.desc}
-                              </div>
+                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 leading-snug mt-0.5">
+                              {habit.desc}
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Pillar 3: Active Cognitive Lens & Prompt Engine ── */}
+                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <UserCheck size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        Cognitive Lens
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditPersona(activePersona)}
+                      className="flex items-center gap-1 text-[10.5px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors cursor-pointer"
+                    >
+                      <Edit3 size={11} />
+                      <span>Edit Prompt</span>
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 space-y-3 max-h-[310px] overflow-y-auto thin-scrollbar flex-1 flex flex-col justify-between">
+                    <div className="space-y-2.5">
+                      {/* Active Persona Header Box */}
+                      <div className="flex items-center gap-2.5 p-2 rounded-lg bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/40">
+                        <div className="w-7 h-7 rounded-md flex items-center justify-center bg-violet-600 text-white font-bold text-xs font-mono shrink-0 shadow-2xs">
+                          {activePersona.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                            {activePersona.name}
+                          </div>
+                          <div className="text-[10px] text-violet-700 dark:text-violet-300 font-medium truncate">
+                            {activePersona.badge}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Live Persona Prompt Rules Snippet */}
+                      <div className="p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] space-y-1">
+                        <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                          Active System Directive
+                        </div>
+                        <p className="text-[11px] text-slate-700 dark:text-zinc-300 italic leading-relaxed line-clamp-4">
+                          &ldquo;{activePersona.instructions}&rdquo;
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Switcher Chips */}
+                    <div className="space-y-1.5 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
+                      <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                        Quick Switch Lens
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {personas.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setActivePersona(p)}
+                            className={`px-2 py-1 rounded text-[10.5px] font-semibold text-left truncate transition-all cursor-pointer ${
+                              activePersona.id === p.id
+                                ? 'bg-violet-600 text-white shadow-2xs'
+                                : 'bg-black/[0.03] dark:bg-white/[0.04] text-slate-700 dark:text-zinc-300 hover:bg-black/[0.06]'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
+
               </div>
 
-              {/* Real Items: Continue Where You Left Off (Only rendered when items exist) */}
+              {/* Real Items: Continue Where You Left Off (Only rendered when actual files exist) */}
               {searchResults.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
@@ -1051,9 +1099,8 @@ export default function GlobalWorkspaceSearchModal({
                     <span>Recent Workspace Files & Context</span>
                   </div>
                   <div className="space-y-1">
-                    {searchResults.slice(0, 6).map((res, itemIdx) => {
-                      const globalIdx = COMPACT_QUICK_ACTIONS.length + itemIdx;
-                      const isSelected = selectedIndex === globalIdx;
+                    {searchResults.slice(0, 5).map((res, itemIdx) => {
+                      const isSelected = selectedIndex === itemIdx;
                       const entity = res.entity;
 
                       return (
@@ -1061,7 +1108,7 @@ export default function GlobalWorkspaceSearchModal({
                           key={entity.id}
                           data-selected={isSelected}
                           onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                          onMouseEnter={() => setSelectedIndex(globalIdx)}
+                          onMouseEnter={() => setSelectedIndex(itemIdx)}
                           className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
                             isSelected
                               ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
@@ -1262,6 +1309,110 @@ export default function GlobalWorkspaceSearchModal({
           </div>
         </div>
       </div>
+
+      {/* ── Edit Cognitive Lens Prompt Modal ── */}
+      {isEditPersonaModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100010] bg-black/45 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-100"
+          onClick={() => setIsEditPersonaModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150 font-sans text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-violet-600 text-white flex items-center justify-center font-bold text-xs">
+                  {editingPersonaName ? editingPersonaName.charAt(0) : 'P'}
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                  Customize Persona System Prompt
+                </h4>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsEditPersonaModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+              Define the tone, behavioral guidelines, what to say, and what to avoid. Saved 100% on your device and applied whenever querying Memory.
+            </p>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-1">
+                    Persona Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPersonaName}
+                    onChange={(e) => setEditingPersonaName(e.target.value)}
+                    placeholder="e.g. Peter Thiel, Warren Buffett"
+                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-1">
+                    Badge / Specialty
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPersonaBadge}
+                    onChange={(e) => setEditingPersonaBadge(e.target.value)}
+                    placeholder="e.g. Contrarian & Zero-to-One"
+                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-1">
+                  System Directive & Behavioral Prompt
+                </label>
+                <textarea
+                  rows={6}
+                  value={editingPersonaInstructions}
+                  onChange={(e) => setEditingPersonaInstructions(e.target.value)}
+                  placeholder="What the persona should focus on, its tone of voice, what it should never do..."
+                  className="w-full text-xs font-mono p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500 resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={handleResetActivePersona}
+                className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={11} />
+                <span>Reset to Default</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditPersonaModalOpen(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCustomPersona}
+                  className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-all cursor-pointer"
+                >
+                  Save Lens to Device
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Semantic Markdown Input Modal with On-Device Persistence ── */}
       {isMdModalOpen && (
