@@ -28022,6 +28022,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           if (target && (
             target.id === 'ai-chat-input' ||
             target.tagName === 'TEXTAREA' ||
+            target.tagName === 'INPUT' ||
             target.closest('.inline-ai-prompt-box')
           )) {
             return;
@@ -53492,7 +53493,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 );
                                 if (tableIntersections.length > 0) {
                                    const table = tableIntersections[tableIntersections.length - 1];
-                                   const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.purple;
+                                   const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.blue;
                                    const isHeader = rowIndex + 1 === table.startRow;
                                    computedFormat.fill = cellFormat.fill || cellFormat.highlight || (isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg));
                                    computedFormat.color = cellFormat.color || (isHeader ? preset.headerColor : '#333');
@@ -53538,7 +53539,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ...customBorders,
                                       borderRightWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'))),
                                       borderBottomWidth: computedFormat.borderColor ? '1px' : (!showGridLines ? '0px' : (tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'))),
-                                      borderColor: computedFormat.borderColor ? computedFormat.borderColor : (tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.purple.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0'))),
+                                      borderColor: computedFormat.borderColor ? computedFormat.borderColor : (tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : (gridLineContrast === 'high' ? (isDarkMode ? '#52525b' : '#cbd5e1') : gridLineContrast === 'subtle' ? (isDarkMode ? '#27272a' : '#f1f5f9') : (isDarkMode ? '#3f3f46' : '#e2e8f0'))),
                                       zIndex: shadowStyle.zIndex !== undefined ? shadowStyle.zIndex : ((tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : (computedFormat.rowSpan || computedFormat.colSpan ? 20 : undefined))
                                     }}
                                     onContextMenu={(e) => {
@@ -54063,7 +54064,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex });
                                         }}
                                       >
-                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.purple).border }}>
+                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}>
                                           <path d="M12 21l-12-18h24z"/>
                                         </svg>
                                       </div>
@@ -54074,7 +54075,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         height="8" 
                                         viewBox="0 0 8 8" 
                                         className="absolute bottom-0 right-0 cursor-se-resize z-20 select-none"
-                                        style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.purple).border }}
+                                        style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}
                                         onMouseDown={(e) => {
                                           e.stopPropagation();
                                           e.preventDefault();
@@ -73023,6 +73024,46 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
       />
 
+      {/* ── Deck Slash Menu Overlay in Sheets/Deck view ── */}
+      {productMode === 'deck' && deckSlashMenu.open && typeof document !== 'undefined' && createPortal(
+        <SlashMenuPopover
+          options={DECK_SLASH_OPTIONS
+            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+            .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))}
+          selectedIndex={deckSlashMenu.activeIndex}
+          onSelectOption={(opt) => executeDeckSlashCommand(opt.key)}
+          onClose={() => setDeckSlashMenu(prev => ({ ...prev, open: false }))}
+          style={{ 
+            left: `${deckSlashMenu.left}px`, 
+            top: deckSlashMenu.top,
+            bottom: deckSlashMenu.bottom
+          }}
+          className="fixed"
+        />,
+        document.fullscreenElement ?? document.body
+      )}
+
+      {/* ── Sheet Slash Menu Overlay in Sheets/Deck view ── */}
+      {productMode === 'sheets' && sheetSlashMenu.open && typeof document !== 'undefined' && createPortal(
+        <SlashMenuPopover
+          ref={sheetSlashMenuContainerRef}
+          options={getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle)}
+          selectedIndex={sheetSlashMenu.activeIndex}
+          onSelectOption={(opt) => {
+            executeSheetSlashCommand(opt.key);
+            setSheetSlashMenu(prev => ({ ...prev, open: false }));
+          }}
+          onClose={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
+          style={{
+            left: `${sheetSlashMenu.left}px`,
+            top: sheetSlashMenu.top,
+            bottom: sheetSlashMenu.bottom,
+          }}
+          className="fixed"
+        />,
+        document.fullscreenElement ?? document.body
+      )}
+
       </div>
     );
   }
@@ -82645,8 +82686,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
-        {/* Subtle dimming backdrop overlay: active when prompt is expanded or slash menu is open */}
-        {(isAnySlashMenuOpen || shouldShowPromptBackdrop) && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {/* Subtle dimming backdrop overlay: only active when floating AI prompt is explicitly expanded */}
+        {shouldShowPromptBackdrop && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div
             aria-hidden
             onClick={() => {
@@ -85246,7 +85287,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
       />
 
-      {slashMenu.open && (
+      {slashMenu.open && typeof document !== 'undefined' && createPortal(
         <SlashMenuPopover
           ref={slashMenuContainerRef}
           options={SLASH_OPTIONS
@@ -85254,13 +85295,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
             .filter(opt => opt.label.toLowerCase().includes(slashMenu.filterText.toLowerCase()))}
           selectedIndex={slashMenu.activeIndex}
           onSelectOption={(opt) => executeSlashCommand(opt.key)}
+          onClose={() => setSlashMenu(prev => ({ ...prev, open: false }))}
           style={{ 
             left: `${slashMenu.left}px`, 
             top: slashMenu.top,
             bottom: slashMenu.bottom
           }}
           className="fixed"
-        />
+        />,
+        document.fullscreenElement ?? document.body
       )}
 
       {deckSlashMenu.open && (
@@ -85280,10 +85323,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* ── Sheet Slash Menu ────────────────────────────────────── */}
-      {productMode === 'sheets' && sheetSlashMenu.open && (
+      {productMode === 'sheets' && sheetSlashMenu.open && typeof document !== 'undefined' && createPortal(
         <SlashMenuPopover
           ref={sheetSlashMenuContainerRef}
-          options={SHEET_SLASH_OPTIONS}
+          options={getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle)}
           selectedIndex={sheetSlashMenu.activeIndex}
           onSelectOption={(opt) => {
             executeSheetSlashCommand(opt.key);
@@ -85296,7 +85339,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             bottom: sheetSlashMenu.bottom,
           }}
           className="fixed"
-        />
+        />,
+        document.fullscreenElement ?? document.body
       )}
 
       {/* ── Cell Format Modal ────────────────────────────────────── */}

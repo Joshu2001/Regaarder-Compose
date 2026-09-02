@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Bold, Italic, Underline, Strikethrough, Heading1, Heading2, Heading3,
   List, ListOrdered, CheckSquare, Quote, Code, Table, Sparkles,
@@ -527,7 +528,7 @@ export default function RoomLiveDocStage({
 
   // Handle Key Down inside editor (Slash menu trigger, Enter, Escape, Shortcuts)
   const handleEditorKeyDown = (e) => {
-    // Slash Menu Interception
+    // Slash Menu Interception — strictly consume all relevant keystrokes while open
     if (slashMenuState.isOpen) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -548,15 +549,32 @@ export default function RoomLiveDocStage({
       if (e.key === 'Enter') {
         e.preventDefault();
         const cmd = filteredCommands[slashMenuState.selectedIndex];
-        if (cmd) {
-          cmd.action();
-        }
+        if (cmd) cmd.action();
         setSlashMenuState({ isOpen: false, query: '', top: 0, left: 0, selectedIndex: 0 });
         return;
       }
       if (e.key === 'Escape') {
         e.preventDefault();
         setSlashMenuState({ isOpen: false, query: '', top: 0, left: 0, selectedIndex: 0 });
+        return;
+      }
+      // Backspace trims query, dismisses menu when query empties
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        setSlashMenuState(prev => {
+          const next = prev.query.slice(0, -1);
+          return { ...prev, query: next };
+        });
+        return;
+      }
+      // Any printable single character updates the live filter query
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setSlashMenuState(prev => ({
+          ...prev,
+          query: prev.query + e.key,
+          selectedIndex: 0,
+        }));
         return;
       }
     }
@@ -567,13 +585,21 @@ export default function RoomLiveDocStage({
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
-          const rect = range.getBoundingClientRect();
-          const containerRect = containerRef.current?.getBoundingClientRect() || { top: 0, left: 0 };
+          const caretRect = range.getBoundingClientRect();
+
+          // Use the editor's own bounding rect as a reliable fallback when the
+          // caret DOMRect has zero height (happens immediately after char insertion).
+          // Coordinates are viewport-relative because the menu uses position:fixed,
+          // which escapes every overflow-hidden ancestor in the tree.
+          const anchorRect = caretRect.height > 0
+            ? caretRect
+            : (editorRef.current?.getBoundingClientRect() || caretRect);
+
           setSlashMenuState({
             isOpen: true,
             query: '',
-            top: rect.bottom - containerRect.top + 8,
-            left: Math.max(16, rect.left - containerRect.left),
+            top: anchorRect.bottom + 8,
+            left: Math.max(16, anchorRect.left),
             selectedIndex: 0,
           });
         }
@@ -1119,7 +1145,7 @@ export default function RoomLiveDocStage({
             {/* Embedded Dynamic Style Definition */}
             <style>{`
               [data-enterprise-page="true"] h1 {
-                color: ${headingColor} !important;
+                color: ${headingColor};
                 font-size: 26px;
                 font-weight: 800;
                 margin-top: 1.4em;
@@ -1127,7 +1153,7 @@ export default function RoomLiveDocStage({
                 letter-spacing: -0.02em;
               }
               [data-enterprise-page="true"] h2 {
-                color: ${headingColor} !important;
+                color: ${headingColor};
                 font-size: 19px;
                 font-weight: 700;
                 margin-top: 1.3em;
@@ -1135,7 +1161,7 @@ export default function RoomLiveDocStage({
                 letter-spacing: -0.01em;
               }
               [data-enterprise-page="true"] h3 {
-                color: ${headingColor} !important;
+                color: ${headingColor};
                 font-size: 15px;
                 font-weight: 600;
                 margin-top: 1.1em;
@@ -1219,47 +1245,52 @@ export default function RoomLiveDocStage({
             </div>
           </div>
 
-          {/* Contextual Slash Menu Overlay */}
-          {slashMenuState.isOpen && (
-            <div
-              className="absolute z-50 w-64 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 font-sans animate-in fade-in zoom-in-95 duration-150 text-left"
-              style={{ top: `${slashMenuState.top}px`, left: `${slashMenuState.left}px` }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
-                Insert Commands
-              </div>
-              <div className="max-h-60 overflow-y-auto thin-scrollbar flex flex-col gap-0.5">
-                {filteredCommands.map((cmd, idx) => (
-                  <button
-                    key={cmd.id}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      cmd.action();
-                      setSlashMenuState({ isOpen: false, query: '', top: 0, left: 0, selectedIndex: 0 });
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors ${
-                      slashMenuState.selectedIndex === idx
-                        ? 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300 font-semibold'
-                        : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
-                      <cmd.icon size={13} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold truncate">{cmd.title}</div>
-                      <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate">{cmd.sub}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
         </div>
       </div>
+
+      {/* ─── CONTEXTUAL SLASH MENU OVERLAY ─── */}
+      {/* Portaled into document.fullscreenElement ?? document.body so the browser
+          compositor always paints it — regardless of native fullscreen state or any
+          overflow-hidden ancestor. Pattern per POSTMORTEM_CitationPopover_Fullscreen.md. */}
+      {slashMenuState.isOpen && createPortal(
+        <div
+          className="fixed z-[9999] w-64 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 font-sans animate-in fade-in zoom-in-95 duration-150 text-left"
+          style={{ top: `${slashMenuState.top}px`, left: `${slashMenuState.left}px` }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
+            Insert Commands
+          </div>
+          <div className="max-h-60 overflow-y-auto thin-scrollbar flex flex-col gap-0.5">
+            {filteredCommands.map((cmd, idx) => (
+              <button
+                key={cmd.id}
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  cmd.action();
+                  setSlashMenuState({ isOpen: false, query: '', top: 0, left: 0, selectedIndex: 0 });
+                }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors ${
+                  slashMenuState.selectedIndex === idx
+                    ? 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300 font-semibold'
+                    : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
+                  <cmd.icon size={13} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold truncate">{cmd.title}</div>
+                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate">{cmd.sub}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.fullscreenElement ?? document.body
+      )}
+
 
       {/* ─── LIVE ASK AI BAR (Bottom Docked / Floating) ─── */}
       {isAiBarOpen && (

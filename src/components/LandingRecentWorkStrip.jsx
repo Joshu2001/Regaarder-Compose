@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Clock, ArrowUpRight, X } from "lucide-react";
 import {
   ComposeIcon,
@@ -146,6 +146,8 @@ export function isMeaningfulWork(data) {
 export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, onRecentCountChange }) {
   const [recentItems, setRecentItems] = useState([]);
   const [showAllModal, setShowAllModal] = useState(false);
+  const onRecentCountChangeRef = useRef(onRecentCountChange);
+  onRecentCountChangeRef.current = onRecentCountChange;
 
   const loadRecentDocs = useCallback(() => {
     try {
@@ -216,12 +218,12 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
       }));
 
       setRecentItems(formatted);
-      onRecentCountChange?.(formatted.length);
+      onRecentCountChangeRef.current?.(formatted.length);
     } catch {
       setRecentItems([]);
-      onRecentCountChange?.(0);
+      onRecentCountChangeRef.current?.(0);
     }
-  }, [onRecentCountChange]);
+  }, []);
 
   useEffect(() => {
     loadRecentDocs();
