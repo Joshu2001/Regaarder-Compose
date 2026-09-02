@@ -45399,7 +45399,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   if (productMode === 'dm') {
     return (
-      <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div
             onClick={toastCallback ? () => { toastCallback(); setToastMessage(''); } : undefined}
@@ -45426,6 +45426,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               else if (ref.type === 'deck') createDeckExperience();
               else createComposeExperience();
             }}
+            onToggleFullscreen={toggleDocumentImmersiveMode}
           />
         </main>
         {sharedReplayPanel}

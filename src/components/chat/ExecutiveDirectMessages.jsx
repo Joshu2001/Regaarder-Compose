@@ -14,7 +14,8 @@ export default function ExecutiveDirectMessages({
   onOpenRoom,
   onOpenMemory,
   onLogDecisionToMemory,
-  onNavigateWorkspace
+  onNavigateWorkspace,
+  onToggleFullscreen
 }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams'
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,12 +138,37 @@ export default function ExecutiveDirectMessages({
     }
   };
 
+  const lastHeaderTapRef = useRef(0);
+  const handleHeaderTap = (e) => {
+    if (e.target.closest('button, input, textarea, a, select')) return;
+    const now = Date.now();
+    if (now - lastHeaderTapRef.current < 350) {
+      if (onToggleFullscreen) onToggleFullscreen();
+      lastHeaderTapRef.current = 0;
+    } else {
+      lastHeaderTapRef.current = now;
+    }
+  };
+
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#f4f5f8] dark:bg-[#0c0d11] font-sans">
+    <div 
+      className="flex h-full w-full overflow-hidden bg-[#f4f5f8] dark:bg-[#0c0d11] font-sans select-none"
+      onDoubleClick={(e) => {
+        if (e.target.closest('button, input, textarea, a, select, [contenteditable="true"]')) return;
+        if (onToggleFullscreen) onToggleFullscreen();
+      }}
+    >
       {/* ── LEFT COLUMN: Contacts & Groups (WhatsApp Architecture, ~340px) ── */}
       <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#14161d]">
         {/* Top Search & Controls Bar */}
-        <div className="p-3.5 space-y-3 border-b border-black/[0.05] dark:border-white/[0.06]">
+        <div 
+          className="p-3.5 space-y-3 border-b border-black/[0.05] dark:border-white/[0.06] cursor-default"
+          onDoubleClick={(e) => {
+            if (e.target.closest('button, input, textarea')) return;
+            if (onToggleFullscreen) onToggleFullscreen();
+          }}
+          onPointerDown={handleHeaderTap}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">
@@ -260,12 +286,19 @@ export default function ExecutiveDirectMessages({
       {/* ── RIGHT COLUMN: Active Chat Stream (Apple Aesthetics) ── */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#f9f9fb] dark:bg-[#0f1117]">
         {/* Top Executive Chat Header */}
-        <header className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold text-xs flex items-center justify-center border border-violet-200 dark:border-violet-800/60">
+        <header 
+          className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0 cursor-default select-none"
+          onDoubleClick={(e) => {
+            if (e.target.closest('button, input, textarea, a, select')) return;
+            if (onToggleFullscreen) onToggleFullscreen();
+          }}
+          onPointerDown={handleHeaderTap}
+        >
+          <div className="flex items-center gap-3 min-w-0 pointer-events-none">
+            <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold text-xs flex items-center justify-center border border-violet-200 dark:border-violet-800/60 pointer-events-auto">
               {currentChat.avatar}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 pointer-events-auto">
               <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
                 {currentChat.name}
               </h3>
