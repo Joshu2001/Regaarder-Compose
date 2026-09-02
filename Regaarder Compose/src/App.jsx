@@ -1299,6 +1299,7 @@ const SlashMenuPopover = React.forwardRef(({
   options = [],
   selectedIndex = 0,
   onSelectOption,
+  onClose,
   title = "SLASH COMMANDS",
   badgeText = null,
   className = '',
@@ -1367,9 +1368,8 @@ const SlashMenuPopover = React.forwardRef(({
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      if (searchQuery) {
-        setSearchQuery('');
-      }
+      if (onClose) onClose();
+      else if (searchQuery) setSearchQuery('');
     }
   };
 
@@ -1384,15 +1384,18 @@ const SlashMenuPopover = React.forwardRef(({
   }, [activeIdx]);
 
   const displayBadgeText = badgeText !== null ? badgeText : `${filteredOptions.length} ${t('slash.commands') || 'COMMANDS'}`;
+  const isFixed = className && className.includes('fixed');
   const isBelow = position ? position === 'below' : (source === 'chat' && position !== 'above');
-  const posClasses = isBelow 
-    ? 'top-full left-0 mt-1.5 slide-in-from-top-2' 
-    : 'bottom-full left-0 mb-1.5 slide-in-from-bottom-2';
+  const posClasses = isFixed
+    ? 'slide-in-from-top-1'
+    : (isBelow 
+        ? 'top-full left-0 mt-1.5 slide-in-from-top-2' 
+        : 'bottom-full left-0 mb-1.5 slide-in-from-bottom-2');
 
   return (
     <div 
       ref={ref}
-      className={`absolute ${posClasses} w-80 max-h-[360px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[250020] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl ${className}`}
+      className={`${isFixed ? 'fixed' : 'absolute'} ${posClasses} w-80 max-h-[360px] flex flex-col bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/90 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.16)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.7)] z-[250020] overflow-hidden transition-all duration-150 animate-in fade-in backdrop-blur-xl ${className}`}
       style={style}
     >
       {/* Search Bar Header */}
@@ -85283,6 +85286,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             executeSheetSlashCommand(opt.key);
             setSheetSlashMenu(prev => ({ ...prev, open: false }));
           }}
+          onClose={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
           style={{
             left: `${sheetSlashMenu.left}px`,
             top: sheetSlashMenu.top,
