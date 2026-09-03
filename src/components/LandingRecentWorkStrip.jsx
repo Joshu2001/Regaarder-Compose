@@ -77,25 +77,41 @@ export function isMeaningfulWork(data) {
     }
   }
 
-  // 4. Sheet grid cell content verification (MUST have at least one cell with non-empty user value)
+  // 4. Sheet grid cell content verification (MUST have custom user cells beyond default template/demo data)
+  const defaultSheetWords = new Set([
+    "item", "description", "qty", "quantity", "price", "unit price", "total", "amount", 
+    "category", "status", "priority", "date", "name", "revenue", "cost", "profit",
+    "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+    "q1", "q2", "q3", "q4", "sample", "template", "untitled"
+  ]);
+
   const hasSheetCellData = (grid) => {
     if (!grid) return false;
+    let customCellCount = 0;
+    const checkVal = (cell) => {
+      if (cell === null || cell === undefined) return false;
+      const val = typeof cell === "object" ? (cell.value ?? cell.raw ?? "") : cell;
+      const str = String(val).trim().toLowerCase();
+      if (!str) return false;
+      if (!defaultSheetWords.has(str)) {
+        customCellCount++;
+      }
+      return customCellCount >= 2;
+    };
+
     if (Array.isArray(grid)) {
-      return grid.some(row =>
-        Array.isArray(row) && row.some(cell => {
-          if (cell === null || cell === undefined) return false;
-          const val = typeof cell === "object" ? (cell.value ?? cell.raw ?? "") : cell;
-          return String(val).trim() !== "";
-        })
-      );
-    }
-    if (grid.cells && typeof grid.cells === "object") {
-      return Object.values(grid.cells).some(c => {
-        const val = typeof c === "object" ? (c?.value ?? c?.raw ?? "") : c;
-        return String(val).trim() !== "";
-      });
-    }
-    if (Array.isArray(grid.data)) {
+      for (const row of grid) {
+        if (Array.isArray(row)) {
+          for (const cell of row) {
+            if (checkVal(cell)) return true;
+          }
+        }
+      }
+    } else if (grid.cells && typeof grid.cells === "object") {
+      for (const c of Object.values(grid.cells)) {
+        if (checkVal(c)) return true;
+      }
+    } else if (Array.isArray(grid.data)) {
       return hasSheetCellData(grid.data);
     }
     return false;
