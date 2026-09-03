@@ -215,6 +215,9 @@ export default function ExecutiveDirectMessages({
   const voiceMicStreamRef = useRef(null);
   const voiceAnalyserRef = useRef(null);
   const voiceAnimFrameRef = useRef(null);
+  const voiceMediaRecorderRef = useRef(null);
+  const voiceAudioChunksRef = useRef([]);
+  const activeAudioPlayerRef = useRef(null);
 
   // ── In-Chat Direct WhatsApp Video/Audio Call State ──
   const [activeCallSession, setActiveCallSession] = useState(null);
@@ -336,18 +339,41 @@ export default function ExecutiveDirectMessages({
     return () => clearInterval(timer);
   }, [activeCallSession]);
 
-  // Real Microphone Stream & Speech Recognition for Voice Note Recording
+  // Real Microphone Stream & MediaRecorder for Voice Note Recording
   useEffect(() => {
     if (isRecordingVoice && !isVoicePaused) {
+      voiceAudioChunksRef.current = [];
       voiceTimerRef.current = setInterval(() => {
         setVoiceElapsedSeconds(prev => prev + 1);
       }, 1000);
 
-      // Start Web Audio Analyser for genuine live waveform animation
+      // Start Web Audio Analyser & MediaRecorder for real voice capture
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
           .then(stream => {
             voiceMicStreamRef.current = stream;
+
+            // 1. MediaRecorder for real audio binary recording
+            try {
+              const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : MediaRecorder.isTypeSupported('audio/webm')
+                ? 'audio/webm'
+                : 'audio/ogg';
+              const recorder = new MediaRecorder(stream, { mimeType });
+              voiceAudioChunksRef.current = [];
+              recorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                  voiceAudioChunksRef.current.push(e.data);
+                }
+              };
+              recorder.start(100);
+              voiceMediaRecorderRef.current = recorder;
+            } catch (recErr) {
+              console.warn('MediaRecorder init error:', recErr);
+            }
+
+            // 2. AudioContext Analyser for real live waves
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (AudioCtx) {
               const ctx = new AudioCtx();
@@ -396,6 +422,9 @@ export default function ExecutiveDirectMessages({
               setVoiceRecognitionTranscript(current.trim());
             }
           };
+          recognizer.onerror = (err) => {
+            console.warn('Speech recognition notice:', err.error);
+          };
           recognizer.start();
           voiceSpeechRecRef.current = recognizer;
         } catch (e) {
@@ -405,6 +434,9 @@ export default function ExecutiveDirectMessages({
     } else {
       if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
       if (voiceAnimFrameRef.current) cancelAnimationFrame(voiceAnimFrameRef.current);
+      if (voiceMediaRecorderRef.current && voiceMediaRecorderRef.current.state !== 'inactive') {
+        try { voiceMediaRecorderRef.current.stop(); } catch (e) {}
+      }
       if (voiceMicStreamRef.current) {
         voiceMicStreamRef.current.getTracks().forEach(t => t.stop());
         voiceMicStreamRef.current = null;
@@ -422,6 +454,9 @@ export default function ExecutiveDirectMessages({
     return () => {
       if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
       if (voiceAnimFrameRef.current) cancelAnimationFrame(voiceAnimFrameRef.current);
+      if (voiceMediaRecorderRef.current && voiceMediaRecorderRef.current.state !== 'inactive') {
+        try { voiceMediaRecorderRef.current.stop(); } catch (e) {}
+      }
       if (voiceMicStreamRef.current) {
         voiceMicStreamRef.current.getTracks().forEach(t => t.stop());
         voiceMicStreamRef.current = null;
@@ -751,6 +786,27 @@ export default function ExecutiveDirectMessages({
 
   const handleSendVoiceRecording = async () => {
     const formattedDuration = `${Math.floor(voiceElapsedSeconds / 60)}:${(voiceElapsedSeconds % 60).toString().padStart(2, '0')}`;
+    
+    // 1. Create real playable Audio Blob URL from recorded chunks
+    let audioUrl = null;
+    let base64Audio = null;
+    try {
+      if (voiceAudioChunksRef.current && voiceAudioChunksRef.current.length > 0) {
+        const mimeType = voiceMediaRecorderRef.current?.mimeType || 'audio/webm';
+        const audioBlob = new Blob(voiceAudioChunksRef.current, { type: mimeType });
+        audioUrl = URL.createObjectURL(audioBlob);
+
+        // Convert to base64 for multimodal AI consumption if needed
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          base64Audio = reader.result;
+        };
+      }
+    } catch (blobErr) {
+      console.warn('Audio blob generation error:', blobErr);
+    }
+
     const capturedTranscript = voiceRecognitionTranscript.trim() || 'Voice audio note dispatched across zero-knowledge channel.';
     
     const newAudioMsg = {
@@ -758,6 +814,7 @@ export default function ExecutiveDirectMessages({
       author: 'You',
       role: 'you',
       isAudio: true,
+      audioUrl: audioUrl,
       audioDuration: formattedDuration === '0:00' ? '0:08' : formattedDuration,
       transcript: capturedTranscript,
       createdAt: Date.now(),
@@ -773,6 +830,11 @@ export default function ExecutiveDirectMessages({
     setIsVoicePaused(false);
     setVoiceElapsedSeconds(0);
     setVoiceRecognitionTranscript('');
+
+    // Stop MediaRecorder cleanly
+    if (voiceMediaRecorderRef.current && voiceMediaRecorderRef.current.state !== 'inactive') {
+      try { voiceMediaRecorderRef.current.stop(); } catch (e) {}
+    }
 
     // If active conversation is an AI Persona or Assistant, process audio transcript with real AI model!
     if (currentChat?.isAi) {
@@ -1693,7 +1755,36 @@ export default function ExecutiveDirectMessages({
                           <div className="flex items-center gap-2.5">
                             <button
                               type="button"
-                              onClick={() => setPlayingVoiceId(prev => prev === msg.id ? null : msg.id)}
+                              onClick={() => {
+                                if (playingVoiceId === msg.id) {
+                                  if (activeAudioPlayerRef.current) {
+                                    activeAudioPlayerRef.current.pause();
+                                  }
+                                  setPlayingVoiceId(null);
+                                } else {
+                                  if (activeAudioPlayerRef.current) {
+                                    activeAudioPlayerRef.current.pause();
+                                  }
+                                  if (msg.audioUrl) {
+                                    const audio = new Audio(msg.audioUrl);
+                                    audio.playbackRate = audioPlaybackSpeeds[msg.id] || 1;
+                                    audio.onended = () => setPlayingVoiceId(null);
+                                    audio.play().catch(e => console.warn('Audio play error:', e));
+                                    activeAudioPlayerRef.current = audio;
+                                    setPlayingVoiceId(msg.id);
+                                  } else {
+                                    // Synthesize speech if no raw blob
+                                    if ('speechSynthesis' in window && msg.transcript) {
+                                      window.speechSynthesis.cancel();
+                                      const utter = new SpeechSynthesisUtterance(msg.transcript);
+                                      utter.rate = (audioPlaybackSpeeds[msg.id] || 1);
+                                      utter.onend = () => setPlayingVoiceId(null);
+                                      window.speechSynthesis.speak(utter);
+                                      setPlayingVoiceId(msg.id);
+                                    }
+                                  }
+                                }
+                              }}
                               className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
                             >
                               {playingVoiceId === msg.id ? <Pause size={13} /> : <Play size={13} className="ml-0.5" />}
@@ -1721,11 +1812,12 @@ export default function ExecutiveDirectMessages({
                             <button
                               type="button"
                               onClick={() => {
-                                setAudioPlaybackSpeeds(prev => {
-                                  const current = prev[msg.id] || 1;
-                                  const next = current === 1 ? 1.5 : current === 1.5 ? 2 : 1;
-                                  return { ...prev, [msg.id]: next };
-                                });
+                                const current = audioPlaybackSpeeds[msg.id] || 1;
+                                const next = current === 1 ? 1.5 : current === 1.5 ? 2 : 1;
+                                setAudioPlaybackSpeeds(prev => ({ ...prev, [msg.id]: next }));
+                                if (activeAudioPlayerRef.current && playingVoiceId === msg.id) {
+                                  activeAudioPlayerRef.current.playbackRate = next;
+                                }
                               }}
                               className="px-2 py-0.5 rounded-lg text-[10px] font-bold font-mono bg-black/[0.05] dark:bg-white/[0.08] hover:bg-violet-100 hover:text-violet-700 dark:hover:bg-violet-950 dark:hover:text-violet-300 text-slate-600 dark:text-zinc-300 transition-colors cursor-pointer shrink-0 border border-black/[0.04] dark:border-white/[0.06]"
                               title="Toggle Audio Speed (1x, 1.5x, 2x)"
@@ -1734,11 +1826,18 @@ export default function ExecutiveDirectMessages({
                             </button>
                           </div>
 
-                          {/* Real Speech Transcription Subtitle */}
+                          {/* Real Speech Transcription & Prompt Transparency */}
                           {msg.transcript && (
-                            <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
-                              "{msg.transcript}"
-                            </p>
+                            <div className="space-y-1">
+                              <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
+                                "{msg.transcript}"
+                              </p>
+                              {isOutgoing && currentChat?.isAi && (
+                                <span className="text-[9.5px] font-mono font-medium text-emerald-600 dark:text-emerald-400 block px-1">
+                                  ✓ Fed directly to {currentChat.name} ({activeModelDisplay.name})
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       ) : (
