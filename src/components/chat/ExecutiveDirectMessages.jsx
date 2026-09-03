@@ -10,7 +10,8 @@ import {
   Megaphone, UserCheck, Users, Radio, Eye, Phone, PhoneOff, PhoneCall,
   MicOff, VideoOff, Maximize2, Minimize2, Image, Link, FileCode,
   UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
-  SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet
+  SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet, UploadCloud,
+  AtSign, Globe, Smartphone, User
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -37,12 +38,13 @@ const EMOJI_CATEGORIES = [
   }
 ];
 
-// Available AI Models for dynamic in-chat switching
-const AI_MODEL_OPTIONS = [
-  { id: 'chatgpt-4o', name: 'ChatGPT (GPT-4o)', provider: 'OpenAI Cloud', icon: '⚡', desc: 'Advanced multimodal reasoning & synthesis' },
-  { id: 'gemma-local', name: 'Gemma 2B (Local Engine)', provider: 'On-Device Zero-Knowledge', icon: '🧠', desc: 'Fast, cryptographically private local AI' },
-  { id: 'llama-local', name: 'Llama 3.2 (Local Engine)', provider: 'Local Edge Mesh', icon: '🦙', desc: 'Offline code, logic, and structure analysis' },
-  { id: 'orb-strategist', name: 'Regaarder Orb Orchestrator', provider: 'Workspace Core', icon: '✨', desc: 'Autonomous cross-document synthesis' }
+// Clean Technical AI Model Registry (No playful emojis, executive tier)
+const DETECTED_WORKSPACE_MODELS = [
+  { id: 'chatgpt-4o', name: 'ChatGPT (GPT-4o)', provider: 'OpenAI Cloud API', badge: 'Cloud', desc: 'Advanced multimodal reasoning & synthesis' },
+  { id: 'gemini-2.0', name: 'Gemini 2.0 Flash', provider: 'Google AI Core', badge: 'Fast Cloud', desc: 'Sub-second real-time streaming & vision' },
+  { id: 'gemma-local', name: 'Gemma 2B (Local)', provider: 'On-Device Zero-Knowledge', badge: 'Local Mesh', desc: 'Private offline engine, zero network telemetry' },
+  { id: 'llama-local', name: 'Llama 3.2 (Local)', provider: 'Local Edge Mesh', badge: 'Local Edge', desc: 'Local code review, schema validation & logic' },
+  { id: 'orb-orchestrator', name: 'Regaarder Orb Core', provider: 'Workspace Autonomous Layer', badge: 'System', desc: 'Autonomous cross-document memory & execution' }
 ];
 
 // Docs File Type Semantic Badge
@@ -123,12 +125,7 @@ export default function ExecutiveDirectMessages({
   const [messageInput, setMessageInput] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
-  const [forwardingMessage, setForwardingMessage] = useState(null);
-  const [forwardSelectedRecipients, setForwardSelectedRecipients] = useState({});
-  const [forwardComment, setForwardComment] = useState('');
-  const [forwardSearchQuery, setForwardSearchQuery] = useState('');
   const [activeMoreMenuMsgId, setActiveMoreMenuMsgId] = useState(null);
-  const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -137,7 +134,6 @@ export default function ExecutiveDirectMessages({
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [emojiCategory, setEmojiCategory] = useState('smileys');
   const [emojiSearch, setEmojiSearch] = useState('');
-  const [copiedKey, setCopiedKey] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
@@ -170,13 +166,29 @@ export default function ExecutiveDirectMessages({
   const [selectedAttachmentIndex, setSelectedAttachmentIndex] = useState(0);
   const [attachmentCaption, setAttachmentCaption] = useState('');
 
-  // ── Create Group / Persona Modal State ──
+  // ── Create Modal State (New Contact, Team Group, or AI Persona) ──
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
-  const [newChatName, setNewChatName] = useState('');
-  const [newChatType, setNewChatType] = useState('group');
-  const [newChatPersonaModel, setNewChatPersonaModel] = useState('gemma-local');
+  const [modalMode, setModalMode] = useState('contact'); // 'contact' | 'group' | 'persona'
+  
+  // New Contact Form Fields (WhatsApp Standard)
+  const [contactFirstName, setContactFirstName] = useState('');
+  const [contactLastName, setContactLastName] = useState('');
+  const [contactUsername, setContactUsername] = useState('');
+  const [contactCountryCode, setContactCountryCode] = useState('+1');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactSyncPhone, setContactSyncPhone] = useState(true);
 
-  // Clean starting state with default Assistant channel
+  // New Group Form Fields
+  const [groupName, setGroupName] = useState('');
+  const [groupSelectedMembers, setGroupSelectedMembers] = useState({});
+
+  // New AI Persona Form Fields
+  const [personaName, setPersonaName] = useState('');
+  const [personaInstructions, setPersonaInstructions] = useState('');
+  const [personaEngine, setPersonaEngine] = useState('gemma-local');
+  const mdFileInputRef = useRef(null);
+
+  // Dynamic Conversations List
   const [conversations, setConversations] = useState([
     {
       id: 'chat-assistant',
@@ -197,17 +209,21 @@ export default function ExecutiveDirectMessages({
     }
   ]);
 
-  // Clean initial messages
-  const [messages, setMessages] = useState([
-    {
-      id: 'm-welcome',
-      author: 'Assistant',
-      role: 'assistant',
-      text: 'Welcome to Regaarder Relay. All communications are end-to-end encrypted with zero-knowledge keys.\n\nYou can chat by typing, attach documents, switch AI models dynamically, or start real-time conversational voice sessions using the Voice Chat with AI button.',
-      createdAt: Date.now() - 1000 * 60 * 2,
-      status: 'read'
-    }
-  ]);
+  // Isolated Message Threads Store per Chat ID
+  const [threadMessages, setThreadMessages] = useState({
+    'chat-assistant': [
+      {
+        id: 'm-welcome',
+        author: 'Assistant',
+        role: 'assistant',
+        text: 'Welcome to Regaarder Relay. All communications are end-to-end encrypted with zero-knowledge keys.\n\nYou can chat by typing, attach documents, switch AI models dynamically, or start real-time conversational voice sessions using the Voice Chat with AI button.',
+        createdAt: Date.now() - 1000 * 60 * 2,
+        status: 'read'
+      }
+    ]
+  });
+
+  const messages = threadMessages[activeContactId] || [];
 
   const messagesEndRef = useRef(null);
   const chatScrollContainerRef = useRef(null);
@@ -221,7 +237,7 @@ export default function ExecutiveDirectMessages({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isTyping, activeContactId]);
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -304,7 +320,7 @@ export default function ExecutiveDirectMessages({
   }, [conversations, activeTab, searchQuery]);
 
   const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
-  const activeModelObj = AI_MODEL_OPTIONS.find(m => m.id === selectedAiModel) || AI_MODEL_OPTIONS[0];
+  const activeModelObj = DETECTED_WORKSPACE_MODELS.find(m => m.id === selectedAiModel) || DETECTED_WORKSPACE_MODELS[0];
 
   const handleSendMessage = (e) => {
     e?.preventDefault();
@@ -313,7 +329,10 @@ export default function ExecutiveDirectMessages({
     const trimmed = messageInput.trim();
 
     if (editingMessageId) {
-      setMessages(prev => prev.map(m => m.id === editingMessageId ? { ...m, text: trimmed, isEdited: true } : m));
+      setThreadMessages(prev => ({
+        ...prev,
+        [activeContactId]: (prev[activeContactId] || []).map(m => m.id === editingMessageId ? { ...m, text: trimmed, isEdited: true } : m)
+      }));
       setEditingMessageId(null);
       setMessageInput('');
       return;
@@ -331,7 +350,10 @@ export default function ExecutiveDirectMessages({
       status: 'sent'
     };
 
-    setMessages(prev => [...prev, newMsg]);
+    setThreadMessages(prev => ({
+      ...prev,
+      [activeContactId]: [...(prev[activeContactId] || []), newMsg]
+    }));
     setMessageInput('');
     setReplyingToMessage(null);
     setIsEmojiPickerOpen(false);
@@ -340,15 +362,21 @@ export default function ExecutiveDirectMessages({
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
+        const aiAuthor = currentChat?.name || 'Assistant';
         const aiReply = {
           id: `m-ai-${Date.now()}`,
-          author: 'Assistant',
+          author: aiAuthor,
           role: 'assistant',
-          text: `(${activeModelObj.name}): Processed your prompt "${trimmed}". Zero-knowledge verification complete across the active workspace.`,
+          text: currentChat?.instructions 
+            ? `(${currentChat.name} Persona): "${trimmed}" analyzed in accordance with custom instructions.`
+            : `(${activeModelObj.name}): Processed your prompt "${trimmed}". Zero-knowledge verification complete.`,
           createdAt: Date.now(),
           status: 'read'
         };
-        setMessages(prev => [...prev, aiReply]);
+        setThreadMessages(prev => ({
+          ...prev,
+          [activeContactId]: [...(prev[activeContactId] || []), aiReply]
+        }));
       }, 700);
     }
   };
@@ -357,48 +385,7 @@ export default function ExecutiveDirectMessages({
     setMessageInput(prev => `${prev}${emoji}`);
   };
 
-  // Document Selection Handlers
-  const handleFileAttach = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const parsedDocs = files.map((f, i) => {
-      const fileName = f.name;
-      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
-      const sizeStr = f.size ? `${Math.round(f.size / 1024)} KB` : '420 KB';
-      return {
-        id: `attach-${Date.now()}-${i}`,
-        title: fileName,
-        type: fileType,
-        size: sizeStr
-      };
-    });
-
-    setPendingAttachments(prev => [...prev, ...parsedDocs]);
-    setSelectedAttachmentIndex(0);
-    setAttachmentCaption('');
-    setIsAttachmentMenuOpen(false);
-  };
-
-  const handleAddMoreFiles = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const parsedDocs = files.map((f, i) => {
-      const fileName = f.name;
-      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
-      const sizeStr = f.size ? `${Math.round(f.size / 1024)} KB` : '420 KB';
-      return {
-        id: `attach-${Date.now()}-${i}`,
-        title: fileName,
-        type: fileType,
-        size: sizeStr
-      };
-    });
-
-    setPendingAttachments(prev => [...prev, ...parsedDocs]);
-  };
-
+  // Attach files to isolated thread
   const handleSendPendingAttachments = () => {
     if (pendingAttachments.length === 0) return;
 
@@ -413,27 +400,13 @@ export default function ExecutiveDirectMessages({
       workspaceRefs: pendingAttachments.length > 1 ? pendingAttachments : null
     };
 
-    setMessages(prev => [...prev, newMsg]);
+    setThreadMessages(prev => ({
+      ...prev,
+      [activeContactId]: [...(prev[activeContactId] || []), newMsg]
+    }));
     setPendingAttachments([]);
     setAttachmentCaption('');
     setSelectedAttachmentIndex(0);
-  };
-
-  const handleStartVoiceRecording = () => {
-    setIsRecordingVoice(true);
-    setIsVoicePaused(false);
-    setVoiceElapsedSeconds(0);
-    setIsEmojiPickerOpen(false);
-  };
-
-  const handleCancelVoiceRecording = () => {
-    setIsRecordingVoice(false);
-    setIsVoicePaused(false);
-    setVoiceElapsedSeconds(0);
-  };
-
-  const handleTogglePauseVoiceRecording = () => {
-    setIsVoicePaused(prev => !prev);
   };
 
   const handleSendVoiceRecording = () => {
@@ -448,7 +421,10 @@ export default function ExecutiveDirectMessages({
       createdAt: Date.now(),
       status: 'sent'
     };
-    setMessages(prev => [...prev, newAudioMsg]);
+    setThreadMessages(prev => ({
+      ...prev,
+      [activeContactId]: [...(prev[activeContactId] || []), newAudioMsg]
+    }));
     setIsRecordingVoice(false);
     setIsVoicePaused(false);
     setVoiceElapsedSeconds(0);
@@ -477,35 +453,135 @@ export default function ExecutiveDirectMessages({
     setCallDuration(0);
   };
 
-  const handleCreateNewChat = (e) => {
+  // ── Unified Contact / Group / Persona Creation Handler ──
+  const handleCreateSubmit = (e) => {
     e?.preventDefault();
-    if (!newChatName.trim()) return;
 
-    const isGroupChat = newChatType === 'group' || newChatType === 'ai-persona';
-    const isAiChannel = newChatType === 'ai-persona';
+    if (modalMode === 'contact') {
+      const fullName = `${contactFirstName.trim()} ${contactLastName.trim()}`.trim() || contactUsername.trim();
+      if (!fullName) return;
 
-    const newChannel = {
-      id: `chat-${Date.now()}`,
-      name: newChatName.trim(),
-      avatar: newChatName.trim().slice(0, 2).toUpperCase(),
-      isGroup: isGroupChat,
-      isAi: isAiChannel,
-      modelId: isAiChannel ? newChatPersonaModel : null,
-      modelName: isAiChannel ? AI_MODEL_OPTIONS.find(m => m.id === newChatPersonaModel)?.name : null,
-      lastMsg: isAiChannel ? `${newChatName} persona initialized.` : 'Channel created. Start messaging...',
-      time: 'Just now',
-      unread: 0,
-      category: isAiChannel ? 'ai' : isGroupChat ? 'teams' : 'all',
-      online: true,
-      fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • E2EE • VERIFIED`,
-      topics: [newChatName.trim()],
-      actions: []
+      const newId = `contact-${Date.now()}`;
+      const initials = (contactFirstName[0] || fullName[0] || 'U').toUpperCase() + (contactLastName[0] || '').toUpperCase();
+
+      const newContact = {
+        id: newId,
+        name: fullName,
+        username: contactUsername.trim() ? `@${contactUsername.replace('@', '')}` : '',
+        phone: contactPhone.trim() ? `${contactCountryCode} ${contactPhone.trim()}` : '',
+        avatar: initials.slice(0, 2),
+        isGroup: false,
+        isAi: false,
+        lastMsg: 'New contact created. Start messaging...',
+        time: 'Just now',
+        unread: 0,
+        category: 'all',
+        online: true,
+        fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • CONTACT • VERIFIED`,
+        topics: [fullName],
+        actions: []
+      };
+
+      setConversations(prev => [newContact, ...prev]);
+      setThreadMessages(prev => ({
+        ...prev,
+        [newId]: [] // Fresh empty canvas
+      }));
+      setActiveContactId(newId);
+      setIsNewChatModalOpen(false);
+      setContactFirstName('');
+      setContactLastName('');
+      setContactUsername('');
+      setContactPhone('');
+    } else if (modalMode === 'group') {
+      if (!groupName.trim()) return;
+
+      const newId = `group-${Date.now()}`;
+      const newGroup = {
+        id: newId,
+        name: groupName.trim(),
+        avatar: groupName.trim().slice(0, 2).toUpperCase(),
+        isGroup: true,
+        isAi: false,
+        lastMsg: 'Group created. Ready for collaboration.',
+        time: 'Just now',
+        unread: 0,
+        category: 'teams',
+        online: true,
+        fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • GROUP • ENCRYPTED`,
+        topics: [groupName.trim()],
+        actions: []
+      };
+
+      setConversations(prev => [newGroup, ...prev]);
+      setThreadMessages(prev => ({
+        ...prev,
+        [newId]: [] // Fresh empty canvas
+      }));
+      setActiveContactId(newId);
+      setIsNewChatModalOpen(false);
+      setGroupName('');
+      setGroupSelectedMembers({});
+    } else if (modalMode === 'persona') {
+      if (!personaName.trim()) return;
+
+      const newId = `persona-${Date.now()}`;
+      const engineObj = DETECTED_WORKSPACE_MODELS.find(m => m.id === personaEngine) || DETECTED_WORKSPACE_MODELS[0];
+
+      const newPersona = {
+        id: newId,
+        name: personaName.trim(),
+        avatar: personaName.trim().slice(0, 2).toUpperCase(),
+        isGroup: false,
+        isAi: true,
+        modelId: personaEngine,
+        modelName: engineObj.name,
+        instructions: personaInstructions.trim(),
+        lastMsg: `${personaName.trim()} persona deployed on ${engineObj.name}.`,
+        time: 'Just now',
+        unread: 0,
+        category: 'ai',
+        online: true,
+        fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • PERSONA • ZERO_KNOWLEDGE`,
+        topics: [personaName.trim()],
+        actions: []
+      };
+
+      setConversations(prev => [newPersona, ...prev]);
+      setThreadMessages(prev => ({
+        ...prev,
+        [newId]: [] // Fresh empty canvas
+      }));
+      setActiveContactId(newId);
+      setIsNewChatModalOpen(false);
+      setPersonaName('');
+      setPersonaInstructions('');
+    }
+  };
+
+  // Import Persona Markdown file
+  const handleImportPersonaMd = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      setPersonaInstructions(text);
+      if (!personaName.trim()) {
+        const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        setPersonaName(cleanTitle);
+      }
     };
+    reader.readAsText(file);
+  };
 
-    setConversations(prev => [newChannel, ...prev]);
-    setActiveContactId(newChannel.id);
-    setIsNewChatModalOpen(false);
-    setNewChatName('');
+  // Generate Persona with AI Assistant
+  const handleAiCraftPersona = () => {
+    const name = personaName.trim() || 'Executive Code Reviewer';
+    setPersonaName(name);
+    setPersonaInstructions(
+      `Role: ${name}\n\nBehavior Directives:\n1. Maintain executive tier conciseness and zero placeholders.\n2. Prioritize code safety, clean architecture, and Apple design aesthetics.\n3. Verify all requirements with cryptographic precision.`
+    );
   };
 
   // Unified click-outside dismissal
@@ -587,7 +663,6 @@ export default function ExecutiveDirectMessages({
 
         {/* Global Right Actions */}
         <div className="flex items-center gap-2">
-          {/* AI Voice Session Trigger Button */}
           <button
             type="button"
             onClick={() => setIsAiVoiceSessionActive(true)}
@@ -642,9 +717,12 @@ export default function ExecutiveDirectMessages({
               </span>
               <button
                 type="button"
-                onClick={() => setIsNewChatModalOpen(true)}
+                onClick={() => {
+                  setModalMode('contact');
+                  setIsNewChatModalOpen(true);
+                }}
                 className="w-7 h-7 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
-                title="Create Group or Add AI Persona"
+                title="Add Contact, Create Group or Deploy Persona"
               >
                 <Plus size={16} strokeWidth={2.2} />
               </button>
@@ -706,7 +784,7 @@ export default function ExecutiveDirectMessages({
                   <MoreHorizontal size={14} />
                 </button>
 
-                {/* High Z-Index More Tabs Popover (Floating Over All Chats) */}
+                {/* High Z-Index More Tabs Popover */}
                 {isMoreTabsMenuOpen && (
                   <div 
                     data-popover-root="true"
@@ -790,31 +868,31 @@ export default function ExecutiveDirectMessages({
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">No Conversations Here</h4>
                   <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                    Start a team channel or interact with a local AI persona.
+                    Add a contact, start a team group, or deploy an AI persona.
                   </p>
                 </div>
                 <div className="space-y-2 pt-2">
                   <button
                     type="button"
                     onClick={() => {
-                      setNewChatType('group');
+                      setModalMode('contact');
                       setIsNewChatModalOpen(true);
                     }}
                     className="w-full py-2 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
                   >
-                    <Plus size={13} />
-                    <span>Create Team Group</span>
+                    <UserPlus size={13} />
+                    <span>Add New Contact</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setNewChatType('ai-persona');
+                      setModalMode('persona');
                       setIsNewChatModalOpen(true);
                     }}
                     className="w-full py-2 px-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] text-slate-800 dark:text-zinc-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
                     <Bot size={13} className="text-violet-600" />
-                    <span>Deploy Local AI Persona</span>
+                    <span>Deploy AI Persona</span>
                   </button>
                 </div>
               </div>
@@ -894,14 +972,13 @@ export default function ExecutiveDirectMessages({
                 {currentChat.avatar}
               </div>
               
-              {/* Correctly Aligned Title & Interactive Model Switcher */}
               <div className="min-w-0 flex flex-col justify-center">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
                     {currentChat.name}
                   </h3>
 
-                  {/* Fully Interactive In-Chat AI Model Selector */}
+                  {/* Clean Technical AI Model Selector */}
                   {currentChat.isAi && (
                     <div className="relative inline-flex items-center">
                       <button
@@ -923,13 +1000,13 @@ export default function ExecutiveDirectMessages({
                       {isAiModelSelectorOpen && (
                         <div 
                           data-popover-root="true"
-                          className="absolute left-0 top-8 w-64 bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-[100] animate-in fade-in duration-100"
+                          className="absolute left-0 top-8 w-72 bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-[100] animate-in fade-in duration-100"
                           onPointerDown={(e) => e.stopPropagation()}
                         >
                           <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-black/[0.04]">
-                            Select AI Engine
+                            Detected Workspace Engines
                           </div>
-                          {AI_MODEL_OPTIONS.map((m) => (
+                          {DETECTED_WORKSPACE_MODELS.map((m) => (
                             <button
                               key={m.id}
                               type="button"
@@ -937,16 +1014,20 @@ export default function ExecutiveDirectMessages({
                                 setSelectedAiModel(m.id);
                                 setIsAiModelSelectorOpen(false);
                               }}
-                              className={`w-full flex items-start gap-2 p-2 rounded-xl text-left transition-colors cursor-pointer ${
+                              className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-colors cursor-pointer ${
                                 selectedAiModel === m.id
                                   ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
                                   : 'hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200'
                               }`}
                             >
-                              <span className="text-sm mt-0.5">{m.icon}</span>
                               <div className="min-w-0 flex-1">
-                                <span className="block text-xs font-bold leading-tight">{m.name}</span>
-                                <span className="block text-[10px] text-slate-400 leading-tight mt-0.5">{m.desc}</span>
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-xs font-bold leading-tight">{m.name}</span>
+                                  <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-700 text-slate-500">
+                                    {m.badge}
+                                  </span>
+                                </div>
+                                <span className="block text-[10.5px] text-slate-400 leading-tight mt-0.5">{m.desc}</span>
                               </div>
                               {selectedAiModel === m.id && <Check size={13} className="text-violet-600 shrink-0 mt-1" />}
                             </button>
@@ -1052,7 +1133,7 @@ export default function ExecutiveDirectMessages({
             </div>
           )}
 
-          {/* Message Stream */}
+          {/* Isolated Message Stream */}
           <div 
             ref={chatScrollContainerRef}
             onScroll={handleScroll}
@@ -1066,139 +1147,123 @@ export default function ExecutiveDirectMessages({
               </span>
             </div>
 
-            <div className="w-fit mx-auto px-3 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-              Today
-            </div>
+            {messages.length === 0 ? (
+              <div className="py-16 text-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mx-auto">
+                  <Lock size={16} />
+                </div>
+                <h4 className="text-xs font-semibold text-slate-700 dark:text-zinc-200">End-to-End Encrypted Session</h4>
+                <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                  Send a message, audio note, or document to begin communicating with {currentChat.name}.
+                </p>
+              </div>
+            ) : (
+              messages.map(msg => {
+                const isOutgoing = msg.role === 'you';
+                const isAssistant = msg.role === 'assistant';
 
-            {messages.map(msg => {
-              const isOutgoing = msg.role === 'you';
-              const isAssistant = msg.role === 'assistant';
-
-              return (
-                <div 
-                  key={msg.id}
-                  className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative`}
-                >
-                  {!isOutgoing && (
-                    <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1">
-                      {msg.author}
-                    </span>
-                  )}
-
-                  {/* Scaled-Up Touch-Friendly Floating Action Toolbar */}
-                  <div className={`absolute -top-4.5 ${isOutgoing ? 'right-2' : 'left-2'} z-20 opacity-0 group-hover/msg:opacity-100 transition-all duration-150 flex items-center gap-1 p-1 rounded-xl bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12] shadow-md select-none`}>
-                    <button
-                      type="button"
-                      onClick={() => setReplyingToMessage(msg)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                      title="Reply"
-                    >
-                      <Reply size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(msg.text || '');
-                      }}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                      title="Copy"
-                    >
-                      <Copy size={13} />
-                    </button>
-                  </div>
-
-                  <div
-                    className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative transition-shadow ${
-                      isOutgoing
-                        ? 'bg-[#F0F2F6] dark:bg-[#1E232F] text-slate-900 dark:text-zinc-100 border border-[#E1E4EA] dark:border-[#2D3546] rounded-tr-xs shadow-2xs'
-                        : isAssistant
-                        ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
-                        : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
-                    }`}
+                return (
+                  <div 
+                    key={msg.id}
+                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative`}
                   >
-                    {/* Attached Single Document Card */}
-                    {msg.workspaceRef && (
-                      <div className="mb-2 rounded-2xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.06] p-3 space-y-2">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} size="lg" />
-                          <div className="min-w-0 flex-1">
-                            <span className="block text-xs font-bold truncate text-slate-900 dark:text-zinc-100">
-                              {msg.workspaceRef.title}
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              {msg.workspaceRef.type?.toUpperCase()} • {msg.workspaceRef.size || '420 KB'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                    {!isOutgoing && (
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1">
+                        {msg.author}
+                      </span>
                     )}
 
-                    {/* Attached Multiple Documents Bento Grid */}
-                    {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
-                      <div className="mb-2.5 grid grid-cols-2 gap-2">
-                        {msg.workspaceRefs.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
-                            className="p-2.5 rounded-xl bg-[#E8EAEE]/90 border border-black/[0.05] hover:border-violet-500 cursor-pointer flex items-center gap-2.5 shadow-2xs"
-                          >
-                            <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                    <div
+                      className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative transition-shadow ${
+                        isOutgoing
+                          ? 'bg-[#F0F2F6] dark:bg-[#1E232F] text-slate-900 dark:text-zinc-100 border border-[#E1E4EA] dark:border-[#2D3546] rounded-tr-xs shadow-2xs'
+                          : isAssistant
+                          ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
+                          : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
+                      }`}
+                    >
+                      {msg.workspaceRef && (
+                        <div className="mb-2 rounded-2xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.06] p-3 space-y-2">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} size="lg" />
                             <div className="min-w-0 flex-1">
-                              <span className="block text-[11.5px] font-bold truncate text-slate-900">
-                                {doc.title}
+                              <span className="block text-xs font-bold truncate text-slate-900 dark:text-zinc-100">
+                                {msg.workspaceRef.title}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono">
+                                {msg.workspaceRef.type?.toUpperCase()} • {msg.workspaceRef.size || '420 KB'}
                               </span>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {msg.isAudio ? (
-                      <div className="space-y-1.5 min-w-[240px]">
-                        <div className="flex items-center gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => setPlayingVoiceId(prev => prev === msg.id ? null : msg.id)}
-                            className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
-                          >
-                            {playingVoiceId === msg.id ? <Pause size={13} /> : <Play size={13} className="ml-0.5" />}
-                          </button>
-                          
-                          <div className="flex-1 flex items-center gap-0.5 h-6">
-                            {[12, 22, 16, 28, 14, 20, 24, 18, 12, 26, 16, 20, 14, 24, 18, 12].map((h, i) => (
-                              <div
-                                key={i}
-                                className={`w-1 rounded-full transition-all ${
-                                  playingVoiceId === msg.id && (i % 3 === 0)
-                                    ? 'bg-violet-600 dark:bg-violet-400 animate-pulse'
-                                    : 'bg-slate-300 dark:bg-zinc-600'
-                                }`}
-                                style={{ height: `${h}px` }}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
-                            {msg.audioDuration || '0:08'}
-                          </span>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
-                    )}
+                      )}
 
-                    <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
-                      <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {isOutgoing && <CheckCheck size={13} className="text-violet-600 dark:text-violet-400 inline" />}
+                      {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
+                        <div className="mb-2.5 grid grid-cols-2 gap-2">
+                          {msg.workspaceRefs.map((doc, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
+                              className="p-2.5 rounded-xl bg-[#E8EAEE]/90 border border-black/[0.05] hover:border-violet-500 cursor-pointer flex items-center gap-2.5 shadow-2xs"
+                            >
+                              <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-[11.5px] font-bold truncate text-slate-900">
+                                  {doc.title}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {msg.isAudio ? (
+                        <div className="space-y-1.5 min-w-[240px]">
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setPlayingVoiceId(prev => prev === msg.id ? null : msg.id)}
+                              className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              {playingVoiceId === msg.id ? <Pause size={13} /> : <Play size={13} className="ml-0.5" />}
+                            </button>
+                            
+                            <div className="flex-1 flex items-center gap-0.5 h-6">
+                              {[12, 22, 16, 28, 14, 20, 24, 18, 12, 26, 16, 20, 14, 24, 18, 12].map((h, i) => (
+                                <div
+                                  key={i}
+                                  className={`w-1 rounded-full transition-all ${
+                                    playingVoiceId === msg.id && (i % 3 === 0)
+                                      ? 'bg-violet-600 dark:bg-violet-400 animate-pulse'
+                                      : 'bg-slate-300 dark:bg-zinc-600'
+                                  }`}
+                                  style={{ height: `${h}px` }}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
+                              {msg.audioDuration || '0:08'}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                      )}
+
+                      <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
+                        <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {isOutgoing && <CheckCheck size={13} className="text-violet-600 dark:text-violet-400 inline" />}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
 
             {isTyping && (
               <div className="flex items-center gap-2 p-3 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 text-violet-700 dark:text-violet-300 text-xs w-fit">
                 <RegaarderAiIcon size={13} strokeWidth={2.0} className="animate-spin" />
-                <span className="font-semibold">Assistant is synthesizing...</span>
+                <span className="font-semibold">{currentChat.name} is synthesizing...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -1290,7 +1355,7 @@ export default function ExecutiveDirectMessages({
 
                 <button
                   type="button"
-                  onClick={handleTogglePauseVoiceRecording}
+                  onClick={() => setIsVoicePaused(prev => !prev)}
                   className="p-2 rounded-xl text-slate-600 dark:text-zinc-300 hover:bg-black/[0.05] transition-colors cursor-pointer"
                   title={isVoicePaused ? "Resume recording" : "Pause recording"}
                 >
@@ -1315,71 +1380,28 @@ export default function ExecutiveDirectMessages({
                   type="file" 
                   multiple
                   ref={fileInputRef} 
-                  onChange={handleFileAttach} 
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
+                    const parsed = files.map((f, i) => ({
+                      id: `attach-${Date.now()}-${i}`,
+                      title: f.name,
+                      type: f.name.endsWith('.xlsx') ? 'sheets' : f.name.endsWith('.pptx') ? 'deck' : 'compose',
+                      size: `${Math.round(f.size / 1024)} KB`
+                    }));
+                    setPendingAttachments(parsed);
+                  }} 
                   className="hidden" 
                 />
 
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsAttachmentMenuOpen(prev => !prev)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
-                    title="Attach Documents, Media, or Workspace Files"
-                  >
-                    <Paperclip size={16} />
-                  </button>
-
-                  {isAttachmentMenuOpen && (
-                    <div 
-                      data-popover-root="true"
-                      className="absolute bottom-11 left-0 w-56 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs"
-                      onPointerDown={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 text-left font-medium cursor-pointer"
-                      >
-                        <FileText size={14} className="text-violet-600" />
-                        <span>Upload Documents</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAttachmentMenuOpen(false);
-                          const demoSheet = {
-                            id: `sheet-${Date.now()}`,
-                            title: 'Q2 Unit Economics Model.xlsx',
-                            type: 'sheets',
-                            size: '340 KB'
-                          };
-                          setPendingAttachments([demoSheet]);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 text-left font-medium cursor-pointer"
-                      >
-                        <Table size={14} className="text-emerald-600" />
-                        <span>Import Sheet / Table</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAttachmentMenuOpen(false);
-                          const demoDeck = {
-                            id: `deck-${Date.now()}`,
-                            title: 'Investor Pitch & Token System.pptx',
-                            type: 'deck',
-                            size: '1.2 MB'
-                          };
-                          setPendingAttachments([demoDeck]);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 text-left font-medium cursor-pointer"
-                      >
-                        <Presentation size={14} className="text-amber-600" />
-                        <span>Import Deck / Diagram</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  title="Attach Documents or Files"
+                >
+                  <Paperclip size={16} />
+                </button>
 
                 <button
                   type="button"
@@ -1396,13 +1418,17 @@ export default function ExecutiveDirectMessages({
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder={`Message ${activeModelObj.name} or teammates...`}
+                  placeholder={`Message ${currentChat.name}...`}
                   className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
                 />
 
                 <button
                   type="button"
-                  onClick={handleStartVoiceRecording}
+                  onClick={() => {
+                    setIsRecordingVoice(true);
+                    setIsVoicePaused(false);
+                    setVoiceElapsedSeconds(0);
+                  }}
                   className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
                   title="Record audio note"
                 >
@@ -1423,10 +1449,10 @@ export default function ExecutiveDirectMessages({
         </main>
       </div>
 
-      {/* ── REFINED EXECUTIVE AI VOICE CONVERSATIONAL OVERLAY (IMAGE 2 STANDARD) ── */}
+      {/* ── REFINED EXECUTIVE AI VOICE OVERLAY (HIGH CONTRAST & PERFECT ALIGNMENT) ── */}
       {isAiVoiceSessionActive && (
-        <div className="fixed inset-0 z-50 bg-[#090A10]/92 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none">
-          {/* Top Bar with Regaarder Signature Circle Brand Icon */}
+        <div className="fixed inset-0 z-50 bg-[#0c0d14]/95 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none text-white">
+          {/* Top Bar with Brand Icon */}
           <div className="w-full max-w-xl flex items-center justify-between">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs text-white">
               <RegaarderBrandIcon size={14} className="text-violet-400 shrink-0" />
@@ -1436,14 +1462,14 @@ export default function ExecutiveDirectMessages({
             <button
               type="button"
               onClick={() => setIsAiVoiceSessionActive(false)}
-              className="p-2 rounded-full text-white/60 hover:text-white bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+              className="p-2 rounded-full text-white/70 hover:text-white bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
               title="Close Voice Session"
             >
               <X size={18} />
             </button>
           </div>
 
-          {/* Central Pulsing Liquid Soundwave Orb + Polished Status Pill Below Orb */}
+          {/* Central Pulsing Liquid Soundwave Orb with Status Badge Below */}
           <div className="flex flex-col items-center justify-center space-y-5 my-auto">
             <div className="relative flex items-center justify-center">
               <div className={`w-56 h-56 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted || isAiVoicePaused ? 'opacity-30' : 'animate-pulse'}`} />
@@ -1461,15 +1487,15 @@ export default function ExecutiveDirectMessages({
               </div>
             </div>
 
-            {/* Polished Frosted Status Pill Placed Beneath the Central Orb */}
-            <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white/90 shadow-xs">
+            {/* Polished Status Pill Positioned Directly Beneath the Central Orb */}
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white shadow-xs">
               <span className={`w-2 h-2 rounded-full ${isAiVoiceMuted ? 'bg-rose-400' : isAiVoicePaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
               <span>
                 {isAiVoiceMuted ? 'Microphone is muted' : isAiVoicePaused ? 'Voice session paused' : 'Listening to voice...'}
               </span>
             </div>
 
-            {/* Natural Text Subtitles (Standard Sans Font, No Monospace) */}
+            {/* Clean Subtitles (Standard Sans System Font) */}
             <div className="text-center space-y-1 max-w-md px-4 pt-1">
               <h3 className="text-base font-bold text-white tracking-tight">
                 {isAiVoiceMuted ? 'Unmute to continue speaking' : isAiVoicePaused ? 'Session is paused' : 'Speak naturally to collaborate'}
@@ -1483,9 +1509,8 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Bottom Glass Controls Bar with Pause/Resume Toggle */}
+          {/* Bottom Glass Controls Bar */}
           <div className="w-full max-w-md flex items-center justify-center gap-5 p-3 rounded-3xl bg-white/10 border border-white/10 backdrop-blur-xl shadow-2xl">
-            {/* 1. Mute / Unmute Toggle */}
             <button
               type="button"
               onClick={() => setIsAiVoiceMuted(prev => !prev)}
@@ -1497,7 +1522,6 @@ export default function ExecutiveDirectMessages({
               {isAiVoiceMuted ? <MicOff size={18} /> : <Mic size={18} />}
             </button>
 
-            {/* 2. End Voice Session (Apple Rose Red) */}
             <button
               type="button"
               onClick={() => setIsAiVoiceSessionActive(false)}
@@ -1507,7 +1531,6 @@ export default function ExecutiveDirectMessages({
               <span>End Voice Session</span>
             </button>
 
-            {/* 3. Pause / Resume Voice Listening Toggle */}
             <button
               type="button"
               onClick={() => setIsAiVoicePaused(prev => !prev)}
@@ -1522,7 +1545,7 @@ export default function ExecutiveDirectMessages({
         </div>
       )}
 
-      {/* ── CREATE NEW GROUP / AI PERSONA MODAL ── */}
+      {/* ── UNIFIED CREATE MODAL (NEW CONTACT, TEAM GROUP, OR AI PERSONA) ── */}
       {isNewChatModalOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
@@ -1532,7 +1555,9 @@ export default function ExecutiveDirectMessages({
         >
           <div className="w-full max-w-md bg-white dark:bg-zinc-850 rounded-3xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-5 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-black/[0.06]">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Create Channel or Persona</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                {modalMode === 'contact' ? 'Add New Contact' : modalMode === 'group' ? 'Create Team Group' : 'Deploy AI Persona'}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsNewChatModalOpen(false)}
@@ -1542,52 +1567,211 @@ export default function ExecutiveDirectMessages({
               </button>
             </div>
 
-            <form onSubmit={handleCreateNewChat} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'group', label: 'Team Group', icon: Users },
-                  { id: 'ai-persona', label: 'AI Persona', icon: Bot }
-                ].map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setNewChatType(t.id)}
-                    className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      newChatType === t.id
-                        ? 'border-violet-600 bg-violet-50/60 text-violet-700 font-bold'
-                        : 'border-black/[0.06] text-slate-600 hover:bg-black/[0.02]'
-                    }`}
-                  >
-                    <t.icon size={15} />
-                    <span className="text-[10.5px]">{t.label}</span>
-                  </button>
-                ))}
-              </div>
+            {/* 3-Mode Selector: Contact | Group | Persona */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'contact', label: 'New Contact', icon: UserPlus },
+                { id: 'group', label: 'Team Group', icon: Users },
+                { id: 'persona', label: 'AI Persona', icon: Bot }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setModalMode(t.id)}
+                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    modalMode === t.id
+                      ? 'border-violet-600 bg-violet-50/60 text-violet-700 font-bold'
+                      : 'border-black/[0.06] text-slate-600 hover:bg-black/[0.02]'
+                  }`}
+                >
+                  <t.icon size={15} />
+                  <span className="text-[10.5px]">{t.label}</span>
+                </button>
+              ))}
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-600">Channel / Persona Name</label>
-                <input
-                  type="text"
-                  value={newChatName}
-                  onChange={(e) => setNewChatName(e.target.value)}
-                  placeholder={newChatType === 'ai-persona' ? "e.g. Gemma Copy Reviewer" : "e.g. Design Systems"}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                  autoFocus
-                />
-              </div>
+            <form onSubmit={handleCreateSubmit} className="space-y-3.5 text-xs">
+              {/* ── 1. NEW CONTACT FORM (WHATSAPP STANDARD) ── */}
+              {modalMode === 'contact' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600">First Name</label>
+                      <input
+                        type="text"
+                        value={contactFirstName}
+                        onChange={(e) => setContactFirstName(e.target.value)}
+                        placeholder="John"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600">Last Name</label>
+                      <input
+                        type="text"
+                        value={contactLastName}
+                        onChange={(e) => setContactLastName(e.target.value)}
+                        placeholder="Doe"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
 
-              {newChatType === 'ai-persona' && (
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-600">Underlying Engine</label>
-                  <select
-                    value={newChatPersonaModel}
-                    onChange={(e) => setNewChatPersonaModel(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 focus:outline-none"
-                  >
-                    {AI_MODEL_OPTIONS.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                      <AtSign size={12} /> Username or Workspace ID
+                    </label>
+                    <input
+                      type="text"
+                      value={contactUsername}
+                      onChange={(e) => setContactUsername(e.target.value)}
+                      placeholder="@johndoe or john@regaarder.io"
+                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                      <Smartphone size={12} /> Phone Number
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={contactCountryCode}
+                        onChange={(e) => setContactCountryCode(e.target.value)}
+                        className="w-24 px-2 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 focus:outline-none"
+                      >
+                        <option value="+1">US +1</option>
+                        <option value="+44">UK +44</option>
+                        <option value="+886">TW +886</option>
+                        <option value="+49">DE +49</option>
+                        <option value="+33">FR +33</option>
+                        <option value="+81">JP +81</option>
+                      </select>
+                      <input
+                        type="tel"
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        placeholder="555-0199"
+                        className="flex-1 px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
+                    <div className="text-[11px]">
+                      <span className="font-semibold text-slate-700 block">Sync to Workspace Directory</span>
+                      <span className="text-[10px] text-slate-400">Available across all active collaboration boards</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={contactSyncPhone}
+                      onChange={(e) => setContactSyncPhone(e.target.checked)}
+                      className="w-4 h-4 rounded text-violet-600 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ── 2. TEAM GROUP FORM ── */}
+              {modalMode === 'group' && (
+                <div className="space-y-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600">Group Name</label>
+                    <input
+                      type="text"
+                      value={groupName}
+                      onChange={(e) => setGroupName(e.target.value)}
+                      placeholder="e.g. Design Systems & Architecture"
+                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600">Add Members / AI Personas</label>
+                    <div className="max-h-36 overflow-y-auto p-1.5 rounded-xl bg-slate-50 border border-black/[0.04] space-y-1">
+                      {conversations.map(c => (
+                        <label key={c.id} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-white cursor-pointer">
+                          <span className="text-xs text-slate-700 font-medium">{c.name}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!groupSelectedMembers[c.id]}
+                            onChange={(e) => setGroupSelectedMembers(prev => ({ ...prev, [c.id]: e.target.checked }))}
+                            className="w-3.5 h-3.5 rounded text-violet-600"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── 3. AI PERSONA FORM ── */}
+              {modalMode === 'persona' && (
+                <div className="space-y-2.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-600">Persona Name</label>
+                      <button
+                        type="button"
+                        onClick={handleAiCraftPersona}
+                        className="text-[10.5px] font-bold text-violet-600 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Wand2 size={11} />
+                        <span>Generate with AI</span>
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={personaName}
+                      onChange={(e) => setPersonaName(e.target.value)}
+                      placeholder="e.g. Executive Code Reviewer"
+                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600">Underlying Engine</label>
+                    <select
+                      value={personaEngine}
+                      onChange={(e) => setPersonaEngine(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 focus:outline-none"
+                    >
+                      {DETECTED_WORKSPACE_MODELS.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} ({m.provider})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-600">Instructions & Behavior</label>
+                      <button
+                        type="button"
+                        onClick={() => mdFileInputRef.current?.click()}
+                        className="text-[10.5px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+                      >
+                        <UploadCloud size={11} />
+                        <span>Import .md</span>
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".md,.txt,.json"
+                      ref={mdFileInputRef}
+                      onChange={handleImportPersonaMd}
+                      className="hidden"
+                    />
+                    <textarea
+                      rows={3}
+                      value={personaInstructions}
+                      onChange={(e) => setPersonaInstructions(e.target.value)}
+                      placeholder="Define persona role, tone, knowledge, and system directives..."
+                      className="w-full p-2.5 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none resize-none"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1601,10 +1785,14 @@ export default function ExecutiveDirectMessages({
                 </button>
                 <button
                   type="submit"
-                  disabled={!newChatName.trim()}
+                  disabled={
+                    (modalMode === 'contact' && !contactFirstName.trim() && !contactUsername.trim()) ||
+                    (modalMode === 'group' && !groupName.trim()) ||
+                    (modalMode === 'persona' && !personaName.trim())
+                  }
                   className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-bold transition-colors cursor-pointer shadow-xs"
                 >
-                  Create
+                  {modalMode === 'contact' ? 'Save Contact' : modalMode === 'group' ? 'Create Group' : 'Deploy Persona'}
                 </button>
               </div>
             </form>
