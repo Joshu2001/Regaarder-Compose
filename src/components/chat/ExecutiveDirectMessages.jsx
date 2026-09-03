@@ -426,40 +426,78 @@ export default function ExecutiveDirectMessages({
 
       try {
         if (targetLocal) {
-          // Direct real local Ollama / LM Studio probe
-          const endpoint = (targetLocal.endpoint || 'http://localhost:11434').replace(/\/+$/, '');
           const modelTag = targetLocal.id || targetLocal.name;
 
-          const res = await fetch(`${endpoint}/api/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: modelTag,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...historyContext
-              ],
-              stream: false
-            })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            aiResponseText = data.message?.content || data.response || '';
-          } else {
-            // Fallback to /api/generate endpoint if /api/chat is unavailable
-            const genRes = await fetch(`${endpoint}/api/generate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+          // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
+          if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
+            try {
+              const ipcRes = await window.electronAPI.generateLocalAI({
+                endpoint: targetLocal.endpoint || 'http://127.0.0.1:11434',
                 model: modelTag,
-                prompt: `${systemPrompt}\n\nUser: ${trimmed}\nAssistant:`,
-                stream: false
-              })
-            });
-            if (genRes.ok) {
-              const genData = await genRes.json();
-              aiResponseText = genData.response || '';
+                prompt: trimmed,
+                systemPrompt: systemPrompt
+              });
+              if (ipcRes && ipcRes.success && ipcRes.text) {
+                aiResponseText = ipcRes.text.trim();
+              }
+            } catch (ipcErr) {
+              console.warn('[Relay] Electron IPC generate error, falling back to fetch:', ipcErr);
+            }
+          }
+
+          // 2. Fetch loop across 127.0.0.1 and localhost candidates
+          if (!aiResponseText) {
+            const rawEndpoint = (targetLocal.endpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+            const candidateBases = [
+              rawEndpoint,
+              rawEndpoint.includes('127.0.0.1') ? rawEndpoint.replace('127.0.0.1', 'localhost') : rawEndpoint.replace('localhost', '127.0.0.1'),
+              'http://127.0.0.1:11434',
+              'http://localhost:11434'
+            ];
+
+            for (const base of candidateBases) {
+              try {
+                // Try /api/generate
+                const genRes = await fetch(`${base}/api/generate`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model: modelTag,
+                    prompt: `${systemPrompt}\n\nUser: ${trimmed}\nAssistant:`,
+                    stream: false
+                  })
+                });
+                if (genRes.ok) {
+                  const genData = await genRes.json();
+                  if (genData.response) {
+                    aiResponseText = genData.response.trim();
+                    break;
+                  }
+                }
+
+                // Try /api/chat
+                const chatRes = await fetch(`${base}/api/chat`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model: modelTag,
+                    messages: [
+                      { role: 'system', content: systemPrompt },
+                      ...historyContext
+                    ],
+                    stream: false
+                  })
+                });
+                if (chatRes.ok) {
+                  const chatData = await chatRes.json();
+                  if (chatData.message?.content) {
+                    aiResponseText = chatData.message.content.trim();
+                    break;
+                  }
+                }
+              } catch (fetchErr) {
+                // Candidate host attempt
+              }
             }
           }
         } else {
