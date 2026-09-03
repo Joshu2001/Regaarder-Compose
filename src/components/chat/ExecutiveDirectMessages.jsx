@@ -7,7 +7,8 @@ import {
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
   Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
-  Megaphone, UserCheck, Users, Radio, Eye
+  Megaphone, UserCheck, Users, Radio, Eye, Phone, PhoneOff, PhoneCall,
+  MicOff, VideoOff, Maximize2, Minimize2, Image, Link, FileCode
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -51,7 +52,7 @@ const DocsSemanticFileBadge = ({ type, title = '', size = 'md' }) => {
     label = 'PPT';
     svg = (
       <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="2.5" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
         <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
@@ -99,7 +100,7 @@ export default function ExecutiveDirectMessages({
   onToggleFullscreen,
   onOpenWorkspaceSwitcher
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'announcements' | 'topics' | 'actions'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'topics' | 'actions' | 'broadcast'
   const [searchQuery, setSearchQuery] = useState('');
   const [activeContactId, setActiveContactId] = useState(activeThreadId || 'thread-beta-launch');
   const [messageInput, setMessageInput] = useState('');
@@ -119,9 +120,14 @@ export default function ExecutiveDirectMessages({
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
+  const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // ── In-Chat Direct WhatsApp Call State ──
+  const [activeCallSession, setActiveCallSession] = useState(null); // { type: 'video' | 'audio', status: 'ringing' | 'connected', duration: 0, isMuted: false, isVideoOff: false }
+  const [callDuration, setCallDuration] = useState(0);
 
   // ── Document Attachment Stage State (WhatsApp Style Dispatch Carousel) ──
   const [pendingAttachments, setPendingAttachments] = useState([]);
@@ -190,6 +196,17 @@ export default function ExecutiveDirectMessages({
     const distanceToBottom = scrollHeight - scrollTop - clientHeight;
     setShowScrollBottom(distanceToBottom > 60);
   };
+
+  // Call timer simulation
+  useEffect(() => {
+    let timer;
+    if (activeCallSession && activeCallSession.status === 'connected') {
+      timer = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [activeCallSession]);
 
   // Clean conversations list
   const conversations = useMemo(() => [
@@ -285,7 +302,7 @@ export default function ExecutiveDirectMessages({
     return conversations.filter(c => {
       if (activeTab === 'unread' && c.unread === 0) return false;
       if (activeTab === 'teams' && !c.isGroup) return false;
-      if (activeTab === 'topics' || activeTab === 'announcements') return true;
+      if (activeTab === 'topics' || activeTab === 'broadcast') return true;
       if (activeTab === 'actions') return (c.actions && c.actions.length > 0);
       if (searchQuery.trim()) {
         return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -453,6 +470,7 @@ export default function ExecutiveDirectMessages({
     setPendingAttachments(prev => [...prev, ...parsedDocs]);
     setSelectedAttachmentIndex(0);
     setAttachmentCaption('');
+    setIsAttachmentMenuOpen(false);
   };
 
   const handleAddMoreFiles = (e) => {
@@ -484,7 +502,6 @@ export default function ExecutiveDirectMessages({
       text: attachmentCaption.trim() || '',
       createdAt: Date.now(),
       status: 'sent',
-      // If 1 item: workspaceRef. If multiple: workspaceRefs array (Bento Grid)
       workspaceRef: pendingAttachments.length === 1 ? pendingAttachments[0] : null,
       workspaceRefs: pendingAttachments.length > 1 ? pendingAttachments : null
     };
@@ -493,6 +510,27 @@ export default function ExecutiveDirectMessages({
     setPendingAttachments([]);
     setAttachmentCaption('');
     setSelectedAttachmentIndex(0);
+  };
+
+  // ── In-Chat Instant WhatsApp Call Handlers ──
+  const handleStartInChatCall = (type = 'video') => {
+    setActiveCallSession({
+      type,
+      status: 'ringing',
+      isMuted: false,
+      isVideoOff: false
+    });
+    setCallDuration(0);
+
+    // Simulate answer after 2.5 seconds
+    setTimeout(() => {
+      setActiveCallSession(prev => prev ? { ...prev, status: 'connected' } : null);
+    }, 2500);
+  };
+
+  const handleEndCall = () => {
+    setActiveCallSession(null);
+    setCallDuration(0);
   };
 
   const handleVoiceRecord = () => {
@@ -571,9 +609,10 @@ export default function ExecutiveDirectMessages({
   // Close open popovers on document tap
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (!e.target.closest('.relative')) {
+      if (!e.target.closest('.relative') && !e.target.closest('[data-popover-root="true"]')) {
         setActiveMoreMenuMsgId(null);
         setIsDetailsMenuOpen(false);
+        setIsAttachmentMenuOpen(false);
       }
     };
     document.addEventListener('pointerdown', handleOutsideClick);
@@ -693,19 +732,19 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats, announcements or files..."
+                placeholder="Search chats, topics or files..."
                 className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
               />
             </div>
 
-            {/* Quick Filter Tabs (All, Unread, Groups, Announcements, Topics, Actions) */}
+            {/* Streamlined Quick Filter Tabs (All, Unread, Groups, Topics, Broadcast, Actions) */}
             <div className="flex items-center gap-1 pt-0.5 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'unread', label: 'Unread' },
                 { id: 'teams', label: 'Groups' },
-                { id: 'announcements', label: 'Announcements' },
                 { id: 'topics', label: 'Topics' },
+                { id: 'broadcast', label: 'News' },
                 { id: 'actions', label: 'Actions' }
               ].map(tab => {
                 const isActive = activeTab === tab.id;
@@ -727,9 +766,9 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Contact Cards / Announcements / Topic Channels View */}
+          {/* Contact Cards / Broadcast / Topic Channels View */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
-            {activeTab === 'announcements' ? (
+            {activeTab === 'broadcast' ? (
               <div className="space-y-2.5 p-1">
                 <div className="flex items-center justify-between text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-1">
                   <span>Company Broadcasts</span>
@@ -1007,15 +1046,26 @@ export default function ExecutiveDirectMessages({
 
               <div className="w-[1px] h-4 bg-black/[0.08] dark:bg-white/[0.1] mx-1" />
 
-              <button
-                type="button"
-                onClick={onOpenRoom}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
-                title="Instant Video Room"
-              >
-                <Video size={13} />
-                <span>Call</span>
-              </button>
+              {/* Native WhatsApp In-Chat Audio/Video Call Triggers */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleStartInChatCall('audio')}
+                  className="p-2 rounded-xl text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  title="Direct Voice Call"
+                >
+                  <Phone size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStartInChatCall('video')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+                  title="Direct Video Call"
+                >
+                  <Video size={13} />
+                  <span>Call</span>
+                </button>
+              </div>
             </div>
           </header>
 
@@ -1072,7 +1122,7 @@ export default function ExecutiveDirectMessages({
                     setChatSearchQuery('');
                     setAiCompanionResponse(null);
                   }}
-                  className="p-1.5 text-slate-400 hover:text-slate-600"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X size={14} />
                 </button>
@@ -1233,7 +1283,7 @@ export default function ExecutiveDirectMessages({
                     </div>
                   </div>
 
-                  {/* Message Bubble */}
+                  {/* Message Bubble (File at Top, Caption at Bottom Standard) */}
                   <div
                     className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative group transition-shadow ${
                       isOutgoing
@@ -1251,7 +1301,67 @@ export default function ExecutiveDirectMessages({
                       </div>
                     )}
 
-                    {/* Audio Voice Note Player with AI Transcript */}
+                    {/* ── 1. SINGLE DOCUMENT CARD AT TOP (Standard Hierarchy) ── */}
+                    {msg.workspaceRef && (
+                      <div className="mb-2 rounded-2xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.06] dark:border-white/[0.08] p-3 space-y-2.5">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} size="lg" />
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-xs font-bold truncate text-slate-900 dark:text-zinc-100">
+                              {msg.workspaceRef.title}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                              {msg.workspaceRef.type?.toUpperCase()} • {msg.workspaceRef.size || '521 KB'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Direct Enterprise Actions: View / Open in App */}
+                        <div className="flex items-center justify-between pt-2 border-t border-black/[0.06] dark:border-white/[0.06] text-xs">
+                          <button
+                            type="button"
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
+                            className="text-violet-600 dark:text-violet-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            <Eye size={12} />
+                            <span>View</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
+                            className="text-slate-600 dark:text-zinc-300 font-medium hover:text-slate-900 cursor-pointer flex items-center gap-1"
+                          >
+                            <Download size={12} />
+                            <span>Save as...</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── 2. MULTIPLE DOCUMENTS AT TOP: BENTO GRID ── */}
+                    {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
+                      <div className="mb-2.5 grid grid-cols-2 gap-2">
+                        {msg.workspaceRefs.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
+                            className="p-2.5 rounded-xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.05] dark:border-white/[0.08] hover:border-violet-500 cursor-pointer transition-all flex items-center gap-2.5 shadow-2xs group/bento"
+                          >
+                            <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[11.5px] font-bold truncate text-slate-900 dark:text-zinc-100 group-hover/bento:text-violet-600">
+                                {doc.title}
+                              </span>
+                              <span className="text-[9.5px] text-slate-500 dark:text-zinc-400 font-mono">
+                                {doc.size || '420 KB'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* ── 3. TEXT CAPTION UNDER ATTACHED FILE ── */}
                     {msg.isAudio ? (
                       <div className="space-y-2 min-w-[240px]">
                         <div className="flex items-center gap-2.5">
@@ -1295,66 +1405,6 @@ export default function ExecutiveDirectMessages({
                       </div>
                     ) : (
                       msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>
-                    )}
-
-                    {/* ── SINGLE DOCUMENT SENT CARD (Images 2 & 4 Standard with Gray Highlight & Actions) ── */}
-                    {msg.workspaceRef && (
-                      <div className="mt-2 rounded-2xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.06] dark:border-white/[0.08] p-3 space-y-2.5">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} size="lg" />
-                          <div className="min-w-0 flex-1">
-                            <span className="block text-xs font-bold truncate text-slate-900 dark:text-zinc-100">
-                              {msg.workspaceRef.title}
-                            </span>
-                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                              {msg.workspaceRef.type?.toUpperCase()} • {msg.workspaceRef.size || '521 KB'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Direct Enterprise Actions: View / Open in App */}
-                        <div className="flex items-center justify-between pt-2 border-t border-black/[0.06] dark:border-white/[0.06] text-xs">
-                          <button
-                            type="button"
-                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
-                            className="text-violet-600 dark:text-violet-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                          >
-                            <Eye size={12} />
-                            <span>View</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
-                            className="text-slate-600 dark:text-zinc-300 font-medium hover:text-slate-900 cursor-pointer flex items-center gap-1"
-                          >
-                            <Download size={12} />
-                            <span>Save as...</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ── MULTIPLE DOCUMENTS SENT: COMPACT BENTO GRID (Image 4 Polish) ── */}
-                    {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
-                      <div className="mt-2.5 grid grid-cols-2 gap-2">
-                        {msg.workspaceRefs.map((doc, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
-                            className="p-2.5 rounded-xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.05] dark:border-white/[0.08] hover:border-violet-500 cursor-pointer transition-all flex items-center gap-2.5 shadow-2xs group/bento"
-                          >
-                            <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
-                            <div className="min-w-0 flex-1">
-                              <span className="block text-[11.5px] font-bold truncate text-slate-900 dark:text-zinc-100 group-hover/bento:text-violet-600">
-                                {doc.title}
-                              </span>
-                              <span className="text-[9.5px] text-slate-500 dark:text-zinc-400 font-mono">
-                                {doc.size || '420 KB'}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     )}
 
                     {/* Ambient Metadata & Read Tick Footer */}
@@ -1405,7 +1455,7 @@ export default function ExecutiveDirectMessages({
           )}
 
           {/* ── BOTTOM COMPOSER (WhatsApp Style with Quote & Edit Banners) ── */}
-          <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md">
+          <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md relative">
             {/* 1. WhatsApp-Style Quoted Reply Preview Banner */}
             {replyingToMessage && (
               <div className="mb-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/90 border border-black/[0.06] flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-150">
@@ -1459,15 +1509,68 @@ export default function ExecutiveDirectMessages({
                 className="hidden" 
               />
 
-              {/* 1. Attachment Clip */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
-                title="Attach Documents, Sheets, or Files"
-              >
-                <Paperclip size={16} />
-              </button>
+              {/* 1. Attachment Clip with Docs/Sheets Quick Import Popover */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsAttachmentMenuOpen(prev => !prev)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  title="Attach Documents, Media, or Workspace Files"
+                >
+                  <Paperclip size={16} />
+                </button>
+
+                {isAttachmentMenuOpen && (
+                  <div 
+                    data-popover-root="true"
+                    className="absolute bottom-11 left-0 w-56 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                    >
+                      <FileText size={14} className="text-violet-600" />
+                      <span>Upload Documents</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAttachmentMenuOpen(false);
+                        const demoSheet = {
+                          id: `sheet-${Date.now()}`,
+                          title: 'Q2 Unit Economics Model.xlsx',
+                          type: 'sheets',
+                          size: '340 KB'
+                        };
+                        setPendingAttachments([demoSheet]);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                    >
+                      <Table size={14} className="text-emerald-600" />
+                      <span>Import Sheet / Table</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAttachmentMenuOpen(false);
+                        const demoDeck = {
+                          id: `deck-${Date.now()}`,
+                          title: 'Investor Pitch & Token System.pptx',
+                          type: 'deck',
+                          size: '1.2 MB'
+                        };
+                        setPendingAttachments([demoDeck]);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                    >
+                      <Presentation size={14} className="text-amber-600" />
+                      <span>Import Deck / Diagram</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* 2. Emoji Picker Button */}
               <button
@@ -1522,6 +1625,84 @@ export default function ExecutiveDirectMessages({
           </div>
         </main>
       </div>
+
+      {/* ── IN-CHAT NATIVE WHATSAPP CALL OVERLAY (P2P CALLING EXPERIENCE) ── */}
+      {activeCallSession && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200 select-none">
+          <div className="w-full max-w-sm bg-[#161922] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col items-center p-6 text-center space-y-6">
+            {/* Top Security & Encryption Indicator */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] text-amber-300 font-medium">
+              <Lock size={10} />
+              <span>End-to-End Encrypted Call</span>
+            </div>
+
+            {/* Avatar & Ringing / Active Status */}
+            <div className="flex flex-col items-center space-y-3">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-violet-600/30 text-violet-300 font-bold text-2xl flex items-center justify-center border-2 border-violet-500/50 ring-8 ring-violet-500/10 animate-pulse">
+                  {currentChat.avatar}
+                </div>
+                {activeCallSession.status === 'connected' && (
+                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-[#161922]" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white tracking-tight">{currentChat.name}</h3>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  {activeCallSession.status === 'ringing' 
+                    ? 'Ringing...' 
+                    : `${Math.floor(callDuration / 60)}:${(callDuration % 60).toString().padStart(2, '0')}`
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Video Mock Stream if Video Call */}
+            {activeCallSession.type === 'video' && activeCallSession.status === 'connected' && (
+              <div className="w-full h-32 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-center relative overflow-hidden">
+                <div className="text-center text-xs text-slate-400 flex flex-col items-center gap-1">
+                  <Video size={18} className="text-violet-400" />
+                  <span>HD Camera Stream Active</span>
+                </div>
+              </div>
+            )}
+
+            {/* Call Action Controls (Mute, Video, End Call) */}
+            <div className="flex items-center justify-center gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveCallSession(prev => ({ ...prev, isMuted: !prev.isMuted }))}
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                  activeCallSession.isMuted ? 'bg-rose-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+                title={activeCallSession.isMuted ? "Unmute" : "Mute"}
+              >
+                {activeCallSession.isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveCallSession(prev => ({ ...prev, isVideoOff: !prev.isVideoOff }))}
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                  activeCallSession.isVideoOff ? 'bg-rose-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+                title={activeCallSession.isVideoOff ? "Turn Video On" : "Turn Video Off"}
+              >
+                {activeCallSession.isVideoOff ? <VideoOff size={16} /> : <Video size={16} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleEndCall}
+                className="w-13 h-13 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                title="End Call"
+              >
+                <PhoneOff size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── WHATSAPP-STYLE DOCUMENT ATTACHMENT PREVIEW STAGE (IMAGES 1 & 3 STANDARD) ── */}
       {pendingAttachments.length > 0 && (
