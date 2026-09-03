@@ -196,14 +196,24 @@ export default function ExecutiveDirectMessages({
   const [isAiVoicePaused, setIsAiVoicePaused] = useState(false);
   const [isAiVoiceMuted, setIsAiVoiceMuted] = useState(false);
   const [aiVoiceLiveWaves, setAiVoiceLiveWaves] = useState([12, 22, 16, 28, 14, 20, 24, 18, 12, 26]);
+  const [aiVoiceLiveTranscript, setAiVoiceLiveTranscript] = useState('');
+  const [isAiVoiceResponding, setIsAiVoiceResponding] = useState(false);
+  const [aiVoiceActiveResponse, setAiVoiceActiveResponse] = useState('');
 
-  // ── WhatsApp Standard Audio Recording State ──
+  // ── WhatsApp Standard Audio Recording & Playback State ──
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(false);
   const [voiceElapsedSeconds, setVoiceElapsedSeconds] = useState(0);
   const [voiceWaveLevels, setVoiceWaveLevels] = useState([12, 20, 15, 28, 14, 22, 18, 25, 16, 24]);
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [audioPlaybackSpeeds, setAudioPlaybackSpeeds] = useState({}); // { [msgId]: 1 | 1.5 | 2 }
+  const [voiceRecognitionTranscript, setVoiceRecognitionTranscript] = useState('');
   const voiceTimerRef = useRef(null);
+  const voiceSpeechRecRef = useRef(null);
+  const voiceAudioContextRef = useRef(null);
+  const voiceMicStreamRef = useRef(null);
+  const voiceAnalyserRef = useRef(null);
+  const voiceAnimFrameRef = useRef(null);
 
   // ── In-Chat Direct WhatsApp Video/Audio Call State ──
   const [activeCallSession, setActiveCallSession] = useState(null);
@@ -325,31 +335,226 @@ export default function ExecutiveDirectMessages({
     return () => clearInterval(timer);
   }, [activeCallSession]);
 
-  // Voice recording timer
+  // Real Microphone Stream & Speech Recognition for Voice Note Recording
   useEffect(() => {
     if (isRecordingVoice && !isVoicePaused) {
       voiceTimerRef.current = setInterval(() => {
         setVoiceElapsedSeconds(prev => prev + 1);
-        setVoiceWaveLevels(prev => prev.map(() => Math.floor(Math.random() * 18) + 8));
       }, 1000);
+
+      // Start Web Audio Analyser for genuine live waveform animation
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            voiceMicStreamRef.current = stream;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              const ctx = new AudioCtx();
+              voiceAudioContextRef.current = ctx;
+              const src = ctx.createMediaStreamSource(stream);
+              const analyser = ctx.createAnalyser();
+              analyser.fftSize = 64;
+              src.connect(analyser);
+              voiceAnalyserRef.current = analyser;
+
+              const dataArray = new Uint8Array(analyser.frequencyBinCount);
+              const updateWaves = () => {
+                if (!voiceAnalyserRef.current) return;
+                voiceAnalyserRef.current.getByteFrequencyData(dataArray);
+                const sampled = [];
+                for (let i = 0; i < 10; i++) {
+                  const val = dataArray[i * 2] || 0;
+                  const normalized = Math.max(6, Math.min(28, Math.round((val / 255) * 28) + 6));
+                  sampled.push(normalized);
+                }
+                setVoiceWaveLevels(sampled);
+                voiceAnimFrameRef.current = requestAnimationFrame(updateWaves);
+              };
+              updateWaves();
+            }
+          })
+          .catch(err => {
+            console.warn('Microphone access for voice note:', err);
+          });
+      }
+
+      // Start Web Speech Recognition to capture audio transcription
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognizer = new SpeechRecognition();
+          recognizer.continuous = true;
+          recognizer.interimResults = true;
+          recognizer.lang = 'en-US';
+          recognizer.onresult = (e) => {
+            let current = '';
+            for (let i = 0; i < e.results.length; i++) {
+              current += e.results[i][0].transcript + ' ';
+            }
+            if (current.trim()) {
+              setVoiceRecognitionTranscript(current.trim());
+            }
+          };
+          recognizer.start();
+          voiceSpeechRecRef.current = recognizer;
+        } catch (e) {
+          console.warn('Speech recognition init:', e);
+        }
+      }
     } else {
       if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
+      if (voiceAnimFrameRef.current) cancelAnimationFrame(voiceAnimFrameRef.current);
+      if (voiceMicStreamRef.current) {
+        voiceMicStreamRef.current.getTracks().forEach(t => t.stop());
+        voiceMicStreamRef.current = null;
+      }
+      if (voiceAudioContextRef.current) {
+        voiceAudioContextRef.current.close().catch(() => {});
+        voiceAudioContextRef.current = null;
+      }
+      if (voiceSpeechRecRef.current) {
+        try { voiceSpeechRecRef.current.stop(); } catch (e) {}
+        voiceSpeechRecRef.current = null;
+      }
     }
+
     return () => {
       if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
+      if (voiceAnimFrameRef.current) cancelAnimationFrame(voiceAnimFrameRef.current);
+      if (voiceMicStreamRef.current) {
+        voiceMicStreamRef.current.getTracks().forEach(t => t.stop());
+        voiceMicStreamRef.current = null;
+      }
+      if (voiceAudioContextRef.current) {
+        voiceAudioContextRef.current.close().catch(() => {});
+        voiceAudioContextRef.current = null;
+      }
+      if (voiceSpeechRecRef.current) {
+        try { voiceSpeechRecRef.current.stop(); } catch (e) {}
+        voiceSpeechRecRef.current = null;
+      }
     };
   }, [isRecordingVoice, isVoicePaused]);
 
-  // AI Voice conversational session simulator
+  // AI Voice Conversational Session (Real Live Audio Analyser & Real-Time Voice Streaming)
   useEffect(() => {
-    let interval;
+    let aiVoiceCtx = null;
+    let aiVoiceStream = null;
+    let aiVoiceFrame = null;
+    let aiSpeechRec = null;
+
     if (isAiVoiceSessionActive && !isAiVoiceMuted && !isAiVoicePaused) {
-      interval = setInterval(() => {
-        setAiVoiceLiveWaves(prev => prev.map(() => Math.floor(Math.random() * 32) + 8));
-      }, 120);
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            aiVoiceStream = stream;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              aiVoiceCtx = new AudioCtx();
+              const src = aiVoiceCtx.createMediaStreamSource(stream);
+              const analyser = aiVoiceCtx.createAnalyser();
+              analyser.fftSize = 64;
+              src.connect(analyser);
+
+              const dataArray = new Uint8Array(analyser.frequencyBinCount);
+              const updateAiWaves = () => {
+                analyser.getByteFrequencyData(dataArray);
+                const sampled = [];
+                for (let i = 0; i < 10; i++) {
+                  const val = dataArray[i * 2] || 0;
+                  const normalized = Math.max(8, Math.min(36, Math.round((val / 255) * 36) + 8));
+                  sampled.push(normalized);
+                }
+                setAiVoiceLiveWaves(sampled);
+                aiVoiceFrame = requestAnimationFrame(updateAiWaves);
+              };
+              updateAiWaves();
+            }
+          })
+          .catch(err => {
+            console.warn('AI Voice mic capture error:', err);
+          });
+      }
+
+      // Live Conversational Speech Recognition
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          aiSpeechRec = new SpeechRecognition();
+          aiSpeechRec.continuous = true;
+          aiSpeechRec.interimResults = true;
+          aiSpeechRec.lang = 'en-US';
+          aiSpeechRec.onresult = async (e) => {
+            let fullText = '';
+            for (let i = 0; i < e.results.length; i++) {
+              fullText += e.results[i][0].transcript + ' ';
+            }
+            const clean = fullText.trim();
+            if (clean) {
+              setAiVoiceLiveTranscript(clean);
+
+              // If last result is final, trigger real AI voice response
+              const isFinal = e.results[e.results.length - 1].isFinal;
+              if (isFinal && !isAiVoiceResponding) {
+                setIsAiVoiceResponding(true);
+                try {
+                  const systemPrompt = currentChat?.instructions || 'You are an executive intelligent voice assistant in Regaarder. Provide concise, clear, and direct conversational responses in under 2 sentences.';
+                  let aiSpeechText = '';
+
+                  if (typeof onCallAi === 'function') {
+                    const aiRes = await onCallAi({
+                      userPrompt: clean,
+                      systemPrompt,
+                      customModel: selectedAiModel
+                    });
+                    if (aiRes) {
+                      aiSpeechText = typeof aiRes === 'string' ? aiRes : (aiRes.text || aiRes.content || '');
+                    }
+                  }
+
+                  if (aiSpeechText) {
+                    setAiVoiceActiveResponse(aiSpeechText);
+                    if ('speechSynthesis' in window) {
+                      const utter = new SpeechSynthesisUtterance(aiSpeechText);
+                      utter.rate = 1.05;
+                      utter.pitch = 1.0;
+                      utter.onend = () => {
+                        setIsAiVoiceResponding(false);
+                      };
+                      window.speechSynthesis.speak(utter);
+                    } else {
+                      setIsAiVoiceResponding(false);
+                    }
+                  } else {
+                    setIsAiVoiceResponding(false);
+                  }
+                } catch (voiceAiErr) {
+                  console.warn('Voice AI synthesis error:', voiceAiErr);
+                  setIsAiVoiceResponding(false);
+                }
+              }
+            }
+          };
+          aiSpeechRec.start();
+        } catch (e) {
+          console.warn('AI Voice speech recognition start:', e);
+        }
+      }
     }
-    return () => clearInterval(interval);
-  }, [isAiVoiceSessionActive, isAiVoiceMuted, isAiVoicePaused]);
+
+    return () => {
+      if (aiVoiceFrame) cancelAnimationFrame(aiVoiceFrame);
+      if (aiVoiceStream) {
+        aiVoiceStream.getTracks().forEach(t => t.stop());
+      }
+      if (aiVoiceCtx) {
+        aiVoiceCtx.close().catch(() => {});
+      }
+      if (aiSpeechRec) {
+        try { aiSpeechRec.stop(); } catch (e) {}
+      }
+    };
+  }, [isAiVoiceSessionActive, isAiVoiceMuted, isAiVoicePaused, selectedAiModel]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter(c => {
@@ -535,25 +740,76 @@ export default function ExecutiveDirectMessages({
     setMessageInput(prev => `${prev}${emoji}`);
   };
 
-  const handleSendVoiceRecording = () => {
+  const handleSendVoiceRecording = async () => {
     const formattedDuration = `${Math.floor(voiceElapsedSeconds / 60)}:${(voiceElapsedSeconds % 60).toString().padStart(2, '0')}`;
+    const capturedTranscript = voiceRecognitionTranscript.trim() || 'Voice audio note dispatched across zero-knowledge channel.';
+    
     const newAudioMsg = {
       id: `m-voice-${Date.now()}`,
       author: 'You',
       role: 'you',
       isAudio: true,
       audioDuration: formattedDuration === '0:00' ? '0:08' : formattedDuration,
-      transcript: 'Voice audio note dispatched across zero-knowledge channel.',
+      transcript: capturedTranscript,
       createdAt: Date.now(),
       status: 'sent'
     };
+
     setThreadMessages(prev => ({
       ...prev,
       [activeContactId]: [...(prev[activeContactId] || []), newAudioMsg]
     }));
+
     setIsRecordingVoice(false);
     setIsVoicePaused(false);
     setVoiceElapsedSeconds(0);
+    setVoiceRecognitionTranscript('');
+
+    // If active conversation is an AI Persona or Assistant, process audio transcript with real AI model!
+    if (currentChat?.isAi) {
+      setIsTyping(true);
+      const activeEngineId = currentChat?.modelId || selectedAiModel;
+      const targetLocal = detectedLocalModels.find(m => m.id === activeEngineId || m.name === activeEngineId);
+      const aiAuthor = currentChat?.name || 'Assistant';
+      const systemPrompt = currentChat?.instructions || 'You are an executive intelligent assistant in Regaarder Relay. Provide direct, helpful, concise, and natural responses.';
+
+      let aiResponseText = '';
+
+      try {
+        if (typeof onCallAi === 'function') {
+          const aiRes = await onCallAi({
+            userPrompt: capturedTranscript,
+            systemPrompt,
+            customModel: activeEngineId,
+            customProvider: targetLocal ? 'Ollama' : undefined
+          });
+          if (aiRes) {
+            aiResponseText = typeof aiRes === 'string' ? aiRes : (aiRes.text || aiRes.content || '');
+          }
+        }
+      } catch (voiceErr) {
+        console.warn('Voice AI response error:', voiceErr);
+      }
+
+      if (!aiResponseText) {
+        aiResponseText = `Understood: "${capturedTranscript}". Ready to assist.`;
+      }
+
+      setIsTyping(false);
+      const aiReply = {
+        id: `m-ai-${Date.now()}`,
+        author: aiAuthor,
+        role: 'assistant',
+        text: aiResponseText,
+        createdAt: Date.now(),
+        status: 'read'
+      };
+
+      setThreadMessages(prev => ({
+        ...prev,
+        [activeContactId]: [...(prev[activeContactId] || []), aiReply]
+      }));
+    }
   };
 
   const handleStartInChatCall = (type = 'video') => {
@@ -1416,7 +1672,7 @@ export default function ExecutiveDirectMessages({
                       )}
 
                       {msg.isAudio ? (
-                        <div className="space-y-1.5 min-w-[240px]">
+                        <div className="space-y-2 min-w-[260px]">
                           <div className="flex items-center gap-2.5">
                             <button
                               type="button"
@@ -1439,10 +1695,34 @@ export default function ExecutiveDirectMessages({
                                 />
                               ))}
                             </div>
+
                             <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
                               {msg.audioDuration || '0:08'}
                             </span>
+
+                            {/* Speed Up Tag: 1x -> 1.5x -> 2x */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAudioPlaybackSpeeds(prev => {
+                                  const current = prev[msg.id] || 1;
+                                  const next = current === 1 ? 1.5 : current === 1.5 ? 2 : 1;
+                                  return { ...prev, [msg.id]: next };
+                                });
+                              }}
+                              className="px-2 py-0.5 rounded-lg text-[10px] font-bold font-mono bg-black/[0.05] dark:bg-white/[0.08] hover:bg-violet-100 hover:text-violet-700 dark:hover:bg-violet-950 dark:hover:text-violet-300 text-slate-600 dark:text-zinc-300 transition-colors cursor-pointer shrink-0 border border-black/[0.04] dark:border-white/[0.06]"
+                              title="Toggle Audio Speed (1x, 1.5x, 2x)"
+                            >
+                              {audioPlaybackSpeeds[msg.id] || 1}x
+                            </button>
                           </div>
+
+                          {/* Real Speech Transcription Subtitle */}
+                          {msg.transcript && (
+                            <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
+                              "{msg.transcript}"
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -1539,16 +1819,23 @@ export default function ExecutiveDirectMessages({
                   </span>
                 </div>
 
-                <div className="flex-1 flex items-center justify-center gap-0.5 h-6 px-4">
-                  {voiceWaveLevels.map((lvl, idx) => (
-                    <div
-                      key={idx}
-                      className={`w-1 rounded-full transition-all duration-150 ${
-                        isVoicePaused ? 'bg-slate-400' : 'bg-violet-600 dark:bg-violet-400'
-                      }`}
-                      style={{ height: `${lvl}px` }}
-                    />
-                  ))}
+                <div className="flex-1 flex flex-col justify-center px-4 min-w-0">
+                  <div className="flex items-center justify-center gap-0.5 h-6">
+                    {voiceWaveLevels.map((lvl, idx) => (
+                      <div
+                        key={idx}
+                        className={`w-1 rounded-full transition-all duration-75 ${
+                          isVoicePaused ? 'bg-slate-400' : 'bg-violet-600 dark:bg-violet-400'
+                        }`}
+                        style={{ height: `${lvl}px` }}
+                      />
+                    ))}
+                  </div>
+                  {voiceRecognitionTranscript && (
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 italic truncate text-center mt-0.5">
+                      "{voiceRecognitionTranscript}"
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -1690,21 +1977,33 @@ export default function ExecutiveDirectMessages({
 
             {/* Status Pill Positioned Directly on the Same Axis */}
             <div className="flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white shadow-xs mx-auto">
-              <span className={`w-2 h-2 rounded-full ${isAiVoiceMuted ? 'bg-rose-400' : isAiVoicePaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+              <span className={`w-2 h-2 rounded-full ${isAiVoiceMuted ? 'bg-rose-400' : isAiVoicePaused ? 'bg-amber-400' : isAiVoiceResponding ? 'bg-violet-400 animate-pulse' : 'bg-emerald-400 animate-pulse'}`} />
               <span>
-                {isAiVoiceMuted ? 'Microphone is muted' : isAiVoicePaused ? 'Voice session paused' : 'Listening to voice...'}
+                {isAiVoiceMuted ? 'Microphone is muted' : isAiVoicePaused ? 'Voice session paused' : isAiVoiceResponding ? `${activeModelDisplay.name} is speaking...` : aiVoiceLiveTranscript ? 'Hearing you speak...' : 'Listening to microphone...'}
               </span>
             </div>
 
             {/* Subtitles on Same Axis */}
-            <div className="text-center space-y-1 w-full px-4 pt-1">
+            <div className="text-center space-y-1.5 w-full px-4 pt-1">
               <h3 className="text-base font-bold text-white tracking-tight">
-                {isAiVoiceMuted ? 'Unmute to continue speaking' : isAiVoicePaused ? 'Session is paused' : 'Speak naturally to collaborate'}
+                {isAiVoiceMuted 
+                  ? 'Unmute to continue speaking' 
+                  : isAiVoicePaused 
+                  ? 'Session is paused' 
+                  : isAiVoiceResponding 
+                  ? `${activeModelDisplay.name}` 
+                  : aiVoiceLiveTranscript 
+                  ? 'You' 
+                  : 'Speak naturally to collaborate'}
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans max-w-sm mx-auto">
+              <p className="text-xs text-slate-300 leading-relaxed font-sans max-w-sm mx-auto min-h-[38px] flex items-center justify-center">
                 {isAiVoiceMuted 
                   ? 'Tap the microphone button below to resume voice streaming.' 
-                  : '“I analyzed the active brief and verified all unit economics margins.”'
+                  : isAiVoiceResponding && aiVoiceActiveResponse
+                  ? `“${aiVoiceActiveResponse}”`
+                  : aiVoiceLiveTranscript
+                  ? `“${aiVoiceLiveTranscript}”`
+                  : 'Start talking to discuss strategy, documents, or models in real time.'
                 }
               </p>
             </div>
