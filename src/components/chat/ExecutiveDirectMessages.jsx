@@ -4,9 +4,59 @@ import {
   Sparkles, FileText, Table, Presentation, X, ArrowRight, MoreVertical,
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
   Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
-  Lock, KeyRound, Shield, CheckCircle2, Copy, Info
+  Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight
 } from 'lucide-react';
-import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, ChatIcon } from '../RegaarderProductIcons';
+import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
+
+// Rich Colored SVG Badges for Files & Attachments (Docs/Sheets standard)
+const ColoredFileBadge = ({ type, title = '', size = 32 }) => {
+  const ext = title.split('.').pop()?.toLowerCase() || '';
+  if (type === 'sheets' || ext === 'xlsx' || ext === 'csv') {
+    return (
+      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-2xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+        </svg>
+      </div>
+    );
+  }
+  if (type === 'deck' || ext === 'pptx') {
+    return (
+      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3.5" width="18" height="12.5" rx="2" />
+          <rect x="5.5" y="6" width="3.5" height="3.5" rx="0.75" fill="currentColor" stroke="none" />
+          <line x1="11.5" y1="6.75" x2="18" y2="6.75" />
+          <line x1="11.5" y1="9.25" x2="18" y2="9.25" />
+          <line x1="5.5" y1="12.5" x2="18" y2="12.5" />
+        </svg>
+      </div>
+    );
+  }
+  if (ext === 'pdf') {
+    return (
+      <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-2xs">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="9" y1="15" x2="15" y2="15" />
+        </svg>
+      </div>
+    );
+  }
+  // Default Docs / Compose badge (Rich Indigo)
+  return (
+    <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 shadow-2xs">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="13" x2="16" y2="13" />
+        <line x1="8" y1="17" x2="14" y2="17" />
+      </svg>
+    </div>
+  );
+};
 
 export default function ExecutiveDirectMessages({
   isDarkMode = false,
@@ -20,14 +70,15 @@ export default function ExecutiveDirectMessages({
   onToggleFullscreen,
   onOpenWorkspaceSwitcher
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'topics' | 'actions'
   const [searchQuery, setSearchQuery] = useState('');
   const [activeContactId, setActiveContactId] = useState(activeThreadId || 'thread-beta-launch');
   const [messageInput, setMessageInput] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
-  const [searchMode, setSearchMode] = useState('keyword'); // 'keyword' | 'semantic'
+  const [isAiMode, setIsAiMode] = useState(false); // True = Ask AI Conversation Companion
+  const [aiCompanionResponse, setAiCompanionResponse] = useState(null);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
@@ -40,7 +91,8 @@ export default function ExecutiveDirectMessages({
       text: 'Product Hunt launch is locked for May 15th! Did everyone review the updated pricing table in Sheets?',
       createdAt: Date.now() - 1000 * 60 * 55,
       status: 'read',
-      workspaceRef: { type: 'sheets', title: 'Q2 Financial Model & Pricing', id: 'sheet-pricing' }
+      workspaceRef: { type: 'sheets', title: 'Q2 Financial Model & Pricing.xlsx', id: 'sheet-pricing' },
+      topic: 'Pricing & Launch'
     },
     {
       id: 'm2',
@@ -49,7 +101,8 @@ export default function ExecutiveDirectMessages({
       text: 'Looks exceptionally clean. The unit economics margins match our target. I approved the final copy in Docs.',
       createdAt: Date.now() - 1000 * 60 * 42,
       status: 'read',
-      workspaceRef: { type: 'compose', title: 'Beta Launch Executive Brief', id: 'doc-beta' }
+      workspaceRef: { type: 'compose', title: 'Beta Launch Executive Brief.brief', id: 'doc-beta' },
+      topic: 'Pricing & Launch'
     },
     {
       id: 'm3',
@@ -58,7 +111,8 @@ export default function ExecutiveDirectMessages({
       text: 'Decision logged: May 15 launch approved across strategy docs and financial model. Next milestone: Final brand approval.',
       createdAt: Date.now() - 1000 * 60 * 20,
       status: 'read',
-      isDecision: true
+      isDecision: true,
+      topic: 'Milestones'
     }
   ]);
 
@@ -69,7 +123,7 @@ export default function ExecutiveDirectMessages({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Clean conversations list without lock spam or clutter
+  // Clean conversations list
   const conversations = useMemo(() => [
     {
       id: 'thread-beta-launch',
@@ -82,8 +136,12 @@ export default function ExecutiveDirectMessages({
       category: 'teams',
       online: true,
       fingerprint: '0x8F2A • B419 • E941 • 3D02',
-      e2eeStatus: 'Verified Enterprise Key',
-      participants: ['Sarah Johnson', 'Alex Morgan', 'Joshua David', 'Orb AI']
+      topics: ['Launch Prep', 'Pricing Model', 'CAC Metrics'],
+      actions: [
+        { id: 'act-1', text: 'Approve final copy in Docs', status: 'done', assignee: 'Joshua David' },
+        { id: 'act-2', text: 'Lock pricing table in Sheets', status: 'done', assignee: 'Sarah Johnson' },
+        { id: 'act-3', text: 'Obtain final brand approval', status: 'pending', assignee: 'Alex Morgan' }
+      ]
     },
     {
       id: 'dm-sarah',
@@ -96,8 +154,10 @@ export default function ExecutiveDirectMessages({
       category: 'unread',
       online: true,
       fingerprint: '0x4C19 • 7E33 • A08F • 99B1',
-      e2eeStatus: 'Verified Enterprise Key',
-      roleTitle: 'VP of Product Strategy'
+      topics: ['CAC Metrics', 'Investor Deck'],
+      actions: [
+        { id: 'act-4', text: 'Review revised CAC deck slide #4', status: 'pending', assignee: 'You' }
+      ]
     },
     {
       id: 'dm-alex',
@@ -110,8 +170,8 @@ export default function ExecutiveDirectMessages({
       category: 'all',
       online: false,
       fingerprint: '0x11B8 • E209 • 55CA • 7710',
-      e2eeStatus: 'Verified Enterprise Key',
-      roleTitle: 'Principal Infrastructure Engineer'
+      topics: ['Backend Infrastructure', 'Webhook Latency'],
+      actions: []
     },
     {
       id: 'thread-marketing',
@@ -124,8 +184,10 @@ export default function ExecutiveDirectMessages({
       category: 'teams',
       online: true,
       fingerprint: '0xD702 • 99AE • 1204 • FA88',
-      e2eeStatus: 'Verified Enterprise Key',
-      participants: ['Elena Rostova', 'Sarah Johnson', 'David Vance']
+      topics: ['Design System', 'Typography Tokens'],
+      actions: [
+        { id: 'act-5', text: 'Verify typography tokens on mobile', status: 'pending', assignee: 'David Vance' }
+      ]
     }
   ], []);
 
@@ -133,6 +195,8 @@ export default function ExecutiveDirectMessages({
     return conversations.filter(c => {
       if (activeTab === 'unread' && c.unread === 0) return false;
       if (activeTab === 'teams' && !c.isGroup) return false;
+      if (activeTab === 'topics') return true;
+      if (activeTab === 'actions') return (c.actions && c.actions.length > 0);
       if (searchQuery.trim()) {
         return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                c.lastMsg.toLowerCase().includes(searchQuery.toLowerCase());
@@ -147,17 +211,35 @@ export default function ExecutiveDirectMessages({
     e?.preventDefault();
     if (!messageInput.trim()) return;
 
+    const trimmed = messageInput.trim();
+    const isAiTagged = trimmed.toLowerCase().startsWith('@ai') || trimmed.toLowerCase().includes('@regaarder');
+
     const newMsg = {
       id: `m-${Date.now()}`,
       author: 'You',
       role: 'you',
-      text: messageInput.trim(),
+      text: trimmed,
       createdAt: Date.now(),
       status: 'sent'
     };
 
     setMessages(prev => [...prev, newMsg]);
     setMessageInput('');
+
+    // If @AI is tagged, trigger intelligent in-stream assistant reply
+    if (isAiTagged) {
+      setTimeout(() => {
+        const aiReply = {
+          id: `m-ai-${Date.now()}`,
+          author: 'Regaarder AI',
+          role: 'assistant',
+          text: `Synthesizing across workspace: The May 15th release criteria are satisfied. CAC margin projections in Sheets match target unit economics at 68%.`,
+          createdAt: Date.now(),
+          status: 'read'
+        };
+        setMessages(prev => [...prev, aiReply]);
+      }, 700);
+    }
   };
 
   const handleLogToMemory = (msg) => {
@@ -170,12 +252,12 @@ export default function ExecutiveDirectMessages({
     const files = e.target.files;
     if (files && files.length > 0) {
       const fileName = files[0].name;
-      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : 'compose';
+      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
       const newMsg = {
         id: `m-${Date.now()}`,
         author: 'You',
         role: 'you',
-        text: `Attached file: ${fileName}`,
+        text: `Shared document: ${fileName}`,
         createdAt: Date.now(),
         status: 'sent',
         workspaceRef: { type: fileType, title: fileName, id: `file-${Date.now()}` }
@@ -214,6 +296,19 @@ export default function ExecutiveDirectMessages({
     recognition.start();
   };
 
+  const handleAiAskSubmit = (e) => {
+    e?.preventDefault();
+    if (!chatSearchQuery.trim()) return;
+    const q = chatSearchQuery.toLowerCase();
+    if (q.includes('summary') || q.includes('summarize')) {
+      setAiCompanionResponse("Summary: Sarah confirmed May 15 launch. Financial model in Sheets approved. Joshua verified the Docs brief. Milestone pending: Final brand approval.");
+    } else if (q.includes('pricing') || q.includes('cac')) {
+      setAiCompanionResponse("Pricing & CAC: Pricing model is locked in Sheets with CAC metrics added to the presentation deck.");
+    } else {
+      setAiCompanionResponse(`Query "${chatSearchQuery}": Found 3 referenced claims in Docs & Sheets. Unit economics confirmed compliant with target margins.`);
+    }
+  };
+
   const handleCopyKey = () => {
     if (currentChat?.fingerprint) {
       navigator.clipboard?.writeText(currentChat.fingerprint);
@@ -236,10 +331,10 @@ export default function ExecutiveDirectMessages({
 
   // In-chat filtered messages
   const visibleMessages = useMemo(() => {
-    if (!chatSearchQuery.trim()) return messages;
+    if (!chatSearchQuery.trim() || isAiMode) return messages;
     const q = chatSearchQuery.toLowerCase();
     return messages.filter(m => m.text.toLowerCase().includes(q) || m.author.toLowerCase().includes(q));
-  }, [messages, chatSearchQuery]);
+  }, [messages, chatSearchQuery, isAiMode]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-[#FBFBFA] dark:bg-[#0c0d11] font-sans select-none">
@@ -272,7 +367,7 @@ export default function ExecutiveDirectMessages({
           {/* Cohesive Relay Workspace Breadcrumb */}
           <div className="flex items-center gap-2 h-8 px-2.5 rounded-xl bg-white/80 dark:bg-zinc-850/80 border border-slate-200/60 dark:border-zinc-750 shadow-2xs">
             <div className="w-5 h-5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-              <ChatIcon size={13} strokeWidth={1.8} />
+              <RelayIcon size={13} strokeWidth={1.8} />
             </div>
             <span className="text-[13px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">Relay</span>
             <span className="text-[9.5px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 tracking-wider uppercase">Workspace</span>
@@ -305,7 +400,7 @@ export default function ExecutiveDirectMessages({
 
       {/* ── 2-COLUMN MAIN BODY FRAME ── */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* ── LEFT COLUMN: Contacts (WhatsApp-style Clean Soft Highlight, ~340px) ── */}
+        {/* ── LEFT COLUMN: Contacts, Topics & Actions (~340px) ── */}
         <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-b from-[#f0f4fd] via-[#f7f9fd] to-[#f4f5f8] dark:from-[#0d1017] dark:via-[#090b10] dark:to-[#07080c] relative">
           {/* Subtle Ambient Mesh Radial Glows */}
           <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -338,17 +433,19 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search or start new chat..."
+                placeholder="Search chats, topics or files..."
                 className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
               />
             </div>
 
-            {/* Quick Filter Tabs (Apple Outlines, Strictly Zero Pills) */}
-            <div className="flex items-center gap-1.5 pt-0.5">
+            {/* Comprehensive Quick Filter Tabs (All, Unread, Groups, Topics, Actions) */}
+            <div className="flex items-center gap-1 pt-0.5 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'unread', label: 'Unread' },
-                { id: 'teams', label: 'Groups' }
+                { id: 'teams', label: 'Groups' },
+                { id: 'topics', label: 'Topics' },
+                { id: 'actions', label: 'Actions' }
               ].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -356,7 +453,7 @@ export default function ExecutiveDirectMessages({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1 text-[11.5px] rounded-xl transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-black/[0.04] dark:border-white/[0.06]'
                         : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
@@ -369,72 +466,115 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Contact Cards (WhatsApp-Style Executive Highlight - No Harsh Outlines) */}
+          {/* Contact Cards or Topic Channels View */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
-            {filteredConversations.length === 0 && (
-              <div className="py-12 text-center text-xs text-slate-400">
-                No conversations found
-              </div>
-            )}
-            {filteredConversations.map(chat => {
-              const isSelected = chat.id === activeContactId;
-              return (
-                <div
-                  key={chat.id}
-                  onClick={() => {
-                    setActiveContactId(chat.id);
-                    if (onSelectThread) onSelectThread(chat.id);
-                  }}
-                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#E8EAEE] dark:bg-[#1D212C] text-slate-900 dark:text-zinc-100 shadow-2xs'
-                      : 'bg-transparent hover:bg-white/60 dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
-                  }`}
-                >
-                  {/* Avatar with Status Indicator */}
-                  <div className="relative shrink-0">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
-                      chat.isGroup
-                        ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
-                        : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
-                    }`}>
-                      {chat.avatar}
+            {activeTab === 'topics' ? (
+              <div className="space-y-2 p-1">
+                <div className="text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-2">
+                  Workspace Topic Channels
+                </div>
+                {['Launch Prep & Strategy', 'Pricing & Unit Economics', 'CAC & Marketing Deck', 'Design System Tokens'].map((t, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setActiveContactId(conversations[idx % conversations.length].id);
+                      setActiveTab('all');
+                    }}
+                    className="p-3 rounded-2xl bg-white/80 dark:bg-zinc-800/80 hover:bg-white border border-black/[0.04] dark:border-white/[0.05] shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-xs">
+                        <Hash size={13} />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">{t}</span>
                     </div>
-                    {chat.online && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0e1017]" />
-                    )}
+                    <span className="text-[10px] text-slate-400 font-mono">Active</span>
                   </div>
-
-                  {/* Clean Text Details (No lock spam) */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                        {chat.name}
+                ))}
+              </div>
+            ) : activeTab === 'actions' ? (
+              <div className="space-y-2 p-1">
+                <div className="text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-2">
+                  Extracted Conversation Actions
+                </div>
+                {conversations.flatMap(c => c.actions || []).map((action) => (
+                  <div
+                    key={action.id}
+                    className="p-3 rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-black/[0.04] dark:border-white/[0.05] shadow-2xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
+                        {action.assignee}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                        {chat.time}
+                      <span className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded ${action.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {action.status.toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 truncate">
-                        {chat.lastMsg}
-                      </p>
-                      {chat.unread > 0 && (
-                        <span className="w-4 h-4 rounded-full bg-violet-600 text-white text-[9.5px] font-bold flex items-center justify-center shrink-0">
-                          {chat.unread}
-                        </span>
+                    <p className="text-xs font-medium text-slate-800 dark:text-zinc-100">{action.text}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              filteredConversations.map(chat => {
+                const isSelected = chat.id === activeContactId;
+                return (
+                  <div
+                    key={chat.id}
+                    onClick={() => {
+                      setActiveContactId(chat.id);
+                      if (onSelectThread) onSelectThread(chat.id);
+                    }}
+                    className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#E8EAEE] dark:bg-[#1D212C] text-slate-900 dark:text-zinc-100 shadow-2xs'
+                        : 'bg-transparent hover:bg-white/60 dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
+                    }`}
+                  >
+                    {/* Avatar with Status Indicator */}
+                    <div className="relative shrink-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
+                        chat.isGroup
+                          ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
+                          : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
+                      }`}>
+                        {chat.avatar}
+                      </div>
+                      {chat.online && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0e1017]" />
                       )}
                     </div>
+
+                    {/* Clean Text Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                          {chat.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                          {chat.time}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 truncate">
+                          {chat.lastMsg}
+                        </p>
+                        {chat.unread > 0 && (
+                          <span className="w-4 h-4 rounded-full bg-violet-600 text-white text-[9.5px] font-bold flex items-center justify-center shrink-0">
+                            {chat.unread}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </aside>
 
         {/* ── RIGHT COLUMN: Active Chat Stream ── */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#FBFBFC] dark:bg-[#0f1117] relative">
-          {/* Active Conversation Header (Clean & Executive) */}
+          {/* Active Conversation Header */}
           <header 
             className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0 cursor-default select-none z-20"
             onDoubleClick={(e) => {
@@ -462,9 +602,9 @@ export default function ExecutiveDirectMessages({
               </div>
             </div>
 
-            {/* Conversation Tools (In-Chat Search, Pin, Meet, Details Ellipsis) */}
+            {/* Conversation Tools */}
             <div className="flex items-center gap-1.5 relative">
-              {/* In-Chat Search Toggle */}
+              {/* In-Chat Search / Ask AI Toggle */}
               <button
                 type="button"
                 onClick={() => setIsChatSearchOpen(prev => !prev)}
@@ -473,7 +613,7 @@ export default function ExecutiveDirectMessages({
                     ? 'bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300' 
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
                 }`}
-                title="Search within this chat"
+                title="Search or Ask AI within this chat"
               >
                 <Search size={15} />
               </button>
@@ -492,7 +632,7 @@ export default function ExecutiveDirectMessages({
                 {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
               </button>
 
-              {/* Ellipsis Details Menu (Houses Optional Cryptographic / Key Info) */}
+              {/* Ellipsis Details Menu */}
               <button
                 type="button"
                 onClick={() => setIsDetailsMenuOpen(prev => !prev)}
@@ -562,64 +702,83 @@ export default function ExecutiveDirectMessages({
             </div>
           </header>
 
-          {/* ── In-Chat Search Drawer with AI Retrieval Toggle ── */}
+          {/* ── In-Chat Search & Ask AI Drawer ── */}
           {isChatSearchOpen && (
-            <div className="px-6 py-2.5 bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between gap-3 shadow-2xs animate-in slide-in-from-top-2 duration-150 z-10">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={chatSearchQuery}
-                  onChange={(e) => setChatSearchQuery(e.target.value)}
-                  placeholder={searchMode === 'semantic' ? "Ask AI semantic retrieval across this conversation..." : "Search keywords in messages..."}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
-                  autoFocus
-                />
-              </div>
+            <div className="px-6 py-2.5 bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] dark:border-white/[0.08] flex flex-col gap-2 shadow-2xs animate-in slide-in-from-top-2 duration-150 z-10">
+              <form onSubmit={handleAiAskSubmit} className="flex items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={chatSearchQuery}
+                    onChange={(e) => {
+                      setChatSearchQuery(e.target.value);
+                      if (aiCompanionResponse) setAiCompanionResponse(null);
+                    }}
+                    placeholder={isAiMode ? "Ask AI: e.g. 'Summarize conversation' or 'What did we decide on CAC?'..." : "Search keywords in messages..."}
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
 
-              {/* Mode Toggle: Keyword vs. AI Semantic */}
-              <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg shrink-0">
+                {/* Mode Toggle: Search vs. Ask AI (with official signature circular AI glyph) */}
+                <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-xl shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { setIsAiMode(false); setAiCompanionResponse(null); }}
+                    className={`px-2.5 py-1 text-[10.5px] rounded-lg transition-all cursor-pointer ${
+                      !isAiMode
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Search
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAiMode(true)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-[10.5px] rounded-lg transition-all cursor-pointer ${
+                      isAiMode
+                        ? 'bg-violet-600 text-white font-semibold shadow-2xs'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <RegaarderAiIcon size={12} strokeWidth={2.0} />
+                    <span>Ask AI</span>
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setSearchMode('keyword')}
-                  className={`px-2 py-1 text-[10.5px] rounded-md transition-all cursor-pointer ${
-                    searchMode === 'keyword'
-                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs'
-                      : 'text-slate-400 hover:text-slate-600'
-                  }`}
+                  onClick={() => {
+                    setIsChatSearchOpen(false);
+                    setChatSearchQuery('');
+                    setAiCompanionResponse(null);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-slate-600"
                 >
-                  Keyword
+                  <X size={14} />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchMode('semantic')}
-                  className={`flex items-center gap-1 px-2 py-1 text-[10.5px] rounded-md transition-all cursor-pointer ${
-                    searchMode === 'semantic'
-                      ? 'bg-violet-600 text-white font-semibold shadow-2xs'
-                      : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <Sparkle size={10} />
-                  <span>AI Semantic</span>
-                </button>
-              </div>
+              </form>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsChatSearchOpen(false);
-                  setChatSearchQuery('');
-                }}
-                className="p-1.5 text-slate-400 hover:text-slate-600"
-              >
-                <X size={14} />
-              </button>
+              {/* In-Chat AI Response Card */}
+              {aiCompanionResponse && (
+                <div className="p-3 rounded-xl bg-violet-50/80 dark:bg-violet-950/40 border border-violet-200/80 dark:border-violet-800/50 text-xs text-slate-800 dark:text-zinc-100 flex items-start gap-2.5 animate-in fade-in duration-200">
+                  <div className="w-5 h-5 rounded-md bg-violet-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <RegaarderAiIcon size={11} strokeWidth={2.0} />
+                  </div>
+                  <div className="flex-1 leading-relaxed">
+                    <span className="font-bold text-violet-700 dark:text-violet-300 block mb-0.5">Regaarder Synthesis:</span>
+                    <p>{aiCompanionResponse}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Message Stream */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 thin-scrollbar">
-            {/* End-to-End Encryption Security Banner (Clean & Subtle) */}
+            {/* End-to-End Encryption Security Banner */}
             <div className="w-fit mx-auto px-4 py-2 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2 max-w-lg text-center leading-normal shadow-2xs">
               <Lock size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
               <span>
@@ -653,11 +812,11 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
-                  {/* Clean Message Bubble: Soft Light Blue/Slate Outgoing (matching left atmosphere), White/Slate Incoming */}
+                  {/* Outgoing & Incoming Message Bubbles */}
                   <div
                     className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative group transition-shadow ${
                       isOutgoing
-                        ? 'bg-[#E3EBF8] dark:bg-[#1C2638] text-slate-900 dark:text-zinc-100 border border-[#D0DDF2] dark:border-[#2B3952] rounded-tr-xs shadow-2xs'
+                        ? 'bg-[#DCF8C6] dark:bg-[#1A3323] text-slate-900 dark:text-zinc-100 border border-[#C5E8AC] dark:border-[#274E36] rounded-tr-xs shadow-2xs'
                         : isAssistant
                         ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
                         : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
@@ -665,35 +824,33 @@ export default function ExecutiveDirectMessages({
                   >
                     <p>{msg.text}</p>
 
-                    {/* Connected Workspace Reference Card */}
+                    {/* Rich Colored SVG File & Document Badge Attachment */}
                     {msg.workspaceRef && (
                       <div 
                         onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
-                        className={`mt-2.5 p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                        className={`mt-2.5 p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
                           isOutgoing
-                            ? 'bg-white/70 dark:bg-white/5 border-black/[0.06] dark:border-white/10 hover:border-violet-400 text-slate-800 dark:text-zinc-200'
+                            ? 'bg-white/85 dark:bg-white/10 border-black/[0.06] dark:border-white/10 hover:border-emerald-500 text-slate-800 dark:text-zinc-200 shadow-2xs'
                             : 'bg-black/[0.02] dark:bg-white/[0.04] border-black/[0.05] dark:border-white/[0.08] hover:border-violet-400 text-slate-800 dark:text-zinc-200'
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0">
-                            <RegaarderProductIcon name={msg.workspaceRef.type} size={15} />
-                          </div>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <ColoredFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} />
                           <div className="min-w-0">
-                            <span className="block text-xs font-semibold truncate">
+                            <span className="block text-xs font-semibold truncate text-slate-900 dark:text-zinc-100">
                               {msg.workspaceRef.title}
                             </span>
-                            <span className="text-[10px] opacity-75">
-                              Workspace {msg.workspaceRef.type.toUpperCase()}
+                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">
+                              Workspace {msg.workspaceRef.type}
                             </span>
                           </div>
                         </div>
-                        <ArrowRight size={12} className="opacity-70" />
+                        <ArrowRight size={13} className="opacity-70 shrink-0" />
                       </div>
                     )}
 
-                    {/* Ambient Metadata Footer */}
-                    <div className="mt-1.5 flex items-center justify-between text-[10px]">
+                    {/* Ambient Metadata & Read Tick Footer */}
+                    <div className="mt-1.5 flex items-center justify-between text-[10px] gap-2">
                       <button
                         type="button"
                         onClick={() => handleLogToMemory(msg)}
@@ -703,9 +860,10 @@ export default function ExecutiveDirectMessages({
                         <RegaarderAiIcon size={11} strokeWidth={2.0} />
                         <span>Log to Memory</span>
                       </button>
-                      <span className="ml-auto font-mono text-slate-400 dark:text-zinc-500">
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div className="ml-auto flex items-center gap-1 font-mono text-slate-400 dark:text-zinc-500">
+                        <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {isOutgoing && <CheckCheck size={13} className="text-emerald-600 dark:text-emerald-400 inline" />}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -714,7 +872,7 @@ export default function ExecutiveDirectMessages({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* ── BOTTOM COMPOSER: WhatsApp Style with Complete Controls ── */}
+          {/* ── BOTTOM COMPOSER ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md">
             <form 
               onSubmit={handleSendMessage}
@@ -753,7 +911,7 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                placeholder="Type a message, @mention a document, or share updates..."
+                placeholder="Type a message, @AI to ask assistant, or share files..."
                 className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
               />
 

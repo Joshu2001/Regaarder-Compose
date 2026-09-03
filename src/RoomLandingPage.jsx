@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon, PresentationIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon, RelayIcon, PresentationIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
@@ -745,7 +745,7 @@ export default function RoomLandingPage({
                         { id: 'deck', label: 'Decks', icon: DeckIcon, color: 'text-amber-600' },
                         { id: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon, color: 'text-sky-600' },
                         { id: 'room-landing', label: 'Room', icon: RoomIcon, color: 'text-violet-600', active: true },
-                        { id: 'dm', label: 'Relay', icon: ChatIcon, color: 'text-indigo-600' },
+                        { id: 'dm', label: 'Relay', icon: RelayIcon, color: 'text-indigo-600' },
                         { id: 'browser', label: 'Browser', icon: BrowserIcon, color: 'text-blue-600' },
                       ].map((item) => (
                         <button

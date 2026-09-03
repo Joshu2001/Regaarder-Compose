@@ -46,7 +46,7 @@ import {
   ScheduleIcon,
   MemoryIcon,
   TasksIcon,
-  ChatIcon,
+  ChatIcon, RelayIcon,
   AssistIcon,
   AgentsIcon,
   BrowserIcon,
@@ -16494,7 +16494,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                 { mode: 'deck', label: t('nav.deck') || 'Decks', desc: t('workspaceDesc.deck') || 'Slide & Presentation', icon: DeckIcon },
                 { mode: 'whiteboard', label: t('nav.whiteboard') || 'Whiteboard', desc: t('workspaceDesc.whiteboard') || 'Visual Canvas & Diagrams', icon: WhiteboardIcon },
                 { mode: 'room', label: t('nav.room') || 'Room', desc: t('workspaceDesc.room') || 'Team Video & Meetings', icon: RoomIcon },
-                { mode: 'dm', label: 'Relay', desc: 'Direct Team & AI Messaging', icon: ChatIcon },
+                { mode: 'dm', label: 'Relay', desc: 'Direct Team & AI Messaging', icon: RelayIcon },
                 { mode: 'browser', label: t('nav.browser') || 'Browser', desc: t('workspaceDesc.browser') || 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
@@ -45018,7 +45018,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'room',       label: 'Room',       icon: RoomIcon,         pinned: true },
           { key: 'help',       label: 'Help',       icon: HelpCircle,       pinned: true },
           { key: 'comments',   label: 'Comments',   icon: MessageSquareText, conditional: comments.length > 0 },
-          { key: 'dm',         label: 'Relay',      icon: ChatIcon },
+          { key: 'dm',         label: 'Relay',      icon: RelayIcon },
           { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
           { key: 'people',     label: 'People',     icon: Users },
           { key: 'memory',     label: 'Memory',     icon: MemoryIcon },
