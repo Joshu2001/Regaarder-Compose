@@ -1739,9 +1739,13 @@ export default function ExecutiveDirectMessages({
             )}
 
             {isTyping && (
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 text-violet-700 dark:text-violet-300 text-xs w-fit">
-                <RegaarderAiIcon size={13} strokeWidth={2.0} className="animate-spin" />
-                <span className="font-semibold">{currentChat.name} is synthesizing...</span>
+              <div className="flex items-center gap-2.5 p-3 px-4 rounded-2xl bg-[#F0F2F6] dark:bg-[#1E232F] border border-[#E1E4EA] dark:border-[#2D3546] text-slate-700 dark:text-zinc-300 text-xs w-fit rounded-tl-xs shadow-2xs animate-in fade-in duration-150">
+                <span className="font-semibold text-slate-600 dark:text-zinc-300">{currentChat.name} is typing</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 animate-bounce" />
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -1831,11 +1835,13 @@ export default function ExecutiveDirectMessages({
                       />
                     ))}
                   </div>
-                  {voiceRecognitionTranscript && (
-                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 italic truncate text-center mt-0.5">
-                      "{voiceRecognitionTranscript}"
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    value={voiceRecognitionTranscript}
+                    onChange={(e) => setVoiceRecognitionTranscript(e.target.value)}
+                    placeholder="Speaking... (transcribed voice text will appear here)"
+                    className="text-[11px] text-slate-700 dark:text-zinc-200 bg-white/70 dark:bg-zinc-900/70 rounded-lg px-2 py-0.5 border border-black/[0.05] dark:border-white/[0.08] focus:outline-none focus:ring-1 focus:ring-violet-500 text-center mt-1 truncate placeholder:text-slate-400"
+                  />
                 </div>
 
                 <button
