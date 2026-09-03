@@ -327,7 +327,9 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
 
 /**
  * Proprietary Regaarder Relay Glyph
- * Metaphor: Dual synchronized transmission nodes with symmetrical bidirectional communication arcs.
+ * Metaphor: Bidirectional peer-to-peer transmission & exchange between two connection endpoints.
+ * Design language: Apple SF Symbol-style pure monoline geometry (1.6px stroke), balanced negative space,
+ * zero decorative clutter, crisp silhouette legible at 16–20px.
  */
 export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
@@ -342,15 +344,15 @@ export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
     className={className}
     {...props}
   >
-    {/* Upper transmission node & directional wave */}
-    <circle cx="7" cy="8" r="2.5" />
-    <path d="M12 6.5h4.5a3 3 0 0 1 3 3v.5" />
-    <polyline points="17 4 19.5 6.5 17 9" />
+    {/* Top transfer track: left endpoint to right forward arrow */}
+    <circle cx="5.5" cy="8.5" r="2" />
+    <path d="M7.5 8.5h11" />
+    <polyline points="15.5 5.5 18.5 8.5 15.5 11.5" />
 
-    {/* Lower reciprocal node & directional return wave */}
-    <circle cx="17" cy="16" r="2.5" />
-    <path d="M12 17.5H7.5a3 3 0 0 1-3-3V14" />
-    <polyline points="7 20 4.5 17.5 7 15" />
+    {/* Bottom reciprocal track: right endpoint to left reverse arrow */}
+    <circle cx="18.5" cy="15.5" r="2" />
+    <path d="M16.5 15.5h-11" />
+    <polyline points="8.5 12.5 5.5 15.5 8.5 18.5" />
   </svg>
 );
 
