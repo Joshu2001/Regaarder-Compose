@@ -5,7 +5,8 @@ import {
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
   Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
-  ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines
+  ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
+  Reply, Edit3, Wand2, Trash2
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -93,6 +94,8 @@ export default function ExecutiveDirectMessages({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeContactId, setActiveContactId] = useState(activeThreadId || 'thread-beta-launch');
   const [messageInput, setMessageInput] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
@@ -255,6 +258,15 @@ export default function ExecutiveDirectMessages({
     if (!messageInput.trim()) return;
 
     const trimmed = messageInput.trim();
+
+    // Handle Edit Mode
+    if (editingMessageId) {
+      setMessages(prev => prev.map(m => m.id === editingMessageId ? { ...m, text: trimmed, isEdited: true } : m));
+      setEditingMessageId(null);
+      setMessageInput('');
+      return;
+    }
+
     const isAiTagged = trimmed.toLowerCase().startsWith('@ai') || trimmed.toLowerCase().includes('@regaarder');
 
     const newMsg = {
@@ -262,12 +274,14 @@ export default function ExecutiveDirectMessages({
       author: 'You',
       role: 'you',
       text: trimmed,
+      replyTo: replyingToMessage ? { id: replyingToMessage.id, author: replyingToMessage.author, text: replyingToMessage.text || replyingToMessage.transcript } : null,
       createdAt: Date.now(),
       status: 'sent'
     };
 
     setMessages(prev => [...prev, newMsg]);
     setMessageInput('');
+    setReplyingToMessage(null);
 
     if (isAiTagged) {
       setTimeout(() => {
@@ -282,6 +296,31 @@ export default function ExecutiveDirectMessages({
         setMessages(prev => [...prev, aiReply]);
       }, 700);
     }
+  };
+
+  const handleStartEdit = (msg) => {
+    setEditingMessageId(msg.id);
+    setMessageInput(msg.text || '');
+    setReplyingToMessage(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setMessageInput('');
+  };
+
+  const handleCopyMessage = (msg) => {
+    const textToCopy = msg.text || msg.transcript || '';
+    if (textToCopy) {
+      navigator.clipboard?.writeText(textToCopy);
+    }
+  };
+
+  const handleAiProofread = (msg) => {
+    // Quick executive AI rewrite
+    const current = msg.text || '';
+    const polished = current.endsWith('.') ? current : `${current}.`;
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: `✨ ${polished}` } : m));
   };
 
   const handleLogToMemory = (msg) => {
@@ -390,7 +429,7 @@ export default function ExecutiveDirectMessages({
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-white dark:bg-[#0c0d11] font-sans select-none">
-      {/* ── TOP UNIFIED WORKSPACE BAR (Docs / Sheets Standard) ── */}
+      {/* ── TOP UNIFIED WORKSPACE BAR (Clean Apple Hierarchy) ── */}
       <header 
         className="h-[54px] flex items-center justify-between px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shrink-0 z-30 cursor-default"
         onDoubleClick={(e) => {
@@ -399,8 +438,8 @@ export default function ExecutiveDirectMessages({
         }}
         onPointerDown={handleHeaderTap}
       >
-        <div className="flex items-center gap-2 select-none">
-          {/* Universal Workspace Switcher Button */}
+        <div className="flex items-center gap-2.5 select-none">
+          {/* Lightweight Borderless Workspace Switcher Button */}
           <button
             type="button"
             data-workspace-switcher="true"
@@ -410,10 +449,10 @@ export default function ExecutiveDirectMessages({
               const rect = e.currentTarget.getBoundingClientRect();
               if (onOpenWorkspaceSwitcher) onOpenWorkspaceSwitcher(rect);
             }}
-            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-850/90 border border-slate-200/70 dark:border-zinc-750 shadow-2xs hover:bg-slate-50 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 transition-all cursor-pointer shrink-0"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-all cursor-pointer shrink-0"
             title="Switch Workspace App"
           >
-            <LayoutGrid size={14} />
+            <LayoutGrid size={15} />
           </button>
 
           {/* Standard Docs/Sheets Style "R Home" Tab Pill */}
@@ -466,7 +505,7 @@ export default function ExecutiveDirectMessages({
 
       {/* ── 2-COLUMN MAIN BODY FRAME ── */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* ── LEFT COLUMN: Contacts (Atmospheric Blue Gradient Restored, ~340px) ── */}
+        {/* ── LEFT COLUMN: Contacts (~340px) ── */}
         <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-b from-[#f0f4fd] via-[#f7f9fd] to-[#f4f5f8] dark:from-[#0d1017] dark:via-[#090b10] dark:to-[#07080c] relative">
           {/* Subtle Ambient Mesh Radial Glows */}
           <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -868,7 +907,7 @@ export default function ExecutiveDirectMessages({
               return (
                 <div 
                   key={msg.id}
-                  className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'}`}
+                  className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative`}
                 >
                   {/* Author Name */}
                   {!isOutgoing && (
@@ -876,6 +915,46 @@ export default function ExecutiveDirectMessages({
                       {msg.author}
                     </span>
                   )}
+
+                  {/* Floating Action Bar on Hover (WhatsApp / Apple Executive Standard) */}
+                  <div className={`absolute -top-3.5 ${isOutgoing ? 'right-2' : 'left-2'} z-20 opacity-0 group-hover/msg:opacity-100 transition-all duration-150 flex items-center gap-0.5 p-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.12] shadow-sm select-none`}>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingToMessage(msg)}
+                      className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                      title="Reply / Quote"
+                    >
+                      <Reply size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyMessage(msg)}
+                      className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                      title="Copy text"
+                    >
+                      <Copy size={12} />
+                    </button>
+                    {isOutgoing && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(msg)}
+                          className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                          title="Edit your message"
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAiProofread(msg)}
+                          className="p-1 rounded-md text-violet-600 hover:text-violet-800 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors"
+                          title="AI Proofread & Polish"
+                        >
+                          <Wand2 size={12} />
+                        </button>
+                      </>
+                    )}
+                  </div>
 
                   {/* Message Bubble */}
                   <div
@@ -887,6 +966,14 @@ export default function ExecutiveDirectMessages({
                         : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
                     }`}
                   >
+                    {/* Quoted Message / Reply Preview if Present */}
+                    {msg.replyTo && (
+                      <div className="mb-2 p-2 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] border-l-2 border-violet-600 text-[11px] space-y-0.5">
+                        <span className="font-bold text-violet-700 dark:text-violet-400 block">{msg.replyTo.author}</span>
+                        <p className="text-slate-600 dark:text-zinc-300 truncate">{msg.replyTo.text}</p>
+                      </div>
+                    )}
+
                     {/* Audio Voice Note Player with AI Transcript */}
                     {msg.isAudio ? (
                       <div className="space-y-2 min-w-[240px]">
@@ -970,6 +1057,7 @@ export default function ExecutiveDirectMessages({
                         <span>Log to Memory</span>
                       </button>
                       <div className="ml-auto flex items-center gap-1 font-mono text-slate-400 dark:text-zinc-500">
+                        {msg.isEdited && <span className="text-[9.5px] italic text-slate-400 mr-0.5">edited</span>}
                         <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         {isOutgoing && <CheckCheck size={13} className="text-violet-600 dark:text-violet-400 inline" />}
                       </div>
@@ -993,8 +1081,48 @@ export default function ExecutiveDirectMessages({
             </button>
           )}
 
-          {/* ── BOTTOM COMPOSER ── */}
+          {/* ── BOTTOM COMPOSER (WhatsApp Style with Quote & Edit Banners) ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md">
+            {/* 1. WhatsApp-Style Quoted Reply Preview Banner (Image 2) */}
+            {replyingToMessage && (
+              <div className="mb-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/90 border border-black/[0.06] flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-150">
+                <div className="flex items-center gap-2 min-w-0 border-l-2 border-violet-600 pl-2">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 block truncate">
+                      Replying to {replyingToMessage.author}
+                    </span>
+                    <p className="text-xs text-slate-600 dark:text-zinc-300 truncate">
+                      {replyingToMessage.text || replyingToMessage.transcript}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyingToMessage(null)}
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* 2. Edit Message Mode Banner */}
+            {editingMessageId && (
+              <div className="mb-2 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 font-medium">
+                  <Edit3 size={13} />
+                  <span>Editing message</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
             <form 
               onSubmit={handleSendMessage}
               className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
@@ -1032,7 +1160,7 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                placeholder="Type a message, @AI to ask assistant, or share files..."
+                placeholder={editingMessageId ? "Edit your message..." : "Type a message, @AI to ask assistant, or share files..."}
                 className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
               />
 
@@ -1055,7 +1183,7 @@ export default function ExecutiveDirectMessages({
                 type="submit"
                 disabled={!messageInput.trim()}
                 className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
-                title="Send Message"
+                title={editingMessageId ? "Save Edit" : "Send Message"}
               >
                 <Send size={13} />
               </button>
