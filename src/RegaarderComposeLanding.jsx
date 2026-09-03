@@ -20,22 +20,22 @@ import {
   WhiteboardIcon,
   ScheduleIcon,
   MemoryIcon,
-  TasksIcon
+  RelayIcon
 } from "./components/RegaarderProductIcons";
 
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 import LegalPolicyModal from "./components/LegalPolicyModal";
 import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
 
-const products = [
+const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
   { id: "deck", title: "Deck", icon: DeckIcon },
   { id: "sheet", title: "Sheet", icon: SheetIcon },
   { id: "room", title: "Room", icon: RoomIcon },
+  { id: "relay", title: "Relay", icon: RelayIcon },
   { id: "whiteboard", title: "Whiteboard", icon: WhiteboardIcon },
   { id: "schedule", title: "Schedule", icon: ScheduleIcon },
   { id: "memory", title: "Memory", icon: MemoryIcon },
-  { id: "tasks", title: "Tasks", icon: TasksIcon },
 ];
 
 export default function RegaarderComposeLanding({
@@ -61,6 +61,29 @@ export default function RegaarderComposeLanding({
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackCategory, setFeedbackCategory] = useState('Idea');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  // Dynamic MRU (Most Recently Used) Product Ordering
+  const [sortedProducts, setSortedProducts] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const lastApp = localStorage.getItem('rc.lastOpenedApp') || 'compose';
+        const mruHistoryRaw = localStorage.getItem('rc.mruAppsHistory');
+        const mruList = mruHistoryRaw ? JSON.parse(mruHistoryRaw) : [lastApp];
+        
+        // Sort DEFAULT_PRODUCTS by index in mruList (most recent first)
+        const sorted = [...DEFAULT_PRODUCTS].sort((a, b) => {
+          const idxA = mruList.indexOf(a.id);
+          const idxB = mruList.indexOf(b.id);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return 0;
+        });
+        return sorted;
+      }
+    } catch {}
+    return DEFAULT_PRODUCTS;
+  });
   const [hasRecentWork, setHasRecentWork] = useState(() => {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
@@ -357,13 +380,22 @@ export default function RegaarderComposeLanding({
             - Generous whitespace (p-6).
           */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 w-full">
-            {products.map((product, idx) => {
+            {sortedProducts.map((product, idx) => {
               const IconComp = product.icon;
               return (
                 <button
                   key={product.id}
                   type="button"
-                  onClick={() => onLaunch?.({ type: 'action', name: product.id })}
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('rc.lastOpenedApp', product.id);
+                      const raw = localStorage.getItem('rc.mruAppsHistory');
+                      const prevList = raw ? JSON.parse(raw) : [];
+                      const nextList = [product.id, ...prevList.filter(id => id !== product.id)];
+                      localStorage.setItem('rc.mruAppsHistory', JSON.stringify(nextList));
+                    } catch {}
+                    onLaunch?.({ type: 'action', name: product.id });
+                  }}
                   style={{ animationDelay: `${idx * 25}ms` }}
                   className={[
                     "flex flex-col items-center justify-center gap-3",

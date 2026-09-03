@@ -2055,11 +2055,14 @@ export default function ExecutiveDirectMessages({
       {/* ── AI CONVERSATIONAL VOICE OVERLAY (RIGID HORIZONTAL/VERTICAL CENTER LOCK) ── */}
       {isAiVoiceSessionActive && (
         <div className="fixed inset-0 z-50 bg-[#0c0d14]/95 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none text-white">
-          {/* Top Bar with Brand Icon */}
+          {/* Top Bar with Brand Icon & Beta Badge */}
           <div className="w-full max-w-xl flex items-center justify-between">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs text-white">
               <RegaarderBrandIcon size={14} className="text-violet-400 shrink-0" />
               <span className="font-semibold">{activeModelDisplay.name}</span>
+              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold bg-violet-500/20 text-violet-300 border border-violet-400/30 uppercase tracking-widest ml-1">
+                BETA
+              </span>
             </div>
 
             <button
