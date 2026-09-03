@@ -116,7 +116,7 @@ export default function ExecutiveDirectMessages({
   onToggleFullscreen,
   onOpenWorkspaceSwitcher
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'ai' | 'topics' | 'broadcast' | 'actions'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'topics' | 'ai' | 'broadcast' | 'actions'
   const [isMoreTabsMenuOpen, setIsMoreTabsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeContactId, setActiveContactId] = useState('chat-assistant');
@@ -147,15 +147,11 @@ export default function ExecutiveDirectMessages({
 
   // ── Full Apple/ChatGPT AI Voice Session State ──
   const [isAiVoiceSessionActive, setIsAiVoiceSessionActive] = useState(false);
-  const [aiVoiceStatus, setAiVoiceStatus] = useState('listening'); // 'listening' | 'thinking' | 'speaking'
+  const [isAiVoicePaused, setIsAiVoicePaused] = useState(false);
   const [isAiVoiceMuted, setIsAiVoiceMuted] = useState(false);
   const [aiVoiceLiveWaves, setAiVoiceLiveWaves] = useState([12, 22, 16, 28, 14, 20, 24, 18, 12, 26]);
-  const [aiVoiceTranscript, setAiVoiceTranscript] = useState('Listening to your audio...');
-  const [aiVoiceHistory, setAiVoiceHistory] = useState([
-    { role: 'assistant', text: 'Hello Joshua! I am ready for real-time strategy synthesis, voice debriefs, or document checks.' }
-  ]);
 
-  // ── WhatsApp Standard Audio Recording State (Image 4 Standard with Apple Palette) ──
+  // ── WhatsApp Standard Audio Recording State ──
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(false);
   const [voiceElapsedSeconds, setVoiceElapsedSeconds] = useState(0);
@@ -163,7 +159,7 @@ export default function ExecutiveDirectMessages({
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const voiceTimerRef = useRef(null);
 
-  // ── In-Chat Direct WhatsApp Video/Audio Call State (Real WebRTC Stream) ──
+  // ── In-Chat Direct WhatsApp Video/Audio Call State ──
   const [activeCallSession, setActiveCallSession] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
   const localVideoRef = useRef(null);
@@ -285,13 +281,13 @@ export default function ExecutiveDirectMessages({
   // AI Voice conversational session simulator
   useEffect(() => {
     let interval;
-    if (isAiVoiceSessionActive && !isAiVoiceMuted) {
+    if (isAiVoiceSessionActive && !isAiVoiceMuted && !isAiVoicePaused) {
       interval = setInterval(() => {
         setAiVoiceLiveWaves(prev => prev.map(() => Math.floor(Math.random() * 32) + 8));
       }, 120);
     }
     return () => clearInterval(interval);
-  }, [isAiVoiceSessionActive, isAiVoiceMuted]);
+  }, [isAiVoiceSessionActive, isAiVoiceMuted, isAiVoicePaused]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter(c => {
@@ -361,7 +357,7 @@ export default function ExecutiveDirectMessages({
     setMessageInput(prev => `${prev}${emoji}`);
   };
 
-  // ── Document Selection & Preview Carousel Handlers ──
+  // Document Selection Handlers
   const handleFileAttach = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -512,32 +508,7 @@ export default function ExecutiveDirectMessages({
     setNewChatName('');
   };
 
-  const handleForwardMessage = (msg) => {
-    setForwardingMessage(msg);
-    setForwardSelectedRecipients({ [currentChat.id]: true });
-    setForwardComment('');
-    setForwardSearchQuery('');
-    setActiveMoreMenuMsgId(null);
-  };
-
-  const handleExecuteForward = () => {
-    if (!forwardingMessage) return;
-    const fwdContent = forwardingMessage.text || forwardingMessage.transcript || '';
-    const newMsg = {
-      id: `m-fwd-${Date.now()}`,
-      author: 'You',
-      role: 'you',
-      text: forwardComment.trim() ? `${forwardComment.trim()}\n\n[Forwarded]: ${fwdContent}` : `[Forwarded]: ${fwdContent}`,
-      createdAt: Date.now(),
-      status: 'sent',
-      workspaceRef: forwardingMessage.workspaceRef,
-      workspaceRefs: forwardingMessage.workspaceRefs
-    };
-    setMessages(prev => [...prev, newMsg]);
-    setForwardingMessage(null);
-  };
-
-  // Close open popovers on document tap
+  // Unified click-outside dismissal
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (!e.target.closest('.relative') && !e.target.closest('[data-popover-root="true"]')) {
@@ -651,14 +622,14 @@ export default function ExecutiveDirectMessages({
 
       {/* ── 2-COLUMN MAIN BODY FRAME ── */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* ── LEFT COLUMN: Contacts & AI Agents (~340px) ── */}
+        {/* ── LEFT COLUMN: Contacts & Sidebar (~340px) ── */}
         <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-b from-[#f0f4fd] via-[#f7f9fd] to-[#f4f5f8] dark:from-[#0d1017] dark:via-[#090b10] dark:to-[#07080c] relative">
           <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-10 right-0 w-40 h-40 bg-violet-300/15 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top Controls Bar */}
+          {/* Top Controls Bar with High Z-Index for Popovers */}
           <div 
-            className="p-3.5 space-y-2.5 border-b border-black/[0.05] dark:border-white/[0.06] relative z-10 cursor-default"
+            className="p-3.5 space-y-2.5 border-b border-black/[0.05] dark:border-white/[0.06] relative z-40 cursor-default"
             onDoubleClick={(e) => {
               if (e.target.closest('button, input, textarea')) return;
               if (onToggleFullscreen) onToggleFullscreen();
@@ -686,18 +657,18 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats, AI agents or files..."
+                placeholder="Search chats, topics or files..."
                 className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
               />
             </div>
 
-            {/* Streamlined Filter Tabs with Ellipsis (...) More Menu */}
-            <div className="flex items-center gap-1 pt-0.5 relative">
+            {/* Main Tabs (All, Unread, Groups, Topics) + Ellipsis (...) More Menu */}
+            <div className="flex items-center gap-1 pt-0.5 relative z-50">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'unread', label: 'Unread' },
                 { id: 'teams', label: 'Groups' },
-                { id: 'ai', label: 'AI Agents' }
+                { id: 'topics', label: 'Topics' }
               ].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -716,43 +687,47 @@ export default function ExecutiveDirectMessages({
                 );
               })}
 
-              {/* Ellipsis (...) Button for Extra Tabs (Topics, News, Actions) */}
+              {/* Ellipsis (...) Button for Extra Views */}
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsMoreTabsMenuOpen(prev => !prev)}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsMoreTabsMenuOpen(prev => !prev);
+                  }}
                   className={`w-7 h-6 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                    ['topics', 'broadcast', 'actions'].includes(activeTab) || isMoreTabsMenuOpen
+                    ['ai', 'broadcast', 'actions'].includes(activeTab) || isMoreTabsMenuOpen
                       ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-violet-600 dark:text-violet-400 font-bold border border-black/[0.04]'
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03]'
                   }`}
-                  title="More tab views"
+                  title="More views (AI Agents, News, Actions)"
                 >
                   <MoreHorizontal size={14} />
                 </button>
 
-                {/* More Tabs Dropdown Popover */}
+                {/* High Z-Index More Tabs Popover (Floating Over All Chats) */}
                 {isMoreTabsMenuOpen && (
                   <div 
                     data-popover-root="true"
-                    className="absolute right-0 top-7 w-40 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in duration-100 text-xs select-none"
+                    className="absolute right-0 top-7 w-44 bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-50 animate-in fade-in duration-100 text-xs select-none"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
-                      onClick={() => { setActiveTab('topics'); setIsMoreTabsMenuOpen(false); }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium cursor-pointer ${
-                        activeTab === 'topics' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
+                      onClick={() => { setActiveTab('ai'); setIsMoreTabsMenuOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl font-medium cursor-pointer ${
+                        activeTab === 'ai' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
                       }`}
                     >
-                      <Hash size={13} className="text-violet-600" />
-                      <span>Topic Channels</span>
+                      <Bot size={13} className="text-violet-600" />
+                      <span>AI Agents</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => { setActiveTab('broadcast'); setIsMoreTabsMenuOpen(false); }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium cursor-pointer ${
-                        activeTab === 'broadcast' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
+                      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl font-medium cursor-pointer ${
+                        activeTab === 'broadcast' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
                       }`}
                     >
                       <Radio size={13} className="text-emerald-600" />
@@ -761,8 +736,8 @@ export default function ExecutiveDirectMessages({
                     <button
                       type="button"
                       onClick={() => { setActiveTab('actions'); setIsMoreTabsMenuOpen(false); }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium cursor-pointer ${
-                        activeTab === 'actions' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
+                      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl font-medium cursor-pointer ${
+                        activeTab === 'actions' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
                       }`}
                     >
                       <ListTodo size={13} className="text-amber-600" />
@@ -798,13 +773,13 @@ export default function ExecutiveDirectMessages({
                 ))}
               </div>
             ) : activeTab === 'broadcast' ? (
-              <div className="p-3 rounded-2xl bg-white/90 border border-black/[0.05] shadow-2xs space-y-1.5">
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-black/[0.05] shadow-2xs space-y-1.5">
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-violet-100 text-violet-700">Official</span>
                 <h4 className="text-xs font-bold text-slate-900">Relay Zero-Knowledge Security Active</h4>
-                <p className="text-[11.5px] text-slate-600">All local conversations, voice streams, and document shares operate with private cryptographic envelopes.</p>
+                <p className="text-[11.5px] text-slate-600 leading-relaxed">All local conversations, voice streams, and document shares operate with private cryptographic envelopes.</p>
               </div>
             ) : activeTab === 'actions' ? (
-              <div className="p-4 text-center text-xs text-slate-400">
+              <div className="p-6 text-center text-xs text-slate-400">
                 No pending action items extracted.
               </div>
             ) : filteredConversations.length === 0 ? (
@@ -903,41 +878,52 @@ export default function ExecutiveDirectMessages({
         <main className="flex-1 flex flex-col min-w-0 bg-[#FDFDFD] dark:bg-[#0f1117] relative">
           {/* Active Conversation Header */}
           <header 
-            className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0 cursor-default select-none z-20"
+            className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0 cursor-default select-none z-30"
             onDoubleClick={(e) => {
               if (e.target.closest('button, input, textarea, a, select')) return;
               if (onToggleFullscreen) onToggleFullscreen();
             }}
             onPointerDown={handleHeaderTap}
           >
-            <div className="flex items-center gap-3 min-w-0 pointer-events-none">
-              <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center pointer-events-auto ${
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
                 currentChat.isAi 
                   ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs' 
                   : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200'
               }`}>
                 {currentChat.avatar}
               </div>
-              <div className="min-w-0 pointer-events-auto">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate flex items-center gap-2">
-                  <span>{currentChat.name}</span>
-                  {/* Dynamic AI Model Selector Pill */}
+              
+              {/* Correctly Aligned Title & Interactive Model Switcher */}
+              <div className="min-w-0 flex flex-col justify-center">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                    {currentChat.name}
+                  </h3>
+
+                  {/* Fully Interactive In-Chat AI Model Selector */}
                   {currentChat.isAi && (
-                    <div className="relative">
+                    <div className="relative inline-flex items-center">
                       <button
                         type="button"
-                        onClick={() => setIsAiModelSelectorOpen(prev => !prev)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-100/80 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 text-[10px] font-bold hover:bg-violet-200 transition-colors cursor-pointer"
-                        title="Switch underlying AI Model Engine"
+                        data-popover-root="true"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsAiModelSelectorOpen(prev => !prev);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-100/90 dark:bg-violet-950/90 text-violet-700 dark:text-violet-300 text-[11px] font-bold hover:bg-violet-200 transition-colors cursor-pointer shadow-2xs border border-violet-200/50"
+                        title="Switch AI Engine"
                       >
                         <span>{activeModelObj.name}</span>
-                        <ChevronDown size={11} />
+                        <ChevronDown size={12} className={`transition-transform ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
                       </button>
 
+                      {/* Dropdown Popover */}
                       {isAiModelSelectorOpen && (
                         <div 
                           data-popover-root="true"
-                          className="absolute left-0 top-6 w-64 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-50 animate-in fade-in duration-100"
+                          className="absolute left-0 top-8 w-64 bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-[100] animate-in fade-in duration-100"
                           onPointerDown={(e) => e.stopPropagation()}
                         >
                           <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-black/[0.04]">
@@ -969,7 +955,8 @@ export default function ExecutiveDirectMessages({
                       )}
                     </div>
                   )}
-                </h3>
+                </div>
+
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1110,14 +1097,6 @@ export default function ExecutiveDirectMessages({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleForwardMessage(msg)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                      title="Forward"
-                    >
-                      <CornerUpRight size={14} strokeWidth={2.2} />
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => {
                         navigator.clipboard?.writeText(msg.text || '');
                       }}
@@ -1204,7 +1183,7 @@ export default function ExecutiveDirectMessages({
                         </div>
                       </div>
                     ) : (
-                      msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
                     )}
 
                     <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
@@ -1225,7 +1204,7 @@ export default function ExecutiveDirectMessages({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* ── BOTTOM COMPOSER WITH APPLE EMOJI PICKER & VOICE RECORDING BAR ── */}
+          {/* ── BOTTOM COMPOSER ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md relative">
             {/* Categorized Apple-Style Emoji Picker Popover */}
             {isEmojiPickerOpen && (
@@ -1278,7 +1257,7 @@ export default function ExecutiveDirectMessages({
               </div>
             )}
 
-            {/* Voice Recording Bar (Image 4 Standard with Apple Palette) */}
+            {/* Voice Recording Bar */}
             {isRecordingVoice ? (
               <div className="flex items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] animate-in slide-in-from-bottom-2 duration-150">
                 <button
@@ -1332,7 +1311,6 @@ export default function ExecutiveDirectMessages({
                 onSubmit={handleSendMessage}
                 className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
               >
-                {/* Hidden File Input */}
                 <input 
                   type="file" 
                   multiple
@@ -1341,7 +1319,6 @@ export default function ExecutiveDirectMessages({
                   className="hidden" 
                 />
 
-                {/* 1. Attachment Clip with Docs/Sheets Popover */}
                 <div className="relative">
                   <button
                     type="button"
@@ -1446,20 +1423,14 @@ export default function ExecutiveDirectMessages({
         </main>
       </div>
 
-      {/* ── EXECUTIVE AI CONVERSATIONAL VOICE OVERLAY (OPENAI/APPLE INTELLIGENCE STANDARD) ── */}
+      {/* ── REFINED EXECUTIVE AI VOICE CONVERSATIONAL OVERLAY (IMAGE 2 STANDARD) ── */}
       {isAiVoiceSessionActive && (
-        <div className="fixed inset-0 z-50 bg-[#090A10]/90 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none">
-          {/* Top Bar with Dynamic Model Selector & Dismiss */}
+        <div className="fixed inset-0 z-50 bg-[#090A10]/92 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none">
+          {/* Top Bar with Regaarder Signature Circle Brand Icon */}
           <div className="w-full max-w-xl flex items-center justify-between">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs text-white">
-              <Sparkles size={13} className="text-violet-400" />
-              <span>{activeModelObj.name}</span>
-            </div>
-
-            {/* Live Session Status Badge */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-violet-950/60 border border-violet-500/30 text-[11px] font-semibold text-violet-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{isAiVoiceMuted ? 'Microphone Muted' : aiVoiceStatus === 'listening' ? 'Listening to voice...' : 'Synthesizing response...'}</span>
+              <RegaarderBrandIcon size={14} className="text-violet-400 shrink-0" />
+              <span className="font-semibold">{activeModelObj.name}</span>
             </div>
 
             <button
@@ -1472,48 +1443,54 @@ export default function ExecutiveDirectMessages({
             </button>
           </div>
 
-          {/* Central Pulsing Liquid Soundwave Orb */}
-          <div className="flex flex-col items-center justify-center space-y-6 my-auto">
+          {/* Central Pulsing Liquid Soundwave Orb + Polished Status Pill Below Orb */}
+          <div className="flex flex-col items-center justify-center space-y-5 my-auto">
             <div className="relative flex items-center justify-center">
-              {/* Outer Glow Halo */}
-              <div className={`w-56 h-56 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted ? 'opacity-30' : 'animate-pulse'}`} />
+              <div className={`w-56 h-56 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted || isAiVoicePaused ? 'opacity-30' : 'animate-pulse'}`} />
               
-              {/* Liquid Interactive Core Orb */}
               <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-700 border-2 border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden">
-                {/* Real-time Dynamic Waveform Bars */}
                 <div className="flex items-center gap-1.5 h-14">
                   {aiVoiceLiveWaves.map((h, i) => (
                     <div
                       key={i}
-                      className={`w-1.5 rounded-full transition-all duration-150 ${isAiVoiceMuted ? 'bg-white/30' : 'bg-white'}`}
-                      style={{ height: `${isAiVoiceMuted ? 6 : h}px` }}
+                      className={`w-1.5 rounded-full transition-all duration-150 ${isAiVoiceMuted || isAiVoicePaused ? 'bg-white/30' : 'bg-white'}`}
+                      style={{ height: `${isAiVoiceMuted || isAiVoicePaused ? 6 : h}px` }}
                     />
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Conversational Live Subtitle & Transcript Preview */}
-            <div className="text-center space-y-1.5 max-w-md px-4">
+            {/* Polished Frosted Status Pill Placed Beneath the Central Orb */}
+            <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white/90 shadow-xs">
+              <span className={`w-2 h-2 rounded-full ${isAiVoiceMuted ? 'bg-rose-400' : isAiVoicePaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+              <span>
+                {isAiVoiceMuted ? 'Microphone is muted' : isAiVoicePaused ? 'Voice session paused' : 'Listening to voice...'}
+              </span>
+            </div>
+
+            {/* Natural Text Subtitles (Standard Sans Font, No Monospace) */}
+            <div className="text-center space-y-1 max-w-md px-4 pt-1">
               <h3 className="text-base font-bold text-white tracking-tight">
-                {isAiVoiceMuted ? 'Microphone is Muted' : 'Speak naturally to collaborate'}
+                {isAiVoiceMuted ? 'Unmute to continue speaking' : isAiVoicePaused ? 'Session is paused' : 'Speak naturally to collaborate'}
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-mono">
-                {isAiVoiceMuted ? 'Click the microphone button below to speak.' : '“I analyzed the active brief and verified all unit economics margins.”'}
+              <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                {isAiVoiceMuted 
+                  ? 'Tap the microphone button below to resume voice streaming.' 
+                  : '“I analyzed the active brief and verified all unit economics margins.”'
+                }
               </p>
             </div>
           </div>
 
-          {/* Bottom Executive Voice Controls Glass Toolbar */}
+          {/* Bottom Glass Controls Bar with Pause/Resume Toggle */}
           <div className="w-full max-w-md flex items-center justify-center gap-5 p-3 rounded-3xl bg-white/10 border border-white/10 backdrop-blur-xl shadow-2xl">
-            {/* 1. Mute / Unmute Microphone Toggle */}
+            {/* 1. Mute / Unmute Toggle */}
             <button
               type="button"
               onClick={() => setIsAiVoiceMuted(prev => !prev)}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-md ${
-                isAiVoiceMuted 
-                  ? 'bg-rose-500 text-white' 
-                  : 'bg-white/20 hover:bg-white/30 text-white'
+                isAiVoiceMuted ? 'bg-rose-500 text-white' : 'bg-white/20 hover:bg-white/30 text-white'
               }`}
               title={isAiVoiceMuted ? "Unmute Microphone" : "Mute Microphone"}
             >
@@ -1530,17 +1507,16 @@ export default function ExecutiveDirectMessages({
               <span>End Voice Session</span>
             </button>
 
-            {/* 3. Interrupt / Push-to-Talk Toggle */}
+            {/* 3. Pause / Resume Voice Listening Toggle */}
             <button
               type="button"
-              onClick={() => {
-                setAiVoiceStatus('speaking');
-                setTimeout(() => setAiVoiceStatus('listening'), 2000);
-              }}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-md"
-              title="Interrupt / Trigger AI reply"
+              onClick={() => setIsAiVoicePaused(prev => !prev)}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-md ${
+                isAiVoicePaused ? 'bg-amber-500 text-white' : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+              title={isAiVoicePaused ? "Resume Voice Listening" : "Pause Voice Listening"}
             >
-              <Volume2 size={18} />
+              {isAiVoicePaused ? <Play size={18} /> : <Pause size={18} />}
             </button>
           </div>
         </div>
