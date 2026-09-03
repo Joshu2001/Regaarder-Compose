@@ -1836,23 +1836,11 @@ export default function ExecutiveDirectMessages({
                             </button>
                           </div>
 
-                          {/* Real Speech Transcription & Prompt Transparency */}
-                          {msg.transcript && (
-                            <div className="space-y-1">
-                              <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
-                                "{msg.transcript}"
-                              </p>
-                              {isOutgoing && currentChat?.isAi && (
-                                <span className={`text-[9.5px] font-mono font-medium block px-1 ${
-                                  msg.rawTranscript ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'
-                                }`}>
-                                  {msg.rawTranscript 
-                                    ? `✓ Instruction fed to ${currentChat.name}: "${msg.rawTranscript}"`
-                                    : `• Voice note received by ${currentChat.name}`
-                                  }
-                                </span>
-                              )}
-                            </div>
+                          {/* Real Speech Transcription Subtitle (if available) */}
+                          {msg.rawTranscript && (
+                            <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
+                              "{msg.rawTranscript}"
+                            </p>
                           )}
                         </div>
                       ) : (
@@ -1956,37 +1944,16 @@ export default function ExecutiveDirectMessages({
                   </span>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center px-4 min-w-0">
-                  <div className="flex items-center justify-center gap-0.5 h-6">
-                    {voiceWaveLevels.map((lvl, idx) => (
-                      <div
-                        key={idx}
-                        className={`w-1 rounded-full transition-all duration-75 ${
-                          isVoicePaused ? 'bg-slate-400' : 'bg-violet-600 dark:bg-violet-400'
-                        }`}
-                        style={{ height: `${lvl}px` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-[9.5px] font-bold text-violet-600 dark:text-violet-400 shrink-0 uppercase tracking-wider">
-                      Transcript:
-                    </span>
-                    <input
-                      type="text"
-                      value={voiceRecognitionTranscript}
-                      onChange={(e) => setVoiceRecognitionTranscript(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleSendVoiceRecording();
-                        }
-                      }}
-                      autoFocus
-                      placeholder="Type or confirm prompt (e.g. 'Write a poem for me')... Press Enter to send"
-                      className="flex-1 text-[11px] font-medium text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 rounded-lg px-2.5 py-1 border border-violet-300 dark:border-violet-700 focus:outline-none focus:ring-1 focus:ring-violet-500 truncate placeholder:text-slate-400 shadow-2xs"
+                <div className="flex-1 flex items-center justify-center gap-0.5 h-6 px-4">
+                  {voiceWaveLevels.map((lvl, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-1 rounded-full transition-all duration-75 ${
+                        isVoicePaused ? 'bg-slate-400' : 'bg-violet-600 dark:bg-violet-400'
+                      }`}
+                      style={{ height: `${lvl}px` }}
                     />
-                  </div>
+                  ))}
                 </div>
 
                 <button
