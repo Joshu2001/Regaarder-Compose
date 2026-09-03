@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
-import { detectLocalLLMServers, CLOUD_AI_MODELS } from '../../services/orbAiService';
+import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
 
 // Curated Apple-style categorized emojis
 const EMOJI_CATEGORIES = [
@@ -157,12 +157,17 @@ export default function ExecutiveDirectMessages({
               id: m.id,
               name: m.id,
               provider: `${s.name} ${m.size ? `(${m.size})` : ''}`,
-              isLocal: true
+              isLocal: true,
+              serverProvider: s.provider,
+              endpoint: s.endpoint
             });
           });
         }
       });
       setDetectedLocalModels(locals);
+      if (locals.length > 0 && selectedAiModel === 'gemini-2.0-flash') {
+        setSelectedAiModel(locals[0].id);
+      }
     } catch (e) {
       console.warn('Local LLM detection error:', e);
     } finally {
@@ -361,7 +366,8 @@ export default function ExecutiveDirectMessages({
     return { name: selectedAiModel, provider: 'AI Engine', isLocal: false };
   }, [selectedAiModel, detectedLocalModels]);
 
-  const handleSendMessage = (e) => {
+  // Dispatch prompt to real model (Ollama / Local LM / Cloud)
+  const handleSendMessage = async (e) => {
     e?.preventDefault();
     if (!messageInput.trim()) return;
 
@@ -399,24 +405,88 @@ export default function ExecutiveDirectMessages({
 
     if (isAiChat) {
       setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        const aiAuthor = currentChat?.name || 'Assistant';
-        const aiReply = {
-          id: `m-ai-${Date.now()}`,
-          author: aiAuthor,
-          role: 'assistant',
-          text: currentChat?.instructions 
-            ? `(${currentChat.name} Persona): "${trimmed}" analyzed in accordance with custom instructions.`
-            : `(${activeModelDisplay.name}): Processed your prompt "${trimmed}". Zero-knowledge verification complete.`,
-          createdAt: Date.now(),
-          status: 'read'
-        };
-        setThreadMessages(prev => ({
-          ...prev,
-          [activeContactId]: [...(prev[activeContactId] || []), aiReply]
-        }));
-      }, 700);
+
+      const targetModelId = currentChat?.modelId || selectedAiModel;
+      const targetLocal = detectedLocalModels.find(m => m.id === targetModelId);
+      const aiAuthor = currentChat?.name || 'Assistant';
+
+      let aiResponseText = '';
+
+      try {
+        if (targetLocal && targetLocal.serverProvider === 'ollama') {
+          // Direct real local Ollama query
+          const endpoint = (targetLocal.endpoint || 'http://localhost:11434').replace(/\/+$/, '');
+          const res = await fetch(`${endpoint}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: targetLocal.name,
+              messages: [
+                {
+                  role: 'system',
+                  content: currentChat?.instructions 
+                    ? currentChat.instructions 
+                    : 'You are an executive zero-knowledge AI assistant in Regaarder. Provide concise, clear, direct, and insightful responses.'
+                },
+                { role: 'user', content: trimmed }
+              ],
+              stream: false
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            aiResponseText = data.message?.content || '';
+          }
+        } else {
+          // Cloud provider execution via callAiProvider
+          const savedConfig = getSavedAiConfig();
+          const providerConfig = {
+            ...savedConfig,
+            provider: targetModelId.includes('gemini') ? 'gemini' : targetModelId.includes('claude') ? 'claude' : targetModelId.includes('gpt') ? 'openai' : 'gemini',
+            activeModel: targetModelId
+          };
+
+          const result = await callAiProvider(
+            [
+              {
+                role: 'system',
+                content: currentChat?.instructions || 'You are an executive zero-knowledge AI assistant in Regaarder. Provide concise, clear, and direct responses.'
+              },
+              { role: 'user', content: trimmed }
+            ],
+            providerConfig
+          );
+
+          if (result && result.content) {
+            aiResponseText = result.content;
+          }
+        }
+      } catch (err) {
+        console.warn('Real AI inference error:', err);
+      }
+
+      // Fallback if network or local server is offline
+      if (!aiResponseText) {
+        aiResponseText = currentChat?.instructions 
+          ? `(${currentChat.name} Persona): Received "${trimmed}". Ready to assist with your directives.`
+          : `(${activeModelDisplay.name}): Processed "${trimmed}". How would you like to proceed?`;
+      }
+
+      setIsTyping(false);
+      const aiReply = {
+        id: `m-ai-${Date.now()}`,
+        author: aiAuthor,
+        role: 'assistant',
+        text: aiResponseText,
+        createdAt: Date.now(),
+        status: 'read'
+      };
+
+      setThreadMessages(prev => ({
+        ...prev,
+        [activeContactId]: [...(prev[activeContactId] || []), aiReply]
+      }));
     }
   };
 
@@ -992,7 +1062,7 @@ export default function ExecutiveDirectMessages({
                     {currentChat.name}
                   </h3>
 
-                  {/* Real Detected Model Selector (Matching Room Standard) */}
+                  {/* Real Detected Model Selector */}
                   {currentChat.isAi && (
                     <div className="relative inline-flex items-center">
                       <button
@@ -1010,7 +1080,7 @@ export default function ExecutiveDirectMessages({
                         <ChevronDown size={12} className={`transition-transform ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
                       </button>
 
-                      {/* Dropdown Menu (Exact Architecture of Room AI Selector) */}
+                      {/* Dropdown Menu */}
                       {isAiModelSelectorOpen && (
                         <div 
                           data-popover-root="true"
@@ -1283,6 +1353,25 @@ export default function ExecutiveDirectMessages({
                         </div>
                       )}
 
+                      {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
+                        <div className="mb-2.5 grid grid-cols-2 gap-2">
+                          {msg.workspaceRefs.map((doc, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
+                              className="p-2.5 rounded-xl bg-[#E8EAEE]/90 border border-black/[0.05] hover:border-violet-500 cursor-pointer flex items-center gap-2.5 shadow-2xs"
+                            >
+                              <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-[11.5px] font-bold truncate text-slate-900">
+                                  {doc.title}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {msg.isAudio ? (
                         <div className="space-y-1.5 min-w-[240px]">
                           <div className="flex items-center gap-2.5">
@@ -1515,7 +1604,7 @@ export default function ExecutiveDirectMessages({
         </main>
       </div>
 
-      {/* ── AI CONVERSATIONAL VOICE OVERLAY (STRICT VERTICAL AXIS ALIGNMENT) ── */}
+      {/* ── AI CONVERSATIONAL VOICE OVERLAY (RIGID HORIZONTAL/VERTICAL CENTER LOCK) ── */}
       {isAiVoiceSessionActive && (
         <div className="fixed inset-0 z-50 bg-[#0c0d14]/95 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none text-white">
           {/* Top Bar with Brand Icon */}
@@ -1535,13 +1624,16 @@ export default function ExecutiveDirectMessages({
             </button>
           </div>
 
-          {/* Central Pulsing Liquid Orb (Strict Centered Geometry) */}
-          <div className="flex flex-col items-center justify-center space-y-5 my-auto w-full max-w-md mx-auto text-center">
-            <div className="relative flex items-center justify-center mx-auto">
-              <div className={`w-56 h-56 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted || isAiVoicePaused ? 'opacity-30' : 'animate-pulse'}`} />
+          {/* Central Pulsing Liquid Orb (Absolute Center Alignment) */}
+          <div className="flex flex-col items-center justify-center space-y-6 my-auto w-full max-w-md mx-auto text-center">
+            {/* Orb Anchor Container */}
+            <div className="relative w-44 h-44 flex items-center justify-center mx-auto">
+              {/* Centered Ambient Glow */}
+              <div className={`absolute inset-0 -m-8 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted || isAiVoicePaused ? 'opacity-20' : 'animate-pulse'}`} />
               
-              <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-700 border-2 border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden mx-auto">
-                <div className="flex items-center gap-1.5 h-14">
+              {/* Solid Liquid Sphere */}
+              <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-700 border-2 border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden z-10">
+                <div className="flex items-center justify-center gap-1.5 h-14 w-full">
                   {aiVoiceLiveWaves.map((h, i) => (
                     <div
                       key={i}
