@@ -45427,9 +45427,16 @@ Respond with a JSON array of slide objects matching the schema.`;
               showToast('Decision logged to Workspace Memory Hub');
             }}
             onNavigateWorkspace={(ref) => {
-              if (ref.type === 'sheets') createSheetsExperience();
-              else if (ref.type === 'deck') createDeckExperience();
-              else createComposeExperience();
+              if (ref.type === 'landing') {
+                setProductMode('landing');
+                setFocusedModule('landing');
+              } else if (ref.type === 'sheets') {
+                createSheetsExperience();
+              } else if (ref.type === 'deck') {
+                createDeckExperience();
+              } else {
+                createComposeExperience();
+              }
             }}
             onToggleFullscreen={toggleDocumentImmersiveMode}
             onOpenWorkspaceSwitcher={(rect) => {
