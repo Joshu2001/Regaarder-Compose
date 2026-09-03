@@ -3,9 +3,10 @@ import {
   Search, Video, Plus, Check, CheckCheck, Send, Smile, Paperclip, 
   Sparkles, FileText, Table, Presentation, X, ArrowRight, MoreVertical,
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
-  Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown
+  Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
+  Lock, KeyRound, Shield, CheckCircle2, Copy, Info
 } from 'lucide-react';
-import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, ChatIcon } from '../RegaarderProductIcons';
+import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon } from '../RegaarderProductIcons';
 
 export default function ExecutiveDirectMessages({
   isDarkMode = false,
@@ -28,6 +29,8 @@ export default function ExecutiveDirectMessages({
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState('keyword'); // 'keyword' | 'semantic'
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isTrustDrawerOpen, setIsTrustDrawerOpen] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
 
   const [messages, setMessages] = useState([
     {
@@ -66,51 +69,67 @@ export default function ExecutiveDirectMessages({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Conversations list
+  // Conversations list with cryptographic enterprise identity & keys
   const conversations = useMemo(() => [
     {
       id: 'thread-beta-launch',
       name: 'Beta Launch Core',
+      handle: '@team.beta-launch',
       avatar: 'BL',
       isGroup: true,
       lastMsg: 'Decision logged: May 15 launch approved...',
       time: '20m ago',
       unread: 0,
       category: 'teams',
-      online: true
+      online: true,
+      fingerprint: '0x8F2A • B419 • E941 • 3D02',
+      e2eeStatus: 'Verified Enterprise Key',
+      participants: ['Sarah Johnson', 'Alex Morgan', 'Joshua David', 'Orb AI']
     },
     {
       id: 'dm-sarah',
       name: 'Sarah Johnson',
+      handle: '@sarah.johnson',
       avatar: 'SJ',
       isGroup: false,
       lastMsg: 'I added the revised CAC metrics to the presentation deck.',
       time: '1h ago',
       unread: 1,
       category: 'unread',
-      online: true
+      online: true,
+      fingerprint: '0x4C19 • 7E33 • A08F • 99B1',
+      e2eeStatus: 'Verified Enterprise Key',
+      roleTitle: 'VP of Product Strategy'
     },
     {
       id: 'dm-alex',
       name: 'Alex Morgan',
+      handle: '@alex.morgan',
       avatar: 'AM',
       isGroup: false,
       lastMsg: 'The backend webhook latency dropped to 45ms.',
       time: 'Yesterday',
       unread: 0,
       category: 'all',
-      online: false
+      online: false,
+      fingerprint: '0x11B8 • E209 • 55CA • 7710',
+      e2eeStatus: 'Verified Enterprise Key',
+      roleTitle: 'Principal Infrastructure Engineer'
     },
     {
       id: 'thread-marketing',
       name: 'Marketing & Brand',
+      handle: '@team.marketing',
       avatar: 'MB',
       isGroup: true,
       lastMsg: 'New typography tokens pushed to design system.',
       time: 'Tuesday',
       unread: 0,
       category: 'teams',
-      online: true
+      online: true,
+      fingerprint: '0xD702 • 99AE • 1204 • FA88',
+      e2eeStatus: 'Verified Enterprise Key',
+      participants: ['Elena Rostova', 'Sarah Johnson', 'David Vance']
     }
   ], []);
 
@@ -120,7 +139,8 @@ export default function ExecutiveDirectMessages({
       if (activeTab === 'teams' && !c.isGroup) return false;
       if (searchQuery.trim()) {
         return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-               c.lastMsg.toLowerCase().includes(searchQuery.toLowerCase());
+               c.lastMsg.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               (c.handle && c.handle.toLowerCase().includes(searchQuery.toLowerCase()));
       }
       return true;
     });
@@ -199,6 +219,14 @@ export default function ExecutiveDirectMessages({
     recognition.start();
   };
 
+  const handleCopyKey = () => {
+    if (currentChat?.fingerprint) {
+      navigator.clipboard?.writeText(currentChat.fingerprint);
+      setCopiedKey(true);
+      setTimeout(() => setCopiedKey(false), 2000);
+    }
+  };
+
   const lastHeaderTapRef = useRef(0);
   const handleHeaderTap = (e) => {
     if (e.target.closest('button, input, textarea, a, select')) return;
@@ -220,7 +248,7 @@ export default function ExecutiveDirectMessages({
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-[#FBFBFA] dark:bg-[#0c0d11] font-sans select-none">
-      {/* ── TOP UNIFIED WORKSPACE BAR (Exact Room/Docs Standard) ── */}
+      {/* ── TOP UNIFIED WORKSPACE BAR ── */}
       <header 
         className="h-[54px] flex items-center justify-between px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shrink-0 z-30 cursor-default"
         onDoubleClick={(e) => {
@@ -248,8 +276,8 @@ export default function ExecutiveDirectMessages({
 
           {/* Cohesive Relay Workspace Breadcrumb */}
           <div className="flex items-center gap-2 h-8 px-2.5 rounded-xl bg-white/80 dark:bg-zinc-850/80 border border-slate-200/60 dark:border-zinc-750 shadow-2xs">
-            <div className="w-5 h-5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-              <ChatIcon size={13} strokeWidth={1.8} />
+            <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <RelayIcon size={13} strokeWidth={1.8} />
             </div>
             <span className="text-[13px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">Relay</span>
             <span className="text-[9.5px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 tracking-wider uppercase">Workspace</span>
@@ -258,10 +286,21 @@ export default function ExecutiveDirectMessages({
 
         {/* Global Right Actions */}
         <div className="flex items-center gap-2">
+          {/* E2EE Security Indicator Pill */}
+          <button
+            type="button"
+            onClick={() => setIsTrustDrawerOpen(prev => !prev)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100/80 transition-colors cursor-pointer"
+            title="View End-to-End Cryptographic Trust Proof"
+          >
+            <Lock size={12} className="text-emerald-600 dark:text-emerald-400" />
+            <span className="font-semibold text-[11px]">E2EE Verified</span>
+          </button>
+
           <button
             type="button"
             onClick={onOpenRoom}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
             title="Start or join video room"
           >
             <Video size={13} />
@@ -282,12 +321,8 @@ export default function ExecutiveDirectMessages({
 
       {/* ── 2-COLUMN MAIN BODY FRAME ── */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* ── LEFT COLUMN: Contacts & Mesh Atmosphere (~340px) ── */}
-        <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-b from-[#f0f4fd] via-[#f7f9fd] to-[#f4f5f8] dark:from-[#0d1017] dark:via-[#090b10] dark:to-[#07080c] relative">
-          {/* Subtle Ambient Mesh Radial Glows */}
-          <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-10 right-0 w-40 h-40 bg-violet-300/15 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-
+        {/* ── LEFT COLUMN: Contacts (WhatsApp-style Clean Highlight, ~340px) ── */}
+        <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-[#F7F8FA] dark:bg-[#0e1017] relative">
           {/* Top Controls Bar */}
           <div 
             className="p-3.5 space-y-2.5 border-b border-black/[0.05] dark:border-white/[0.06] relative z-10 cursor-default"
@@ -302,8 +337,8 @@ export default function ExecutiveDirectMessages({
                 <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">
                   Relay
                 </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/40">
-                  On-Device
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40">
+                  P2P Encrypted
                 </span>
               </div>
             </div>
@@ -315,8 +350,8 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search or start new chat..."
-                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+                placeholder="Search by name, @handle, or user ID..."
+                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
 
@@ -335,7 +370,7 @@ export default function ExecutiveDirectMessages({
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-3 py-1 text-[11.5px] rounded-xl transition-all cursor-pointer ${
                       isActive
-                        ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
+                        ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-black/[0.04] dark:border-white/[0.06]'
                         : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                     }`}
                   >
@@ -346,8 +381,8 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Elevated Floating Contact Cards (Image 4 Apple Executive Tier) */}
-          <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-2 relative z-10">
+          {/* Contact Cards (WhatsApp-Style Executive Highlight - No Harsh Outlines) */}
+          <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
             {filteredConversations.length === 0 && (
               <div className="py-12 text-center text-xs text-slate-400">
                 No conversations found
@@ -362,33 +397,38 @@ export default function ExecutiveDirectMessages({
                     setActiveContactId(chat.id);
                     if (onSelectThread) onSelectThread(chat.id);
                   }}
-                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer border ${
+                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-white dark:bg-zinc-800/95 border-violet-300/80 dark:border-violet-700/80 shadow-[0_4px_16px_rgba(124,58,237,0.08)] outline outline-1 outline-violet-500/30'
-                      : 'bg-white/80 dark:bg-zinc-850/60 border-black/[0.04] dark:border-white/[0.05] hover:bg-white dark:hover:bg-zinc-800 shadow-2xs hover:shadow-xs'
+                      ? 'bg-[#E8EAEE] dark:bg-[#1D212C] text-slate-900 dark:text-zinc-100 shadow-2xs'
+                      : 'bg-transparent hover:bg-[#EFF1F4] dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
                   }`}
                 >
                   {/* Avatar with Status Indicator */}
                   <div className="relative shrink-0">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
                       chat.isGroup
-                        ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
-                        : 'bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
+                        ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                        : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
                     }`}>
                       {chat.avatar}
                     </div>
                     {chat.online && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-800" />
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#F7F8FA] dark:ring-[#0e1017]" />
                     )}
                   </div>
 
-                  {/* Text Details */}
+                  {/* Text Details & Trust Handle */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                        {chat.name}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                          {chat.name}
+                        </span>
+                        {chat.e2eeStatus && (
+                          <Lock size={10} className="text-emerald-600 dark:text-emerald-400 shrink-0" title="End-to-End Encrypted" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0">
                         {chat.time}
                       </span>
                     </div>
@@ -397,7 +437,7 @@ export default function ExecutiveDirectMessages({
                         {chat.lastMsg}
                       </p>
                       {chat.unread > 0 && (
-                        <span className="w-4 h-4 rounded-full bg-violet-600 text-white text-[9.5px] font-bold flex items-center justify-center shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9.5px] font-bold flex items-center justify-center shrink-0">
                           {chat.unread}
                         </span>
                       )}
@@ -420,34 +460,59 @@ export default function ExecutiveDirectMessages({
             }}
             onPointerDown={handleHeaderTap}
           >
-            <div className="flex items-center gap-3 min-w-0 pointer-events-none">
-              <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold text-xs flex items-center justify-center border border-violet-200 dark:border-violet-800/60 pointer-events-auto">
+            <div 
+              onClick={() => setIsTrustDrawerOpen(prev => !prev)}
+              className="flex items-center gap-3 min-w-0 cursor-pointer group"
+              title="Click to inspect cryptographic key fingerprint & trust details"
+            >
+              <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center border border-blue-200 dark:border-blue-800/60">
                 {currentChat.avatar}
               </div>
-              <div className="min-w-0 pointer-events-auto">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                  {currentChat.name}
-                </h3>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {currentChat.name}
+                  </h3>
+                  <span className="font-mono text-[10px] text-slate-400 dark:text-zinc-500 bg-black/[0.03] dark:bg-white/[0.05] px-1.5 py-0.5 rounded-md">
+                    {currentChat.handle}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Active
+                    <Lock size={10} />
+                    <span>E2EE Active</span>
                   </span>
                   <span>•</span>
-                  <span>Synced with Workspace Graph</span>
+                  <span className="font-mono text-[10px] text-slate-400 truncate max-w-[150px]">
+                    {currentChat.fingerprint}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Conversation Tools (Pin, In-Chat Search, Meet) */}
+            {/* Conversation Tools (Pin, In-Chat Search, Meet, Trust) */}
             <div className="flex items-center gap-1.5">
+              {/* Trust & E2EE Info Button */}
+              <button
+                type="button"
+                onClick={() => setIsTrustDrawerOpen(prev => !prev)}
+                className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                  isTrustDrawerOpen 
+                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' 
+                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
+                }`}
+                title="Cryptographic trust and user ID details"
+              >
+                <ShieldCheck size={16} />
+              </button>
+
               {/* In-Chat Search Toggle */}
               <button
                 type="button"
                 onClick={() => setIsChatSearchOpen(prev => !prev)}
                 className={`p-2 rounded-xl transition-colors cursor-pointer ${
                   isChatSearchOpen 
-                    ? 'bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300' 
+                    ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' 
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
                 }`}
                 title="Search within this chat"
@@ -474,7 +539,7 @@ export default function ExecutiveDirectMessages({
               <button
                 type="button"
                 onClick={onOpenRoom}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
                 title="Instant Video Room"
               >
                 <Video size={13} />
@@ -482,6 +547,50 @@ export default function ExecutiveDirectMessages({
               </button>
             </div>
           </header>
+
+          {/* ── Cryptographic Trust & User Verification Drawer ── */}
+          {isTrustDrawerOpen && (
+            <div className="px-6 py-3 bg-emerald-50/90 dark:bg-emerald-950/40 border-b border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between gap-4 text-xs animate-in slide-in-from-top-2 duration-150 z-15">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-emerald-900 dark:text-emerald-100">
+                      End-to-End Cryptographic Security
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200/60 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200">
+                      AES-256-GCM / Curve25519
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-emerald-700 dark:text-emerald-300 text-[11px]">
+                    <span>User Key: <span className="font-mono font-bold">{currentChat.fingerprint}</span></span>
+                    <span>•</span>
+                    <span>Verified Organization Signature</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCopyKey}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-zinc-800 text-emerald-800 dark:text-emerald-200 border border-emerald-300/50 dark:border-emerald-700/50 text-[11px] font-semibold hover:bg-white cursor-pointer shadow-2xs"
+                >
+                  {copiedKey ? <CheckCircle2 size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                  <span>{copiedKey ? 'Copied' : 'Copy Key'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsTrustDrawerOpen(false)}
+                  className="p-1 text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── In-Chat Search Drawer with AI Retrieval Toggle ── */}
           {isChatSearchOpen && (
@@ -516,7 +625,7 @@ export default function ExecutiveDirectMessages({
                   onClick={() => setSearchMode('semantic')}
                   className={`flex items-center gap-1 px-2 py-1 text-[10.5px] rounded-md transition-all cursor-pointer ${
                     searchMode === 'semantic'
-                      ? 'bg-violet-600 text-white font-semibold shadow-2xs'
+                      ? 'bg-blue-600 text-white font-semibold shadow-2xs'
                       : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
@@ -540,6 +649,14 @@ export default function ExecutiveDirectMessages({
 
           {/* Message Stream */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 thin-scrollbar">
+            {/* End-to-End Encryption Security Banner (Apple / WhatsApp Standard) */}
+            <div className="w-fit mx-auto px-4 py-2 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2 max-w-lg text-center leading-normal shadow-2xs">
+              <Lock size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>
+                Messages and calls are end-to-end encrypted. No one outside of this chat, not even Regaarder, can read or listen to them.
+              </span>
+            </div>
+
             <div className="w-fit mx-auto px-3 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] text-[10.5px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
               Today
             </div>
@@ -566,13 +683,13 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
-                  {/* Refined Message Bubble (Clean Executive Slate / Indigo - Zero Underlines) */}
+                  {/* Refined Message Bubble (Apple Executive Royal Blue - Pure Elegance) */}
                   <div
                     className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative group transition-shadow ${
                       isOutgoing
-                        ? 'bg-[#5B4DB2] text-white rounded-tr-xs shadow-xs'
+                        ? 'bg-[#2563EB] text-white rounded-tr-xs shadow-xs'
                         : isAssistant
-                        ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
+                        ? 'bg-blue-50/80 dark:bg-blue-950/40 text-slate-800 dark:text-zinc-100 border border-blue-200/70 dark:border-blue-800/40 rounded-tl-xs shadow-2xs'
                         : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
                     }`}
                   >
@@ -585,14 +702,14 @@ export default function ExecutiveDirectMessages({
                         className={`mt-2.5 p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-colors ${
                           isOutgoing
                             ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
-                            : 'bg-black/[0.02] dark:bg-white/[0.04] border-black/[0.05] dark:border-white/[0.08] hover:border-violet-400 text-slate-800 dark:text-zinc-200'
+                            : 'bg-black/[0.02] dark:bg-white/[0.04] border-black/[0.05] dark:border-white/[0.08] hover:border-blue-400 text-slate-800 dark:text-zinc-200'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                             isOutgoing 
                               ? 'bg-white/20 text-white' 
-                              : 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300'
+                              : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300'
                           }`}>
                             <RegaarderProductIcon name={msg.workspaceRef.type} size={15} />
                           </div>
@@ -609,20 +726,20 @@ export default function ExecutiveDirectMessages({
                       </div>
                     )}
 
-                    {/* Ambient Metadata Footer (No harsh divider line) */}
+                    {/* Ambient Metadata Footer */}
                     <div className="mt-1.5 flex items-center justify-between text-[10px]">
                       <button
                         type="button"
                         onClick={() => handleLogToMemory(msg)}
                         className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-semibold hover:underline cursor-pointer ${
-                          isOutgoing ? 'text-violet-200' : 'text-violet-600 dark:text-violet-400'
+                          isOutgoing ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'
                         }`}
                         title="Register this claim in Workspace Memory Hub"
                       >
                         <RegaarderAiIcon size={11} strokeWidth={2.0} />
                         <span>Log to Memory</span>
                       </button>
-                      <span className={`ml-auto font-mono ${isOutgoing ? 'text-violet-200/80' : 'text-slate-400 dark:text-zinc-500'}`}>
+                      <span className={`ml-auto font-mono ${isOutgoing ? 'text-blue-100/80' : 'text-slate-400 dark:text-zinc-500'}`}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -694,7 +811,7 @@ export default function ExecutiveDirectMessages({
               <button
                 type="submit"
                 disabled={!messageInput.trim()}
-                className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
+                className="w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
                 title="Send Message"
               >
                 <Send size={13} />

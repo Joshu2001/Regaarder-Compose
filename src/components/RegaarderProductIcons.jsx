@@ -325,6 +325,32 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
   </svg>
 );
 
+/**
+ * Proprietary Regaarder Relay Glyph
+ * Metaphor: Bidirectional peer-to-peer transmission with two interlocking communication waves and cryptographic focal link.
+ */
+export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Outgoing signal track */}
+    <path d="M4.5 9.5C4.5 6.5 7 4.5 10.5 4.5H15.5C18.5 4.5 20.5 6.5 20.5 9.5C20.5 11.5 19.5 13 18 14L19.5 17.5L15 16.5" />
+    {/* Incoming counter-track (interlocking relay loop) */}
+    <path d="M19.5 14.5C19.5 17.5 17 19.5 13.5 19.5H8.5C5.5 19.5 3.5 17.5 3.5 14.5C3.5 12.5 4.5 11 6 10L4.5 6.5L9 7.5" opacity="0.45" />
+    {/* Cryptographic focal core node */}
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const PeopleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
@@ -637,8 +663,8 @@ export const RegaarderProductIconMap = {
   fitscreen: RegaarderFitScreenIcon,
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
-  relay: ChatIcon,
-  Relay: ChatIcon,
+  relay: RelayIcon,
+  Relay: RelayIcon,
   browser: BrowserIcon,
   slide: DeckIcon,
   Slide: DeckIcon,
