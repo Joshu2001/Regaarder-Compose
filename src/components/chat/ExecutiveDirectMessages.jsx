@@ -9,7 +9,8 @@ import {
   Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
   Megaphone, UserCheck, Users, Radio, Eye, Phone, PhoneOff, PhoneCall,
   MicOff, VideoOff, Maximize2, Minimize2, Image, Link, FileCode,
-  UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower
+  UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
+  SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -44,6 +45,65 @@ const AI_MODEL_OPTIONS = [
   { id: 'orb-strategist', name: 'Regaarder Orb Orchestrator', provider: 'Workspace Core', icon: '✨', desc: 'Autonomous cross-document synthesis' }
 ];
 
+// Docs File Type Semantic Badge
+const DocsSemanticFileBadge = ({ type, title = '', size = 'md' }) => {
+  const nameLower = (title || '').toLowerCase();
+  const ext = (nameLower.split('.').pop() || type || '').toLowerCase();
+
+  let bgHex = '#7C3AED';
+  let label = 'DOC';
+  let svg = (
+    <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+
+  if (ext === 'pdf') {
+    bgHex = '#DC2626';
+    label = 'PDF';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  } else if (['xls', 'xlsx', 'csv', 'ods'].includes(ext) || type === 'sheets') {
+    bgHex = '#059669';
+    label = ext === 'csv' ? 'CSV' : 'XLS';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  } else if (['ppt', 'pptx', 'key'].includes(ext) || type === 'deck') {
+    bgHex = '#D97706';
+    label = 'PPT';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  const dimClasses = size === 'lg' ? 'w-[32px] h-[36px] rounded-lg' : 'w-[20px] h-[22px] rounded-[5px]';
+  const labelClasses = size === 'lg' ? 'text-[8.5px] font-black uppercase mb-0.5' : 'text-[6.5px] font-black uppercase mb-[1px]';
+
+  return (
+    <span
+      className={`${dimClasses} flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-xs`}
+      style={{ backgroundColor: bgHex }}
+    >
+      <span className={`${labelClasses} text-white leading-none`}>{label}</span>
+      {svg}
+    </span>
+  );
+};
+
 export default function ExecutiveDirectMessages({
   isDarkMode = false,
   threads = [],
@@ -56,9 +116,10 @@ export default function ExecutiveDirectMessages({
   onToggleFullscreen,
   onOpenWorkspaceSwitcher
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'ai' | 'topics' | 'broadcast'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'ai' | 'topics' | 'broadcast' | 'actions'
+  const [isMoreTabsMenuOpen, setIsMoreTabsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeContactId, setActiveContactId] = useState('chat-ai-default');
+  const [activeContactId, setActiveContactId] = useState('chat-assistant');
   const [messageInput, setMessageInput] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
@@ -84,12 +145,17 @@ export default function ExecutiveDirectMessages({
   const [selectedAiModel, setSelectedAiModel] = useState('chatgpt-4o');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
 
-  // ── AI Real-Time Voice Conversation Mode State ──
+  // ── Full Apple/ChatGPT AI Voice Session State ──
   const [isAiVoiceSessionActive, setIsAiVoiceSessionActive] = useState(false);
   const [aiVoiceStatus, setAiVoiceStatus] = useState('listening'); // 'listening' | 'thinking' | 'speaking'
-  const [aiVoiceWaves, setAiVoiceWaves] = useState([10, 18, 26, 14, 32, 20, 12, 28, 16, 22]);
+  const [isAiVoiceMuted, setIsAiVoiceMuted] = useState(false);
+  const [aiVoiceLiveWaves, setAiVoiceLiveWaves] = useState([12, 22, 16, 28, 14, 20, 24, 18, 12, 26]);
+  const [aiVoiceTranscript, setAiVoiceTranscript] = useState('Listening to your audio...');
+  const [aiVoiceHistory, setAiVoiceHistory] = useState([
+    { role: 'assistant', text: 'Hello Joshua! I am ready for real-time strategy synthesis, voice debriefs, or document checks.' }
+  ]);
 
-  // ── WhatsApp Standard Audio Recording State (Apple Refined Palette) ──
+  // ── WhatsApp Standard Audio Recording State (Image 4 Standard with Apple Palette) ──
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isVoicePaused, setIsVoicePaused] = useState(false);
   const [voiceElapsedSeconds, setVoiceElapsedSeconds] = useState(0);
@@ -97,7 +163,7 @@ export default function ExecutiveDirectMessages({
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const voiceTimerRef = useRef(null);
 
-  // ── In-Chat Direct Call State (Real WebRTC Camera & Audio) ──
+  // ── In-Chat Direct WhatsApp Video/Audio Call State (Real WebRTC Stream) ──
   const [activeCallSession, setActiveCallSession] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
   const localVideoRef = useRef(null);
@@ -111,19 +177,19 @@ export default function ExecutiveDirectMessages({
   // ── Create Group / Persona Modal State ──
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [newChatName, setNewChatName] = useState('');
-  const [newChatType, setNewChatType] = useState('group'); // 'group' | 'dm' | 'ai-persona'
+  const [newChatType, setNewChatType] = useState('group');
   const [newChatPersonaModel, setNewChatPersonaModel] = useState('gemma-local');
 
-  // Clean starting state with default ChatGPT / Regaarder AI channel
+  // Clean starting state with default Assistant channel
   const [conversations, setConversations] = useState([
     {
-      id: 'chat-ai-default',
-      name: 'ChatGPT & Regaarder AI',
+      id: 'chat-assistant',
+      name: 'Assistant',
       avatar: 'AI',
       isGroup: false,
       isAi: true,
       modelId: 'chatgpt-4o',
-      modelName: 'ChatGPT (GPT-4o) / Gemma Local',
+      modelName: 'ChatGPT (GPT-4o)',
       lastMsg: 'Ready for strategy briefings, real-time voice, or file synthesis.',
       time: 'Just now',
       unread: 0,
@@ -135,13 +201,13 @@ export default function ExecutiveDirectMessages({
     }
   ]);
 
-  // Clean initial messages starting on a fresh slate
+  // Clean initial messages
   const [messages, setMessages] = useState([
     {
       id: 'm-welcome',
-      author: 'ChatGPT (OpenAI)',
+      author: 'Assistant',
       role: 'assistant',
-      text: 'Welcome to Regaarder Relay. All communications are end-to-end encrypted with zero-knowledge keys.\n\nYou can chat by typing, attach documents, switch AI models dynamically, or start real-time voice sessions using the AI Voice button.',
+      text: 'Welcome to Regaarder Relay. All communications are end-to-end encrypted with zero-knowledge keys.\n\nYou can chat by typing, attach documents, switch AI models dynamically, or start real-time conversational voice sessions using the Voice Chat with AI button.',
       createdAt: Date.now() - 1000 * 60 * 2,
       status: 'read'
     }
@@ -219,20 +285,20 @@ export default function ExecutiveDirectMessages({
   // AI Voice conversational session simulator
   useEffect(() => {
     let interval;
-    if (isAiVoiceSessionActive) {
+    if (isAiVoiceSessionActive && !isAiVoiceMuted) {
       interval = setInterval(() => {
-        setAiVoiceWaves(prev => prev.map(() => Math.floor(Math.random() * 30) + 10));
-      }, 150);
+        setAiVoiceLiveWaves(prev => prev.map(() => Math.floor(Math.random() * 32) + 8));
+      }, 120);
     }
     return () => clearInterval(interval);
-  }, [isAiVoiceSessionActive]);
+  }, [isAiVoiceSessionActive, isAiVoiceMuted]);
 
   const filteredConversations = useMemo(() => {
     return conversations.filter(c => {
       if (activeTab === 'unread' && c.unread === 0) return false;
       if (activeTab === 'teams' && !c.isGroup) return false;
       if (activeTab === 'ai' && !c.isAi) return false;
-      if (activeTab === 'topics' || activeTab === 'broadcast') return true;
+      if (activeTab === 'topics' || activeTab === 'broadcast' || activeTab === 'actions') return true;
       if (searchQuery.trim()) {
         return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                c.lastMsg.toLowerCase().includes(searchQuery.toLowerCase());
@@ -280,7 +346,7 @@ export default function ExecutiveDirectMessages({
         setIsTyping(false);
         const aiReply = {
           id: `m-ai-${Date.now()}`,
-          author: activeModelObj.name,
+          author: 'Assistant',
           role: 'assistant',
           text: `(${activeModelObj.name}): Processed your prompt "${trimmed}". Zero-knowledge verification complete across the active workspace.`,
           createdAt: Date.now(),
@@ -293,6 +359,68 @@ export default function ExecutiveDirectMessages({
 
   const handleSelectEmoji = (emoji) => {
     setMessageInput(prev => `${prev}${emoji}`);
+  };
+
+  // ── Document Selection & Preview Carousel Handlers ──
+  const handleFileAttach = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const parsedDocs = files.map((f, i) => {
+      const fileName = f.name;
+      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
+      const sizeStr = f.size ? `${Math.round(f.size / 1024)} KB` : '420 KB';
+      return {
+        id: `attach-${Date.now()}-${i}`,
+        title: fileName,
+        type: fileType,
+        size: sizeStr
+      };
+    });
+
+    setPendingAttachments(prev => [...prev, ...parsedDocs]);
+    setSelectedAttachmentIndex(0);
+    setAttachmentCaption('');
+    setIsAttachmentMenuOpen(false);
+  };
+
+  const handleAddMoreFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const parsedDocs = files.map((f, i) => {
+      const fileName = f.name;
+      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
+      const sizeStr = f.size ? `${Math.round(f.size / 1024)} KB` : '420 KB';
+      return {
+        id: `attach-${Date.now()}-${i}`,
+        title: fileName,
+        type: fileType,
+        size: sizeStr
+      };
+    });
+
+    setPendingAttachments(prev => [...prev, ...parsedDocs]);
+  };
+
+  const handleSendPendingAttachments = () => {
+    if (pendingAttachments.length === 0) return;
+
+    const newMsg = {
+      id: `m-doc-${Date.now()}`,
+      author: 'You',
+      role: 'you',
+      text: attachmentCaption.trim() || '',
+      createdAt: Date.now(),
+      status: 'sent',
+      workspaceRef: pendingAttachments.length === 1 ? pendingAttachments[0] : null,
+      workspaceRefs: pendingAttachments.length > 1 ? pendingAttachments : null
+    };
+
+    setMessages(prev => [...prev, newMsg]);
+    setPendingAttachments([]);
+    setAttachmentCaption('');
+    setSelectedAttachmentIndex(0);
   };
 
   const handleStartVoiceRecording = () => {
@@ -384,6 +512,31 @@ export default function ExecutiveDirectMessages({
     setNewChatName('');
   };
 
+  const handleForwardMessage = (msg) => {
+    setForwardingMessage(msg);
+    setForwardSelectedRecipients({ [currentChat.id]: true });
+    setForwardComment('');
+    setForwardSearchQuery('');
+    setActiveMoreMenuMsgId(null);
+  };
+
+  const handleExecuteForward = () => {
+    if (!forwardingMessage) return;
+    const fwdContent = forwardingMessage.text || forwardingMessage.transcript || '';
+    const newMsg = {
+      id: `m-fwd-${Date.now()}`,
+      author: 'You',
+      role: 'you',
+      text: forwardComment.trim() ? `${forwardComment.trim()}\n\n[Forwarded]: ${fwdContent}` : `[Forwarded]: ${fwdContent}`,
+      createdAt: Date.now(),
+      status: 'sent',
+      workspaceRef: forwardingMessage.workspaceRef,
+      workspaceRefs: forwardingMessage.workspaceRefs
+    };
+    setMessages(prev => [...prev, newMsg]);
+    setForwardingMessage(null);
+  };
+
   // Close open popovers on document tap
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -393,6 +546,7 @@ export default function ExecutiveDirectMessages({
         setIsAttachmentMenuOpen(false);
         setIsEmojiPickerOpen(false);
         setIsAiModelSelectorOpen(false);
+        setIsMoreTabsMenuOpen(false);
       }
     };
     document.addEventListener('pointerdown', handleOutsideClick);
@@ -413,7 +567,7 @@ export default function ExecutiveDirectMessages({
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-white dark:bg-[#0c0d11] font-sans select-none relative">
-      {/* ── TOP UNIFIED WORKSPACE BAR (Clean Apple Minimalist Standard) ── */}
+      {/* ── TOP UNIFIED WORKSPACE BAR ── */}
       <header 
         className="h-[54px] flex items-center justify-between px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shrink-0 z-30 cursor-default"
         onDoubleClick={(e) => {
@@ -499,7 +653,6 @@ export default function ExecutiveDirectMessages({
       <div className="flex-1 flex overflow-hidden relative">
         {/* ── LEFT COLUMN: Contacts & AI Agents (~340px) ── */}
         <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-b from-[#f0f4fd] via-[#f7f9fd] to-[#f4f5f8] dark:from-[#0d1017] dark:via-[#090b10] dark:to-[#07080c] relative">
-          {/* Subtle Ambient Mesh Glows */}
           <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-10 right-0 w-40 h-40 bg-violet-300/15 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -516,7 +669,6 @@ export default function ExecutiveDirectMessages({
               <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">
                 Relay
               </span>
-              {/* Refined Apple-Style Borderless "+" Button */}
               <button
                 type="button"
                 onClick={() => setIsNewChatModalOpen(true)}
@@ -539,8 +691,8 @@ export default function ExecutiveDirectMessages({
               />
             </div>
 
-            {/* Filter Tabs (All, Unread, Groups, AI Agents) */}
-            <div className="flex items-center gap-1 pt-0.5 overflow-x-auto no-scrollbar">
+            {/* Streamlined Filter Tabs with Ellipsis (...) More Menu */}
+            <div className="flex items-center gap-1 pt-0.5 relative">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'unread', label: 'Unread' },
@@ -563,12 +715,99 @@ export default function ExecutiveDirectMessages({
                   </button>
                 );
               })}
+
+              {/* Ellipsis (...) Button for Extra Tabs (Topics, News, Actions) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsMoreTabsMenuOpen(prev => !prev)}
+                  className={`w-7 h-6 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                    ['topics', 'broadcast', 'actions'].includes(activeTab) || isMoreTabsMenuOpen
+                      ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-violet-600 dark:text-violet-400 font-bold border border-black/[0.04]'
+                      : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03]'
+                  }`}
+                  title="More tab views"
+                >
+                  <MoreHorizontal size={14} />
+                </button>
+
+                {/* More Tabs Dropdown Popover */}
+                {isMoreTabsMenuOpen && (
+                  <div 
+                    data-popover-root="true"
+                    className="absolute right-0 top-7 w-40 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in duration-100 text-xs select-none"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('topics'); setIsMoreTabsMenuOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium cursor-pointer ${
+                        activeTab === 'topics' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Hash size={13} className="text-violet-600" />
+                      <span>Topic Channels</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('broadcast'); setIsMoreTabsMenuOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium cursor-pointer ${
+                        activeTab === 'broadcast' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Radio size={13} className="text-emerald-600" />
+                      <span>Company News</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('actions'); setIsMoreTabsMenuOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium cursor-pointer ${
+                        activeTab === 'actions' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-zinc-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <ListTodo size={13} className="text-amber-600" />
+                      <span>Action Items</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Contact Cards / Empty State */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
-            {filteredConversations.length === 0 ? (
+            {activeTab === 'topics' ? (
+              <div className="space-y-2 p-1">
+                <div className="text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-2">
+                  Topic Channels
+                </div>
+                {['General Workspace Graph', 'Strategy & Docs Briefs', 'Unit Economics Models'].map((t, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => { setActiveContactId(conversations[0].id); setActiveTab('all'); }}
+                    className="p-3 rounded-2xl bg-white/80 dark:bg-zinc-800/80 hover:bg-white border border-black/[0.04] shadow-2xs cursor-pointer flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center font-bold text-xs">
+                        <Hash size={13} />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">{t}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Active</span>
+                  </div>
+                ))}
+              </div>
+            ) : activeTab === 'broadcast' ? (
+              <div className="p-3 rounded-2xl bg-white/90 border border-black/[0.05] shadow-2xs space-y-1.5">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-violet-100 text-violet-700">Official</span>
+                <h4 className="text-xs font-bold text-slate-900">Relay Zero-Knowledge Security Active</h4>
+                <p className="text-[11.5px] text-slate-600">All local conversations, voice streams, and document shares operate with private cryptographic envelopes.</p>
+              </div>
+            ) : activeTab === 'actions' ? (
+              <div className="p-4 text-center text-xs text-slate-400">
+                No pending action items extracted.
+              </div>
+            ) : filteredConversations.length === 0 ? (
               <div className="p-6 text-center space-y-4 my-auto">
                 <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 flex items-center justify-center mx-auto shadow-2xs">
                   <MessageSquarePlus size={22} />
@@ -625,7 +864,7 @@ export default function ExecutiveDirectMessages({
                         chat.isAi
                           ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs'
                           : chat.isGroup
-                          ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
+                          ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200'
                           : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
                       }`}>
                         {chat.avatar}
@@ -675,7 +914,7 @@ export default function ExecutiveDirectMessages({
               <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center pointer-events-auto ${
                 currentChat.isAi 
                   ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs' 
-                  : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60'
+                  : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200'
               }`}>
                 {currentChat.avatar}
               </div>
@@ -695,7 +934,6 @@ export default function ExecutiveDirectMessages({
                         <ChevronDown size={11} />
                       </button>
 
-                      {/* AI Model Selection Dropdown Popover */}
                       {isAiModelSelectorOpen && (
                         <div 
                           data-popover-root="true"
@@ -761,7 +999,6 @@ export default function ExecutiveDirectMessages({
                 <MoreVertical size={15} />
               </button>
 
-              {/* Details Utility Menu */}
               {isDetailsMenuOpen && (
                 <div 
                   className="absolute right-0 top-11 w-64 bg-white dark:bg-zinc-850 rounded-2xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in duration-150"
@@ -784,7 +1021,6 @@ export default function ExecutiveDirectMessages({
 
               <div className="w-[1px] h-4 bg-black/[0.08] dark:bg-white/[0.1] mx-1" />
 
-              {/* Call Triggers */}
               <button
                 type="button"
                 onClick={() => handleStartInChatCall('audio')}
@@ -862,6 +1098,36 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
+                  {/* Scaled-Up Touch-Friendly Floating Action Toolbar */}
+                  <div className={`absolute -top-4.5 ${isOutgoing ? 'right-2' : 'left-2'} z-20 opacity-0 group-hover/msg:opacity-100 transition-all duration-150 flex items-center gap-1 p-1 rounded-xl bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12] shadow-md select-none`}>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingToMessage(msg)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title="Reply"
+                    >
+                      <Reply size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleForwardMessage(msg)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title="Forward"
+                    >
+                      <CornerUpRight size={14} strokeWidth={2.2} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(msg.text || '');
+                      }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title="Copy"
+                    >
+                      <Copy size={13} />
+                    </button>
+                  </div>
+
                   <div
                     className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative transition-shadow ${
                       isOutgoing
@@ -871,6 +1137,43 @@ export default function ExecutiveDirectMessages({
                         : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
                     }`}
                   >
+                    {/* Attached Single Document Card */}
+                    {msg.workspaceRef && (
+                      <div className="mb-2 rounded-2xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.06] p-3 space-y-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} size="lg" />
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-xs font-bold truncate text-slate-900 dark:text-zinc-100">
+                              {msg.workspaceRef.title}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {msg.workspaceRef.type?.toUpperCase()} • {msg.workspaceRef.size || '420 KB'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Attached Multiple Documents Bento Grid */}
+                    {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
+                      <div className="mb-2.5 grid grid-cols-2 gap-2">
+                        {msg.workspaceRefs.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
+                            className="p-2.5 rounded-xl bg-[#E8EAEE]/90 border border-black/[0.05] hover:border-violet-500 cursor-pointer flex items-center gap-2.5 shadow-2xs"
+                          >
+                            <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[11.5px] font-bold truncate text-slate-900">
+                                {doc.title}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {msg.isAudio ? (
                       <div className="space-y-1.5 min-w-[240px]">
                         <div className="flex items-center gap-2.5">
@@ -901,7 +1204,7 @@ export default function ExecutiveDirectMessages({
                         </div>
                       </div>
                     ) : (
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                      msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>
                     )}
 
                     <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
@@ -916,7 +1219,7 @@ export default function ExecutiveDirectMessages({
             {isTyping && (
               <div className="flex items-center gap-2 p-3 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 text-violet-700 dark:text-violet-300 text-xs w-fit">
                 <RegaarderAiIcon size={13} strokeWidth={2.0} className="animate-spin" />
-                <span className="font-semibold">{activeModelObj.name} is synthesizing...</span>
+                <span className="font-semibold">Assistant is synthesizing...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -931,7 +1234,6 @@ export default function ExecutiveDirectMessages({
                 className="absolute bottom-16 left-6 w-80 bg-white dark:bg-zinc-850 rounded-3xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-3 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none"
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                {/* Search Bar */}
                 <div className="relative mb-2">
                   <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -943,7 +1245,6 @@ export default function ExecutiveDirectMessages({
                   />
                 </div>
 
-                {/* Categories Tab Bar */}
                 <div className="flex items-center gap-1 pb-2 mb-2 border-b border-black/[0.05]">
                   {EMOJI_CATEGORIES.map(cat => (
                     <button
@@ -960,7 +1261,6 @@ export default function ExecutiveDirectMessages({
                   ))}
                 </div>
 
-                {/* Emoji Grid */}
                 <div className="grid grid-cols-7 gap-1 h-44 overflow-y-auto thin-scrollbar p-1">
                   {(EMOJI_CATEGORIES.find(c => c.id === emojiCategory)?.emojis || [])
                     .filter(em => !emojiSearch || em.includes(emojiSearch))
@@ -978,7 +1278,7 @@ export default function ExecutiveDirectMessages({
               </div>
             )}
 
-            {/* Voice Recording Bar (Apple Minimalist Palette) */}
+            {/* Voice Recording Bar (Image 4 Standard with Apple Palette) */}
             {isRecordingVoice ? (
               <div className="flex items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] animate-in slide-in-from-bottom-2 duration-150">
                 <button
@@ -1018,7 +1318,6 @@ export default function ExecutiveDirectMessages({
                   {isVoicePaused ? <Play size={15} /> : <Pause size={15} />}
                 </button>
 
-                {/* Refined Apple Purple Send Button */}
                 <button
                   type="button"
                   onClick={handleSendVoiceRecording}
@@ -1033,6 +1332,78 @@ export default function ExecutiveDirectMessages({
                 onSubmit={handleSendMessage}
                 className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
               >
+                {/* Hidden File Input */}
+                <input 
+                  type="file" 
+                  multiple
+                  ref={fileInputRef} 
+                  onChange={handleFileAttach} 
+                  className="hidden" 
+                />
+
+                {/* 1. Attachment Clip with Docs/Sheets Popover */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachmentMenuOpen(prev => !prev)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                    title="Attach Documents, Media, or Workspace Files"
+                  >
+                    <Paperclip size={16} />
+                  </button>
+
+                  {isAttachmentMenuOpen && (
+                    <div 
+                      data-popover-root="true"
+                      className="absolute bottom-11 left-0 w-56 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 text-left font-medium cursor-pointer"
+                      >
+                        <FileText size={14} className="text-violet-600" />
+                        <span>Upload Documents</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachmentMenuOpen(false);
+                          const demoSheet = {
+                            id: `sheet-${Date.now()}`,
+                            title: 'Q2 Unit Economics Model.xlsx',
+                            type: 'sheets',
+                            size: '340 KB'
+                          };
+                          setPendingAttachments([demoSheet]);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 text-left font-medium cursor-pointer"
+                      >
+                        <Table size={14} className="text-emerald-600" />
+                        <span>Import Sheet / Table</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachmentMenuOpen(false);
+                          const demoDeck = {
+                            id: `deck-${Date.now()}`,
+                            title: 'Investor Pitch & Token System.pptx',
+                            type: 'deck',
+                            size: '1.2 MB'
+                          };
+                          setPendingAttachments([demoDeck]);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 text-left font-medium cursor-pointer"
+                      >
+                        <Presentation size={14} className="text-amber-600" />
+                        <span>Import Deck / Diagram</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setIsEmojiPickerOpen(prev => !prev)}
@@ -1075,54 +1446,101 @@ export default function ExecutiveDirectMessages({
         </main>
       </div>
 
-      {/* ── REAL-TIME AI CONVERSATIONAL VOICE OVERLAY (OPENAI/APPLE INTELLIGENCE STYLE) ── */}
+      {/* ── EXECUTIVE AI CONVERSATIONAL VOICE OVERLAY (OPENAI/APPLE INTELLIGENCE STANDARD) ── */}
       {isAiVoiceSessionActive && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex flex-col items-center justify-between p-10 animate-in fade-in duration-200 select-none">
-          <div className="w-full max-w-lg flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-[#090A10]/90 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none">
+          {/* Top Bar with Dynamic Model Selector & Dismiss */}
+          <div className="w-full max-w-xl flex items-center justify-between">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs text-white">
               <Sparkles size={13} className="text-violet-400" />
               <span>{activeModelObj.name}</span>
             </div>
+
+            {/* Live Session Status Badge */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-violet-950/60 border border-violet-500/30 text-[11px] font-semibold text-violet-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{isAiVoiceMuted ? 'Microphone Muted' : aiVoiceStatus === 'listening' ? 'Listening to voice...' : 'Synthesizing response...'}</span>
+            </div>
+
             <button
               type="button"
               onClick={() => setIsAiVoiceSessionActive(false)}
               className="p-2 rounded-full text-white/60 hover:text-white bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+              title="Close Voice Session"
             >
               <X size={18} />
             </button>
           </div>
 
-          {/* Central Pulsing Liquid Orb Visualizer */}
-          <div className="flex flex-col items-center justify-center space-y-8">
+          {/* Central Pulsing Liquid Soundwave Orb */}
+          <div className="flex flex-col items-center justify-center space-y-6 my-auto">
             <div className="relative flex items-center justify-center">
-              <div className="w-48 h-48 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-2xl animate-pulse pointer-events-none" />
-              <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 border border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden">
-                <div className="flex items-center gap-1.5 h-12">
-                  {aiVoiceWaves.map((h, i) => (
+              {/* Outer Glow Halo */}
+              <div className={`w-56 h-56 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted ? 'opacity-30' : 'animate-pulse'}`} />
+              
+              {/* Liquid Interactive Core Orb */}
+              <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-700 border-2 border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden">
+                {/* Real-time Dynamic Waveform Bars */}
+                <div className="flex items-center gap-1.5 h-14">
+                  {aiVoiceLiveWaves.map((h, i) => (
                     <div
                       key={i}
-                      className="w-1.5 rounded-full bg-white transition-all duration-150"
-                      style={{ height: `${h}px` }}
+                      className={`w-1.5 rounded-full transition-all duration-150 ${isAiVoiceMuted ? 'bg-white/30' : 'bg-white'}`}
+                      style={{ height: `${isAiVoiceMuted ? 6 : h}px` }}
                     />
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="text-center space-y-1">
-              <h3 className="text-base font-bold text-white">Listening to your voice...</h3>
-              <p className="text-xs text-slate-400">Speak naturally with {activeModelObj.name}</p>
+            {/* Conversational Live Subtitle & Transcript Preview */}
+            <div className="text-center space-y-1.5 max-w-md px-4">
+              <h3 className="text-base font-bold text-white tracking-tight">
+                {isAiVoiceMuted ? 'Microphone is Muted' : 'Speak naturally to collaborate'}
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed font-mono">
+                {isAiVoiceMuted ? 'Click the microphone button below to speak.' : '“I analyzed the active brief and verified all unit economics margins.”'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Bottom Executive Voice Controls Glass Toolbar */}
+          <div className="w-full max-w-md flex items-center justify-center gap-5 p-3 rounded-3xl bg-white/10 border border-white/10 backdrop-blur-xl shadow-2xl">
+            {/* 1. Mute / Unmute Microphone Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsAiVoiceMuted(prev => !prev)}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-md ${
+                isAiVoiceMuted 
+                  ? 'bg-rose-500 text-white' 
+                  : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+              title={isAiVoiceMuted ? "Unmute Microphone" : "Mute Microphone"}
+            >
+              {isAiVoiceMuted ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+
+            {/* 2. End Voice Session (Apple Rose Red) */}
             <button
               type="button"
               onClick={() => setIsAiVoiceSessionActive(false)}
               className="h-12 px-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
             >
-              <PhoneOff size={15} />
+              <PhoneOff size={16} />
               <span>End Voice Session</span>
+            </button>
+
+            {/* 3. Interrupt / Push-to-Talk Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setAiVoiceStatus('speaking');
+                setTimeout(() => setAiVoiceStatus('listening'), 2000);
+              }}
+              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-md"
+              title="Interrupt / Trigger AI reply"
+            >
+              <Volume2 size={18} />
             </button>
           </div>
         </div>
@@ -1253,6 +1671,58 @@ export default function ExecutiveDirectMessages({
                 className="w-13 h-13 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg cursor-pointer"
               >
                 <PhoneOff size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Attachment Preview Carousel */}
+      {pendingAttachments.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-white/95 dark:bg-[#0c0d11]/95 backdrop-blur-md flex flex-col justify-between p-6 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => { setPendingAttachments([]); setAttachmentCaption(''); }}
+              className="p-2 rounded-full text-slate-400 hover:text-slate-800 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+            <span className="text-xs font-mono font-semibold text-slate-600">
+              {pendingAttachments[selectedAttachmentIndex]?.title || 'Document Preview'}
+            </span>
+            <div className="w-8" />
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center py-6">
+            <div className="w-full max-w-md p-8 rounded-3xl bg-[#F4F5F8] border border-black/[0.05] flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
+              <DocsSemanticFileBadge 
+                type={pendingAttachments[selectedAttachmentIndex]?.type} 
+                title={pendingAttachments[selectedAttachmentIndex]?.title} 
+                size="lg" 
+              />
+              <h3 className="text-sm font-bold text-slate-800">{pendingAttachments[selectedAttachmentIndex]?.title}</h3>
+              <span className="text-[11px] text-slate-400">No preview available</span>
+            </div>
+          </div>
+
+          <div className="w-full max-w-xl mx-auto space-y-3">
+            <input
+              type="text"
+              value={attachmentCaption}
+              onChange={(e) => setAttachmentCaption(e.target.value)}
+              placeholder="Type a message or document caption..."
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs text-xs text-slate-800 focus:outline-none"
+              autoFocus
+            />
+            <div className="flex items-center justify-center gap-3">
+              <input type="file" multiple ref={addMoreFileInputRef} onChange={handleAddMoreFiles} className="hidden" />
+              <button
+                type="button"
+                onClick={handleSendPendingAttachments}
+                className="w-12 h-12 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg cursor-pointer shrink-0"
+              >
+                <Send size={16} className="ml-0.5" />
               </button>
             </div>
           </div>
