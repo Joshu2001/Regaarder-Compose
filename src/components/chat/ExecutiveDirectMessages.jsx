@@ -1976,8 +1976,15 @@ export default function ExecutiveDirectMessages({
                       type="text"
                       value={voiceRecognitionTranscript}
                       onChange={(e) => setVoiceRecognitionTranscript(e.target.value)}
-                      placeholder="Type or speak your prompt (e.g. 'Write a poem for me')..."
-                      className="flex-1 text-[11px] font-medium text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 rounded-lg px-2 py-0.5 border border-violet-200 dark:border-violet-900 focus:outline-none focus:ring-1 focus:ring-violet-500 truncate placeholder:text-slate-400 shadow-2xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSendVoiceRecording();
+                        }
+                      }}
+                      autoFocus
+                      placeholder="Type or confirm prompt (e.g. 'Write a poem for me')... Press Enter to send"
+                      className="flex-1 text-[11px] font-medium text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 rounded-lg px-2.5 py-1 border border-violet-300 dark:border-violet-700 focus:outline-none focus:ring-1 focus:ring-violet-500 truncate placeholder:text-slate-400 shadow-2xs"
                     />
                   </div>
                 </div>
