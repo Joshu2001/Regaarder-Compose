@@ -45439,6 +45439,10 @@ Respond with a JSON array of slide objects matching the schema.`;
               }
             }}
             onToggleFullscreen={toggleDocumentImmersiveMode}
+            onCallAi={callGemini}
+            detectedModelsFromApp={composeDetectedModels}
+            onCallAi={callGemini}
+            detectedModelsFromApp={composeDetectedModels}
             onOpenWorkspaceSwitcher={(rect) => {
               setWorkspaceSwitcherAnchorRect(rect);
               setWorkspaceSwitcherOpen(true);

@@ -117,7 +117,9 @@ export default function ExecutiveDirectMessages({
   onLogDecisionToMemory,
   onNavigateWorkspace,
   onToggleFullscreen,
-  onOpenWorkspaceSwitcher
+  onOpenWorkspaceSwitcher,
+  onCallAi,
+  detectedModelsFromApp = []
 }) {
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'topics' | 'ai' | 'broadcast' | 'actions'
   const [isMoreTabsMenuOpen, setIsMoreTabsMenuOpen] = useState(false);
@@ -143,6 +145,16 @@ export default function ExecutiveDirectMessages({
   const [isScanningModels, setIsScanningModels] = useState(false);
   const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
+
+  // Sync detected models from app if available
+  useEffect(() => {
+    if (detectedModelsFromApp && detectedModelsFromApp.length > 0) {
+      setDetectedLocalModels(detectedModelsFromApp);
+      if (selectedAiModel === 'gemini-2.0-flash') {
+        setSelectedAiModel(detectedModelsFromApp[0].id);
+      }
+    }
+  }, [detectedModelsFromApp]);
 
   // Scan live local Ollama/LM Studio models on mount
   const scanRealLocalModels = async () => {
@@ -425,10 +437,23 @@ export default function ExecutiveDirectMessages({
         : 'You are an executive intelligent assistant in Regaarder Relay. Provide direct, helpful, concise, and natural conversational responses.';
 
       try {
-        if (targetLocal) {
+        // 1. If onCallAi is supplied from App.jsx (the central engine), execute directly
+        if (typeof onCallAi === 'function') {
+          const aiRes = await onCallAi({
+            userPrompt: trimmed,
+            systemPrompt: systemPrompt,
+            customModel: activeEngineId,
+            customProvider: targetLocal ? 'Ollama' : undefined
+          });
+          if (aiRes) {
+            aiResponseText = typeof aiRes === 'string' ? aiRes : (aiRes.text || aiRes.content || '');
+          }
+        }
+
+        // 2. Direct Electron Native IPC / Loopback fallback if onCallAi did not return text
+        if (!aiResponseText && targetLocal) {
           const modelTag = targetLocal.id || targetLocal.name;
 
-          // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
           if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
             try {
               const ipcRes = await window.electronAPI.generateLocalAI({
@@ -441,11 +466,10 @@ export default function ExecutiveDirectMessages({
                 aiResponseText = ipcRes.text.trim();
               }
             } catch (ipcErr) {
-              console.warn('[Relay] Electron IPC generate error, falling back to fetch:', ipcErr);
+              console.warn('[Relay] Electron IPC generate error:', ipcErr);
             }
           }
 
-          // 2. Fetch loop across 127.0.0.1 and localhost candidates
           if (!aiResponseText) {
             const rawEndpoint = (targetLocal.endpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
             const candidateBases = [
@@ -457,7 +481,6 @@ export default function ExecutiveDirectMessages({
 
             for (const base of candidateBases) {
               try {
-                // Try /api/generate
                 const genRes = await fetch(`${base}/api/generate`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -474,59 +497,8 @@ export default function ExecutiveDirectMessages({
                     break;
                   }
                 }
-
-                // Try /api/chat
-                const chatRes = await fetch(`${base}/api/chat`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    model: modelTag,
-                    messages: [
-                      { role: 'system', content: systemPrompt },
-                      ...historyContext
-                    ],
-                    stream: false
-                  })
-                });
-                if (chatRes.ok) {
-                  const chatData = await chatRes.json();
-                  if (chatData.message?.content) {
-                    aiResponseText = chatData.message.content.trim();
-                    break;
-                  }
-                }
-              } catch (fetchErr) {
-                // Candidate host attempt
-              }
+              } catch (fetchErr) {}
             }
-          }
-        } else {
-          // Cloud provider execution via callAiProvider
-          const savedConfig = getSavedAiConfig();
-          const providerType = activeEngineId.includes('gemini') ? 'gemini' 
-            : activeEngineId.includes('claude') ? 'claude' 
-            : activeEngineId.includes('gpt') ? 'openai' 
-            : activeEngineId.includes('deepseek') ? 'deepseek' : 'gemini';
-
-          const providerConfig = {
-            ...savedConfig,
-            provider: providerType,
-            activeModel: activeEngineId,
-            geminiModel: activeEngineId,
-            openaiModel: activeEngineId,
-            claudeModel: activeEngineId
-          };
-
-          const result = await callAiProvider(
-            [
-              { role: 'system', content: systemPrompt },
-              ...historyContext
-            ],
-            providerConfig
-          );
-
-          if (result && result.content) {
-            aiResponseText = result.content;
           }
         }
       } catch (err) {
