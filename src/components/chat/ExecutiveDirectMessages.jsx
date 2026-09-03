@@ -5,9 +5,10 @@ import {
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
   Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
-  ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines, Home
+  ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
+import RegaarderBrandIcon from '../RegaarderBrandIcon';
 
 // Exact Docs File Type Pill Badges (Matching App.jsx getFileSemanticBadge)
 const DocsSemanticFileBadge = ({ type, title = '' }) => {
@@ -28,7 +29,7 @@ const DocsSemanticFileBadge = ({ type, title = '' }) => {
     label = 'PDF';
     svg = (
       <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3.5 2H10L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
         <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
       </svg>
     );
@@ -162,7 +163,6 @@ export default function ExecutiveDirectMessages({
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     const distanceToBottom = scrollHeight - scrollTop - clientHeight;
-    // Show button immediately as soon as user scrolls up > 60px
     setShowScrollBottom(distanceToBottom > 60);
   };
 
@@ -327,7 +327,6 @@ export default function ExecutiveDirectMessages({
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setIsRecordingVoice(false);
-      // Create rich Audio Message with waveform & transcript
       const newAudioMsg = {
         id: `m-voice-${Date.now()}`,
         author: 'You',
@@ -391,9 +390,9 @@ export default function ExecutiveDirectMessages({
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-white dark:bg-[#0c0d11] font-sans select-none">
-      {/* ── TOP UNIFIED WORKSPACE BAR ── */}
+      {/* ── TOP UNIFIED WORKSPACE BAR (Docs / Sheets Standard) ── */}
       <header 
-        className="h-[54px] flex items-center justify-between px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-xl shrink-0 z-30 cursor-default"
+        className="h-[54px] flex items-center justify-between px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shrink-0 z-30 cursor-default"
         onDoubleClick={(e) => {
           if (e.target.closest('button, input, textarea, a, select')) return;
           if (onToggleFullscreen) onToggleFullscreen();
@@ -401,19 +400,6 @@ export default function ExecutiveDirectMessages({
         onPointerDown={handleHeaderTap}
       >
         <div className="flex items-center gap-2 select-none">
-          {/* Universal Home Dashboard Button */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onNavigateWorkspace) onNavigateWorkspace({ type: 'compose' });
-              else window.location.hash = '#compose';
-            }}
-            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 shadow-2xs hover:bg-slate-50 text-slate-600 dark:text-zinc-300 hover:text-slate-900 transition-all cursor-pointer shrink-0"
-            title="Return to Home / Workspace Dashboard"
-          >
-            <Home size={14} />
-          </button>
-
           {/* Universal Workspace Switcher Button */}
           <button
             type="button"
@@ -424,19 +410,33 @@ export default function ExecutiveDirectMessages({
               const rect = e.currentTarget.getBoundingClientRect();
               if (onOpenWorkspaceSwitcher) onOpenWorkspaceSwitcher(rect);
             }}
-            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 shadow-2xs hover:bg-slate-50 text-slate-600 dark:text-zinc-300 hover:text-slate-900 transition-all cursor-pointer shrink-0"
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-850/90 border border-slate-200/70 dark:border-zinc-750 shadow-2xs hover:bg-slate-50 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 transition-all cursor-pointer shrink-0"
             title="Switch Workspace App"
           >
             <LayoutGrid size={14} />
           </button>
 
+          {/* Standard Docs/Sheets Style "R Home" Tab Pill */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onNavigateWorkspace) onNavigateWorkspace({ type: 'landing' });
+              else window.location.hash = '#landing';
+            }}
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-all cursor-pointer select-none text-xs font-semibold"
+            title="Return to Home Dashboard"
+          >
+            <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+            <span>Home</span>
+          </button>
+
           {/* Cohesive Relay Workspace Breadcrumb */}
-          <div className="flex items-center gap-2 h-8 px-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/60 dark:border-zinc-750 shadow-2xs">
+          <div className="flex items-center gap-2 h-8 px-2.5 rounded-xl bg-white/80 dark:bg-zinc-850/80 border border-slate-200/60 dark:border-zinc-750 shadow-2xs">
             <div className="w-5 h-5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
               <RelayIcon size={13} strokeWidth={1.8} />
             </div>
             <span className="text-[13px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">Relay</span>
-            <span className="text-[9.5px] font-medium px-1.5 py-0.5 rounded-md bg-white dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 tracking-wider uppercase">Workspace</span>
+            <span className="text-[9.5px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 tracking-wider uppercase">Workspace</span>
           </div>
         </div>
 
@@ -466,8 +466,12 @@ export default function ExecutiveDirectMessages({
 
       {/* ── 2-COLUMN MAIN BODY FRAME ── */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* ── LEFT COLUMN: Contacts, Topics & Actions (~340px) ── */}
-        <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-[#FBFBFA] dark:bg-[#0c0d11] relative">
+        {/* ── LEFT COLUMN: Contacts (Atmospheric Blue Gradient Restored, ~340px) ── */}
+        <aside className="w-[340px] shrink-0 flex flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-gradient-to-b from-[#f0f4fd] via-[#f7f9fd] to-[#f4f5f8] dark:from-[#0d1017] dark:via-[#090b10] dark:to-[#07080c] relative">
+          {/* Subtle Ambient Mesh Radial Glows */}
+          <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-10 right-0 w-40 h-40 bg-violet-300/15 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+
           {/* Top Controls Bar */}
           <div 
             className="p-3.5 space-y-2.5 border-b border-black/[0.05] dark:border-white/[0.06] relative z-10 cursor-default"
@@ -491,7 +495,7 @@ export default function ExecutiveDirectMessages({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search chats, topics or files..."
-                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
               />
             </div>
 
@@ -584,7 +588,7 @@ export default function ExecutiveDirectMessages({
                     className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-[#E8EAEE] dark:bg-[#1D212C] text-slate-900 dark:text-zinc-100 shadow-2xs'
-                        : 'bg-transparent hover:bg-white dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
+                        : 'bg-transparent hover:bg-white/60 dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
                     }`}
                   >
                     {/* Avatar with Status Indicator */}
@@ -633,7 +637,7 @@ export default function ExecutiveDirectMessages({
         <main className="flex-1 flex flex-col min-w-0 bg-[#FDFDFD] dark:bg-[#0f1117] relative">
           {/* Active Conversation Header */}
           <header 
-            className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 flex items-center justify-between shrink-0 cursor-default select-none z-20"
+            className="h-[60px] px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between shrink-0 cursor-default select-none z-20"
             onDoubleClick={(e) => {
               if (e.target.closest('button, input, textarea, a, select')) return;
               if (onToggleFullscreen) onToggleFullscreen();
@@ -873,7 +877,7 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
-                  {/* Refined Executive Minimal Outgoing Bubble (Clean Crisp Slate Frost / Pure Apple Feel) */}
+                  {/* Message Bubble */}
                   <div
                     className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative group transition-shadow ${
                       isOutgoing
