@@ -6,8 +6,8 @@ import {
   Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
-  Reply, Edit3, Wand2, Trash2, Forward, Star, CornerUpRight, BellOff, Bell,
-  Share2
+  Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
+  Megaphone, UserCheck, Users, Radio
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -91,12 +91,15 @@ export default function ExecutiveDirectMessages({
   onToggleFullscreen,
   onOpenWorkspaceSwitcher
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'topics' | 'actions'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'announcements' | 'topics' | 'actions'
   const [searchQuery, setSearchQuery] = useState('');
   const [activeContactId, setActiveContactId] = useState(activeThreadId || 'thread-beta-launch');
   const [messageInput, setMessageInput] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
+  const [forwardingMessage, setForwardingMessage] = useState(null); // Message object for WhatsApp-style forward modal
+  const [forwardSelectedRecipients, setForwardSelectedRecipients] = useState({});
+  const [forwardComment, setForwardComment] = useState('');
   const [activeMoreMenuMsgId, setActiveMoreMenuMsgId] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
@@ -240,11 +243,33 @@ export default function ExecutiveDirectMessages({
     }
   ], []);
 
+  // Company announcements / broadcast items
+  const announcements = useMemo(() => [
+    {
+      id: 'ann-1',
+      title: 'Q2 Product Launch Date Locked',
+      author: 'CEO Office',
+      date: 'Today at 09:00',
+      text: 'All team leads please verify your Docs briefings and Sheet margins for the Product Hunt May 15 launch.',
+      tag: 'Company Milestone',
+      badge: 'Official'
+    },
+    {
+      id: 'ann-2',
+      title: 'Design System Typography v2 Released',
+      author: 'Design Guild',
+      date: 'Yesterday',
+      text: 'Global tokens updated across Docs, Sheets, Decks, and Relay. All components reflect the pure Apple geometry.',
+      tag: 'Design System',
+      badge: 'Update'
+    }
+  ], []);
+
   const filteredConversations = useMemo(() => {
     return conversations.filter(c => {
       if (activeTab === 'unread' && c.unread === 0) return false;
       if (activeTab === 'teams' && !c.isGroup) return false;
-      if (activeTab === 'topics') return true;
+      if (activeTab === 'topics' || activeTab === 'announcements') return true;
       if (activeTab === 'actions') return (c.actions && c.actions.length > 0);
       if (searchQuery.trim()) {
         return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -326,10 +351,27 @@ export default function ExecutiveDirectMessages({
     setActiveMoreMenuMsgId(null);
   };
 
-  const handleForwardMessage = (msg) => {
-    const textToForward = msg.text || msg.transcript || '';
-    setMessageInput(`Fwd: ${textToForward}`);
+  const handleOpenForwardModal = (msg) => {
+    setForwardingMessage(msg);
+    setForwardSelectedRecipients({ [currentChat.id]: true });
+    setForwardComment('');
     setActiveMoreMenuMsgId(null);
+  };
+
+  const handleExecuteForward = () => {
+    if (!forwardingMessage) return;
+    const fwdContent = forwardingMessage.text || forwardingMessage.transcript || '';
+    const newMsg = {
+      id: `m-fwd-${Date.now()}`,
+      author: 'You',
+      role: 'you',
+      text: forwardComment.trim() ? `${forwardComment.trim()}\n\n[Forwarded]: ${fwdContent}` : `[Forwarded]: ${fwdContent}`,
+      createdAt: Date.now(),
+      status: 'sent',
+      workspaceRef: forwardingMessage.workspaceRef
+    };
+    setMessages(prev => [...prev, newMsg]);
+    setForwardingMessage(null);
   };
 
   const handleAskAiAboutMessage = (msg) => {
@@ -470,7 +512,7 @@ export default function ExecutiveDirectMessages({
   }, [messages, chatSearchQuery, isAiMode]);
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-white dark:bg-[#0c0d11] font-sans select-none">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-white dark:bg-[#0c0d11] font-sans select-none relative">
       {/* ── TOP UNIFIED WORKSPACE BAR (Clean Apple Hierarchy) ── */}
       <header 
         className="h-[54px] flex items-center justify-between px-6 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shrink-0 z-30 cursor-default"
@@ -575,17 +617,18 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats, topics or files..."
+                placeholder="Search chats, announcements or files..."
                 className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
               />
             </div>
 
-            {/* Quick Filter Tabs (All, Unread, Groups, Topics, Actions) */}
+            {/* Quick Filter Tabs (All, Unread, Groups, Announcements, Topics, Actions) */}
             <div className="flex items-center gap-1 pt-0.5 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'unread', label: 'Unread' },
                 { id: 'teams', label: 'Groups' },
+                { id: 'announcements', label: 'Announcements' },
                 { id: 'topics', label: 'Topics' },
                 { id: 'actions', label: 'Actions' }
               ].map(tab => {
@@ -608,9 +651,38 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Contact Cards / Topic Channels View */}
+          {/* Contact Cards / Announcements / Topic Channels View */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
-            {activeTab === 'topics' ? (
+            {activeTab === 'announcements' ? (
+              <div className="space-y-2.5 p-1">
+                <div className="flex items-center justify-between text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-1">
+                  <span>Company Broadcasts</span>
+                  <span className="flex items-center gap-1 text-violet-600 dark:text-violet-400">
+                    <Radio size={11} className="animate-pulse" /> Live
+                  </span>
+                </div>
+                {announcements.map((ann) => (
+                  <div
+                    key={ann.id}
+                    className="p-3.5 rounded-2xl bg-white/90 dark:bg-zinc-850/90 border border-black/[0.05] dark:border-white/[0.06] shadow-2xs space-y-2 hover:border-violet-300 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300">
+                        {ann.badge}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">{ann.date}</span>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 mb-0.5">{ann.title}</h4>
+                      <p className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-relaxed">{ann.text}</p>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium pt-1 border-t border-black/[0.03]">
+                      From: <span className="font-semibold text-slate-600 dark:text-zinc-300">{ann.author}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : activeTab === 'topics' ? (
               <div className="space-y-2 p-1">
                 <div className="text-[10.5px] uppercase font-bold text-slate-400 tracking-wider mb-2">
                   Workspace Topic Channels
@@ -788,7 +860,7 @@ export default function ExecutiveDirectMessages({
                 <MoreVertical size={15} />
               </button>
 
-              {/* Enterprise Popover Utility Menu (Schedule, Export, Mute, Security) */}
+              {/* Enterprise Popover Utility Menu */}
               {isDetailsMenuOpen && (
                 <div 
                   className="absolute right-0 top-11 w-72 bg-white dark:bg-zinc-850 rounded-2xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
@@ -889,7 +961,7 @@ export default function ExecutiveDirectMessages({
                   />
                 </div>
 
-                {/* Mode Toggle: Search vs. Ask AI (with official signature circular AI glyph) */}
+                {/* Mode Toggle: Search vs. Ask AI */}
                 <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-xl shrink-0">
                   <button
                     type="button"
@@ -984,70 +1056,70 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
-                  {/* ── 20/80 Focused Floating Action Toolbar (WhatsApp & Apple Standard) ── */}
-                  <div className={`absolute -top-3.5 ${isOutgoing ? 'right-2' : 'left-2'} z-20 opacity-0 group-hover/msg:opacity-100 transition-all duration-150 flex items-center gap-0.5 p-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.12] shadow-sm select-none`}>
+                  {/* ── Scaled-Up Touch-Friendly Floating Action Toolbar (28×28px Targets) ── */}
+                  <div className={`absolute -top-4.5 ${isOutgoing ? 'right-2' : 'left-2'} z-20 opacity-0 group-hover/msg:opacity-100 transition-all duration-150 flex items-center gap-1 p-1 rounded-xl bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md border border-black/[0.08] dark:border-white/[0.12] shadow-md select-none`}>
                     {/* 1. Reply / Quote */}
                     <button
                       type="button"
                       onClick={() => setReplyingToMessage(msg)}
-                      className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                       title="Reply / Quote"
                     >
-                      <Reply size={12} />
+                      <Reply size={14} />
                     </button>
 
-                    {/* 2. Forward */}
+                    {/* 2. Official WhatsApp Curved Forward Glyph (Image 2) */}
                     <button
                       type="button"
-                      onClick={() => handleForwardMessage(msg)}
-                      className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-                      title="Forward to chat"
+                      onClick={() => handleOpenForwardModal(msg)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                      title="Forward to..."
                     >
-                      <Forward size={12} />
+                      <CornerUpRight size={14} strokeWidth={2.2} />
                     </button>
 
                     {/* 3. Ask AI about this message */}
                     <button
                       type="button"
                       onClick={() => handleAskAiAboutMessage(msg)}
-                      className="p-1 rounded-md text-violet-600 hover:text-violet-800 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-violet-600 hover:text-violet-800 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors cursor-pointer"
                       title="Ask AI about this message"
                     >
-                      <RegaarderAiIcon size={12} strokeWidth={2.0} />
+                      <RegaarderAiIcon size={14} strokeWidth={2.0} />
                     </button>
 
                     {/* 4. Star / Bookmark */}
                     <button
                       type="button"
                       onClick={() => handleToggleStar(msg.id)}
-                      className={`p-1 rounded-md transition-colors ${msg.isStarred ? 'text-amber-500 bg-amber-50 dark:bg-amber-950/40' : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700'}`}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${msg.isStarred ? 'text-amber-500 bg-amber-50 dark:bg-amber-950/40' : 'text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700'}`}
                       title={msg.isStarred ? "Unstar message" : "Star message"}
                     >
-                      <Star size={12} className={msg.isStarred ? "fill-amber-500" : ""} />
+                      <Star size={14} className={msg.isStarred ? "fill-amber-500" : ""} />
                     </button>
 
-                    {/* 5. Micro-Ellipsis for Secondary Actions (Copy, Edit, AI Polish, Delete) */}
+                    {/* 5. Micro-Ellipsis for Secondary Actions */}
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setActiveMoreMenuMsgId(prev => prev === msg.id ? null : msg.id)}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                         title="More actions"
                       >
-                        <MoreVertical size={12} />
+                        <MoreVertical size={14} />
                       </button>
 
                       {activeMoreMenuMsgId === msg.id && (
                         <div 
-                          className="absolute right-0 top-6 w-36 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-black/[0.08] dark:border-white/[0.1] p-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-xs"
+                          className="absolute right-0 top-8 w-38 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-black/[0.08] dark:border-white/[0.1] p-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-xs"
                           onPointerDown={(e) => e.stopPropagation()}
                         >
                           <button
                             type="button"
                             onClick={() => handleCopyMessage(msg)}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium"
+                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
                           >
-                            <Copy size={11} />
+                            <Copy size={13} />
                             <span>Copy Text</span>
                           </button>
                           {isOutgoing && (
@@ -1055,17 +1127,17 @@ export default function ExecutiveDirectMessages({
                               <button
                                 type="button"
                                 onClick={() => handleStartEdit(msg)}
-                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium"
+                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
                               >
-                                <Edit3 size={11} />
+                                <Edit3 size={13} />
                                 <span>Edit</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleAiProofread(msg)}
-                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left font-medium"
+                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left font-medium cursor-pointer"
                               >
-                                <Wand2 size={11} />
+                                <Wand2 size={13} />
                                 <span>AI Polish</span>
                               </button>
                             </>
@@ -1074,9 +1146,9 @@ export default function ExecutiveDirectMessages({
                           <button
                             type="button"
                             onClick={() => handleDeleteMessage(msg.id)}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium"
+                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium cursor-pointer"
                           >
-                            <Trash2 size={11} />
+                            <Trash2 size={13} />
                             <span>Delete</span>
                           </button>
                         </div>
@@ -1145,7 +1217,7 @@ export default function ExecutiveDirectMessages({
                         )}
                       </div>
                     ) : (
-                      <p>{msg.text}</p>
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
                     )}
 
                     {/* Exact Docs-Standard Colored Semantic File Badge Attachment (Image 3) */}
@@ -1185,7 +1257,7 @@ export default function ExecutiveDirectMessages({
                           <RegaarderAiIcon size={11} strokeWidth={2.0} />
                           <span>Log to Memory</span>
                         </button>
-                        {msg.isStarred && <Star size={10} className="fill-amber-500 text-amber-500" />}
+                        {msg.isStarred && <Star size={11} className="fill-amber-500 text-amber-500" />}
                       </div>
                       <div className="ml-auto flex items-center gap-1 font-mono text-slate-400 dark:text-zinc-500">
                         {msg.isEdited && <span className="text-[9.5px] italic text-slate-400 mr-0.5">edited</span>}
@@ -1322,6 +1394,120 @@ export default function ExecutiveDirectMessages({
           </div>
         </main>
       </div>
+
+      {/* ── WHATSAPP-STYLE FORWARD MESSAGE MODAL (IMAGE 2 STANDARD) ── */}
+      {forwardingMessage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setForwardingMessage(null);
+          }}
+        >
+          <div className="w-full max-w-md bg-white dark:bg-zinc-850 rounded-3xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setForwardingMessage(null)}
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Forward message to</h3>
+              </div>
+            </div>
+
+            {/* Recipient Search */}
+            <div className="p-3 border-b border-black/[0.04] dark:border-white/[0.06]">
+              <div className="relative flex items-center">
+                <Search size={14} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search name or group..."
+                  className="w-full pl-9 pr-3 py-2 rounded-2xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Recipient List with Checkboxes */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 thin-scrollbar max-h-60">
+              <div className="px-3 py-1 text-[10.5px] uppercase font-bold text-slate-400 tracking-wider">
+                Recent Chats
+              </div>
+              {conversations.map(c => {
+                const isChecked = !!forwardSelectedRecipients[c.id];
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      setForwardSelectedRecipients(prev => ({
+                        ...prev,
+                        [c.id]: !prev[c.id]
+                      }));
+                    }}
+                    className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
+                        c.isGroup
+                          ? 'bg-violet-100 text-violet-700'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {c.avatar}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                          {c.name}
+                        </span>
+                        <span className="text-[11px] text-slate-400 truncate block">
+                          {c.isGroup ? 'Group Conversation' : 'Direct Message'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Checkbox */}
+                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                      isChecked
+                        ? 'bg-violet-600 border-violet-600 text-white'
+                        : 'border-slate-300 dark:border-zinc-600 bg-transparent'
+                    }`}>
+                      {isChecked && <Check size={13} strokeWidth={2.5} />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Message Preview & Optional Comment Input (Image 2 Style) */}
+            <div className="p-3 border-t border-black/[0.06] dark:border-white/[0.08] bg-slate-50 dark:bg-zinc-800/80 space-y-2">
+              <div className="p-2 rounded-xl bg-white dark:bg-zinc-850 border border-black/[0.05] text-[11px] text-slate-600 dark:text-zinc-300 line-clamp-2">
+                <span className="font-semibold text-slate-800 dark:text-zinc-100">Preview: </span>
+                {forwardingMessage.text || forwardingMessage.transcript}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={forwardComment}
+                  onChange={(e) => setForwardComment(e.target.value)}
+                  placeholder="Add an optional comment..."
+                  className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-zinc-850 border border-black/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleExecuteForward}
+                  disabled={Object.values(forwardSelectedRecipients).filter(Boolean).length === 0}
+                  className="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-xs"
+                >
+                  <Send size={12} />
+                  <span>Send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
