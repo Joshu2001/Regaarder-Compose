@@ -213,30 +213,9 @@ async function extractPptxContent(file, cleanTitle) {
   }
 }
 
-// Raw binary text scanner — last-resort for encrypted or malformed PDFs.
-// Pulls readable ASCII/Latin strings directly from the binary stream.
-async function extractPdfRawText(file) {
-  try {
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    const decoder = new TextDecoder('latin1');
-    const raw = decoder.decode(bytes);
-    // Extract readable strings of 4+ printable characters
-    const matches = raw.match(/[\x20-\x7E\xA0-\xFF]{4,}/g) || [];
-    // Filter out PDF binary noise (long hex strings, stream tokens)
-    const cleaned = matches
-      .filter(s => !/^[0-9a-fA-F]{8,}$/.test(s) && !/^[\x20]{3,}$/.test(s))
-      .filter(s => s.trim().length > 3 && /[a-zA-ZÀ-ÿ]/.test(s))
-      .slice(0, 400);
-    return cleaned.length > 0 ? cleaned.join(' ') : null;
-  } catch {
-    return null;
-  }
-}
-
-// Robust PDF Text Extractor using pdfjs, with raw-stream fallback
+// Clean PDF Text Extractor using pdfjs for background AI grounding and search.
+// Never emits raw binary streams or FlateDecode gibberish.
 async function extractPdfContent(file, cleanTitle) {
-  // ── Primary: pdfjs structured extraction ──────────────────────────
   try {
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const buffer = await file.arrayBuffer();
@@ -277,36 +256,12 @@ async function extractPdfContent(file, cleanTitle) {
       html += `</div>\n`;
     }
 
-    // If pdfjs returned no usable text, fall through to raw extractor
-    if (totalChars < 20) throw new Error('pdfjs returned empty text');
+    if (totalChars < 20) return null;
     return html;
   } catch (err) {
-    console.warn('pdfjs extraction failed, trying raw scan:', err);
+    console.warn('pdfjs background extraction gracefully deferred:', err);
+    return null;
   }
-
-  // ── Secondary: raw binary string scan ────────────────────────────
-  try {
-    const rawText = await extractPdfRawText(file);
-    if (rawText && rawText.trim().length > 30) {
-      const sentences = rawText.match(/[^.!?\n]{10,}[.!?]?/g) || rawText.split(/\s{2,}/);
-      let html = `<h1 class="text-2xl font-bold text-slate-900 dark:text-zinc-100 mb-4">${escapeHtml(cleanTitle)}</h1>\n`;
-      html += `<div class="mb-3 flex items-center gap-1.5 text-[10.5px] font-semibold text-amber-600 dark:text-amber-400"><span>⚠</span><span>Partial text extracted — PDF may use embedded images or non-standard encoding.</span></div>\n`;
-      html += `<div class="space-y-1">\n`;
-      sentences.slice(0, 120).forEach(s => {
-        const trimmed = s.trim();
-        if (trimmed.length > 4) {
-          html += `<p class="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed my-1">${escapeHtml(trimmed)}</p>\n`;
-        }
-      });
-      html += `</div>\n`;
-      // Mark partial so inspector can show a notice
-      return { html, partial: true };
-    }
-  } catch (rawErr) {
-    console.warn('Raw PDF scan also failed:', rawErr);
-  }
-
-  return null;
 }
 
 
@@ -501,16 +456,33 @@ export default function OmniPortalModal({
             if (ext === 'docx' || ext === 'doc' || ext === 'wps') {
               bodyHtml = await extractDocxContent(item.file, cleanTitle);
             } else if (ext === 'pdf') {
-              const pdfResult = await extractPdfContent(item.file, cleanTitle);
-              if (pdfResult && typeof pdfResult === 'object' && pdfResult.html) {
-                // Partial raw-stream extraction
-                bodyHtml = pdfResult.html;
-                extractionPartial = true;
-              } else if (typeof pdfResult === 'string') {
-                // Full pdfjs extraction
-                bodyHtml = pdfResult;
+              const pdfBlobUrl = URL.createObjectURL(item.file);
+              let cleanText = '';
+              try {
+                const pdfResult = await extractPdfContent(item.file, cleanTitle);
+                if (typeof pdfResult === 'string') {
+                  cleanText = pdfResult;
+                }
+              } catch (pdfErr) {
+                console.warn('PDF background text extraction deferred:', pdfErr);
               }
-              // else null — extraction fully failed, leave bodyHtml empty
+
+              regaarderDoc = {
+                id: docId,
+                mode: 'compose',
+                title: cleanTitle,
+                subtitle: 'Native PDF Document',
+                bodyHtml: '',
+                cleanExtractedText: cleanText,
+                fileType: 'pdf',
+                isPdfDoc: true,
+                pdfBlobUrl: pdfBlobUrl,
+                initiatives: [],
+                originalFileName: item.name,
+                originalSize: item.sizeStr,
+                absorbedAt: Date.now(),
+                rawBlob: item.file
+              };
             } else if (ext === 'md' || ext === 'txt') {
               const raw = await item.file.text();
               const lines = raw.split(/\r?\n/);
@@ -523,22 +495,21 @@ export default function OmniPortalModal({
               }).join('\n');
             }
 
-            // extractionPartial remains false unless pdfjs partially succeeded above.
-            // When bodyHtml is empty, the inspector will render a "Preview Unavailable" state.
-
-            regaarderDoc = {
-              id: docId,
-              mode: 'compose',
-              title: cleanTitle,
-              subtitle: 'Absorbed Enterprise Document',
-              bodyHtml: bodyHtml || null,
-              extractionPartial,
-              initiatives: [],
-              originalFileName: item.name,
-              originalSize: item.sizeStr,
-              absorbedAt: Date.now(),
-              rawBlob: item.file
-            };
+            if (ext !== 'pdf') {
+              regaarderDoc = {
+                id: docId,
+                mode: 'compose',
+                title: cleanTitle,
+                subtitle: 'Absorbed Enterprise Document',
+                bodyHtml: bodyHtml || null,
+                extractionPartial,
+                initiatives: [],
+                originalFileName: item.name,
+                originalSize: item.sizeStr,
+                absorbedAt: Date.now(),
+                rawBlob: item.file
+              };
+            }
           }
 
           item.status = 'ready';
@@ -615,34 +586,56 @@ export default function OmniPortalModal({
         className="w-full max-w-6xl h-[88vh] max-h-[820px] bg-white/98 dark:bg-zinc-900/98 rounded-[20px] border border-black/[0.08] dark:border-white/[0.1] shadow-[0_25px_70px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* Top Executive Header */}
-        <div className="flex items-center justify-between px-6 sm:px-7 py-4.5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md shrink-0">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white flex items-center justify-center shadow-[0_4px_14px_rgba(124,58,237,0.3)] shrink-0">
-              <ImportPortalIcon size={22} strokeWidth={1.7} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                  Omni-Portal
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.08] select-none">
-                  Experimental
-                </span>
+        {/* Top Executive Header with Progressive Disclosure */}
+        <div className="group/omni-header relative px-6 sm:px-8 py-3.5 sm:py-4 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 transition-all duration-300 ease-out">
+          <div className="flex items-center justify-between">
+            {/* Left Brand Identity & Title */}
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 text-white flex items-center justify-center shadow-[0_2px_12px_rgba(124,58,237,0.25)] border border-white/20 shrink-0 transition-transform duration-300 group-hover/omni-header:scale-[1.03]">
+                <ImportPortalIcon size={20} strokeWidth={1.8} />
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Bulk transfer Microsoft, Google & WPS repositories into native Regaarder formats
-              </p>
+
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-[15px] sm:text-base font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                    Omni-Portal
+                  </h2>
+
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-violet-500/[0.08] dark:bg-violet-400/[0.12] text-violet-700 dark:text-violet-300 border border-violet-500/20 select-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                    Universal Ingestion
+                  </span>
+
+                  {filesQueue.length > 0 && (
+                    <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.08]">
+                      {filesQueue.length} {filesQueue.length === 1 ? 'file' : 'files'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Progressive Disclosure Subtitle: Discreet at rest, expands smoothly on hover / approach */}
+                <div className="grid grid-rows-[0fr] group-hover/omni-header:grid-rows-[1fr] transition-all duration-300 ease-out">
+                  <div className="overflow-hidden">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 pt-1 tracking-normal font-normal">
+                      Bulk transfer Microsoft 365, Google Workspace & WPS repositories into native Regaarder formats
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Controls: Apple-style polished dismiss button */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close Omni-Portal"
+                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-100 bg-black/[0.03] hover:bg-black/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.10] border border-black/[0.04] dark:border-white/[0.06] transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+              >
+                <X size={15} strokeWidth={2} />
+              </button>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors flex items-center justify-center cursor-pointer"
-          >
-            <X size={16} />
-          </button>
         </div>
 
         {/* Main Content Area: Split Ingestion & Dual-View Inspector */}
@@ -881,8 +874,27 @@ export default function OmniPortalModal({
                 <div className="flex-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[12px] border border-black/[0.06] dark:border-white/[0.08] shadow-sm p-5 overflow-y-auto thin-scrollbar min-h-0">
                   {previewMode === 'regaarder' ? (
                     <div className="space-y-4">
-                      {/* Extraction status header */}
-                      {previewItem.mode === 'compose' && !previewItem.bodyHtml ? (
+                      {previewItem.isPdfDoc ? (
+                        <div className="flex flex-col h-full min-h-[380px] space-y-2.5">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                            <div className="flex items-center gap-2">
+                              <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-950/70 text-red-600 dark:text-red-400 font-bold text-[9.5px] uppercase tracking-wider">PDF</span>
+                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Native High-Fidelity Viewer</span>
+                            </div>
+                            <span className="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                              <CheckCircle2 size={13} />
+                              <span>100% Vector Fidelity</span>
+                            </span>
+                          </div>
+                          <div className="w-full h-[360px] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950">
+                            <iframe
+                              src={`${previewItem.pdfBlobUrl}#toolbar=0&navpanes=0`}
+                              title={previewItem.title}
+                              className="w-full h-full border-0"
+                            />
+                          </div>
+                        </div>
+                      ) : previewItem.mode === 'compose' && !previewItem.bodyHtml ? (
                         <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
                           <span className="w-4 h-4 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-[9px] font-black">!</span>
                           <span>Preview unavailable — content could not be extracted from this file</span>
@@ -899,7 +911,7 @@ export default function OmniPortalModal({
                         </div>
                       )}
 
-                      {previewItem.mode === 'compose' && (
+                      {!previewItem.isPdfDoc && previewItem.mode === 'compose' && (
                         previewItem.bodyHtml ? (
                           <div className="prose prose-sm max-w-none text-slate-800 dark:text-zinc-200">
                             <div 
@@ -974,6 +986,25 @@ export default function OmniPortalModal({
                           </div>
                         </div>
                       )}
+                    </div>
+                  ) : previewItem.isPdfDoc && previewItem.pdfBlobUrl ? (
+                    <div className="flex flex-col h-full min-h-[380px] space-y-2.5">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Original PDF Document</span>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10.5px] font-medium border border-emerald-200/50">
+                          <ShieldCheck size={12} />
+                          <span>Bit-for-Bit Preserved</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-[360px] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950">
+                        <iframe
+                          src={`${previewItem.pdfBlobUrl}#toolbar=1`}
+                          title={previewItem.title}
+                          className="w-full h-full border-0"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">

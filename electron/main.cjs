@@ -10,6 +10,7 @@ app.commandLine.appendSwitch('disable-gpu-compositing');
 app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+app.commandLine.appendSwitch('allow-file-access-from-files');
 
 let mainWindow = null;
 let browserViewManager = null;
@@ -218,6 +219,8 @@ $ws.AppActivate('${targetName}')
   const portsToTry = [
     process.env.VITE_DEV_SERVER_URL,
     'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://[::1]:5173',
     'http://localhost:5174',
     'http://localhost:5175'
   ].filter(Boolean);

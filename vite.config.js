@@ -79,6 +79,7 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, env);
 
   return {
+    base: './',
     plugins: [apiDevMiddlewarePlugin()],
     resolve: {
       alias: {
@@ -89,6 +90,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: true,
       proxy: {
         '/api/auth': 'http://localhost:3001',
         '/api/events': 'http://localhost:3001',
@@ -100,7 +102,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      include: ['canvg'],
+      include: ['canvg', 'pdfjs-dist'],
     },
     build: {
       minify: true,

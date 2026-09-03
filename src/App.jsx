@@ -30,7 +30,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
 import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
@@ -71,6 +71,7 @@ import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 import OmniPortalModal from './components/OmniPortalModal';
+import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -18035,6 +18036,37 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
   const activeDoc = documents.find((doc) => doc.id === activeDocId);
+  const [pdfRotation, setPdfRotation] = useState(0);
+  const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
+
+  const handlePrintPdf = useCallback(() => {
+    if (activeDoc?.pdfBlobUrl) {
+      const printFrame = document.createElement('iframe');
+      printFrame.style.position = 'fixed';
+      printFrame.style.right = '0';
+      printFrame.style.bottom = '0';
+      printFrame.style.width = '0';
+      printFrame.style.height = '0';
+      printFrame.style.border = '0';
+      printFrame.src = activeDoc.pdfBlobUrl;
+      printFrame.onload = () => {
+        try {
+          printFrame.contentWindow.focus();
+          printFrame.contentWindow.print();
+        } catch {
+          window.print();
+        }
+      };
+      document.body.appendChild(printFrame);
+      setTimeout(() => {
+        try {
+          document.body.removeChild(printFrame);
+        } catch {}
+      }, 60000);
+    } else {
+      window.print();
+    }
+  }, [activeDoc?.pdfBlobUrl]);
 
   useEffect(() => {
     window.setActiveDocIdGlobal = setActiveDocId;
@@ -34392,12 +34424,15 @@ Respond with valid JSON formatted like this:
           rawBlob: item.rawBlob || null,
         };
       }
+      const isPdf = item.fileType === 'pdf' || item.isPdfDoc || (item.originalFileName && item.originalFileName.toLowerCase().endsWith('.pdf'));
+      const pdfBlobUrl = item.pdfBlobUrl || (item.rawBlob ? URL.createObjectURL(item.rawBlob) : null);
       return {
         id: docId,
         mode: 'compose',
         title: item.title || 'Absorbed Document',
-        subtitle: item.subtitle || 'Enterprise Document',
+        subtitle: isPdf ? 'Native PDF Document' : (item.subtitle || 'Enterprise Document'),
         bodyHtml: item.bodyHtml || '',
+        cleanExtractedText: item.cleanExtractedText || '',
         initiatives: item.initiatives || [],
         appendedSections: [],
         isBlank: false,
@@ -34412,6 +34447,9 @@ Respond with valid JSON formatted like this:
         originalFileName: item.originalFileName || '',
         originalSize: item.originalSize || '',
         rawBlob: item.rawBlob || null,
+        fileType: isPdf ? 'pdf' : (item.fileType || 'compose'),
+        isPdfDoc: isPdf,
+        pdfBlobUrl: pdfBlobUrl,
       };
     });
 
@@ -34445,6 +34483,38 @@ Respond with valid JSON formatted like this:
     }
 
     showToast(`Absorbed ${absorbedDocs.length} enterprise document${absorbedDocs.length > 1 ? 's' : ''} into workspace`);
+  };
+
+  const handleConvertPdfToEditableDoc = (targetDocId) => {
+    const docId = targetDocId || activeDocId;
+    const docToConvert = documents.find((d) => d.id === docId);
+    if (!docToConvert) return;
+
+    let convertedHtml = docToConvert.cleanExtractedText || '';
+    if (!convertedHtml) {
+      convertedHtml = `<h1 class="text-2xl font-bold my-3 text-slate-900 dark:text-white">${escapeHtml(docToConvert.title || 'Converted Document')}</h1><p class="my-2 text-slate-700 dark:text-zinc-300 leading-relaxed">Document transcribed from ${escapeHtml(docToConvert.originalFileName || 'PDF')}. Ready for editing in Regaarder Compose.</p>`;
+    }
+
+    setDocuments((prev) =>
+      prev.map((d) => {
+        if (d.id === docId) {
+          return {
+            ...d,
+            isPdfDoc: false,
+            bodyHtml: convertedHtml,
+            subtitle: 'Converted from PDF',
+          };
+        }
+        return d;
+      })
+    );
+
+    if (activeDocId === docId) {
+      setDocBodyHtml(convertedHtml);
+      setDocSubtitle('Converted from PDF');
+    }
+
+    showToast('Converted PDF to editable document');
   };
 
   const openLandingWorkspace = (destination) => {
@@ -75097,7 +75167,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {/* Sub-toolbar details (shown when expanded) */}
           {!isDocumentSubToolbarCollapsed && (
             <div className="flex flex-wrap items-center justify-start gap-3 sm:gap-4 px-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
-              {docToolbarTab === 'Write' && (
+              {docToolbarTab === 'Write' && activeDoc?.isPdfDoc && (
+                <div className="w-full flex items-center justify-between gap-3 py-0.5 animate-in fade-in duration-150 select-none group">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-6 h-6 rounded-[6px] bg-red-600 text-white flex items-center justify-center font-black text-[9px] tracking-tight shrink-0 shadow-2xs">
+                      PDF
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate max-w-sm sm:max-w-md">
+                        {activeDoc.title || activeDoc.originalFileName || 'PDF Document'}
+                      </span>
+                      {activeDoc.originalSize && (
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">
+                          ({activeDoc.originalSize})
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.08] shrink-0">
+                        Read-Only Vector
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* PDF Utility Actions (Rotate 90, Annotate/Markup, Print) */}
+                    <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                      <button
+                        type="button"
+                        onClick={() => setPdfRotation((prev) => (prev + 90) % 360)}
+                        className="p-1.5 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                        title="Rotate 90° Clockwise"
+                      >
+                        <RotateCw size={13} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPdfMarkupActive((prev) => !prev)}
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                          pdfMarkupActive
+                            ? 'text-violet-600 bg-white dark:bg-zinc-800 shadow-xs outline outline-1 outline-violet-500/30 font-semibold'
+                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]'
+                        }`}
+                        title={pdfMarkupActive ? 'Hide Markup / Drawing Tools' : 'Annotate / Draw on Document'}
+                      >
+                        <PenTool size={13} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePrintPdf}
+                        className="p-1.5 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                        title="Print PDF Document"
+                      >
+                        <Printer size={13} />
+                      </button>
+                    </div>
+
+                    {activeDoc.pdfBlobUrl && (
+                      <a
+                        href={activeDoc.pdfBlobUrl}
+                        download={activeDoc.originalFileName || `${activeDoc.title || 'document'}.pdf`}
+                        className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+                        title="Download Original PDF"
+                      >
+                        <Download size={14} />
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleConvertPdfToEditableDoc(activeDoc.id)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-[0_2px_8px_rgba(124,58,237,0.25)] active:scale-95 transition-all cursor-pointer select-none"
+                      title="Convert this PDF into an editable rich text Compose document"
+                    >
+                      <FileEdit size={13} />
+                      <span>Convert to Editable Document</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {docToolbarTab === 'Write' && !activeDoc?.isPdfDoc && (
                 <div className="w-full flex flex-col gap-2">
                   <div className="w-full flex flex-wrap items-center justify-start gap-3 sm:gap-4">
             {/* Group 1: Typography Structure */}
@@ -80650,8 +80800,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            );
                         })}
 
-            {/* Page 1 Sheet Wrapper */}
-            <div
+            {/* Native PDF Document Viewer — High Fidelity Vector Presentation */}
+            {activeDoc?.isPdfDoc ? (
+              <NativePdfDocumentViewer
+                pdfBlobUrl={activeDoc.pdfBlobUrl}
+                rawBlob={activeDoc.rawBlob}
+                title={activeDoc.title || activeDoc.originalFileName}
+                zoomLevel={zoomLevel}
+                rotation={pdfRotation}
+                pageOrientation={pageOrientation}
+                docPageSize={docPageSize}
+                markupActive={pdfMarkupActive}
+                onCloseMarkup={() => setPdfMarkupActive(false)}
+                isDarkMode={isDarkMode}
+              />
+            ) : (
+              <>
+                {/* Page 1 Sheet Wrapper */}
+                <div
               data-enterprise-page="true"
               className={`w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border transition-all relative ${
                 isDarkMode 
@@ -81237,6 +81403,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               );
             })}
+              </>
+            )}
 
 
 
