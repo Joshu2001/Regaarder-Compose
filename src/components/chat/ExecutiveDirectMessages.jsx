@@ -17,7 +17,7 @@ import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, 
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
 
-// Curated Apple-style categorized emojis
+// Curated Apple-style categorized emojis & Custom Regaarder Stickers
 const EMOJI_CATEGORIES = [
   {
     id: 'smileys',
@@ -36,6 +36,12 @@ const EMOJI_CATEGORIES = [
     name: 'Tech & Workspace',
     icon: '⚡',
     emojis: ['⚡', '✨', '🔥', '💡', '🚀', '🎯', '🏆', '💎', '🎉', '📌', '📎', '📊', '📈', '📉', '📂', '📁', '💻', '🖥️', '📱', '🔒', '🔑', '🛡️', '🧠', '⚙️', '🤖', '💬', '📝', '✉️', '📅', '⏱️']
+  },
+  {
+    id: 'custom',
+    name: 'Custom & Stickers',
+    icon: '✨',
+    emojis: ['🚀', '🛡️', '🔮', '🌌', '⚡', '💎', '💡', '🧠', '👑', '🔥', '🎯', '🪐', '🧬', '🛸', '🛰️', '📡', '🕹️', '🧪', '🔑', '🏷️', '📦']
   }
 ];
 
