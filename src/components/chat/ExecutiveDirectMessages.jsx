@@ -7,13 +7,13 @@ import {
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
   Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
-  Megaphone, UserCheck, Users, Radio
+  Megaphone, UserCheck, Users, Radio, Eye
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 
 // Exact Docs File Type Pill Badges (Matching App.jsx getFileSemanticBadge)
-const DocsSemanticFileBadge = ({ type, title = '' }) => {
+const DocsSemanticFileBadge = ({ type, title = '', size = 'md' }) => {
   const nameLower = (title || '').toLowerCase();
   const ext = (nameLower.split('.').pop() || type || '').toLowerCase();
 
@@ -68,12 +68,20 @@ const DocsSemanticFileBadge = ({ type, title = '' }) => {
     );
   }
 
+  const dimClasses = size === 'lg' 
+    ? 'w-[32px] h-[36px] rounded-lg' 
+    : 'w-[20px] h-[22px] rounded-[5px]';
+
+  const labelClasses = size === 'lg'
+    ? 'text-[8.5px] font-black tracking-tighter uppercase mb-0.5'
+    : 'text-[6.5px] font-black tracking-tighter uppercase mb-[1px]';
+
   return (
     <span
-      className="w-[20px] h-[22px] rounded-[5px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-xs"
+      className={`${dimClasses} flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-xs`}
       style={{ backgroundColor: bgHex }}
     >
-      <span className="text-[6.5px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{label}</span>
+      <span className={`${labelClasses} text-white leading-none`}>{label}</span>
       {svg}
     </span>
   );
@@ -115,6 +123,11 @@ export default function ExecutiveDirectMessages({
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
+  // ── Document Attachment Stage State (WhatsApp Style Dispatch Carousel) ──
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [selectedAttachmentIndex, setSelectedAttachmentIndex] = useState(0);
+  const [attachmentCaption, setAttachmentCaption] = useState('');
+
   const [messages, setMessages] = useState([
     {
       id: 'm1',
@@ -123,7 +136,7 @@ export default function ExecutiveDirectMessages({
       text: 'Product Hunt launch is locked for May 15th! Did everyone review the updated pricing table in Sheets?',
       createdAt: Date.now() - 1000 * 60 * 55,
       status: 'read',
-      workspaceRef: { type: 'sheets', title: 'Q2 Financial Model & Pricing.xlsx', id: 'sheet-pricing' },
+      workspaceRef: { type: 'sheets', title: 'Q2 Financial Model & Pricing.xlsx', size: '521 KB', id: 'sheet-pricing' },
       topic: 'Pricing & Launch'
     },
     {
@@ -133,7 +146,7 @@ export default function ExecutiveDirectMessages({
       text: 'Looks exceptionally clean. The unit economics margins match our target. I approved the final copy in Docs.',
       createdAt: Date.now() - 1000 * 60 * 42,
       status: 'read',
-      workspaceRef: { type: 'compose', title: 'Beta Launch Executive Brief.brief', id: 'doc-beta' },
+      workspaceRef: { type: 'compose', title: 'Beta Launch Executive Brief.brief', size: '280 KB', id: 'doc-beta' },
       topic: 'Pricing & Launch'
     },
     {
@@ -161,6 +174,7 @@ export default function ExecutiveDirectMessages({
   const messagesEndRef = useRef(null);
   const chatScrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const addMoreFileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -373,7 +387,8 @@ export default function ExecutiveDirectMessages({
       text: forwardComment.trim() ? `${forwardComment.trim()}\n\n[Forwarded]: ${fwdContent}` : `[Forwarded]: ${fwdContent}`,
       createdAt: Date.now(),
       status: 'sent',
-      workspaceRef: forwardingMessage.workspaceRef
+      workspaceRef: forwardingMessage.workspaceRef,
+      workspaceRefs: forwardingMessage.workspaceRefs
     };
     setMessages(prev => [...prev, newMsg]);
     setForwardingMessage(null);
@@ -418,22 +433,66 @@ export default function ExecutiveDirectMessages({
     }
   };
 
+  // ── Document Selection & Preview Carousel Handlers ──
   const handleFileAttach = (e) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const fileName = files[0].name;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const parsedDocs = files.map((f, i) => {
+      const fileName = f.name;
       const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
-      const newMsg = {
-        id: `m-${Date.now()}`,
-        author: 'You',
-        role: 'you',
-        text: `Shared document: ${fileName}`,
-        createdAt: Date.now(),
-        status: 'sent',
-        workspaceRef: { type: fileType, title: fileName, id: `file-${Date.now()}` }
+      const sizeStr = f.size ? `${Math.round(f.size / 1024)} KB` : '420 KB';
+      return {
+        id: `attach-${Date.now()}-${i}`,
+        title: fileName,
+        type: fileType,
+        size: sizeStr
       };
-      setMessages(prev => [...prev, newMsg]);
-    }
+    });
+
+    setPendingAttachments(prev => [...prev, ...parsedDocs]);
+    setSelectedAttachmentIndex(0);
+    setAttachmentCaption('');
+  };
+
+  const handleAddMoreFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const parsedDocs = files.map((f, i) => {
+      const fileName = f.name;
+      const fileType = fileName.endsWith('.xlsx') || fileName.endsWith('.csv') ? 'sheets' : fileName.endsWith('.pptx') ? 'deck' : fileName.endsWith('.pdf') ? 'pdf' : 'compose';
+      const sizeStr = f.size ? `${Math.round(f.size / 1024)} KB` : '420 KB';
+      return {
+        id: `attach-${Date.now()}-${i}`,
+        title: fileName,
+        type: fileType,
+        size: sizeStr
+      };
+    });
+
+    setPendingAttachments(prev => [...prev, ...parsedDocs]);
+  };
+
+  const handleSendPendingAttachments = () => {
+    if (pendingAttachments.length === 0) return;
+
+    const newMsg = {
+      id: `m-doc-${Date.now()}`,
+      author: 'You',
+      role: 'you',
+      text: attachmentCaption.trim() || '',
+      createdAt: Date.now(),
+      status: 'sent',
+      // If 1 item: workspaceRef. If multiple: workspaceRefs array (Bento Grid)
+      workspaceRef: pendingAttachments.length === 1 ? pendingAttachments[0] : null,
+      workspaceRefs: pendingAttachments.length > 1 ? pendingAttachments : null
+    };
+
+    setMessages(prev => [...prev, newMsg]);
+    setPendingAttachments([]);
+    setAttachmentCaption('');
+    setSelectedAttachmentIndex(0);
   };
 
   const handleVoiceRecord = () => {
@@ -1235,31 +1294,66 @@ export default function ExecutiveDirectMessages({
                         )}
                       </div>
                     ) : (
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                      msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>
                     )}
 
-                    {/* Exact Docs-Standard Colored Semantic File Badge Attachment (Image 3) */}
+                    {/* ── SINGLE DOCUMENT SENT CARD (Images 2 & 4 Standard with Gray Highlight & Actions) ── */}
                     {msg.workspaceRef && (
-                      <div 
-                        onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
-                        className={`mt-2.5 p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                          isOutgoing
-                            ? 'bg-white dark:bg-zinc-800/80 border-black/[0.06] dark:border-white/10 hover:border-violet-500 text-slate-800 dark:text-zinc-200 shadow-2xs'
-                            : 'bg-black/[0.02] dark:bg-white/[0.04] border-black/[0.05] dark:border-white/[0.08] hover:border-violet-400 text-slate-800 dark:text-zinc-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} />
-                          <div className="min-w-0">
-                            <span className="block text-xs font-semibold truncate text-slate-900 dark:text-zinc-100">
+                      <div className="mt-2 rounded-2xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.06] dark:border-white/[0.08] p-3 space-y-2.5">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} size="lg" />
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-xs font-bold truncate text-slate-900 dark:text-zinc-100">
                               {msg.workspaceRef.title}
                             </span>
-                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">
-                              Workspace {msg.workspaceRef.type}
+                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                              {msg.workspaceRef.type?.toUpperCase()} • {msg.workspaceRef.size || '521 KB'}
                             </span>
                           </div>
                         </div>
-                        <ArrowRight size={13} className="opacity-70 shrink-0" />
+
+                        {/* Direct Enterprise Actions: View / Open in App */}
+                        <div className="flex items-center justify-between pt-2 border-t border-black/[0.06] dark:border-white/[0.06] text-xs">
+                          <button
+                            type="button"
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
+                            className="text-violet-600 dark:text-violet-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            <Eye size={12} />
+                            <span>View</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
+                            className="text-slate-600 dark:text-zinc-300 font-medium hover:text-slate-900 cursor-pointer flex items-center gap-1"
+                          >
+                            <Download size={12} />
+                            <span>Save as...</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── MULTIPLE DOCUMENTS SENT: COMPACT BENTO GRID (Image 4 Polish) ── */}
+                    {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
+                      <div className="mt-2.5 grid grid-cols-2 gap-2">
+                        {msg.workspaceRefs.map((doc, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
+                            className="p-2.5 rounded-xl bg-[#E8EAEE]/90 dark:bg-[#252B39]/90 border border-black/[0.05] dark:border-white/[0.08] hover:border-violet-500 cursor-pointer transition-all flex items-center gap-2.5 shadow-2xs group/bento"
+                          >
+                            <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[11.5px] font-bold truncate text-slate-900 dark:text-zinc-100 group-hover/bento:text-violet-600">
+                                {doc.title}
+                              </span>
+                              <span className="text-[9.5px] text-slate-500 dark:text-zinc-400 font-mono">
+                                {doc.size || '420 KB'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -1356,9 +1450,10 @@ export default function ExecutiveDirectMessages({
               onSubmit={handleSendMessage}
               className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
             >
-              {/* Hidden File Input */}
+              {/* Hidden File Input (Multi-File Capable) */}
               <input 
                 type="file" 
+                multiple
                 ref={fileInputRef} 
                 onChange={handleFileAttach} 
                 className="hidden" 
@@ -1369,7 +1464,7 @@ export default function ExecutiveDirectMessages({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
-                title="Attach Document, Sheet, or File"
+                title="Attach Documents, Sheets, or Files"
               >
                 <Paperclip size={16} />
               </button>
@@ -1427,6 +1522,126 @@ export default function ExecutiveDirectMessages({
           </div>
         </main>
       </div>
+
+      {/* ── WHATSAPP-STYLE DOCUMENT ATTACHMENT PREVIEW STAGE (IMAGES 1 & 3 STANDARD) ── */}
+      {pendingAttachments.length > 0 && (
+        <div 
+          className="fixed inset-0 z-50 bg-white/95 dark:bg-[#0c0d11]/95 backdrop-blur-md flex flex-col justify-between p-6 animate-in fade-in duration-150"
+        >
+          {/* Top Bar with Cancel / Dismiss */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => {
+                setPendingAttachments([]);
+                setAttachmentCaption('');
+              }}
+              className="p-2 rounded-full text-slate-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] transition-colors cursor-pointer"
+              title="Cancel sending"
+            >
+              <X size={20} />
+            </button>
+            <span className="text-xs font-mono font-semibold text-slate-600 dark:text-zinc-300">
+              {pendingAttachments[selectedAttachmentIndex]?.title || 'Document Preview'}
+            </span>
+            <div className="w-8" />
+          </div>
+
+          {/* Central Large Document Preview Card (Image 1 & 3 Style) */}
+          <div className="flex-1 flex flex-col items-center justify-center py-6">
+            <div className="w-full max-w-md p-8 rounded-3xl bg-[#F4F5F8] dark:bg-zinc-850/80 border border-black/[0.05] dark:border-white/[0.06] flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
+              <div className="w-20 h-24 rounded-2xl bg-white dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] shadow-md flex items-center justify-center">
+                <DocsSemanticFileBadge 
+                  type={pendingAttachments[selectedAttachmentIndex]?.type} 
+                  title={pendingAttachments[selectedAttachmentIndex]?.title} 
+                  size="lg" 
+                />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                  {pendingAttachments[selectedAttachmentIndex]?.title}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 font-mono">
+                  {pendingAttachments[selectedAttachmentIndex]?.size} • {pendingAttachments[selectedAttachmentIndex]?.type?.toUpperCase()}
+                </p>
+              </div>
+              <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                No preview available
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Dispatch Controls & Multi-File Thumbnail Carousel (Images 1 & 3 Style) */}
+          <div className="w-full max-w-xl mx-auto space-y-3">
+            {/* Caption Input */}
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={attachmentCaption}
+                onChange={(e) => setAttachmentCaption(e.target.value)}
+                placeholder="Type a message or document caption..."
+                className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                autoFocus
+              />
+            </div>
+
+            {/* Thumbnail Carousel with Add (+) Button and Circular Send */}
+            <div className="flex items-center justify-center gap-3">
+              {/* Hidden file input for adding more files */}
+              <input 
+                type="file" 
+                multiple
+                ref={addMoreFileInputRef} 
+                onChange={handleAddMoreFiles} 
+                className="hidden" 
+              />
+
+              {/* Document Thumbnails */}
+              <div className="flex items-center gap-2 overflow-x-auto p-1">
+                {pendingAttachments.map((doc, idx) => (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => setSelectedAttachmentIndex(idx)}
+                    className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                      selectedAttachmentIndex === idx
+                        ? 'border-emerald-500 bg-white dark:bg-zinc-800 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-black/[0.08] dark:border-white/[0.1] bg-slate-50 dark:bg-zinc-850 hover:border-slate-400'
+                    }`}
+                  >
+                    <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
+                  </button>
+                ))}
+
+                {/* Add (+) Button (Image 3) */}
+                <button
+                  type="button"
+                  onClick={() => addMoreFileInputRef.current?.click()}
+                  className="w-12 h-12 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 hover:border-violet-500 bg-transparent flex items-center justify-center text-slate-400 hover:text-violet-600 transition-colors cursor-pointer"
+                  title="Add more files"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+
+              {/* Circular Send Button with Badge Counter (Images 1 & 3) */}
+              <button
+                type="button"
+                onClick={handleSendPendingAttachments}
+                className="relative w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                title="Send documents"
+              >
+                <Send size={16} className="ml-0.5" />
+                {pendingAttachments.length > 1 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center border-2 border-white dark:border-zinc-900">
+                    {pendingAttachments.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── WHATSAPP-STYLE FORWARD MESSAGE MODAL (IMAGE 2 STANDARD) ── */}
       {forwardingMessage && (
