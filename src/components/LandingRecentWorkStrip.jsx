@@ -169,22 +169,10 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
                 continue;
               }
 
-              let title = data.docTitle || data.title;
-
-              // Smart excerpt extraction if title is generic/empty
-              if (!title || title.trim() === "" || title.toLowerCase() === "untitled document") {
-                if (data.bodyHtml) {
-                  const plain = data.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-                  if (plain.length > 3) {
-                    title = plain.slice(0, 26) + (plain.length > 26 ? "..." : "");
-                  }
-                } else if (data.initiatives && data.initiatives[0] && data.initiatives[0].title) {
-                  title = data.initiatives[0].title;
-                }
-              }
+              let title = (data.docTitle || data.title || data.sheetsTitle || data.deckTitle || "").trim();
 
               if (!title) {
-                title = `Document #${key.replace("rc.savedDoc.", "").slice(-4)}`;
+                title = "Untitled";
               }
 
               let detectedProduct = "compose";
