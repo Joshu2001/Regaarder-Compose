@@ -327,7 +327,7 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
 
 /**
  * Proprietary Regaarder Relay Glyph
- * Metaphor: Bidirectional peer-to-peer transmission with two interlocking communication waves and cryptographic focal link.
+ * Metaphor: Dual synchronized transmission nodes with symmetrical bidirectional communication arcs.
  */
 export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
@@ -342,12 +342,15 @@ export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
     className={className}
     {...props}
   >
-    {/* Outgoing signal track */}
-    <path d="M4.5 9.5C4.5 6.5 7 4.5 10.5 4.5H15.5C18.5 4.5 20.5 6.5 20.5 9.5C20.5 11.5 19.5 13 18 14L19.5 17.5L15 16.5" />
-    {/* Incoming counter-track (interlocking relay loop) */}
-    <path d="M19.5 14.5C19.5 17.5 17 19.5 13.5 19.5H8.5C5.5 19.5 3.5 17.5 3.5 14.5C3.5 12.5 4.5 11 6 10L4.5 6.5L9 7.5" opacity="0.45" />
-    {/* Cryptographic focal core node */}
-    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+    {/* Upper transmission node & directional wave */}
+    <circle cx="7" cy="8" r="2.5" />
+    <path d="M12 6.5h4.5a3 3 0 0 1 3 3v.5" />
+    <polyline points="17 4 19.5 6.5 17 9" />
+
+    {/* Lower reciprocal node & directional return wave */}
+    <circle cx="17" cy="16" r="2.5" />
+    <path d="M12 17.5H7.5a3 3 0 0 1-3-3V14" />
+    <polyline points="7 20 4.5 17.5 7 15" />
   </svg>
 );
 

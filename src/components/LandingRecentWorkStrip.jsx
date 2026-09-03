@@ -48,9 +48,10 @@ export function isMeaningfulWork(data) {
 
   // 1. Title verification (strictly match all default system titles)
   const rawTitle = (data.docTitle || data.title || data.sheetsTitle || data.deckTitle || "").trim();
-  const isDefaultTitle = !rawTitle || /^(untitled(\s+(document|sheet|sheets|spreadsheet|deck|presentation|whiteboard|canvas))?|document\s*#\d+|composition|sheet\s*\d+)$/i.test(rawTitle);
+  const isDefaultTitle = !rawTitle || /^(untitled(\s+(document|sheet|sheets|spreadsheet|deck|presentation|whiteboard|canvas))?|document\s*#\d+|composition|sheet\s*\d+|untitled\s*sheet)$/i.test(rawTitle);
 
-  // If the user gave it a genuine custom title (e.g. "Q3 Budget", "Sprint Retrospective")
+  // If title is a generic default "Untitled Sheet" / "Untitled", do NOT qualify as recent work by title alone!
+  // It MUST have actual user-written content (body, custom cells, slides) below:
   if (rawTitle && !isDefaultTitle) {
     return true;
   }
