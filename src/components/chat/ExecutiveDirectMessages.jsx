@@ -6,7 +6,8 @@ import {
   Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
-  Reply, Edit3, Wand2, Trash2
+  Reply, Edit3, Wand2, Trash2, Forward, Star, CornerUpRight, BellOff, Bell,
+  Share2
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -96,6 +97,7 @@ export default function ExecutiveDirectMessages({
   const [messageInput, setMessageInput] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
+  const [activeMoreMenuMsgId, setActiveMoreMenuMsgId] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
@@ -106,6 +108,7 @@ export default function ExecutiveDirectMessages({
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const [messages, setMessages] = useState([
     {
@@ -302,6 +305,7 @@ export default function ExecutiveDirectMessages({
     setEditingMessageId(msg.id);
     setMessageInput(msg.text || '');
     setReplyingToMessage(null);
+    setActiveMoreMenuMsgId(null);
   };
 
   const handleCancelEdit = () => {
@@ -314,18 +318,56 @@ export default function ExecutiveDirectMessages({
     if (textToCopy) {
       navigator.clipboard?.writeText(textToCopy);
     }
+    setActiveMoreMenuMsgId(null);
+  };
+
+  const handleToggleStar = (msgId) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, isStarred: !m.isStarred } : m));
+    setActiveMoreMenuMsgId(null);
+  };
+
+  const handleForwardMessage = (msg) => {
+    const textToForward = msg.text || msg.transcript || '';
+    setMessageInput(`Fwd: ${textToForward}`);
+    setActiveMoreMenuMsgId(null);
+  };
+
+  const handleAskAiAboutMessage = (msg) => {
+    setIsChatSearchOpen(true);
+    setIsAiMode(true);
+    const query = `Analyze claim from ${msg.author}: "${msg.text || msg.transcript}"`;
+    setChatSearchQuery(query);
+    setAiCompanionResponse(`Orb Analysis: "${msg.text || msg.transcript}" aligns with Q2 Milestone targets. Verified against active brief and pricing models.`);
+    setActiveMoreMenuMsgId(null);
+  };
+
+  const handleDeleteMessage = (msgId) => {
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    setActiveMoreMenuMsgId(null);
   };
 
   const handleAiProofread = (msg) => {
-    // Quick executive AI rewrite
     const current = msg.text || '';
     const polished = current.endsWith('.') ? current : `${current}.`;
     setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: `✨ ${polished}` } : m));
+    setActiveMoreMenuMsgId(null);
   };
 
   const handleLogToMemory = (msg) => {
     if (onLogDecisionToMemory) {
       onLogDecisionToMemory(msg.text || msg.transcript, currentChat.name);
+    }
+  };
+
+  const handleScheduleHuddle = () => {
+    setIsDetailsMenuOpen(false);
+    if (onOpenRoom) onOpenRoom();
+  };
+
+  const handleExportBrief = () => {
+    setIsDetailsMenuOpen(false);
+    if (onNavigateWorkspace) {
+      onNavigateWorkspace({ type: 'compose', title: `${currentChat.name} Summary Brief.brief` });
     }
   };
 
@@ -732,7 +774,7 @@ export default function ExecutiveDirectMessages({
                 {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
               </button>
 
-              {/* Ellipsis Details Menu */}
+              {/* Ellipsis Details Menu (Enterprise Utility Hub) */}
               <button
                 type="button"
                 onClick={() => setIsDetailsMenuOpen(prev => !prev)}
@@ -741,12 +783,12 @@ export default function ExecutiveDirectMessages({
                     ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100' 
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
                 }`}
-                title="Conversation details and security info"
+                title="Conversation details and enterprise tools"
               >
                 <MoreVertical size={15} />
               </button>
 
-              {/* Popover Menu for Details & Cryptography */}
+              {/* Enterprise Popover Utility Menu (Schedule, Export, Mute, Security) */}
               {isDetailsMenuOpen && (
                 <div 
                   className="absolute right-0 top-11 w-72 bg-white dark:bg-zinc-850 rounded-2xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
@@ -755,7 +797,7 @@ export default function ExecutiveDirectMessages({
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/[0.05] dark:border-white/[0.06]">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-zinc-100">
                       <ShieldCheck size={14} className="text-emerald-600" />
-                      <span>Security & Trust Details</span>
+                      <span>Enterprise Thread Tools</span>
                     </div>
                     <button
                       type="button"
@@ -765,13 +807,39 @@ export default function ExecutiveDirectMessages({
                       <X size={13} />
                     </button>
                   </div>
-                  <div className="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300">
+
+                  {/* 4 High-Value Enterprise Actions */}
+                  <div className="space-y-1 mb-2.5">
+                    <button
+                      type="button"
+                      onClick={handleScheduleHuddle}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer"
+                    >
+                      <Calendar size={14} className="text-violet-600 dark:text-violet-400" />
+                      <span>Schedule Instant Huddle</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportBrief}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer"
+                    >
+                      <FileText size={14} className="text-blue-600 dark:text-blue-400" />
+                      <span>Export Thread to Docs Brief</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setIsMuted(prev => !prev); setIsDetailsMenuOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer"
+                    >
+                      {isMuted ? <Bell size={14} className="text-emerald-600" /> : <BellOff size={14} className="text-slate-500" />}
+                      <span>{isMuted ? 'Unmute Notifications' : 'Mute Thread Notifications'}</span>
+                    </button>
+                  </div>
+
+                  {/* E2EE Security Section */}
+                  <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.06] space-y-1.5 text-[11px]">
                     <div className="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-black/[0.04]">
-                      <span className="block text-[10px] text-slate-400 uppercase font-semibold">Encryption Protocol</span>
-                      <span className="font-semibold text-slate-800 dark:text-zinc-100">AES-256-GCM / Curve25519 E2EE</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-black/[0.04]">
-                      <span className="block text-[10px] text-slate-400 uppercase font-semibold">User Fingerprint</span>
+                      <span className="block text-[9.5px] text-slate-400 uppercase font-semibold">User Fingerprint</span>
                       <span className="font-mono text-[10.5px] font-bold text-slate-800 dark:text-zinc-100 block truncate">
                         {currentChat.fingerprint || '0x8F2A • B419 • E941 • 3D02'}
                       </span>
@@ -916,8 +984,9 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
-                  {/* Floating Action Bar on Hover (WhatsApp / Apple Executive Standard) */}
+                  {/* ── 20/80 Focused Floating Action Toolbar (WhatsApp & Apple Standard) ── */}
                   <div className={`absolute -top-3.5 ${isOutgoing ? 'right-2' : 'left-2'} z-20 opacity-0 group-hover/msg:opacity-100 transition-all duration-150 flex items-center gap-0.5 p-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.12] shadow-sm select-none`}>
+                    {/* 1. Reply / Quote */}
                     <button
                       type="button"
                       onClick={() => setReplyingToMessage(msg)}
@@ -926,34 +995,93 @@ export default function ExecutiveDirectMessages({
                     >
                       <Reply size={12} />
                     </button>
+
+                    {/* 2. Forward */}
                     <button
                       type="button"
-                      onClick={() => handleCopyMessage(msg)}
+                      onClick={() => handleForwardMessage(msg)}
                       className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-                      title="Copy text"
+                      title="Forward to chat"
                     >
-                      <Copy size={12} />
+                      <Forward size={12} />
                     </button>
-                    {isOutgoing && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleStartEdit(msg)}
-                          className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-                          title="Edit your message"
+
+                    {/* 3. Ask AI about this message */}
+                    <button
+                      type="button"
+                      onClick={() => handleAskAiAboutMessage(msg)}
+                      className="p-1 rounded-md text-violet-600 hover:text-violet-800 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors"
+                      title="Ask AI about this message"
+                    >
+                      <RegaarderAiIcon size={12} strokeWidth={2.0} />
+                    </button>
+
+                    {/* 4. Star / Bookmark */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStar(msg.id)}
+                      className={`p-1 rounded-md transition-colors ${msg.isStarred ? 'text-amber-500 bg-amber-50 dark:bg-amber-950/40' : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700'}`}
+                      title={msg.isStarred ? "Unstar message" : "Star message"}
+                    >
+                      <Star size={12} className={msg.isStarred ? "fill-amber-500" : ""} />
+                    </button>
+
+                    {/* 5. Micro-Ellipsis for Secondary Actions (Copy, Edit, AI Polish, Delete) */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoreMenuMsgId(prev => prev === msg.id ? null : msg.id)}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                        title="More actions"
+                      >
+                        <MoreVertical size={12} />
+                      </button>
+
+                      {activeMoreMenuMsgId === msg.id && (
+                        <div 
+                          className="absolute right-0 top-6 w-36 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-black/[0.08] dark:border-white/[0.1] p-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-xs"
+                          onPointerDown={(e) => e.stopPropagation()}
                         >
-                          <Edit3 size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleAiProofread(msg)}
-                          className="p-1 rounded-md text-violet-600 hover:text-violet-800 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors"
-                          title="AI Proofread & Polish"
-                        >
-                          <Wand2 size={12} />
-                        </button>
-                      </>
-                    )}
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMessage(msg)}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium"
+                          >
+                            <Copy size={11} />
+                            <span>Copy Text</span>
+                          </button>
+                          {isOutgoing && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(msg)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium"
+                              >
+                                <Edit3 size={11} />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAiProofread(msg)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left font-medium"
+                              >
+                                <Wand2 size={11} />
+                                <span>AI Polish</span>
+                              </button>
+                            </>
+                          )}
+                          <div className="my-0.5 border-t border-black/[0.04] dark:border-white/[0.06]" />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium"
+                          >
+                            <Trash2 size={11} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Message Bubble */}
@@ -1047,15 +1175,18 @@ export default function ExecutiveDirectMessages({
 
                     {/* Ambient Metadata & Read Tick Footer */}
                     <div className="mt-1.5 flex items-center justify-between text-[10px] gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleLogToMemory(msg)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-semibold hover:underline cursor-pointer text-violet-600 dark:text-violet-400"
-                        title="Register this claim in Workspace Memory Hub"
-                      >
-                        <RegaarderAiIcon size={11} strokeWidth={2.0} />
-                        <span>Log to Memory</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleLogToMemory(msg)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-semibold hover:underline cursor-pointer text-violet-600 dark:text-violet-400"
+                          title="Register this claim in Workspace Memory Hub"
+                        >
+                          <RegaarderAiIcon size={11} strokeWidth={2.0} />
+                          <span>Log to Memory</span>
+                        </button>
+                        {msg.isStarred && <Star size={10} className="fill-amber-500 text-amber-500" />}
+                      </div>
                       <div className="ml-auto flex items-center gap-1 font-mono text-slate-400 dark:text-zinc-500">
                         {msg.isEdited && <span className="text-[9.5px] italic text-slate-400 mr-0.5">edited</span>}
                         <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -1083,7 +1214,7 @@ export default function ExecutiveDirectMessages({
 
           {/* ── BOTTOM COMPOSER (WhatsApp Style with Quote & Edit Banners) ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md">
-            {/* 1. WhatsApp-Style Quoted Reply Preview Banner (Image 2) */}
+            {/* 1. WhatsApp-Style Quoted Reply Preview Banner */}
             {replyingToMessage && (
               <div className="mb-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/90 border border-black/[0.06] flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-150">
                 <div className="flex items-center gap-2 min-w-0 border-l-2 border-violet-600 pl-2">
