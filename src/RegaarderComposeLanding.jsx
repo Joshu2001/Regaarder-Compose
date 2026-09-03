@@ -18,7 +18,7 @@ import {
   SheetIcon,
   RoomIcon,
   WhiteboardIcon,
-  ScheduleIcon,
+  ImportPortalIcon,
   MemoryIcon,
   RelayIcon
 } from "./components/RegaarderProductIcons";
@@ -34,7 +34,7 @@ const DEFAULT_PRODUCTS = [
   { id: "room", title: "Room", icon: RoomIcon },
   { id: "relay", title: "Relay", icon: RelayIcon },
   { id: "whiteboard", title: "Whiteboard", icon: WhiteboardIcon },
-  { id: "schedule", title: "Schedule", icon: ScheduleIcon },
+  { id: "omni-portal", title: "Import", icon: ImportPortalIcon },
   { id: "memory", title: "Memory", icon: MemoryIcon },
 ];
 

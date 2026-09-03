@@ -70,6 +70,7 @@ import MemoryDashboard from './MemoryDashboard';
 import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
+import OmniPortalModal from './components/OmniPortalModal';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6870,6 +6871,7 @@ function AppCore() {
   const [orbOpen, setOrbOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
+  const [isOmniPortalOpen, setIsOmniPortalOpen] = useState(false);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -18351,6 +18353,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [fontSearch, setFontSearch] = useState('');
   const [sizeSearch, setSizeSearch] = useState('');
   const [openDocMenuId, setOpenDocMenuId] = useState(null);
+  const [overflowTabMenuOpen, setOverflowTabMenuOpen] = useState(false);
   const [docMenuPos, setDocMenuPos] = useState({ top: 0, left: 0 });
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [renameDocValue, setRenameDocValue] = useState('');
@@ -34340,6 +34343,110 @@ Respond with valid JSON formatted like this:
     showToast('Manageen workspace ready');
   };
 
+  const handleBatchAbsorbed = (absorbedDocs) => {
+    if (!Array.isArray(absorbedDocs) || absorbedDocs.length === 0) return;
+
+    const normalizedDocs = absorbedDocs.map((item, idx) => {
+      const docId = item.id || (Date.now() + idx);
+      if (item.mode === 'sheets') {
+        return {
+          id: docId,
+          mode: 'sheets',
+          title: item.title || 'Absorbed Sheet',
+          sheetsTitle: item.title || 'Absorbed Sheet',
+          sheetsData: item.sheetsData || (item.sheetGrid ? [{ id: 1, title: item.title || 'Sheet 1', subtitle: 'Absorbed Sheet' }] : []),
+          sheetGrids: item.sheetGrids || { 1: item.sheetGrid || { rows: 22, cols: 26, cells: [] } },
+          activeSheetId: item.activeSheetId || 1,
+          deckTitle: 'Untitled Deck',
+          deckSlidesData: [],
+          activeDeckSlideId: 1,
+          bodyHtml: '',
+          initiatives: [],
+          appendedSections: [],
+          isBlank: false,
+          pinned: false,
+          originalFileName: item.originalFileName || '',
+          originalSize: item.originalSize || '',
+          rawBlob: item.rawBlob || null,
+        };
+      }
+      if (item.mode === 'deck') {
+        return {
+          id: docId,
+          mode: 'deck',
+          title: item.title || 'Absorbed Presentation',
+          deckTitle: item.title || 'Absorbed Presentation',
+          deckSlidesData: item.deckSlides || [],
+          activeDeckSlideId: 1,
+          sheetsTitle: 'Untitled Sheet',
+          sheetsData: [],
+          sheetGrids: { 1: { rows: 22, cols: 26, cells: [] } },
+          activeSheetId: 1,
+          bodyHtml: '',
+          initiatives: [],
+          appendedSections: [],
+          isBlank: false,
+          pinned: false,
+          originalFileName: item.originalFileName || '',
+          originalSize: item.originalSize || '',
+          rawBlob: item.rawBlob || null,
+        };
+      }
+      return {
+        id: docId,
+        mode: 'compose',
+        title: item.title || 'Absorbed Document',
+        subtitle: item.subtitle || 'Enterprise Document',
+        bodyHtml: item.bodyHtml || '',
+        initiatives: item.initiatives || [],
+        appendedSections: [],
+        isBlank: false,
+        pinned: false,
+        sheetsTitle: 'Untitled Sheet',
+        sheetsData: [],
+        sheetGrids: { 1: { rows: 22, cols: 26, cells: [] } },
+        activeSheetId: 1,
+        deckTitle: 'Untitled Deck',
+        deckSlidesData: [],
+        activeDeckSlideId: 1,
+        originalFileName: item.originalFileName || '',
+        originalSize: item.originalSize || '',
+        rawBlob: item.rawBlob || null,
+      };
+    });
+
+    setDocuments((prev) => [...prev, ...normalizedDocs]);
+
+    const first = normalizedDocs[0];
+    if (first) {
+      if (first.mode === 'sheets') {
+        setProductMode('sheets');
+        setActiveDocId(first.id);
+        setSheetsTitle(first.title);
+        if (first.sheetGrids) {
+          setSheetGrids(first.sheetGrids);
+        }
+        setActiveSheetId(first.activeSheetId || 1);
+      } else if (first.mode === 'deck') {
+        setProductMode('deck');
+        setActiveDocId(first.id);
+        setDeckTitle(first.title);
+        if (first.deckSlidesData) {
+          setDeckSlidesData(first.deckSlidesData);
+        }
+        setActiveDeckSlideId(1);
+      } else {
+        setProductMode('compose');
+        setActiveDocId(first.id);
+        setDocTitle(first.title);
+        setDocSubtitle(first.subtitle || '');
+        setDocBodyHtml(first.bodyHtml || '');
+      }
+    }
+
+    showToast(`Absorbed ${absorbedDocs.length} enterprise document${absorbedDocs.length > 1 ? 's' : ''} into workspace`);
+  };
+
   const openLandingWorkspace = (destination) => {
     setCreationPickerOpen(false);
     enterFullscreen();
@@ -34356,6 +34463,11 @@ Respond with valid JSON formatted like this:
       target = destination.toLowerCase();
     } else {
       target = 'compose';
+    }
+
+    if (target === 'omni-portal' || target === 'import') {
+      setIsOmniPortalOpen(true);
+      return;
     }
 
     if (target === 'compose') {
@@ -36254,6 +36366,33 @@ Respond with a JSON array of slide objects matching the schema.`;
       return a.pinned ? -1 : 1;
     });
   }, [documents, activeWorkspaceMode, getDocMode]);
+
+  const windowedTabDocuments = useMemo(() => {
+    const MAX_VISIBLE_TABS = 16;
+    if (orderedDocuments.length <= MAX_VISIBLE_TABS) {
+      return {
+        visibleDocs: orderedDocuments,
+        hiddenCount: 0,
+        startIndex: 0,
+        hiddenDocs: [],
+      };
+    }
+    const activeIdx = orderedDocuments.findIndex((d) => d.id === activeDocId);
+    const safeIdx = activeIdx >= 0 ? activeIdx : 0;
+    let start = Math.max(0, safeIdx - 7);
+    let end = Math.min(orderedDocuments.length, start + MAX_VISIBLE_TABS);
+    if (end - start < MAX_VISIBLE_TABS) {
+      start = Math.max(0, end - MAX_VISIBLE_TABS);
+    }
+    const visibleDocs = orderedDocuments.slice(start, end);
+    const hiddenDocs = orderedDocuments.filter((d) => !visibleDocs.some((vd) => vd.id === d.id));
+    return {
+      visibleDocs,
+      hiddenCount: hiddenDocs.length,
+      startIndex: start,
+      hiddenDocs,
+    };
+  }, [orderedDocuments, activeDocId]);
 
   useEffect(() => {
     if (productMode === 'landing' || productMode === 'room' || productMode === 'dm') return;
@@ -47837,7 +47976,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {/* Center Section: Document Tab Strip */}
               <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
-                {orderedDocuments.map((doc, docIndex) => {
+                {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
+                  const docIndex = windowedTabDocuments.startIndex + localIndex;
                 const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
                 const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
                 const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
@@ -48005,6 +48145,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 );
               })}
+              {windowedTabDocuments.hiddenCount > 0 && (
+                <div className="relative shrink-0 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setOverflowTabMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
+                    title={`${windowedTabDocuments.hiddenCount} more open documents`}
+                  >
+                    <span>+{windowedTabDocuments.hiddenCount} more</span>
+                  </button>
+                  {overflowTabMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[99990]"
+                        onClick={() => setOverflowTabMenuOpen(false)}
+                      />
+                      <div
+                        style={{ zIndex: 99999 }}
+                        className="absolute top-full left-0 mt-1.5 w-64 max-h-80 overflow-y-auto border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                      >
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                          <span>Open Documents ({orderedDocuments.length})</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOverflowTabMenuOpen(false);
+                              setIsMemorySearchOpen(true);
+                            }}
+                            className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                          >
+                            Search all
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {windowedTabDocuments.hiddenDocs.map((hDoc) => (
+                            <button
+                              key={hDoc.id}
+                              type="button"
+                              onClick={() => {
+                                switchDocument(hDoc.id);
+                                setOverflowTabMenuOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
+                            >
+                              <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={createItemForCurrentContext}
@@ -49476,7 +49669,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   className="flex flex-col items-start p-3.5 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/20 text-left transition-all group"
                                 >
                                   <div className="w-8 h-8 rounded-lg bg-violet-100/60 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                                    <Sparkles size={16} />
+                                    <RegaarderAiIcon size={16} className="text-violet-600 dark:text-violet-400" />
                                   </div>
                                   <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-0.5">Ask a question</span>
                                   <span className="text-[11px] text-slate-400 dark:text-zinc-500 leading-tight">Get insights about your data</span>
@@ -74608,7 +74801,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
               <span>Home</span>
             </button>
-            {orderedDocuments.map((doc, docIndex) => {
+            {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
+              const docIndex = windowedTabDocuments.startIndex + localIndex;
               const rawTitle = doc.title?.trim();
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
               const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : rawTitle)) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
@@ -74771,6 +74965,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               );
             })}
+            {windowedTabDocuments.hiddenCount > 0 && (
+              <div className="relative shrink-0 flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setOverflowTabMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
+                  title={`${windowedTabDocuments.hiddenCount} more open documents`}
+                >
+                  <span>+{windowedTabDocuments.hiddenCount} more</span>
+                </button>
+                {overflowTabMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[99990]"
+                      onClick={() => setOverflowTabMenuOpen(false)}
+                    />
+                    <div
+                      style={{ zIndex: 99999 }}
+                      className="absolute top-full left-0 mt-1.5 w-64 max-h-80 overflow-y-auto border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                    >
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                        <span>Open Documents ({orderedDocuments.length})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOverflowTabMenuOpen(false);
+                            setIsMemorySearchOpen(true);
+                          }}
+                          className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                        >
+                          Search all
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {windowedTabDocuments.hiddenDocs.map((hDoc) => (
+                          <button
+                            key={hDoc.id}
+                            type="button"
+                            onClick={() => {
+                              switchDocument(hDoc.id);
+                              setOverflowTabMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
+                          >
+                            <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={createItemForCurrentContext}
@@ -87188,6 +87435,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+
+      {/* ── Layer 7: Omni-Portal Batch Ingestion Modal ──────────────── */}
+      <OmniPortalModal
+        isOpen={isOmniPortalOpen}
+        onClose={() => setIsOmniPortalOpen(false)}
+        onBatchAbsorbed={handleBatchAbsorbed}
+      />
     </div>
   );
 }

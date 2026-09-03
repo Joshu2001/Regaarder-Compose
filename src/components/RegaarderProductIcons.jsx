@@ -254,6 +254,36 @@ export const ScheduleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...
   </svg>
 );
 
+/**
+ * Proprietary Regaarder Omni-Portal / Import Glyph
+ * Metaphor: Universal entry portal vortex receiving external documents into the workspace core.
+ * Pure Apple SF Symbol-style monoline geometry (1.6px stroke), balanced negative space,
+ * crisp silhouette at 16–26px.
+ */
+export const ImportPortalIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Portal outer dynamic vortex frame */}
+    <path d="M4 14.5V6.5A2.5 2.5 0 0 1 6.5 4H17.5A2.5 2.5 0 0 1 20 6.5V17.5A2.5 2.5 0 0 1 17.5 20H14" />
+    {/* Downward absorption vector into portal core */}
+    <path d="M12 2v9" />
+    <polyline points="9 8 12 11 15 8" />
+    {/* Focal core receiving ring */}
+    <circle cx="8" cy="16" r="3.5" />
+    <circle cx="8" cy="16" r="0.75" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const MemoryIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
