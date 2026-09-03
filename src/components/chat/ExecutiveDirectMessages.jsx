@@ -197,6 +197,34 @@ export default function ExecutiveDirectMessages({
     scanRealLocalModels();
   }, []);
 
+  // Global Outside Click / Tap Dismissal for Popovers
+  useEffect(() => {
+    const handleGlobalPointerDown = (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      // If user taps outside Model Engine Selector, dismiss it
+      if (isAiModelSelectorOpen && !target.closest('[data-popover-root="true"]')) {
+        setIsAiModelSelectorOpen(false);
+      }
+
+      // If user taps outside Emoji Picker, dismiss it
+      if (isEmojiPickerOpen && !target.closest('[data-popover-root="true"]')) {
+        setIsEmojiPickerOpen(false);
+      }
+
+      // If user taps outside Details menu, dismiss it
+      if (isDetailsMenuOpen && !target.closest('[data-popover-root="true"]')) {
+        setIsDetailsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleGlobalPointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handleGlobalPointerDown);
+    };
+  }, [isAiModelSelectorOpen, isEmojiPickerOpen, isDetailsMenuOpen]);
+
   // ── Full Apple/ChatGPT AI Voice Session State ──
   const [isAiVoiceSessionActive, setIsAiVoiceSessionActive] = useState(false);
   const [isAiVoicePaused, setIsAiVoicePaused] = useState(false);
@@ -788,6 +816,7 @@ export default function ExecutiveDirectMessages({
 
   const handleSelectEmoji = (emoji) => {
     setMessageInput(prev => `${prev}${emoji}`);
+    setIsEmojiPickerOpen(false);
   };
 
   const handleSendVoiceRecording = async () => {
