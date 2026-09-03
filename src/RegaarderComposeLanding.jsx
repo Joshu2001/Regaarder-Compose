@@ -394,7 +394,8 @@ export default function RegaarderComposeLanding({
                       const nextList = [product.id, ...prevList.filter(id => id !== product.id)];
                       localStorage.setItem('rc.mruAppsHistory', JSON.stringify(nextList));
                     } catch {}
-                    onLaunch?.({ type: 'action', name: product.id });
+                    const targetName = product.id === 'relay' ? 'dm' : product.id;
+                    onLaunch?.({ type: 'action', name: targetName });
                   }}
                   style={{ animationDelay: `${idx * 25}ms` }}
                   className={[
