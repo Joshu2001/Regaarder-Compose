@@ -11,10 +11,11 @@ import {
   MicOff, VideoOff, Maximize2, Minimize2, Image, Link, FileCode,
   UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
   SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet, UploadCloud,
-  AtSign, Globe, Smartphone, User
+  AtSign, Globe, Smartphone, User, Terminal, HardDriveDownload
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
+import { detectLocalLLMServers, CLOUD_AI_MODELS } from '../../services/orbAiService';
 
 // Curated Apple-style categorized emojis
 const EMOJI_CATEGORIES = [
@@ -38,13 +39,13 @@ const EMOJI_CATEGORIES = [
   }
 ];
 
-// Clean Technical AI Model Registry (No playful emojis, executive tier)
-const DETECTED_WORKSPACE_MODELS = [
-  { id: 'chatgpt-4o', name: 'ChatGPT (GPT-4o)', provider: 'OpenAI Cloud API', badge: 'Cloud', desc: 'Advanced multimodal reasoning & synthesis' },
-  { id: 'gemini-2.0', name: 'Gemini 2.0 Flash', provider: 'Google AI Core', badge: 'Fast Cloud', desc: 'Sub-second real-time streaming & vision' },
-  { id: 'gemma-local', name: 'Gemma 2B (Local)', provider: 'On-Device Zero-Knowledge', badge: 'Local Mesh', desc: 'Private offline engine, zero network telemetry' },
-  { id: 'llama-local', name: 'Llama 3.2 (Local)', provider: 'Local Edge Mesh', badge: 'Local Edge', desc: 'Local code review, schema validation & logic' },
-  { id: 'orb-orchestrator', name: 'Regaarder Orb Core', provider: 'Workspace Autonomous Layer', badge: 'System', desc: 'Autonomous cross-document memory & execution' }
+// Fallback Cloud AI Models matching Room specifications
+const DEFAULT_CLOUD_MODELS = [
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Google AI' },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google AI' },
+  { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+  { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
+  { id: 'deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek' }
 ];
 
 // Docs File Type Semantic Badge
@@ -137,9 +138,41 @@ export default function ExecutiveDirectMessages({
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
-  // ── AI Model Switcher State ──
-  const [selectedAiModel, setSelectedAiModel] = useState('chatgpt-4o');
+  // ── Real Live Probed Model Registry (Matching Room Standard) ──
+  const [detectedLocalModels, setDetectedLocalModels] = useState([]);
+  const [isScanningModels, setIsScanningModels] = useState(false);
+  const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
+
+  // Scan live local Ollama/LM Studio models on mount
+  const scanRealLocalModels = async () => {
+    setIsScanningModels(true);
+    try {
+      const servers = await detectLocalLLMServers({ timeoutMs: 1200 });
+      const locals = [];
+      (servers || []).forEach(s => {
+        if (s.isOnline && Array.isArray(s.models)) {
+          s.models.forEach(m => {
+            locals.push({
+              id: m.id,
+              name: m.id,
+              provider: `${s.name} ${m.size ? `(${m.size})` : ''}`,
+              isLocal: true
+            });
+          });
+        }
+      });
+      setDetectedLocalModels(locals);
+    } catch (e) {
+      console.warn('Local LLM detection error:', e);
+    } finally {
+      setIsScanningModels(false);
+    }
+  };
+
+  useEffect(() => {
+    scanRealLocalModels();
+  }, []);
 
   // ── Full Apple/ChatGPT AI Voice Session State ──
   const [isAiVoiceSessionActive, setIsAiVoiceSessionActive] = useState(false);
@@ -166,26 +199,23 @@ export default function ExecutiveDirectMessages({
   const [selectedAttachmentIndex, setSelectedAttachmentIndex] = useState(0);
   const [attachmentCaption, setAttachmentCaption] = useState('');
 
-  // ── Create Modal State (New Contact, Team Group, or AI Persona) ──
+  // ── Create Modal State (Instagram-Style Create Profile, Team Group, or AI Persona) ──
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('contact'); // 'contact' | 'group' | 'persona'
+  const [modalMode, setModalMode] = useState('profile'); // 'profile' | 'group' | 'persona'
   
-  // New Contact Form Fields (WhatsApp Standard)
-  const [contactFirstName, setContactFirstName] = useState('');
-  const [contactLastName, setContactLastName] = useState('');
-  const [contactUsername, setContactUsername] = useState('');
-  const [contactCountryCode, setContactCountryCode] = useState('+1');
-  const [contactPhone, setContactPhone] = useState('');
-  const [contactSyncPhone, setContactSyncPhone] = useState(true);
+  // Clean Profile Form Fields (Instagram Standard: Name, Username ID, Bio)
+  const [profileName, setProfileName] = useState('');
+  const [profileUsername, setProfileUsername] = useState('');
+  const [profileBio, setProfileBio] = useState('');
 
-  // New Group Form Fields
+  // Group Form Fields
   const [groupName, setGroupName] = useState('');
   const [groupSelectedMembers, setGroupSelectedMembers] = useState({});
 
-  // New AI Persona Form Fields
+  // AI Persona Form Fields
   const [personaName, setPersonaName] = useState('');
   const [personaInstructions, setPersonaInstructions] = useState('');
-  const [personaEngine, setPersonaEngine] = useState('gemma-local');
+  const [personaEngine, setPersonaEngine] = useState('gemini-2.0-flash');
   const mdFileInputRef = useRef(null);
 
   // Dynamic Conversations List
@@ -196,20 +226,20 @@ export default function ExecutiveDirectMessages({
       avatar: 'AI',
       isGroup: false,
       isAi: true,
-      modelId: 'chatgpt-4o',
-      modelName: 'ChatGPT (GPT-4o)',
+      modelId: 'gemini-2.0-flash',
+      modelName: 'Gemini 2.0 Flash',
       lastMsg: 'Ready for strategy briefings, real-time voice, or file synthesis.',
       time: 'Just now',
       unread: 0,
       category: 'ai',
       online: true,
-      fingerprint: '0xAI • CRYPTO • ZERO • KNOWLEDGE',
+      fingerprint: '0xAI • ZERO • KNOWLEDGE',
       topics: ['Strategy Synthesis', 'Voice Chat', 'Workspace Analysis'],
       actions: []
     }
   ]);
 
-  // Isolated Message Threads Store per Chat ID
+  // Isolated Message Threads Store
   const [threadMessages, setThreadMessages] = useState({
     'chat-assistant': [
       {
@@ -228,7 +258,6 @@ export default function ExecutiveDirectMessages({
   const messagesEndRef = useRef(null);
   const chatScrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
-  const addMoreFileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -312,15 +341,25 @@ export default function ExecutiveDirectMessages({
       if (activeTab === 'ai' && !c.isAi) return false;
       if (activeTab === 'topics' || activeTab === 'broadcast' || activeTab === 'actions') return true;
       if (searchQuery.trim()) {
-        return c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-               c.lastMsg.toLowerCase().includes(searchQuery.toLowerCase());
+        const q = searchQuery.toLowerCase();
+        return c.name.toLowerCase().includes(q) || 
+               (c.username && c.username.toLowerCase().includes(q)) ||
+               c.lastMsg.toLowerCase().includes(q);
       }
       return true;
     });
   }, [conversations, activeTab, searchQuery]);
 
   const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
-  const activeModelObj = DETECTED_WORKSPACE_MODELS.find(m => m.id === selectedAiModel) || DETECTED_WORKSPACE_MODELS[0];
+  
+  // Find current active model info from detected locals or cloud models
+  const activeModelDisplay = useMemo(() => {
+    const fromLocal = detectedLocalModels.find(m => m.id === selectedAiModel);
+    if (fromLocal) return { name: fromLocal.name, provider: fromLocal.provider, isLocal: true };
+    const fromCloud = DEFAULT_CLOUD_MODELS.find(m => m.id === selectedAiModel);
+    if (fromCloud) return { name: fromCloud.name, provider: fromCloud.provider, isLocal: false };
+    return { name: selectedAiModel, provider: 'AI Engine', isLocal: false };
+  }, [selectedAiModel, detectedLocalModels]);
 
   const handleSendMessage = (e) => {
     e?.preventDefault();
@@ -369,7 +408,7 @@ export default function ExecutiveDirectMessages({
           role: 'assistant',
           text: currentChat?.instructions 
             ? `(${currentChat.name} Persona): "${trimmed}" analyzed in accordance with custom instructions.`
-            : `(${activeModelObj.name}): Processed your prompt "${trimmed}". Zero-knowledge verification complete.`,
+            : `(${activeModelDisplay.name}): Processed your prompt "${trimmed}". Zero-knowledge verification complete.`,
           createdAt: Date.now(),
           status: 'read'
         };
@@ -383,30 +422,6 @@ export default function ExecutiveDirectMessages({
 
   const handleSelectEmoji = (emoji) => {
     setMessageInput(prev => `${prev}${emoji}`);
-  };
-
-  // Attach files to isolated thread
-  const handleSendPendingAttachments = () => {
-    if (pendingAttachments.length === 0) return;
-
-    const newMsg = {
-      id: `m-doc-${Date.now()}`,
-      author: 'You',
-      role: 'you',
-      text: attachmentCaption.trim() || '',
-      createdAt: Date.now(),
-      status: 'sent',
-      workspaceRef: pendingAttachments.length === 1 ? pendingAttachments[0] : null,
-      workspaceRefs: pendingAttachments.length > 1 ? pendingAttachments : null
-    };
-
-    setThreadMessages(prev => ({
-      ...prev,
-      [activeContactId]: [...(prev[activeContactId] || []), newMsg]
-    }));
-    setPendingAttachments([]);
-    setAttachmentCaption('');
-    setSelectedAttachmentIndex(0);
   };
 
   const handleSendVoiceRecording = () => {
@@ -453,46 +468,47 @@ export default function ExecutiveDirectMessages({
     setCallDuration(0);
   };
 
-  // ── Unified Contact / Group / Persona Creation Handler ──
+  // ── Unified Profile / Group / Persona Creation Handler ──
   const handleCreateSubmit = (e) => {
     e?.preventDefault();
 
-    if (modalMode === 'contact') {
-      const fullName = `${contactFirstName.trim()} ${contactLastName.trim()}`.trim() || contactUsername.trim();
-      if (!fullName) return;
+    if (modalMode === 'profile') {
+      const cleanName = profileName.trim();
+      const cleanHandle = profileUsername.trim().replace(/^@/, '');
+      if (!cleanName && !cleanHandle) return;
 
-      const newId = `contact-${Date.now()}`;
-      const initials = (contactFirstName[0] || fullName[0] || 'U').toUpperCase() + (contactLastName[0] || '').toUpperCase();
+      const newId = `profile-${Date.now()}`;
+      const displayName = cleanName || `@${cleanHandle}`;
+      const initials = cleanName ? cleanName.slice(0, 2).toUpperCase() : cleanHandle.slice(0, 2).toUpperCase();
 
       const newContact = {
         id: newId,
-        name: fullName,
-        username: contactUsername.trim() ? `@${contactUsername.replace('@', '')}` : '',
-        phone: contactPhone.trim() ? `${contactCountryCode} ${contactPhone.trim()}` : '',
-        avatar: initials.slice(0, 2),
+        name: displayName,
+        username: `@${cleanHandle || cleanName.toLowerCase().replace(/\s+/g, '')}`,
+        bio: profileBio.trim(),
+        avatar: initials,
         isGroup: false,
         isAi: false,
-        lastMsg: 'New contact created. Start messaging...',
+        lastMsg: 'Profile created. Start direct messaging...',
         time: 'Just now',
         unread: 0,
         category: 'all',
         online: true,
-        fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • CONTACT • VERIFIED`,
-        topics: [fullName],
+        fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • PROFILE • VERIFIED`,
+        topics: [displayName],
         actions: []
       };
 
       setConversations(prev => [newContact, ...prev]);
       setThreadMessages(prev => ({
         ...prev,
-        [newId]: [] // Fresh empty canvas
+        [newId]: []
       }));
       setActiveContactId(newId);
       setIsNewChatModalOpen(false);
-      setContactFirstName('');
-      setContactLastName('');
-      setContactUsername('');
-      setContactPhone('');
+      setProfileName('');
+      setProfileUsername('');
+      setProfileBio('');
     } else if (modalMode === 'group') {
       if (!groupName.trim()) return;
 
@@ -516,7 +532,7 @@ export default function ExecutiveDirectMessages({
       setConversations(prev => [newGroup, ...prev]);
       setThreadMessages(prev => ({
         ...prev,
-        [newId]: [] // Fresh empty canvas
+        [newId]: []
       }));
       setActiveContactId(newId);
       setIsNewChatModalOpen(false);
@@ -526,7 +542,7 @@ export default function ExecutiveDirectMessages({
       if (!personaName.trim()) return;
 
       const newId = `persona-${Date.now()}`;
-      const engineObj = DETECTED_WORKSPACE_MODELS.find(m => m.id === personaEngine) || DETECTED_WORKSPACE_MODELS[0];
+      const engineName = detectedLocalModels.find(m => m.id === personaEngine)?.name || DEFAULT_CLOUD_MODELS.find(m => m.id === personaEngine)?.name || personaEngine;
 
       const newPersona = {
         id: newId,
@@ -535,9 +551,9 @@ export default function ExecutiveDirectMessages({
         isGroup: false,
         isAi: true,
         modelId: personaEngine,
-        modelName: engineObj.name,
+        modelName: engineName,
         instructions: personaInstructions.trim(),
-        lastMsg: `${personaName.trim()} persona deployed on ${engineObj.name}.`,
+        lastMsg: `${personaName.trim()} persona deployed on ${engineName}.`,
         time: 'Just now',
         unread: 0,
         category: 'ai',
@@ -550,7 +566,7 @@ export default function ExecutiveDirectMessages({
       setConversations(prev => [newPersona, ...prev]);
       setThreadMessages(prev => ({
         ...prev,
-        [newId]: [] // Fresh empty canvas
+        [newId]: []
       }));
       setActiveContactId(newId);
       setIsNewChatModalOpen(false);
@@ -559,7 +575,6 @@ export default function ExecutiveDirectMessages({
     }
   };
 
-  // Import Persona Markdown file
   const handleImportPersonaMd = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -575,7 +590,6 @@ export default function ExecutiveDirectMessages({
     reader.readAsText(file);
   };
 
-  // Generate Persona with AI Assistant
   const handleAiCraftPersona = () => {
     const name = personaName.trim() || 'Executive Code Reviewer';
     setPersonaName(name);
@@ -702,7 +716,7 @@ export default function ExecutiveDirectMessages({
           <div className="absolute top-0 left-0 w-48 h-48 bg-blue-300/15 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-10 right-0 w-40 h-40 bg-violet-300/15 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top Controls Bar with High Z-Index for Popovers */}
+          {/* Top Controls Bar */}
           <div 
             className="p-3.5 space-y-2.5 border-b border-black/[0.05] dark:border-white/[0.06] relative z-40 cursor-default"
             onDoubleClick={(e) => {
@@ -718,11 +732,11 @@ export default function ExecutiveDirectMessages({
               <button
                 type="button"
                 onClick={() => {
-                  setModalMode('contact');
+                  setModalMode('profile');
                   setIsNewChatModalOpen(true);
                 }}
                 className="w-7 h-7 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
-                title="Add Contact, Create Group or Deploy Persona"
+                title="Create Profile, Group or Deploy Persona"
               >
                 <Plus size={16} strokeWidth={2.2} />
               </button>
@@ -735,7 +749,7 @@ export default function ExecutiveDirectMessages({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats, topics or files..."
+                placeholder="Search chats, usernames or topics..."
                 className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
               />
             </div>
@@ -868,20 +882,20 @@ export default function ExecutiveDirectMessages({
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">No Conversations Here</h4>
                   <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                    Add a contact, start a team group, or deploy an AI persona.
+                    Create a profile, start a group, or deploy an AI persona.
                   </p>
                 </div>
                 <div className="space-y-2 pt-2">
                   <button
                     type="button"
                     onClick={() => {
-                      setModalMode('contact');
+                      setModalMode('profile');
                       setIsNewChatModalOpen(true);
                     }}
                     className="w-full py-2 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
                   >
                     <UserPlus size={13} />
-                    <span>Add New Contact</span>
+                    <span>Create Profile</span>
                   </button>
                   <button
                     type="button"
@@ -978,7 +992,7 @@ export default function ExecutiveDirectMessages({
                     {currentChat.name}
                   </h3>
 
-                  {/* Clean Technical AI Model Selector */}
+                  {/* Real Detected Model Selector (Matching Room Standard) */}
                   {currentChat.isAi && (
                     <div className="relative inline-flex items-center">
                       <button
@@ -990,48 +1004,119 @@ export default function ExecutiveDirectMessages({
                           setIsAiModelSelectorOpen(prev => !prev);
                         }}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-100/90 dark:bg-violet-950/90 text-violet-700 dark:text-violet-300 text-[11px] font-bold hover:bg-violet-200 transition-colors cursor-pointer shadow-2xs border border-violet-200/50"
-                        title="Switch AI Engine"
+                        title="Switch AI Model Engine"
                       >
-                        <span>{activeModelObj.name}</span>
+                        <span>{activeModelDisplay.name}</span>
                         <ChevronDown size={12} className={`transition-transform ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
                       </button>
 
-                      {/* Dropdown Popover */}
+                      {/* Dropdown Menu (Exact Architecture of Room AI Selector) */}
                       {isAiModelSelectorOpen && (
                         <div 
                           data-popover-root="true"
-                          className="absolute left-0 top-8 w-72 bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-[100] animate-in fade-in duration-100"
+                          className="absolute left-0 top-8 w-72 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-2xl p-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150 text-left font-sans select-none"
                           onPointerDown={(e) => e.stopPropagation()}
                         >
-                          <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-black/[0.04]">
-                            Detected Workspace Engines
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1.5">
+                            Select Model Engine
                           </div>
-                          {DETECTED_WORKSPACE_MODELS.map((m) => (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedAiModel(m.id);
-                                setIsAiModelSelectorOpen(false);
-                              }}
-                              className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-colors cursor-pointer ${
-                                selectedAiModel === m.id
-                                  ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300'
-                                  : 'hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200'
-                              }`}
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="text-xs font-bold leading-tight">{m.name}</span>
-                                  <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-700 text-slate-500">
-                                    {m.badge}
-                                  </span>
-                                </div>
-                                <span className="block text-[10.5px] text-slate-400 leading-tight mt-0.5">{m.desc}</span>
+
+                          {/* 1. Real Live Detected Local Models */}
+                          {detectedLocalModels && detectedLocalModels.length > 0 ? (
+                            <div className="mb-2">
+                              <div className="flex items-center justify-between px-2.5 py-1">
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Local Models ({detectedLocalModels.length})
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); scanRealLocalModels(); }}
+                                  className="text-[10px] text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer"
+                                  title="Rescan local models"
+                                >
+                                  <RefreshCw size={11} className={isScanningModels ? 'animate-spin' : ''} />
+                                </button>
                               </div>
-                              {selectedAiModel === m.id && <Check size={13} className="text-violet-600 shrink-0 mt-1" />}
-                            </button>
-                          ))}
+
+                              {detectedLocalModels.map((localM) => {
+                                const isSel = selectedAiModel === localM.id;
+                                return (
+                                  <button
+                                    key={localM.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedAiModel(localM.id);
+                                      setIsAiModelSelectorOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
+                                      isSel 
+                                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold' 
+                                        : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-5 h-5 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <RegaarderAiIcon size={12} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-xs font-bold truncate leading-tight">{localM.name}</div>
+                                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{localM.provider}</div>
+                                      </div>
+                                    </div>
+                                    {isSel && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                              <div className="h-[1px] bg-slate-100 dark:bg-zinc-800 my-1.5" />
+                            </div>
+                          ) : (
+                            <div className="px-2.5 py-2 mb-1 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+                              <span>No local Ollama models detected</span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); scanRealLocalModels(); }}
+                                className="text-violet-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <HardDriveDownload size={11} /> Scan
+                              </button>
+                            </div>
+                          )}
+
+                          {/* 2. Cloud AI Models */}
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5 py-1">
+                            Cloud Models
+                          </div>
+
+                          {DEFAULT_CLOUD_MODELS.map((m) => {
+                            const isSel = selectedAiModel === m.id;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAiModel(m.id);
+                                  setIsAiModelSelectorOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
+                                  isSel 
+                                    ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold' 
+                                    : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-5 h-5 rounded-lg bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                                    <RegaarderAiIcon size={12} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-bold truncate leading-tight">{m.name}</div>
+                                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{m.provider}</div>
+                                  </div>
+                                </div>
+                                {isSel && <span className="w-1.5 h-1.5 rounded-full bg-violet-600 shrink-0" />}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -1081,7 +1166,7 @@ export default function ExecutiveDirectMessages({
                   <div className="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60 text-[11px] space-y-1">
                     <span className="text-[9.5px] text-slate-400 uppercase font-semibold block">Key Fingerprint</span>
                     <span className="font-mono text-[10.5px] font-bold text-slate-800 dark:text-zinc-100 block truncate">
-                      {currentChat.fingerprint || '0xAI • CRYPTO • ZERO • KNOWLEDGE'}
+                      {currentChat.fingerprint || '0xAI • ZERO • KNOWLEDGE'}
                     </span>
                   </div>
                 </div>
@@ -1198,25 +1283,6 @@ export default function ExecutiveDirectMessages({
                         </div>
                       )}
 
-                      {msg.workspaceRefs && msg.workspaceRefs.length > 0 && (
-                        <div className="mb-2.5 grid grid-cols-2 gap-2">
-                          {msg.workspaceRefs.map((doc, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => onNavigateWorkspace && onNavigateWorkspace(doc)}
-                              className="p-2.5 rounded-xl bg-[#E8EAEE]/90 border border-black/[0.05] hover:border-violet-500 cursor-pointer flex items-center gap-2.5 shadow-2xs"
-                            >
-                              <DocsSemanticFileBadge type={doc.type} title={doc.title} size="md" />
-                              <div className="min-w-0 flex-1">
-                                <span className="block text-[11.5px] font-bold truncate text-slate-900">
-                                  {doc.title}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
                       {msg.isAudio ? (
                         <div className="space-y-1.5 min-w-[240px]">
                           <div className="flex items-center gap-2.5">
@@ -1327,7 +1393,7 @@ export default function ExecutiveDirectMessages({
               <div className="flex items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] animate-in slide-in-from-bottom-2 duration-150">
                 <button
                   type="button"
-                  onClick={handleCancelVoiceRecording}
+                  onClick={() => setIsRecordingVoice(false)}
                   className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   title="Discard recording"
                 >
@@ -1449,14 +1515,14 @@ export default function ExecutiveDirectMessages({
         </main>
       </div>
 
-      {/* ── REFINED EXECUTIVE AI VOICE OVERLAY (HIGH CONTRAST & PERFECT ALIGNMENT) ── */}
+      {/* ── AI CONVERSATIONAL VOICE OVERLAY (STRICT VERTICAL AXIS ALIGNMENT) ── */}
       {isAiVoiceSessionActive && (
         <div className="fixed inset-0 z-50 bg-[#0c0d14]/95 backdrop-blur-2xl flex flex-col items-center justify-between p-8 animate-in fade-in duration-200 select-none text-white">
           {/* Top Bar with Brand Icon */}
           <div className="w-full max-w-xl flex items-center justify-between">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs text-white">
               <RegaarderBrandIcon size={14} className="text-violet-400 shrink-0" />
-              <span className="font-semibold">{activeModelObj.name}</span>
+              <span className="font-semibold">{activeModelDisplay.name}</span>
             </div>
 
             <button
@@ -1469,12 +1535,12 @@ export default function ExecutiveDirectMessages({
             </button>
           </div>
 
-          {/* Central Pulsing Liquid Soundwave Orb with Status Badge Below */}
-          <div className="flex flex-col items-center justify-center space-y-5 my-auto">
-            <div className="relative flex items-center justify-center">
+          {/* Central Pulsing Liquid Orb (Strict Centered Geometry) */}
+          <div className="flex flex-col items-center justify-center space-y-5 my-auto w-full max-w-md mx-auto text-center">
+            <div className="relative flex items-center justify-center mx-auto">
               <div className={`w-56 h-56 rounded-full bg-gradient-to-tr from-violet-600/40 via-indigo-500/30 to-fuchsia-500/40 blur-3xl transition-all duration-300 pointer-events-none ${isAiVoiceMuted || isAiVoicePaused ? 'opacity-30' : 'animate-pulse'}`} />
               
-              <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-700 border-2 border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden">
+              <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-violet-600 via-indigo-600 to-purple-700 border-2 border-white/20 shadow-2xl flex items-center justify-center relative overflow-hidden mx-auto">
                 <div className="flex items-center gap-1.5 h-14">
                   {aiVoiceLiveWaves.map((h, i) => (
                     <div
@@ -1487,20 +1553,20 @@ export default function ExecutiveDirectMessages({
               </div>
             </div>
 
-            {/* Polished Status Pill Positioned Directly Beneath the Central Orb */}
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white shadow-xs">
+            {/* Status Pill Positioned Directly on the Same Axis */}
+            <div className="flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-white shadow-xs mx-auto">
               <span className={`w-2 h-2 rounded-full ${isAiVoiceMuted ? 'bg-rose-400' : isAiVoicePaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
               <span>
                 {isAiVoiceMuted ? 'Microphone is muted' : isAiVoicePaused ? 'Voice session paused' : 'Listening to voice...'}
               </span>
             </div>
 
-            {/* Clean Subtitles (Standard Sans System Font) */}
-            <div className="text-center space-y-1 max-w-md px-4 pt-1">
+            {/* Subtitles on Same Axis */}
+            <div className="text-center space-y-1 w-full px-4 pt-1">
               <h3 className="text-base font-bold text-white tracking-tight">
                 {isAiVoiceMuted ? 'Unmute to continue speaking' : isAiVoicePaused ? 'Session is paused' : 'Speak naturally to collaborate'}
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              <p className="text-xs text-slate-300 leading-relaxed font-sans max-w-sm mx-auto">
                 {isAiVoiceMuted 
                   ? 'Tap the microphone button below to resume voice streaming.' 
                   : '“I analyzed the active brief and verified all unit economics margins.”'
@@ -1510,7 +1576,7 @@ export default function ExecutiveDirectMessages({
           </div>
 
           {/* Bottom Glass Controls Bar */}
-          <div className="w-full max-w-md flex items-center justify-center gap-5 p-3 rounded-3xl bg-white/10 border border-white/10 backdrop-blur-xl shadow-2xl">
+          <div className="w-full max-w-md flex items-center justify-center gap-5 p-3 rounded-3xl bg-white/10 border border-white/10 backdrop-blur-xl shadow-2xl mx-auto">
             <button
               type="button"
               onClick={() => setIsAiVoiceMuted(prev => !prev)}
@@ -1545,7 +1611,7 @@ export default function ExecutiveDirectMessages({
         </div>
       )}
 
-      {/* ── UNIFIED CREATE MODAL (NEW CONTACT, TEAM GROUP, OR AI PERSONA) ── */}
+      {/* ── UNIFIED CREATE MODAL (INSTAGRAM-STYLE CREATE PROFILE, TEAM GROUP, OR AI PERSONA) ── */}
       {isNewChatModalOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
@@ -1556,7 +1622,7 @@ export default function ExecutiveDirectMessages({
           <div className="w-full max-w-md bg-white dark:bg-zinc-850 rounded-3xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-5 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-black/[0.06]">
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
-                {modalMode === 'contact' ? 'Add New Contact' : modalMode === 'group' ? 'Create Team Group' : 'Deploy AI Persona'}
+                {modalMode === 'profile' ? 'Create User Profile' : modalMode === 'group' ? 'Create Team Group' : 'Deploy AI Persona'}
               </h3>
               <button
                 type="button"
@@ -1567,10 +1633,10 @@ export default function ExecutiveDirectMessages({
               </button>
             </div>
 
-            {/* 3-Mode Selector: Contact | Group | Persona */}
+            {/* 3-Mode Selector: Profile | Group | Persona */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'contact', label: 'New Contact', icon: UserPlus },
+                { id: 'profile', label: 'Create Profile', icon: User },
                 { id: 'group', label: 'Team Group', icon: Users },
                 { id: 'persona', label: 'AI Persona', icon: Bot }
               ].map(t => (
@@ -1591,83 +1657,42 @@ export default function ExecutiveDirectMessages({
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-3.5 text-xs">
-              {/* ── 1. NEW CONTACT FORM (WHATSAPP STANDARD) ── */}
-              {modalMode === 'contact' && (
+              {/* ── 1. INSTAGRAM-STYLE USER PROFILE (Name, @Username, Bio) ── */}
+              {modalMode === 'profile' && (
                 <div className="space-y-2.5">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-600">First Name</label>
-                      <input
-                        type="text"
-                        value={contactFirstName}
-                        onChange={(e) => setContactFirstName(e.target.value)}
-                        placeholder="John"
-                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                        autoFocus
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-600">Last Name</label>
-                      <input
-                        type="text"
-                        value={contactLastName}
-                        onChange={(e) => setContactLastName(e.target.value)}
-                        placeholder="Doe"
-                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                      <AtSign size={12} /> Username or Workspace ID
-                    </label>
+                    <label className="text-[11px] font-bold text-slate-600">Full Name</label>
                     <input
                       type="text"
-                      value={contactUsername}
-                      onChange={(e) => setContactUsername(e.target.value)}
-                      placeholder="@johndoe or john@regaarder.io"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="e.g. Joshua David"
                       className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                      autoFocus
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                      <Smartphone size={12} /> Phone Number
+                      <AtSign size={12} /> Unique Username ID
                     </label>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={contactCountryCode}
-                        onChange={(e) => setContactCountryCode(e.target.value)}
-                        className="w-24 px-2 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 focus:outline-none"
-                      >
-                        <option value="+1">US +1</option>
-                        <option value="+44">UK +44</option>
-                        <option value="+886">TW +886</option>
-                        <option value="+49">DE +49</option>
-                        <option value="+33">FR +33</option>
-                        <option value="+81">JP +81</option>
-                      </select>
-                      <input
-                        type="tel"
-                        value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value)}
-                        placeholder="555-0199"
-                        className="flex-1 px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      value={profileUsername}
+                      onChange={(e) => setProfileUsername(e.target.value)}
+                      placeholder="@joshua or @arch_lead"
+                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none font-mono"
+                    />
                   </div>
 
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
-                    <div className="text-[11px]">
-                      <span className="font-semibold text-slate-700 block">Sync to Workspace Directory</span>
-                      <span className="text-[10px] text-slate-400">Available across all active collaboration boards</span>
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600">Role / Status Bio</label>
                     <input
-                      type="checkbox"
-                      checked={contactSyncPhone}
-                      onChange={(e) => setContactSyncPhone(e.target.checked)}
-                      className="w-4 h-4 rounded text-violet-600 cursor-pointer"
+                      type="text"
+                      value={profileBio}
+                      onChange={(e) => setProfileBio(e.target.value)}
+                      placeholder="e.g. Lead System Architect • Core Workspace"
+                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1689,7 +1714,7 @@ export default function ExecutiveDirectMessages({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600">Add Members / AI Personas</label>
+                    <label className="text-[11px] font-bold text-slate-600">Add Profiles / AI Personas</label>
                     <div className="max-h-36 overflow-y-auto p-1.5 rounded-xl bg-slate-50 border border-black/[0.04] space-y-1">
                       {conversations.map(c => (
                         <label key={c.id} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-white cursor-pointer">
@@ -1707,7 +1732,7 @@ export default function ExecutiveDirectMessages({
                 </div>
               )}
 
-              {/* ── 3. AI PERSONA FORM ── */}
+              {/* ── 3. AI PERSONA FORM WITH DETECTED LOCAL/CLOUD ENGINES ── */}
               {modalMode === 'persona' && (
                 <div className="space-y-2.5">
                   <div className="space-y-1">
@@ -1733,15 +1758,24 @@ export default function ExecutiveDirectMessages({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600">Underlying Engine</label>
+                    <label className="text-[11px] font-bold text-slate-600">Underlying Engine (Detected from Room)</label>
                     <select
                       value={personaEngine}
                       onChange={(e) => setPersonaEngine(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 focus:outline-none"
                     >
-                      {DETECTED_WORKSPACE_MODELS.map(m => (
-                        <option key={m.id} value={m.id}>{m.name} ({m.provider})</option>
-                      ))}
+                      {detectedLocalModels.length > 0 && (
+                        <optgroup label="Local Detected Engines">
+                          {detectedLocalModels.map(m => (
+                            <option key={m.id} value={m.id}>{m.name} ({m.provider})</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Cloud Engines">
+                        {DEFAULT_CLOUD_MODELS.map(m => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.provider})</option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
 
@@ -1786,13 +1820,13 @@ export default function ExecutiveDirectMessages({
                 <button
                   type="submit"
                   disabled={
-                    (modalMode === 'contact' && !contactFirstName.trim() && !contactUsername.trim()) ||
+                    (modalMode === 'profile' && !profileName.trim() && !profileUsername.trim()) ||
                     (modalMode === 'group' && !groupName.trim()) ||
                     (modalMode === 'persona' && !personaName.trim())
                   }
                   className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-bold transition-colors cursor-pointer shadow-xs"
                 >
-                  {modalMode === 'contact' ? 'Save Contact' : modalMode === 'group' ? 'Create Group' : 'Deploy Persona'}
+                  {modalMode === 'profile' ? 'Save Profile' : modalMode === 'group' ? 'Create Group' : 'Deploy Persona'}
                 </button>
               </div>
             </form>
@@ -1835,58 +1869,6 @@ export default function ExecutiveDirectMessages({
                 className="w-13 h-13 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg cursor-pointer"
               >
                 <PhoneOff size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Document Attachment Preview Carousel */}
-      {pendingAttachments.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-white/95 dark:bg-[#0c0d11]/95 backdrop-blur-md flex flex-col justify-between p-6 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => { setPendingAttachments([]); setAttachmentCaption(''); }}
-              className="p-2 rounded-full text-slate-400 hover:text-slate-800 cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-            <span className="text-xs font-mono font-semibold text-slate-600">
-              {pendingAttachments[selectedAttachmentIndex]?.title || 'Document Preview'}
-            </span>
-            <div className="w-8" />
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-center py-6">
-            <div className="w-full max-w-md p-8 rounded-3xl bg-[#F4F5F8] border border-black/[0.05] flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
-              <DocsSemanticFileBadge 
-                type={pendingAttachments[selectedAttachmentIndex]?.type} 
-                title={pendingAttachments[selectedAttachmentIndex]?.title} 
-                size="lg" 
-              />
-              <h3 className="text-sm font-bold text-slate-800">{pendingAttachments[selectedAttachmentIndex]?.title}</h3>
-              <span className="text-[11px] text-slate-400">No preview available</span>
-            </div>
-          </div>
-
-          <div className="w-full max-w-xl mx-auto space-y-3">
-            <input
-              type="text"
-              value={attachmentCaption}
-              onChange={(e) => setAttachmentCaption(e.target.value)}
-              placeholder="Type a message or document caption..."
-              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-black/[0.08] shadow-2xs text-xs text-slate-800 focus:outline-none"
-              autoFocus
-            />
-            <div className="flex items-center justify-center gap-3">
-              <input type="file" multiple ref={addMoreFileInputRef} onChange={handleAddMoreFiles} className="hidden" />
-              <button
-                type="button"
-                onClick={handleSendPendingAttachments}
-                className="w-12 h-12 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg cursor-pointer shrink-0"
-              >
-                <Send size={16} className="ml-0.5" />
               </button>
             </div>
           </div>
