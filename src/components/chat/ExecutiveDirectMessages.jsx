@@ -807,7 +807,9 @@ export default function ExecutiveDirectMessages({
       console.warn('Audio blob generation error:', blobErr);
     }
 
-    const capturedTranscript = voiceRecognitionTranscript.trim() || 'Voice audio note dispatched across zero-knowledge channel.';
+    const rawSpokenText = voiceRecognitionTranscript.trim();
+    const capturedTranscript = rawSpokenText || 'Voice audio note dispatched across zero-knowledge channel.';
+    const isExplicitSpeech = Boolean(rawSpokenText);
     
     const newAudioMsg = {
       id: `m-voice-${Date.now()}`,
@@ -816,7 +818,8 @@ export default function ExecutiveDirectMessages({
       isAudio: true,
       audioUrl: audioUrl,
       audioDuration: formattedDuration === '0:00' ? '0:08' : formattedDuration,
-      transcript: capturedTranscript,
+      transcript: isExplicitSpeech ? rawSpokenText : '[Voice Audio Note]',
+      rawTranscript: rawSpokenText,
       createdAt: Date.now(),
       status: 'sent'
     };
@@ -852,10 +855,15 @@ export default function ExecutiveDirectMessages({
 
       let aiResponseText = '';
 
+      // Prompt to model: if user spoke words, pass their exact words. If empty, ask to assist based on the audio note.
+      const promptToModel = isExplicitSpeech 
+        ? rawSpokenText 
+        : 'The user sent a voice audio note. Acknowledge that you received their voice audio note and ask how you can assist them.';
+
       try {
         if (typeof onCallAi === 'function') {
           const aiRes = await onCallAi({
-            userPrompt: capturedTranscript,
+            userPrompt: promptToModel,
             systemPrompt,
             customModel: activeEngineId,
             customProvider: targetLocal ? 'Ollama' : undefined
@@ -871,7 +879,9 @@ export default function ExecutiveDirectMessages({
       }
 
       if (!aiResponseText) {
-        aiResponseText = `Understood: "${capturedTranscript}". Ready to assist.`;
+        aiResponseText = isExplicitSpeech 
+          ? `Understood: "${rawSpokenText}". Ready to assist.` 
+          : `I received your voice note. How would you like me to help?`;
       }
 
       setIsTyping(false);
@@ -1833,8 +1843,13 @@ export default function ExecutiveDirectMessages({
                                 "{msg.transcript}"
                               </p>
                               {isOutgoing && currentChat?.isAi && (
-                                <span className="text-[9.5px] font-mono font-medium text-emerald-600 dark:text-emerald-400 block px-1">
-                                  ✓ Fed directly to {currentChat.name} ({activeModelDisplay.name})
+                                <span className={`text-[9.5px] font-mono font-medium block px-1 ${
+                                  msg.rawTranscript ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'
+                                }`}>
+                                  {msg.rawTranscript 
+                                    ? `✓ Instruction fed to ${currentChat.name}: "${msg.rawTranscript}"`
+                                    : `• Voice note received by ${currentChat.name}`
+                                  }
                                 </span>
                               )}
                             </div>
@@ -1953,13 +1968,18 @@ export default function ExecutiveDirectMessages({
                       />
                     ))}
                   </div>
-                  <input
-                    type="text"
-                    value={voiceRecognitionTranscript}
-                    onChange={(e) => setVoiceRecognitionTranscript(e.target.value)}
-                    placeholder="Speaking... (transcribed voice text will appear here)"
-                    className="text-[11px] text-slate-700 dark:text-zinc-200 bg-white/70 dark:bg-zinc-900/70 rounded-lg px-2 py-0.5 border border-black/[0.05] dark:border-white/[0.08] focus:outline-none focus:ring-1 focus:ring-violet-500 text-center mt-1 truncate placeholder:text-slate-400"
-                  />
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-[9.5px] font-bold text-violet-600 dark:text-violet-400 shrink-0 uppercase tracking-wider">
+                      Transcript:
+                    </span>
+                    <input
+                      type="text"
+                      value={voiceRecognitionTranscript}
+                      onChange={(e) => setVoiceRecognitionTranscript(e.target.value)}
+                      placeholder="Type or speak your prompt (e.g. 'Write a poem for me')..."
+                      className="flex-1 text-[11px] font-medium text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 rounded-lg px-2 py-0.5 border border-violet-200 dark:border-violet-900 focus:outline-none focus:ring-1 focus:ring-violet-500 truncate placeholder:text-slate-400 shadow-2xs"
+                    />
+                  </div>
                 </div>
 
                 <button
