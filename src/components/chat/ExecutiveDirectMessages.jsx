@@ -100,6 +100,7 @@ export default function ExecutiveDirectMessages({
   const [forwardingMessage, setForwardingMessage] = useState(null); // Message object for WhatsApp-style forward modal
   const [forwardSelectedRecipients, setForwardSelectedRecipients] = useState({});
   const [forwardComment, setForwardComment] = useState('');
+  const [forwardSearchQuery, setForwardSearchQuery] = useState('');
   const [activeMoreMenuMsgId, setActiveMoreMenuMsgId] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
@@ -112,6 +113,7 @@ export default function ExecutiveDirectMessages({
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const [messages, setMessages] = useState([
     {
@@ -167,7 +169,7 @@ export default function ExecutiveDirectMessages({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -312,7 +314,9 @@ export default function ExecutiveDirectMessages({
     setReplyingToMessage(null);
 
     if (isAiTagged) {
+      setIsTyping(true);
       setTimeout(() => {
+        setIsTyping(false);
         const aiReply = {
           id: `m-ai-${Date.now()}`,
           author: 'Regaarder AI',
@@ -355,6 +359,7 @@ export default function ExecutiveDirectMessages({
     setForwardingMessage(msg);
     setForwardSelectedRecipients({ [currentChat.id]: true });
     setForwardComment('');
+    setForwardSearchQuery('');
     setActiveMoreMenuMsgId(null);
   };
 
@@ -503,6 +508,18 @@ export default function ExecutiveDirectMessages({
       lastHeaderTapRef.current = now;
     }
   };
+
+  // Close open popovers on document tap
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.relative')) {
+        setActiveMoreMenuMsgId(null);
+        setIsDetailsMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, []);
 
   // In-chat filtered messages
   const visibleMessages = useMemo(() => {
@@ -874,7 +891,7 @@ export default function ExecutiveDirectMessages({
                     <button
                       type="button"
                       onClick={() => setIsDetailsMenuOpen(false)}
-                      className="text-slate-400 hover:text-slate-600 text-xs"
+                      className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                     >
                       <X size={13} />
                     </button>
@@ -885,25 +902,25 @@ export default function ExecutiveDirectMessages({
                     <button
                       type="button"
                       onClick={handleScheduleHuddle}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer whitespace-nowrap"
                     >
-                      <Calendar size={14} className="text-violet-600 dark:text-violet-400" />
+                      <Calendar size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                       <span>Schedule Instant Huddle</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleExportBrief}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer whitespace-nowrap"
                     >
-                      <FileText size={14} className="text-blue-600 dark:text-blue-400" />
+                      <FileText size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
                       <span>Export Thread to Docs Brief</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => { setIsMuted(prev => !prev); setIsDetailsMenuOpen(false); }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700/60 transition-colors text-left cursor-pointer whitespace-nowrap"
                     >
-                      {isMuted ? <Bell size={14} className="text-emerald-600" /> : <BellOff size={14} className="text-slate-500" />}
+                      {isMuted ? <Bell size={14} className="text-emerald-600 shrink-0" /> : <BellOff size={14} className="text-slate-500 shrink-0" />}
                       <span>{isMuted ? 'Unmute Notifications' : 'Mute Thread Notifications'}</span>
                     </button>
                   </div>
@@ -916,13 +933,14 @@ export default function ExecutiveDirectMessages({
                         {currentChat.fingerprint || '0x8F2A • B419 • E941 • 3D02'}
                       </span>
                     </div>
+                    {/* Single-Line Copy Button */}
                     <button
                       type="button"
                       onClick={handleCopyKey}
-                      className="w-full py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-700 hover:bg-slate-200 text-slate-800 dark:text-zinc-200 font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-zinc-700 hover:bg-slate-200 text-slate-800 dark:text-zinc-200 font-semibold text-[11px] flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap leading-none"
                     >
-                      {copiedKey ? <CheckCircle2 size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                      <span>{copiedKey ? 'Fingerprint Copied' : 'Copy Key Fingerprint'}</span>
+                      {copiedKey ? <CheckCircle2 size={13} className="text-emerald-600 shrink-0" /> : <Copy size={13} className="shrink-0" />}
+                      <span className="whitespace-nowrap">{copiedKey ? 'Fingerprint Copied' : 'Copy Key Fingerprint'}</span>
                     </button>
                   </div>
                 </div>
@@ -1111,45 +1129,45 @@ export default function ExecutiveDirectMessages({
 
                       {activeMoreMenuMsgId === msg.id && (
                         <div 
-                          className="absolute right-0 top-8 w-38 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-black/[0.08] dark:border-white/[0.1] p-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-xs"
+                          className="absolute right-0 top-8 w-44 bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 text-xs"
                           onPointerDown={(e) => e.stopPropagation()}
                         >
                           <button
                             type="button"
                             onClick={() => handleCopyMessage(msg)}
-                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer whitespace-nowrap"
                           >
-                            <Copy size={13} />
-                            <span>Copy Text</span>
+                            <Copy size={13} className="shrink-0" />
+                            <span className="whitespace-nowrap">Copy Message Text</span>
                           </button>
                           {isOutgoing && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => handleStartEdit(msg)}
-                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer whitespace-nowrap"
                               >
-                                <Edit3 size={13} />
-                                <span>Edit</span>
+                                <Edit3 size={13} className="shrink-0" />
+                                <span className="whitespace-nowrap">Edit Message</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleAiProofread(msg)}
-                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left font-medium cursor-pointer"
+                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-left font-medium cursor-pointer whitespace-nowrap"
                               >
-                                <Wand2 size={13} />
-                                <span>AI Polish</span>
+                                <Wand2 size={13} className="shrink-0" />
+                                <span className="whitespace-nowrap">AI Polish</span>
                               </button>
                             </>
                           )}
-                          <div className="my-0.5 border-t border-black/[0.04] dark:border-white/[0.06]" />
+                          <div className="my-1 border-t border-black/[0.04] dark:border-white/[0.06]" />
                           <button
                             type="button"
                             onClick={() => handleDeleteMessage(msg.id)}
-                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium cursor-pointer whitespace-nowrap"
                           >
-                            <Trash2 size={13} />
-                            <span>Delete</span>
+                            <Trash2 size={13} className="shrink-0" />
+                            <span className="whitespace-nowrap">Delete Message</span>
                           </button>
                         </div>
                       )}
@@ -1269,6 +1287,14 @@ export default function ExecutiveDirectMessages({
                 </div>
               );
             })}
+
+            {/* AI Typing / Synthesizing Indicator */}
+            {isTyping && (
+              <div className="flex items-center gap-2 p-3 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 text-xs w-fit">
+                <RegaarderAiIcon size={13} strokeWidth={2.0} className="animate-spin" />
+                <span className="font-semibold">Regaarder AI is synthesizing...</span>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -1302,7 +1328,7 @@ export default function ExecutiveDirectMessages({
                 <button
                   type="button"
                   onClick={() => setReplyingToMessage(null)}
-                  className="p-1 rounded text-slate-400 hover:text-slate-600 shrink-0"
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 shrink-0 cursor-pointer"
                 >
                   <X size={14} />
                 </button>
@@ -1358,12 +1384,19 @@ export default function ExecutiveDirectMessages({
                 <Smile size={16} />
               </button>
 
-              {/* Text Input */}
+              {/* Text Input with Enter send & Esc cancel */}
               <input
                 type="text"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                placeholder={editingMessageId ? "Edit your message..." : "Type a message, @AI to ask assistant, or share files..."}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && (editingMessageId || replyingToMessage)) {
+                    setEditingMessageId(null);
+                    setReplyingToMessage(null);
+                    setMessageInput('');
+                  }
+                }}
+                placeholder={editingMessageId ? "Edit your message... (Esc to cancel)" : "Type a message, @AI to ask assistant, or share files..."}
                 className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
               />
 
@@ -1410,7 +1443,7 @@ export default function ExecutiveDirectMessages({
                 <button
                   type="button"
                   onClick={() => setForwardingMessage(null)}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors"
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -1424,6 +1457,8 @@ export default function ExecutiveDirectMessages({
                 <Search size={14} className="absolute left-3.5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
+                  value={forwardSearchQuery}
+                  onChange={(e) => setForwardSearchQuery(e.target.value)}
                   placeholder="Search name or group..."
                   className="w-full pl-9 pr-3 py-2 rounded-2xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
                 />
@@ -1435,51 +1470,53 @@ export default function ExecutiveDirectMessages({
               <div className="px-3 py-1 text-[10.5px] uppercase font-bold text-slate-400 tracking-wider">
                 Recent Chats
               </div>
-              {conversations.map(c => {
-                const isChecked = !!forwardSelectedRecipients[c.id];
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => {
-                      setForwardSelectedRecipients(prev => ({
-                        ...prev,
-                        [c.id]: !prev[c.id]
-                      }));
-                    }}
-                    className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
-                        c.isGroup
-                          ? 'bg-violet-100 text-violet-700'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}>
-                        {c.avatar}
+              {conversations
+                .filter(c => !forwardSearchQuery.trim() || c.name.toLowerCase().includes(forwardSearchQuery.toLowerCase()))
+                .map(c => {
+                  const isChecked = !!forwardSelectedRecipients[c.id];
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        setForwardSelectedRecipients(prev => ({
+                          ...prev,
+                          [c.id]: !prev[c.id]
+                        }));
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
+                          c.isGroup
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}>
+                          {c.avatar}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                            {c.name}
+                          </span>
+                          <span className="text-[11px] text-slate-400 truncate block">
+                            {c.isGroup ? 'Group Conversation' : 'Direct Message'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                          {c.name}
-                        </span>
-                        <span className="text-[11px] text-slate-400 truncate block">
-                          {c.isGroup ? 'Group Conversation' : 'Direct Message'}
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* Checkbox */}
-                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                      isChecked
-                        ? 'bg-violet-600 border-violet-600 text-white'
-                        : 'border-slate-300 dark:border-zinc-600 bg-transparent'
-                    }`}>
-                      {isChecked && <Check size={13} strokeWidth={2.5} />}
+                      {/* Checkbox */}
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                        isChecked
+                          ? 'bg-violet-600 border-violet-600 text-white'
+                          : 'border-slate-300 dark:border-zinc-600 bg-transparent'
+                      }`}>
+                        {isChecked && <Check size={13} strokeWidth={2.5} />}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
 
-            {/* Message Preview & Optional Comment Input (Image 2 Style) */}
+            {/* Message Preview & Optional Comment Input */}
             <div className="p-3 border-t border-black/[0.06] dark:border-white/[0.08] bg-slate-50 dark:bg-zinc-800/80 space-y-2">
               <div className="p-2 rounded-xl bg-white dark:bg-zinc-850 border border-black/[0.05] text-[11px] text-slate-600 dark:text-zinc-300 line-clamp-2">
                 <span className="font-semibold text-slate-800 dark:text-zinc-100">Preview: </span>
