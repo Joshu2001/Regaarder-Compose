@@ -208,6 +208,7 @@ export default function ExecutiveDirectMessages({
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const [audioPlaybackSpeeds, setAudioPlaybackSpeeds] = useState({}); // { [msgId]: 1 | 1.5 | 2 }
   const [voiceRecognitionTranscript, setVoiceRecognitionTranscript] = useState('');
+  const [aiStatusPhase, setAiStatusPhase] = useState('thinking'); // 'thinking' | 'typing'
   const voiceTimerRef = useRef(null);
   const voiceSpeechRecRef = useRef(null);
   const voiceAudioContextRef = useRef(null);
@@ -622,6 +623,12 @@ export default function ExecutiveDirectMessages({
 
     if (isAiChat) {
       setIsTyping(true);
+      setAiStatusPhase('thinking');
+
+      // Shift to 'typing' after thinking phase initiates
+      const phaseTimer = setTimeout(() => {
+        setAiStatusPhase('typing');
+      }, 1200);
 
       const activeEngineId = currentChat?.modelId || selectedAiModel;
       const targetLocal = detectedLocalModels.find(m => m.id === activeEngineId || m.name === activeEngineId);
@@ -708,6 +715,8 @@ export default function ExecutiveDirectMessages({
         }
       } catch (err) {
         console.warn('Real AI inference dispatch error:', err);
+      } finally {
+        clearTimeout(phaseTimer);
       }
 
       // If connection fails, indicate server status clearly instead of generic confirmation
@@ -768,6 +777,12 @@ export default function ExecutiveDirectMessages({
     // If active conversation is an AI Persona or Assistant, process audio transcript with real AI model!
     if (currentChat?.isAi) {
       setIsTyping(true);
+      setAiStatusPhase('thinking');
+
+      const phaseTimer = setTimeout(() => {
+        setAiStatusPhase('typing');
+      }, 1200);
+
       const activeEngineId = currentChat?.modelId || selectedAiModel;
       const targetLocal = detectedLocalModels.find(m => m.id === activeEngineId || m.name === activeEngineId);
       const aiAuthor = currentChat?.name || 'Assistant';
@@ -789,6 +804,8 @@ export default function ExecutiveDirectMessages({
         }
       } catch (voiceErr) {
         console.warn('Voice AI response error:', voiceErr);
+      } finally {
+        clearTimeout(phaseTimer);
       }
 
       if (!aiResponseText) {
@@ -1740,7 +1757,9 @@ export default function ExecutiveDirectMessages({
 
             {isTyping && (
               <div className="flex items-center gap-2.5 p-3 px-4 rounded-2xl bg-[#F0F2F6] dark:bg-[#1E232F] border border-[#E1E4EA] dark:border-[#2D3546] text-slate-700 dark:text-zinc-300 text-xs w-fit rounded-tl-xs shadow-2xs animate-in fade-in duration-150">
-                <span className="font-semibold text-slate-600 dark:text-zinc-300">{currentChat.name} is typing</span>
+                <span className="font-semibold text-slate-600 dark:text-zinc-300">
+                  {currentChat.name} is {aiStatusPhase}
+                </span>
                 <div className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 animate-bounce [animation-delay:-0.3s]" />
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 animate-bounce [animation-delay:-0.15s]" />
