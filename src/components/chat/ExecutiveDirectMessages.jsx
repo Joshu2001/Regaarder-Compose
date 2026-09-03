@@ -4,57 +4,75 @@ import {
   Sparkles, FileText, Table, Presentation, X, ArrowRight, MoreVertical,
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
   Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
-  Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight
+  Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
+  ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 
-// Rich Colored SVG Badges for Files & Attachments (Docs/Sheets standard)
-const ColoredFileBadge = ({ type, title = '', size = 32 }) => {
-  const ext = title.split('.').pop()?.toLowerCase() || '';
-  if (type === 'sheets' || ext === 'xlsx' || ext === 'csv') {
-    return (
-      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-2xs">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="3" />
-          <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
-        </svg>
-      </div>
-    );
-  }
-  if (type === 'deck' || ext === 'pptx') {
-    return (
-      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3.5" width="18" height="12.5" rx="2" />
-          <rect x="5.5" y="6" width="3.5" height="3.5" rx="0.75" fill="currentColor" stroke="none" />
-          <line x1="11.5" y1="6.75" x2="18" y2="6.75" />
-          <line x1="11.5" y1="9.25" x2="18" y2="9.25" />
-          <line x1="5.5" y1="12.5" x2="18" y2="12.5" />
-        </svg>
-      </div>
-    );
-  }
+// Exact Docs File Type Pill Badges (Matching App.jsx getFileSemanticBadge)
+const DocsSemanticFileBadge = ({ type, title = '' }) => {
+  const nameLower = (title || '').toLowerCase();
+  const ext = (nameLower.split('.').pop() || type || '').toLowerCase();
+
+  let bgHex = '#7C3AED';
+  let label = 'DOC';
+  let svg = (
+    <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+
   if (ext === 'pdf') {
-    return (
-      <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-2xs">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="9" y1="15" x2="15" y2="15" />
-        </svg>
-      </div>
+    bgHex = '#DC2626';
+    label = 'PDF';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  } else if (['xls', 'xlsx', 'csv', 'ods'].includes(ext) || type === 'sheets') {
+    bgHex = '#059669';
+    label = ext === 'csv' ? 'CSV' : 'XLS';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  } else if (['ppt', 'pptx', 'key'].includes(ext) || type === 'deck') {
+    bgHex = '#D97706';
+    label = 'PPT';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  } else if (['png', 'jpg', 'jpeg', 'svg', 'webp'].includes(ext) || type === 'image') {
+    bgHex = '#475569';
+    label = 'PNG';
+    svg = (
+      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="5.5" cy="5.5" r="1" fill="currentColor" />
+        <path d="M2.5 11.5L6 8L10 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M8.5 10.5L10.5 8.5L13.5 11.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
     );
   }
-  // Default Docs / Compose badge (Rich Indigo)
+
   return (
-    <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 shadow-2xs">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="8" y1="13" x2="16" y2="13" />
-        <line x1="8" y1="17" x2="14" y2="17" />
-      </svg>
-    </div>
+    <span
+      className="w-[20px] h-[22px] rounded-[5px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-xs"
+      style={{ backgroundColor: bgHex }}
+    >
+      <span className="text-[6.5px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{label}</span>
+      {svg}
+    </span>
   );
 };
 
@@ -77,9 +95,11 @@ export default function ExecutiveDirectMessages({
   const [isPinned, setIsPinned] = useState(false);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
-  const [isAiMode, setIsAiMode] = useState(false); // True = Ask AI Conversation Companion
+  const [isAiMode, setIsAiMode] = useState(false); // Ask AI Conversation Companion
   const [aiCompanionResponse, setAiCompanionResponse] = useState(null);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
 
@@ -105,6 +125,16 @@ export default function ExecutiveDirectMessages({
       topic: 'Pricing & Launch'
     },
     {
+      id: 'm-audio-1',
+      author: 'Sarah Johnson',
+      role: 'other',
+      isAudio: true,
+      audioDuration: '0:18',
+      transcript: 'I also synced the marketing deck typography tokens with David Vance.',
+      createdAt: Date.now() - 1000 * 60 * 30,
+      status: 'read'
+    },
+    {
       id: 'm3',
       author: 'Orb Intelligence',
       role: 'assistant',
@@ -117,11 +147,23 @@ export default function ExecutiveDirectMessages({
   ]);
 
   const messagesEndRef = useRef(null);
+  const chatScrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowScrollBottom(false);
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+    setShowScrollBottom(distanceToBottom > 180);
+  };
 
   // Clean conversations list
   const conversations = useMemo(() => [
@@ -226,7 +268,6 @@ export default function ExecutiveDirectMessages({
     setMessages(prev => [...prev, newMsg]);
     setMessageInput('');
 
-    // If @AI is tagged, trigger intelligent in-stream assistant reply
     if (isAiTagged) {
       setTimeout(() => {
         const aiReply = {
@@ -244,7 +285,7 @@ export default function ExecutiveDirectMessages({
 
   const handleLogToMemory = (msg) => {
     if (onLogDecisionToMemory) {
-      onLogDecisionToMemory(msg.text, currentChat.name);
+      onLogDecisionToMemory(msg.text || msg.transcript, currentChat.name);
     }
   };
 
@@ -266,7 +307,7 @@ export default function ExecutiveDirectMessages({
     }
   };
 
-  const handleVoiceDictate = () => {
+  const handleVoiceRecord = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Speech recognition is not supported in this browser environment.');
       return;
@@ -284,8 +325,19 @@ export default function ExecutiveDirectMessages({
     setIsRecordingVoice(true);
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      setMessageInput(prev => `${prev ? prev + ' ' : ''}${transcript}`);
       setIsRecordingVoice(false);
+      // Create rich Audio Message with waveform & transcript
+      const newAudioMsg = {
+        id: `m-voice-${Date.now()}`,
+        author: 'You',
+        role: 'you',
+        isAudio: true,
+        audioDuration: '0:07',
+        transcript: transcript,
+        createdAt: Date.now(),
+        status: 'sent'
+      };
+      setMessages(prev => [...prev, newAudioMsg]);
     };
     recognition.onerror = () => {
       setIsRecordingVoice(false);
@@ -333,7 +385,7 @@ export default function ExecutiveDirectMessages({
   const visibleMessages = useMemo(() => {
     if (!chatSearchQuery.trim() || isAiMode) return messages;
     const q = chatSearchQuery.toLowerCase();
-    return messages.filter(m => m.text.toLowerCase().includes(q) || m.author.toLowerCase().includes(q));
+    return messages.filter(m => (m.text && m.text.toLowerCase().includes(q)) || (m.transcript && m.transcript.toLowerCase().includes(q)) || m.author.toLowerCase().includes(q));
   }, [messages, chatSearchQuery, isAiMode]);
 
   return (
@@ -438,7 +490,7 @@ export default function ExecutiveDirectMessages({
               />
             </div>
 
-            {/* Comprehensive Quick Filter Tabs (All, Unread, Groups, Topics, Actions) */}
+            {/* Quick Filter Tabs (All, Unread, Groups, Topics, Actions) */}
             <div className="flex items-center gap-1 pt-0.5 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All' },
@@ -466,7 +518,7 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Contact Cards or Topic Channels View */}
+          {/* Contact Cards / Topic Channels View */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
             {activeTab === 'topics' ? (
               <div className="space-y-2 p-1">
@@ -777,7 +829,11 @@ export default function ExecutiveDirectMessages({
           )}
 
           {/* Message Stream */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 thin-scrollbar">
+          <div 
+            ref={chatScrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto px-6 py-5 space-y-4 thin-scrollbar relative"
+          >
             {/* End-to-End Encryption Security Banner */}
             <div className="w-fit mx-auto px-4 py-2 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2 max-w-lg text-center leading-normal shadow-2xs">
               <Lock size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
@@ -812,30 +868,74 @@ export default function ExecutiveDirectMessages({
                     </span>
                   )}
 
-                  {/* Outgoing & Incoming Message Bubbles */}
+                  {/* Message Bubble: Tailored Lavender-Periwinkle (Harmonious with Left Sidebar Atmosphere) */}
                   <div
                     className={`p-3.5 rounded-2xl text-[13px] leading-relaxed relative group transition-shadow ${
                       isOutgoing
-                        ? 'bg-[#DCF8C6] dark:bg-[#1A3323] text-slate-900 dark:text-zinc-100 border border-[#C5E8AC] dark:border-[#274E36] rounded-tr-xs shadow-2xs'
+                        ? 'bg-[#EBE9FE] dark:bg-[#201D3D] text-slate-900 dark:text-zinc-100 border border-[#DDD6FE] dark:border-[#38316B] rounded-tr-xs shadow-2xs'
                         : isAssistant
                         ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
                         : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
                     }`}
                   >
-                    <p>{msg.text}</p>
+                    {/* Audio Voice Note Player with AI Transcript */}
+                    {msg.isAudio ? (
+                      <div className="space-y-2 min-w-[240px]">
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setPlayingVoiceId(prev => prev === msg.id ? null : msg.id)}
+                            className="w-8 h-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            {playingVoiceId === msg.id ? <Pause size={13} /> : <Play size={13} className="ml-0.5" />}
+                          </button>
+                          
+                          {/* Animated Voice Scrubber */}
+                          <div className="flex-1 flex items-center gap-0.5 h-6">
+                            {[12, 22, 16, 28, 14, 20, 24, 18, 12, 26, 16, 20, 14, 24, 18, 12].map((h, i) => (
+                              <div
+                                key={i}
+                                className={`w-1 rounded-full transition-all ${
+                                  playingVoiceId === msg.id && (i % 3 === 0)
+                                    ? 'bg-violet-600 dark:bg-violet-400 animate-pulse'
+                                    : 'bg-slate-300 dark:bg-zinc-600'
+                                }`}
+                                style={{ height: `${h}px` }}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
+                            {msg.audioDuration || '0:12'}
+                          </span>
+                        </div>
 
-                    {/* Rich Colored SVG File & Document Badge Attachment */}
+                        {/* Collapsible / Visible AI Transcription */}
+                        {msg.transcript && (
+                          <div className="p-2 rounded-xl bg-white/70 dark:bg-white/5 border border-black/[0.04] text-[11px] leading-relaxed text-slate-700 dark:text-zinc-300 flex items-start gap-1.5">
+                            <Sparkle size={12} className="text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-semibold text-slate-800 dark:text-zinc-200">AI Transcript: </span>
+                              <span>"{msg.transcript}"</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p>{msg.text}</p>
+                    )}
+
+                    {/* Exact Docs-Standard Colored Semantic File Badge Attachment (Image 3) */}
                     {msg.workspaceRef && (
                       <div 
                         onClick={() => onNavigateWorkspace && onNavigateWorkspace(msg.workspaceRef)}
                         className={`mt-2.5 p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
                           isOutgoing
-                            ? 'bg-white/85 dark:bg-white/10 border-black/[0.06] dark:border-white/10 hover:border-emerald-500 text-slate-800 dark:text-zinc-200 shadow-2xs'
+                            ? 'bg-white/85 dark:bg-white/10 border-black/[0.06] dark:border-white/10 hover:border-violet-500 text-slate-800 dark:text-zinc-200 shadow-2xs'
                             : 'bg-black/[0.02] dark:bg-white/[0.04] border-black/[0.05] dark:border-white/[0.08] hover:border-violet-400 text-slate-800 dark:text-zinc-200'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <ColoredFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} />
+                          <DocsSemanticFileBadge type={msg.workspaceRef.type} title={msg.workspaceRef.title} />
                           <div className="min-w-0">
                             <span className="block text-xs font-semibold truncate text-slate-900 dark:text-zinc-100">
                               {msg.workspaceRef.title}
@@ -862,7 +962,7 @@ export default function ExecutiveDirectMessages({
                       </button>
                       <div className="ml-auto flex items-center gap-1 font-mono text-slate-400 dark:text-zinc-500">
                         <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        {isOutgoing && <CheckCheck size={13} className="text-emerald-600 dark:text-emerald-400 inline" />}
+                        {isOutgoing && <CheckCheck size={13} className="text-violet-600 dark:text-violet-400 inline" />}
                       </div>
                     </div>
                   </div>
@@ -871,6 +971,18 @@ export default function ExecutiveDirectMessages({
             })}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* ── WhatsApp-Style Floating Scroll-to-Bottom Button ── */}
+          {showScrollBottom && (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="absolute bottom-20 right-8 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] shadow-lg flex items-center justify-center text-slate-600 dark:text-zinc-200 hover:text-violet-600 hover:scale-105 transition-all cursor-pointer z-30 animate-in fade-in zoom-in-95 duration-150"
+              title="Scroll to bottom"
+            >
+              <ScrollDownIcon size={18} />
+            </button>
+          )}
 
           {/* ── BOTTOM COMPOSER ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md">
@@ -915,16 +1027,16 @@ export default function ExecutiveDirectMessages({
                 className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
               />
 
-              {/* 3. Voice Dictation Microphone */}
+              {/* 3. Audio Voice Message Recorder with Auto-Transcription */}
               <button
                 type="button"
-                onClick={handleVoiceDictate}
+                onClick={handleVoiceRecord}
                 className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
                   isRecordingVoice 
                     ? 'bg-rose-500 text-white animate-pulse' 
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
                 }`}
-                title={isRecordingVoice ? "Listening..." : "Dictate message"}
+                title={isRecordingVoice ? "Recording audio note... (Click to send)" : "Record audio voice note"}
               >
                 <Mic size={16} />
               </button>
