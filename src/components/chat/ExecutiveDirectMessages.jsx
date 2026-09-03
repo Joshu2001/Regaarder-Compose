@@ -1874,41 +1874,49 @@ export default function ExecutiveDirectMessages({
 
           {/* ── BOTTOM COMPOSER ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md relative">
-            {/* Categorized Apple-Style Emoji Picker Popover */}
+            {/* Categorized Apple Liquid Glass Emoji & Custom Reaction Popover */}
             {isEmojiPickerOpen && (
               <div 
                 data-popover-root="true"
-                className="absolute bottom-16 left-6 w-80 bg-white dark:bg-zinc-850 rounded-3xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-3 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none"
+                className="absolute bottom-16 left-6 w-[330px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-black/[0.08] dark:border-white/[0.1] p-3 z-40 animate-in fade-in zoom-in-95 duration-150 select-none font-sans"
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                <div className="relative mb-2">
-                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                {/* Search Bar */}
+                <div className="relative mb-2.5">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   <input
                     type="text"
                     value={emojiSearch}
                     onChange={(e) => setEmojiSearch(e.target.value)}
-                    placeholder="Search emoji..."
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                    placeholder="Search emoji or stickers..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40 transition-all"
                   />
                 </div>
 
-                <div className="flex items-center gap-1 pb-2 mb-2 border-b border-black/[0.05]">
-                  {EMOJI_CATEGORIES.map(cat => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setEmojiCategory(cat.id)}
-                      className={`flex-1 py-1 text-center rounded-lg text-sm transition-colors cursor-pointer ${
-                        emojiCategory === cat.id ? 'bg-violet-100 dark:bg-violet-950/80 shadow-2xs' : 'hover:bg-slate-100'
-                      }`}
-                      title={cat.name}
-                    >
-                      {cat.icon}
-                    </button>
-                  ))}
+                {/* Apple-Style Segmented Category Tabs */}
+                <div className="flex items-center gap-1 p-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl mb-2.5">
+                  {EMOJI_CATEGORIES.map(cat => {
+                    const isActive = emojiCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setEmojiCategory(cat.id)}
+                        className={`flex-1 py-1 text-center rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer flex items-center justify-center gap-1 ${
+                          isActive 
+                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs' 
+                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                        }`}
+                        title={cat.name}
+                      >
+                        <span className="text-sm leading-none">{cat.icon}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 h-44 overflow-y-auto thin-scrollbar p-1">
+                {/* Emoji Grid */}
+                <div className="grid grid-cols-7 gap-1 h-48 overflow-y-auto thin-scrollbar p-1">
                   {(EMOJI_CATEGORIES.find(c => c.id === emojiCategory)?.emojis || [])
                     .filter(em => !emojiSearch || em.includes(emojiSearch))
                     .map((em, idx) => (
@@ -1916,7 +1924,7 @@ export default function ExecutiveDirectMessages({
                         key={idx}
                         type="button"
                         onClick={() => handleSelectEmoji(em)}
-                        className="w-8 h-8 rounded-lg hover:bg-black/[0.05] text-lg flex items-center justify-center transition-transform hover:scale-120 cursor-pointer"
+                        className="w-9 h-9 rounded-xl hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-90 text-xl flex items-center justify-center transition-all cursor-pointer"
                       >
                         {em}
                       </button>
