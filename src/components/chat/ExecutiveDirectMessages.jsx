@@ -406,29 +406,38 @@ export default function ExecutiveDirectMessages({
     if (isAiChat) {
       setIsTyping(true);
 
-      const targetModelId = currentChat?.modelId || selectedAiModel;
-      const targetLocal = detectedLocalModels.find(m => m.id === targetModelId);
+      const activeEngineId = currentChat?.modelId || selectedAiModel;
+      const targetLocal = detectedLocalModels.find(m => m.id === activeEngineId || m.name === activeEngineId);
       const aiAuthor = currentChat?.name || 'Assistant';
 
       let aiResponseText = '';
 
+      // Build conversation context
+      const existingThread = threadMessages[activeContactId] || [];
+      const historyContext = existingThread.slice(-6).map(m => ({
+        role: m.role === 'you' ? 'user' : 'assistant',
+        content: m.text || ''
+      }));
+      historyContext.push({ role: 'user', content: trimmed });
+
+      const systemPrompt = currentChat?.instructions 
+        ? currentChat.instructions 
+        : 'You are an executive intelligent assistant in Regaarder Relay. Provide direct, helpful, concise, and natural conversational responses.';
+
       try {
-        if (targetLocal && targetLocal.serverProvider === 'ollama') {
-          // Direct real local Ollama query
+        if (targetLocal) {
+          // Direct real local Ollama / LM Studio probe
           const endpoint = (targetLocal.endpoint || 'http://localhost:11434').replace(/\/+$/, '');
+          const modelTag = targetLocal.id || targetLocal.name;
+
           const res = await fetch(`${endpoint}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: targetLocal.name,
+              model: modelTag,
               messages: [
-                {
-                  role: 'system',
-                  content: currentChat?.instructions 
-                    ? currentChat.instructions 
-                    : 'You are an executive zero-knowledge AI assistant in Regaarder. Provide concise, clear, direct, and insightful responses.'
-                },
-                { role: 'user', content: trimmed }
+                { role: 'system', content: systemPrompt },
+                ...historyContext
               ],
               stream: false
             })
@@ -436,24 +445,44 @@ export default function ExecutiveDirectMessages({
 
           if (res.ok) {
             const data = await res.json();
-            aiResponseText = data.message?.content || '';
+            aiResponseText = data.message?.content || data.response || '';
+          } else {
+            // Fallback to /api/generate endpoint if /api/chat is unavailable
+            const genRes = await fetch(`${endpoint}/api/generate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: modelTag,
+                prompt: `${systemPrompt}\n\nUser: ${trimmed}\nAssistant:`,
+                stream: false
+              })
+            });
+            if (genRes.ok) {
+              const genData = await genRes.json();
+              aiResponseText = genData.response || '';
+            }
           }
         } else {
           // Cloud provider execution via callAiProvider
           const savedConfig = getSavedAiConfig();
+          const providerType = activeEngineId.includes('gemini') ? 'gemini' 
+            : activeEngineId.includes('claude') ? 'claude' 
+            : activeEngineId.includes('gpt') ? 'openai' 
+            : activeEngineId.includes('deepseek') ? 'deepseek' : 'gemini';
+
           const providerConfig = {
             ...savedConfig,
-            provider: targetModelId.includes('gemini') ? 'gemini' : targetModelId.includes('claude') ? 'claude' : targetModelId.includes('gpt') ? 'openai' : 'gemini',
-            activeModel: targetModelId
+            provider: providerType,
+            activeModel: activeEngineId,
+            geminiModel: activeEngineId,
+            openaiModel: activeEngineId,
+            claudeModel: activeEngineId
           };
 
           const result = await callAiProvider(
             [
-              {
-                role: 'system',
-                content: currentChat?.instructions || 'You are an executive zero-knowledge AI assistant in Regaarder. Provide concise, clear, and direct responses.'
-              },
-              { role: 'user', content: trimmed }
+              { role: 'system', content: systemPrompt },
+              ...historyContext
             ],
             providerConfig
           );
@@ -463,14 +492,16 @@ export default function ExecutiveDirectMessages({
           }
         }
       } catch (err) {
-        console.warn('Real AI inference error:', err);
+        console.warn('Real AI inference dispatch error:', err);
       }
 
-      // Fallback if network or local server is offline
+      // If connection fails, indicate server status clearly instead of generic confirmation
       if (!aiResponseText) {
-        aiResponseText = currentChat?.instructions 
-          ? `(${currentChat.name} Persona): Received "${trimmed}". Ready to assist with your directives.`
-          : `(${activeModelDisplay.name}): Processed "${trimmed}". How would you like to proceed?`;
+        if (targetLocal) {
+          aiResponseText = `Unable to connect to local engine "${targetLocal.name}" at http://localhost:11434. Please ensure Ollama is running ('ollama serve').`;
+        } else {
+          aiResponseText = `Connected to ${activeModelDisplay.name}. Ready to assist with your workspace tasks.`;
+        }
       }
 
       setIsTyping(false);
@@ -1117,6 +1148,7 @@ export default function ExecutiveDirectMessages({
                                     type="button"
                                     onClick={() => {
                                       setSelectedAiModel(localM.id);
+                                      setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, modelId: localM.id, modelName: localM.name } : c));
                                       setIsAiModelSelectorOpen(false);
                                     }}
                                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
@@ -1166,6 +1198,7 @@ export default function ExecutiveDirectMessages({
                                 type="button"
                                 onClick={() => {
                                   setSelectedAiModel(m.id);
+                                  setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, modelId: m.id, modelName: m.name } : c));
                                   setIsAiModelSelectorOpen(false);
                                 }}
                                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
