@@ -8,7 +8,8 @@ import {
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
   Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
   Megaphone, UserCheck, Users, Radio, Eye, Phone, PhoneOff, PhoneCall,
-  MicOff, VideoOff, Maximize2, Minimize2, Image, Link, FileCode
+  MicOff, VideoOff, Maximize2, Minimize2, Image, Link, FileCode,
+  UserPlus, MessageSquarePlus, Cpu, RefreshCw
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -52,7 +53,7 @@ const DocsSemanticFileBadge = ({ type, title = '', size = 'md' }) => {
     label = 'PPT';
     svg = (
       <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2.5" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
         <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
@@ -100,7 +101,7 @@ export default function ExecutiveDirectMessages({
   onToggleFullscreen,
   onOpenWorkspaceSwitcher
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'topics' | 'actions' | 'broadcast'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread' | 'teams' | 'ai' | 'topics' | 'broadcast' | 'actions'
   const [searchQuery, setSearchQuery] = useState('');
   const [activeContactId, setActiveContactId] = useState(activeThreadId || 'thread-beta-launch');
   const [messageInput, setMessageInput] = useState('');
@@ -116,8 +117,6 @@ export default function ExecutiveDirectMessages({
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [isAiMode, setIsAiMode] = useState(false); // Ask AI Conversation Companion
   const [aiCompanionResponse, setAiCompanionResponse] = useState(null);
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
-  const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -125,14 +124,31 @@ export default function ExecutiveDirectMessages({
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
-  // ── In-Chat Direct WhatsApp Call State ──
-  const [activeCallSession, setActiveCallSession] = useState(null); // { type: 'video' | 'audio', status: 'ringing' | 'connected', duration: 0, isMuted: false, isVideoOff: false }
+  // ── WhatsApp Audio Recording State (Image 4 Standard) ──
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isVoicePaused, setIsVoicePaused] = useState(false);
+  const [voiceElapsedSeconds, setVoiceElapsedSeconds] = useState(0);
+  const [voiceWaveLevels, setVoiceWaveLevels] = useState([12, 20, 15, 28, 14, 22, 18, 25, 16, 24]);
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const voiceTimerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+
+  // ── In-Chat Direct WhatsApp Call State (Real Media Stream Support) ──
+  const [activeCallSession, setActiveCallSession] = useState(null); // { type: 'video' | 'audio', status: 'ringing' | 'connected', isMuted: false, isVideoOff: false }
   const [callDuration, setCallDuration] = useState(0);
+  const localVideoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
 
   // ── Document Attachment Stage State (WhatsApp Style Dispatch Carousel) ──
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [selectedAttachmentIndex, setSelectedAttachmentIndex] = useState(0);
   const [attachmentCaption, setAttachmentCaption] = useState('');
+
+  // ── Create Group / Direct Message Modal State ──
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [newChatName, setNewChatName] = useState('');
+  const [newChatType, setNewChatType] = useState('group'); // 'group' | 'dm' | 'ai-persona'
+  const [selectedAiPersona, setSelectedAiPersona] = useState('Gemma-2B (Local)');
 
   const [messages, setMessages] = useState([
     {
@@ -197,7 +213,30 @@ export default function ExecutiveDirectMessages({
     setShowScrollBottom(distanceToBottom > 60);
   };
 
-  // Call timer simulation
+  // ── Real WebRTC Camera & Audio Stream Integration ──
+  useEffect(() => {
+    if (activeCallSession && activeCallSession.type === 'video' && activeCallSession.status === 'connected') {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            mediaStreamRef.current = stream;
+            if (localVideoRef.current) {
+              localVideoRef.current.srcObject = stream;
+            }
+          })
+          .catch(err => {
+            console.warn('Webcam stream not accessible, showing active visualizer:', err);
+          });
+      }
+    } else {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+    }
+  }, [activeCallSession]);
+
+  // Call duration counter
   useEffect(() => {
     let timer;
     if (activeCallSession && activeCallSession.status === 'connected') {
@@ -208,13 +247,29 @@ export default function ExecutiveDirectMessages({
     return () => clearInterval(timer);
   }, [activeCallSession]);
 
-  // Clean conversations list
-  const conversations = useMemo(() => [
+  // WhatsApp Voice Recording Timer
+  useEffect(() => {
+    if (isRecordingVoice && !isVoicePaused) {
+      voiceTimerRef.current = setInterval(() => {
+        setVoiceElapsedSeconds(prev => prev + 1);
+        setVoiceWaveLevels(prev => prev.map(() => Math.floor(Math.random() * 20) + 10));
+      }, 1000);
+    } else {
+      if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
+    }
+    return () => {
+      if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
+    };
+  }, [isRecordingVoice, isVoicePaused]);
+
+  // Dynamic Conversations List (Including Local AI Personas and User Created Channels)
+  const [conversations, setConversations] = useState([
     {
       id: 'thread-beta-launch',
       name: 'Beta Launch Core',
       avatar: 'BL',
       isGroup: true,
+      isAi: false,
       lastMsg: 'Decision logged: May 15 launch approved...',
       time: '20m ago',
       unread: 0,
@@ -233,6 +288,7 @@ export default function ExecutiveDirectMessages({
       name: 'Sarah Johnson',
       avatar: 'SJ',
       isGroup: false,
+      isAi: false,
       lastMsg: 'I added the revised CAC metrics to the presentation deck.',
       time: '1h ago',
       unread: 1,
@@ -245,10 +301,43 @@ export default function ExecutiveDirectMessages({
       ]
     },
     {
+      id: 'thread-ai-orb',
+      name: 'Orb Strategist (Local AI)',
+      avatar: 'AI',
+      isGroup: false,
+      isAi: true,
+      modelName: 'Gemma 2B Local Engine',
+      lastMsg: 'Unit economics models verified compliant with target margins.',
+      time: '2h ago',
+      unread: 0,
+      category: 'ai',
+      online: true,
+      fingerprint: '0xAI01 • LOCAL • GEMMA • 9982',
+      topics: ['Strategy Synthesis', 'Model Review', 'Architecture'],
+      actions: []
+    },
+    {
+      id: 'thread-ai-swarm',
+      name: 'AI Design & Copy Swarm',
+      avatar: '🤖',
+      isGroup: true,
+      isAi: true,
+      modelName: 'Gemma + Llama Swarm',
+      lastMsg: 'Gemma: Verified typography tokens for mobile responsiveness.',
+      time: '3h ago',
+      unread: 0,
+      category: 'ai',
+      online: true,
+      fingerprint: '0xSWARM • MULTI • AGENT • 1010',
+      topics: ['Copy Polish', 'Design Review', 'Design Tokens'],
+      actions: []
+    },
+    {
       id: 'dm-alex',
       name: 'Alex Morgan',
       avatar: 'AM',
       isGroup: false,
+      isAi: false,
       lastMsg: 'The backend webhook latency dropped to 45ms.',
       time: 'Yesterday',
       unread: 0,
@@ -263,6 +352,7 @@ export default function ExecutiveDirectMessages({
       name: 'Marketing & Brand',
       avatar: 'MB',
       isGroup: true,
+      isAi: false,
       lastMsg: 'New typography tokens pushed to design system.',
       time: 'Tuesday',
       unread: 0,
@@ -274,7 +364,7 @@ export default function ExecutiveDirectMessages({
         { id: 'act-5', text: 'Verify typography tokens on mobile', status: 'pending', assignee: 'David Vance' }
       ]
     }
-  ], []);
+  ]);
 
   // Company announcements / broadcast items
   const announcements = useMemo(() => [
@@ -302,6 +392,7 @@ export default function ExecutiveDirectMessages({
     return conversations.filter(c => {
       if (activeTab === 'unread' && c.unread === 0) return false;
       if (activeTab === 'teams' && !c.isGroup) return false;
+      if (activeTab === 'ai' && !c.isAi) return false;
       if (activeTab === 'topics' || activeTab === 'broadcast') return true;
       if (activeTab === 'actions') return (c.actions && c.actions.length > 0);
       if (searchQuery.trim()) {
@@ -328,7 +419,7 @@ export default function ExecutiveDirectMessages({
       return;
     }
 
-    const isAiTagged = trimmed.toLowerCase().startsWith('@ai') || trimmed.toLowerCase().includes('@regaarder');
+    const isAiChat = currentChat?.isAi || trimmed.toLowerCase().startsWith('@ai') || trimmed.toLowerCase().includes('@regaarder');
 
     const newMsg = {
       id: `m-${Date.now()}`,
@@ -344,20 +435,23 @@ export default function ExecutiveDirectMessages({
     setMessageInput('');
     setReplyingToMessage(null);
 
-    if (isAiTagged) {
+    if (isAiChat) {
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
+        const aiAuthor = currentChat?.isAi ? currentChat.name : 'Regaarder AI';
         const aiReply = {
           id: `m-ai-${Date.now()}`,
-          author: 'Regaarder AI',
+          author: aiAuthor,
           role: 'assistant',
-          text: `Synthesizing across workspace: The May 15th release criteria are satisfied. CAC margin projections in Sheets match target unit economics at 68%.`,
+          text: currentChat?.id === 'thread-ai-swarm'
+            ? `Swarm Consensus (Gemma & Llama): Verified "${trimmed}". Architecture tokens validated across all active workspace canvases.`
+            : `Local Synthesis (${currentChat?.modelName || 'Gemma 2B'}): Analyzed "${trimmed}". Criteria satisfied with full cryptographic zero-knowledge compliance.`,
           createdAt: Date.now(),
           status: 'read'
         };
         setMessages(prev => [...prev, aiReply]);
-      }, 700);
+      }, 750);
     }
   };
 
@@ -512,6 +606,41 @@ export default function ExecutiveDirectMessages({
     setSelectedAttachmentIndex(0);
   };
 
+  // ── WhatsApp Standard Voice Recording Bar Handlers (Image 4) ──
+  const handleStartVoiceRecording = () => {
+    setIsRecordingVoice(true);
+    setIsVoicePaused(false);
+    setVoiceElapsedSeconds(0);
+  };
+
+  const handleCancelVoiceRecording = () => {
+    setIsRecordingVoice(false);
+    setIsVoicePaused(false);
+    setVoiceElapsedSeconds(0);
+  };
+
+  const handleTogglePauseVoiceRecording = () => {
+    setIsVoicePaused(prev => !prev);
+  };
+
+  const handleSendVoiceRecording = () => {
+    const formattedDuration = `${Math.floor(voiceElapsedSeconds / 60)}:${(voiceElapsedSeconds % 60).toString().padStart(2, '0')}`;
+    const newAudioMsg = {
+      id: `m-voice-${Date.now()}`,
+      author: 'You',
+      role: 'you',
+      isAudio: true,
+      audioDuration: formattedDuration === '0:00' ? '0:06' : formattedDuration,
+      transcript: 'Voice message audio note registered across E2EE session.',
+      createdAt: Date.now(),
+      status: 'sent'
+    };
+    setMessages(prev => [...prev, newAudioMsg]);
+    setIsRecordingVoice(false);
+    setIsVoicePaused(false);
+    setVoiceElapsedSeconds(0);
+  };
+
   // ── In-Chat Instant WhatsApp Call Handlers ──
   const handleStartInChatCall = (type = 'video') => {
     setActiveCallSession({
@@ -522,55 +651,48 @@ export default function ExecutiveDirectMessages({
     });
     setCallDuration(0);
 
-    // Simulate answer after 2.5 seconds
     setTimeout(() => {
       setActiveCallSession(prev => prev ? { ...prev, status: 'connected' } : null);
-    }, 2500);
+    }, 2000);
   };
 
   const handleEndCall = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
     setActiveCallSession(null);
     setCallDuration(0);
   };
 
-  const handleVoiceRecord = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in this browser environment.');
-      return;
-    }
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+  const handleCreateNewChat = (e) => {
+    e?.preventDefault();
+    if (!newChatName.trim()) return;
 
-    if (isRecordingVoice) {
-      setIsRecordingVoice(false);
-      return;
-    }
+    const isGroupChat = newChatType === 'group' || newChatType === 'ai-persona';
+    const isAiChannel = newChatType === 'ai-persona';
 
-    setIsRecordingVoice(true);
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setIsRecordingVoice(false);
-      const newAudioMsg = {
-        id: `m-voice-${Date.now()}`,
-        author: 'You',
-        role: 'you',
-        isAudio: true,
-        audioDuration: '0:07',
-        transcript: transcript,
-        createdAt: Date.now(),
-        status: 'sent'
-      };
-      setMessages(prev => [...prev, newAudioMsg]);
+    const newChannel = {
+      id: `chat-${Date.now()}`,
+      name: newChatName.trim(),
+      avatar: newChatName.trim().slice(0, 2).toUpperCase(),
+      isGroup: isGroupChat,
+      isAi: isAiChannel,
+      modelName: isAiChannel ? selectedAiPersona : null,
+      lastMsg: isAiChannel ? `${selectedAiPersona} ready for queries.` : 'Channel created. Start messaging...',
+      time: 'Just now',
+      unread: 0,
+      category: isAiChannel ? 'ai' : isGroupChat ? 'teams' : 'all',
+      online: true,
+      fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • E2EE • VERIFIED`,
+      topics: [newChatName.trim()],
+      actions: []
     };
-    recognition.onerror = () => {
-      setIsRecordingVoice(false);
-    };
-    recognition.onend = () => {
-      setIsRecordingVoice(false);
-    };
-    recognition.start();
+
+    setConversations(prev => [newChannel, ...prev]);
+    setActiveContactId(newChannel.id);
+    setIsNewChatModalOpen(false);
+    setNewChatName('');
   };
 
   const handleAiAskSubmit = (e) => {
@@ -723,6 +845,15 @@ export default function ExecutiveDirectMessages({
               <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-zinc-100">
                 Relay
               </span>
+              {/* New Direct Message / Group Action Button */}
+              <button
+                type="button"
+                onClick={() => setIsNewChatModalOpen(true)}
+                className="w-7 h-7 rounded-xl bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+                title="Create Group or Add AI Persona"
+              >
+                <Plus size={15} />
+              </button>
             </div>
 
             {/* Clean Rounded Search Bar */}
@@ -737,12 +868,13 @@ export default function ExecutiveDirectMessages({
               />
             </div>
 
-            {/* Streamlined Quick Filter Tabs (All, Unread, Groups, Topics, Broadcast, Actions) */}
+            {/* Streamlined Quick Filter Tabs (All, Unread, Groups, AI, Topics, News, Actions) */}
             <div className="flex items-center gap-1 pt-0.5 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'unread', label: 'Unread' },
                 { id: 'teams', label: 'Groups' },
+                { id: 'ai', label: 'AI Agents' },
                 { id: 'topics', label: 'Topics' },
                 { id: 'broadcast', label: 'News' },
                 { id: 'actions', label: 'Actions' }
@@ -766,7 +898,7 @@ export default function ExecutiveDirectMessages({
             </div>
           </div>
 
-          {/* Contact Cards / Broadcast / Topic Channels View */}
+          {/* Contact Cards / Broadcast / Topic Channels / Empty States View */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2.5 space-y-1 relative z-10">
             {activeTab === 'broadcast' ? (
               <div className="space-y-2.5 p-1">
@@ -843,6 +975,43 @@ export default function ExecutiveDirectMessages({
                   </div>
                 ))}
               </div>
+            ) : filteredConversations.length === 0 ? (
+              /* ── EXECUTIVE EMPTY STATE WITH 1-TAP ACTIONS ── */
+              <div className="p-6 text-center space-y-4 my-auto">
+                <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 flex items-center justify-center mx-auto shadow-2xs">
+                  <MessageSquarePlus size={22} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">No Conversations in this view</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
+                    Connect with teammates or deploy an autonomous local AI persona.
+                  </p>
+                </div>
+                <div className="space-y-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewChatType('group');
+                      setIsNewChatModalOpen(true);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Plus size={13} />
+                    <span>Create Team Group</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewChatType('ai-persona');
+                      setIsNewChatModalOpen(true);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] text-slate-800 dark:text-zinc-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Bot size={13} className="text-violet-600" />
+                    <span>Deploy Local AI Persona</span>
+                  </button>
+                </div>
+              </div>
             ) : (
               filteredConversations.map(chat => {
                 const isSelected = chat.id === activeContactId;
@@ -862,7 +1031,9 @@ export default function ExecutiveDirectMessages({
                     {/* Avatar with Status Indicator */}
                     <div className="relative shrink-0">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
-                        chat.isGroup
+                        chat.isAi
+                          ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs'
+                          : chat.isGroup
                           ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800'
                           : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
                       }`}>
@@ -876,8 +1047,13 @@ export default function ExecutiveDirectMessages({
                     {/* Clean Text Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                        <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
                           {chat.name}
+                          {chat.isAi && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-violet-100 dark:bg-violet-950 text-violet-600 font-bold uppercase">
+                              AI
+                            </span>
+                          )}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono shrink-0">
                           {chat.time}
@@ -913,12 +1089,21 @@ export default function ExecutiveDirectMessages({
             onPointerDown={handleHeaderTap}
           >
             <div className="flex items-center gap-3 min-w-0 pointer-events-none">
-              <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-bold text-xs flex items-center justify-center border border-violet-200 dark:border-violet-800/60 pointer-events-auto">
+              <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center pointer-events-auto ${
+                currentChat.isAi 
+                  ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs' 
+                  : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60'
+              }`}>
                 {currentChat.avatar}
               </div>
               <div className="min-w-0 pointer-events-auto">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
                   {currentChat.name}
+                  {currentChat.isAi && (
+                    <span className="text-[9.5px] px-1.5 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 font-bold">
+                      {currentChat.modelName || 'Local Gemma Engine'}
+                    </span>
+                  )}
                 </h3>
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1436,7 +1621,7 @@ export default function ExecutiveDirectMessages({
             {isTyping && (
               <div className="flex items-center gap-2 p-3 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 text-xs w-fit">
                 <RegaarderAiIcon size={13} strokeWidth={2.0} className="animate-spin" />
-                <span className="font-semibold">Regaarder AI is synthesizing...</span>
+                <span className="font-semibold">{currentChat?.isAi ? `${currentChat.name} is synthesizing...` : 'Regaarder AI is synthesizing...'}</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -1454,7 +1639,7 @@ export default function ExecutiveDirectMessages({
             </button>
           )}
 
-          {/* ── BOTTOM COMPOSER (WhatsApp Style with Quote & Edit Banners) ── */}
+          {/* ── BOTTOM COMPOSER (WhatsApp Style with Quote & Voice Recording Bar) ── */}
           <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-zinc-900 backdrop-blur-md relative">
             {/* 1. WhatsApp-Style Quoted Reply Preview Banner */}
             {replyingToMessage && (
@@ -1496,139 +1681,191 @@ export default function ExecutiveDirectMessages({
               </div>
             )}
 
-            <form 
-              onSubmit={handleSendMessage}
-              className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
-            >
-              {/* Hidden File Input (Multi-File Capable) */}
-              <input 
-                type="file" 
-                multiple
-                ref={fileInputRef} 
-                onChange={handleFileAttach} 
-                className="hidden" 
-              />
-
-              {/* 1. Attachment Clip with Docs/Sheets Quick Import Popover */}
-              <div className="relative">
+            {/* ── FULL WHATSAPP VOICE RECORDING BAR (IMAGE 4 STANDARD) ── */}
+            {isRecordingVoice ? (
+              <div className="flex items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] animate-in slide-in-from-bottom-2 duration-150">
+                {/* Trash/Delete Button */}
                 <button
                   type="button"
-                  onClick={() => setIsAttachmentMenuOpen(prev => !prev)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
-                  title="Attach Documents, Media, or Workspace Files"
+                  onClick={handleCancelVoiceRecording}
+                  className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                  title="Discard recording"
                 >
-                  <Paperclip size={16} />
+                  <Trash2 size={16} />
                 </button>
 
-                {isAttachmentMenuOpen && (
-                  <div 
-                    data-popover-root="true"
-                    className="absolute bottom-11 left-0 w-56 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs"
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
-                    >
-                      <FileText size={14} className="text-violet-600" />
-                      <span>Upload Documents</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAttachmentMenuOpen(false);
-                        const demoSheet = {
-                          id: `sheet-${Date.now()}`,
-                          title: 'Q2 Unit Economics Model.xlsx',
-                          type: 'sheets',
-                          size: '340 KB'
-                        };
-                        setPendingAttachments([demoSheet]);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
-                    >
-                      <Table size={14} className="text-emerald-600" />
-                      <span>Import Sheet / Table</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAttachmentMenuOpen(false);
-                        const demoDeck = {
-                          id: `deck-${Date.now()}`,
-                          title: 'Investor Pitch & Token System.pptx',
-                          type: 'deck',
-                          size: '1.2 MB'
-                        };
-                        setPendingAttachments([demoDeck]);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
-                    >
-                      <Presentation size={14} className="text-amber-600" />
-                      <span>Import Deck / Diagram</span>
-                    </button>
-                  </div>
-                )}
+                {/* Red Recording Dot & Live Elapsed Time */}
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full bg-rose-500 ${isVoicePaused ? '' : 'animate-ping'}`} />
+                  <span className="font-mono text-xs font-bold text-slate-800 dark:text-zinc-100">
+                    {Math.floor(voiceElapsedSeconds / 60)}:{(voiceElapsedSeconds % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+
+                {/* Animated Waveform Visualizer */}
+                <div className="flex-1 flex items-center justify-center gap-0.5 h-6 px-4">
+                  {voiceWaveLevels.map((lvl, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-1 rounded-full transition-all duration-150 ${
+                        isVoicePaused ? 'bg-slate-400' : 'bg-violet-600 dark:bg-violet-400'
+                      }`}
+                      style={{ height: `${lvl}px` }}
+                    />
+                  ))}
+                </div>
+
+                {/* Pause / Resume Button */}
+                <button
+                  type="button"
+                  onClick={handleTogglePauseVoiceRecording}
+                  className="p-2 rounded-xl text-slate-600 dark:text-zinc-300 hover:bg-black/[0.05] transition-colors cursor-pointer"
+                  title={isVoicePaused ? "Resume recording" : "Pause recording"}
+                >
+                  {isVoicePaused ? <Play size={15} /> : <Pause size={15} />}
+                </button>
+
+                {/* Send Voice Note Circular Button (Image 4) */}
+                <button
+                  type="button"
+                  onClick={handleSendVoiceRecording}
+                  className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                  title="Send voice note"
+                >
+                  <Send size={14} className="ml-0.5" />
+                </button>
               </div>
-
-              {/* 2. Emoji Picker Button */}
-              <button
-                type="button"
-                onClick={() => setMessageInput(prev => `${prev} 👍`)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
-                title="Quick Emoji Reaction"
+            ) : (
+              <form 
+                onSubmit={handleSendMessage}
+                className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
               >
-                <Smile size={16} />
-              </button>
+                {/* Hidden File Input (Multi-File Capable) */}
+                <input 
+                  type="file" 
+                  multiple
+                  ref={fileInputRef} 
+                  onChange={handleFileAttach} 
+                  className="hidden" 
+                />
 
-              {/* Text Input with Enter send & Esc cancel */}
-              <input
-                type="text"
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape' && (editingMessageId || replyingToMessage)) {
-                    setEditingMessageId(null);
-                    setReplyingToMessage(null);
-                    setMessageInput('');
-                  }
-                }}
-                placeholder={editingMessageId ? "Edit your message... (Esc to cancel)" : "Type a message, @AI to ask assistant, or share files..."}
-                className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
-              />
+                {/* 1. Attachment Clip with Docs/Sheets Quick Import Popover */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachmentMenuOpen(prev => !prev)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                    title="Attach Documents, Media, or Workspace Files"
+                  >
+                    <Paperclip size={16} />
+                  </button>
 
-              {/* 3. Audio Voice Message Recorder with Auto-Transcription */}
-              <button
-                type="button"
-                onClick={handleVoiceRecord}
-                className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
-                  isRecordingVoice 
-                    ? 'bg-rose-500 text-white animate-pulse' 
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
-                }`}
-                title={isRecordingVoice ? "Recording audio note... (Click to send)" : "Record audio voice note"}
-              >
-                <Mic size={16} />
-              </button>
+                  {isAttachmentMenuOpen && (
+                    <div 
+                      data-popover-root="true"
+                      className="absolute bottom-11 left-0 w-56 bg-white dark:bg-zinc-800 rounded-2xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] p-1.5 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                      >
+                        <FileText size={14} className="text-violet-600" />
+                        <span>Upload Documents</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachmentMenuOpen(false);
+                          const demoSheet = {
+                            id: `sheet-${Date.now()}`,
+                            title: 'Q2 Unit Economics Model.xlsx',
+                            type: 'sheets',
+                            size: '340 KB'
+                          };
+                          setPendingAttachments([demoSheet]);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                      >
+                        <Table size={14} className="text-emerald-600" />
+                        <span>Import Sheet / Table</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachmentMenuOpen(false);
+                          const demoDeck = {
+                            id: `deck-${Date.now()}`,
+                            title: 'Investor Pitch & Token System.pptx',
+                            type: 'deck',
+                            size: '1.2 MB'
+                          };
+                          setPendingAttachments([demoDeck]);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 text-left font-medium cursor-pointer"
+                      >
+                        <Presentation size={14} className="text-amber-600" />
+                        <span>Import Deck / Diagram</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              {/* 4. Send Button */}
-              <button
-                type="submit"
-                disabled={!messageInput.trim()}
-                className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
-                title={editingMessageId ? "Save Edit" : "Send Message"}
-              >
-                <Send size={13} />
-              </button>
-            </form>
+                {/* 2. Emoji Picker Button */}
+                <button
+                  type="button"
+                  onClick={() => setMessageInput(prev => `${prev} 👍`)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  title="Quick Emoji Reaction"
+                >
+                  <Smile size={16} />
+                </button>
+
+                {/* Text Input with Enter send & Esc cancel */}
+                <input
+                  type="text"
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' && (editingMessageId || replyingToMessage)) {
+                      setEditingMessageId(null);
+                      setReplyingToMessage(null);
+                      setMessageInput('');
+                    }
+                  }}
+                  placeholder={editingMessageId ? "Edit your message... (Esc to cancel)" : "Type a message, @AI to ask assistant, or share files..."}
+                  className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                />
+
+                {/* 3. Audio Voice Message Recorder Trigger */}
+                <button
+                  type="button"
+                  onClick={handleStartVoiceRecording}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  title="Record voice message (WhatsApp style)"
+                >
+                  <Mic size={16} />
+                </button>
+
+                {/* 4. Send Button */}
+                <button
+                  type="submit"
+                  disabled={!messageInput.trim()}
+                  className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
+                  title={editingMessageId ? "Save Edit" : "Send Message"}
+                >
+                  <Send size={13} />
+                </button>
+              </form>
+            )}
           </div>
         </main>
       </div>
 
-      {/* ── IN-CHAT NATIVE WHATSAPP CALL OVERLAY (P2P CALLING EXPERIENCE) ── */}
+      {/* ── IN-CHAT NATIVE WHATSAPP CALL OVERLAY (REAL WEBRTC CAMERA & AUDIO) ── */}
       {activeCallSession && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200 select-none">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200 select-none">
           <div className="w-full max-w-sm bg-[#161922] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col items-center p-6 text-center space-y-6">
             {/* Top Security & Encryption Indicator */}
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] text-amber-300 font-medium">
@@ -1657,21 +1894,36 @@ export default function ExecutiveDirectMessages({
               </div>
             </div>
 
-            {/* Video Mock Stream if Video Call */}
+            {/* Real WebRTC Video Stream or Audio Visualizer */}
             {activeCallSession.type === 'video' && activeCallSession.status === 'connected' && (
-              <div className="w-full h-32 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-center relative overflow-hidden">
-                <div className="text-center text-xs text-slate-400 flex flex-col items-center gap-1">
-                  <Video size={18} className="text-violet-400" />
-                  <span>HD Camera Stream Active</span>
-                </div>
+              <div className="w-full h-36 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center relative overflow-hidden">
+                <video 
+                  ref={localVideoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className={`w-full h-full object-cover ${activeCallSession.isVideoOff ? 'hidden' : 'block'}`}
+                />
+                {activeCallSession.isVideoOff && (
+                  <div className="text-center text-xs text-slate-400 flex flex-col items-center gap-1.5">
+                    <VideoOff size={20} className="text-rose-400" />
+                    <span>Camera is turned off</span>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Call Action Controls (Mute, Video, End Call) */}
+            {/* Call Action Controls (Mute, Video, Solid High-Contrast Red Hang Up) */}
             <div className="flex items-center justify-center gap-4 pt-2">
               <button
                 type="button"
-                onClick={() => setActiveCallSession(prev => ({ ...prev, isMuted: !prev.isMuted }))}
+                onClick={() => {
+                  const newMuted = !activeCallSession.isMuted;
+                  setActiveCallSession(prev => ({ ...prev, isMuted: newMuted }));
+                  if (mediaStreamRef.current) {
+                    mediaStreamRef.current.getAudioTracks().forEach(t => { t.enabled = !newMuted; });
+                  }
+                }}
                 className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                   activeCallSession.isMuted ? 'bg-rose-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
@@ -1682,7 +1934,13 @@ export default function ExecutiveDirectMessages({
 
               <button
                 type="button"
-                onClick={() => setActiveCallSession(prev => ({ ...prev, isVideoOff: !prev.isVideoOff }))}
+                onClick={() => {
+                  const newVideoOff = !activeCallSession.isVideoOff;
+                  setActiveCallSession(prev => ({ ...prev, isVideoOff: newVideoOff }));
+                  if (mediaStreamRef.current) {
+                    mediaStreamRef.current.getVideoTracks().forEach(t => { t.enabled = !newVideoOff; });
+                  }
+                }}
                 className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                   activeCallSession.isVideoOff ? 'bg-rose-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
@@ -1691,15 +1949,116 @@ export default function ExecutiveDirectMessages({
                 {activeCallSession.isVideoOff ? <VideoOff size={16} /> : <Video size={16} />}
               </button>
 
+              {/* Solid High-Contrast Red Hang Up Button */}
               <button
                 type="button"
                 onClick={handleEndCall}
-                className="w-13 h-13 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                className="w-13 h-13 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white flex items-center justify-center shadow-lg transition-transform cursor-pointer shrink-0"
                 title="End Call"
               >
-                <PhoneOff size={18} />
+                <PhoneOff size={20} />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CREATE NEW GROUP / AI PERSONA MODAL ── */}
+      {isNewChatModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setIsNewChatModalOpen(false);
+          }}
+        >
+          <div className="w-full max-w-md bg-white dark:bg-zinc-850 rounded-3xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <MessageSquarePlus size={18} className="text-violet-600" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Create New Channel</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNewChatModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewChat} className="space-y-4 text-xs">
+              {/* Channel Type Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">Channel Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'group', label: 'Team Group', icon: Users },
+                    { id: 'dm', label: 'Direct Member', icon: UserPlus },
+                    { id: 'ai-persona', label: 'AI Persona', icon: Bot }
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setNewChatType(t.id)}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        newChatType === t.id
+                          ? 'border-violet-600 bg-violet-50/60 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-bold'
+                          : 'border-black/[0.06] dark:border-white/[0.08] text-slate-600 dark:text-zinc-400 hover:bg-black/[0.02]'
+                      }`}
+                    >
+                      <t.icon size={15} />
+                      <span className="text-[10.5px]">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Channel Name Input */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">Channel / Persona Name</label>
+                <input
+                  type="text"
+                  value={newChatName}
+                  onChange={(e) => setNewChatName(e.target.value)}
+                  placeholder={newChatType === 'ai-persona' ? "e.g. Gemma Copy Reviewer" : "e.g. Security Audit Core"}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  autoFocus
+                />
+              </div>
+
+              {/* Local AI Engine Selector if AI Persona */}
+              {newChatType === 'ai-persona' && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">Underlying Model Engine</label>
+                  <select
+                    value={selectedAiPersona}
+                    onChange={(e) => setSelectedAiPersona(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] text-xs text-slate-800 dark:text-zinc-100 focus:outline-none"
+                  >
+                    <option value="Gemma-2B (Local On-Device)">Gemma 2B (Local On-Device Engine)</option>
+                    <option value="Llama 3.2 (Local Edge Engine)">Llama 3.2 (Local Edge Engine)</option>
+                    <option value="Orb Autonomous Orchestrator">Orb Autonomous Orchestrator</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-black/[0.05]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewChatModalOpen(false)}
+                  className="px-3 py-2 rounded-xl text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newChatName.trim()}
+                  className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-bold transition-colors cursor-pointer shadow-xs"
+                >
+                  Create Channel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1883,7 +2242,9 @@ export default function ExecutiveDirectMessages({
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
-                          c.isGroup
+                          c.isAi
+                            ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs'
+                            : c.isGroup
                             ? 'bg-violet-100 text-violet-700'
                             : 'bg-slate-200 text-slate-700'
                         }`}>
@@ -1894,7 +2255,7 @@ export default function ExecutiveDirectMessages({
                             {c.name}
                           </span>
                           <span className="text-[11px] text-slate-400 truncate block">
-                            {c.isGroup ? 'Group Conversation' : 'Direct Message'}
+                            {c.isAi ? 'AI Engine Persona' : c.isGroup ? 'Group Conversation' : 'Direct Message'}
                           </span>
                         </div>
                       </div>
