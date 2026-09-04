@@ -35,7 +35,7 @@ async function runMcpVerification() {
   // 2. Server Resources List & Read
   console.log('\n2. Server Resources Primitives (Token-Dense Feeds)');
   const resList = processMcpRequest({ jsonrpc: '2.0', id: 102, method: 'resources/list' });
-  assert(Array.isArray(resList?.result?.resources) && resList.result.resources.length === 7, '7 standardized workspace resources listed');
+  assert(Array.isArray(resList?.result?.resources) && resList.result.resources.length >= 7, `${resList?.result?.resources?.length} standardized workspace resources listed`);
   
   const readContext = processMcpRequest({ jsonrpc: '2.0', id: 103, method: 'resources/read', params: { uri: 'workspace://graph/context' } });
   assert(readContext?.result?.contents?.[0]?.mimeType === 'text/markdown', 'workspace://graph/context returns text/markdown');

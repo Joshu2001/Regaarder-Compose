@@ -6,7 +6,7 @@ import {
   SlidersHorizontal, Calendar, Zap, MessageSquare, Database, X,
   Maximize2, Minimize2, Eye, ExternalLink, ShieldCheck, Compass,
   AlertTriangle, Tag as TagIcon, Hash, CheckCircle2, ChevronRight,
-  Copy, Terminal, Code2, Play
+  Copy, Terminal, Code2, Play, Calculator
 } from 'lucide-react';
 import { MemoryIcon, TasksIcon, OrbIcon, RegaarderAiIcon, RegaarderProductIcon } from './components/RegaarderProductIcons';
 import { 
@@ -22,6 +22,7 @@ import {
   generateExternalAgentConfig 
 } from './services/universalMcpBridge.js';
 import BlockCanvasInspector from './components/dev/BlockCanvasInspector';
+import MatrixSchemaInspector from './components/sheets/MatrixSchemaInspector';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
@@ -29,6 +30,7 @@ const MEMORY_TABS = [
   { id: 'rules', label: 'Rules & Propagation', icon: ShieldCheck },
   { id: 'mcp', label: 'MCP Protocol', icon: Zap },
   { id: 'canvas_blocks', label: 'Canvas AST', icon: Layers },
+  { id: 'matrix_engine', label: 'Matrix Engine', icon: Calculator },
   { id: 'graph', label: 'Knowledge Graph', icon: Network },
   { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: Folder },
@@ -1212,6 +1214,11 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
                   {/* ── Tab: Block Canvas AST Inspector (Pillar 4) ── */}
                   {activeTab === 'canvas_blocks' && (
                     <BlockCanvasInspector />
+                  )}
+
+                  {/* ── Tab: Matrix Execution Engine (Pillar 5) ── */}
+                  {activeTab === 'matrix_engine' && (
+                    <MatrixSchemaInspector />
                   )}
 
                   {activeTab === 'graph' && (

@@ -74,6 +74,7 @@ import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 import { subscribeToStaging, getBranchById } from './services/workspaceStagingEngine';
 import WorkspaceStagingReviewModal from './components/staging/WorkspaceStagingReviewModal';
+import * as matrixEngine from './services/matrixSchemaEngine';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -23237,7 +23238,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   // ── Sheets & Research Notes bridge sync ─────────────────────────────────
   useEffect(() => {
-    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids };
+    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids, activeSheetId };
+    window.__REGAARDER_MATRIX_ENGINE__ = matrixEngine;
     window.__REGAARDER_UPDATE_SHEET_CELLS__ = (updates) => {
       // updates: Array<{ sheetId, row, col, value }>
       if (!Array.isArray(updates)) return { success: false, error: { code: 'INVALID_PARAMS', details: 'updates must be an array.' } };
@@ -23248,6 +23250,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           if (!next[sid]) next[sid] = {};
           const key = `${row},${col}`;
           next[sid][key] = { ...(next[sid][key] || {}), value };
+          if (Array.isArray(next[sid].cells)) {
+            const nextCells = next[sid].cells.map(r => (Array.isArray(r) ? [...r] : []));
+            if (nextCells[row]) {
+              nextCells[row][col] = value;
+              next[sid] = { ...next[sid], cells: nextCells };
+            }
+          }
         }
         return next;
       });
@@ -23314,6 +23323,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     return () => {
       delete window.__REGAARDER_SHEET_DATA__;
+      delete window.__REGAARDER_MATRIX_ENGINE__;
       delete window.__REGAARDER_UPDATE_SHEET_CELLS__;
       delete window.__REGAARDER_FORMAT_SHEET_RANGE__;
       delete window.__REGAARDER_RESEARCH_NOTES__;

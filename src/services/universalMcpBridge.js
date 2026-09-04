@@ -34,6 +34,7 @@ import {
   approveAndCommitBranch, 
   rejectBranch 
 } from './workspaceStagingEngine.js';
+import * as matrixEngine from './matrixSchemaEngine.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MCP RESOURCE CATALOG SPECIFICATION
@@ -92,6 +93,12 @@ export const MCP_RESOURCES = [
     uri: 'workspace://docs/blocks',
     name: 'Active Document Block Tree AST',
     description: 'Structured AST of all document blocks with persistent block IDs, types, content, and versioning for surgical patching.',
+    mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://sheets/schema',
+    name: 'Active Sheet Matrix Schema',
+    description: 'Column schemas, types (dropdown, percentage, currency, number), and validation rules for the active sheet.',
     mimeType: 'application/json'
   }
 ];
@@ -518,6 +525,17 @@ ${cleanText}`;
   }
 
   if (uri === 'workspace://sheets/active') {
+    const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+    const targetId = sheetData?.activeSheetId || 'default';
+    const grid = sheetData?.sheetGrids?.[targetId];
+    if (grid && Array.isArray(grid.cells) && grid.cells.length > 0) {
+      const md = matrixEngine.matrixAstToMarkdown(grid);
+      return {
+        uri,
+        mimeType: 'text/markdown',
+        text: md
+      };
+    }
     return {
       uri,
       mimeType: 'text/markdown',
@@ -528,6 +546,23 @@ ${cleanText}`;
 | Q2 2026 | $12.0B | $12.4B | +3.3% | Exceeded |
 | Q3 2026 | $13.5B | Pending | -- | Tracking |
 | Q4 2026 | $15.0B | Forecast | +11.1% | Active |`
+    };
+  }
+
+  if (uri === 'workspace://sheets/schema') {
+    const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+    const targetId = sheetData?.activeSheetId || 'default';
+    const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+    const detected = matrixEngine.inferMatrixSchema(grid.cells || []);
+    return {
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify({
+        sheetId: targetId,
+        columns: detected.columns,
+        rowCount: grid.cells?.length || 0,
+        orientation: detected.orientation
+      }, null, 2)
     };
   }
 

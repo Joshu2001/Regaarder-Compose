@@ -17,6 +17,7 @@
 import * as docsCommandApi from './docsCommandApi.js';
 import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEngineHarness.js';
 import { getActiveBlockTree, getBlock, patchBlock, insertBlock, deleteBlock, moveBlock, batchPatchBlocks } from './blockCanvasEngine.js';
+import * as matrixEngine from './matrixSchemaEngine.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
@@ -920,6 +921,182 @@ export const CANONICAL_DOCS_TOOLS = [
         return { success: true, message: `Formatted range (${params.startRow},${params.startCol}) to (${params.endRow},${params.endCol}) as ${params.formatType}.`, data: params };
       }
       return { success: true, message: 'Range formatted', data: params };
+    }
+  },
+  {
+    name: 'validate_matrix_schema',
+    label: 'Validate Matrix Schema',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Validates active spreadsheet grid data against column schemas (dropdown options, % formatting, numbers, dates) and returns diagnostics and auto-fix suggestions.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID (defaults to active).' },
+      }
+    },
+    execute: async (params = {}) => {
+      const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+      const targetId = params.sheetId || (sheetData?.activeSheetId || 'default');
+      const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+      const detected = matrixEngine.inferMatrixSchema(grid.cells || []);
+      const validation = matrixEngine.validateMatrixData(grid.cells || [], detected.columns);
+      return {
+        success: true,
+        data: {
+          sheetId: targetId,
+          valid: validation.valid,
+          violationCount: validation.violationCount,
+          violations: validation.violations,
+          summary: validation.summary,
+          columns: detected.columns,
+        }
+      };
+    }
+  },
+  {
+    name: 'patch_matrix_cells',
+    label: 'Surgically Patch Matrix Cells',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Surgically updates specific cell coordinates with schema validation and optional Pillar 3 sandbox staging.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID.' },
+        patches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              row: { type: 'number', description: '0-based row index.' },
+              col: { type: 'number', description: '0-based col index.' },
+              value: { description: 'Cell value or formula.' }
+            },
+            required: ['row', 'col', 'value']
+          },
+          description: 'Array of cell update patches.'
+        },
+        stage: { type: 'boolean', description: 'If true, routes mutation into isolated PR branch for review.' },
+        branchId: { type: 'string', description: 'Optional target PR branch ID.' }
+      },
+      required: ['patches']
+    },
+    execute: async (params) => {
+      return matrixEngine.patchMatrixCells(params);
+    }
+  },
+  {
+    name: 'query_matrix_sql',
+    label: 'Query Matrix via SQL',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Executes relational SQL query over active spreadsheet data (SELECT, WHERE, GROUP BY, ORDER BY, LIMIT).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'SQL query expression (e.g. SELECT Category, SUM(Actual) GROUP BY Category).' },
+        sheetId: { type: 'string', description: 'Target sheet ID (defaults to active).' }
+      },
+      required: ['query']
+    },
+    execute: async (params) => {
+      const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+      const targetId = params.sheetId || (sheetData?.activeSheetId || 'default');
+      const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+      return matrixEngine.queryMatrixSql(grid.cells || [], params.query);
+    }
+  },
+  {
+    name: 'add_column_with_schema',
+    label: 'Add Column With Schema',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Adds a typed column (dropdown with options, percentage, currency, number, date) with strict validation rules.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID.' },
+        column: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', description: 'Display header label.' },
+            key: { type: 'string', description: 'Identifier.' },
+            type: { type: 'string', enum: ['text', 'number', 'currency', 'percentage', 'dropdown', 'date', 'boolean'] },
+            options: { type: 'array', items: { type: 'string' }, description: 'Dropdown options if type is dropdown.' },
+            width: { type: 'number', description: 'Pixel width hint.' }
+          },
+          required: ['label']
+        },
+        defaultValue: { description: 'Default value for existing rows.' },
+        stage: { type: 'boolean', description: 'Stage mutation into PR branch.' }
+      },
+      required: ['column']
+    },
+    execute: async (params) => {
+      return matrixEngine.addColumnWithSchema(params);
+    }
+  },
+  {
+    name: 'evaluate_matrix_formulas',
+    label: 'Evaluate Matrix Formulas',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Recomputes all dynamic formula dependencies across the active sheet with cycle detection.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID.' }
+      }
+    },
+    execute: async (params = {}) => {
+      const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+      const targetId = params.sheetId || (sheetData?.activeSheetId || 'default');
+      const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+      const evalResult = matrixEngine.evaluateMatrixFormulas(grid.cells || []);
+      if (typeof window !== 'undefined' && window.__REGAARDER_UPDATE_SHEET_CELLS__ && evalResult.formulaCount > 0) {
+        const patches = [];
+        for (let r = 0; r < evalResult.evaluatedCells.length; r++) {
+          const row = evalResult.evaluatedCells[r];
+          if (!Array.isArray(row)) continue;
+          for (let c = 0; c < row.length; c++) {
+            if (String(grid.cells?.[r]?.[c] || '').startsWith('=')) {
+              patches.push({ sheetId: targetId, row: r, col: c, value: row[c] });
+            }
+          }
+        }
+        if (patches.length > 0) {
+          window.__REGAARDER_UPDATE_SHEET_CELLS__(patches);
+        }
+      }
+      return {
+        success: true,
+        data: {
+          formulaCount: evalResult.formulaCount,
+          cyclesFound: evalResult.cyclesFound,
+          message: `Evaluated ${evalResult.formulaCount} formula cell(s).`,
+        }
+      };
     }
   },
 

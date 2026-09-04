@@ -66,6 +66,12 @@ export const REGAARDER_MCP_RESOURCES = [
     name: 'Cross-Workspace Propagation Audit Trail',
     description: 'Real-time log of automated state propagations across connected Docs, Sheets, and Decisions.',
     mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://sheets/schema',
+    name: 'Active Sheet Matrix Schema',
+    description: 'Column schemas, types (dropdown, percentage, currency, number), and validation rules for the active sheet.',
+    mimeType: 'application/json'
   }
 ];
 
@@ -577,6 +583,81 @@ export const REGAARDER_MCP_TOOLS = [
     name: 'save_document',
     description: 'Explicitly save document draft to database.',
     parameters: { type: SchemaType.OBJECT, properties: {} }
+  },
+  {
+    name: 'validate_matrix_schema',
+    description: 'Validate active sheet data against column schemas (dropdown options, % format, numbers, dates).',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        sheetId: { type: SchemaType.STRING, description: 'Target sheet ID' }
+      }
+    }
+  },
+  {
+    name: 'patch_matrix_cells',
+    description: 'Surgically update cell coordinates with validation and optional staging.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        sheetId: { type: SchemaType.STRING, description: 'Target sheet ID' },
+        patches: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              row: { type: SchemaType.NUMBER, description: '0-based row' },
+              col: { type: SchemaType.NUMBER, description: '0-based col' },
+              value: { type: SchemaType.STRING, description: 'Cell value' }
+            },
+            required: ['row', 'col', 'value']
+          }
+        },
+        stage: { type: SchemaType.BOOLEAN, description: 'Stage in PR branch' }
+      },
+      required: ['patches']
+    }
+  },
+  {
+    name: 'query_matrix_sql',
+    description: 'Execute relational SQL query over active spreadsheet data (SELECT..WHERE..GROUP BY).',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        query: { type: SchemaType.STRING, description: 'SQL query' },
+        sheetId: { type: SchemaType.STRING, description: 'Target sheet ID' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'add_column_with_schema',
+    description: 'Add a typed column with validation constraints to the active matrix.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        sheetId: { type: SchemaType.STRING, description: 'Target sheet ID' },
+        column: {
+          type: SchemaType.OBJECT,
+          properties: {
+            label: { type: SchemaType.STRING, description: 'Header label' },
+            type: { type: SchemaType.STRING, description: 'Column type' }
+          },
+          required: ['label']
+        }
+      },
+      required: ['column']
+    }
+  },
+  {
+    name: 'evaluate_matrix_formulas',
+    description: 'Recompute all dynamic formula dependencies across the active sheet with cycle detection.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        sheetId: { type: SchemaType.STRING, description: 'Target sheet ID' }
+      }
+    }
   }
 ];
 
@@ -691,6 +772,23 @@ This document outlines the migration from pixel-bound human apps to token-dense 
 | Q2 2026 | $12.0B | $12.4B | +3.3% | Exceeded |
 | Q3 2026 | $13.5B | Pending | -- | Tracking |
 | Q4 2026 | $15.0B | Forecast | +11.1% | Active |`
+      };
+
+    case 'workspace://sheets/schema':
+      return {
+        mimeType: 'application/json',
+        text: JSON.stringify({
+          sheetId: 'sheet_active_model',
+          columns: [
+            { index: 0, key: 'quarter', label: 'Quarter', type: 'text', width: 120 },
+            { index: 1, key: 'target_revenue', label: 'Target Revenue', type: 'currency', width: 140 },
+            { index: 2, key: 'actual_revenue', label: 'Actual Revenue', type: 'currency', width: 140 },
+            { index: 3, key: 'growth_pct', label: 'Growth %', type: 'percentage', width: 120 },
+            { index: 4, key: 'status', label: 'Status', type: 'dropdown', options: ['Exceeded', 'Tracking', 'Active', 'At Risk'], width: 130 }
+          ],
+          rowCount: 4,
+          orientation: 'horizontal'
+        }, null, 2)
       };
 
     case 'workspace://tasks/active':
