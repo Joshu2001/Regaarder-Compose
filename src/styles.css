@@ -2788,3 +2788,27 @@ button.bg-violet-600,
 .apple-floating-exit-btn {
   animation: apple-button-spring-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards, apple-soft-halo 1.3s ease-out 1 forwards;
 }
+
+/* Deep-link target line outline status (Strict adherence to outline visual state rule) */
+@keyframes regaarder-outline-pulse {
+  0% {
+    outline-color: rgba(139, 92, 246, 0.9);
+    background-color: rgba(139, 92, 246, 0.12);
+  }
+  60% {
+    outline-color: rgba(139, 92, 246, 0.5);
+    background-color: rgba(139, 92, 246, 0.05);
+  }
+  100% {
+    outline-color: transparent;
+    background-color: transparent;
+  }
+}
+
+.regaarder-line-outline-target {
+  outline: 2px solid transparent !important;
+  outline-offset: 4px !important;
+  border-radius: 6px !important;
+  animation: regaarder-outline-pulse 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+

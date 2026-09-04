@@ -71,6 +71,32 @@ export const CANONICAL_DOCS_TOOLS = [
     }
   },
   {
+    name: 'create_document',
+    label: 'Create New Document',
+    category: DOCS_TOOL_CATEGORIES.DOCUMENT_TOOLS,
+    description: 'Creates a new document in the workspace with specified title and optional initial HTML or markdown body.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Title of the new document.' },
+        contentHtml: { type: 'string', description: 'Initial HTML or rich text body content.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional classification tags.' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      if (typeof window !== 'undefined' && window.__REGAARDER_CREATE_DOC__) {
+        return window.__REGAARDER_CREATE_DOC__(params);
+      }
+      return { success: true, message: `Document "${params.title}" created.`, data: { id: `doc_${Date.now()}`, ...params } };
+    }
+  },
+  {
     name: 'insert_text',
     label: 'Insert Text',
     category: DOCS_TOOL_CATEGORIES.DOCUMENT_TOOLS,
@@ -394,6 +420,57 @@ export const CANONICAL_DOCS_TOOLS = [
           wordCount: stats.wordCount
         }
       };
+    }
+  },
+  {
+    name: 'search_workspace_citations',
+    label: 'Search Workspace Citations',
+    category: DOCS_TOOL_CATEGORIES.ANALYSIS_TOOLS,
+    description: 'Searches all workspace documents for keywords, returning exact document titles, line indices, and matching text excerpts for deep-link citations.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Keyword or phrase to locate across workspace documents.' }
+      },
+      required: ['query']
+    },
+    execute: async (params) => {
+      const allDocs = (typeof window !== 'undefined' && window.__REGAARDER_WORKSPACE_DOCS__) || [];
+      const query = (params.query || '').toLowerCase().trim();
+      const results = [];
+
+      allDocs.forEach(doc => {
+        if (!doc.bodyHtml && !doc.title) return;
+        let blocks = [];
+        if (typeof document !== 'undefined' && doc.bodyHtml) {
+          const tempEl = document.createElement('div');
+          tempEl.innerHTML = doc.bodyHtml;
+          blocks = Array.from(tempEl.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, tr, div'))
+            .map(el => el.textContent.trim())
+            .filter(Boolean);
+        }
+        if (blocks.length === 0 && doc.bodyHtml) {
+          blocks = doc.bodyHtml.replace(/<[^>]+>/g, '\n').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        }
+
+        blocks.forEach((b, idx) => {
+          if (b.toLowerCase().includes(query)) {
+            results.push({
+              docId: doc.id,
+              docTitle: doc.title || 'Untitled Document',
+              line: idx + 1,
+              snippet: b.slice(0, 160)
+            });
+          }
+        });
+      });
+
+      return { success: true, data: { total: results.length, citations: results.slice(0, 10) } };
     }
   },
 

@@ -18022,19 +18022,55 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
-  const [documents, setDocuments] = useState([
-    {
-      id: Date.now(),
-      mode: 'compose',
-      title: '',
-      subtitle: '',
-      initiatives: defaultInitiatives,
-      appendedSections: [],
-      isBlank: true,
-      bodyHtml: '',
-    },
-  ]);
+  const [documents, setDocuments] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('regaarder_documents_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load documents from localStorage:', e);
+    }
+    return [
+      {
+        id: Date.now(),
+        mode: 'compose',
+        title: '',
+        subtitle: '',
+        initiatives: defaultInitiatives,
+        appendedSections: [],
+        isBlank: true,
+        bodyHtml: '',
+      },
+    ];
+  });
   const [activeDocId, setActiveDocId] = useState(null);
+
+  // Auto-persist documents to localStorage
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && documents) {
+        localStorage.setItem('regaarder_documents_v1', JSON.stringify(documents));
+      }
+    } catch (e) {
+      console.warn('Failed to save documents to localStorage:', e);
+    }
+  }, [documents]);
+
+  // Keep active document in documents list updated with latest title and bodyHtml
+  useEffect(() => {
+    if (activeDocId) {
+      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
+        ...d,
+        title: docTitle !== undefined ? docTitle : d.title,
+        bodyHtml: docBodyHtml !== undefined ? docBodyHtml : d.bodyHtml
+      } : d));
+    }
+  }, [docBodyHtml, docTitle, activeDocId]);
+
   const activeDoc = documents.find((doc) => doc.id === activeDocId);
   const [pdfRotation, setPdfRotation] = useState(0);
   const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
@@ -23289,6 +23325,42 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       delete window.__REGAARDER_DELETE_TASK__;
     };
   }, [tasks]);
+
+  // Documents bridge for autonomous agents & citation search
+  useEffect(() => {
+    window.__REGAARDER_WORKSPACE_DOCS__ = documents;
+    window.__REGAARDER_CREATE_DOC__ = ({ title = 'Untitled Document', contentHtml = '', mode = 'compose' } = {}) => {
+      const newDocId = Date.now() + Math.floor(Math.random() * 1000);
+      const newDoc = {
+        id: newDocId,
+        mode: mode || 'compose',
+        title: title || 'Untitled Document',
+        subtitle: '',
+        initiatives: [],
+        appendedSections: [],
+        isBlank: !contentHtml && !title,
+        bodyHtml: contentHtml || '',
+        pinned: false,
+        sheetsTitle: 'Untitled Sheet',
+        sheetsData: [{ id: 1, title: 'Sheet 1', subtitle: '' }],
+        sheetGrids: { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } },
+        activeSheetId: 1,
+        deckTitle: 'Untitled Deck',
+        deckSlidesData: JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)),
+        activeDeckSlideId: 1,
+      };
+      setDocuments(prev => [...prev, newDoc]);
+      setActiveDocId(newDocId);
+      setDocTitle(newDoc.title);
+      setDocBodyHtml(newDoc.bodyHtml);
+      return { success: true, docId: newDocId, title: newDoc.title, newDoc };
+    };
+
+    return () => {
+      delete window.__REGAARDER_WORKSPACE_DOCS__;
+      delete window.__REGAARDER_CREATE_DOC__;
+    };
+  }, [documents]);
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [dueDatePickerTaskId, setDueDatePickerTaskId] = useState(null);
@@ -33750,6 +33822,17 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
+
+    // If options.forceNew is not requested and documents exist, restore active or most recent document
+    if (!options.forceNew && documents && documents.length > 0) {
+      const targetDoc = documents.find(d => String(d.id) === String(activeDocId)) || documents[documents.length - 1];
+      if (targetDoc && (targetDoc.title || targetDoc.bodyHtml)) {
+        setActiveDocId(targetDoc.id);
+        setDocTitle(targetDoc.title || 'Untitled Document');
+        setDocBodyHtml(targetDoc.bodyHtml || '');
+        return;
+      }
+    }
     createNewComposition(options);
   };
 
@@ -45306,7 +45389,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           <>
 
             {/* ── Sleek Sidebar Icon Rail (Scoped between top header and bottom status bar, never blocks top/bottom icons) ──────────── */}
-            {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
+            {productMode !== 'landing' && productMode !== 'browser' && productMode !== 'dm' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
@@ -45636,20 +45719,76 @@ Respond with a JSON array of slide objects matching the schema.`;
               showToast('Decision logged to Workspace Memory Hub');
             }}
             onNavigateWorkspace={(ref) => {
+              if (!ref) return;
               if (ref.type === 'landing') {
                 setProductMode('landing');
                 setFocusedModule('landing');
               } else if (ref.type === 'sheets') {
                 createSheetsExperience();
+                if (ref.sheetId) setActiveSheetId(ref.sheetId);
               } else if (ref.type === 'deck') {
                 createDeckExperience();
+                if (ref.slideId) setActiveDeckSlideId(ref.slideId);
               } else {
-                createComposeExperience();
+                // Compose Docs mode
+                setCreationPickerOpen(false);
+                setProductMode('compose');
+                setFocusedModule('compose');
+                setDockedModules([]);
+                setRoomPanelMode('docked');
+                setLeftSidebarOpen(false);
+                setActiveDocView('document');
+
+                const targetDocId = ref.docId || ref.id;
+                if (targetDocId) {
+                  const targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+                  if (targetDoc) {
+                    setActiveDocId(targetDoc.id);
+                    setDocTitle(targetDoc.title || '');
+                    setDocBodyHtml(targetDoc.bodyHtml || '');
+                  }
+                }
+
+                // Deep-link to line and scroll into view with executive outline highlight only for citation clicks
+                if (ref.isCitationClick || (ref.line && ref.line > 1) || (ref.textSnippet && !ref.isDirectOpen)) {
+                  setTimeout(() => {
+                    const editorEl = blankBodyRef.current || document.querySelector('[contenteditable="true"]');
+                    if (!editorEl) return;
+                    let targetEl = null;
+
+                    if (ref.line && ref.line > 0) {
+                      const blocks = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, tr, div'))
+                        .filter(el => el.textContent && el.textContent.trim().length > 0);
+                      if (blocks.length > 0) {
+                        const targetIdx = Math.min(ref.line - 1, blocks.length - 1);
+                        targetEl = blocks[targetIdx];
+                      }
+                    }
+
+                    if (!targetEl && ref.textSnippet) {
+                      const cleanSnippet = ref.textSnippet.slice(0, 30).toLowerCase();
+                      const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, null, false);
+                      let n;
+                      while ((n = walker.nextNode())) {
+                        if (n.textContent && n.textContent.toLowerCase().includes(cleanSnippet)) {
+                          targetEl = n.parentElement;
+                          break;
+                        }
+                      }
+                    }
+
+                    if (targetEl) {
+                      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      targetEl.classList.add('regaarder-line-outline-target');
+                      setTimeout(() => {
+                        targetEl.classList.remove('regaarder-line-outline-target');
+                      }, 2600);
+                    }
+                  }, 250);
+                }
               }
             }}
             onToggleFullscreen={toggleDocumentImmersiveMode}
-            onCallAi={callGemini}
-            detectedModelsFromApp={composeDetectedModels}
             onCallAi={callGemini}
             detectedModelsFromApp={composeDetectedModels}
             onOpenWorkspaceSwitcher={(rect) => {
@@ -45660,7 +45799,6 @@ Respond with a JSON array of slide objects matching the schema.`;
         </main>
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}
-        {sharedRightPanels}
       </div>
     );
   }
