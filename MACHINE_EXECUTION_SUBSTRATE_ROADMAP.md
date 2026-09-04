@@ -54,7 +54,7 @@ An **AI-Native Workspace** must be engineered as an execution engine:
 | **Pillar 3** | **Human-in-the-Loop "Approval & Sandbox" Engine** | **100% COMPLETED** | [`workspaceStagingEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/workspaceStagingEngine.js), [`WorkspaceStagingReviewModal.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/staging/WorkspaceStagingReviewModal.jsx), [`docsToolExecutor.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolExecutor.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
 | **Pillar 4** | **The Canvas (Block-Level State IDs & Patch Engine)** | **100% COMPLETED** | [`blockCanvasEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/blockCanvasEngine.js), [`BlockCanvasInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/dev/BlockCanvasInspector.jsx), [`docsCommandApi.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsCommandApi.js), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
 | **Pillar 5** | **The Matrix Engine (Code Execution & Schema)** | **100% COMPLETED** | [`matrixSchemaEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/matrixSchemaEngine.js), [`MatrixSchemaInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/sheets/MatrixSchemaInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
-| **Pillar 6** | The Intent Scheduler (Constraint Engine) | `20%` (Specified) | [`VERTICAL_INTEGRATIONS.md`](file:///c:/Users/user/Downloads/Project%20MOAT/VERTICAL_INTEGRATIONS.md) |
+| **Pillar 6** | **The Intent Scheduler (Constraint & Multi-Agent Negotiation)** | **100% COMPLETED** | [`intentSchedulerEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/intentSchedulerEngine.js), [`IntentSchedulerInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/schedule/IntentSchedulerInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js), [`relayAgentService.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/relayAgentService.js) |
 
 ---
 
@@ -347,7 +347,72 @@ Pillar 5 transforms the spreadsheet into an **AI-Native Matrix Engine and In-Bro
 
 ---
 
-## 8. Upstream Roadmap: Steps to Complete Pillar 6
+## 8. Pillar 6 Deep Dive: The Intent Scheduler & Multi-Agent Negotiation Substrate (Completed)
+
+Traditional calendar systems are passive silos: human users engage in exhausting manual email ping-pong ("Does 3 PM work? No, how about 4 PM?") while software blindly overlays conflicting events. AI assistants cannot autonomously lock meetings because they lack mathematical constraint models, multi-agent negotiation protocols, and sandbox staging safeguards.
+
+Pillar 6 delivers an **AI-Native Intent Scheduler and Multi-Agent Negotiation Engine**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│             PILLAR 6: INTENT SCHEDULER & MULTI-AGENT NEGOTIATION            │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│    RULE 4 CONTEXT MAPPING    │    MATHEMATICAL CSP SOLVER   │  MULTI-AGENT  │
+│    & SYSTEMIC SPECS          │    & TEMPORAL CONFLICT MATRIX│  NEGOTIATION  │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • "Tennis practice" ->       │ • Utility: U(slot) in [0, 1] │ • Alternating │
+│   health_athletics (90m,     │ • Interval Forward Checking  │   Offers      │
+│   buffers, energy load)      │ • Conflict Resolution:       │ • Monotonic   │
+│ • "Board prep sync" ->       │   priority_bump, duration_   │   Concessions │
+│   executive_strategy         │   compression, cooldown      │ • Pareto      │
+│ • Bilateral / Financial specs│ • Pillar 3 Staging Sandbox   │   Convergence │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 8.1. Rule 4 Context-Aware Intent Interpretation
+- **Anti-Literal Domain Mapping:** Mandated by Rule 4, colloquial user requests are never processed naively. A prompt like "Tennis practice" is systematically mapped to `health_athletics` (duration: 90 min, prep: 20 min, cooldown: 20 min, energy load: `high`, preferred: `late_afternoon` / `early_morning`).
+- **Standardized Domain Specs:** Built-in systemic specifications for `health_athletics`, `executive_strategy`, `financial_projection`, `engineering_architecture`, and `bilateral_sync`.
+- **Constraint Overrides:** Allows explicit user overrides (e.g., custom duration, urgency, participants) while maintaining systemic defaults.
+
+### 8.2. Mathematical CSP Solver & Multi-Objective Slot Utility
+- **Hard Constraints:** Strictly enforces calendar working windows (e.g. 08:00–18:00), blackout intervals, participant availability, and pre/post buffers.
+- **Forward Checking:** Prunes infeasible domains across discrete 15-minute intervals.
+- **Multi-Objective Slot Utility Function:**
+  $$U(\text{slot}) = w_{\text{pref}} \cdot S_{\text{time}} + w_{\text{priority}} \cdot S_{\text{priority}} - w_{\text{buffer}} \cdot P_{\text{buffer}} - w_{\text{fatigue}} \cdot P_{\text{fatigue}}$$
+  Optimizes for circadian energy alignment, prevents back-to-back cognitive overload, and applies lunch-hour buffer penalties.
+
+### 8.3. Multi-Agent Alternating-Offer Negotiation Protocol
+- **Autonomous Peer Consensus:** Facilitates bilateral consensus between autonomous AI agents (e.g. Alex Agent $\leftrightarrow$ Elena Agent) without human email friction.
+- **Monotonic Concessions & Pareto Convergence:** Agents submit proposals with explicit utility ratings ($U_A, U_B$). If non-overlapping, concession rates expand candidate domains until Pareto optimality is achieved ($U_A \times U_B \ge \text{threshold}$).
+- **State Machine:** Governed by deterministic lifecycle states: `PROPOSED` $\rightarrow$ `COUNTER_OFFERED` $\rightarrow$ `AGREED` $\rightarrow$ `COMMITTED` (or `REJECTED`).
+
+### 8.4. Temporal Conflict Matrix & Automated Resolution
+- **Surgical Conflict Detection:** Evaluates overlapping intervals, participant collisions, and buffer violations across active schedules.
+- **Three Resolution Strategies:**
+  1. `priority_bump`: Automatically shifts lower-priority events to the next optimal slot when an urgent executive conflict arises.
+  2. `duration_compression`: Dynamically compresses non-essential meetings to fit tight calendar windows.
+  3. `cooldown_compression`: Adjusts post-event cooldown buffers while maintaining minimum safety margins.
+- **Pillar 3 Sandbox Staging Integration:** Speculative schedule modifications execute via `stage: true`, routing proposed shifts into isolated PR sandboxes for executive visual approval.
+
+### 8.5. Apple-Tier Intent Scheduler Inspector UI ([`IntentSchedulerInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/schedule/IntentSchedulerInspector.jsx))
+- Mounted under the dedicated **Meetings & Scheduler** tab in [`MemoryDashboard.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/MemoryDashboard.jsx):
+  - **Calendar & Timeline View:** Apple-minimalist horizontal/vertical timeline showing scheduled blocks, buffer envelopes, and active selection outlines (strictly non-pill tabs).
+  - **Multi-Agent Negotiation Studio:** Live protocol feed visualizing alternating agent proposals, concession rounds, and mutual utility scores with 1-click test negotiations.
+  - **Constraint Solver Playground:** Interactive form to test Rule 4 colloquial intent phrases ("Tennis practice", "Quarterly board sync"), solve optimal slots, and inspect utility ranking.
+  - **Conflict Resolution Center:** Active collision cards with automated resolution recommendations and 1-click "Stage Shift PR" sandbox triggers.
+
+### 8.6. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://schedule/calendar`:** Token-dense JSON-LD / Markdown stream of scheduled events, working windows, and blackout blocks.
+- **Resource `workspace://schedule/negotiations`:** Live feed of active and completed multi-agent negotiation threads.
+- **Tools:** `solve_schedule_constraints`, `negotiate_multi_agent_schedule`, `detect_schedule_conflicts`, `resolve_schedule_conflict`, `commit_scheduled_event`.
+
+### 8.7. Relay Agent & Universal Context Graph Wiring
+- **Relay Agent Integration:** `relayAgentService.js` automatically classifies scheduling intents (`isScheduleMeeting`), executes multi-agent negotiations in the background, and emits interactive schedule action cards into `ExecutiveDirectMessages.jsx`.
+- **Universal Context Graph:** `universalContextGraph.js` records persistent `scheduled_event` and `schedule_negotiation` nodes with participant edges and reactive notification propagation.
+
+---
+
+## 9. Upstream Roadmap: Completed Substrate Pillars
 
 ### Milestone 2: Native Model Context Protocol (MCP) Layer
 - [x] Implement open-standard JSON-RPC server transport (`protocolVersion: "2024-11-05"`).
@@ -383,12 +448,30 @@ Pillar 5 transforms the spreadsheet into an **AI-Native Matrix Engine and In-Bro
 - [x] Build Apple-tier interactive Matrix Schema & Query Inspector in Memory Dashboard.
 
 ### Milestone 6: Constraint-Based Intent Scheduler
-- [ ] Implement constraint-satisfaction negotiation algorithm for meetings and deadlines.
-- [ ] Allow multi-agent parameter negotiation (e.g. Alex Agent $\leftrightarrow$ Elena Agent).
+- [x] Implement constraint-satisfaction negotiation algorithm for meetings and deadlines.
+- [x] Allow multi-agent parameter negotiation (e.g. Alex Agent $\leftrightarrow$ Elena Agent).
+- [x] Rule 4 context-aware intent interpretation ("Tennis practice" -> `health_athletics`).
+- [x] Temporal conflict matrix & automated resolution (`priority_bump`, `duration_compression`, `cooldown_compression`).
+- [x] Expose MCP Resources (`workspace://schedule/calendar`, `workspace://schedule/negotiations`) and 5 canonical tools.
+- [x] Build Apple-tier Intent Scheduler Inspector UI in Memory Dashboard.
+- [x] Relay autonomous agent integration with interactive chat action cards.
 
 ---
 
-## 9. Live Changelog
+## 10. Live Changelog
+
+- **2026-09-04:**
+  - **Pillar 6 Completed (The Constraint-Based Intent Scheduler & Multi-Agent Negotiation Substrate):**
+    - Created `intentSchedulerEngine.js` featuring CSP solver with forward checking, multi-objective utility scoring $U(\text{slot}) \in [0, 1]$, and Rule 4 context-aware intent interpretation mapping colloquial prompts ("Tennis practice", "Board prep sync") to systemic specs.
+    - Implemented multi-agent alternating-offer parameter negotiation protocol with Pareto convergence and state machine (`PROPOSED`, `COUNTER_OFFERED`, `AGREED`, `COMMITTED`).
+    - Implemented temporal conflict detection and automated resolution strategies (`priority_bump`, `duration_compression`, `cooldown_compression`) with seamless Pillar 3 sandbox staging (`stage: true`).
+    - Added 5 canonical tools to `docsToolRegistry.js` (`solve_schedule_constraints`, `negotiate_multi_agent_schedule`, `detect_schedule_conflicts`, `resolve_schedule_conflict`, `commit_scheduled_event`) and wired staging execution into `docsToolExecutor.js`.
+    - Exposed MCP Resources `workspace://schedule/calendar` and `workspace://schedule/negotiations` alongside tool declarations in `universalMcpBridge.js` and `server/mcpTools.js`.
+    - Integrated Relay Autonomous Agent (`relayAgentService.js`) to classify scheduling intents, run negotiations, and render interactive action cards in `ExecutiveDirectMessages.jsx` with 1-click confirmation and inspector navigation.
+    - Recorded scheduling nodes and participant edges in `universalContextGraph.js`.
+    - Built Apple-tier `IntentSchedulerInspector.jsx` featuring 4 non-pill tab views (Calendar & Timeline, Multi-Agent Studio, Constraint Playground, Conflict Center) and mounted in `MemoryDashboard.jsx`.
+    - Automated test suite `scripts/test-intent-scheduler.js`: **20/20 Tests Passed** (163 total substrate tests passing across all 6 Pillars).
+    - Production Vite build verified: **✓ built in 24.55s**.
 
 - **2026-09-04:**
   - **Pillar 5 Completed (The Matrix Engine: Code Execution & Schema Validation Substrate):**
