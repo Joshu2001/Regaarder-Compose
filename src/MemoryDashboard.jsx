@@ -8,10 +8,17 @@ import {
   AlertTriangle, Tag as TagIcon, Hash, CheckCircle2, ChevronRight
 } from 'lucide-react';
 import { MemoryIcon, TasksIcon, OrbIcon, RegaarderAiIcon, RegaarderProductIcon } from './components/RegaarderProductIcons';
+import { 
+  getMemoryBank, 
+  subscribeToGraph, 
+  getPropagationHistory, 
+  mutateAndPropagate 
+} from './services/universalContextGraph.js';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'decisions', label: 'Decisions', icon: TasksIcon },
+  { id: 'rules', label: 'Rules & Propagation', icon: ShieldCheck },
   { id: 'graph', label: 'Knowledge Graph', icon: Network },
   { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: Folder },
@@ -174,6 +181,33 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
     setTimeout(() => setIsRefreshing(false), 700);
   };
 
+  const [memoryBank, setMemoryBank] = useState(() => getMemoryBank());
+  const [propagationHistory, setPropagationHistory] = useState(() => getPropagationHistory());
+
+  // Subscribe to live Universal Context Graph & Memory Bank mutations
+  useEffect(() => {
+    const unsub = subscribeToGraph('*', () => {
+      setMemoryBank(getMemoryBank());
+      setPropagationHistory(getPropagationHistory());
+    });
+    return unsub;
+  }, []);
+
+  // Merged live and historical decisions
+  const allDecisions = useMemo(() => {
+    const dynamicDecisions = (memoryBank?.decisions || []).map(d => ({
+      id: d.id,
+      title: d.title,
+      date: new Date(d.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      owner: d.approver,
+      workspace: d.workspace || 'compose',
+      status: d.status || 'Confirmed',
+      impact: d.financialImpact && d.financialImpact !== 'N/A' ? d.financialImpact : 'High',
+      rationale: d.rationale
+    }));
+    return [...dynamicDecisions, ...DECISIONS_DATA.filter(d => !dynamicDecisions.some(dyn => dyn.id === d.id))];
+  }, [memoryBank]);
+
   // Filtered timeline data
   const filteredTimeline = useMemo(() => {
     return TIMELINE_DATA.filter(item => {
@@ -272,6 +306,12 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
                 label="Decisions" 
                 isActive={activeTab === 'decisions'} 
                 onClick={() => setActiveTab('decisions')} 
+              />
+              <SidebarNavItem 
+                icon={<ShieldCheck size={14} />} 
+                label="Rules & Propagation" 
+                isActive={activeTab === 'rules'} 
+                onClick={() => setActiveTab('rules')} 
               />
               <SidebarNavItem 
                 icon={<Network size={14} />} 
@@ -546,10 +586,10 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Confirmed Organizational Decisions</h2>
-                        <span className="text-[10px] text-slate-400 font-mono">{DECISIONS_DATA.length} verified</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{allDecisions.length} verified</span>
                       </div>
                       <div className="grid gap-2.5">
-                        {DECISIONS_DATA.map((dec) => (
+                        {allDecisions.map((dec) => (
                           <div key={dec.id} className="p-4 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-violet-500/30 transition-all">
                             <div className="flex items-start justify-between gap-3 mb-1.5">
                               <div className="flex items-center gap-2">
@@ -573,6 +613,123 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'rules' && (
+                    <div className="space-y-4">
+                      {/* Substrate Engine Header */}
+                      <div className="flex items-center justify-between p-3.5 rounded-xl bg-violet-500/5 dark:bg-violet-400/5 border border-violet-500/15">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <Zap size={14} className="text-violet-600 dark:text-violet-400" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                              Autonomous State Engine & Propagation Bus
+                            </h3>
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                            Semantic changes in Sheets, Docs, or Tasks automatically propagate through dependency edges.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            mutateAndPropagate({
+                              entityId: 'ent_nv_sheet',
+                              changes: {
+                                metadata: { keyMetric: '$54.0B Projected GPU Revenue', financialFigure: '$54.00 Billion' }
+                              },
+                              reason: 'Interactive Sheet Margin & Revenue Model Update',
+                              actor: 'human'
+                            });
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-violet-600 text-white hover:bg-violet-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer shrink-0"
+                        >
+                          Simulate Sheet Revenue Sync
+                        </button>
+                      </div>
+
+                      {/* Active Project Rules & Instructions */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                            Persistent Project Rules & Directives ({memoryBank.rules.length})
+                          </h4>
+                          <span className="text-[10px] text-slate-400 font-mono">Enforced across all AI tasks</span>
+                        </div>
+                        <div className="grid gap-2">
+                          {memoryBank.rules.map(r => (
+                            <div key={r.id} className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs flex items-start justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border font-mono ${
+                                    r.enforcement === 'strict' 
+                                      ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' 
+                                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                                  }`}>
+                                    {r.enforcement}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">{r.project}</span>
+                                </div>
+                                <p className="text-xs font-medium text-slate-800 dark:text-zinc-100">{r.rule}</p>
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Cross-Workspace Auto-Propagation Audit Trail */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                            Recent Semantic Auto-Propagations ({propagationHistory.length})
+                          </h4>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Live Audit Log
+                          </span>
+                        </div>
+                        {propagationHistory.length === 0 ? (
+                          <div className="p-6 text-center rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-dashed border-black/[0.08] text-xs text-slate-400">
+                            No auto-propagation events recorded yet. Click "Simulate Sheet Revenue Sync" or edit a linked Doc to trigger one.
+                          </div>
+                        ) : (
+                          <div className="grid gap-2">
+                            {propagationHistory.map((log) => (
+                              <div key={log.mutationId} className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+                                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 mb-1.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-slate-900 dark:text-white">{log.sourceTitle}</span>
+                                    <span>→</span>
+                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{log.impactedCount} linked targets updated</span>
+                                  </div>
+                                  <span className="font-mono text-[10px] text-slate-400">
+                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-slate-600 dark:text-zinc-300 font-medium mb-2">
+                                  Reason: {log.reason} (Actor: {log.actor})
+                                </div>
+                                {log.impactedTargets?.length > 0 && (
+                                  <div className="space-y-1 pl-3 border-l-2 border-emerald-500/40">
+                                    {log.impactedTargets.map((target, idx) => (
+                                      <div key={idx} className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center justify-between">
+                                        <span>• {target.targetTitle} ({target.workspace}) via <code className="text-[10px] text-violet-600 dark:text-violet-300 font-mono">{target.relationType}</code></span>
+                                        {target.delta?.propagatedFigure && (
+                                          <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{target.delta.propagatedFigure}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

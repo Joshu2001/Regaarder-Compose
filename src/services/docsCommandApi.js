@@ -8,6 +8,8 @@
  * Direct DOM manipulations or editor instances are isolated here.
  */
 
+import { notifyDocumentMutated } from './universalContextGraph.js';
+
 // Global registry of active editor instance bindings
 let activeEditorBinding = null;
 
@@ -123,6 +125,18 @@ export const insertContent = ({ text = '', html = '', position = 'cursor' }) => 
     }
   }
 
+  // Notify Universal Context Graph of mutation
+  try {
+    const newSnap = getDocumentSnapshot();
+    notifyDocumentMutated({
+      docId: activeEditorBinding?.docId || 'doc_active',
+      title: activeEditorBinding?.title || 'Active Document',
+      text: newSnap.text,
+      characterCount: newSnap.characterCount,
+      wordCount: newSnap.wordCount
+    });
+  } catch (_e) {}
+
   return { success: true, mode: 'execCommand' };
 };
 
@@ -134,6 +148,7 @@ export const replaceRange = ({ targetText = '', replacementText = '', replaceAll
   if (!ed) return { success: false, reason: 'No active editor found' };
 
   const snapshot = getDocumentSnapshot();
+  let mutationSucceeded = false;
   
   // If targetText specified, replace targetText in innerHTML/innerText
   if (targetText && snapshot.text.includes(targetText)) {
@@ -143,13 +158,27 @@ export const replaceRange = ({ targetText = '', replacementText = '', replaceAll
     } else {
       ed.innerHTML = ed.innerHTML.replace(targetText, replacementText);
     }
-    return { success: true, replacedCount: replaceAll ? 'all' : 1 };
+    mutationSucceeded = true;
+  } else if (snapshot.hasSelection) {
+    // If selection exists, replace active selection
+    document.execCommand('insertText', false, replacementText);
+    mutationSucceeded = true;
   }
 
-  // If selection exists, replace active selection
-  if (snapshot.hasSelection) {
-    document.execCommand('insertText', false, replacementText);
-    return { success: true, replacedCount: 1, mode: 'selection' };
+  if (mutationSucceeded) {
+    // Notify Universal Context Graph of mutation
+    try {
+      const newSnap = getDocumentSnapshot();
+      notifyDocumentMutated({
+        docId: activeEditorBinding?.docId || 'doc_active',
+        title: activeEditorBinding?.title || 'Active Document',
+        text: newSnap.text,
+        characterCount: newSnap.characterCount,
+        wordCount: newSnap.wordCount
+      });
+    } catch (_e) {}
+
+    return { success: true, replacedCount: replaceAll ? 'all' : 1 };
   }
 
   return { success: false, reason: 'Target text not found and no selection active' };

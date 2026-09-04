@@ -13,6 +13,13 @@
  * 4. Scan workspace documents for deep-link citations with exact line numbers
  */
 
+import { 
+  getAgentContext, 
+  rememberInstruction, 
+  addProjectRule, 
+  mutateAndPropagate 
+} from './universalContextGraph.js';
+
 /**
  * Converts markdown text into executive-tier, semantic document HTML.
  * Strips conversational chatter and automatically synthesizes structured sections
@@ -153,18 +160,20 @@ export function classifyRelayIntent(prompt) {
   const text = (prompt || '').trim().toLowerCase();
 
   const isTranslation = /\b(translate|traducir|traduire|übersetzen|翻译|翻訳)\b/i.test(text) || /\b(to|into|in)\s+(chinese|spanish|french|german|japanese|russian|arabic|hindi|portuguese|italian|english)\b/i.test(text);
-  const isDocCreation = !isTranslation && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
-  const isTaskSchedule = !isTranslation && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|meeting|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
-  const isSheetUpdate = !isTranslation && (/(update|set|change|write|fill)\s+(the\s+)?(sheet|cell|row|column|cells)\s+([a-z]\d+|\d+)/i.test(text) || /(update|modify)\s+(spreadsheet|sheets)/i.test(text));
-  const isCitationQuery = !isTranslation && (/(where is|where does it mention|find in docs|search docs for|cite where|what doc discusses|reference for|show me where)/i.test(text) || /\b(citation|citations|source reference)\b/i.test(text));
+  const isMemoryInstruction = !isTranslation && /(remember that|our rule is|always make sure|from now on|save instruction|project rule:|never forget)/i.test(text);
+  const isDocCreation = !isTranslation && !isMemoryInstruction && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
+  const isTaskSchedule = !isTranslation && !isMemoryInstruction && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|meeting|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
+  const isSheetUpdate = !isTranslation && !isMemoryInstruction && (/(update|set|change|write|fill)\s+(the\s+)?(sheet|cell|row|column|cells)\s+([a-z]\d+|\d+)/i.test(text) || /(update|modify)\s+(spreadsheet|sheets)/i.test(text));
+  const isCitationQuery = !isTranslation && !isMemoryInstruction && (/(where is|where does it mention|find in docs|search docs for|cite where|what doc discusses|reference for|show me where)/i.test(text) || /\b(citation|citations|source reference)\b/i.test(text));
 
   return {
-    isAction: isDocCreation || isTaskSchedule || isSheetUpdate || isCitationQuery,
+    isAction: isDocCreation || isTaskSchedule || isSheetUpdate || isCitationQuery || isMemoryInstruction,
     isDocCreation,
     isTaskSchedule,
     isSheetUpdate,
     isCitationQuery,
-    isTranslation
+    isTranslation,
+    isMemoryInstruction
   };
 }
 
@@ -259,13 +268,43 @@ export async function processRelayAgentMessage({
     }
   }
 
+  // Handle Persistent Memory & Rule Storage Intent
+  if (intent.isMemoryInstruction) {
+    const cleanRule = trimmed
+      .replace(/^(remember that|our rule is|always make sure|from now on|save instruction|project rule:|never forget)\s*[:,-]?\s*/i, '')
+      .trim();
+
+    const isRule = /rule|must|never|always|enforce/i.test(trimmed);
+    if (isRule) {
+      addProjectRule({ rule: cleanRule, project: 'Global Workspace', enforcement: 'strict' });
+    } else {
+      rememberInstruction({ text: cleanRule, category: 'user_directive', project: 'Global Workspace', priority: 'strict' });
+    }
+
+    return {
+      replyText: `I have committed that directive to your persistent workspace memory bank:\n\n> "${cleanRule}"\n\nAll future agent syntheses and cross-app workflows will strictly observe this constraint.`,
+      actionCard: {
+        type: 'memory',
+        subType: 'stored',
+        title: 'Committed to Memory Bank',
+        description: `Stored as persistent ${isRule ? 'project rule' : 'workspace instruction'}.`,
+        previewSnippet: cleanRule
+      },
+      referenceSources: []
+    };
+  }
+
   // Dynamic system prompt selection to prevent small model hallucination
   let activeSystemPrompt = 'You are an executive intelligent assistant in Regaarder Relay. Answer user queries directly, concisely, and naturally. Never create a document or output outlines unless explicitly asked.';
 
   if (intent.isTranslation) {
     activeSystemPrompt = 'You are an expert multilingual translator in Regaarder Relay. Provide an accurate, direct translation of the requested sentence or text into the target language. Do not create documents, do not add filler commentary, and do not invent outlines.';
   } else if (intent.isDocCreation) {
-    activeSystemPrompt = RELAY_AGENT_SYSTEM_PROMPT;
+    const memoryContext = getAgentContext({ maxEntities: 6, maxRules: 4, maxDecisions: 2 });
+    activeSystemPrompt = `${RELAY_AGENT_SYSTEM_PROMPT}\n\n${memoryContext}`;
+  } else {
+    const memoryContext = getAgentContext({ maxEntities: 4, maxRules: 3, maxDecisions: 2 });
+    activeSystemPrompt = `${activeSystemPrompt}\n\n${memoryContext}`;
   }
 
   // Attempt AI invocation via onCallAi bridge
@@ -332,6 +371,21 @@ export async function processRelayAgentMessage({
           description: `Document "${params.title}" has been created and prepared in Compose Docs.`,
           previewSnippet: previewSnippet.slice(0, 160)
         };
+
+        // Auto-propagate new document node into Universal Context Graph
+        mutateAndPropagate({
+          entityId: `ent_doc_${created?.docId || Date.now()}`,
+          changes: {
+            title: params.title,
+            type: 'document',
+            workspace: 'compose',
+            excerpt: previewSnippet,
+            content: previewSnippet,
+            metadata: { docId: created?.docId, status: 'Active' }
+          },
+          reason: 'Agent Document Synthesis in Relay',
+          actor: 'agent'
+        });
       }
     } else if (action === 'add_task' && params.title) {
       if (typeof window !== 'undefined' && window.__REGAARDER_ADD_TASK__) {
@@ -346,6 +400,19 @@ export async function processRelayAgentMessage({
           dueDate: params.dueDate || 'Flexible',
           description: `Scheduled task "${params.title}" in workspace initiatives.`
         };
+
+        mutateAndPropagate({
+          entityId: `ent_task_${res?.data?.id || Date.now()}`,
+          changes: {
+            title: params.title,
+            type: 'task',
+            workspace: 'tasks',
+            excerpt: params.title,
+            metadata: { priority: params.priority || 'Medium', status: 'In Progress' }
+          },
+          reason: 'Agent Task Scheduling in Relay',
+          actor: 'agent'
+        });
       }
     } else if (action === 'update_sheet' && params.updates?.length) {
       if (typeof window !== 'undefined' && window.__REGAARDER_UPDATE_SHEET_CELLS__) {
@@ -357,6 +424,16 @@ export async function processRelayAgentMessage({
           description: `Updated ${params.updates.length} cell(s) in active spreadsheet.`,
           cellCount: params.updates.length
         };
+
+        mutateAndPropagate({
+          entityId: 'ent_nv_sheet',
+          changes: {
+            excerpt: `Updated ${params.updates.length} cell(s) via agent action.`,
+            metadata: { updatesCount: params.updates.length }
+          },
+          reason: 'Agent Spreadsheet Cell Update in Relay',
+          actor: 'agent'
+        });
       }
     } else if (action === 'search_workspace_citations' && params.query) {
       referenceSources = searchWorkspaceCitations(params.query);
@@ -394,6 +471,21 @@ export async function processRelayAgentMessage({
         description: `Document "${title}" has been created and prepared in Compose Docs.`,
         previewSnippet: previewSnippet.slice(0, 160)
       };
+
+      // Auto-propagate new document node into Universal Context Graph
+      mutateAndPropagate({
+        entityId: `ent_doc_${created?.docId || Date.now()}`,
+        changes: {
+          title: title,
+          type: 'document',
+          workspace: 'compose',
+          excerpt: previewSnippet,
+          content: previewSnippet,
+          metadata: { docId: created?.docId, status: 'Active' }
+        },
+        reason: 'Agent Document Synthesis in Relay',
+        actor: 'agent'
+      });
 
       if (!replyText) {
         replyText = `I have created the document "${title}" in Compose Docs with an executive overview and key strategic drivers. You can open it directly from the action card below.`;
