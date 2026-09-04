@@ -23,6 +23,7 @@ import {
 } from './services/universalMcpBridge.js';
 import BlockCanvasInspector from './components/dev/BlockCanvasInspector';
 import MatrixSchemaInspector from './components/sheets/MatrixSchemaInspector';
+import IntentSchedulerInspector from './components/schedule/IntentSchedulerInspector';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
@@ -35,7 +36,7 @@ const MEMORY_TABS = [
   { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: Folder },
   { id: 'files', label: 'Files', icon: FileText },
-  { id: 'meetings', label: 'Meetings', icon: MessageSquare }
+  { id: 'meetings', label: 'Meetings & Intent Scheduler', icon: Clock }
 ];
 
 const QUICK_SUGGESTIONS = [
@@ -419,8 +420,8 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                 onClick={() => setActiveTab('files')} 
               />
               <SidebarNavItem 
-                icon={<MessageSquare size={14} />} 
-                label="Meetings" 
+                icon={<Clock size={14} />} 
+                label="Meetings & Scheduler" 
                 isActive={activeTab === 'meetings'} 
                 onClick={() => setActiveTab('meetings')} 
               />
@@ -1318,13 +1319,19 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                     </div>
                   )}
 
-                  {(activeTab === 'files' || activeTab === 'meetings') && (
+                  {activeTab === 'meetings' && (
+                    <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 overflow-hidden shadow-xs">
+                      <IntentSchedulerInspector />
+                    </div>
+                  )}
+
+                  {activeTab === 'files' && (
                     <div className="p-8 text-center rounded-xl bg-white/60 dark:bg-zinc-800/50 border border-black/[0.05] dark:border-white/[0.06]">
                       <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto mb-2 border border-violet-500/15">
-                        {activeTab === 'files' ? <FileText size={18} /> : <MessageSquare size={18} />}
+                        <FileText size={18} />
                       </div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-1">
-                        {activeTab === 'files' ? 'Cross-Workspace File Index' : 'Meeting Memory Logs'}
+                        Cross-Workspace File Index
                       </h3>
                       <p className="text-[12px] text-slate-500 dark:text-zinc-400 max-w-sm mx-auto mb-3">
                         All synced items are automatically referenced into your primary knowledge stream.

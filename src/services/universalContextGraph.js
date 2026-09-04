@@ -655,3 +655,103 @@ export const getPropagationHistory = () => {
   initializeContextGraph();
   return [...(propagationHistoryCache || [])];
 };
+
+/**
+ * Record a scheduled event into the Universal Context Graph
+ */
+export const recordScheduledEventGraphNode = (event) => {
+  if (!event || !event.title) return null;
+  initializeContextGraph();
+
+  const eventNodeId = `ent_sched_${event.id || Date.now()}`;
+  const existingIdx = graphEntitiesCache.findIndex(e => e.id === eventNodeId || (e.metadata && e.metadata.scheduleEventId === event.id));
+
+  const node = {
+    id: eventNodeId,
+    type: 'EVENT',
+    workspace: 'schedule',
+    title: event.title,
+    author: (event.participants && event.participants[0]) || 'Joshua David',
+    authorRole: 'Meeting Host',
+    updatedAt: new Date().toISOString(),
+    project: event.intentCategory || 'Executive Schedule',
+    tags: ['Calendar', 'IntentScheduler', event.priority || 'medium'],
+    excerpt: `${event.title} (${event.startTime} - ${event.endTime})`,
+    content: `Meeting: ${event.title}\nIntent Category: ${event.intentCategory || 'general'}\nPriority: ${event.priority || 'medium'}\nParticipants: ${(event.participants || []).join(', ')}`,
+    metadata: {
+      scheduleEventId: event.id,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      participants: event.participants || [],
+      priority: event.priority || 'medium',
+      status: event.status || 'scheduled'
+    }
+  };
+
+  if (existingIdx !== -1) {
+    graphEntitiesCache[existingIdx] = { ...graphEntitiesCache[existingIdx], ...node };
+  } else {
+    graphEntitiesCache = [node, ...graphEntitiesCache];
+  }
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+
+  (event.participants || []).forEach(pId => {
+    const targetEntity = graphEntitiesCache.find(e => e.id === `ent_${pId}` || e.id === pId);
+    if (targetEntity) {
+      const edgeId = `edge_${node.id}_to_${targetEntity.id}`;
+      if (!graphEdgesCache.some(ed => ed.id === edgeId)) {
+        graphEdgesCache.push({
+          id: edgeId,
+          sourceId: node.id,
+          targetId: targetEntity.id,
+          relationType: 'PARTICIPATES_IN',
+          label: `Participant: ${targetEntity.title || pId}`,
+          epistemicStatus: 'VERIFIED',
+          isAiInferred: false,
+          confidenceScore: 1.0,
+          lenses: ['timeline', 'people']
+        });
+      }
+    }
+  });
+  safeSetItem(GRAPH_EDGES_STORAGE_KEY, graphEdgesCache);
+
+  notifySubscribers('schedule_events', event);
+  notifySubscribers('graph_entities', graphEntitiesCache);
+  return node;
+};
+
+/**
+ * Record a multi-agent negotiation record into Context Graph
+ */
+export const recordNegotiationGraphNode = (negotiation) => {
+  if (!negotiation || !negotiation.id) return null;
+  initializeContextGraph();
+
+  const node = {
+    id: `ent_neg_${negotiation.id}`,
+    type: 'DECISION',
+    workspace: 'schedule',
+    title: `Negotiation: ${negotiation.title || 'Schedule Protocol'}`,
+    author: 'Agent Swarm',
+    authorRole: 'Multi-Agent Negotiator',
+    updatedAt: new Date().toISOString(),
+    project: 'Multi-Agent Scheduling',
+    tags: ['Negotiation', 'IntentScheduler', negotiation.status || 'AGREED'],
+    excerpt: `Status: ${negotiation.status} | Rounds: ${negotiation.roundsCount} | Agreed: ${negotiation.agreedSlot?.formattedTime || 'N/A'}`,
+    content: JSON.stringify(negotiation, null, 2),
+    metadata: {
+      negotiationId: negotiation.id,
+      status: negotiation.status,
+      roundsCount: negotiation.roundsCount,
+      agreedSlot: negotiation.agreedSlot
+    }
+  };
+
+  graphEntitiesCache = [node, ...graphEntitiesCache];
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+  notifySubscribers('schedule_negotiations', negotiation);
+  notifySubscribers('graph_entities', graphEntitiesCache);
+  return node;
+};
+

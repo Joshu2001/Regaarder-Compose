@@ -3048,6 +3048,10 @@ export default function ExecutiveDirectMessages({
                                 <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                                   <GitPullRequest size={12} strokeWidth={2.2} />
                                 </div>
+                              ) : msg.actionCard.type === 'schedule' ? (
+                                <div className="w-5 h-5 rounded-[5px] bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <Calendar size={12} strokeWidth={2.2} />
+                                </div>
                               ) : (
                                 <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                                   <CheckSquare size={12} strokeWidth={2.2} />
@@ -3060,6 +3064,10 @@ export default function ExecutiveDirectMessages({
                             {msg.actionCard.type === 'staging_pr' ? (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
                                 ⏳ Pending Review
+                              </span>
+                            ) : msg.actionCard.type === 'schedule' ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
+                                ⚡ Negotiated
                               </span>
                             ) : (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
@@ -3087,6 +3095,54 @@ export default function ExecutiveDirectMessages({
                               <span>Open in Compose Docs</span>
                               <ArrowRight size={12} />
                             </button>
+                          )}
+
+                          {msg.actionCard.type === 'schedule' && (
+                            <div className="space-y-2 mt-1">
+                              {msg.actionCard.agreedSlot && (
+                                <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-sky-800 dark:text-sky-300">
+                                      {msg.actionCard.agreedSlot.formattedTime || msg.actionCard.agreedSlot.start}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300">
+                                    {msg.actionCard.confidence || 90}% Match
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (typeof window !== 'undefined' && window.__REGAARDER_COMMIT_EVENT__) {
+                                      window.__REGAARDER_COMMIT_EVENT__(msg.actionCard.event || {
+                                        title: msg.actionCard.title.replace('Scheduled: ', ''),
+                                        startTime: msg.actionCard.agreedSlot?.start || new Date().toISOString(),
+                                        endTime: msg.actionCard.agreedSlot?.end || new Date().toISOString(),
+                                        participants: msg.actionCard.participants || ['user-joshua']
+                                      });
+                                    }
+                                  }}
+                                  className="flex-1 py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                                >
+                                  <Check size={12} />
+                                  <span>Confirm Meeting</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__) {
+                                      window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__();
+                                    }
+                                  }}
+                                  className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11.5px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                >
+                                  <span>Inspect</span>
+                                  <ArrowRight size={11} />
+                                </button>
+                              </div>
+                            </div>
                           )}
 
                           {msg.actionCard.type === 'staging_pr' && (

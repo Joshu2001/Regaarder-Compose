@@ -163,13 +163,16 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
           proposedText = '';
         }
       } catch (_e) {}
+    } else if (toolDef.category === 'schedule_tools') {
+      beforeText = JSON.stringify(params.conflict || params.existingEvent || {}, null, 2);
+      proposedText = JSON.stringify(params.event || params.resolution || params, null, 2);
     }
 
     const stagedResult = stageMutation({
       branchId: options.branchId,
-      targetApp: context.targetApp || 'compose',
-      entityId: context.entityId || 'ent_doc_active',
-      targetTitle: context.targetTitle || (params.blockId ? `Block [${params.blockId}]` : (currentSnapshot.title || 'Active Document')),
+      targetApp: context.targetApp || (toolDef.category === 'schedule_tools' ? 'schedule' : 'compose'),
+      entityId: context.entityId || (params.event?.id || 'ent_schedule_active'),
+      targetTitle: context.targetTitle || (toolDef.category === 'schedule_tools' ? `Schedule: ${params.event?.title || params.strategy || 'Event Mutation'}` : (params.blockId ? `Block [${params.blockId}]` : (currentSnapshot.title || 'Active Document'))),
       toolName,
       params,
       beforeText,

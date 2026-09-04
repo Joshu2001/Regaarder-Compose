@@ -72,6 +72,18 @@ export const REGAARDER_MCP_RESOURCES = [
     name: 'Active Sheet Matrix Schema',
     description: 'Column schemas, types (dropdown, percentage, currency, number), and validation rules for the active sheet.',
     mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://schedule/calendar',
+    name: 'Universal Calendar & Scheduled Events',
+    description: 'Universal calendar store events with participant schedules, priority, and energy metadata in structured Markdown and JSON.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://schedule/negotiations',
+    name: 'Multi-Agent Negotiation Audit Feed',
+    description: 'Active and completed multi-agent schedule negotiations, Pareto utility convergence logs, and agreed slots.',
+    mimeType: 'application/json'
   }
 ];
 
@@ -658,6 +670,98 @@ export const REGAARDER_MCP_TOOLS = [
         sheetId: { type: SchemaType.STRING, description: 'Target sheet ID' }
       }
     }
+  },
+
+  // ── Constraint-Based Intent Scheduler Tools (Pillar 6) ──
+  {
+    name: 'solve_schedule_constraints',
+    description: 'Executes mathematical CSP forward checking and slot utility evaluation U(slot) for meeting intents.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        intent: { type: SchemaType.STRING, description: 'Colloquial or structured meeting intent (e.g., "Tennis practice", "Board prep sync")' },
+        domain: { type: SchemaType.STRING, description: 'Optional domain override' },
+        participants: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Participant IDs' },
+        durationMinutes: { type: SchemaType.NUMBER, description: 'Desired duration in minutes' },
+        timeWindow: {
+          type: SchemaType.OBJECT,
+          properties: {
+            start: { type: SchemaType.STRING, description: 'ISO 8601 start' },
+            end: { type: SchemaType.STRING, description: 'ISO 8601 end' }
+          }
+        }
+      },
+      required: ['intent']
+    }
+  },
+  {
+    name: 'negotiate_multi_agent_schedule',
+    description: 'Initiates multi-agent parameter negotiation protocol with alternating offers and Pareto convergence.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        initiatorAgentId: { type: SchemaType.STRING, description: 'Initiating agent' },
+        counterpartyAgentId: { type: SchemaType.STRING, description: 'Responding agent' },
+        intent: { type: SchemaType.STRING, description: 'Meeting intent' },
+        maxRounds: { type: SchemaType.NUMBER, description: 'Maximum negotiation turns' }
+      },
+      required: ['intent']
+    }
+  },
+  {
+    name: 'detect_schedule_conflicts',
+    description: 'Analyzes proposed events against active calendar events and participant constraints to detect collisions.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        proposedEvent: {
+          type: SchemaType.OBJECT,
+          properties: {
+            title: { type: SchemaType.STRING },
+            start: { type: SchemaType.STRING },
+            end: { type: SchemaType.STRING },
+            participants: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+          },
+          required: ['title', 'start', 'end']
+        }
+      },
+      required: ['proposedEvent']
+    }
+  },
+  {
+    name: 'resolve_schedule_conflict',
+    description: 'Applies automated conflict resolution strategies (priority_bump, duration_compression) with optional staging.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        conflictId: { type: SchemaType.STRING, description: 'Conflict ID' },
+        strategy: { type: SchemaType.STRING, description: 'Resolution strategy' },
+        stage: { type: SchemaType.BOOLEAN, description: 'Stage in PR branch' }
+      },
+      required: ['strategy']
+    }
+  },
+  {
+    name: 'commit_scheduled_event',
+    description: 'Commits or stages a scheduled meeting or focus block into universal schedule storage.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        event: {
+          type: SchemaType.OBJECT,
+          properties: {
+            title: { type: SchemaType.STRING },
+            start: { type: SchemaType.STRING },
+            end: { type: SchemaType.STRING },
+            participants: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+            priority: { type: SchemaType.STRING }
+          },
+          required: ['title', 'start', 'end']
+        },
+        stage: { type: SchemaType.BOOLEAN, description: 'Stage mutation in isolated PR branch' }
+      },
+      required: ['event']
+    }
   }
 ];
 
@@ -811,6 +915,34 @@ This document outlines the migration from pixel-bound human apps to token-dense 
             sourceApp: 'sheets',
             downstreamAffected: ['ent_nv_memo', 'ent_nv_deck'],
             status: 'success'
+          }
+        ], null, 2)
+      };
+
+    case 'workspace://schedule/calendar':
+      return {
+        mimeType: 'text/markdown',
+        text: `# Workspace Schedule & Intent Calendar
+*Active Events: 2 | Conflicts: 0*
+
+| Time Window | Title | Category | Priority | Participants | Status |
+| :--- | :--- | :--- | :---: | :--- | :---: |
+| Today 10:00 - 11:00 | **Product Architecture Review (Deck V2)** | \`executive_review\` | **p0_critical** | user-joshua, agent-elena, agent-alex | \`scheduled\` |
+| Tomorrow 14:00 - 15:00 | **Q3 Financial & Runway Audit** | \`financial_projection\` | **p1_high** | user-joshua, agent-david | \`scheduled\` |`
+      };
+
+    case 'workspace://schedule/negotiations':
+      return {
+        mimeType: 'application/json',
+        text: JSON.stringify([
+          {
+            id: 'neg_101',
+            title: 'Product Architecture Review (Deck V2)',
+            status: 'AGREEMENT_REACHED',
+            agreedSlot: { start: '2026-09-04T14:00:00.000Z', end: '2026-09-04T15:00:00.000Z', utilityScore: 0.88 },
+            roundsCount: 2,
+            finalCompositeUtility: 0.88,
+            timestamp: new Date().toISOString()
           }
         ], null, 2)
       };

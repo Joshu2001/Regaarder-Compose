@@ -35,6 +35,7 @@ import {
   rejectBranch 
 } from './workspaceStagingEngine.js';
 import * as matrixEngine from './matrixSchemaEngine.js';
+import * as intentScheduler from './intentSchedulerEngine.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MCP RESOURCE CATALOG SPECIFICATION
@@ -99,6 +100,18 @@ export const MCP_RESOURCES = [
     uri: 'workspace://sheets/schema',
     name: 'Active Sheet Matrix Schema',
     description: 'Column schemas, types (dropdown, percentage, currency, number), and validation rules for the active sheet.',
+    mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://schedule/calendar',
+    name: 'Universal Calendar & Scheduled Events',
+    description: 'Universal calendar store events with participant schedules, priority, and energy metadata in structured Markdown and JSON.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://schedule/negotiations',
+    name: 'Multi-Agent Negotiation Audit Feed',
+    description: 'Active and completed multi-agent schedule negotiations, Pareto utility convergence logs, and agreed slots.',
     mimeType: 'application/json'
   }
 ];
@@ -609,6 +622,24 @@ ${cleanText}`;
       uri,
       mimeType: 'application/json',
       text: JSON.stringify(tree, null, 2)
+    };
+  }
+
+  if (uri === 'workspace://schedule/calendar') {
+    const md = intentScheduler.calendarToMarkdown();
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
+  if (uri === 'workspace://schedule/negotiations') {
+    const negotiations = intentScheduler.getNegotiationAuditLog();
+    return {
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(negotiations, null, 2)
     };
   }
 

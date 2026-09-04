@@ -75,6 +75,7 @@ import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 import { subscribeToStaging, getBranchById } from './services/workspaceStagingEngine';
 import WorkspaceStagingReviewModal from './components/staging/WorkspaceStagingReviewModal';
 import * as matrixEngine from './services/matrixSchemaEngine';
+import * as intentScheduler from './services/intentSchedulerEngine';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6906,10 +6907,21 @@ function AppCore() {
       setMemoryTab('canvas');
       setIsMemoryOpen(true);
     };
+    window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__ = () => {
+      setMemoryTab('meetings');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_INTENT_SCHEDULER__ = intentScheduler;
+    window.__REGAARDER_COMMIT_EVENT__ = (event) => {
+      return intentScheduler.commitCalendarEvent(event);
+    };
     return () => {
       delete window.__REGAARDER_OPEN_STAGING_MODAL__;
       delete window.__REGAARDER_OPEN_MATRIX_ENGINE__;
       delete window.__REGAARDER_OPEN_CANVAS_INSPECTOR__;
+      delete window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__;
+      delete window.__REGAARDER_INTENT_SCHEDULER__;
+      delete window.__REGAARDER_COMMIT_EVENT__;
     };
   }, [stagedBranches]);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');

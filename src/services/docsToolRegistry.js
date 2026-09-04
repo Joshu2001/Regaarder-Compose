@@ -18,6 +18,7 @@ import * as docsCommandApi from './docsCommandApi.js';
 import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEngineHarness.js';
 import { getActiveBlockTree, getBlock, patchBlock, insertBlock, deleteBlock, moveBlock, batchPatchBlocks } from './blockCanvasEngine.js';
 import * as matrixEngine from './matrixSchemaEngine.js';
+import * as intentScheduler from './intentSchedulerEngine.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
@@ -29,6 +30,7 @@ export const DOCS_TOOL_CATEGORIES = {
   TASKS_TOOLS: 'tasks_tools',
   ROOMS_TOOLS: 'rooms_tools',
   BROWSER_TOOLS: 'browser_tools',
+  SCHEDULE_TOOLS: 'schedule_tools',
 };
 
 export const CANONICAL_DOCS_TOOLS = [
@@ -1410,6 +1412,240 @@ export const CANONICAL_DOCS_TOOLS = [
         return window.__REGAARDER_DELETE_RESEARCH_NOTE__(params.noteId);
       }
       return { success: true, message: 'Research note deleted', data: params };
+    }
+  },
+
+  // ── CONSTRAINT-BASED INTENT SCHEDULER TOOLS (Pillar 6) ─────────────
+  {
+    name: 'solve_schedule_constraints',
+    label: 'Solve Schedule Constraints',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Executes mathematical Constraint Satisfaction Problem (CSP) forward checking over hard constraints and evaluates composite utility functions U(slot) for ranked feasible time slots.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        intent: { type: 'string', description: 'Colloquial or structured meeting intent (e.g., "Tennis practice", "Board prep sync")' },
+        domain: { type: 'string', description: 'Optional domain override (e.g. "executive_board", "health_athletics")' },
+        participants: { type: 'array', items: { type: 'string' }, description: 'Participant IDs (e.g. ["alex", "elena"])' },
+        durationMinutes: { type: 'number', description: 'Desired duration in minutes' },
+        timeWindow: {
+          type: 'object',
+          properties: {
+            start: { type: 'string', description: 'ISO 8601 start timestamp' },
+            end: { type: 'string', description: 'ISO 8601 end timestamp' }
+          }
+        },
+        weights: { type: 'object', description: 'Optional custom utility weight overrides' }
+      },
+      required: ['intent']
+    },
+    execute: async (params) => {
+      try {
+        const spec = intentScheduler.parseIntentToScheduleSpec(params.intent, {
+          domain: params.domain,
+          durationMinutes: params.durationMinutes,
+          participants: params.participants,
+          timeWindow: params.timeWindow,
+          weights: params.weights
+        });
+        const solution = intentScheduler.solveScheduleConstraints(spec);
+        return {
+          success: solution.feasible,
+          message: solution.feasible
+            ? `Found ${solution.feasibleSlots.length} feasible slots with CSP utility ranking.`
+            : `Constraint satisfaction failed: ${solution.explanation || 'No valid intervals'}`,
+          data: solution
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'negotiate_multi_agent_schedule',
+    label: 'Multi-Agent Schedule Negotiation',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Initiates a multi-agent parameter negotiation protocol between agent profiles with alternating offers, monotonic concessions, and Pareto convergence.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        initiatorAgentId: { type: 'string', description: 'Agent ID proposing the meeting (default: "alex")' },
+        counterpartyAgentId: { type: 'string', description: 'Agent ID responding to proposal (default: "elena")' },
+        intent: { type: 'string', description: 'Meeting intent or topic description' },
+        timeWindow: {
+          type: 'object',
+          properties: {
+            start: { type: 'string', description: 'ISO 8601 search window start' },
+            end: { type: 'string', description: 'ISO 8601 search window end' }
+          }
+        },
+        maxRounds: { type: 'number', description: 'Maximum negotiation turns (default: 6)' },
+        compromiseRate: { type: 'number', description: 'Concession rate per turn between 0.05 and 0.25' }
+      },
+      required: ['intent']
+    },
+    execute: async (params) => {
+      try {
+        const result = await intentScheduler.negotiateScheduleBetweenAgents({
+          initiatorAgentId: params.initiatorAgentId || 'alex',
+          counterpartyAgentId: params.counterpartyAgentId || 'elena',
+          intent: params.intent,
+          timeWindow: params.timeWindow,
+          maxRounds: params.maxRounds,
+          compromiseRate: params.compromiseRate
+        });
+        return {
+          success: result.status === 'agreed',
+          message: result.status === 'agreed'
+            ? `Negotiation converged in ${result.rounds.length} rounds. Agreed slot: ${result.agreedSlot?.start}`
+            : `Negotiation ended with status: ${result.status}`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'detect_schedule_conflicts',
+    label: 'Detect Schedule Conflicts',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Analyzes a candidate event against the active calendar store, participant profiles, and energy/buffer boundaries to detect hard overlaps and soft buffer collisions.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        proposedEvent: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            start: { type: 'string', description: 'ISO 8601 start' },
+            end: { type: 'string', description: 'ISO 8601 end' },
+            participants: { type: 'array', items: { type: 'string' } },
+            priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] }
+          },
+          required: ['title', 'start', 'end']
+        }
+      },
+      required: ['proposedEvent']
+    },
+    execute: async (params) => {
+      try {
+        const calendar = intentScheduler.getActiveCalendarEvents();
+        const conflicts = intentScheduler.detectScheduleConflicts(params.proposedEvent, calendar);
+        return {
+          success: true,
+          conflictCount: conflicts.length,
+          hasConflicts: conflicts.length > 0,
+          data: conflicts
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'resolve_schedule_conflict',
+    label: 'Resolve Schedule Conflict',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Applies automated conflict resolution strategies (priority bump, duration compression, cooldown compression, or alternative relocation) with optional Pillar 3 staging.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        conflictId: { type: 'string', description: 'Conflict ID or candidate proposed event reference' },
+        strategy: {
+          type: 'string',
+          enum: ['priority_bump', 'duration_compression', 'cooldown_compression', 'relocate_alternative'],
+          description: 'Automated resolution strategy'
+        },
+        stage: { type: 'boolean', description: 'If true, stage resolution to isolated Pillar 3 PR branch' }
+      },
+      required: ['strategy']
+    },
+    execute: async (params) => {
+      try {
+        const resolution = intentScheduler.resolveScheduleConflict({
+          conflictId: params.conflictId,
+          strategy: params.strategy,
+          stage: params.stage === true
+        });
+        return {
+          success: resolution.success,
+          message: resolution.message,
+          data: resolution
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'commit_scheduled_event',
+    label: 'Commit Scheduled Event',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Commits a scheduled meeting or focus block into the universal calendar store or stages it into an isolated Pillar 3 sandbox branch for executive review.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        event: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            start: { type: 'string' },
+            end: { type: 'string' },
+            domain: { type: 'string' },
+            participants: { type: 'array', items: { type: 'string' } },
+            priority: { type: 'string' }
+          },
+          required: ['title', 'start', 'end']
+        },
+        stage: { type: 'boolean', description: 'If true, stage mutation to Pillar 3 branch instead of committing directly' }
+      },
+      required: ['event']
+    },
+    execute: async (params) => {
+      try {
+        if (params.stage) {
+          const staged = intentScheduler.stageScheduleEvent(params.event);
+          return {
+            success: true,
+            message: `Event staged in PR branch: ${staged.branchId}`,
+            data: staged
+          };
+        }
+        const committed = intentScheduler.commitCalendarEvent(params.event);
+        return {
+          success: true,
+          message: `Event committed to universal schedule: ${committed.title} (${committed.id})`,
+          data: committed
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
     }
   }
 ];
