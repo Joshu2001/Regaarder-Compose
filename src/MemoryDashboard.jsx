@@ -167,14 +167,20 @@ const GRAPH_NODES = [
   { id: 'node-5', label: 'Room Realtime Sync', category: 'Network', connections: 11, color: 'purple' }
 ];
 
-const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
-  const [activeTab, setActiveTab] = useState('timeline');
+const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' }) => {
+  const [activeTab, setActiveTab] = useState(initialTab || 'timeline');
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState('All time');
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isHighContrast, setIsHighContrast] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Esc key dismissal
   useEffect(() => {

@@ -6874,6 +6874,7 @@ function AppCore() {
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
+  const [memoryTab, setMemoryTab] = useState('timeline');
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
   const [isOmniPortalOpen, setIsOmniPortalOpen] = useState(false);
 
@@ -6897,8 +6898,18 @@ function AppCore() {
         if (found) setActiveReviewBranch(found);
       }
     };
+    window.__REGAARDER_OPEN_MATRIX_ENGINE__ = () => {
+      setMemoryTab('matrix');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_OPEN_CANVAS_INSPECTOR__ = () => {
+      setMemoryTab('canvas');
+      setIsMemoryOpen(true);
+    };
     return () => {
       delete window.__REGAARDER_OPEN_STAGING_MODAL__;
+      delete window.__REGAARDER_OPEN_MATRIX_ENGINE__;
+      delete window.__REGAARDER_OPEN_CANVAS_INSPECTOR__;
     };
   }, [stagedBranches]);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
@@ -45132,6 +45143,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'memory' && (
             <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-transparent overflow-hidden">
               <MemoryDashboard 
+                initialTab={memoryTab}
                 onClose={() => setRightSidebarOpen(false)}
                 onNavigateToEntity={(entity) => {
                   setRightSidebarOpen(false);
@@ -49398,6 +49410,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Right Section: Inline View Controls (when on View) + Collapse Toggle */}
                         <div className="flex items-center gap-2">
+                          {/* Matrix Engine / Inspector Direct Launcher (Pillar 5) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.__REGAARDER_OPEN_MATRIX_ENGINE__) {
+                                window.__REGAARDER_OPEN_MATRIX_ENGINE__();
+                              } else {
+                                setMemoryTab('matrix');
+                                setIsMemoryOpen(true);
+                              }
+                              showToast('Matrix Engine & Schema Inspector active');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100/90 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/60 shadow-2xs transition-all active:scale-[0.97] cursor-pointer"
+                            title="Open In-Browser Matrix Engine, Relational SQL & Formula Schema Inspector (Pillar 5)"
+                          >
+                            <Calculator size={13} className="text-violet-600 dark:text-violet-400" />
+                            <span>Matrix Engine</span>
+                            <span className="text-[9.5px] px-1.5 py-0.2 bg-violet-200/70 dark:bg-violet-800/60 text-violet-800 dark:text-violet-200 rounded font-mono font-semibold">SQL</span>
+                          </button>
+
                           {sheetToolbarTab === 'View' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-150">
                               {/* Gridlines Dropdown */}
@@ -87562,6 +87594,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {/* Main Memory Intelligence Container */}
           <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
             <MemoryDashboard 
+              initialTab={memoryTab}
               onClose={() => setIsMemoryOpen(false)}
               onNavigateToEntity={(entity) => {
                 setIsMemoryOpen(false);
