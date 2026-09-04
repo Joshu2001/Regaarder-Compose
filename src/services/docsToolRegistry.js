@@ -16,9 +16,11 @@
 
 import * as docsCommandApi from './docsCommandApi.js';
 import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEngineHarness.js';
+import { getActiveBlockTree, getBlock, patchBlock, insertBlock, deleteBlock, moveBlock, batchPatchBlocks } from './blockCanvasEngine.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
+  BLOCK_CANVAS_TOOLS: 'block_canvas_tools',
   ANALYSIS_TOOLS: 'analysis_tools',
   APPLICATION_COMMANDS: 'application_commands',
   DECK_TOOLS: 'deck_tools',
@@ -29,6 +31,191 @@ export const DOCS_TOOL_CATEGORIES = {
 };
 
 export const CANONICAL_DOCS_TOOLS = [
+  // ── BLOCK CANVAS AST TOOLS (Pillar 4) ─────────────────────────────
+  {
+    name: 'get_block_tree',
+    label: 'Get Canvas Block Tree',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Retrieves the complete structured Block Tree AST of the active document with unique block IDs, types, content, properties, and version.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: async () => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      return { success: true, data: tree };
+    }
+  },
+  {
+    name: 'get_block',
+    label: 'Get Canvas Block by ID',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Retrieves a single discrete block from the document AST by its unique block ID.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Unique ID of the block to retrieve (e.g. blk_...)' }
+      },
+      required: ['blockId']
+    },
+    execute: async (params) => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      const block = getBlock(tree, params.blockId);
+      if (!block) return { success: false, error: `Block ID '${params.blockId}' not found.` };
+      return { success: true, data: block };
+    }
+  },
+  {
+    name: 'patch_block',
+    label: 'Surgically Patch Canvas Block',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Surgically updates an individual block in-place (content, properties, or type) without re-streaming or mutating any other block in the document.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Target block ID to patch (e.g. blk_...)' },
+        content: { type: 'string', description: 'New text/HTML content for the block' },
+        properties: { type: 'object', description: 'Optional properties (theme, language, headers, rows)' },
+        type: { type: 'string', description: 'Optional new block type (h1, h2, h3, paragraph, callout, quote, code, table, divider)' }
+      },
+      required: ['blockId']
+    },
+    execute: async (params) => {
+      return docsCommandApi.patchBlockById(params);
+    }
+  },
+  {
+    name: 'insert_block',
+    label: 'Insert Block Adjacent',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Inserts a new typed block adjacent to an existing target block ("before" or "after") in the document AST.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        targetBlockId: { type: 'string', description: 'Existing block ID to anchor the insertion' },
+        position: { type: 'string', enum: ['before', 'after'], description: 'Position relative to target block' },
+        block: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', description: 'Block type (h1, h2, h3, paragraph, callout, quote, code, table, divider)' },
+            content: { type: 'string', description: 'Text content of the new block' },
+            properties: { type: 'object', description: 'Optional block properties' }
+          },
+          required: ['type', 'content']
+        }
+      },
+      required: ['block']
+    },
+    execute: async (params) => {
+      return docsCommandApi.insertBlockAdjacent(params);
+    }
+  },
+  {
+    name: 'delete_block',
+    label: 'Delete Canvas Block',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Removes a specific block from the document AST by its block ID.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Target block ID to remove' }
+      },
+      required: ['blockId']
+    },
+    execute: async (params) => {
+      return docsCommandApi.deleteBlockById(params);
+    }
+  },
+  {
+    name: 'move_block',
+    label: 'Move Canvas Block',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Reorders a block to a new position before or after a target block.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Block ID to move' },
+        targetBlockId: { type: 'string', description: 'Anchor block ID' },
+        position: { type: 'string', enum: ['before', 'after'], description: 'Position relative to anchor' }
+      },
+      required: ['blockId', 'targetBlockId']
+    },
+    execute: async (params) => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      return moveBlock(tree, params);
+    }
+  },
+  {
+    name: 'batch_patch_blocks',
+    label: 'Batch Patch Canvas Blocks',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Atomically executes multiple block patches, insertions, and deletions in a single transaction pass.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        patches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              op: { type: 'string', enum: ['patch', 'insert', 'delete'] },
+              blockId: { type: 'string' },
+              targetBlockId: { type: 'string' },
+              position: { type: 'string' },
+              content: { type: 'string' },
+              type: { type: 'string' },
+              properties: { type: 'object' },
+              block: { type: 'object' }
+            },
+            required: ['op']
+          },
+          description: 'Array of block patch operations to apply atomically'
+        }
+      },
+      required: ['patches']
+    },
+    execute: async (params) => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      return batchPatchBlocks(tree, params.patches || []);
+    }
+  },
+
   // ── DOCUMENT TOOLS ────────────────────────────────────────────────
   {
     name: 'get_document_structure',

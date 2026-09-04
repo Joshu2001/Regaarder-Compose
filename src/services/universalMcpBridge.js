@@ -87,6 +87,12 @@ export const MCP_RESOURCES = [
     name: 'Active Staged Pull Requests & Redline Diffs',
     description: 'Sandbox staging branches and redline visual diffs awaiting human review.',
     mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://docs/blocks',
+    name: 'Active Document Block Tree AST',
+    description: 'Structured AST of all document blocks with persistent block IDs, types, content, and versioning for surgical patching.',
+    mimeType: 'application/json'
   }
 ];
 
@@ -560,6 +566,15 @@ ${cleanText}`;
       ).join('\n\n');
 
     return { uri, mimeType: 'text/markdown', text: md };
+  }
+
+  if (uri === 'workspace://docs/blocks') {
+    const tree = docsCommandApi.getBlockTreeSnapshot();
+    return {
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(tree, null, 2)
+    };
   }
 
   throw new Error(`Resource URI '${uri}' not recognized.`);

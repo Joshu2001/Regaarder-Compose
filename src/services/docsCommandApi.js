@@ -9,6 +9,7 @@
  */
 
 import { notifyDocumentMutated } from './universalContextGraph.js';
+import { htmlToBlockTree, blockTreeToHtml, patchBlock, insertBlock, deleteBlock, getActiveBlockTree } from './blockCanvasEngine.js';
 
 // Global registry of active editor instance bindings
 let activeEditorBinding = null;
@@ -314,3 +315,85 @@ export const deleteRange = ({ targetText = '', deleteEntireDocument = false }) =
   document.execCommand('delete', false, null);
   return { success: true, deleted: 'selection' };
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. BLOCK CANVAS AST COMMANDS (Pillar 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Get current document state as a structured Block Tree AST.
+ */
+export const getBlockTreeSnapshot = () => {
+  const snapshot = getDocumentSnapshot();
+  if (snapshot.html || snapshot.text) {
+    return htmlToBlockTree(snapshot.html || snapshot.text, {
+      documentId: activeEditorBinding?.docId || 'doc_active',
+      title: activeEditorBinding?.title || 'Active Document'
+    });
+  }
+  return getActiveBlockTree() || htmlToBlockTree('', {
+    documentId: activeEditorBinding?.docId || 'doc_active',
+    title: activeEditorBinding?.title || 'Active Document'
+  });
+};
+
+/**
+ * Surgically patch a specific block by its blockId in the live DOM and AST.
+ */
+export const patchBlockById = ({ blockId, content, properties, type, agentId = 'relay_agent' }) => {
+  const ed = getActiveEditable();
+  const tree = getBlockTreeSnapshot();
+  
+  const patchResult = patchBlock(tree, { blockId, content, properties, type, agentId });
+  
+  if (ed && patchResult.success) {
+    const updatedHtml = blockTreeToHtml(tree);
+    ed.innerHTML = updatedHtml;
+    if (activeEditorBinding?.setHTML) {
+      activeEditorBinding.setHTML(updatedHtml);
+    }
+  }
+
+  return patchResult;
+};
+
+/**
+ * Insert a new block adjacent to targetBlockId in the live DOM and AST.
+ */
+export const insertBlockAdjacent = ({ targetBlockId, position = 'after', block = {}, agentId = 'relay_agent' }) => {
+  const ed = getActiveEditable();
+  const tree = getBlockTreeSnapshot();
+  
+  const insertResult = insertBlock(tree, { targetBlockId, position, block, agentId });
+  
+  if (ed && insertResult.success) {
+    const updatedHtml = blockTreeToHtml(tree);
+    ed.innerHTML = updatedHtml;
+    if (activeEditorBinding?.setHTML) {
+      activeEditorBinding.setHTML(updatedHtml);
+    }
+  }
+
+  return insertResult;
+};
+
+/**
+ * Delete a specific block by blockId in the live DOM and AST.
+ */
+export const deleteBlockById = ({ blockId, agentId = 'relay_agent' }) => {
+  const ed = getActiveEditable();
+  const tree = getBlockTreeSnapshot();
+  
+  const deleteResult = deleteBlock(tree, { blockId, agentId });
+  
+  if (ed && deleteResult.success) {
+    const updatedHtml = blockTreeToHtml(tree);
+    ed.innerHTML = updatedHtml;
+    if (activeEditorBinding?.setHTML) {
+      activeEditorBinding.setHTML(updatedHtml);
+    }
+  }
+
+  return deleteResult;
+};
+

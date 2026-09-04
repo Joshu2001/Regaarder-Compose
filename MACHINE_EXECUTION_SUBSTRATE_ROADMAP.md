@@ -52,7 +52,7 @@ An **AI-Native Workspace** must be engineered as an execution engine:
 | **Pillar 1** | **Universal Context Graph & Memory Bank** | **100% COMPLETED** | [`universalContextGraph.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalContextGraph.js), [`orbKnowledgeGraphService.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/orbKnowledgeGraphService.js), [`MemoryDashboard.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/MemoryDashboard.jsx) |
 | **Pillar 2** | **Native Model Context Protocol (MCP) Layer** | **100% COMPLETED** | [`mcpTools.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/server/mcpTools.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js), [`MemoryDashboard.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/MemoryDashboard.jsx) |
 | **Pillar 3** | **Human-in-the-Loop "Approval & Sandbox" Engine** | **100% COMPLETED** | [`workspaceStagingEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/workspaceStagingEngine.js), [`WorkspaceStagingReviewModal.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/staging/WorkspaceStagingReviewModal.jsx), [`docsToolExecutor.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolExecutor.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
-| **Pillar 4** | The Canvas (Block-Level State IDs) | `30%` (Command API) | [`docsCommandApi.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsCommandApi.js) |
+| **Pillar 4** | **The Canvas (Block-Level State IDs & Patch Engine)** | **100% COMPLETED** | [`blockCanvasEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/blockCanvasEngine.js), [`BlockCanvasInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/dev/BlockCanvasInspector.jsx), [`docsCommandApi.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsCommandApi.js), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
 | **Pillar 5** | The Matrix Engine (Code Execution & Schema) | `25%` (Visual Grid) | [`SheetRenderingEngine.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/SheetRenderingEngine.jsx) |
 | **Pillar 6** | The Intent Scheduler (Constraint Engine) | `20%` (Specified) | [`VERTICAL_INTEGRATIONS.md`](file:///c:/Users/user/Downloads/Project%20MOAT/VERTICAL_INTEGRATIONS.md) |
 
@@ -224,7 +224,66 @@ External agents (Claude Desktop, Cursor, local LLMs) can programmatically partic
 
 ---
 
-## 6. Upstream Roadmap: Steps to Complete Pillars 4 Through 6
+## 6. Pillar 4 Deep Dive: The Canvas (Block-Level State IDs & Surgical Patch Engine) (Completed)
+
+Traditional document processors represent documents as opaque monolithic strings or raw unstructured HTML. When an AI agent needs to modify a single paragraph in a 10,000-word document, it either re-generates the entire document from scratch (wasting thousands of context tokens and creating human-AI edit race conditions) or executes brittle regex search/replace passes that break on minor whitespace variations.
+
+Pillar 4 transforms the document model into a **Structured Abstract Syntax Tree (AST) Canvas**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 PILLAR 4: BLOCK CANVAS AST & SURGICAL PATCH                 │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│       STRUCTURED AST         │     SURGICAL PATCH ENGINE    │  BI-DIRECTIONAL│
+│   (Persistent Node IDs)      │   (Zero Re-Stream Latency)   │   SERIALIZER   │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • blk_<timestamp>_<uuid>     │ • patch_block(id, content)   │ • HTML <-> AST│
+│ • Types: h1..h3, p, callout, │ • insert_block(target, pos)  │ • Markdown AST│
+│   code, table, list_item     │ • delete_block(id)           │ • data-block-id│
+│ • Monotonic block versions   │ • move_block(id, target, pos)│ • Reactive DOM│
+│ • Semantic properties        │ • batch_patch_blocks(patches)│   Sync & Graph│
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 6.1. The Block AST Schema ([`blockCanvasEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/blockCanvasEngine.js))
+Every document node possesses a structured schema:
+- **`id`:** Permanent unique identifier (e.g. `blk_1725450000_a8f2`), preserved across edits.
+- **`type`:** Explicit node classification (`h1`, `h2`, `h3`, `paragraph`, `callout`, `code`, `table`, `quote`, `divider`, `bullet_list`, `numbered_list`).
+- **`content`:** Clean inner text/HTML.
+- **`properties`:** Type-specific metadata (`theme` for callouts, `language` for code blocks, `headers` & `rows` for tables).
+- **`version`:** Monotonic version counter incremented on every discrete mutation for concurrency safety.
+- **`lastModifiedBy`:** Identity of the author (`'human'` or `agentId`).
+
+### 6.2. Isomorphic Bi-Directional Serializers
+- **`htmlToBlockTree(html)`:** Intelligently breaks down incoming DOM/HTML trees into typed AST blocks. Extracts existing `data-block-id` attributes or generates deterministic IDs.
+- **`blockTreeToHtml(tree)`:** Renders production-clean HTML where every root node is stamped with `data-block-id="${block.id}"` and `data-block-type="${block.type}"`.
+- **`blockTreeToMarkdown(tree)`:** Produces high-density Markdown with embedded block ID comments (`<!-- id:blk_... -->`) for token-efficient LLM prompts.
+
+### 6.3. Surgical Patch Engine Operations
+Autonomous agents can execute discrete atomic mutations without touching the rest of the canvas:
+- **`patch_block`:** In-place update of an existing block's content, properties, or type. Increments the target block's version while leaving the rest of the AST untouched.
+- **`insert_block`:** Inserts a new block adjacent to an existing target block (`'before'` or `'after'`).
+- **`delete_block`:** Safely excises a block from the document tree.
+- **`move_block`:** Reorders nodes within the tree.
+- **`batch_patch_blocks`:** Atomically applies multiple patch operations in a single pass.
+
+### 6.4. Pillar 3 Staging Sandbox Integration
+When an agent calls `patch_block` with `options.stage: true`, the patch is automatically intercepted by the Staging Engine (`workspaceStagingEngine.js`). Instead of computing a document-wide diff, it computes a **surgical block redline diff** strictly comparing the targeted block's before/after text.
+
+### 6.5. Apple-Tier Visual Block Canvas Inspector ([`BlockCanvasInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/dev/BlockCanvasInspector.jsx))
+Mounted inside the `MemoryDashboard.jsx` under a dedicated **Canvas AST** tab:
+- **Visual Block Stream:** Cards for every block displaying type badge, block ID, character count, and version.
+- **1-Click Copy:** Instant clipboard copy of any block ID.
+- **Interactive Patch Console:** Allows human directors to test surgical patches directly in the UI.
+- **AST JSON & Markdown Viewers:** Raw views for developer and agent inspection.
+
+### 6.6. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://docs/blocks`:** Returns the full JSON-LD / JSON AST of active document blocks.
+- **Tools:** `get_block_tree`, `get_block`, `patch_block`, `insert_block`, `delete_block`, `move_block`, `batch_patch_blocks`.
+
+---
+
+## 7. Upstream Roadmap: Steps to Complete Pillars 5 and 6
 
 ### Milestone 2: Native Model Context Protocol (MCP) Layer
 - [x] Implement open-standard JSON-RPC server transport (`protocolVersion: "2024-11-05"`).
@@ -243,8 +302,12 @@ External agents (Claude Desktop, Cursor, local LLMs) can programmatically partic
 - [x] Expose staging operations via standard MCP Tools and Resource (`workspace://staging/active`).
 
 ### Milestone 4: Block-Level State Canvas
-- [ ] Migrate raw `contentEditable` HTML strings to a block tree schema (`[{ id: 'block_a1', type: 'h2', content: '...' }]`).
-- [ ] Allow agents to patch individual block IDs without re-streaming complete document bodies.
+- [x] Migrate raw `contentEditable` HTML strings to a structured Block Tree AST schema.
+- [x] Stamp every document block with persistent unique IDs (`data-block-id`).
+- [x] Implement surgical in-place block patch operators (`patch_block`, `insert_block`, `delete_block`, `move_block`).
+- [x] Integrate block staging diffs into Pillar 3 sandbox PR branches.
+- [x] Build Apple-tier interactive Block Canvas Inspector UI in Memory Dashboard.
+- [x] Expose block AST via MCP Resource `workspace://docs/blocks` and canonical tools.
 
 ### Milestone 5: Code-Execution Matrix Engine
 - [ ] Integrate Pyodide (WebAssembly Python) or SQLite in-browser sandbox for Sheets.
@@ -256,9 +319,19 @@ External agents (Claude Desktop, Cursor, local LLMs) can programmatically partic
 
 ---
 
-## 7. Live Changelog
+## 8. Live Changelog
 
 - **2026-09-04:**
+  - **Pillar 4 Completed (The Canvas: Block-Level State IDs & Surgical Patch Engine):**
+    - Created `blockCanvasEngine.js` implementing a canonical Abstract Syntax Tree (AST) Document Model with unique block IDs (`blk_...`), monotonic versioning, and type tagging.
+    - Built bi-directional isomorphic serializers: `htmlToBlockTree`, `blockTreeToHtml`, and `blockTreeToMarkdown`.
+    - Implemented surgical patch operations: `patchBlock`, `insertBlock`, `deleteBlock`, `moveBlock`, and `batchPatchBlocks`, eliminating full-document re-streaming and human-agent edit race conditions.
+    - Integrated with `docsCommandApi.js` (`getBlockTreeSnapshot`, `patchBlockById`, `insertBlockAdjacent`, `deleteBlockById`).
+    - Registered 7 canonical block tools in `docsToolRegistry.js` and wired surgical block redline diffs into `docsToolExecutor.js`.
+    - Exposed MCP Resource `workspace://docs/blocks` and block tools via `universalMcpBridge.js`.
+    - Built `BlockCanvasInspector.jsx` and mounted the "Canvas AST" tab in `MemoryDashboard.jsx`.
+    - Automated test suite `scripts/test-block-canvas.js`: **59/59 Tests Passed** (118 total substrate tests passing).
+    - Production Vite build verified: **✓ built in 43.01s**.
   - **Pillar 3 Completed (Human-in-the-Loop "Approval & Sandbox" Engine):**
     - Created `workspaceStagingEngine.js` featuring isolated multi-app sandbox branches (`pr_<timestamp>_<hash>`), reactive event subscriptions (`subscribeToStaging`), and full lifecycle management (`createStagingBranch`, `stageMutation`, `toggleMutationSelection`, `approveAndCommitBranch`, `rejectBranch`).
     - Integrated Google `diff-match-patch` semantic diff algorithm in `computeVisualDiff` generating token-level redline additions (`+1`), deletions (`-1`), and equality chunks (`0`) with character delta statistics.
@@ -285,4 +358,5 @@ External agents (Claude Desktop, Cursor, local LLMs) can programmatically partic
     - Integrated with Docs Command API: Wired `notifyDocumentMutated` to keep the context graph continuously synchronized with human typing and range replacements.
     - Integrated with Memory Dashboard: Added live `allDecisions` rendering, reactive state subscriptions, and the "Rules & Propagation" tab with live auto-propagation audit logging.
     - Created Master Roadmap: Authored `MACHINE_EXECUTION_SUBSTRATE_ROADMAP.md` tracking the dual-mode evolution toward the machine execution substrate.
+
 

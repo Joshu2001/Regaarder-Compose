@@ -138,19 +138,43 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
 
   // 3b. Handle Isolated Staging Mode (Pillar 3 Sandbox Execution)
   if (options.stage && toolDef.mutatesDocument) {
-    const beforeText = currentSnapshot.text || '';
-    const proposedText = params.text || params.contentHtml || params.replacementText || (params.title ? `# ${params.title}\n\n${beforeText}` : beforeText);
+    let beforeText = currentSnapshot.text || '';
+    let proposedText = params.text || params.contentHtml || params.replacementText || (params.title ? `# ${params.title}\n\n${beforeText}` : beforeText);
     
+    // Surgical block-level diff extraction for Pillar 4
+    if (toolName === 'patch_block' && params.blockId) {
+      try {
+        const tree = docsCommandApi.getBlockTreeSnapshot();
+        const blk = tree?.blocks?.find(b => b.id === params.blockId);
+        if (blk) {
+          beforeText = blk.content || '';
+          proposedText = params.content !== undefined ? params.content : beforeText;
+        }
+      } catch (_e) {}
+    } else if (toolName === 'insert_block') {
+      beforeText = '';
+      proposedText = params.block?.content || '';
+    } else if (toolName === 'delete_block' && params.blockId) {
+      try {
+        const tree = docsCommandApi.getBlockTreeSnapshot();
+        const blk = tree?.blocks?.find(b => b.id === params.blockId);
+        if (blk) {
+          beforeText = blk.content || '';
+          proposedText = '';
+        }
+      } catch (_e) {}
+    }
+
     const stagedResult = stageMutation({
       branchId: options.branchId,
       targetApp: context.targetApp || 'compose',
       entityId: context.entityId || 'ent_doc_active',
-      targetTitle: context.targetTitle || currentSnapshot.title || 'Active Document',
+      targetTitle: context.targetTitle || (params.blockId ? `Block [${params.blockId}]` : (currentSnapshot.title || 'Active Document')),
       toolName,
       params,
       beforeText,
       afterText: proposedText,
-      metadata: { requestId, toolLabel: toolDef.label, destructive: toolDef.destructive }
+      metadata: { requestId, toolLabel: toolDef.label, destructive: toolDef.destructive, blockId: params.blockId }
     });
 
     const stagedOutput = {

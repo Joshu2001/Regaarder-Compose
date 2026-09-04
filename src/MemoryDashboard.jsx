@@ -21,12 +21,14 @@ import {
   MCP_PROMPTS, 
   generateExternalAgentConfig 
 } from './services/universalMcpBridge.js';
+import BlockCanvasInspector from './components/dev/BlockCanvasInspector';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'decisions', label: 'Decisions', icon: TasksIcon },
   { id: 'rules', label: 'Rules & Propagation', icon: ShieldCheck },
   { id: 'mcp', label: 'MCP Protocol', icon: Zap },
+  { id: 'canvas_blocks', label: 'Canvas AST', icon: Layers },
   { id: 'graph', label: 'Knowledge Graph', icon: Network },
   { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: Folder },
@@ -1205,6 +1207,11 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* ── Tab: Block Canvas AST Inspector (Pillar 4) ── */}
+                  {activeTab === 'canvas_blocks' && (
+                    <BlockCanvasInspector />
                   )}
 
                   {activeTab === 'graph' && (
