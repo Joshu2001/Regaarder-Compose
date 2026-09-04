@@ -30,7 +30,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive, GitPullRequest } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
 import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
@@ -72,6 +72,8 @@ import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWor
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
+import { subscribeToStaging, getBranchById } from './services/workspaceStagingEngine';
+import WorkspaceStagingReviewModal from './components/staging/WorkspaceStagingReviewModal';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6873,6 +6875,31 @@ function AppCore() {
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
   const [isOmniPortalOpen, setIsOmniPortalOpen] = useState(false);
+
+  // ── Pillar 3: Human-in-the-Loop Staging & Approval Engine State ─────────
+  const [stagedBranches, setStagedBranches] = useState([]);
+  const [activeReviewBranch, setActiveReviewBranch] = useState(null);
+
+  useEffect(() => {
+    const unsub = subscribeToStaging((branches) => {
+      setStagedBranches(branches);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    window.__REGAARDER_OPEN_STAGING_MODAL__ = (branchIdOrObj) => {
+      if (typeof branchIdOrObj === 'object' && branchIdOrObj) {
+        setActiveReviewBranch(branchIdOrObj);
+      } else {
+        const found = getBranchById(branchIdOrObj) || stagedBranches[0];
+        if (found) setActiveReviewBranch(found);
+      }
+    };
+    return () => {
+      delete window.__REGAARDER_OPEN_STAGING_MODAL__;
+    };
+  }, [stagedBranches]);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -87626,7 +87653,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
       />
 
+      {/* ── Layer 6.8: Human-in-the-Loop Workspace Staging & Review Engine Modal ── */}
+      {activeReviewBranch && (
+        <WorkspaceStagingReviewModal
+          branch={activeReviewBranch}
+          onClose={() => setActiveReviewBranch(null)}
+          onCommitted={(commitResult) => {
+            setActiveReviewBranch(null);
+            if (commitResult && commitResult.branch) {
+              showToast(`Committed PR #${commitResult.branch.branchNumber || ''}: ${commitResult.committedCount} mutation(s) merged`);
+            }
+          }}
+          onRejected={(branchId) => {
+            setActiveReviewBranch(null);
+            showToast(`Closed Staged PR #${activeReviewBranch.branchNumber || ''}`);
+          }}
+        />
+      )}
 
+      {/* ── Staging PR Floating Quick-Review Indicator Badge ── */}
+      {stagedBranches && stagedBranches.length > 0 && !activeReviewBranch && (
+        <div className="fixed bottom-6 right-6 z-[999990] animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <button
+            onClick={() => setActiveReviewBranch(stagedBranches[0])}
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 dark:bg-zinc-900/95 text-white rounded-xl shadow-2xl backdrop-blur-md border border-slate-700/80 hover:border-violet-500/80 transition-all hover:scale-[1.02] cursor-pointer group"
+          >
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+            </span>
+            <GitPullRequest size={15} className="text-violet-400 group-hover:rotate-12 transition-transform" />
+            <span className="text-xs font-semibold tracking-wide">
+              {stagedBranches.length} Staged PR{stagedBranches.length > 1 ? 's' : ''} Pending Review
+            </span>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">
+              Review Diff
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Close Document / Whiteboard Confirmation Modal */}
       {renderCloseConfirmModal()}

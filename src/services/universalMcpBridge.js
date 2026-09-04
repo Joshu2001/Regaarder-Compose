@@ -26,6 +26,14 @@ import {
 import * as docsCommandApi from './docsCommandApi.js';
 import { executeTool, getTransactionHistory } from './docsToolExecutor.js';
 import { CANONICAL_DOCS_TOOLS } from './docsToolRegistry.js';
+import { 
+  createStagingBranch, 
+  stageMutation, 
+  getActiveBranches, 
+  getBranchById, 
+  approveAndCommitBranch, 
+  rejectBranch 
+} from './workspaceStagingEngine.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MCP RESOURCE CATALOG SPECIFICATION
@@ -73,6 +81,12 @@ export const MCP_RESOURCES = [
     name: 'Cross-Workspace Propagation Audit Trail',
     description: 'Real-time log of automated state propagations across connected Docs, Sheets, and Decisions.',
     mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://staging/active',
+    name: 'Active Staged Pull Requests & Redline Diffs',
+    description: 'Sandbox staging branches and redline visual diffs awaiting human review.',
+    mimeType: 'text/markdown'
   }
 ];
 
@@ -295,6 +309,123 @@ export const MCP_STATE_TOOLS = [
         }
       };
     }
+  },
+  {
+    name: 'stage_workspace_mutation',
+    label: 'Stage Workspace Mutation (PR)',
+    category: 'safety_staging',
+    description: 'Stage an isolated mutation across Docs, Sheets, or Tasks for human review without touching production workspace state.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        targetApp: { type: 'string', description: 'compose | sheets | tasks' },
+        targetTitle: { type: 'string', description: 'Title or label of the target object' },
+        toolName: { type: 'string', description: 'Underlying tool name to stage' },
+        params: { type: 'object', description: 'Arguments for the tool' },
+        beforeText: { type: 'string', description: 'Original content before mutation' },
+        afterText: { type: 'string', description: 'Proposed modified content' }
+      },
+      required: ['targetApp', 'targetTitle', 'afterText']
+    },
+    execute: async (params) => {
+      const res = stageMutation({
+        targetApp: params.targetApp,
+        targetTitle: params.targetTitle,
+        toolName: params.toolName || 'stage_workspace_mutation',
+        params: params.params || {},
+        beforeText: params.beforeText || '',
+        afterText: params.afterText
+      });
+      return {
+        success: true,
+        message: `Staged mutation into PR #${res.prNumber}. Awaiting human review.`,
+        data: res
+      };
+    }
+  },
+  {
+    name: 'get_staged_diff',
+    label: 'Get Staged PR Redline Diffs',
+    category: 'safety_staging',
+    description: 'Retrieve line-by-line visual redlines and delta statistics for an active staging branch.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        branchId: { type: 'string', description: 'Staging branch ID' }
+      }
+    },
+    execute: async (params) => {
+      if (params.branchId) {
+        const br = getBranchById(params.branchId);
+        return { success: Boolean(br), data: br };
+      }
+      const active = getActiveBranches();
+      return { success: true, data: active };
+    }
+  },
+  {
+    name: 'approve_staged_branch',
+    label: 'Approve & Commit Staged PR',
+    category: 'safety_staging',
+    description: 'Human approval handler: Atomically commit staged changes into production documents and trigger context graph propagation.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        branchId: { type: 'string', description: 'Branch ID to approve and commit' },
+        selectedMutationIds: { type: 'array', items: { type: 'string' }, description: 'Optional cherry-picked mutation IDs' }
+      },
+      required: ['branchId']
+    },
+    execute: async (params) => {
+      const res = await approveAndCommitBranch(params.branchId, params.selectedMutationIds);
+      return {
+        success: res.success,
+        message: `Approved and committed PR #${res.prNumber} (${res.committedCount} changes applied).`,
+        data: res
+      };
+    }
+  },
+  {
+    name: 'reject_staged_branch',
+    label: 'Reject & Discard Staged PR',
+    category: 'safety_staging',
+    description: 'Reject a staged pull request and discard sandbox changes without mutating workspace state.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        branchId: { type: 'string', description: 'Branch ID to discard' },
+        reason: { type: 'string', description: 'Rejection rationale' }
+      },
+      required: ['branchId']
+    },
+    execute: async (params) => {
+      const res = rejectBranch(params.branchId, params.reason);
+      return {
+        success: true,
+        message: `Rejected PR #${res.prNumber}. Staged changes discarded.`,
+        data: res
+      };
+    }
   }
 ];
 
@@ -412,6 +543,23 @@ ${cleanText}`;
       mimeType: 'application/json',
       text: JSON.stringify(history, null, 2)
     };
+  }
+
+  if (uri === 'workspace://staging/active') {
+    const branches = getActiveBranches();
+    if (branches.length === 0) {
+      return {
+        uri,
+        mimeType: 'text/markdown',
+        text: '### ACTIVE WORKSPACE STAGING SANDBOX\nNo uncommitted pull requests currently pending human review.'
+      };
+    }
+    const md = `### ACTIVE WORKSPACE STAGING SANDBOX (${branches.length} PRs Pending Review)\n\n` +
+      branches.map(b => `#### PR #${b.prNumber}: ${b.title}\n- Agent: ${b.agentId} | Target Apps: ${b.targetApps.join(', ')}\n- Staged Mutations: ${b.mutations.length}\n` +
+        b.mutations.map(m => `  * [${m.targetApp.toUpperCase()}] ${m.targetTitle}: +${m.stats.addedChars} / -${m.stats.removedChars} chars`).join('\n')
+      ).join('\n\n');
+
+    return { uri, mimeType: 'text/markdown', text: md };
   }
 
   throw new Error(`Resource URI '${uri}' not recognized.`);

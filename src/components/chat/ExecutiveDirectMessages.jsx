@@ -12,7 +12,7 @@ import {
   UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
   SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet, UploadCloud,
   AtSign, Globe, Smartphone, User, Terminal, HardDriveDownload,
-  History, RotateCcw, Square, Bold, Languages, Loader2, Zap
+  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -3039,11 +3039,15 @@ export default function ExecutiveDirectMessages({
                         <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700/80 shadow-xs space-y-2">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
-                              {/* Real Colorful Semantic SVG File Badge as in Image 4 */}
+                              {/* Real Colorful Semantic SVG File Badge */}
                               {msg.actionCard.type === 'document' ? (
                                 <DocsSemanticFileBadge type="compose" title={msg.actionCard.title} size="md" />
                               ) : msg.actionCard.type === 'sheet' ? (
                                 <DocsSemanticFileBadge type="sheets" title={msg.actionCard.title} size="md" />
+                              ) : msg.actionCard.type === 'staging_pr' ? (
+                                <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <GitPullRequest size={12} strokeWidth={2.2} />
+                                </div>
                               ) : (
                                 <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                                   <CheckSquare size={12} strokeWidth={2.2} />
@@ -3053,9 +3057,15 @@ export default function ExecutiveDirectMessages({
                                 {msg.actionCard.title}
                               </span>
                             </div>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
-                              ✓ Executed
-                            </span>
+                            {msg.actionCard.type === 'staging_pr' ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
+                                ⏳ Pending Review
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
+                                ✓ Executed
+                              </span>
+                            )}
                           </div>
 
                           <p className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-snug">
@@ -3076,6 +3086,21 @@ export default function ExecutiveDirectMessages({
                             >
                               <span>Open in Compose Docs</span>
                               <ArrowRight size={12} />
+                            </button>
+                          )}
+
+                          {msg.actionCard.type === 'staging_pr' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_STAGING_MODAL__) {
+                                  window.__REGAARDER_OPEN_STAGING_MODAL__(msg.actionCard.branchId);
+                                }
+                              }}
+                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm hover:shadow"
+                            >
+                              <GitPullRequest size={12} />
+                              <span>Review Redline Diff & Merge</span>
                             </button>
                           )}
                         </div>

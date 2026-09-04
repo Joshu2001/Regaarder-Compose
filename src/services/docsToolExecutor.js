@@ -9,6 +9,7 @@
 
 import { getToolByName } from './docsToolRegistry.js';
 import * as docsCommandApi from './docsCommandApi.js';
+import { stageMutation } from './workspaceStagingEngine.js';
 
 // In-memory transaction stack for document state undo/redo tracking
 const transactionHistory = [];
@@ -133,6 +134,41 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
     };
     executionLogs.push({ ...dryRunResult, durationMs: Date.now() - startTime });
     return dryRunResult;
+  }
+
+  // 3b. Handle Isolated Staging Mode (Pillar 3 Sandbox Execution)
+  if (options.stage && toolDef.mutatesDocument) {
+    const beforeText = currentSnapshot.text || '';
+    const proposedText = params.text || params.contentHtml || params.replacementText || (params.title ? `# ${params.title}\n\n${beforeText}` : beforeText);
+    
+    const stagedResult = stageMutation({
+      branchId: options.branchId,
+      targetApp: context.targetApp || 'compose',
+      entityId: context.entityId || 'ent_doc_active',
+      targetTitle: context.targetTitle || currentSnapshot.title || 'Active Document',
+      toolName,
+      params,
+      beforeText,
+      afterText: proposedText,
+      metadata: { requestId, toolLabel: toolDef.label, destructive: toolDef.destructive }
+    });
+
+    const stagedOutput = {
+      success: true,
+      isStaged: true,
+      toolName,
+      requestId,
+      branchId: stagedResult.branchId,
+      mutationId: stagedResult.mutationId,
+      prNumber: stagedResult.prNumber,
+      message: `[STAGED FOR APPROVAL] Propose changes for "${toolDef.label}" into PR #${stagedResult.prNumber}.`,
+      data: stagedResult,
+      error: null,
+      warnings,
+      timestamp: new Date().toISOString()
+    };
+    executionLogs.push({ ...stagedOutput, durationMs: Date.now() - startTime });
+    return stagedOutput;
   }
 
   // 4. Capture Before Snapshot for Mutating Operations
