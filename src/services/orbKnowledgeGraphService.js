@@ -1994,19 +1994,4 @@ Assessment: Proceed with the enterprise strategy, but gate capital release and s
   };
 }
 
-// ── Universal Context Graph & Memory Bank Substrate Re-exports ──
-export {
-  rememberInstruction,
-  getProjectRules,
-  addProjectRule,
-  recordDecision,
-  getMemoryBank,
-  subscribeToGraph,
-  mutateAndPropagate,
-  notifyDocumentMutated,
-  getAgentContext,
-  exportGraphAsJsonLd,
-  getPropagationHistory
-} from './universalContextGraph.js';
-
 

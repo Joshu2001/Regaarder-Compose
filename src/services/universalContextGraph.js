@@ -126,11 +126,13 @@ export const initializeContextGraph = () => {
   }
   if (!graphEntitiesCache) {
     const persisted = safeGetItem(GRAPH_ENTITIES_STORAGE_KEY, null);
-    graphEntitiesCache = persisted && persisted.length > 0 ? persisted : [...INITIAL_ORB_ENTITIES];
+    const defaults = Array.isArray(INITIAL_ORB_ENTITIES) ? INITIAL_ORB_ENTITIES : [];
+    graphEntitiesCache = persisted && persisted.length > 0 ? persisted : [...defaults];
   }
   if (!graphEdgesCache) {
     const persisted = safeGetItem(GRAPH_EDGES_STORAGE_KEY, null);
-    graphEdgesCache = persisted && persisted.length > 0 ? persisted : [...INITIAL_ORB_EDGES];
+    const defaults = Array.isArray(INITIAL_ORB_EDGES) ? INITIAL_ORB_EDGES : [];
+    graphEdgesCache = persisted && persisted.length > 0 ? persisted : [...defaults];
   }
   if (!propagationHistoryCache) {
     propagationHistoryCache = safeGetItem(PROPAGATION_HISTORY_KEY, []);
@@ -142,9 +144,6 @@ export const initializeContextGraph = () => {
     decisionsCount: memoryBankCache.decisions.length
   };
 };
-
-// Auto-hydrate immediately
-initializeContextGraph();
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. PERSISTENT AGENT MEMORY BANK
