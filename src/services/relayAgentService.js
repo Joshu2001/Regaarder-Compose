@@ -19,6 +19,7 @@ import {
   addProjectRule, 
   mutateAndPropagate 
 } from './universalContextGraph.js';
+import { mcpClient } from './universalMcpBridge.js';
 
 /**
  * Converts markdown text into executive-tier, semantic document HTML.
@@ -437,6 +438,19 @@ export async function processRelayAgentMessage({
       }
     } else if (action === 'search_workspace_citations' && params.query) {
       referenceSources = searchWorkspaceCitations(params.query);
+    } else if (['remember_instruction', 'add_project_rule', 'record_decision', 'mutate_and_propagate', 'validate_tool_call'].includes(action)) {
+      try {
+        const mcpResult = await mcpClient.callTool(action, params);
+        actionCard = {
+          type: action === 'record_decision' ? 'decision' : 'memory',
+          subType: 'mcp_execution',
+          title: `MCP: ${action.replace(/_/g, ' ').toUpperCase()}`,
+          description: mcpResult?.content?.[0]?.text || `Executed ${action} via native Model Context Protocol.`,
+          previewSnippet: typeof params === 'object' ? JSON.stringify(params, null, 2) : String(params)
+        };
+      } catch (mcpErr) {
+        console.warn(`[RelayAgent] MCP callTool failed for ${action}:`, mcpErr);
+      }
     }
   }
 

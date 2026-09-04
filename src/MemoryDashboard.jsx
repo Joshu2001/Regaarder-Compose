@@ -5,7 +5,8 @@ import {
   Network, ArrowRight, Box, Layers, Globe, Layout, Plus, Check,
   SlidersHorizontal, Calendar, Zap, MessageSquare, Database, X,
   Maximize2, Minimize2, Eye, ExternalLink, ShieldCheck, Compass,
-  AlertTriangle, Tag as TagIcon, Hash, CheckCircle2, ChevronRight
+  AlertTriangle, Tag as TagIcon, Hash, CheckCircle2, ChevronRight,
+  Copy, Terminal, Code2, Play
 } from 'lucide-react';
 import { MemoryIcon, TasksIcon, OrbIcon, RegaarderAiIcon, RegaarderProductIcon } from './components/RegaarderProductIcons';
 import { 
@@ -14,11 +15,18 @@ import {
   getPropagationHistory, 
   mutateAndPropagate 
 } from './services/universalContextGraph.js';
+import { 
+  mcpClient, 
+  MCP_RESOURCES, 
+  MCP_PROMPTS, 
+  generateExternalAgentConfig 
+} from './services/universalMcpBridge.js';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'decisions', label: 'Decisions', icon: TasksIcon },
   { id: 'rules', label: 'Rules & Propagation', icon: ShieldCheck },
+  { id: 'mcp', label: 'MCP Protocol', icon: Zap },
   { id: 'graph', label: 'Knowledge Graph', icon: Network },
   { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: Folder },
@@ -192,6 +200,69 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
     });
     return unsub;
   }, []);
+
+  // MCP Protocol Inspector State
+  const [mcpSubTab, setMcpSubTab] = useState('resources'); // 'resources' | 'tools' | 'prompts' | 'connect'
+  const [mcpToolsList, setMcpToolsList] = useState([]);
+  const [mcpToolSearch, setMcpToolSearch] = useState('');
+  const [selectedMcpResource, setSelectedMcpResource] = useState(null);
+  const [resourcePayload, setResourcePayload] = useState(null);
+  const [isLoadingResource, setIsLoadingResource] = useState(false);
+  const [selectedMcpTool, setSelectedMcpTool] = useState(null);
+  const [toolArgsJson, setToolArgsJson] = useState('{}');
+  const [toolCallOutput, setToolCallOutput] = useState(null);
+  const [isCallingTool, setIsCallingTool] = useState(false);
+  const [copiedConfigKey, setCopiedConfigKey] = useState(null);
+  const [promptArgs, setPromptArgs] = useState({});
+  const [activePromptPreview, setActivePromptPreview] = useState(null);
+
+  // Load MCP tools on mount or when activeTab === 'mcp'
+  useEffect(() => {
+    if (activeTab === 'mcp') {
+      mcpClient.listTools().then(tools => setMcpToolsList(tools)).catch(() => {});
+    }
+  }, [activeTab]);
+
+  const handleInspectResource = async (resDef) => {
+    setSelectedMcpResource(resDef);
+    setIsLoadingResource(true);
+    try {
+      const data = await mcpClient.readResource(resDef.uri);
+      setResourcePayload(data);
+    } catch (err) {
+      setResourcePayload({ uri: resDef.uri, mimeType: 'text/plain', text: `Error reading resource: ${err.message}` });
+    } finally {
+      setIsLoadingResource(false);
+    }
+  };
+
+  const handleExecuteToolTest = async () => {
+    if (!selectedMcpTool) return;
+    setIsCallingTool(true);
+    setToolCallOutput(null);
+    try {
+      let parsedArgs = {};
+      try {
+        parsedArgs = JSON.parse(toolArgsJson);
+      } catch (e) {
+        parsedArgs = {};
+      }
+      const res = await mcpClient.callTool(selectedMcpTool.name, parsedArgs);
+      setToolCallOutput(res);
+    } catch (err) {
+      setToolCallOutput({ error: err.message, isError: true });
+    } finally {
+      setIsCallingTool(false);
+    }
+  };
+
+  const handleCopySnippet = (key, text) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedConfigKey(key);
+      setTimeout(() => setCopiedConfigKey(null), 2000);
+    }
+  };
 
   // Merged live and historical decisions
   const allDecisions = useMemo(() => {
@@ -731,6 +802,408 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity }) => {
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'mcp' && (
+                    <div className="space-y-4">
+                      {/* MCP Protocol Header & Status Card */}
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/5 via-sky-500/5 to-emerald-500/5 border border-violet-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                              MCP 2024-11-05 Compliant
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">JSON-RPC 2.0</span>
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Model Context Protocol (MCP) Middleware Layer
+                          </h3>
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                            High-density token-optimized data feeds, canonical tools, and executive workflow prompts for internal & external AI agents.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="px-2.5 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-[10.5px] font-mono text-slate-600 dark:text-zinc-300 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                            <span>/mcp/sse (port 3001)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Subtabs Navigation (Strictly rounded rectangles, never pill-shaped) */}
+                      <div className="flex items-center gap-1.5 border-b border-black/[0.06] dark:border-white/[0.08] pb-2">
+                        {[
+                          { id: 'resources', label: `Resources (${MCP_RESOURCES.length})`, icon: Database },
+                          { id: 'tools', label: `Tools (${mcpToolsList.length || 58})`, icon: Terminal },
+                          { id: 'prompts', label: `Prompts (${MCP_PROMPTS.length})`, icon: Sparkles },
+                          { id: 'connect', label: 'Connect Agents', icon: Code2 }
+                        ].map((sub) => {
+                          const isActive = mcpSubTab === sub.id;
+                          const IconComp = sub.icon;
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => setMcpSubTab(sub.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-violet-600 text-white shadow-2xs'
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
+                              }`}
+                            >
+                              <IconComp size={12} />
+                              <span>{sub.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* 1. Resources Subtab */}
+                      {mcpSubTab === 'resources' && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                              Token-dense feeds strip away HTML and visual chrome, saving up to <strong>80% tokens</strong> during agent context ingestion.
+                            </span>
+                          </div>
+
+                          <div className="grid gap-2.5">
+                            {MCP_RESOURCES.map((res) => (
+                              <div
+                                key={res.uri}
+                                className={`p-3.5 rounded-xl border transition-all ${
+                                  selectedMcpResource?.uri === res.uri
+                                    ? 'bg-violet-500/5 dark:bg-violet-400/5 border-violet-500/40 shadow-xs'
+                                    : 'bg-white/80 dark:bg-zinc-800/70 border-black/[0.06] dark:border-white/[0.08] hover:border-violet-500/20'
+                                }`}
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <code className="text-[11px] font-bold font-mono text-violet-600 dark:text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">
+                                      {res.uri}
+                                    </code>
+                                    <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 uppercase px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.04]">
+                                      {res.mimeType}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInspectResource(res)}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-600/10 dark:bg-violet-400/10 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white text-[11px] font-semibold transition-all cursor-pointer self-start sm:self-auto"
+                                  >
+                                    <Eye size={11} />
+                                    <span>{selectedMcpResource?.uri === res.uri ? 'Inspecting Feed' : 'Inspect Token Feed'}</span>
+                                  </button>
+                                </div>
+                                <div className="text-[13px] font-semibold text-slate-900 dark:text-white">{res.name}</div>
+                                <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">{res.description}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Resource Feed Preview Drawer */}
+                          {selectedMcpResource && (
+                            <div className="mt-4 p-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 shadow-xl space-y-2.5">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-violet-400" />
+                                  <span className="text-xs font-mono font-bold text-violet-300">{selectedMcpResource.uri}</span>
+                                  {resourcePayload && (
+                                    <span className="text-[10px] font-mono text-slate-400">
+                                      ~{Math.ceil((resourcePayload.text?.length || 0) / 4)} tokens ({resourcePayload.text?.length || 0} chars)
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {resourcePayload && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopySnippet('resource_text', resourcePayload.text)}
+                                      className="flex items-center gap-1 text-[10.5px] font-mono text-slate-400 hover:text-white transition-colors cursor-pointer px-2 py-0.5 rounded bg-slate-900 border border-slate-800"
+                                    >
+                                      {copiedConfigKey === 'resource_text' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                                      <span>{copiedConfigKey === 'resource_text' ? 'Copied' : 'Copy'}</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => { setSelectedMcpResource(null); setResourcePayload(null); }}
+                                    className="text-slate-400 hover:text-white cursor-pointer"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                              {isLoadingResource ? (
+                                <div className="py-8 text-center text-xs text-slate-400 font-mono">
+                                  Reading resource from workspace substrate...
+                                </div>
+                              ) : (
+                                <pre className="text-[11px] font-mono text-slate-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto max-h-64 whitespace-pre-wrap leading-relaxed">
+                                  {resourcePayload?.text || 'No content returned'}
+                                </pre>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 2. Tools Subtab */}
+                      {mcpSubTab === 'tools' && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="relative flex-1">
+                              <Search size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
+                              <input
+                                type="text"
+                                value={mcpToolSearch}
+                                onChange={(e) => setMcpToolSearch(e.target.value)}
+                                placeholder="Filter tools by name, category, or parameter..."
+                                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500"
+                              />
+                            </div>
+                            <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                              {mcpToolsList.filter(t => !mcpToolSearch || t.name.toLowerCase().includes(mcpToolSearch.toLowerCase())).length} matches
+                            </span>
+                          </div>
+
+                          <div className="grid gap-2 max-h-96 overflow-y-auto pr-1">
+                            {mcpToolsList
+                              .filter(t => !mcpToolSearch || t.name.toLowerCase().includes(mcpToolSearch.toLowerCase()) || (t.description || '').toLowerCase().includes(mcpToolSearch.toLowerCase()))
+                              .map((tool) => (
+                                <div
+                                  key={tool.name}
+                                  className="p-3 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-violet-500/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                                >
+                                  <div className="space-y-0.5">
+                                    <div className="flex items-center gap-2">
+                                      <code className="text-xs font-bold font-mono text-slate-900 dark:text-white">
+                                        {tool.name}
+                                      </code>
+                                      <span className="text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20">
+                                        MCP Tool
+                                      </span>
+                                    </div>
+                                    <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 leading-snug">{tool.description}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedMcpTool(tool);
+                                      setToolArgsJson(JSON.stringify(
+                                        tool.inputSchema?.properties
+                                          ? Object.keys(tool.inputSchema.properties).reduce((acc, k) => ({ ...acc, [k]: '' }), {})
+                                          : {},
+                                        null,
+                                        2
+                                      ));
+                                      setToolCallOutput(null);
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-violet-600 hover:text-white text-[11px] font-semibold text-slate-700 dark:text-zinc-300 transition-all cursor-pointer self-start sm:self-auto shrink-0"
+                                  >
+                                    <Play size={10} />
+                                    <span>Test in Sandbox</span>
+                                  </button>
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* Tool Execution Sandbox Modal/Drawer */}
+                          {selectedMcpTool && (
+                            <div className="mt-4 p-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 shadow-xl space-y-3">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <Terminal size={14} className="text-violet-400" />
+                                  <span className="text-xs font-mono font-bold text-violet-300">Sandbox: {selectedMcpTool.name}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelectedMcpTool(null); setToolCallOutput(null); }}
+                                  className="text-slate-400 hover:text-white cursor-pointer"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="text-[10.5px] font-mono text-slate-400">Input Arguments (JSON Schema):</label>
+                                <textarea
+                                  value={toolArgsJson}
+                                  onChange={(e) => setToolArgsJson(e.target.value)}
+                                  rows={4}
+                                  className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 focus:outline-none focus:border-violet-500"
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-500 font-mono">Executes safely via docsToolExecutor transaction runtime</span>
+                                <button
+                                  type="button"
+                                  disabled={isCallingTool}
+                                  onClick={handleExecuteToolTest}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                >
+                                  <Play size={11} />
+                                  <span>{isCallingTool ? 'Executing...' : 'Run Tool Staging Call'}</span>
+                                </button>
+                              </div>
+
+                              {toolCallOutput && (
+                                <div className="mt-2 pt-2 border-t border-slate-800 space-y-1">
+                                  <div className="text-[10px] font-mono text-slate-400 uppercase">Execution Result:</div>
+                                  <pre className="text-[11px] font-mono p-2.5 rounded bg-slate-900 text-emerald-400 overflow-x-auto max-h-48 whitespace-pre-wrap">
+                                    {JSON.stringify(toolCallOutput, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 3. Prompts Subtab */}
+                      {mcpSubTab === 'prompts' && (
+                        <div className="space-y-3">
+                          <div className="grid gap-2.5">
+                            {MCP_PROMPTS.map((prompt) => (
+                              <div
+                                key={prompt.name}
+                                className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-violet-500/20 transition-all"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <code className="text-xs font-bold font-mono text-slate-900 dark:text-white">
+                                      {prompt.name}
+                                    </code>
+                                    <span className="text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                      Prompt Template
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const instantiated = await mcpClient.getPrompt(prompt.name, promptArgs[prompt.name] || {});
+                                      setActivePromptPreview({ name: prompt.name, ...instantiated });
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-600/10 dark:bg-violet-400/10 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white text-[11px] font-semibold transition-all cursor-pointer self-start sm:self-auto"
+                                  >
+                                    <Eye size={11} />
+                                    <span>Preview Instantiated Template</span>
+                                  </button>
+                                </div>
+                                <p className="text-[12px] text-slate-600 dark:text-zinc-400 mb-2">{prompt.description}</p>
+                                
+                                {prompt.arguments?.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
+                                    {prompt.arguments.map((arg) => (
+                                      <div key={arg.name} className="space-y-0.5">
+                                        <div className="flex items-center justify-between text-[10.5px] text-slate-500 font-mono">
+                                          <span>{arg.name} {arg.required && <strong className="text-rose-500">*</strong>}</span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          placeholder={arg.description}
+                                          value={promptArgs[prompt.name]?.[arg.name] || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setPromptArgs(prev => ({
+                                              ...prev,
+                                              [prompt.name]: { ...(prev[prompt.name] || {}), [arg.name]: val }
+                                            }));
+                                          }}
+                                          className="w-full px-2 py-1 text-[11px] rounded bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] focus:outline-none focus:border-violet-500"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Instantiated Prompt Modal/Drawer */}
+                          {activePromptPreview && (
+                            <div className="mt-4 p-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 shadow-xl space-y-2.5">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <Sparkles size={14} className="text-amber-400" />
+                                  <span className="text-xs font-mono font-bold text-amber-300">Prompt: {activePromptPreview.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopySnippet('prompt_text', activePromptPreview.messages?.[0]?.content?.text || '')}
+                                    className="flex items-center gap-1 text-[10.5px] font-mono text-slate-400 hover:text-white transition-colors cursor-pointer px-2 py-0.5 rounded bg-slate-900 border border-slate-800"
+                                  >
+                                    {copiedConfigKey === 'prompt_text' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                                    <span>{copiedConfigKey === 'prompt_text' ? 'Copied' : 'Copy Prompt'}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActivePromptPreview(null)}
+                                    className="text-slate-400 hover:text-white cursor-pointer"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                              <pre className="text-[11px] font-mono text-slate-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto max-h-60 whitespace-pre-wrap leading-relaxed">
+                                {activePromptPreview.messages?.[0]?.content?.text || 'No message content'}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 4. Connect Agents Subtab */}
+                      {mcpSubTab === 'connect' && (
+                        <div className="space-y-4">
+                          <div className="p-3.5 rounded-xl bg-violet-500/5 border border-violet-500/15 space-y-1">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">Connecting External Desktop Agents</h4>
+                            <p className="text-[11.5px] text-slate-500 dark:text-zinc-400">
+                              Any MCP-compliant desktop agent (Claude Desktop, Cursor, Windsurf) can connect directly to your live Regaarder Compose workspace via the standard Server-Sent Events (SSE) endpoint.
+                            </p>
+                          </div>
+
+                          {/* Claude Desktop Config */}
+                          <div className="p-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-bold text-violet-300">Claude Desktop (~/Library/Application Support/Claude/claude_desktop_config.json)</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopySnippet('claude', JSON.stringify(generateExternalAgentConfig().claudeDesktop, null, 2))}
+                                className="flex items-center gap-1 text-[10.5px] font-mono text-slate-400 hover:text-white transition-colors cursor-pointer px-2 py-1 rounded bg-slate-900 border border-slate-800"
+                              >
+                                {copiedConfigKey === 'claude' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                                <span>{copiedConfigKey === 'claude' ? 'Copied' : 'Copy Config'}</span>
+                              </button>
+                            </div>
+                            <pre className="text-[11px] font-mono text-slate-300 p-2.5 rounded bg-slate-900/90 overflow-x-auto">
+                              {JSON.stringify(generateExternalAgentConfig().claudeDesktop, null, 2)}
+                            </pre>
+                          </div>
+
+                          {/* Cursor Config */}
+                          <div className="p-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-bold text-sky-300">Cursor IDE (.cursor/mcp.json)</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopySnippet('cursor', JSON.stringify(generateExternalAgentConfig().cursor, null, 2))}
+                                className="flex items-center gap-1 text-[10.5px] font-mono text-slate-400 hover:text-white transition-colors cursor-pointer px-2 py-1 rounded bg-slate-900 border border-slate-800"
+                              >
+                                {copiedConfigKey === 'cursor' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                                <span>{copiedConfigKey === 'cursor' ? 'Copied' : 'Copy Config'}</span>
+                              </button>
+                            </div>
+                            <pre className="text-[11px] font-mono text-slate-300 p-2.5 rounded bg-slate-900/90 overflow-x-auto">
+                              {JSON.stringify(generateExternalAgentConfig().cursor, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

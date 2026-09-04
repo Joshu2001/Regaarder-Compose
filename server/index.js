@@ -5,8 +5,14 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
-import { processAgentRequest } from './orchestrator.js';
-import { handleMcpJsonRpc, REGAARDER_MCP_TOOLS } from './mcpTools.js';
+import { 
+  handleMcpJsonRpc, 
+  processMcpRequest, 
+  REGAARDER_MCP_TOOLS, 
+  REGAARDER_MCP_RESOURCES, 
+  REGAARDER_MCP_PROMPTS, 
+  toStandardJsonSchema 
+} from './mcpTools.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -180,7 +186,10 @@ app.use(cors());
 app.use(express.json());
 
 // Model Context Protocol (MCP) Endpoints
+// 1. Pure JSON-RPC 2.0 endpoint (HTTP transport)
 app.post('/api/mcp', handleMcpJsonRpc);
+
+// 2. Convenience REST discovery endpoints
 app.get('/api/mcp/tools', (req, res) => {
   res.json({
     tools: REGAARDER_MCP_TOOLS.map(t => ({
@@ -191,11 +200,53 @@ app.get('/api/mcp/tools', (req, res) => {
   });
 });
 
-// Helper for standard JSON schema normalization in MCP
-function toStandardJsonSchema(schema) {
-  if (!schema || typeof schema !== 'object') return schema;
-  return schema;
-}
+app.get('/api/mcp/resources', (req, res) => {
+  res.json({ resources: REGAARDER_MCP_RESOURCES });
+});
+
+app.get('/api/mcp/prompts', (req, res) => {
+  res.json({ prompts: REGAARDER_MCP_PROMPTS });
+});
+
+// 3. Standard MCP Server-Sent Events (SSE) Transport (for Claude Desktop, Cursor, and Windsurf)
+const mcpSseClients = new Map();
+
+app.get('/mcp/sse', (req, res) => {
+  const sessionId = `mcp_sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  if (typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
+  }
+
+  mcpSseClients.set(sessionId, res);
+
+  // Send the endpoint event as per MCP SSE transport specification
+  res.write(`event: endpoint\ndata: /mcp/message?sessionId=${sessionId}\n\n`);
+
+  req.on('close', () => {
+    mcpSseClients.delete(sessionId);
+  });
+});
+
+app.post('/mcp/message', (req, res) => {
+  const { sessionId } = req.query;
+  const message = req.body || {};
+  const response = processMcpRequest(message);
+
+  const clientRes = sessionId ? mcpSseClients.get(sessionId) : null;
+  if (clientRes && response) {
+    clientRes.write(`event: message\ndata: ${JSON.stringify(response)}\n\n`);
+    return res.status(202).json({ status: 'accepted' });
+  }
+
+  if (!response) {
+    return res.status(204).end();
+  }
+  return res.json(response);
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API Auth Routes (SQLite Backed with Scrypt Hashing & Session Storage)
