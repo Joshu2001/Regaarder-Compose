@@ -276,110 +276,203 @@ export function buildWorkspaceIndex(context = {}) {
     return lower.length > 0 && !placeholderTitles.has(lower) && !lower.startsWith('untitled');
   };
 
-  // Add currently open document / deck / sheet ONLY if it has real user content or custom title
+  // Extract searchable text tokens from spreadsheet grids
+  const extractTextFromGrid = (grids) => {
+    if (!grids || typeof grids !== 'object') return '';
+    const tokens = [];
+    for (const gridId of Object.keys(grids)) {
+      const g = grids[gridId];
+      if (g && Array.isArray(g.cells)) {
+        for (const row of g.cells) {
+          if (Array.isArray(row)) {
+            for (const cell of row) {
+              if (cell !== undefined && cell !== null && String(cell).trim()) {
+                tokens.push(String(cell).trim());
+              }
+            }
+          }
+        }
+      }
+    }
+    return tokens.slice(0, 300).join(' ');
+  };
+
+  // Extract searchable text from presentation slides
+  const extractTextFromSlides = (slides) => {
+    if (!Array.isArray(slides)) return '';
+    return slides
+      .map((s, idx) => `Slide ${idx + 1}: ${s.title || ''} ${s.subtitle || ''} ${s.content || ''}`)
+      .filter(Boolean)
+      .join('. ');
+  };
+
+  // 1. Index Currently Open Document / Sheet / Deck
   const hasActiveContent = currentPlainText.length > 0 || (currentDocTitle && isRealTitle(currentDocTitle));
-  if (hasActiveContent && activeDocId) {
-    const activeRes = resolveWorkspaceForEntity(currentDocTitle || 'Untitled Document', '', currentProductMode);
-    const titleToUse = currentDocTitle || `${activeRes.prefix === 'Deck' ? 'Deck' : activeRes.prefix === 'Sheets' ? 'Sheet' : 'Document'}`;
-    items.push({
-      id: `doc-active-${activeDocId || 'current'}`,
-      type: activeRes.type,
-      workspace: activeRes.workspace,
-      title: titleToUse,
-      subtitle: currentDocSubtitle || `Currently open in ${activeRes.prefix}`,
-      location: `${activeRes.prefix} > ${titleToUse}`,
-      content: currentPlainText,
-      rawHtml: currentDocBodyHtml,
-      author: 'You (Author)',
-      authorRole: 'Editor',
-      updatedAt: 'Just now',
-      isCurrent: true,
-      metadata: {
-        docId: activeDocId,
-        isCurrent: true
-      }
-    });
+  if (activeDocId) {
+    if (currentProductMode === 'sheets') {
+      const activeSheetTitle = (context.sheetsTitle || currentDocTitle || 'Untitled Sheet').trim();
+      const gridText = extractTextFromGrid(context.sheetGrids);
+      items.push({
+        id: `sheet-active-${activeDocId}`,
+        type: 'sheet',
+        workspace: 'sheets',
+        title: activeSheetTitle,
+        subtitle: 'Spreadsheet Calculation Grid',
+        location: `Sheets > ${activeSheetTitle}`,
+        content: gridText || 'Active spreadsheet calculations and cell data.',
+        rawHtml: '',
+        author: 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: 'Just now',
+        isCurrent: true,
+        metadata: {
+          docId: activeDocId,
+          sheetId: context.activeSheetId,
+          isCurrent: true
+        }
+      });
+    } else if (currentProductMode === 'deck') {
+      const activeDeckTitle = (context.deckTitle || currentDocTitle || 'Untitled Deck').trim();
+      const slides = context.deckSlidesData || [];
+      const deckText = extractTextFromSlides(slides);
+      items.push({
+        id: `deck-active-${activeDocId}`,
+        type: 'deck',
+        workspace: 'deck',
+        title: activeDeckTitle,
+        subtitle: `Presentation (${slides.length > 0 ? slides.length : 1} Slides)`,
+        location: `Deck > ${activeDeckTitle}`,
+        content: deckText || 'Active presentation deck.',
+        rawHtml: '',
+        author: 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: 'Just now',
+        isCurrent: true,
+        metadata: {
+          docId: activeDocId,
+          slideCount: slides.length,
+          isCurrent: true
+        }
+      });
+    } else if (hasActiveContent) {
+      const activeRes = resolveWorkspaceForEntity(currentDocTitle || 'Untitled Document', '', currentProductMode);
+      const titleToUse = currentDocTitle || 'Untitled Document';
+      items.push({
+        id: `doc-active-${activeDocId}`,
+        type: activeRes.type,
+        workspace: activeRes.workspace,
+        title: titleToUse,
+        subtitle: currentDocSubtitle || `Currently open in ${activeRes.prefix}`,
+        location: `${activeRes.prefix} > ${titleToUse}`,
+        content: currentPlainText,
+        rawHtml: currentDocBodyHtml,
+        author: 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: 'Just now',
+        isCurrent: true,
+        metadata: {
+          docId: activeDocId,
+          isCurrent: true
+        }
+      });
+    }
   }
 
-  // Add other saved documents ONLY if they have real content or a real custom title
+  // 2. Index All Saved Documents, Workbooks, and Presentation Decks
   docs.forEach((doc, idx) => {
-    if (doc.id === activeDocId) return; // avoid duplicate with active document
-    const plainText = stripHtml(doc.bodyHtml || doc.content || '').trim();
-    const rawTitle = (doc.title || '').trim();
-    if (!plainText && (!rawTitle || !isRealTitle(rawTitle))) {
-      return; // Skip empty / placeholder documents
-    }
-    const docRes = resolveWorkspaceForEntity(rawTitle || '', doc.type || doc.format || '');
-    items.push({
-      id: `doc-${doc.id || idx}`,
-      type: docRes.type,
-      workspace: docRes.workspace,
-      title: rawTitle || `${docRes.prefix} ${idx + 1}`,
-      subtitle: doc.subtitle || `${docRes.prefix} File`,
-      location: `${docRes.prefix} > ${rawTitle || `${docRes.prefix} ${idx + 1}`}`,
-      content: plainText,
-      rawHtml: doc.bodyHtml || '',
-      author: doc.author || 'You (Author)',
-      authorRole: 'Editor',
-      updatedAt: doc.updatedAt || 'Recently saved',
-      metadata: {
-        docId: doc.id
+    if (String(doc.id) === String(activeDocId)) return; // skip active to prevent duplicate
+
+    const isSheets = doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0) || (doc.sheetGrids && Object.keys(doc.sheetGrids).length > 0);
+    const isDeck = doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0);
+    const isWhiteboard = doc.mode === 'whiteboard';
+
+    if (isSheets) {
+      const rawTitle = (doc.sheetsTitle || doc.title || '').trim();
+      const gridText = extractTextFromGrid(doc.sheetGrids);
+      const sheetCount = doc.sheetsData?.length || 1;
+      items.push({
+        id: `sheet-${doc.id || idx}`,
+        type: 'sheet',
+        workspace: 'sheets',
+        title: rawTitle || `Spreadsheet ${idx + 1}`,
+        subtitle: `Spreadsheet (${sheetCount} Sheet${sheetCount > 1 ? 's' : ''})`,
+        location: `Sheets > ${rawTitle || `Spreadsheet ${idx + 1}`}`,
+        content: gridText || 'Spreadsheet calculation workbook and data models.',
+        rawHtml: '',
+        author: doc.author || 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: doc.updatedAt || 'Recently saved',
+        metadata: {
+          docId: doc.id,
+          sheetId: doc.activeSheetId || 1,
+          sheetCount: sheetCount
+        }
+      });
+    } else if (isDeck) {
+      const rawTitle = (doc.deckTitle || doc.title || '').trim();
+      const slides = doc.deckSlidesData || [];
+      const deckText = extractTextFromSlides(slides);
+      const slideCount = slides.length || 1;
+      items.push({
+        id: `deck-${doc.id || idx}`,
+        type: 'deck',
+        workspace: 'deck',
+        title: rawTitle || `Presentation ${idx + 1}`,
+        subtitle: `Presentation (${slideCount} Slide${slideCount > 1 ? 's' : ''})`,
+        location: `Deck > ${rawTitle || `Presentation ${idx + 1}`}`,
+        content: deckText || 'Presentation slides and speaker notes.',
+        rawHtml: '',
+        author: doc.author || 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: doc.updatedAt || 'Recently saved',
+        metadata: {
+          docId: doc.id,
+          slideCount: slideCount
+        }
+      });
+    } else if (isWhiteboard) {
+      const rawTitle = (doc.title || '').trim();
+      items.push({
+        id: `whiteboard-${doc.id || idx}`,
+        type: 'whiteboard',
+        workspace: 'whiteboard',
+        title: rawTitle || `Whiteboard ${idx + 1}`,
+        subtitle: 'Visual Infinite Canvas',
+        location: `Whiteboard > ${rawTitle || `Whiteboard ${idx + 1}`}`,
+        content: 'Whiteboard diagrams, sticky notes, and visual mind maps.',
+        rawHtml: '',
+        author: doc.author || 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: doc.updatedAt || 'Recently saved',
+        metadata: {
+          docId: doc.id
+        }
+      });
+    } else {
+      const plainText = stripHtml(doc.bodyHtml || doc.content || '').trim();
+      const rawTitle = (doc.title || '').trim();
+      if (!plainText && (!rawTitle || !isRealTitle(rawTitle))) {
+        return; // Skip empty placeholder documents
       }
-    });
+      const docRes = resolveWorkspaceForEntity(rawTitle || '', doc.type || doc.format || '');
+      items.push({
+        id: `doc-${doc.id || idx}`,
+        type: docRes.type,
+        workspace: docRes.workspace,
+        title: rawTitle || `${docRes.prefix} ${idx + 1}`,
+        subtitle: doc.subtitle || `${docRes.prefix} File`,
+        location: `${docRes.prefix} > ${rawTitle || `${docRes.prefix} ${idx + 1}`}`,
+        content: plainText,
+        rawHtml: doc.bodyHtml || '',
+        author: doc.author || 'You (Author)',
+        authorRole: 'Editor',
+        updatedAt: doc.updatedAt || 'Recently saved',
+        metadata: {
+          docId: doc.id
+        }
+      });
+    }
   });
-
-  // 2. Real Spreadsheets
-  if (context.sheetsTitle && currentProductMode === 'sheets') {
-    const sheetTitle = context.sheetsTitle.trim();
-    if (isRealTitle(sheetTitle) || context.hasImportedData || (context.sheetGrids && Object.keys(context.sheetGrids).length > 0)) {
-      const exists = items.some(i => i.title === sheetTitle && i.workspace === 'sheets');
-      if (!exists) {
-        items.push({
-          id: `sheet-active-${context.activeSheetId || 'current'}`,
-          type: 'sheet',
-          workspace: 'sheets',
-          title: sheetTitle,
-          subtitle: 'Spreadsheet Calculation Grid',
-          location: `Sheets > ${sheetTitle}`,
-          content: 'Active spreadsheet calculations and cell data.',
-          author: 'You (Author)',
-          authorRole: 'Editor',
-          updatedAt: 'Just now',
-          isCurrent: true,
-          metadata: {
-            sheetId: context.activeSheetId
-          }
-        });
-      }
-    }
-  }
-
-  // 3. Real Presentations & Slides
-  if (context.deckTitle && currentProductMode === 'deck') {
-    const deckTitle = context.deckTitle.trim();
-    if (isRealTitle(deckTitle)) {
-      const exists = items.some(i => i.title === deckTitle && i.workspace === 'deck');
-      if (!exists) {
-        const slides = context.deckSlidesData || [];
-        items.push({
-          id: `deck-active-${context.activeDeckSlideId || 'current'}`,
-          type: 'deck',
-          workspace: 'deck',
-          title: deckTitle,
-          subtitle: `Presentation (${slides.length > 0 ? slides.length : 1} Slides)`,
-          location: `Deck > ${deckTitle}`,
-          content: slides.map((s, idx) => `Slide ${idx + 1}: ${s.title || ''} ${s.content || ''}`).join('. '),
-          author: 'You (Author)',
-          authorRole: 'Editor',
-          updatedAt: 'Just now',
-          isCurrent: true,
-          metadata: {
-            slideCount: slides.length
-          }
-        });
-      }
-    }
-  }
 
   // 4. Real Tasks & Action Items (Only genuine user-created tasks, excluding default placeholder initiatives)
   const tasks = context.tasks || [];

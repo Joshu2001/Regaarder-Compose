@@ -8668,6 +8668,8 @@ function AppCore() {
   const [deckTitle, setDeckTitle] = useState('Untitled Deck');
   const [sheetsTitle, setSheetsTitle] = useState('Untitled Sheet');
   const [activeSheetId, setActiveSheetId] = useState(1);
+  const [headerWorkbookDropdownOpen, setHeaderWorkbookDropdownOpen] = useState(false);
+  const [headerWorkbookSearchQuery, setHeaderWorkbookSearchQuery] = useState('');
   const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
   const [addressTemp, setAddressTemp] = useState(null);
@@ -18290,16 +18292,116 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   }, [documents]);
 
-  // Keep active document in documents list updated with latest title and bodyHtml
+  // Keep active document in documents list updated with latest content across all modes
   useEffect(() => {
-    if (activeDocId) {
+    if (!activeDocId) return;
+
+    if (productMode === 'sheets') {
+      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
+        ...d,
+        mode: 'sheets',
+        title: sheetsTitle || d.title || 'Untitled Sheet',
+        sheetsTitle: sheetsTitle,
+        sheetGrids: sheetGrids,
+        sheetsData: sheetsData,
+        activeSheetId: activeSheetId,
+        updatedAt: 'Just now'
+      } : d));
+    } else if (productMode === 'deck') {
+      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
+        ...d,
+        mode: 'deck',
+        title: deckTitle || d.title || 'Untitled Deck',
+        deckTitle: deckTitle,
+        deckSlidesData: deckSlidesData,
+        activeDeckSlideId: activeDeckSlideId,
+        updatedAt: 'Just now'
+      } : d));
+    } else if (productMode === 'whiteboard') {
+      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
+        ...d,
+        mode: 'whiteboard',
+        whiteboardWidgets: whiteboardWidgets,
+        whiteboardStrokes: whiteboardStrokes,
+        whiteboardShapes: whiteboardShapes,
+        updatedAt: 'Just now'
+      } : d));
+    } else {
       setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
         ...d,
         title: docTitle !== undefined ? docTitle : d.title,
-        bodyHtml: docBodyHtml !== undefined ? docBodyHtml : d.bodyHtml
+        bodyHtml: docBodyHtml !== undefined ? docBodyHtml : d.bodyHtml,
+        updatedAt: 'Just now'
       } : d));
     }
-  }, [docBodyHtml, docTitle, activeDocId]);
+  }, [
+    activeDocId,
+    productMode,
+    docTitle,
+    docBodyHtml,
+    sheetsTitle,
+    sheetGrids,
+    sheetsData,
+    activeSheetId,
+    deckTitle,
+    deckSlidesData,
+    activeDeckSlideId,
+    whiteboardWidgets,
+    whiteboardStrokes,
+    whiteboardShapes
+  ]);
+
+  // List of all saved workbooks for quick switching
+  const sheetsWorkbooksList = useMemo(() => {
+    return documents.filter((doc) => doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0) || (doc.sheetGrids && Object.keys(doc.sheetGrids).length > 0));
+  }, [documents]);
+
+  // List of all saved slide decks for quick switching
+  const deckPresentationsList = useMemo(() => {
+    return documents.filter((doc) => doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0));
+  }, [documents]);
+
+  // Ensure an active document exists in documents collection when entering Sheets or Deck mode
+  useEffect(() => {
+    if (productMode === 'sheets') {
+      const existingSheetsDoc = documents.find((doc) => doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0));
+      if (!existingSheetsDoc) {
+        const initialDocId = Date.now();
+        const newSheetsDoc = {
+          id: initialDocId,
+          mode: 'sheets',
+          title: sheetsTitle || 'Untitled Sheet',
+          sheetsTitle: sheetsTitle || 'Untitled Sheet',
+          sheetsData: sheetsData,
+          sheetGrids: sheetGrids,
+          activeSheetId: activeSheetId || 1,
+          updatedAt: 'Just now',
+        };
+        setDocuments(prev => [...prev, newSheetsDoc]);
+        setActiveDocId(initialDocId);
+      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && (d.mode === 'sheets' || d.sheetsData))) {
+        switchDocument(existingSheetsDoc.id);
+      }
+    } else if (productMode === 'deck') {
+      const existingDeckDoc = documents.find((doc) => doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0));
+      if (!existingDeckDoc) {
+        const initialDocId = Date.now();
+        const newDeckDoc = {
+          id: initialDocId,
+          mode: 'deck',
+          title: deckTitle || 'Untitled Deck',
+          deckTitle: deckTitle || 'Untitled Deck',
+          deckSlidesData: deckSlidesData,
+          activeDeckSlideId: activeDeckSlideId || 1,
+          updatedAt: 'Just now',
+        };
+        setDocuments(prev => [...prev, newDeckDoc]);
+        setActiveDocId(initialDocId);
+      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && (d.mode === 'deck' || d.deckSlidesData))) {
+        switchDocument(existingDeckDoc.id);
+      }
+    }
+  }, [productMode]);
 
   const activeDoc = documents.find((doc) => doc.id === activeDocId);
   const [pdfRotation, setPdfRotation] = useState(0);
@@ -24268,6 +24370,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const closeTransientMenus = () => {
     setIsHeaderMoreMenuOpen(false);
     setOpenDropdown(null);
+    setHeaderWorkbookDropdownOpen(false);
     setTextStyleMenuOpen(false);
     setComposeExportMenuOpen(false);
     setSheetsExportMenuOpen(false);
@@ -48475,6 +48578,161 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                   <span>Home</span>
                 </button>
+
+                {(isSheetsMode || productMode === 'deck') && (
+                  <>
+                    <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
+                    <div className="relative shrink-0 flex items-center">
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setHeaderWorkbookSearchQuery('');
+                          setHeaderWorkbookDropdownOpen((prev) => !prev);
+                        }}
+                        className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                          headerWorkbookDropdownOpen
+                            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600'
+                            : 'bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/60 shadow-sm'
+                        }`}
+                        title={isSheetsMode ? 'Switch Workbook' : 'Switch Presentation'}
+                      >
+                        {isSheetsMode ? (
+                          <SheetIcon size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : (
+                          <DeckIcon size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
+                        )}
+                        <span className="font-semibold max-w-[130px] truncate">
+                          {isSheetsMode
+                            ? (sheetsTitle || 'Untitled Sheet')
+                            : (deckTitle || 'Untitled Deck')}
+                        </span>
+                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {headerWorkbookDropdownOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-[99990]"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setHeaderWorkbookDropdownOpen(false);
+                            }}
+                          />
+                          <div
+                            style={{ zIndex: 99999 }}
+                            className="absolute top-full left-0 mt-1.5 w-72 max-h-96 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/5 dark:ring-white/10 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                          >
+                            {/* Search Header */}
+                            <div className="relative px-1 pt-1 pb-1.5">
+                              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                              <input
+                                type="text"
+                                autoFocus
+                                value={headerWorkbookSearchQuery}
+                                onChange={(e) => setHeaderWorkbookSearchQuery(e.target.value)}
+                                placeholder={isSheetsMode ? 'Search workbooks...' : 'Search presentations...'}
+                                className="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-transparent focus:border-violet-500 focus:outline-none placeholder:text-slate-400"
+                              />
+                            </div>
+
+                            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                              <span>{isSheetsMode ? 'Saved Workbooks' : 'Saved Presentations'} ({
+                                (isSheetsMode ? sheetsWorkbooksList : deckPresentationsList).length
+                              })</span>
+                            </div>
+
+                            {/* List */}
+                            <div className="flex-1 overflow-y-auto max-h-56 flex flex-col gap-0.5 py-1">
+                              {(() => {
+                                const list = isSheetsMode ? sheetsWorkbooksList : deckPresentationsList;
+                                const filtered = list.filter((doc) => {
+                                  if (!headerWorkbookSearchQuery.trim()) return true;
+                                  const q = headerWorkbookSearchQuery.toLowerCase();
+                                  const title = (doc.title || doc.sheetsTitle || doc.deckTitle || '').toLowerCase();
+                                  return title.includes(q);
+                                });
+
+                                if (filtered.length === 0) {
+                                  return (
+                                    <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                      {isSheetsMode ? 'No workbooks found' : 'No presentations found'}
+                                    </div>
+                                  );
+                                }
+
+                                return filtered.map((doc) => {
+                                  const isActive = String(doc.id) === String(activeDocId);
+                                  const title = isSheetsMode
+                                    ? (doc.sheetsTitle || doc.title || 'Untitled Sheet')
+                                    : (doc.deckTitle || doc.title || 'Untitled Deck');
+                                  const count = isSheetsMode
+                                    ? (doc.sheetGrids ? Object.keys(doc.sheetGrids).length : (doc.sheetsData?.length || 1))
+                                    : (doc.deckSlidesData?.length || 1);
+                                  const countLabel = isSheetsMode
+                                    ? `${count} sheet${count === 1 ? '' : 's'}`
+                                    : `${count} slide${count === 1 ? '' : 's'}`;
+
+                                  return (
+                                    <button
+                                      key={doc.id}
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        switchDocument(doc.id);
+                                        setHeaderWorkbookDropdownOpen(false);
+                                      }}
+                                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer ${
+                                        isActive
+                                          ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
+                                          : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        {isSheetsMode ? (
+                                          <SheetIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
+                                        ) : (
+                                          <DeckIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
+                                        )}
+                                        <span className="truncate">{title}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">
+                                          {countLabel}
+                                        </span>
+                                        {isActive && <Check size={13} className="text-violet-600 dark:text-violet-400" />}
+                                      </div>
+                                    </button>
+                                  );
+                                });
+                              })()}
+                            </div>
+
+                            {/* Footer: Create New */}
+                            <div className="border-t border-slate-100 dark:border-zinc-800 pt-1">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  createItemForCurrentContext();
+                                  setHeaderWorkbookDropdownOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
+                              >
+                                <Plus size={13} />
+                                <span>{isSheetsMode ? '+ New Workbook' : '+ New Presentation'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Center Section: Document Tab Strip */}
@@ -87791,9 +88049,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
-            showToast(`Navigated to Sheets Model: ${entity.title}`);
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.sheetId) {
+              setActiveSheetId(entity.metadata.sheetId);
+            }
+            showToast(`Navigated to Sheets: ${entity.title}`);
           } else if (ws === 'deck') {
             if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
             if (entity.metadata?.slideNumber) {
               setActiveDeckSlideId(entity.metadata.slideNumber);
             }
@@ -87903,9 +88170,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.sheetId) {
+              setActiveSheetId(entity.metadata.sheetId);
+            }
             showToast(`Navigated to Sheets: ${entity.title}`);
           } else if (ws === 'deck') {
             if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
             if (entity.metadata?.slideNumber) {
               setActiveDeckSlideId(entity.metadata.slideNumber);
             }
