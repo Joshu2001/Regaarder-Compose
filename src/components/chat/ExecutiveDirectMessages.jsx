@@ -432,8 +432,9 @@ export default function ExecutiveDirectMessages({
   const [personaEngine, setPersonaEngine] = useState('gemini-2.0-flash');
   const mdFileInputRef = useRef(null);
 
-  // Dynamic Conversations List
-  const [conversations, setConversations] = useState([
+  // Dynamic Conversations List with localStorage Persistence
+  const RELAY_CONVERSATIONS_STORAGE_KEY = 'regaarder_relay_conversations_v2';
+  const DEFAULT_CONVERSATIONS = [
     {
       id: 'chat-assistant',
       name: 'Assistant',
@@ -451,7 +452,35 @@ export default function ExecutiveDirectMessages({
       topics: ['Strategy Synthesis', 'Voice Chat', 'Workspace Analysis'],
       actions: []
     }
-  ]);
+  ];
+
+  const [conversations, setConversations] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(RELAY_CONVERSATIONS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Relay] Failed to load conversations from localStorage:', e);
+    }
+    return DEFAULT_CONVERSATIONS;
+  });
+
+  // Automatically persist conversations whenever updated
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && conversations) {
+        localStorage.setItem(RELAY_CONVERSATIONS_STORAGE_KEY, JSON.stringify(conversations));
+      }
+    } catch (e) {
+      console.warn('[Relay] Failed to persist conversations to localStorage:', e);
+    }
+  }, [conversations]);
 
   // Isolated Message Threads Store with localStorage Persistence
   const RELAY_MESSAGES_STORAGE_KEY = 'regaarder_relay_messages_v1';
@@ -614,6 +643,60 @@ export default function ExecutiveDirectMessages({
     status: 'read'
   });
 
+  // ── Session Lifecycle: Auto-Archive Previous AI Chats on Fresh App Launch ──
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      const SESSION_MARKER = 'regaarder_relay_session_active_v1';
+      const isSessionActive = sessionStorage.getItem(SESSION_MARKER);
+      if (!isSessionActive) {
+        sessionStorage.setItem(SESSION_MARKER, 'true');
+
+        setThreadMessages(prevThreads => {
+          let updated = { ...prevThreads };
+          let sessionsToArchive = [];
+
+          Object.keys(updated).forEach(contactId => {
+            const msgs = updated[contactId] || [];
+            const userMsgs = msgs.filter(m => m.role === 'you');
+            if (userMsgs.length > 0) {
+              const firstUserMsg = userMsgs[0].text || 'Previous Chat';
+              const sessionTitle = firstUserMsg.length > 40 ? `${firstUserMsg.slice(0, 40)}...` : firstUserMsg;
+              const contactObj = conversations.find(c => c.id === contactId);
+              const mName = contactObj?.modelName || contactObj?.name || 'AI Assistant';
+
+              sessionsToArchive.push({
+                id: `session-auto-${Date.now()}-${contactId}`,
+                contactId: contactId,
+                title: sessionTitle,
+                date: new Date(msgs[msgs.length - 1]?.createdAt || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                modelName: mName,
+                messages: [...msgs]
+              });
+
+              updated[contactId] = [{
+                id: `m-welcome-${Date.now()}`,
+                author: contactObj?.name || 'Assistant',
+                role: 'assistant',
+                text: `Welcome back to a new chat session with ${contactObj?.name || 'Assistant'}. All communications are end-to-end encrypted.\n\nYour previous conversation has been archived to History. Ready for your next briefing or question.`,
+                createdAt: Date.now(),
+                status: 'read'
+              }];
+            }
+          });
+
+          if (sessionsToArchive.length > 0) {
+            setAiChatSessions(prevSess => [...sessionsToArchive, ...prevSess]);
+          }
+
+          return updated;
+        });
+      }
+    } catch (e) {
+      console.warn('[Relay] Session lifecycle auto-archive error:', e);
+    }
+  }, []);
+
   const handleStartNewAiChat = () => {
     const currentMessages = threadMessages[activeContactId] || [];
     const userMessages = currentMessages.filter(m => m.role === 'you');
@@ -623,6 +706,7 @@ export default function ExecutiveDirectMessages({
       const sessionTitle = firstUserMsg.length > 40 ? `${firstUserMsg.slice(0, 40)}...` : firstUserMsg;
       const newSession = {
         id: `session-${Date.now()}`,
+        contactId: activeContactId,
         title: sessionTitle,
         date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         modelName: (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'Gemini 2.0 Flash',
@@ -649,6 +733,24 @@ export default function ExecutiveDirectMessages({
 
   const handleSelectPastAiSession = (session) => {
     if (!session || !session.messages) return;
+
+    // Archive current if it has user messages and isn't already the selected session
+    const currentMessages = threadMessages[activeContactId] || [];
+    const userMessages = currentMessages.filter(m => m.role === 'you');
+    if (userMessages.length > 0 && !aiChatSessions.some(s => s.id === session.id && s.messages?.length === currentMessages.length)) {
+      const firstUserMsg = userMessages[0].text || 'Untitled Chat';
+      const sessionTitle = firstUserMsg.length > 40 ? `${firstUserMsg.slice(0, 40)}...` : firstUserMsg;
+      const currentSessionObj = {
+        id: `session-${Date.now()}`,
+        contactId: activeContactId,
+        title: sessionTitle,
+        date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        modelName: (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'Assistant',
+        messages: [...currentMessages]
+      };
+      setAiChatSessions(prev => [currentSessionObj, ...prev.filter(s => s.id !== currentSessionObj.id)]);
+    }
+
     setThreadMessages(prev => ({
       ...prev,
       [activeContactId]: [...session.messages]

@@ -34829,25 +34829,64 @@ Respond with valid JSON formatted like this:
     setOpenDocMenuId(null);
   };
 
-  const confirmCloseDocument = () => {
-    if (!closeConfirmDocId) {
+  const handleSaveAndCloseDocument = (docId) => {
+    const targetId = docId || closeConfirmDocId;
+    const targetDoc = documents.find((d) => d.id === targetId);
+    if (!targetDoc) {
+      setCloseConfirmDocId(null);
       return;
     }
 
-    const targetDoc = documents.find((d) => d.id === closeConfirmDocId);
+    const updatedDocs = documents.map((d) => {
+      if (d.id === targetId) {
+        return {
+          ...d,
+          bodyHtml: targetId === activeDocId ? docBodyHtml : d.bodyHtml,
+          title: targetId === activeDocId ? docTitle : d.title,
+          subtitle: targetId === activeDocId ? docSubtitle : d.subtitle,
+          updatedAt: Date.now(),
+          isSaved: true
+        };
+      }
+      return d;
+    });
+
+    setDocuments(updatedDocs);
+    setCloseConfirmDocId(null);
+    showToast(`"${targetDoc.title || 'Document'}" saved to Library`);
+
+    // If closing active document, switch to remaining or create clean
+    if (targetId === activeDocId) {
+      const remaining = updatedDocs.filter((d) => d.id !== targetId);
+      if (remaining.length > 0) {
+        switchDocument(remaining[0].id);
+      } else {
+        createNewComposition({ silent: true });
+      }
+    }
+  };
+
+  const handleDiscardAndCloseDocument = (docId) => {
+    const targetId = docId || closeConfirmDocId;
+    const targetDoc = documents.find((d) => d.id === targetId);
     const targetDocMode = targetDoc ? getDocMode(targetDoc) : activeWorkspaceMode;
 
-    const remaining = documents.filter((doc) => doc.id !== closeConfirmDocId);
+    const remaining = documents.filter((doc) => doc.id !== targetId);
     const remainingInMode = remaining.filter((doc) => getDocMode(doc) === targetDocMode);
 
     setDocuments(remaining);
     setCloseConfirmDocId(null);
+    showToast('Document discarded');
 
     if (!remainingInMode.length) {
       createNewComposition({ silent: true });
     } else {
       switchDocument(remainingInMode[0].id);
     }
+  };
+
+  const confirmCloseDocument = () => {
+    handleSaveAndCloseDocument(closeConfirmDocId);
   };
 
   const openCreateWorkspaceModal = () => {
@@ -36686,12 +36725,19 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const renderCloseConfirmModal = () => {
     if (!closeConfirmDocId) return null;
+    const targetDoc = documents.find((d) => d.id === closeConfirmDocId);
+    const targetTitle = targetDoc?.title || closeConfirmTerm.noun;
+
     return createPortal(
       <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-        <div className="w-[420px] max-w-[90vw] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150 font-sans">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">{closeConfirmTerm.title}</h3>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">You can still create a new one after closing. This action will remove the selected tab.</p>
-          <div className="flex items-center justify-end gap-2">
+        <div className="w-[440px] max-w-[90vw] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150 font-sans">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">
+            Close "{targetTitle}"?
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">
+            Would you like to save this {closeConfirmTerm.noun} to your Workspace Library, or discard it? Saved items remain securely stored and can be reopened anytime from your library or search.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => setCloseConfirmDocId(null)}
@@ -36701,10 +36747,17 @@ Respond with a JSON array of slide objects matching the schema.`;
             </button>
             <button
               type="button"
-              onClick={confirmCloseDocument}
+              onClick={() => handleDiscardAndCloseDocument(closeConfirmDocId)}
+              className="px-3.5 py-1.5 rounded-xl text-xs border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold transition-colors cursor-pointer"
+            >
+              Discard & Delete
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSaveAndCloseDocument(closeConfirmDocId)}
               className="px-4 py-1.5 rounded-xl text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-sm transition-colors cursor-pointer"
             >
-              {closeConfirmTerm.button}
+              Save to Library
             </button>
           </div>
         </div>

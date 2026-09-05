@@ -5,7 +5,7 @@ import {
   Clock, FileText, Database, ShieldCheck, Compass,
   Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
   Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown,
-  Edit3, RotateCcw
+  Edit3, RotateCcw, History
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -353,6 +353,76 @@ export default function GlobalWorkspaceSearchModal({
   const promptEditInputRef = useRef(null);
   const synthesisCardRef = useRef(null);
 
+  // Persistent Recent Inquiries History
+  const [recentInquiries, setRecentInquiries] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('regaarder_memory_inquiries_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[Memory] Failed to load recent inquiries:', e);
+    }
+    return [];
+  });
+
+  const saveInquiryToHistory = (q, answer, sources = []) => {
+    if (!q || !q.trim() || !answer) return;
+    const item = {
+      id: `inq-${Date.now()}`,
+      query: q.trim(),
+      answerPreview: answer.length > 90 ? `${answer.slice(0, 90)}...` : answer,
+      fullAnswer: answer,
+      sources: sources || [],
+      timestamp: Date.now()
+    };
+    setRecentInquiries(prev => {
+      const filtered = prev.filter(i => i.query.toLowerCase() !== q.trim().toLowerCase());
+      const updated = [item, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('regaarder_memory_inquiries_v1', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+  };
+
+  const handleClearMemorySynthesis = () => {
+    setQuery('');
+    setAiResponse(null);
+    setConversationThread([]);
+    setQuotedSnippet('');
+    setSelectionTooltip(null);
+    setIsReplying(false);
+    setIsEditingPrompt(false);
+    setMode('search');
+    setTimeout(() => inputRef.current?.focus(), 40);
+  };
+
+  const handleRestorePastInquiry = (inq) => {
+    if (!inq) return;
+    setQuery(inq.query);
+    setAiResponse({
+      answer: inq.fullAnswer || inq.answerPreview,
+      sources: inq.sources || []
+    });
+    setConversationThread([]);
+    setQuotedSnippet('');
+    setSelectionTooltip(null);
+    setIsReplying(false);
+    setIsEditingPrompt(false);
+    setMode('ai');
+  };
+
+  const handleClearInquiriesHistory = () => {
+    setRecentInquiries([]);
+    try {
+      localStorage.removeItem('regaarder_memory_inquiries_v1');
+    } catch (_) {}
+  };
+
   // Persona list (supports custom on-device edits)
   const [personas, setPersonas] = useState(() => {
     try {
@@ -469,6 +539,10 @@ export default function GlobalWorkspaceSearchModal({
       setSelectedIndex(0);
       setAiResponse(null);
       setAiLoading(false);
+      setConversationThread([]);
+      setQuotedSnippet('');
+      setIsReplying(false);
+      setIsEditingPrompt(false);
       setIsMdModalOpen(false);
       setIsPersonaMenuOpen(false);
       setIsEditPersonaModalOpen(false);
@@ -611,6 +685,9 @@ export default function GlobalWorkspaceSearchModal({
         personaInstructions: personaContext
       });
       setAiResponse(result);
+      if (result?.answer) {
+        saveInquiryToHistory(targetQ.trim(), result.answer, result.sources);
+      }
     } catch (err) {
       console.error('Error synthesizing workspace knowledge:', err);
       setAiResponse({
@@ -1671,6 +1748,37 @@ export default function GlobalWorkspaceSearchModal({
           )}
         </div>
 
+        {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory) ── */}
+        {recentInquiries.length > 0 && (
+          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
+              <History size={11} className="text-violet-600 dark:text-violet-400" />
+              Recent:
+            </span>
+            <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar flex-1">
+              {recentInquiries.slice(0, 5).map((inq) => (
+                <button
+                  key={inq.id}
+                  type="button"
+                  onClick={() => handleRestorePastInquiry(inq)}
+                  className="px-2.5 py-0.5 rounded-lg text-[11px] bg-white dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-300 border border-slate-200/80 dark:border-zinc-700/60 transition-all shrink-0 cursor-pointer shadow-2xs font-medium"
+                  title={inq.query}
+                >
+                  {inq.query.length > 28 ? `${inq.query.slice(0, 28)}…` : inq.query}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleClearInquiriesHistory}
+              className="text-[10px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 shrink-0 ml-auto transition-colors cursor-pointer"
+              title="Clear inquiry history"
+            >
+              Clear History
+            </button>
+          </div>
+        )}
+
         {/* ── Footer Cheatsheet Bar ── */}
         <div className={`flex items-center justify-between px-5 py-2.5 text-[11px] text-slate-500 dark:text-zinc-400 shrink-0 ${footerClasses}`}>
           <div className="flex items-center gap-3">
@@ -1686,6 +1794,18 @@ export default function GlobalWorkspaceSearchModal({
               <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">Esc</kbd>
               <span>{t('common.close') || 'Close'}</span>
             </span>
+
+            {(aiResponse || query || conversationThread.length > 0) && (
+              <button
+                type="button"
+                onClick={handleClearMemorySynthesis}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-950/40 text-slate-600 hover:text-rose-600 dark:text-zinc-300 dark:hover:text-rose-400 border border-slate-200/80 dark:border-zinc-700 font-medium text-[10.5px] transition-colors cursor-pointer ml-1"
+                title="Reset search and clear current synthesis"
+              >
+                <RotateCcw size={10} />
+                <span>Reset Search</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
