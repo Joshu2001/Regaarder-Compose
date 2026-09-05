@@ -1359,263 +1359,378 @@ export default function GlobalWorkspaceSearchModal({
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE - EMPTY QUERY (Unified 3-Pillar Executive Architecture)
+              MODE B: SEARCH MODE - EMPTY QUERY (Category Browser or 3-Pillar Executive Architecture)
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
-            <div className="space-y-4">
-              {/* ── 3-Pillar Executive Memory Grid ── */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                
-                {/* ── Pillar 1: Brand & Design System Tokens ── */}
-                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
-                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
-                    <div className="flex items-center gap-1.5">
-                      <Palette size={13} className="text-violet-600 dark:text-violet-400" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
-                        Brand Rules
-                      </span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 font-semibold">
-                        {brandRules.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".md,.markdown,.txt"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-1 rounded hover:bg-black/[0.04] text-slate-500 hover:text-violet-600 transition-colors cursor-pointer"
-                        title="Upload .MD file"
-                      >
-                        <FileUp size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsMdModalOpen(true)}
-                        className="p-1 rounded hover:bg-black/[0.04] text-violet-600 hover:text-violet-700 transition-colors cursor-pointer"
-                        title="Add or Paste MD"
-                      >
-                        <Plus size={13} strokeWidth={2.5} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="p-3 space-y-1.5 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
-                    {brandRules.map((rule) => (
-                      <div
-                        key={rule.id}
-                        className="flex items-start justify-between p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
-                      >
-                        <div className="min-w-0 flex-1 pr-1">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            {rule.category && (
-                              <span className={`text-[8px] font-bold uppercase font-mono px-1 py-0.2 rounded border ${getCategoryBadge(rule.category)}`}>
-                                {rule.category}
-                              </span>
-                            )}
-                            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">
-                              {rule.label}
-                            </span>
-                          </div>
-                          <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-tight">
-                            {rule.value}
-                          </div>
-                        </div>
+            activeFilter === 'all' ? (
+              <div className="space-y-4">
+                {/* ── 3-Pillar Executive Memory Grid ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  
+                  {/* ── Pillar 1: Brand & Design System Tokens ── */}
+                  <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                      <div className="flex items-center gap-1.5">
+                        <Palette size={13} className="text-violet-600 dark:text-violet-400" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                          Brand Rules
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 font-semibold">
+                          {brandRules.length}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".md,.markdown,.txt"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
                         <button
                           type="button"
-                          onClick={() => handleRemoveBrandRule(rule.id)}
-                          className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0 cursor-pointer"
-                          title="Delete rule"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-1 rounded hover:bg-black/[0.04] text-slate-500 hover:text-violet-600 transition-colors cursor-pointer"
+                          title="Upload .MD file"
                         >
-                          <Trash2 size={11} />
+                          <FileUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsMdModalOpen(true)}
+                          className="p-1 rounded hover:bg-black/[0.04] text-violet-600 hover:text-violet-700 transition-colors cursor-pointer"
+                          title="Add or Paste MD"
+                        >
+                          <Plus size={13} strokeWidth={2.5} />
                         </button>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                {/* ── Pillar 2: Ambient Learned Habits ── */}
-                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
-                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
-                    <div className="flex items-center gap-1.5">
-                      <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
-                        Ambient Habits
+                    <div className="p-3 space-y-1.5 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                      {brandRules.map((rule) => (
+                        <div
+                          key={rule.id}
+                          className="flex items-start justify-between p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
+                        >
+                          <div className="min-w-0 flex-1 pr-1">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              {rule.category && (
+                                <span className={`text-[8px] font-bold uppercase font-mono px-1 py-0.2 rounded border ${getCategoryBadge(rule.category)}`}>
+                                  {rule.category}
+                                </span>
+                              )}
+                              <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">
+                                {rule.label}
+                              </span>
+                            </div>
+                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-tight">
+                              {rule.value}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBrandRule(rule.id)}
+                            className="text-slate-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            title="Delete rule"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Pillar 2: Learned Ambient Habits ── */}
+                  <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                      <div className="flex items-center gap-1.5">
+                        <Compass size={13} className="text-violet-600 dark:text-violet-400" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                          Ambient Habits
+                        </span>
+                      </div>
+                      <span className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-mono font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Live
                       </span>
                     </div>
-                    <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Live
-                    </span>
+
+                    <div className="p-3 space-y-2 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                      {LEARNED_HABITS.map((habit) => {
+                        const IconComponent = habit.icon;
+                        return (
+                          <div
+                            key={habit.id}
+                            className="flex items-start gap-2.5 p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
+                          >
+                            <div className="w-6 h-6 rounded-md bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5 border border-black/[0.05] dark:border-white/[0.06]">
+                              <IconComponent size={12} strokeWidth={1.6} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">
+                                {habit.title}
+                              </div>
+                              <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 leading-snug mt-0.5">
+                                {habit.desc}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div className="p-3 space-y-2 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
-                    {LEARNED_HABITS.map((habit) => {
-                      const HabitIcon = habit.icon;
-                      return (
-                        <div
-                          key={habit.id}
-                          className="flex items-start gap-2.5 p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
-                        >
-                          <div className="w-6 h-6 rounded flex items-center justify-center bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
-                            <HabitIcon size={12} />
+                  {/* ── Pillar 3: Active Cognitive Lens ── */}
+                  <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                      <div className="flex items-center gap-1.5">
+                        <UserCheck size={13} className="text-violet-600 dark:text-violet-400" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                          Cognitive Lens
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditPersona(activePersona)}
+                        className="text-[10.5px] text-violet-600 dark:text-violet-400 hover:text-violet-700 font-semibold flex items-center gap-1 cursor-pointer"
+                        title="Customize this persona's prompt"
+                      >
+                        <Edit3 size={11} />
+                        <span>Edit Prompt</span>
+                      </button>
+                    </div>
+
+                    <div className="p-3.5 space-y-3 max-h-[310px] overflow-y-auto thin-scrollbar flex-1 flex flex-col justify-between">
+                      <div className="space-y-2.5">
+                        {/* Active Persona Header Box */}
+                        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/40">
+                          <div className="w-7 h-7 rounded-md flex items-center justify-center bg-violet-600 text-white font-bold text-xs font-mono shrink-0 shadow-2xs">
+                            {activePersona.name.split(' ').map(n => n[0]).join('')}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[11.5px] font-bold text-slate-800 dark:text-zinc-200 truncate">
-                              {habit.title}
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                              {activePersona.name}
                             </div>
-                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 leading-snug mt-0.5">
-                              {habit.desc}
+                            <div className="text-[10px] text-violet-700 dark:text-violet-300 font-medium truncate">
+                              {activePersona.badge}
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        {/* Live Persona Prompt Rules Snippet */}
+                        <div className="p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] space-y-1">
+                          <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                            Active System Directive
+                          </div>
+                          <p className="text-[11px] text-slate-700 dark:text-zinc-300 italic leading-relaxed line-clamp-4">
+                            &ldquo;{activePersona.instructions}&rdquo;
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Quick Switcher Chips */}
+                      <div className="space-y-1.5 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
+                        <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                          Quick Switch Lens
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {personas.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setActivePersona(p)}
+                              className={`px-2 py-1 rounded text-[10.5px] font-semibold text-left truncate transition-all cursor-pointer ${
+                                activePersona.id === p.id
+                                  ? 'bg-violet-600 text-white shadow-2xs'
+                                  : 'bg-black/[0.03] dark:bg-white/[0.04] text-slate-700 dark:text-zinc-300 hover:bg-black/[0.06]'
+                              }`}
+                            >
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
 
-                {/* ── Pillar 3: Active Cognitive Lens & Prompt Engine ── */}
-                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
-                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
-                    <div className="flex items-center gap-1.5">
-                      <UserCheck size={13} className="text-violet-600 dark:text-violet-400" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
-                        Cognitive Lens
-                      </span>
+                {/* Real Items: Continue Where You Left Off */}
+                {searchResults.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
+                      <RegaarderHistoryIcon size={12} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
+                      <span>Recent Workspace Files & Context</span>
+                    </div>
+                    <div className="space-y-1">
+                      {searchResults.slice(0, 5).map((res, itemIdx) => {
+                        const isSelected = selectedIndex === itemIdx;
+                        const entity = res.entity;
+
+                        return (
+                          <div
+                            key={entity.id}
+                            data-selected={isSelected}
+                            onClick={() => handleActivateItem({ type: 'entity', data: entity })}
+                            onMouseEnter={() => setSelectedIndex(itemIdx)}
+                            className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                              isSelected
+                                ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
+                                : 'hover:bg-white/60 dark:hover:bg-zinc-800/40 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05]">
+                                <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                    {entity.title}
+                                  </span>
+                                  {entity.isCurrent && (
+                                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                  {entity.location} • {entity.author}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                                {entity.updatedAt}
+                              </span>
+                              <ArrowRight
+                                size={12}
+                                className={`transition-transform duration-150 ${
+                                  isSelected ? 'translate-x-0.5 text-violet-600 dark:text-violet-400' : 'text-slate-300 dark:text-zinc-600'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Category-Specific Workspace File Browser ── */
+              <div className="space-y-3">
+                {searchResults.length > 0 ? (
+                  <div>
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 font-mono">
+                        <RegaarderProductIcon name={activeFilter} size={13} strokeWidth={1.7} className="text-violet-600 dark:text-violet-400" />
+                        <span>Workspace {activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
+                          {searchResults.length}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          if (onNavigateToEntity) {
+                            onNavigateToEntity({ workspace: activeFilter, actionType: 'create' });
+                          }
+                        }}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors cursor-pointer"
+                      >
+                        <Plus size={12} strokeWidth={2.5} />
+                        <span>New {activeFilter === 'sheets' ? 'Sheet' : activeFilter === 'deck' ? 'Slide Deck' : activeFilter === 'docs' ? 'Document' : activeFilter.slice(0, -1)}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      {searchResults.map((res, itemIdx) => {
+                        const isSelected = selectedIndex === itemIdx;
+                        const entity = res.entity;
+
+                        return (
+                          <div
+                            key={entity.id}
+                            data-selected={isSelected}
+                            onClick={() => handleActivateItem({ type: 'entity', data: entity })}
+                            onMouseEnter={() => setSelectedIndex(itemIdx)}
+                            className={`flex items-center justify-between p-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                              isSelected
+                                ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
+                                : 'hover:bg-white/60 dark:hover:bg-zinc-800/40 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05]">
+                                <RegaarderProductIcon name={entity.workspace} size={15} strokeWidth={1.6} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                    {entity.title}
+                                  </span>
+                                  {entity.isCurrent && (
+                                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                  {entity.location} • {entity.author}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                                {entity.updatedAt}
+                              </span>
+                              <ArrowRight
+                                size={13}
+                                className={`transition-transform duration-150 ${
+                                  isSelected ? 'translate-x-0.5 text-violet-600 dark:text-violet-400' : 'text-slate-300 dark:text-zinc-600'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  /* Empty State for Selected Category */
+                  <div className="py-14 text-center max-w-sm mx-auto space-y-3">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-slate-400 dark:text-zinc-500 shadow-2xs">
+                      <RegaarderProductIcon name={activeFilter} size={24} strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h4 className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-200">
+                        No {activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Found
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                        There are no {activeFilter} created in your workspace yet.
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleOpenEditPersona(activePersona)}
-                      className="flex items-center gap-1 text-[10.5px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors cursor-pointer"
+                      onClick={() => {
+                        onClose();
+                        if (onNavigateToEntity) {
+                          onNavigateToEntity({ workspace: activeFilter, actionType: 'create' });
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-all cursor-pointer"
                     >
-                      <Edit3 size={11} />
-                      <span>Edit Prompt</span>
+                      <Plus size={12} strokeWidth={2.5} />
+                      <span>Create New {activeFilter === 'sheets' ? 'Spreadsheet' : activeFilter === 'deck' ? 'Slide Deck' : activeFilter === 'docs' ? 'Document' : activeFilter}</span>
                     </button>
                   </div>
-
-                  <div className="p-3.5 space-y-3 max-h-[310px] overflow-y-auto thin-scrollbar flex-1 flex flex-col justify-between">
-                    <div className="space-y-2.5">
-                      {/* Active Persona Header Box */}
-                      <div className="flex items-center gap-2.5 p-2 rounded-lg bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/40">
-                        <div className="w-7 h-7 rounded-md flex items-center justify-center bg-violet-600 text-white font-bold text-xs font-mono shrink-0 shadow-2xs">
-                          {activePersona.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                            {activePersona.name}
-                          </div>
-                          <div className="text-[10px] text-violet-700 dark:text-violet-300 font-medium truncate">
-                            {activePersona.badge}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Live Persona Prompt Rules Snippet */}
-                      <div className="p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] space-y-1">
-                        <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                          Active System Directive
-                        </div>
-                        <p className="text-[11px] text-slate-700 dark:text-zinc-300 italic leading-relaxed line-clamp-4">
-                          &ldquo;{activePersona.instructions}&rdquo;
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quick Switcher Chips */}
-                    <div className="space-y-1.5 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
-                      <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                        Quick Switch Lens
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {personas.map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => setActivePersona(p)}
-                            className={`px-2 py-1 rounded text-[10.5px] font-semibold text-left truncate transition-all cursor-pointer ${
-                              activePersona.id === p.id
-                                ? 'bg-violet-600 text-white shadow-2xs'
-                                : 'bg-black/[0.03] dark:bg-white/[0.04] text-slate-700 dark:text-zinc-300 hover:bg-black/[0.06]'
-                            }`}
-                          >
-                            {p.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+                )}
               </div>
-
-              {/* Real Items: Continue Where You Left Off (Only rendered when actual files exist) */}
-              {searchResults.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
-                    <RegaarderHistoryIcon size={12} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
-                    <span>Recent Workspace Files & Context</span>
-                  </div>
-                  <div className="space-y-1">
-                    {searchResults.slice(0, 5).map((res, itemIdx) => {
-                      const isSelected = selectedIndex === itemIdx;
-                      const entity = res.entity;
-
-                      return (
-                        <div
-                          key={entity.id}
-                          data-selected={isSelected}
-                          onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                          onMouseEnter={() => setSelectedIndex(itemIdx)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
-                            isSelected
-                              ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
-                              : 'hover:bg-white/60 dark:hover:bg-zinc-800/40 border border-transparent'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05]">
-                              <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                                  {entity.title}
-                                </span>
-                                {entity.isCurrent && (
-                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono">
-                                    Active
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
-                                {entity.location} • {entity.author}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
-                              {entity.updatedAt}
-                            </span>
-                            <ArrowRight
-                              size={12}
-                              className={`transition-transform duration-150 ${
-                                isSelected ? 'translate-x-0.5 text-violet-600 dark:text-violet-400' : 'text-slate-300 dark:text-zinc-600'
-                              }`}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            )
           )}
 
           {/* ══════════════════════════════════════════════════════════

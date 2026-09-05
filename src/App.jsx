@@ -6969,7 +6969,22 @@ function AppCore() {
   }, [stagedBranches]);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
+  const [orbInitialFilter, setOrbInitialFilter] = useState('all');
+  const SHEETS_GRIDS_STORAGE_KEY = 'regaarder_sheets_grids_v1';
   const [sheetGrids, setSheetGrids] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(SHEETS_GRIDS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Sheets] Failed to load sheet grids from localStorage:', e);
+    }
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
     [
@@ -6979,6 +6994,16 @@ function AppCore() {
     });
     return result;
   });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && sheetGrids) {
+        localStorage.setItem(SHEETS_GRIDS_STORAGE_KEY, JSON.stringify(sheetGrids));
+      }
+    } catch (e) {
+      console.warn('[Sheets] Failed to persist sheet grids to localStorage:', e);
+    }
+  }, [sheetGrids]);
 
   const [notifications, setNotifications] = useState([]);
 
@@ -10528,7 +10553,33 @@ const DEFAULT_DECK_SLIDES = [
     footer: 'novaris Company'
   }
 ];
-  const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_BLANK_DECK_SLIDES);
+  const DECK_SLIDES_STORAGE_KEY = 'regaarder_deck_slides_v1';
+  const [deckSlidesData, setDeckSlidesData] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(DECK_SLIDES_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Deck] Failed to load deck slides from localStorage:', e);
+    }
+    return DEFAULT_BLANK_DECK_SLIDES;
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && Array.isArray(deckSlidesData) && deckSlidesData.length > 0) {
+        localStorage.setItem(DECK_SLIDES_STORAGE_KEY, JSON.stringify(deckSlidesData));
+      }
+    } catch (e) {
+      console.warn('[Deck] Failed to persist deck slides to localStorage:', e);
+    }
+  }, [deckSlidesData]);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
@@ -10542,19 +10593,95 @@ const DEFAULT_DECK_SLIDES = [
   const [whiteboardEmojiUsage, setWhiteboardEmojiUsage] = useState([]);
   const [whiteboardAlignmentGuides, setWhiteboardAlignmentGuides] = useState([]);
   const [whiteboardHoveredAnchor, setWhiteboardHoveredAnchor] = useState(null);
-  const [whiteboardStrokes, setWhiteboardStrokes] = useState([]);
+  const WHITEBOARD_STROKES_STORAGE_KEY = 'regaarder_whiteboard_strokes_v1';
+  const [whiteboardStrokes, setWhiteboardStrokes] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(WHITEBOARD_STROKES_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[Whiteboard] Failed to load strokes from localStorage:', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(WHITEBOARD_STROKES_STORAGE_KEY, JSON.stringify(whiteboardStrokes));
+      }
+    } catch (e) {
+      console.warn('[Whiteboard] Failed to persist strokes to localStorage:', e);
+    }
+  }, [whiteboardStrokes]);
+
   const [whiteboardRedoStrokes, setWhiteboardRedoStrokes] = useState([]);
   const [whiteboardCurrentStroke, setWhiteboardCurrentStroke] = useState('');
   const [whiteboardLineAnchor, setWhiteboardLineAnchor] = useState(null);
   const [whiteboardCurrentShape, setWhiteboardCurrentShape] = useState(null);
-  const [whiteboardShapes, setWhiteboardShapes] = useState([]);
+
+  const WHITEBOARD_SHAPES_STORAGE_KEY = 'regaarder_whiteboard_shapes_v1';
+  const [whiteboardShapes, setWhiteboardShapes] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(WHITEBOARD_SHAPES_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[Whiteboard] Failed to load shapes from localStorage:', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(WHITEBOARD_SHAPES_STORAGE_KEY, JSON.stringify(whiteboardShapes));
+      }
+    } catch (e) {
+      console.warn('[Whiteboard] Failed to persist shapes to localStorage:', e);
+    }
+  }, [whiteboardShapes]);
+
   const [selectedShapeIndex, setSelectedShapeIndex] = useState(null);
   const [whiteboardShapeVariant, setWhiteboardShapeVariant] = useState('line');
   const [whiteboardShapeMenuOpen, setWhiteboardShapeMenuOpen] = useState(false);
   const [whiteboardShapeFillMenuFor, setWhiteboardShapeFillMenuFor] = useState(null);
   const [whiteboardShapeStrokeMenuFor, setWhiteboardShapeStrokeMenuFor] = useState(null);
   const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
-  const [whiteboardWidgets, setWhiteboardWidgets] = useState([]);
+
+  const WHITEBOARD_WIDGETS_STORAGE_KEY = 'regaarder_whiteboard_widgets_v1';
+  const [whiteboardWidgets, setWhiteboardWidgets] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(WHITEBOARD_WIDGETS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[Whiteboard] Failed to load widgets from localStorage:', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(WHITEBOARD_WIDGETS_STORAGE_KEY, JSON.stringify(whiteboardWidgets));
+      }
+    } catch (e) {
+      console.warn('[Whiteboard] Failed to persist widgets to localStorage:', e);
+    }
+  }, [whiteboardWidgets]);
   const [whiteboardMoreMenuOpen, setWhiteboardMoreMenuOpen] = useState(false);
   const [whiteboardStickyPaletteOpen, setWhiteboardStickyPaletteOpen] = useState(false);
   const [whiteboardStickyColor, setWhiteboardStickyColor] = useState('#fef08a');
@@ -48593,6 +48720,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ? 'opacity-100 pointer-events-auto' 
                     : 'opacity-0 pointer-events-none'
                 }`}>
+                  {/* Workspace Library / Files Browser Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetFilter = isSheetsMode ? 'sheets' : isDeckMode ? 'deck' : 'compose';
+                      setOrbInitialFilter(targetFilter);
+                      setOrbInitialQuery('');
+                      setIsMemorySearchOpen(true);
+                    }}
+                    className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
+                    title={`Browse ${isSheetsMode ? 'Sheets' : isDeckMode ? 'Decks' : 'Documents'} Library`}
+                  >
+                    <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
+                    <span>Library</span>
+                  </button>
+
                   {/* Export Dropdown Button */}
               <div className="relative export-menu-container">
                 <button
@@ -73648,6 +73791,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
             }`}>
+              {/* Workspace Library / Files Browser Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOrbInitialFilter('compose');
+                  setOrbInitialQuery('');
+                  setIsMemorySearchOpen(true);
+                }}
+                className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
+                title="Browse Documents Library"
+              >
+                <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
+                <span>Library</span>
+              </button>
+
               {/* Export Dropdown Button in Top Header */}
             {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
               <div className="relative export-menu-container">
@@ -87691,6 +87849,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isOpen={isMemorySearchOpen}
         onClose={() => setIsMemorySearchOpen(false)}
         initialQuery={orbInitialQuery}
+        initialFilter={orbInitialFilter}
         isDarkMode={isDarkMode}
         productMode={productMode}
         onCallAi={callGemini}
@@ -87717,6 +87876,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onNavigateToEntity={(entity) => {
           if (!entity) return;
           const ws = (entity.workspace || '').toLowerCase();
+          if (entity.actionType === 'create') {
+            if (ws === 'compose' || ws === 'docs') {
+              if (productMode !== 'compose') setProductMode('compose');
+              handleCreateNewDocument();
+            } else if (ws === 'sheets') {
+              if (productMode !== 'sheets') setProductMode('sheets');
+              showToast('Created new spreadsheet');
+            } else if (ws === 'deck') {
+              if (productMode !== 'deck') setProductMode('deck');
+              showToast('Created new presentation');
+            }
+            return;
+          }
           if (ws === 'compose') {
             if (productMode !== 'compose') setProductMode('compose');
             if (entity.metadata?.docId) {
