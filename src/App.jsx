@@ -87641,7 +87641,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isDarkMode={isDarkMode}
         productMode={productMode}
         onCallAi={callGemini}
-        aiConfig={aiConfig || aiProviderConfig}
+        aiConfig={aiProviderConfig}
+        selectedModel={composeSelectedModel}
+        detectedModels={composeDetectedModels}
         liveWorkspaceContext={{
           documents,
           activeDocId,

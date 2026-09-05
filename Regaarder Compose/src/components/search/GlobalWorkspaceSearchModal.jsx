@@ -322,6 +322,8 @@ export default function GlobalWorkspaceSearchModal({
   productMode = 'compose',
   onCallAi = null,
   aiConfig = null,
+  selectedModel = null,
+  detectedModels = [],
   liveWorkspaceContext = {},
   onNavigateToEntity
 }) {
@@ -595,6 +597,8 @@ export default function GlobalWorkspaceSearchModal({
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
       const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
+      const activeModelId = selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
+      const activeProvider = (selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
 
       const result = await synthesizeWorkspaceKnowledge({
         query: targetQ.trim(),
@@ -602,6 +606,8 @@ export default function GlobalWorkspaceSearchModal({
         workspaceIndex,
         onCallAi,
         aiConfig,
+        customModel: activeModelId,
+        customProvider: activeProvider,
         personaInstructions: personaContext
       });
       setAiResponse(result);
@@ -633,6 +639,8 @@ export default function GlobalWorkspaceSearchModal({
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
       const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
+      const activeModelId = selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
+      const activeProvider = (selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
 
       const result = await synthesizeWorkspaceKnowledge({
         query: userMessage,
@@ -640,6 +648,8 @@ export default function GlobalWorkspaceSearchModal({
         workspaceIndex,
         onCallAi,
         aiConfig,
+        customModel: activeModelId,
+        customProvider: activeProvider,
         previousConversation: [
           { role: 'user', text: query },
           ...(aiResponse?.answer ? [{ role: 'assistant', text: aiResponse.answer }] : []),

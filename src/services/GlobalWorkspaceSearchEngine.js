@@ -637,6 +637,8 @@ export async function synthesizeWorkspaceKnowledge({
   workspaceIndex = [],
   onCallAi = null,
   aiConfig = null,
+  customModel = null,
+  customProvider = null,
   previousConversation = [],
   personaInstructions = ''
 }) {
@@ -649,14 +651,16 @@ export async function synthesizeWorkspaceKnowledge({
     };
   }
 
-  // Extract generous context from each matched document (up to 3,000 chars)
-  const contextData = matched.map((m, idx) => {
-    const rawContent = (m.entity.content || m.entity.bodyText || m.snippet || '').trim();
-    const truncatedContent = rawContent.length > 3000 ? rawContent.slice(0, 3000) + '…' : rawContent;
-    return `[Source ${idx + 1}] "${m.entity.title}" (${m.entity.location || m.entity.workspace}):\n${truncatedContent}`;
-  }).join('\n\n---\n\n');
+  // Build grounded context from top matched entities
+  const contextBlocks = matched.map((m, idx) => {
+    const e = m.entity;
+    const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
+    return `[DOCUMENT ${idx + 1}: ${e.title} (${e.workspace || e.type})]\n${bodyExcerpt}`;
+  });
 
-  // Format previous conversation context if follow-up turns exist
+  const contextData = contextBlocks.join('\n\n---\n\n');
+
+  // Format previous conversation context if follow-up turn
   const convContext = previousConversation?.length > 0
     ? '\n\nPREVIOUS CONVERSATION TURNS:\n' + previousConversation.map(c => `${c.role === 'user' ? 'User' : 'Assistant'}: ${c.text}`).join('\n')
     : '';
@@ -674,30 +678,54 @@ ${contextData}
 
 Synthesize the answer directly based on the sources above. Explain the exact connections and details found in the workspace:`;
 
+  // Helper to verify if returned string is a provider error or unconfigured message
+  const isErrorOrEmpty = (str) => {
+    if (!str || typeof str !== 'string') return true;
+    const lower = str.toLowerCase();
+    return lower.includes('empty response') ||
+           lower.includes('check your api key') ||
+           lower.includes('api key and model settings') ||
+           lower.includes('unable to synthesize') ||
+           lower.includes('quota exceeded') ||
+           lower.includes('invalid api key');
+  };
+
+  // Helper to check if configuration has usable credentials or active local endpoint
+  const hasUsableConfig = (cfg) => {
+    if (!cfg) return false;
+    const p = (cfg.provider || '').toLowerCase();
+    if (p === 'ollama' || p === 'local' || cfg.isLocal || cfg.endpoint) return true;
+    if (p === 'gemini' && (cfg.geminiApiKey || cfg.apiKey)) return true;
+    if (p === 'claude' && (cfg.claudeApiKey || cfg.apiKey)) return true;
+    if (p === 'openai' && (cfg.openaiApiKey || cfg.apiKey)) return true;
+    return false;
+  };
+
   // ── Primary Path: callAiWithTools (live tool-calling harness) ──────────────
-  if (aiConfig) {
+  if (aiConfig && hasUsableConfig(aiConfig)) {
     try {
       const { callAiWithTools } = await import('./docsToolExecutor.js');
       const { getSavedAiConfig } = await import('./orbAiService.js');
 
       const resolvedConfig = aiConfig || getSavedAiConfig();
-      const toolPrompt = `${systemPrompt}\n\n${userPrompt}`;
+      if (hasUsableConfig(resolvedConfig)) {
+        const toolPrompt = `${systemPrompt}\n\n${userPrompt}`;
+        const result = await callAiWithTools(toolPrompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
 
-      const result = await callAiWithTools(toolPrompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
-
-      if (result?.answer) {
-        return {
-          answer: result.answer,
-          sources: matched.map(m => m.entity),
-          toolsExecuted: result.toolsExecuted || []
-        };
+        if (result?.answer && !isErrorOrEmpty(result.answer)) {
+          return {
+            answer: result.answer,
+            sources: matched.map(m => m.entity),
+            toolsExecuted: result.toolsExecuted || []
+          };
+        }
       }
     } catch (err) {
       console.warn('[synthesizeWorkspaceKnowledge] callAiWithTools failed, falling back:', err);
     }
   }
 
-  // ── Secondary Path: onCallAi bridge (supports both object & string signatures) ──
+  // ── Secondary Path: onCallAi bridge (routes to default LLM / local model) ──
   if (onCallAi) {
     try {
       let response = null;
@@ -705,7 +733,9 @@ Synthesize the answer directly based on the sources above. Explain the exact con
         try {
           const aiResult = await onCallAi({
             userPrompt,
-            systemPrompt
+            systemPrompt,
+            customModel,
+            customProvider
           });
           response = typeof aiResult === 'string' ? aiResult : (aiResult?.text || aiResult?.content || '');
         } catch (callErr) {
@@ -715,7 +745,7 @@ Synthesize the answer directly based on the sources above. Explain the exact con
         }
       }
 
-      if (response && response.trim()) {
+      if (response && response.trim() && !isErrorOrEmpty(response)) {
         return {
           answer: response.trim(),
           sources: matched.map(m => m.entity)
