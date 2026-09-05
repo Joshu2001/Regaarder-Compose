@@ -21,6 +21,8 @@ import {
 } from './universalContextGraph.js';
 import { mcpClient } from './universalMcpBridge.js';
 import * as intentScheduler from './intentSchedulerEngine.js';
+import * as spatialTopology from './spatialTopologyEngine.js';
+import * as roomObserver from './roomObserverEngine.js';
 
 /**
  * Converts markdown text into executive-tier, semantic document HTML.
@@ -167,22 +169,40 @@ export function classifyRelayIntent(prompt) {
     /(schedule|book|arrange|set up|plan)\s+(a\s+)?(meeting|sync|call|discussion|review|session|prep|practice)/i.test(text) ||
     /\b(tennis practice|board prep sync|investor pitch sync|architecture review|design sync|financial audit session)\b/i.test(text)
   );
-  const isDocCreation = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
-  const isTaskSchedule = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
+  const isDirectiveQueue = !isTranslation && !isMemoryInstruction && (
+    /(?:queue|run|assign|execute|checkout)\s+(?:an?|the)?\s*(?:agent|autonomous)?\s*(?:directive|task|execution)/i.test(text) ||
+    /(?:add|create|dispatch)\s+(?:an?|the)?\s*(?:agent|autonomous)?\s*(?:directive|execution|agent\s+task|autonomous\s+task)/i.test(text)
+  );
+  const isWhiteboardTopology = !isTranslation && !isMemoryInstruction && (
+    /(?:compile|render|generate|export|patch|inspect)\s+(?:an?|the)?\s*(?:whiteboard|diagram|flowchart|architecture|spatial topology)/i.test(text) ||
+    /(?:whiteboard topology|spatial graph|diagram to schema|architecture diagram)/i.test(text)
+  );
+  const isRoomHarvester = !isTranslation && !isMemoryInstruction && (
+    /(?:harvest|observe|transcribe|listen|monitor|join)\s+(?:an?|the)?\s*(?:room|meeting|audio|call|speech|discussion|in-meeting)/i.test(text) ||
+    /(?:meeting observer|room observer|room context|in-meeting observer|meeting transcript|harvest meeting)/i.test(text)
+  );
+  const isDocCreation = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
+  const isTaskSchedule = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
   const isSheetUpdate = !isTranslation && !isMemoryInstruction && (/(update|set|change|write|fill)\s+(the\s+)?(sheet|cell|row|column|cells)\s+([a-z]\d+|\d+)/i.test(text) || /(update|modify)\s+(spreadsheet|sheets)/i.test(text));
   const isCitationQuery = !isTranslation && !isMemoryInstruction && (/(where is|where does it mention|find in docs|search docs for|cite where|what doc discusses|reference for|show me where)/i.test(text) || /\b(citation|citations|source reference)\b/i.test(text));
+  const isIngestDocument = !isSheetUpdate && !isCitationQuery && !isDocCreation && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester &&
+    /(ingest|import|upload|parse|absorb)\s+(a\s+)?(file|document|pdf|csv|spreadsheet|docx|pptx)/i.test(text);
 
   return {
-    isAction: isDocCreation || isTaskSchedule || isScheduleMeeting || isSheetUpdate || isCitationQuery || isMemoryInstruction,
+    isAction: isDocCreation || isTaskSchedule || isScheduleMeeting || isSheetUpdate || isCitationQuery || isMemoryInstruction || isIngestDocument || isDirectiveQueue || isWhiteboardTopology || isRoomHarvester,
     isDocCreation,
     isTaskSchedule,
+    isDirectiveQueue,
     isScheduleMeeting,
     isSheetUpdate,
     isCitationQuery,
+    isIngestDocument,
+    isWhiteboardTopology,
+    isRoomHarvester,
     isTranslation,
     isMemoryInstruction
   };
-}
+};
 
 /**
  * Searches all workspace documents for citations and computes 1-based line numbers
@@ -249,13 +269,15 @@ When creating a document, memo, or outline:
 /**
  * Main execution dispatcher for Relay
  */
-export async function processRelayAgentMessage({
-  userPrompt,
-  onCallAi,
-  customModel,
-  customProvider,
-  existingThread = []
-}) {
+export async function processRelayAgentMessage(args = {}) {
+  const options = typeof args === 'string' ? { userPrompt: args } : (args || {});
+  const {
+    userPrompt,
+    onCallAi,
+    customModel,
+    customProvider,
+    existingThread = []
+  } = options;
   const trimmed = (userPrompt || '').trim();
   const intent = classifyRelayIntent(trimmed);
 
@@ -330,6 +352,77 @@ export async function processRelayAgentMessage({
     };
 
     replyText = `I analyzed your intent for **"${spec.title}"** (Systemic domain: \`${spec.intentCategory}\`, Prep buffer: ${spec.constraints?.prepBufferMin || 15}m).\n\nAlex Agent and Elena Agent conducted alternating-offer parameter negotiation and reached Pareto convergence at **${slotTimeStr}** (${confidencePct}% confidence). You can confirm the slot or inspect the schedule below.`;
+
+    return {
+      replyText,
+      actionCard,
+      referenceSources: []
+    };
+  }
+
+  // Handle Whiteboard Spatial Topology & Diagram Compiler (Pillar 9)
+  if (intent.isWhiteboardTopology) {
+    const graph = spatialTopology.getTopologyGraph();
+    const isSql = /sql|ddl|database|table/i.test(trimmed);
+    const isOpenApi = /openapi|swagger|endpoint|api/i.test(trimmed);
+    const isState = /state|fsm|xstate|lifecycle/i.test(trimmed);
+    const target = isSql ? 'sql' : (isOpenApi ? 'openapi' : (isState ? 'state_machine' : 'summary'));
+    
+    let compiledCode = '';
+    if (target === 'sql') compiledCode = spatialTopology.compileTopologyToSqlSchema();
+    else if (target === 'openapi') compiledCode = spatialTopology.compileTopologyToOpenApi();
+    else if (target === 'state_machine') compiledCode = spatialTopology.compileTopologyToStateMachine();
+    else compiledCode = spatialTopology.compileTopologyToArchitectureSummary();
+
+    const analysis = spatialTopology.analyzeTopology();
+
+    actionCard = {
+      type: 'topology',
+      subType: 'compiled',
+      title: `Spatial Topology: ${target.toUpperCase()}`,
+      description: `Compiled visual whiteboard canvas (${graph.nodes.length} nodes, ${graph.edges.length} edges, ${analysis.hasCycles ? 'cyclic' : 'acyclic'}) into ${target.toUpperCase()}.`,
+      target,
+      nodeCount: graph.nodes.length,
+      edgeCount: graph.edges.length,
+      previewSnippet: compiledCode.slice(0, 300)
+    };
+
+    replyText = `I processed the spatial whiteboard canvas topology (**${graph.nodes.length} nodes**, **${graph.edges.length} directed edges**).\n\nBi-directional compiler emitted **${target.toUpperCase()}** specifications with complete relational constraints.\n\n\`\`\`${target === 'sql' ? 'sql' : target === 'summary' ? 'markdown' : 'json'}\n${compiledCode.slice(0, 450)}${compiledCode.length > 450 ? '\n// ...' : ''}\n\`\`\`\n\nYou can inspect or synthesize further in the Spatial Topology Inspector.`;
+
+    return {
+      replyText,
+      actionCard,
+      referenceSources: []
+    };
+  }
+
+  // Handle Room Real-Time Context Harvester & Multi-Agent Observer (Pillar 10)
+  if (intent.isRoomHarvester) {
+    const session = roomObserver.getLiveSession();
+    const isSimulate = /simulate|run simulation|demo meeting|sample call/i.test(trimmed);
+
+    if (isSimulate && session.speakerTurns.length === 0) {
+      roomObserver.runSyntheticMeetingSimulation();
+    }
+
+    const updatedSession = roomObserver.getLiveSession();
+    const snippet = roomObserver.serializeRoomContextToMarkdown(updatedSession);
+
+    actionCard = {
+      type: 'room_harvester',
+      subType: 'live_stream',
+      title: `Room In-Meeting Observer: ${updatedSession.title}`,
+      description: `Active observers (${updatedSession.activeObservers.map(o => o.name).join(', ')}) tracking live organizational intent, decisions, and cross-app mutations.`,
+      meetingId: updatedSession.meetingId,
+      speakerCount: updatedSession.participants.length,
+      turnsCount: updatedSession.summary.totalTurns,
+      decisionsCount: updatedSession.summary.decisionsCount,
+      directivesCount: updatedSession.summary.directivesCount,
+      activePrBranchId: updatedSession.activePrBranchId,
+      previewSnippet: snippet.slice(0, 320)
+    };
+
+    replyText = `The **Room Context Harvester & Multi-Agent In-Meeting Observer** is actively monitoring "${updatedSession.title}".\n\n- **Active Observers:** ${updatedSession.activeObservers.map(o => o.name).join(', ')}\n- **Speaker Turns Processed:** ${updatedSession.summary.totalTurns}\n- **Epistemic Decisions Harvested:** ${updatedSession.summary.decisionsCount}\n- **Directives Queued:** ${updatedSession.summary.directivesCount}\n${updatedSession.activePrBranchId ? `- **Staged Meeting PR:** \`${updatedSession.activePrBranchId}\`\n` : ''}\nYou can inspect live transcripts, consensus cards, and staged PR diffs in the Room Observer Inspector.`;
 
     return {
       replyText,
@@ -578,6 +671,45 @@ export async function processRelayAgentMessage({
       if (!replyText) {
         replyText = `I have scheduled the task "${taskTitle}" (${priority} Priority, Due: ${dueDate}) in your workspace initiatives.`;
       }
+    }
+  } else if (!actionCard && intent.isIngestDocument) {
+    // ── Case D: Omni-Portal universal document ingestion (Pillar 7) ──
+    actionCard = {
+      type: 'portal',
+      title: 'Omni-Portal: Ready to Ingest',
+      description: 'Drop a file into the Omni-Portal to extract semantic AST state, route entities cross-app, and generate a staging PR.',
+    };
+    if (!replyText) {
+      replyText = `I can ingest that document through the **Omni-Portal** ingestion substrate. Drop your file into the portal to decompose it into Canvas blocks, Matrix tables, and Directive Queue items — all routed cross-app with a single staged PR.`;
+    }
+  } else if (!actionCard && intent.isDirectiveQueue) {
+    // ── Case E: Directive Queue & Autonomous Agent Execution (Pillar 8) ──
+    const directiveTitleMatch = trimmed.match(/(?:directive|agent task|task)\s+["']?([^"',.\n]+)["']?/i) ||
+      trimmed.match(/(?:queue|run|assign|execute|checkout)\s+["']?([^"',.\n]+)["']?/i);
+    const directiveTitle = directiveTitleMatch ? directiveTitleMatch[1].trim() : 'Autonomous Directive';
+
+    let queuedItem = null;
+    if (typeof window !== 'undefined' && window.__REGAARDER_DIRECTIVE_QUEUE__) {
+      queuedItem = window.__REGAARDER_DIRECTIVE_QUEUE__.queueDirective({
+        title: directiveTitle,
+        tier: /team/i.test(trimmed) ? 'team' : /user/i.test(trimmed) ? 'user' : 'agent',
+        priority: /urgent|p0|critical/i.test(trimmed) ? 'P0' : /p1|high/i.test(trimmed) ? 'P1' : 'P2',
+        description: `Queued via Relay Agent: ${trimmed}`
+      });
+    }
+
+    actionCard = {
+      type: 'directive',
+      directiveId: queuedItem?.id || `dir_${Date.now()}`,
+      title: queuedItem?.title || directiveTitle,
+      tier: queuedItem?.tier || 'agent',
+      priority: queuedItem?.priority || 'P1',
+      status: queuedItem?.status || 'PENDING',
+      description: `Directive queued in Autonomous Agent Execution Loop with block pointer anchoring.`
+    };
+
+    if (!replyText) {
+      replyText = `I have queued the directive "${directiveTitle}" into the **Directive Queue & Autonomous Agent Execution Loop** (${actionCard.tier.toUpperCase()} tier, ${actionCard.priority}). You can inspect the queue or trigger the runner in the Memory Dashboard.`;
     }
   }
 

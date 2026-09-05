@@ -84,6 +84,36 @@ export const REGAARDER_MCP_RESOURCES = [
     name: 'Multi-Agent Negotiation Audit Feed',
     description: 'Active and completed multi-agent schedule negotiations, Pareto utility convergence logs, and agreed slots.',
     mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://portal/queue',
+    name: 'Omni-Portal Ingestion Queue',
+    description: 'Active file ingestion jobs, status, token metrics, and extracted cross-app entity manifests in Markdown and JSON.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://portal/manifest',
+    name: 'Omni-Portal Ingestion Manifest',
+    description: 'Historical catalog of ingested documents, extracted block/sheet counts, and token savings metrics.',
+    mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://tasks/queue',
+    name: 'Directive Queue & Autonomous Tasks',
+    description: 'Active, staged, and completed directives across User, Agent, and Team tiers with block pointer anchoring.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://whiteboard/topology',
+    name: 'Whiteboard Spatial Topology AST',
+    description: 'Relational node-and-edge spatial graph AST of whiteboard canvas diagrams, schemas, and flowcharts in token-dense Markdown.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://room/live-context',
+    name: 'Room Live In-Meeting Context Stream',
+    description: 'Real-time stream of speaker turns, consensus log, active observers, and pending meeting PR mutations in token-dense Markdown.',
+    mimeType: 'text/markdown'
   }
 ];
 
@@ -762,6 +792,160 @@ export const REGAARDER_MCP_TOOLS = [
       },
       required: ['event']
     }
+  },
+
+  // ── Directive Queue & Autonomous Agent Execution Tools (Pillar 8) ──
+  {
+    name: 'queue_agent_directive',
+    description: 'Queues a new task or autonomous execution directive with a three-tier taxonomy (user, agent, team) and block pointer anchoring.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        title: { type: SchemaType.STRING, description: 'Directive title or task description' },
+        description: { type: SchemaType.STRING, description: 'Detailed instructions' },
+        tier: { type: SchemaType.STRING, description: 'Taxonomy tier: user | agent | team' },
+        priority: { type: SchemaType.STRING, description: 'Priority level: P0 | P1 | P2 | P3' },
+        actionPayload: { type: SchemaType.OBJECT, description: 'Machine-executable action payload' },
+        blockPointer: { type: SchemaType.OBJECT, description: 'Anchored Canvas block AST ID or Matrix cell' },
+        autoExecute: { type: SchemaType.BOOLEAN, description: 'Immediately trigger background autonomous execution' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'link_directive_to_block',
+    description: 'Anchors an active directive to a specific Canvas block AST ID (blk_...) or Matrix cell for zero-drift execution.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        directiveId: { type: SchemaType.STRING, description: 'Target directive ID' },
+        blockId: { type: SchemaType.STRING, description: 'Canvas block AST ID (blk_...) or cell identifier' },
+        blockType: { type: SchemaType.STRING, description: 'Block type (e.g. h1, paragraph, matrix, table)' },
+        docId: { type: SchemaType.STRING, description: 'Host document ID' },
+        cellKey: { type: SchemaType.STRING, description: 'Optional Matrix cell coordinate' }
+      },
+      required: ['directiveId', 'blockId']
+    }
+  },
+  {
+    name: 'checkout_agent_directive',
+    description: 'Atomically locks and checks out the next pending directive for an autonomous background agent runner.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        agentId: { type: SchemaType.STRING, description: 'Agent worker identifier (default: agent_runner_1)' }
+      }
+    }
+  },
+  {
+    name: 'complete_agent_directive',
+    description: 'Marks an active directive as COMPLETED or STAGED with execution results and optional Pillar 3 staging PR sandbox.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        directiveId: { type: SchemaType.STRING, description: 'Directive ID to complete' },
+        result: { type: SchemaType.OBJECT, description: 'Execution result object' },
+        stage: { type: SchemaType.BOOLEAN, description: 'Stage mutation in isolated PR branch' }
+      },
+      required: ['directiveId']
+    }
+  },
+  {
+    name: 'get_whiteboard_topology',
+    description: 'Retrieves the complete spatial topology AST graph of the whiteboard canvas with nodes, directed edges, and graph analytics.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        includeAnalysis: { type: SchemaType.BOOLEAN, description: 'If true, includes in/out degrees, root/sink nodes, and cycle detection' }
+      }
+    }
+  },
+  {
+    name: 'compile_diagram_to_schema',
+    description: 'Bi-directionally compiles the visual whiteboard diagram AST into ANSI SQL DDL, OpenAPI 3.0 specs, executable State Machines, or Markdown architecture summaries.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        target: { type: SchemaType.STRING, description: 'Target format: sql, openapi, state_machine, or summary' }
+      },
+      required: ['target']
+    }
+  },
+  {
+    name: 'render_agent_plan_to_canvas',
+    description: 'Synthesizes an agent execution plan or architecture into visual whiteboard canvas topology with computed 2D coordinates and directed edges.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        title: { type: SchemaType.STRING, description: 'Plan or architecture title' },
+        steps: { type: SchemaType.ARRAY, description: 'List of plan steps or architecture stages' },
+        clearExisting: { type: SchemaType.BOOLEAN, description: 'Clear canvas before rendering' }
+      },
+      required: ['steps']
+    }
+  },
+  {
+    name: 'patch_whiteboard_node',
+    description: 'Updates properties, metadata, status, or spatial coordinates of a specific node in the whiteboard topology graph.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        nodeId: { type: SchemaType.STRING, description: 'ID of the node to update' },
+        patch: { type: SchemaType.OBJECT, description: 'Properties to update' }
+      },
+      required: ['nodeId', 'patch']
+    }
+  },
+  {
+    name: 'harvest_meeting_intent',
+    description: 'Ingests spoken audio transcript turns from an active Room meeting session and extracts categorized epistemic intent.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        speaker: { type: SchemaType.STRING, description: 'Speaker identity' },
+        text: { type: SchemaType.STRING, description: 'Spoken transcript turn' },
+        confidence: { type: SchemaType.NUMBER, description: 'Confidence score (0 to 1)' }
+      },
+      required: ['speaker', 'text']
+    }
+  },
+  {
+    name: 'mutate_workspace_from_audio',
+    description: 'Concurrently mutates live workspace state across Canvas, Whiteboard, Directive Queue, or Matrix from in-meeting speech intent.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        speaker: { type: SchemaType.STRING, description: 'Speaker identity' },
+        text: { type: SchemaType.STRING, description: 'Spoken proposal text' },
+        stage: { type: SchemaType.BOOLEAN, description: 'Stage mutation into isolated meeting PR' }
+      },
+      required: ['speaker', 'text']
+    }
+  },
+  {
+    name: 'dispatch_in_room_directive',
+    description: 'Extracts an actionable commitment from in-room conversation and queues a machine directive.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        title: { type: SchemaType.STRING, description: 'Directive action summary' },
+        assignee: { type: SchemaType.STRING, description: 'Target assignee' },
+        priority: { type: SchemaType.STRING, description: 'Priority level (P0..P3)' },
+        tier: { type: SchemaType.STRING, description: 'Ownership tier (agent, user, team)' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'get_room_live_context',
+    description: 'Queries active Room session context, speaker turns, epistemic consensus log, and pending meeting PR mutations.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        format: { type: SchemaType.STRING, description: 'Format of returned context (markdown or json)' }
+      },
+      required: []
+    }
   }
 ];
 
@@ -945,6 +1129,85 @@ This document outlines the migration from pixel-bound human apps to token-dense 
             timestamp: new Date().toISOString()
           }
         ], null, 2)
+      };
+
+    case 'workspace://portal/queue':
+      return {
+        mimeType: 'text/markdown',
+        text: `# Omni-Portal Ingestion Queue
+*Active Ingestions: 1 | Schema Status: Decomposed*
+
+- **File:** \`Q3_Enterprise_Review.docx\` (DOCX)
+- **Status:** \`decomposed\`
+- **Token Savings:** \`84%\` (~1,850 semantic tokens vs ~11,500 raw markup)
+- **Canvas Blocks:** 14 blocks extracted
+- **Matrix Sheets:** 2 tables validated
+- **Directives:** 5 action items queued`
+      };
+
+    case 'workspace://portal/manifest':
+      return {
+        mimeType: 'application/json',
+        text: JSON.stringify([
+          {
+            id: 'pkg_sample_1',
+            title: 'Q3 Enterprise Review',
+            fileName: 'Q3_Enterprise_Review.docx',
+            format: 'docx',
+            blocks: 14,
+            sheets: 2,
+            tasks: 5,
+            savingsPercent: 84,
+            createdAt: new Date().toISOString()
+          }
+        ], null, 2)
+      };
+
+    case 'workspace://tasks/queue':
+      return {
+        mimeType: 'text/markdown',
+        text: `# Directive Queue & Autonomous Tasks
+*Active Directives: 3 | Tiers: user, agent, team*
+
+| ID | Title | Tier | Priority | Status | Anchored Block |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| \`dir_sample_1\` | **Reconcile Q3 GPU Margin with Balance Sheet** | \`agent\` | **P0** | \`STAGED\` | \`blk_matrix_fin_01\` |
+| \`dir_sample_2\` | **Surgical Patch Executive Overview Heading** | \`agent\` | **P1** | \`PENDING\` | \`blk_h1_intro\` |
+| \`dir_sample_3\` | **Legal Counsel Sign-off on Dual-Sourcing PR** | \`user\` | **P1** | \`PENDING\` | \`blk_callout_legal\` |`
+      };
+
+    case 'workspace://whiteboard/topology':
+      return {
+        mimeType: 'text/markdown',
+        text: `# Whiteboard Spatial Topology Graph
+*Active Nodes: 4 | Directed Edges: 4*
+
+### Graph Nodes
+- **node_auth** [type: service, status: live] (x: 100, y: 150)
+  * Label: Authentication Service
+  * Capabilities: JWT verification, OAuth2
+- **node_db** [type: database, status: live] (x: 400, y: 150)
+  * Label: Primary PostgreSQL Cluster
+  * Capabilities: User profiles, ACID guarantees
+
+### Directed Relational Edges
+- node_auth --[writes_to]--> node_db
+- node_client --[calls]--> node_auth`
+      };
+
+    case 'workspace://room/live-context':
+      return {
+        mimeType: 'text/markdown',
+        text: `# Room Live In-Meeting Context Feed
+*Active Observers: Alex Agent, Elena Agent, Marcus Agent | Status: LISTENING*
+
+### Epistemic Intent Log
+- **[DECISION CONSENSUS]** (Elena Rostova): We formally agreed to allocate $750,000 for H100 GPU clusters and update projected gross margin to 78%.
+- **[ARCHITECTURE MUTATION]** (Alex Chen): Connect API Gateway to distributed GPU Inference Worker service.
+- **[ACTION DIRECTIVE]** (Marcus Vance): Queue P0 directive for Marcus Agent to benchmark cluster inference latency by Friday.
+
+### Pending Meeting PR
+- Branch: \`pr_room_exec_sample\` (3 mutations awaiting approval)`
       };
 
     default:

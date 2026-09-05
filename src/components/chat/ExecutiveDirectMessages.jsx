@@ -12,7 +12,7 @@ import {
   UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
   SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet, UploadCloud,
   AtSign, Globe, Smartphone, User, Terminal, HardDriveDownload,
-  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest
+  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest, Network
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -3052,6 +3052,22 @@ export default function ExecutiveDirectMessages({
                                 <div className="w-5 h-5 rounded-[5px] bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                                   <Calendar size={12} strokeWidth={2.2} />
                                 </div>
+                              ) : msg.actionCard.type === 'portal' ? (
+                                <div className="w-5 h-5 rounded-[5px] bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <UploadCloud size={12} strokeWidth={2.2} />
+                                </div>
+                              ) : msg.actionCard.type === 'directive' ? (
+                                <div className="w-5 h-5 rounded-[5px] bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <ListTodo size={12} strokeWidth={2.2} />
+                                </div>
+                              ) : msg.actionCard.type === 'topology' ? (
+                                <div className="w-5 h-5 rounded-[5px] bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <Network size={12} strokeWidth={2.2} />
+                                </div>
+                              ) : msg.actionCard.type === 'room_harvester' ? (
+                                <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <Radio size={12} strokeWidth={2.2} />
+                                </div>
                               ) : (
                                 <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                                   <CheckSquare size={12} strokeWidth={2.2} />
@@ -3068,6 +3084,22 @@ export default function ExecutiveDirectMessages({
                             ) : msg.actionCard.type === 'schedule' ? (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
                                 ⚡ Negotiated
+                              </span>
+                            ) : msg.actionCard.type === 'portal' ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
+                                ⚡ Ready to Ingest
+                              </span>
+                            ) : msg.actionCard.type === 'directive' ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 shrink-0">
+                                ⚡ Directive Queued
+                              </span>
+                            ) : msg.actionCard.type === 'topology' ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 shrink-0">
+                                ⚡ Topology Compiled
+                              </span>
+                            ) : msg.actionCard.type === 'room_harvester' ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
+                                ⚡ In-Meeting Live
                               </span>
                             ) : (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
@@ -3157,6 +3189,69 @@ export default function ExecutiveDirectMessages({
                             >
                               <GitPullRequest size={12} />
                               <span>Review Redline Diff & Merge</span>
+                            </button>
+                          )}
+                          {msg.actionCard.type === 'portal' && (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_PORTAL_INSPECTOR__) {
+                                  window.__REGAARDER_OPEN_PORTAL_INSPECTOR__();
+                                }
+                              }}
+                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <UploadCloud size={12} />
+                              <span>Open Omni-Portal Inspector</span>
+                            </button>
+                          )}
+                          {msg.actionCard.type === 'directive' && (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__) {
+                                  window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__();
+                                }
+                              }}
+                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <ListTodo size={12} />
+                              <span>Open Directive Queue Inspector</span>
+                              <ArrowRight size={11} />
+                            </button>
+                          )}
+                          {msg.actionCard.type === 'topology' && (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__) {
+                                  window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__();
+                                }
+                              }}
+                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <Network size={12} />
+                              <span>Open Spatial Topology Inspector</span>
+                              <ArrowRight size={11} />
+                            </button>
+                          )}
+                          {msg.actionCard.type === 'room_harvester' && (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
+                                  window.__REGAARDER_OPEN_ROOM_HARVESTER__();
+                                }
+                              }}
+                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <Radio size={12} />
+                              <span>Open Room Observer Inspector</span>
+                              <ArrowRight size={11} />
                             </button>
                           )}
                         </div>

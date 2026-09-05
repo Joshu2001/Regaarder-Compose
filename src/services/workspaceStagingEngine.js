@@ -151,6 +151,7 @@ export function getBranchById(branchId) {
  * Create a new isolated staging branch.
  */
 export function createStagingBranch({
+  branchId: customBranchId,
   title,
   description = '',
   agentId = 'relay_agent',
@@ -160,10 +161,11 @@ export function createStagingBranch({
   initializeStaging();
 
   const prNumber = prSequenceCounter++;
-  const branchId = `pr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const branchId = customBranchId || `pr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
   const newBranch = {
     id: branchId,
+    branchId,
     prNumber,
     title: title || `Agent Proposed PR #${prNumber}`,
     description,
@@ -239,6 +241,7 @@ export function stageMutation({
     branchId: branch.id,
     mutationId: mutation.mutationId,
     prNumber: branch.prNumber,
+    targetApp: mutation.targetApp,
     mutation
   };
 }

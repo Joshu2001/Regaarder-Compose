@@ -6,7 +6,7 @@ import {
   SlidersHorizontal, Calendar, Zap, MessageSquare, Database, X,
   Maximize2, Minimize2, Eye, ExternalLink, ShieldCheck, Compass,
   AlertTriangle, Tag as TagIcon, Hash, CheckCircle2, ChevronRight,
-  Copy, Terminal, Code2, Play, Calculator
+  Copy, Terminal, Code2, Play, Calculator, UploadCloud, Radio
 } from 'lucide-react';
 import { MemoryIcon, TasksIcon, OrbIcon, RegaarderAiIcon, RegaarderProductIcon } from './components/RegaarderProductIcons';
 import { 
@@ -24,6 +24,10 @@ import {
 import BlockCanvasInspector from './components/dev/BlockCanvasInspector';
 import MatrixSchemaInspector from './components/sheets/MatrixSchemaInspector';
 import IntentSchedulerInspector from './components/schedule/IntentSchedulerInspector';
+import OmniPortalInspector from './components/portal/OmniPortalInspector';
+import DirectiveQueueInspector from './components/tasks/DirectiveQueueInspector';
+import SpatialTopologyInspector from './components/whiteboard/SpatialTopologyInspector';
+import RoomContextHarvesterInspector from './components/room/RoomContextHarvesterInspector';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
@@ -32,6 +36,10 @@ const MEMORY_TABS = [
   { id: 'mcp', label: 'MCP Protocol', icon: Zap },
   { id: 'canvas_blocks', label: 'Canvas AST', icon: Layers },
   { id: 'matrix_engine', label: 'Matrix Engine', icon: Calculator },
+  { id: 'omni_portal', label: 'Omni-Portal', icon: UploadCloud },
+  { id: 'directives', label: 'Directive Queue', icon: CheckSquare },
+  { id: 'topology', label: 'Spatial Topology', icon: Network },
+  { id: 'room', label: 'Room Observer', icon: Radio },
   { id: 'graph', label: 'Knowledge Graph', icon: Network },
   { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: Folder },
@@ -424,6 +432,30 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                 label="Meetings & Scheduler" 
                 isActive={activeTab === 'meetings'} 
                 onClick={() => setActiveTab('meetings')} 
+              />
+              <SidebarNavItem
+                icon={<UploadCloud size={14} />}
+                label="Omni-Portal"
+                isActive={activeTab === 'omni_portal'}
+                onClick={() => setActiveTab('omni_portal')}
+              />
+              <SidebarNavItem
+                icon={<CheckSquare size={14} />}
+                label="Directive Queue"
+                isActive={activeTab === 'directives'}
+                onClick={() => setActiveTab('directives')}
+              />
+              <SidebarNavItem
+                icon={<Network size={14} />}
+                label="Spatial Topology"
+                isActive={activeTab === 'topology'}
+                onClick={() => setActiveTab('topology')}
+              />
+              <SidebarNavItem
+                icon={<Radio size={14} />}
+                label="Room Observer"
+                isActive={activeTab === 'room'}
+                onClick={() => setActiveTab('room')}
               />
             </div>
 
@@ -1226,6 +1258,26 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                   {/* ── Tab: Matrix Execution Engine (Pillar 5) ── */}
                   {activeTab === 'matrix_engine' && (
                     <MatrixSchemaInspector />
+                  )}
+
+                  {/* ── Tab: Omni-Portal Universal Ingestion Inspector (Pillar 7) ── */}
+                  {activeTab === 'omni_portal' && (
+                    <OmniPortalInspector />
+                  )}
+
+                  {/* ── Tab: Directive Queue & Execution Inspector (Pillar 8) ── */}
+                  {activeTab === 'directives' && (
+                    <DirectiveQueueInspector />
+                  )}
+
+                  {/* ── Tab: Whiteboard Spatial Topology Graph & Compiler (Pillar 9) ── */}
+                  {activeTab === 'topology' && (
+                    <SpatialTopologyInspector />
+                  )}
+
+                  {/* ── Tab: Room Real-Time Context Harvester & Multi-Agent Observer (Pillar 10) ── */}
+                  {activeTab === 'room' && (
+                    <RoomContextHarvesterInspector />
                   )}
 
                   {activeTab === 'graph' && (

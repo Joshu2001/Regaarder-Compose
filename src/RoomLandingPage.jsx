@@ -863,6 +863,24 @@ export default function RoomLandingPage({
                   <span className="text-[11px] font-bold tracking-tight">E2EE AES-256</span>
                 </button>
 
+                {/* AI In-Meeting Observer Pill (Pillar 10) */}
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
+                      window.__REGAARDER_OPEN_ROOM_HARVESTER__();
+                    } else {
+                      showToast?.("Opening Room Observer Inspector in Memory Dashboard...");
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-200/70 dark:border-violet-800/70 text-violet-700 dark:text-violet-300 text-xs font-semibold hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+                  title="Open Real-Time Room Observer & Intent Harvester"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                  <span className="text-[11px] font-bold tracking-tight">AI Observer Active</span>
+                </button>
+
                 {/* Recording Status Pill */}
                 <button 
                   onClick={() => {

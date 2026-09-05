@@ -36,6 +36,10 @@ import {
 } from './workspaceStagingEngine.js';
 import * as matrixEngine from './matrixSchemaEngine.js';
 import * as intentScheduler from './intentSchedulerEngine.js';
+import * as omniPortal from './omniPortalEngine.js';
+import * as directiveEngine from './directiveQueueEngine.js';
+import * as spatialTopology from './spatialTopologyEngine.js';
+import * as roomObserver from './roomObserverEngine.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MCP RESOURCE CATALOG SPECIFICATION
@@ -44,56 +48,56 @@ import * as intentScheduler from './intentSchedulerEngine.js';
 export const MCP_RESOURCES = [
   {
     uri: 'workspace://graph/context',
-    name: 'Universal Context Graph Feed',
-    description: 'High-density semantic markdown feed of active project rules, binding decisions, and linked workspace entities (< 500 tokens).',
+    name: 'Universal Context Feed',
+    description: 'Active project rules, binding epistemic decisions, and connected entity nodes in token-dense Markdown.',
     mimeType: 'text/markdown'
   },
   {
     uri: 'workspace://memory/bank',
-    name: 'Persistent Agent Memory Bank',
-    description: 'Complete JSON-LD semantic web graph of instructions, preferences, project rules, and executive decisions.',
-    mimeType: 'application/ld+json'
+    name: 'Agent Memory Bank',
+    description: 'Full JSON-LD semantic graph of permanent instructions, preferences, and organization-wide project rules.',
+    mimeType: 'application/json'
   },
   {
     uri: 'workspace://docs/active',
-    name: 'Active Compose Document',
-    description: 'Token-dense markdown representation of the currently focused document, stripped of HTML/DOM noise.',
+    name: 'Active Focused Document',
+    description: 'Current document in focus with clean stripped Markdown, heading structures, and word stats.',
     mimeType: 'text/markdown'
   },
   {
     uri: 'workspace://docs/list',
     name: 'Workspace Document Manifest',
-    description: 'Catalog of all available workspace documents with titles, word counts, and last modified timestamps.',
+    description: 'Manifest array of all documents in the active workspace with word counts and last-modified timestamps.',
     mimeType: 'application/json'
   },
   {
     uri: 'workspace://sheets/active',
-    name: 'Active Sheet Matrix',
-    description: 'Tabular data matrix and financial models serialized in structured Markdown and CSV format.',
+    name: 'Active Tabular Model',
+    description: 'Tabular calculation models in clean Markdown table and CSV format, optimized for agent reasoning.',
     mimeType: 'text/markdown'
   },
   {
     uri: 'workspace://tasks/active',
-    name: 'Active Initiatives & Tasks',
-    description: 'Current strategic initiatives, owners, deadlines, and dependency constraints.',
+    name: 'Active Strategic Initiatives',
+    description: 'Key initiatives, roadmap milestones, assigned owners, and deadline constraints in structured JSON.',
     mimeType: 'application/json'
   },
   {
     uri: 'workspace://graph/propagation-log',
-    name: 'Cross-Workspace Propagation Audit Trail',
-    description: 'Real-time log of automated state propagations across connected Docs, Sheets, and Decisions.',
-    mimeType: 'application/json'
+    name: 'Cross-Workspace Propagation Audit Log',
+    description: 'Live log of state mutations automatically propagated across connected documents and models.',
+    mimeType: 'text/markdown'
   },
   {
     uri: 'workspace://staging/active',
-    name: 'Active Staged Pull Requests & Redline Diffs',
-    description: 'Sandbox staging branches and redline visual diffs awaiting human review.',
+    name: 'Active Staging PR Branches',
+    description: 'List of uncommitted agent pull request branches awaiting human review with visual redline diff stats.',
     mimeType: 'text/markdown'
   },
   {
     uri: 'workspace://docs/blocks',
-    name: 'Active Document Block Tree AST',
-    description: 'Structured AST of all document blocks with persistent block IDs, types, content, and versioning for surgical patching.',
+    name: 'Active Document Block AST',
+    description: 'Structured block-level Abstract Syntax Tree (AST) with unique block IDs (blk_...), types, and versioning.',
     mimeType: 'application/json'
   },
   {
@@ -113,6 +117,36 @@ export const MCP_RESOURCES = [
     name: 'Multi-Agent Negotiation Audit Feed',
     description: 'Active and completed multi-agent schedule negotiations, Pareto utility convergence logs, and agreed slots.',
     mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://portal/queue',
+    name: 'Omni-Portal Ingestion Queue',
+    description: 'Active file ingestion jobs, status, token metrics, and extracted cross-app entity manifests in Markdown and JSON.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://portal/manifest',
+    name: 'Omni-Portal Ingestion Manifest',
+    description: 'Historical catalog of ingested documents, extracted block/sheet counts, and token savings metrics.',
+    mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://tasks/queue',
+    name: 'Directive Queue & Autonomous Tasks',
+    description: 'Active, staged, and completed directives across User, Agent, and Team tiers with block pointer anchoring.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://whiteboard/topology',
+    name: 'Whiteboard Spatial Topology AST',
+    description: 'Relational node-and-edge spatial graph AST of whiteboard canvas diagrams, schemas, and flowcharts in token-dense Markdown.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://room/live-context',
+    name: 'Room Live In-Meeting Context Stream',
+    description: 'Real-time feed of active meeting session, speaker turns, epistemic consensus log, and pending PR mutations in token-dense Markdown.',
+    mimeType: 'text/markdown'
   }
 ];
 
@@ -579,14 +613,21 @@ ${cleanText}`;
     };
   }
 
+  if (uri === 'workspace://tasks/queue') {
+    const md = directiveEngine.serializeDirectivesToMarkdown();
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
   if (uri === 'workspace://tasks/active') {
+    const directives = directiveEngine.getDirectives();
     return {
       uri,
       mimeType: 'application/json',
-      text: JSON.stringify([
-        { id: 'init-1', title: 'GPU Cluster Capacity Deployment', status: 'In Progress', deadline: '2026-10-15', owner: 'Alex M.' },
-        { id: 'init-2', title: 'SOC2 Type II Audit Sign-Off', status: 'Completed', deadline: '2026-08-30', owner: 'Elena R.' }
-      ], null, 2)
+      text: JSON.stringify(directives, null, 2)
     };
   }
 
@@ -643,8 +684,55 @@ ${cleanText}`;
     };
   }
 
+  if (uri === 'workspace://portal/queue') {
+    const queue = omniPortal.getPortalQueue();
+    if (queue.length === 0) {
+      return {
+        uri,
+        mimeType: 'text/markdown',
+        text: '### OMNI-PORTAL INGESTION QUEUE\nNo active ingestion packages in queue.'
+      };
+    }
+    const md = `### OMNI-PORTAL INGESTION QUEUE (${queue.length} Packages Processed)\n\n` +
+      queue.map(pkg => omniPortal.serializePackageToMarkdown(pkg)).join('\n\n---\n\n');
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
+  if (uri === 'workspace://portal/manifest') {
+    const manifest = omniPortal.getIngestionManifest();
+    return {
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(manifest, null, 2)
+    };
+  }
+
+  if (uri === 'workspace://whiteboard/topology') {
+    const md = spatialTopology.serializeTopologyToMarkdown();
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
+  if (uri === 'workspace://room/live-context') {
+    const md = roomObserver.serializeRoomContextToMarkdown();
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
   throw new Error(`Resource URI '${uri}' not recognized.`);
 }
+
+export const readResource = readWorkspaceResource;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. ISOMORPHIC MCP JSON-RPC 2.0 PROTOCOL ENGINE

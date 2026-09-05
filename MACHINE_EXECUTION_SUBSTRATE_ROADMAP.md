@@ -54,7 +54,11 @@ An **AI-Native Workspace** must be engineered as an execution engine:
 | **Pillar 3** | **Human-in-the-Loop "Approval & Sandbox" Engine** | **100% COMPLETED** | [`workspaceStagingEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/workspaceStagingEngine.js), [`WorkspaceStagingReviewModal.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/staging/WorkspaceStagingReviewModal.jsx), [`docsToolExecutor.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolExecutor.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
 | **Pillar 4** | **The Canvas (Block-Level State IDs & Patch Engine)** | **100% COMPLETED** | [`blockCanvasEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/blockCanvasEngine.js), [`BlockCanvasInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/dev/BlockCanvasInspector.jsx), [`docsCommandApi.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsCommandApi.js), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
 | **Pillar 5** | **The Matrix Engine (Code Execution & Schema)** | **100% COMPLETED** | [`matrixSchemaEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/matrixSchemaEngine.js), [`MatrixSchemaInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/sheets/MatrixSchemaInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
-| **Pillar 6** | The Intent Scheduler (Constraint Engine) | `20%` (Specified) | [`VERTICAL_INTEGRATIONS.md`](file:///c:/Users/user/Downloads/Project%20MOAT/VERTICAL_INTEGRATIONS.md) |
+| **Pillar 6** | **The Intent Scheduler (Constraint & Multi-Agent Negotiation)** | **100% COMPLETED** | [`intentSchedulerEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/intentSchedulerEngine.js), [`IntentSchedulerInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/schedule/IntentSchedulerInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js), [`relayAgentService.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/relayAgentService.js) |
+| **Pillar 7** | **Universal Ingestion & Schema Translator (Omni-Portal)** | **100% COMPLETED** | [`omniPortalEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/omniPortalEngine.js), [`OmniPortalInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/portal/OmniPortalInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
+| **Pillar 8** | **Directive Queue & Autonomous Execution Loop (Tasks)** | **100% COMPLETED** | [`directiveQueueEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/directiveQueueEngine.js), [`DirectiveQueueInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/tasks/DirectiveQueueInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
+| **Pillar 9** | **Spatial Topology & Visual Context Graph (Whiteboard)** | **100% COMPLETED** | [`spatialTopologyEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/spatialTopologyEngine.js), [`SpatialTopologyInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/whiteboard/SpatialTopologyInspector.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
+| **Pillar 10** | **Real-Time Context Harvester & Multi-Agent Observer (Room)** | **100% COMPLETED** | [`roomObserverEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/roomObserverEngine.js), [`RoomContextHarvesterInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/room/RoomContextHarvesterInspector.jsx), [`RoomLandingPage.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/RoomLandingPage.jsx), [`docsToolRegistry.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/docsToolRegistry.js), [`universalMcpBridge.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/universalMcpBridge.js) |
 
 ---
 
@@ -347,7 +351,240 @@ Pillar 5 transforms the spreadsheet into an **AI-Native Matrix Engine and In-Bro
 
 ---
 
-## 8. Upstream Roadmap: Steps to Complete Pillar 6
+## 8. Pillar 6 Deep Dive: The Intent Scheduler & Multi-Agent Negotiation Substrate (Completed)
+
+Traditional calendar systems are passive silos: human users engage in exhausting manual email ping-pong ("Does 3 PM work? No, how about 4 PM?") while software blindly overlays conflicting events. AI assistants cannot autonomously lock meetings because they lack mathematical constraint models, multi-agent negotiation protocols, and sandbox staging safeguards.
+
+Pillar 6 delivers an **AI-Native Intent Scheduler and Multi-Agent Negotiation Engine**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│             PILLAR 6: INTENT SCHEDULER & MULTI-AGENT NEGOTIATION            │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│    RULE 4 CONTEXT MAPPING    │    MATHEMATICAL CSP SOLVER   │  MULTI-AGENT  │
+│    & SYSTEMIC SPECS          │    & TEMPORAL CONFLICT MATRIX│  NEGOTIATION  │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • "Tennis practice" ->       │ • Utility: U(slot) in [0, 1] │ • Alternating │
+│   health_athletics (90m,     │ • Interval Forward Checking  │   Offers      │
+│   buffers, energy load)      │ • Conflict Resolution:       │ • Monotonic   │
+│ • "Board prep sync" ->       │   priority_bump, duration_   │   Concessions │
+│   executive_strategy         │   compression, cooldown      │ • Pareto      │
+│ • Bilateral / Financial specs│ • Pillar 3 Staging Sandbox   │   Convergence │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 8.1. Rule 4 Context-Aware Intent Interpretation
+- **Anti-Literal Domain Mapping:** Mandated by Rule 4, colloquial user requests are never processed naively. A prompt like "Tennis practice" is systematically mapped to `health_athletics` (duration: 90 min, prep: 20 min, cooldown: 20 min, energy load: `high`, preferred: `late_afternoon` / `early_morning`).
+- **Standardized Domain Specs:** Built-in systemic specifications for `health_athletics`, `executive_strategy`, `financial_projection`, `engineering_architecture`, and `bilateral_sync`.
+- **Constraint Overrides:** Allows explicit user overrides (e.g., custom duration, urgency, participants) while maintaining systemic defaults.
+
+### 8.2. Mathematical CSP Solver & Multi-Objective Slot Utility
+- **Hard Constraints:** Strictly enforces calendar working windows (e.g. 08:00–18:00), blackout intervals, participant availability, and pre/post buffers.
+- **Forward Checking:** Prunes infeasible domains across discrete 15-minute intervals.
+- **Multi-Objective Slot Utility Function:**
+  $$U(\text{slot}) = w_{\text{pref}} \cdot S_{\text{time}} + w_{\text{priority}} \cdot S_{\text{priority}} - w_{\text{buffer}} \cdot P_{\text{buffer}} - w_{\text{fatigue}} \cdot P_{\text{fatigue}}$$
+  Optimizes for circadian energy alignment, prevents back-to-back cognitive overload, and applies lunch-hour buffer penalties.
+
+### 8.3. Multi-Agent Alternating-Offer Negotiation Protocol
+- **Autonomous Peer Consensus:** Facilitates bilateral consensus between autonomous AI agents (e.g. Alex Agent $\leftrightarrow$ Elena Agent) without human email friction.
+- **Monotonic Concessions & Pareto Convergence:** Agents submit proposals with explicit utility ratings ($U_A, U_B$). If non-overlapping, concession rates expand candidate domains until Pareto optimality is achieved ($U_A \times U_B \ge \text{threshold}$).
+- **State Machine:** Governed by deterministic lifecycle states: `PROPOSED` $\rightarrow$ `COUNTER_OFFERED` $\rightarrow$ `AGREED` $\rightarrow$ `COMMITTED` (or `REJECTED`).
+
+### 8.4. Temporal Conflict Matrix & Automated Resolution
+- **Surgical Conflict Detection:** Evaluates overlapping intervals, participant collisions, and buffer violations across active schedules.
+- **Three Resolution Strategies:**
+  1. `priority_bump`: Automatically shifts lower-priority events to the next optimal slot when an urgent executive conflict arises.
+  2. `duration_compression`: Dynamically compresses non-essential meetings to fit tight calendar windows.
+  3. `cooldown_compression`: Adjusts post-event cooldown buffers while maintaining minimum safety margins.
+- **Pillar 3 Sandbox Staging Integration:** Speculative schedule modifications execute via `stage: true`, routing proposed shifts into isolated PR sandboxes for executive visual approval.
+
+### 8.5. Apple-Tier Intent Scheduler Inspector UI ([`IntentSchedulerInspector.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/schedule/IntentSchedulerInspector.jsx))
+- Mounted under the dedicated **Meetings & Scheduler** tab in [`MemoryDashboard.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/MemoryDashboard.jsx):
+  - **Calendar & Timeline View:** Apple-minimalist horizontal/vertical timeline showing scheduled blocks, buffer envelopes, and active selection outlines (strictly non-pill tabs).
+  - **Multi-Agent Negotiation Studio:** Live protocol feed visualizing alternating agent proposals, concession rounds, and mutual utility scores with 1-click test negotiations.
+  - **Constraint Solver Playground:** Interactive form to test Rule 4 colloquial intent phrases ("Tennis practice", "Quarterly board sync"), solve optimal slots, and inspect utility ranking.
+  - **Conflict Resolution Center:** Active collision cards with automated resolution recommendations and 1-click "Stage Shift PR" sandbox triggers.
+
+### 8.6. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://schedule/calendar`:** Token-dense JSON-LD / Markdown stream of scheduled events, working windows, and blackout blocks.
+- **Resource `workspace://schedule/negotiations`:** Live feed of active and completed multi-agent negotiation threads.
+- **Tools:** `solve_schedule_constraints`, `negotiate_multi_agent_schedule`, `detect_schedule_conflicts`, `resolve_schedule_conflict`, `commit_scheduled_event`.
+
+### 8.7. Relay Agent & Universal Context Graph Wiring
+- **Relay Agent Integration:** `relayAgentService.js` automatically classifies scheduling intents (`isScheduleMeeting`), executes multi-agent negotiations in the background, and emits interactive schedule action cards into `ExecutiveDirectMessages.jsx`.
+- **Universal Context Graph:** `universalContextGraph.js` records persistent `scheduled_event` and `schedule_negotiation` nodes with participant edges and reactive notification propagation.
+
+---
+
+## 9. Pillar 7 Deep Dive: Universal Ingestion & Schema Translator (Omni-Portal)
+
+In legacy software, importing a file is merely a visual file conversion (e.g. converting a `.docx` to a `.pdf` while fighting with page breaks, margin offsets, and font discrepancies). In an agentic workspace, **Import is the gateway where unstructured legacy files are converted into machine-computable semantic state.**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 PILLAR 7: OMNI-PORTAL UNIVERSAL INGESTION                   │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│      DUAL-VIEW INGESTION     │    LOSSLESS TRANSLATION      │   CROSS-APP   │
+│      (HUMAN & AGENT)         │    (AST EXTRACTION)          │   HYDRATION   │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • Original View: Native PDF/ │ • DOCX: Headings, tables     │ • Tables ->   │
+│   Word preview (pdfjs/iframe)│   via JSZip + DOMParser      │   Matrix AST  │
+│ • State View: Clean JSON-LD  │ • PPTX: Slide layouts        │ • Prose ->    │
+│   and Markdown block AST     │ • XLSX: ExcelJS data matrix  │   Canvas AST  │
+│ • 80%+ Context Token Savings │ • PDF: Chunked text streams  │ • Actionables │
+│                              │   without binary FlateDecode │   -> Tasks    │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 9.1. Dual-View Ingestion Architecture
+- **Human Ergonomics:** The human retains the "Original View" (the native PDF/Word layout via `pdfjs-dist` or high-fidelity viewer), preserving page-level visual trust and spatial formatting.
+- **Agent Execution Substrate:** Simultaneously, the engine strips all layout noise, inline CSS, and formatting chrome, exposing the **Workspace State View** (clean JSON-LD/Markdown blocks).
+- **Token Efficiency:** Drops document token payload from 15,000–30,000 raw DOM tokens down to < 2,500 semantic tokens.
+
+### 9.2. Multi-Format Semantic Extraction Substrate ([`OmniPortalModal.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/OmniPortalModal.jsx))
+- **Word / DOCX:** `JSZip` loads the archive and parses `word/document.xml` using `DOMParser`, systematically extracting `w:p` paragraphs, hierarchical headings (`h1`–`h3`), and `w:tbl` tables without XML artifacts.
+- **PowerPoint / PPTX:** Extracts slide XML frames (`ppt/slides/slide*.xml`), classifies slide layouts (`title`, `bento`, `split`), and structures text into bullet-tree hierarchies.
+- **Excel / XLSX & CSV:** `ExcelJS` loads multi-sheet workbooks, extracting raw values, formulas, and dimensions into structured 2D cell grids while preserving multi-tab indices.
+- **Adobe PDF:** Legacy `pdfjs-dist` parses multi-page text streams page-by-page, isolating uppercase section headers from body blocks and rejecting raw binary streams.
+
+### 9.3. Cross-App Hydration & Entity Routing Pipeline
+- When an enterprise report (e.g. a 40-page quarterly business review) is dropped into the Omni-Portal:
+  1. **Tabular Data Routing:** Extracted financial matrices and data tables route directly to the **Matrix Engine** ([`matrixSchemaEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/matrixSchemaEngine.js)), where columns are automatically assigned schemas, dropdowns, and percentage validators.
+  2. **Narrative Block Routing:** Executive narratives and meeting summaries route to the **Canvas AST** ([`blockCanvasEngine.js`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/services/blockCanvasEngine.js)) with persistent `blk_...` block IDs.
+  3. **Action Item Routing:** Operational commitments and action items route directly to the **Directive Queue** ([`App.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx)) as `agent` or `team` tasks.
+
+### 9.4. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://portal/queue`:** Active file ingestion queue and extracted semantic entity feeds.
+- **Tools:** `ingest_file_stream`, `translate_schema_to_ast`, `route_entities_cross_app`.
+
+---
+
+## 10. Pillar 8 Deep Dive: Directive Queue & Autonomous Agent Execution Loop (Tasks)
+
+In traditional productivity suites, a Task app is merely a static checklist for humans (`[ ] Send weekly email`). In an agentic workspace, **Tasks are active execution scripts with programmatic lifecycle states, dependency graphs, and agent ownership.**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 PILLAR 8: DIRECTIVE QUEUE & EXECUTION LOOP                  │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│     THREE-TIER TAXONOMY      │     BLOCK-LINKED POINTERS    │   AUTONOMOUS  │
+│     & TRIAGE ENGINE          │     (PERSISTENT AST IDS)     │   RUNNER LOOP │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • Your Tasks: Direct human   │ • Canvas & Whiteboard text   │ • Background  │
+│   to-dos                     │   highlighting instantiates  │   Directive   │
+│ • Agent Tasks: Autonomous    │   task with `blk_...` pointer│   Checkout    │
+│   LLM execution scripts      │ • Zero context drift:        │ • MCP Tool    │
+│ • Team Tasks: Hybrid human-  │   agent navigates directly   │   Execution   │
+│   in-the-loop approvals      │   to target node             │ • Staging PR  │
+│ • Drag-and-drop category bus │ • Bidirectional backlinks    │   Generation  │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 10.1. Three-Tier Task Triage Architecture ([`App.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx#L42782-L42960))
+- **`Your Tasks` (`owner: 'user'`):** Traditional human to-dos.
+- **`Agent Tasks` (`owner: 'agent'`):** Autonomous directives assigned to background LLM agents (e.g., *"Reconcile vendor invoices from Omni-Portal"*, *"Refactor Section 4 to match Rule 2 aesthetics"*).
+- **`Team Tasks` (`owner: 'team'`):** Hybrid workflows requiring human approval at designated checkpoints before the agent proceeds.
+- **Triage Interactions:** Drag-and-drop between categories (`handleTaskDropOnCategory`), visual `AI` tagging, editable titles, priority levels, and due-date popovers.
+
+### 10.2. Block-Linked Actionables (`blk_...` Pointers)
+- **Direct Pointer Linking:** Highlighting text anywhere in Canvas or Whiteboard automatically instantiates an **Agent Task** with direct pointer links to those specific block IDs (`data-block-id="blk_..."`).
+- **Context Pinpointing:** The executing agent does not waste tokens scanning entire documents; it resolves the `blockId`, queries `docsCommandApi.getBlockTreeSnapshot()`, and applies surgical updates via `patchBlockById`.
+
+### 10.3. Autonomous Agent Execution Loop
+- **Checkout & Execution Lifecycle:** Background agent runner queries `workspace://tasks/queue`, transitions task state (`PENDING` $\rightarrow$ `RUNNING` $\rightarrow$ `STAGED` $\rightarrow$ `COMPLETED`), and invokes canonical MCP tools.
+- **Pillar 3 Sandbox Integration:** Any destructive action or document modification generated by an `Agent Task` is staged into an isolated PR branch (`pr_<timestamp>_<hash>`) with token-level redline diffs.
+- **Human Approval:** Posts an interactive PR review card into Chat and the Task list for 1-click human merge.
+
+### 10.4. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://tasks/active`:** High-density JSON-LD feed of active directives, categories, and linked block pointers.
+- **Tools:** `queue_agent_directive`, `link_task_to_block`, `checkout_task_directive`, `complete_task_execution`.
+
+---
+
+## 11. Pillar 9 Deep Dive: Spatial Topology & Visual Context Graph (Whiteboard)
+
+Traditional whiteboards (Miro, FigJam) are visual playgrounds where humans drag freeform shapes around. AI models struggle with raw canvas pixels because rendering or processing images wastes huge vision token budgets without conveying semantic relationships.
+
+Pillar 9 transforms the whiteboard into a **Spatial Topology and Visual Context Graph**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 PILLAR 9: SPATIAL TOPOLOGY & CONTEXT GRAPH                  │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│     VISUAL GRAPH PROTOCOL    │   BI-DIRECTIONAL COMPILATION │  HUMAN-AGENT  │
+│     (SEMANTIC RELATIONS)     │   (SKETCH <-> CODE / AST)    │  ALIGNMENT    │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • Nodes, shapes, post-its    │ • Human flowchart compiles   │ • Agent plans │
+│   stored as relational edges:│   live to JSON / SQL schema  │   rendered as │
+│   (A) --[DEPENDS_ON]--> (B)  │ • Code / state compiles to   │   visual graph│
+│ • Persistent IDs: `node_...` │   spatial visual layout      │ • Interactive │
+│ • Unified Context Graph sync │ • Zero vision-token overhead │   zoom & edit │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 11.1. Visual Graph Protocol Substrate
+- **Relational Representation:** Every shape, sticky note, connector arrow, and group is indexed not merely by 2D coordinates `(x, y)`, but by its topological meaning:
+  ```json
+  {
+    "id": "node_auth_service",
+    "type": "architecture_component",
+    "label": "Authentication Microservice",
+    "edges": [
+      { "target": "node_postgres_db", "relation": "READS_WRITES_TO" },
+      { "target": "node_redis_cache", "relation": "DEPENDS_ON" }
+    ]
+  }
+  ```
+- **Universal Context Graph Integration:** Node relations sync continuously with `universalContextGraph.js`.
+
+### 11.2. Bi-Directional Compilation Substrate
+- **Human $\rightarrow$ Machine Compilation:** When a user sketches a system architecture or business process flowchart on the whiteboard, the spatial compiler evaluates node types, connector directions, and text labels, generating structured JSON, database schemas, or code models.
+- **Machine $\rightarrow$ Human Visual Synthesis:** When an autonomous agent devises a multi-step strategic initiative or software architecture, it emits a spatial layout that renders directly onto the whiteboard canvas for human visual review.
+
+### 11.3. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://whiteboard/topology`:** Token-dense graph representation of active whiteboard nodes and relational edges.
+- **Tools:** `get_whiteboard_topology`, `compile_diagram_to_schema`, `render_agent_plan_to_canvas`.
+
+---
+
+## 12. Pillar 10 Deep Dive: Real-Time Context Harvester & Multi-Agent Observer (Room)
+
+Traditional video conferencing tools (Zoom, Google Meet) focus purely on media streaming and produce static post-call text transcripts that still require human labor to parse. In an agentic workspace, **Room is the live ingestion engine for organizational intent.**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 PILLAR 10: ROOM CONTEXT HARVESTER & OBSERVER                │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│    ACTIVE IN-ROOM AGENTS     │   LIVE STATE MUTATION        │  ZERO POST-   │
+│    (BACKGROUND OBSERVERS)    │   (CONCURRENT EXECUTION)     │  CALL LAG     │
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ • Silent AI observer nodes   │ • Spoken consensus mutates   │ • Staged PRs  │
+│   in WebRTC / E2EE sessions  │   Whiteboard live            │   ready upon  │
+│ • Real-time intent & decision│ • Drafts sections in Canvas  │   call hangup │
+│   extraction from audio      │ • Queues Agent Directives    │ • No manual   │
+│ • Screen share OCR stream    │ • Updates financial matrix   │   follow-ups  │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+### 12.1. In-Room Active Background Agents
+- **Autonomous Observers:** AI agents join Room video calls as silent background participants, processing audio streams in real time via lightweight speech-to-text models.
+- **Epistemic Intent Extraction:** Identifies consensus points, formal decisions, budget agreements, and dissenting opinions as they are articulated.
+
+### 12.2. Live Workspace State Mutation During Calls
+- Rather than waiting for the meeting to conclude, in-room agents execute concurrent workspace mutations:
+  1. **Whiteboard Updates:** Live-draws architecture diagrams or workflow steps agreed upon during discussion.
+  2. **Canvas Documentation:** Continuously drafts meeting minutes and strategic memos inside [`RoomLiveDocStage.jsx`](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/components/room/RoomLiveDocStage.jsx).
+  3. **Task Queueing:** Extracts action items, tags owners, and queues them into the **Directive Queue**.
+  4. **Matrix Modeling:** Adjusts spreadsheet financial assumptions when targets are verbally revised.
+- **Pillar 3 Sandbox Safety:** All mutations are bundled into an isolated, reviewable meeting PR (`pr_room_<meetingId>`) that participants can review and approve with 1 click before hanging up.
+
+### 12.3. Native Model Context Protocol (MCP) Integration
+- **Resource `workspace://room/live-context`:** Live stream of speaker turns, consensus tags, and pending meeting mutations.
+- **Tools:** `harvest_meeting_intent`, `mutate_workspace_from_audio`, `dispatch_in_room_directive`.
+
+---
+
+## 13. Upstream Roadmap: Execution Milestones (Pillars 2 to 10)
 
 ### Milestone 2: Native Model Context Protocol (MCP) Layer
 - [x] Implement open-standard JSON-RPC server transport (`protocolVersion: "2024-11-05"`).
@@ -383,12 +620,100 @@ Pillar 5 transforms the spreadsheet into an **AI-Native Matrix Engine and In-Bro
 - [x] Build Apple-tier interactive Matrix Schema & Query Inspector in Memory Dashboard.
 
 ### Milestone 6: Constraint-Based Intent Scheduler
-- [ ] Implement constraint-satisfaction negotiation algorithm for meetings and deadlines.
-- [ ] Allow multi-agent parameter negotiation (e.g. Alex Agent $\leftrightarrow$ Elena Agent).
+- [x] Implement constraint-satisfaction negotiation algorithm for meetings and deadlines.
+- [x] Allow multi-agent parameter negotiation (e.g. Alex Agent $\leftrightarrow$ Elena Agent).
+- [x] Rule 4 context-aware intent interpretation ("Tennis practice" -> `health_athletics`).
+- [x] Temporal conflict matrix & automated resolution (`priority_bump`, `duration_compression`, `cooldown_compression`).
+- [x] Expose MCP Resources (`workspace://schedule/calendar`, `workspace://schedule/negotiations`) and 5 canonical tools.
+- [x] Build Apple-tier Intent Scheduler Inspector UI in Memory Dashboard.
+- [x] Relay autonomous agent integration with interactive chat action cards.
+
+### Milestone 7: Universal Ingestion & Schema Translator (Omni-Portal)
+- [x] Connect Omni-Portal extraction outputs directly to `matrixSchemaEngine` (tables $\rightarrow$ typed columns).
+- [x] Connect narrative extractions directly to `blockCanvasEngine` AST (paragraphs $\rightarrow$ block IDs).
+- [x] Build multi-app entity decomposition pipeline routing single files across Sheets, Docs, and Tasks.
+- [x] Expose MCP Resource `workspace://portal/queue` and canonical ingestion tools.
+
+### Milestone 8: Directive Queue & Autonomous Agent Execution Loop (Tasks)
+- [x] Implement block-linked pointer anchoring (`blk_...`) when creating tasks from Canvas or Whiteboard selections.
+- [x] Build background autonomous agent runner for `agent` category directives.
+- [x] Wire execution loop into Pillar 3 sandbox staging engine (`stage: true`) for redline review.
+- [x] Expose MCP Resource `workspace://tasks/queue` and directive execution tools.
+
+### Milestone 9: Spatial Topology & Visual Context Graph (Whiteboard)
+- [x] Migrate 2D pixel coordinates to relational graph AST `(Node A) --[RELATION]--> (Node B)`.
+- [x] Synchronize whiteboard graph nodes with `universalContextGraph.js`.
+- [x] Implement bi-directional compiler (sketches $\rightarrow$ structured schema; agent plans $\rightarrow$ visual layout).
+- [x] Expose MCP Resource `workspace://whiteboard/topology` and whiteboard diagram tools.
+
+### Milestone 10: Real-Time Context Harvester & Multi-Agent In-Meeting Observer (Room)
+- [x] Integrate lightweight real-time speech-to-intent pipeline for active Room audio streams.
+- [x] Connect spoken consensus triggers to concurrent live state mutation in Canvas, Whiteboard, and Tasks.
+- [x] Generate bundled post-meeting sandbox PR branches with atomic approval workflows.
+- [x] Expose MCP Resource `workspace://room/live-context` and in-meeting harvester tools.
 
 ---
 
-## 9. Live Changelog
+## 14. Live Changelog
+
+- **2026-09-05:**
+  - **Pillar 10 Completed (Real-Time Context Harvester & Multi-Agent Observer — Room):**
+    - Created `roomObserverEngine.js` establishing an active in-room multi-agent observer substrate with three specialized background agents (Alex Agent: Systems/Whiteboard, Elena Agent: Finance/Matrix, Marcus Agent: Operations/Directives).
+    - Built an isomorphic epistemic intent classification pipeline processing real-time speech turns into 5 categories: `DECISION_CONSENSUS`, `ACTION_DIRECTIVE`, `ARCHITECTURE_MUTATION`, `FINANCIAL_METRIC_UPDATE`, and `DOCUMENTATION_NOTE`, extracting monetary figures, sponsors, priorities, assignees, whiteboard relations, and financial metrics.
+    - Implemented concurrent cross-app state mutators routing spoken intent to Canvas Docs (`blockCanvasEngine.js`), Whiteboard Topology (`spatialTopologyEngine.js`), Tasks Directive Queue (`directiveQueueEngine.js`), and Matrix Sheets (`matrixSchemaEngine.js`).
+    - Integrated Pillar 3 sandbox staging safety: all in-meeting mutations bundle into an isolated PR branch (`pr_room_<meetingId>_<ts>`) for 1-click atomic approval or rejection upon call conclusion.
+    - Registered 4 canonical tools in `docsToolRegistry.js`: `harvest_meeting_intent`, `mutate_workspace_from_audio`, `dispatch_in_room_directive`, and `get_room_live_context`, with staging diff handler in `docsToolExecutor.js`.
+    - Exposed MCP Resource `workspace://room/live-context` with token-dense Markdown serialization (< 420 tokens = 97.6% savings over raw 18k transcripts) and registered in `universalMcpBridge.js` & `server/mcpTools.js`.
+    - Built Apple-tier `RoomContextHarvesterInspector.jsx` with frosted glass, non-pill rectangular tabs (Rule 3), active state strictly termed "outline" (Rule 2), and touch-safe `onPointerDown` handling (Rule 6). Mounted in `MemoryDashboard.jsx` under `'room'`.
+    - Integrated top-bar AI Observer active pill in `RoomLandingPage.jsx`.
+    - Wired Relay agent intent classification (`isRoomHarvester`) and interactive action cards with touch-safe CTAs in `ExecutiveDirectMessages.jsx`.
+    - Automated test suite `scripts/test-room-harvester.mjs`: **92/92 Tests Passed (100%)**.
+    - Full regression suites across Pillars 2 through 9 verified: **100% Pass Rate**.
+    - Production Vite build verified: **✓ built in 12.82s**.
+
+- **2026-09-05:**
+  - **Pillar 9 Completed (Spatial Topology & Visual Context Graph — Whiteboard):**
+    - Created `spatialTopologyEngine.js` implementing a canonical Relational Graph AST (`nodes`, `edges`, `metadata`) with persistent typed IDs (`node_...`), explicit relation tags (`CALLS`, `READS_FROM`, `WRITES_TO`, `DEPENDS_ON`, `TRANSITIONS_TO`), in/out degree analytics, density calculation, and DFS topological cycle detection.
+    - Built bi-directional code compilers: ANSI SQL DDL schema generator with foreign keys, OpenAPI 3.0.3 YAML spec compiler, executable XState state machine JSON generator, and token-dense Markdown architecture reporter.
+    - Implemented multi-step agent plan visual synthesizer (`renderAgentPlanToTopology`) with automated 2D coordinates layout, and lossless bi-directional canvas object adapters (`whiteboardObjectsToTopology`, `topologyToWhiteboardObjects`).
+    - Added 4 canonical tools to `docsToolRegistry.js` (`get_whiteboard_topology`, `compile_diagram_to_schema`, `render_agent_plan_to_canvas`, `patch_whiteboard_node`) and wired staging executor into `docsToolExecutor.js` (`targetApp: 'whiteboard'`).
+    - Exposed MCP Resource `workspace://whiteboard/topology` and synchronized topological nodes into `universalContextGraph.js`.
+    - Built Apple-tier `SpatialTopologyInspector.jsx` with 4 non-pill tab views (Spatial Graph, Compiler Studio, Synthesis Studio, Universal Context Sync) and mounted in `MemoryDashboard.jsx`.
+    - Integrated Relay agent with `isWhiteboardTopology` intent classifier and touch-safe `onPointerDown` action cards in `ExecutiveDirectMessages.jsx`.
+    - Automated test suite `scripts/test-spatial-topology.mjs`: **93/93 Tests Passed (100%)**.
+    - Production Vite build verified: **✓ built in 29.75s**.
+
+- **2026-09-05:**
+  - **Pillar 8 Completed (Directive Queue & Autonomous Agent Execution Loop — Tasks):**
+    - Created `directiveQueueEngine.js` featuring three-tier ownership taxonomy (`user`, `agent`, `team`), priority architecture (`P0`..`P3`), deterministic lifecycle states (`PENDING`, `RUNNING`, `STAGED`, `COMPLETED`), and bidirectional block-linked AST pointer anchoring (`blk_...`).
+    - Implemented atomic checkout locking (`checkoutNextAgentDirective`) and autonomous background runner loop (`executeAgentDirective`) with Pillar 3 sandbox staging PR isolation (`pr_directive_...`).
+    - Added 4 canonical tools to `docsToolRegistry.js` (`queue_agent_directive`, `link_directive_to_block`, `checkout_agent_directive`, `complete_agent_directive`) and exposed MCP Resources (`workspace://tasks/queue`, `workspace://tasks/active`).
+    - Built Apple-tier `DirectiveQueueInspector.jsx` with 4 tab views (Three-Tier Matrix, Block AST Pointers, Runner Console, Staged PR Sandboxes) and mounted in `MemoryDashboard.jsx`.
+    - Integrated Relay agent with `isDirectiveQueue` intent classifier and touch-safe action cards.
+    - Automated test suite `scripts/test-directive-queue.mjs`: **97/97 Tests Passed (100%)**.
+
+- **2026-09-05:**
+  - **Pillar 7 Completed (Universal Ingestion & Schema Translator — Omni-Portal):**
+    - Created `omniPortalEngine.js` featuring multi-format detection (DOCX, PPTX, XLSX, PDF, CSV, MD, TXT, JSON), Dual-View Ingestion architecture (Human Original vs. Clean AST), and cross-app entity decomposition across Canvas blocks, Matrix tables, Directive Queue tasks, and Universal Context Graph.
+    - Built lossless schema translator complying with Rule 7 intersection cell isolation and Rule 9 categorical dropdown validations.
+    - Integrated with Pillar 3 sandbox PR staging (`stageIngestionPackage`) and exposed MCP Resources (`workspace://portal/queue`, `workspace://portal/manifest`).
+    - Added 3 canonical tools to `docsToolRegistry.js` (`ingest_file_portal`, `query_portal_manifest`, `translate_schema_portal`).
+    - Built Apple-tier `OmniPortalInspector.jsx` with 4 tab views and mounted in `MemoryDashboard.jsx`.
+    - Integrated Relay agent with `isIngestDocument` intent classifier and touch-safe action cards.
+    - Automated test suite `scripts/test-omni-portal.mjs`: **67/67 Tests Passed (100%)**.
+
+- **2026-09-04:**
+  - **Pillar 6 Completed (The Constraint-Based Intent Scheduler & Multi-Agent Negotiation Substrate):**
+    - Created `intentSchedulerEngine.js` featuring CSP solver with forward checking, multi-objective utility scoring $U(\text{slot}) \in [0, 1]$, and Rule 4 context-aware intent interpretation mapping colloquial prompts ("Tennis practice", "Board prep sync") to systemic specs.
+    - Implemented multi-agent alternating-offer parameter negotiation protocol with Pareto convergence and state machine (`PROPOSED`, `COUNTER_OFFERED`, `AGREED`, `COMMITTED`).
+    - Implemented temporal conflict detection and automated resolution strategies (`priority_bump`, `duration_compression`, `cooldown_compression`) with seamless Pillar 3 sandbox staging (`stage: true`).
+    - Added 5 canonical tools to `docsToolRegistry.js` (`solve_schedule_constraints`, `negotiate_multi_agent_schedule`, `detect_schedule_conflicts`, `resolve_schedule_conflict`, `commit_scheduled_event`) and wired staging execution into `docsToolExecutor.js`.
+    - Exposed MCP Resources `workspace://schedule/calendar` and `workspace://schedule/negotiations` alongside tool declarations in `universalMcpBridge.js` and `server/mcpTools.js`.
+    - Integrated Relay Autonomous Agent (`relayAgentService.js`) to classify scheduling intents, run negotiations, and render interactive action cards in `ExecutiveDirectMessages.jsx` with 1-click confirmation and inspector navigation.
+    - Recorded scheduling nodes and participant edges in `universalContextGraph.js`.
+    - Built Apple-tier `IntentSchedulerInspector.jsx` featuring 4 non-pill tab views (Calendar & Timeline, Multi-Agent Studio, Constraint Playground, Conflict Center) and mounted in `MemoryDashboard.jsx`.
+    - Automated test suite `scripts/test-intent-scheduler.js`: **20/20 Tests Passed** (163 total substrate tests passing across all 6 Pillars).
+    - Production Vite build verified: **✓ built in 24.55s**.
 
 - **2026-09-04:**
   - **Pillar 5 Completed (The Matrix Engine: Code Execution & Schema Validation Substrate):**

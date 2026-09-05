@@ -19,6 +19,10 @@ import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEn
 import { getActiveBlockTree, getBlock, patchBlock, insertBlock, deleteBlock, moveBlock, batchPatchBlocks } from './blockCanvasEngine.js';
 import * as matrixEngine from './matrixSchemaEngine.js';
 import * as intentScheduler from './intentSchedulerEngine.js';
+import * as omniPortal from './omniPortalEngine.js';
+import * as directiveEngine from './directiveQueueEngine.js';
+import * as spatialTopology from './spatialTopologyEngine.js';
+import * as roomObserver from './roomObserverEngine.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
@@ -29,8 +33,11 @@ export const DOCS_TOOL_CATEGORIES = {
   SHEET_TOOLS: 'sheet_tools',
   TASKS_TOOLS: 'tasks_tools',
   ROOMS_TOOLS: 'rooms_tools',
+  ROOM_TOOLS: 'room_tools',
   BROWSER_TOOLS: 'browser_tools',
   SCHEDULE_TOOLS: 'schedule_tools',
+  PORTAL_TOOLS: 'portal_tools',
+  WHITEBOARD_TOOLS: 'whiteboard_tools',
 };
 
 export const CANONICAL_DOCS_TOOLS = [
@@ -1642,6 +1649,673 @@ export const CANONICAL_DOCS_TOOLS = [
           success: true,
           message: `Event committed to universal schedule: ${committed.title} (${committed.id})`,
           data: committed
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── OMNI-PORTAL UNIVERSAL INGESTION TOOLS (Pillar 7) ──────────────
+  {
+    name: 'ingest_file_stream',
+    label: 'Ingest File Stream',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Ingests raw text or file stream into an Ingestion Package with dual-view original fidelity and clean semantic AST state.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw text, HTML, or serialized content of the file' },
+        fileName: { type: 'string', description: 'Original file name with extension (e.g. Q3_Report.docx)' },
+        title: { type: 'string', description: 'Optional clean document title' },
+        stage: { type: 'boolean', description: 'If true, stages cross-app mutations into a Pillar 3 PR sandbox' }
+      },
+      required: ['content', 'fileName']
+    },
+    execute: async (params) => {
+      try {
+        const pkg = omniPortal.createIngestionPackage(params.content, {
+          fileName: params.fileName,
+          title: params.title
+        });
+        if (params.stage) {
+          const staged = omniPortal.stageIngestionPackage(pkg);
+          return {
+            success: true,
+            message: `File ingested and staged in PR branch: ${staged.branchId}`,
+            data: { package: pkg, staging: staged }
+          };
+        }
+        return {
+          success: true,
+          message: `File ingested successfully: ${pkg.title} (${pkg.id})`,
+          data: pkg
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'translate_schema_to_ast',
+    label: 'Translate Schema to AST',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Losslessly translates unstructured raw content (tables, CSV, HTML, Markdown) into typed Canvas Block Trees or Rule 7/9 schema-validated Matrix ASTs.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw string, HTML table, or CSV to translate' },
+        targetType: { type: 'string', enum: ['matrix', 'canvas'], description: 'Destination AST type' },
+        title: { type: 'string', description: 'Optional title' }
+      },
+      required: ['content', 'targetType']
+    },
+    execute: async (params) => {
+      try {
+        if (params.targetType === 'matrix') {
+          const translated = omniPortal.translateTableToMatrixAst(params.content, { title: params.title });
+          return {
+            success: true,
+            message: `Translated table to Matrix AST with ${translated.schema.columns.length} columns and ${translated.grid.length} rows`,
+            data: translated
+          };
+        }
+        const blockTree = omniPortal.htmlToBlockTree(params.content, { documentId: `doc_${Date.now()}` });
+        return {
+          success: true,
+          message: `Translated content to Canvas Block Tree with ${blockTree.blocks.length} blocks`,
+          data: blockTree
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'decompose_document_cross_app',
+    label: 'Decompose Document Cross-App',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Decomposes a multi-modal enterprise document into Canvas blocks, Matrix tables, Directive Queue tasks, and Context Graph nodes with token savings metrics.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw text or HTML of the document' },
+        fileName: { type: 'string', description: 'Document filename' },
+        title: { type: 'string', description: 'Optional title' }
+      },
+      required: ['content']
+    },
+    execute: async (params) => {
+      try {
+        const decomposition = omniPortal.decomposeDocumentCrossApp(params.content, {
+          fileName: params.fileName,
+          title: params.title
+        });
+        return {
+          success: true,
+          message: `Decomposed into ${decomposition.canvas.blockCount} blocks, ${decomposition.matrix.totalTables} tables, and ${decomposition.directives.totalTasks} tasks (${decomposition.tokenStats.savingsPercent}% token savings)`,
+          data: decomposition
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'route_entities_cross_app',
+    label: 'Route Entities Cross-App',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Dispatches decomposed entities to active workspaces (Sheets, Docs, Tasks) or routes them into a Pillar 3 staging PR branch.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        packageId: { type: 'string', description: 'ID of the ingestion package to route' },
+        stage: { type: 'boolean', description: 'If true (default), routes to isolated staging sandbox' }
+      },
+      required: ['packageId']
+    },
+    execute: async (params) => {
+      try {
+        const res = await omniPortal.routeEntitiesCrossApp(params.packageId, {
+          stage: params.stage !== false
+        });
+        return {
+          success: true,
+          message: res.mode === 'staged_sandbox'
+            ? `Routed entities into Staging PR: ${res.branchId}`
+            : `Directly committed entities to active workspaces`,
+          data: res
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'stage_ingestion_package',
+    label: 'Stage Ingestion Package',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Stages all extracted entities from an ingestion package into an isolated Pillar 3 PR sandbox branch for executive visual redline review.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        packageId: { type: 'string', description: 'ID of the ingestion package' },
+        branchTitle: { type: 'string', description: 'Custom staging PR title' }
+      },
+      required: ['packageId']
+    },
+    execute: async (params) => {
+      try {
+        const pkg = omniPortal.getIngestionPackageById(params.packageId);
+        if (!pkg) {
+          return { success: false, error: `Package not found: ${params.packageId}` };
+        }
+        const staged = omniPortal.stageIngestionPackage(pkg, { branchTitle: params.branchTitle });
+        return {
+          success: true,
+          message: `Staged ingestion package in PR branch: ${staged.branchId}`,
+          data: staged
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── DIRECTIVE QUEUE & AUTONOMOUS AGENT TOOLS (Pillar 8) ───────────
+  {
+    name: 'queue_agent_directive',
+    label: 'Queue Agent Directive',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Queues a new task or autonomous execution directive into the directive engine with a three-tier taxonomy (user, agent, team) and optional block pointer anchoring.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Directive title or task description' },
+        description: { type: 'string', description: 'Detailed execution instructions' },
+        tier: { type: 'string', enum: ['user', 'agent', 'team'], description: 'Three-tier ownership taxonomy' },
+        priority: { type: 'string', enum: ['P0', 'P1', 'P2', 'P3'], description: 'Directive execution priority' },
+        actionPayload: { type: 'object', description: 'Optional machine-executable action specifications' },
+        blockPointer: { type: 'object', description: 'Optional anchored Canvas block AST ID or Matrix cell' },
+        autoExecute: { type: 'boolean', description: 'Whether to immediately trigger autonomous execution' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      try {
+        const item = directiveEngine.queueDirective({
+          title: params.title,
+          description: params.description || '',
+          tier: params.tier || 'agent',
+          priority: params.priority || 'P1',
+          actionPayload: params.actionPayload || null,
+          blockPointer: params.blockPointer || null
+        });
+        if (params.autoExecute && item.tier === 'agent') {
+          const execRes = await directiveEngine.executeAgentDirective(item.id, { stage: true });
+          return {
+            success: true,
+            message: `Queued and executed directive ${item.id} (Status: ${execRes.directive.status})`,
+            data: { directive: execRes.directive, stagedPr: execRes.stagedPr }
+          };
+        }
+        return {
+          success: true,
+          message: `Queued directive "${item.title}" [${item.tier.toUpperCase()} - ${item.priority}] with ID: ${item.id}`,
+          data: item
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'link_directive_to_block',
+    label: 'Link Directive to Block',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Anchors an active directive to a specific Canvas block AST ID (blk_...) or Matrix cell for surgical zero-drift execution.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        directiveId: { type: 'string', description: 'Target directive ID' },
+        blockId: { type: 'string', description: 'Canvas block AST ID (blk_...) or cell identifier' },
+        blockType: { type: 'string', description: 'Block type (e.g. h1, paragraph, matrix, table)' },
+        docId: { type: 'string', description: 'Host document ID' },
+        cellKey: { type: 'string', description: 'Optional Matrix cell coordinate (e.g. status:row-1)' }
+      },
+      required: ['directiveId', 'blockId']
+    },
+    execute: async (params) => {
+      try {
+        const updated = directiveEngine.linkDirectiveToBlock(params.directiveId, {
+          blockId: params.blockId,
+          blockType: params.blockType || 'block',
+          docId: params.docId || 'active_doc',
+          cellKey: params.cellKey || null
+        });
+        return {
+          success: true,
+          message: `Linked directive ${params.directiveId} to block pointer [${params.blockId}]`,
+          data: updated
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'checkout_agent_directive',
+    label: 'Checkout Agent Directive',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Atomically locks and checks out the next pending directive for an autonomous background agent runner.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        agentId: { type: 'string', description: 'Agent worker identifier (default: agent_runner_1)' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      try {
+        const checkedOut = directiveEngine.checkoutNextAgentDirective(params?.agentId || 'agent_runner_1');
+        if (!checkedOut) {
+          return {
+            success: true,
+            message: 'No pending agent directives available in queue.',
+            data: null
+          };
+        }
+        return {
+          success: true,
+          message: `Checked out directive ${checkedOut.id}: "${checkedOut.title}"`,
+          data: checkedOut
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'complete_agent_directive',
+    label: 'Complete Agent Directive',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Marks an active directive as COMPLETED or STAGED with execution results and optional Pillar 3 staging PR sandbox.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        directiveId: { type: 'string', description: 'ID of directive to complete' },
+        result: { type: 'object', description: 'Output execution details, summary, and artifacts' },
+        stage: { type: 'boolean', description: 'If true (default), mutative actions generate a Pillar 3 staging PR' }
+      },
+      required: ['directiveId']
+    },
+    execute: async (params) => {
+      try {
+        const execRes = await directiveEngine.executeAgentDirective(params.directiveId, {
+          stage: params.stage !== false,
+          result: params.result
+        });
+        return {
+          success: true,
+          message: `Directive ${params.directiveId} executed (Status: ${execRes.directive.status})`,
+          data: execRes
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── SPATIAL TOPOLOGY & VISUAL CONTEXT GRAPH TOOLS (Pillar 9) ─────────
+  {
+    name: 'get_whiteboard_topology',
+    label: 'Get Whiteboard Topology Graph',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Retrieves the complete spatial topology AST graph (nodes, directional edges, metadata, and graph analytics) of the whiteboard canvas.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        includeAnalysis: { type: 'boolean', description: 'If true (default), computes graph analytics (in/out degrees, root/sink nodes, cycles)' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      try {
+        const graph = spatialTopology.getTopologyGraph();
+        const analysis = params?.includeAnalysis !== false ? spatialTopology.analyzeTopology() : null;
+        return {
+          success: true,
+          message: `Retrieved spatial whiteboard topology with ${graph.nodes.length} nodes and ${graph.edges.length} edges.`,
+          data: {
+            ...graph,
+            analysis
+          }
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'compile_diagram_to_schema',
+    label: 'Compile Diagram to Code Schema',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Bi-directionally compiles the visual whiteboard diagram AST into ANSI SQL DDL, OpenAPI 3.0 specs, executable State Machine JSON, or Markdown architecture summaries.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        target: { 
+          type: 'string', 
+          enum: ['sql', 'openapi', 'state_machine', 'summary'],
+          description: 'Target schema output format (sql, openapi, state_machine, or summary)'
+        }
+      },
+      required: ['target']
+    },
+    execute: async (params) => {
+      try {
+        const target = params?.target || 'sql';
+        let compiledOutput = '';
+        if (target === 'sql') {
+          compiledOutput = spatialTopology.compileTopologyToSqlSchema();
+        } else if (target === 'openapi') {
+          compiledOutput = spatialTopology.compileTopologyToOpenApi();
+        } else if (target === 'state_machine') {
+          compiledOutput = spatialTopology.compileTopologyToStateMachine();
+        } else if (target === 'summary') {
+          compiledOutput = spatialTopology.compileTopologyToArchitectureSummary();
+        } else {
+          return { success: false, error: `Unsupported compilation target: ${target}. Must be sql, openapi, state_machine, or summary.` };
+        }
+        return {
+          success: true,
+          target,
+          message: `Compiled spatial diagram to ${target.toUpperCase()} successfully.`,
+          data: compiledOutput
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'render_agent_plan_to_canvas',
+    label: 'Render Agent Plan to Canvas',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Synthesizes an agent execution plan, architecture, or workflow into visual whiteboard canvas topology with computed spatial 2D coordinates and directed edges.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Title of the architecture or workflow plan' },
+        steps: { 
+          type: 'array', 
+          items: { type: 'object' },
+          description: 'List of plan steps or architecture stages with title, description, nodeType, status, and dependsOn dependencies'
+        },
+        clearExisting: { type: 'boolean', description: 'If true, clears existing whiteboard canvas nodes before rendering' }
+      },
+      required: ['steps']
+    },
+    execute: async (params) => {
+      try {
+        const plan = {
+          title: params?.title || 'Agent Synthesized Plan',
+          steps: params?.steps || []
+        };
+        const result = spatialTopology.renderAgentPlanToTopology(plan, {
+          clearExisting: params?.clearExisting === true
+        });
+        return {
+          success: true,
+          message: `Rendered agent plan "${plan.title}" onto whiteboard canvas with ${result.nodes.length} nodes and ${result.edges.length} directed edges.`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'patch_whiteboard_node',
+    label: 'Patch Whiteboard Node',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Updates properties, metadata, status, or spatial coordinates of a specific node in the whiteboard topology graph.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'ID of the node to update' },
+        patch: { type: 'object', description: 'Properties to update (label, status, metadata, x, y, width, height)' }
+      },
+      required: ['nodeId', 'patch']
+    },
+    execute: async (params) => {
+      try {
+        const updated = spatialTopology.updateTopologyNode(params.nodeId, params.patch);
+        if (!updated) {
+          return { success: false, error: `Node with id "${params.nodeId}" not found in spatial topology.` };
+        }
+        return {
+          success: true,
+          message: `Successfully patched whiteboard node "${params.nodeId}" (${updated.label}).`,
+          data: updated
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── ROOM REAL-TIME CONTEXT HARVESTER & MULTI-AGENT OBSERVER (Pillar 10) ────
+  {
+    name: 'harvest_meeting_intent',
+    label: 'Harvest In-Meeting Intent',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Ingests spoken audio transcript turns from an active Room meeting session and extracts categorized epistemic intent (decisions, directives, architecture proposals, financial updates, minutes).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        speaker: { type: 'string', description: 'Name and role of the speaker (e.g., "Elena Rostova (VP Finance)")' },
+        text: { type: 'string', description: 'Verbatim spoken audio transcription turn' },
+        confidence: { type: 'number', description: 'Speech-to-text confidence score between 0 and 1' }
+      },
+      required: ['speaker', 'text']
+    },
+    execute: async (params) => {
+      try {
+        const turn = roomObserver.ingestSpeechTurn({
+          speaker: params.speaker,
+          text: params.text,
+          confidence: params.confidence || 0.95,
+          autoMutate: false
+        });
+        return {
+          success: true,
+          message: `Harvested intent from ${params.speaker}: [${turn.intent.type.toUpperCase()}]`,
+          data: turn
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'mutate_workspace_from_audio',
+    label: 'Mutate Workspace From Audio',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Concurrently mutates live workspace state across Canvas Docs, Whiteboard Topology, Directive Queue, or Matrix Sheets from spoken in-meeting intent with optional Pillar 3 staging sandbox safety.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        speaker: { type: 'string', description: 'Speaker who articulated the intent' },
+        text: { type: 'string', description: 'Spoken transcript proposal' },
+        stage: { type: 'boolean', description: 'If true (default), stages mutation into isolated meeting PR branch' }
+      },
+      required: ['speaker', 'text']
+    },
+    execute: async (params) => {
+      try {
+        const shouldStage = params?.stage !== false;
+        const turn = roomObserver.ingestSpeechTurn({
+          speaker: params.speaker,
+          text: params.text,
+          autoMutate: true,
+          stage: shouldStage
+        });
+        return {
+          success: true,
+          message: `Successfully applied in-meeting mutation (${turn.intent.type.toUpperCase()}) with stage=${shouldStage}.`,
+          data: {
+            turn,
+            activePrBranchId: roomObserver.getLiveSession().activePrBranchId
+          }
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'dispatch_in_room_directive',
+    label: 'Dispatch In-Room Directive',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Extracts an actionable commitment from in-room spoken conversation and directly queues a P0..P3 machine directive for autonomous agent or human execution.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Directive action summary' },
+        assignee: { type: 'string', description: 'Target agent or human assignee' },
+        priority: { type: 'string', enum: ['P0', 'P1', 'P2', 'P3'], description: 'Priority classification' },
+        tier: { type: 'string', enum: ['agent', 'user', 'team'], description: 'Ownership tier' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      try {
+        const mutation = roomObserver.mutateWorkspaceFromIntent({
+          type: 'action_directive',
+          extractedData: {
+            title: params.title,
+            assignee: params.assignee || 'Marcus Agent',
+            priority: params.priority || 'P1',
+            tier: params.tier || 'agent'
+          }
+        }, { stage: false });
+        return {
+          success: true,
+          message: `Dispatched in-room directive: "${params.title}" to ${params.assignee || 'Marcus Agent'}.`,
+          data: mutation
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'get_room_live_context',
+    label: 'Get Room Live Context',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Queries active Room session context, speaker transcript turns, epistemic consensus log, and pending meeting PR mutations.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        format: { type: 'string', enum: ['markdown', 'json'], description: 'Format of the returned context (markdown or json)' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      try {
+        const format = params?.format || 'markdown';
+        const session = roomObserver.getLiveSession();
+        const content = format === 'json'
+          ? roomObserver.serializeRoomContextToJson(session)
+          : roomObserver.serializeRoomContextToMarkdown(session);
+        return {
+          success: true,
+          format,
+          message: `Retrieved active Room context for "${session.title}" (${session.summary.totalTurns} turns, ${session.summary.decisionsCount} decisions).`,
+          data: content,
+          session
         };
       } catch (err) {
         return { success: false, error: err.message };

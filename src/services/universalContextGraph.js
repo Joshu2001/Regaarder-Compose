@@ -755,3 +755,192 @@ export const recordNegotiationGraphNode = (negotiation) => {
   return node;
 };
 
+/**
+ * Record an Omni-Portal Ingestion Package into Context Graph
+ */
+export const recordIngestionGraphNode = (ingestPackage) => {
+  if (!ingestPackage || !ingestPackage.id) return null;
+  initializeContextGraph();
+
+  const node = {
+    id: `ent_portal_${ingestPackage.id}`,
+    type: 'DOCUMENT',
+    workspace: 'portal',
+    title: `Ingestion: ${ingestPackage.title}`,
+    author: 'Omni-Portal',
+    authorRole: 'Universal Schema Translator',
+    updatedAt: new Date().toISOString(),
+    project: 'Enterprise Ingestion',
+    tags: ['OmniPortal', ingestPackage.format?.toUpperCase() || 'DOCUMENT', ingestPackage.status || 'DECOMPOSED'],
+    excerpt: `${ingestPackage.fileName} | Blocks: ${ingestPackage.workspaceState?.canvas?.blockCount || 0} | Sheets: ${ingestPackage.workspaceState?.matrix?.totalTables || 0} | Tasks: ${ingestPackage.workspaceState?.directives?.totalTasks || 0} | Context Savings: ${ingestPackage.workspaceState?.tokenStats?.savingsPercent || 0}%`,
+    content: JSON.stringify(ingestPackage.workspaceState?.tokenStats || {}, null, 2),
+    metadata: {
+      packageId: ingestPackage.id,
+      fileName: ingestPackage.fileName,
+      format: ingestPackage.format,
+      status: ingestPackage.status,
+      blockCount: ingestPackage.workspaceState?.canvas?.blockCount,
+      sheetCount: ingestPackage.workspaceState?.matrix?.totalTables,
+      taskCount: ingestPackage.workspaceState?.directives?.totalTasks,
+      tokenStats: ingestPackage.workspaceState?.tokenStats
+    }
+  };
+
+  const existingIdx = graphEntitiesCache.findIndex(e => e.id === node.id);
+  if (existingIdx !== -1) {
+    graphEntitiesCache[existingIdx] = { ...graphEntitiesCache[existingIdx], ...node };
+  } else {
+    graphEntitiesCache = [node, ...graphEntitiesCache];
+  }
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+
+  notifySubscribers('portal_ingestions', ingestPackage);
+  notifySubscribers('graph_entities', graphEntitiesCache);
+  return node;
+};
+
+/**
+ * Record a Directive Queue Item into Context Graph
+ */
+export const recordDirectiveGraphNode = (directive) => {
+  if (!directive || !directive.id) return null;
+  initializeContextGraph();
+
+  const node = {
+    id: `ent_directive_${directive.id}`,
+    type: 'TASK',
+    workspace: 'tasks',
+    title: `Directive: ${directive.title}`,
+    author: directive.tier === 'agent' ? 'Autonomous Agent' : (directive.tier === 'team' ? 'Cross-Functional Team' : 'Executive User'),
+    authorRole: `${(directive.tier || 'agent').toUpperCase()} Directive`,
+    updatedAt: new Date().toISOString(),
+    project: 'Autonomous Task Substrate',
+    tags: ['DirectiveQueue', (directive.tier || 'agent').toUpperCase(), directive.priority || 'P1', directive.status || 'PENDING'],
+    excerpt: `Status: ${directive.status} | Tier: ${directive.tier} | Priority: ${directive.priority}${directive.blockPointer ? ` | Block: ${directive.blockPointer.blockId}` : ''}`,
+    content: JSON.stringify(directive, null, 2),
+    metadata: {
+      directiveId: directive.id,
+      tier: directive.tier,
+      priority: directive.priority,
+      status: directive.status,
+      blockPointer: directive.blockPointer,
+      stagingPrId: directive.stagingPrId
+    }
+  };
+
+  const existingIdx = graphEntitiesCache.findIndex(e => e.id === node.id);
+  if (existingIdx !== -1) {
+    graphEntitiesCache[existingIdx] = { ...graphEntitiesCache[existingIdx], ...node };
+  } else {
+    graphEntitiesCache = [node, ...graphEntitiesCache];
+  }
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+
+  notifySubscribers('directive_queue', directive);
+  notifySubscribers('graph_entities', graphEntitiesCache);
+  return node;
+};
+
+/**
+ * Record a Whiteboard Spatial Topology Graph into Context Graph
+ */
+export const recordTopologyGraphNode = (topology) => {
+  if (!topology || !topology.id) return null;
+  initializeContextGraph();
+
+  const nodeCount = topology.nodes ? topology.nodes.length : 0;
+  const edgeCount = topology.edges ? topology.edges.length : 0;
+
+  const node = {
+    id: `ent_topology_${topology.id}`,
+    type: 'DOCUMENT',
+    workspace: 'whiteboard',
+    title: `Topology: ${topology.title || 'System Diagram'}`,
+    author: 'Spatial Topology Engine',
+    authorRole: 'Visual Graph Compiler',
+    updatedAt: new Date().toISOString(),
+    project: 'Architecture & System Topology',
+    tags: ['SpatialTopology', 'Whiteboard', `${nodeCount}_NODES`, `${edgeCount}_EDGES`],
+    excerpt: `${topology.title || 'System Diagram'} | Nodes: ${nodeCount} | Edges: ${edgeCount} | Compiled Schemas: SQL DDL, OpenAPI, State Machine`,
+    content: JSON.stringify({
+      id: topology.id,
+      title: topology.title,
+      nodeCount,
+      edgeCount,
+      nodes: (topology.nodes || []).map(n => ({ id: n.id, type: n.type, label: n.label })),
+      edges: (topology.edges || []).map(e => ({ source: e.source, target: e.target, relation: e.relation }))
+    }, null, 2),
+    metadata: {
+      topologyId: topology.id,
+      nodeCount,
+      edgeCount,
+      version: topology.version || 1
+    }
+  };
+
+  const existingIdx = graphEntitiesCache.findIndex(e => e.id === node.id);
+  if (existingIdx !== -1) {
+    graphEntitiesCache[existingIdx] = { ...graphEntitiesCache[existingIdx], ...node };
+  } else {
+    graphEntitiesCache = [node, ...graphEntitiesCache];
+  }
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+
+  notifySubscribers('whiteboard_topology', topology);
+  notifySubscribers('graph_entities', graphEntitiesCache);
+  return node;
+};
+
+/**
+ * Record a Room Observer & In-Meeting Session into Universal Context Graph
+ */
+export const recordRoomObserverGraphNode = (session) => {
+  if (!session || !session.meetingId) return null;
+  initializeContextGraph();
+
+  const participantCount = session.participants ? session.participants.length : 0;
+  const intentCount = session.harvestedIntents ? session.harvestedIntents.length : 0;
+  const decisionsCount = session.summary?.decisionsCount || 0;
+  const directivesCount = session.summary?.directivesCount || 0;
+
+  const node = {
+    id: `ent_room_${session.meetingId}`,
+    type: 'DOCUMENT',
+    workspace: 'room',
+    title: `In-Room Observer: ${session.title || 'Live Meeting'}`,
+    author: 'Room Context Harvester',
+    authorRole: 'In-Meeting Multi-Agent Observer',
+    updatedAt: new Date().toISOString(),
+    project: 'Organizational Intent & Meeting Harvesting',
+    tags: ['Room', 'MeetingObserver', `${participantCount}_PARTICIPANTS`, `${decisionsCount}_DECISIONS`, `${directivesCount}_DIRECTIVES`],
+    excerpt: `${session.title || 'Meeting'} | Status: ${session.status} | Decisions: ${decisionsCount} | Directives: ${directivesCount} | Total Turns: ${session.summary?.totalTurns || 0}`,
+    content: JSON.stringify({
+      meetingId: session.meetingId,
+      title: session.title,
+      status: session.status,
+      participants: session.participants,
+      observers: (session.activeObservers || []).map(o => o.name),
+      summary: session.summary,
+      activePrBranchId: session.activePrBranchId
+    }, null, 2),
+    metadata: {
+      meetingId: session.meetingId,
+      status: session.status,
+      activePrBranchId: session.activePrBranchId,
+      summary: session.summary,
+      version: 1
+    }
+  };
+
+  const existingIdx = graphEntitiesCache.findIndex(e => e.id === node.id);
+  if (existingIdx !== -1) {
+    graphEntitiesCache[existingIdx] = { ...graphEntitiesCache[existingIdx], ...node };
+  } else {
+    graphEntitiesCache = [node, ...graphEntitiesCache];
+  }
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+
+  notifySubscribers('room_observer', session);
+  notifySubscribers('graph_entities', graphEntitiesCache);
+  return node;
+};

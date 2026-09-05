@@ -76,6 +76,10 @@ import { subscribeToStaging, getBranchById } from './services/workspaceStagingEn
 import WorkspaceStagingReviewModal from './components/staging/WorkspaceStagingReviewModal';
 import * as matrixEngine from './services/matrixSchemaEngine';
 import * as intentScheduler from './services/intentSchedulerEngine';
+import * as omniPortal from './services/omniPortalEngine';
+import * as directiveQueue from './services/directiveQueueEngine';
+import * as spatialTopology from './services/spatialTopologyEngine';
+import * as roomObserver from './services/roomObserverEngine';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6911,6 +6915,26 @@ function AppCore() {
       setMemoryTab('meetings');
       setIsMemoryOpen(true);
     };
+    window.__REGAARDER_OMNI_PORTAL__ = omniPortal;
+    window.__REGAARDER_OPEN_PORTAL_INSPECTOR__ = () => {
+      setMemoryTab('omni_portal');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_DIRECTIVE_QUEUE__ = directiveQueue;
+    window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__ = () => {
+      setMemoryTab('directives');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_SPATIAL_TOPOLOGY__ = spatialTopology;
+    window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__ = () => {
+      setMemoryTab('topology');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_ROOM_HARVESTER__ = roomObserver;
+    window.__REGAARDER_OPEN_ROOM_HARVESTER__ = () => {
+      setMemoryTab('room');
+      setIsMemoryOpen(true);
+    };
     window.__REGAARDER_INTENT_SCHEDULER__ = intentScheduler;
     window.__REGAARDER_COMMIT_EVENT__ = (event) => {
       return intentScheduler.commitCalendarEvent(event);
@@ -6920,6 +6944,14 @@ function AppCore() {
       delete window.__REGAARDER_OPEN_MATRIX_ENGINE__;
       delete window.__REGAARDER_OPEN_CANVAS_INSPECTOR__;
       delete window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__;
+      delete window.__REGAARDER_OMNI_PORTAL__;
+      delete window.__REGAARDER_OPEN_PORTAL_INSPECTOR__;
+      delete window.__REGAARDER_DIRECTIVE_QUEUE__;
+      delete window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__;
+      delete window.__REGAARDER_SPATIAL_TOPOLOGY__;
+      delete window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__;
+      delete window.__REGAARDER_ROOM_HARVESTER__;
+      delete window.__REGAARDER_OPEN_ROOM_HARVESTER__;
       delete window.__REGAARDER_INTENT_SCHEDULER__;
       delete window.__REGAARDER_COMMIT_EVENT__;
     };
