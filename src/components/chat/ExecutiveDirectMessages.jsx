@@ -129,8 +129,43 @@ const DocsSemanticFileBadge = ({ type, title = '', size = 'md' }) => {
   );
 };
 
-// Formats inline tokens (bold, italics, code)
-const renderFormattedInline = (text, keyPrefix = '') => {
+// Helper to highlight search query matches in plain text
+const highlightTextChunks = (str, query, prefix) => {
+  if (!query || !query.trim() || typeof str !== 'string') return str;
+  const cleanQ = query.trim();
+  const lowerQ = cleanQ.toLowerCase();
+  const lowerStr = str.toLowerCase();
+  const chunks = [];
+  let start = 0;
+  let idx = lowerStr.indexOf(lowerQ, start);
+  let chunkIdx = 0;
+
+  while (idx !== -1) {
+    if (idx > start) {
+      chunks.push(str.slice(start, idx));
+    }
+    const matchText = str.slice(idx, idx + cleanQ.length);
+    chunks.push(
+      <mark
+        key={`${prefix}-hl-${chunkIdx++}`}
+        className="bg-amber-200 dark:bg-amber-800/80 text-slate-900 dark:text-zinc-50 font-semibold px-0.5 rounded shadow-2xs"
+      >
+        {matchText}
+      </mark>
+    );
+    start = idx + cleanQ.length;
+    idx = lowerStr.indexOf(lowerQ, start);
+  }
+
+  if (start < str.length) {
+    chunks.push(str.slice(start));
+  }
+
+  return chunks.length > 0 ? chunks : str;
+};
+
+// Formats inline tokens (bold, italics, code) with optional keyword highlighting
+const renderFormattedInline = (text, keyPrefix = '', highlightQuery = '') => {
   if (!text) return null;
   const parts = [];
   const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
@@ -139,29 +174,31 @@ const renderFormattedInline = (text, keyPrefix = '') => {
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+      const plainSlice = text.slice(lastIndex, match.index);
+      parts.push(highlightTextChunks(plainSlice, highlightQuery, `${keyPrefix}-txt-${match.index}`));
     }
     const token = match[0];
     if (token.startsWith('**') && token.endsWith('**')) {
       const boldContent = token.slice(2, -2).replace(/^\*\*|\*\*$/g, '');
-      parts.push(<strong key={`${keyPrefix}-b-${match.index}`} className="font-bold text-slate-900 dark:text-zinc-50">{boldContent}</strong>);
+      parts.push(<strong key={`${keyPrefix}-b-${match.index}`} className="font-bold text-slate-900 dark:text-zinc-50">{highlightTextChunks(boldContent, highlightQuery, `${keyPrefix}-b-${match.index}`)}</strong>);
     } else if (token.startsWith('*') && token.endsWith('*')) {
-      parts.push(<em key={`${keyPrefix}-i-${match.index}`} className="italic text-slate-700 dark:text-zinc-200">{token.slice(1, -1)}</em>);
+      parts.push(<em key={`${keyPrefix}-i-${match.index}`} className="italic text-slate-700 dark:text-zinc-200">{highlightTextChunks(token.slice(1, -1), highlightQuery, `${keyPrefix}-i-${match.index}`)}</em>);
     } else if (token.startsWith('`') && token.endsWith('`')) {
-      parts.push(<code key={`${keyPrefix}-c-${match.index}`} className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.08] font-mono text-[11.5px]">{token.slice(1, -1)}</code>);
+      parts.push(<code key={`${keyPrefix}-c-${match.index}`} className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.08] font-mono text-[11.5px]">{highlightTextChunks(token.slice(1, -1), highlightQuery, `${keyPrefix}-c-${match.index}`)}</code>);
     }
     lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
+    const remaining = text.slice(lastIndex);
+    parts.push(highlightTextChunks(remaining, highlightQuery, `${keyPrefix}-txt-end`));
   }
 
   return parts;
 };
 
-// Formats message blocks, converting raw markdown headers (##, ###) into executive typography
-const renderFormattedMessageText = (text) => {
+// Formats message blocks, converting raw markdown headers (##, ###) into executive typography with search highlighting
+const renderFormattedMessageText = (text, highlightQuery = '') => {
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -175,7 +212,7 @@ const renderFormattedMessageText = (text) => {
       const headingContent = trimmed.replace(/^#\s+/, '');
       elements.push(
         <h2 key={idx} className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100 mt-2.5 mb-1 tracking-tight">
-          {renderFormattedInline(headingContent, `h1-${idx}`)}
+          {renderFormattedInline(headingContent, `h1-${idx}`, highlightQuery)}
         </h2>
       );
       return;
@@ -187,7 +224,7 @@ const renderFormattedMessageText = (text) => {
       elements.push(
         <h3 key={idx} className="text-xs font-bold text-slate-800 dark:text-zinc-200 mt-2 mb-0.5 tracking-tight flex items-center gap-1.5">
           <span className="w-1 h-3 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0" />
-          <span>{renderFormattedInline(headingContent, `h2-${idx}`)}</span>
+          <span>{renderFormattedInline(headingContent, `h2-${idx}`, highlightQuery)}</span>
         </h3>
       );
       return;
@@ -198,7 +235,7 @@ const renderFormattedMessageText = (text) => {
       const headingContent = trimmed.replace(/^###\s+/, '');
       elements.push(
         <h4 key={idx} className="text-[11.5px] font-semibold text-slate-700 dark:text-zinc-300 mt-1.5 mb-0.5">
-          {renderFormattedInline(headingContent, `h3-${idx}`)}
+          {renderFormattedInline(headingContent, `h3-${idx}`, highlightQuery)}
         </h4>
       );
       return;
@@ -210,7 +247,7 @@ const renderFormattedMessageText = (text) => {
       elements.push(
         <div key={idx} className="flex items-start gap-1.5 ml-1 my-0.5 text-xs text-slate-700 dark:text-zinc-200">
           <span className="text-slate-400 dark:text-zinc-500 shrink-0 select-none">•</span>
-          <span>{renderFormattedInline(bulletContent, `b-${idx}`)}</span>
+          <span>{renderFormattedInline(bulletContent, `b-${idx}`, highlightQuery)}</span>
         </div>
       );
       return;
@@ -222,7 +259,7 @@ const renderFormattedMessageText = (text) => {
       elements.push(
         <div key={idx} className="flex items-start gap-1.5 ml-1 my-0.5 text-xs text-slate-700 dark:text-zinc-200">
           <span className="font-mono text-[10px] font-bold text-violet-600 dark:text-violet-400 shrink-0 select-none">{numMatch[1]}.</span>
-          <span>{renderFormattedInline(numMatch[2], `n-${idx}`)}</span>
+          <span>{renderFormattedInline(numMatch[2], `n-${idx}`, highlightQuery)}</span>
         </div>
       );
       return;
@@ -237,7 +274,7 @@ const renderFormattedMessageText = (text) => {
     // Standard paragraph line
     elements.push(
       <p key={idx} className="leading-relaxed">
-        {renderFormattedInline(line, `p-${idx}`)}
+        {renderFormattedInline(line, `p-${idx}`, highlightQuery)}
       </p>
     );
   });
@@ -270,6 +307,8 @@ export default function ExecutiveDirectMessages({
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [chatSearchMatchIndex, setChatSearchMatchIndex] = useState(0);
+  const [aiHistorySearchQuery, setAiHistorySearchQuery] = useState('');
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -293,6 +332,17 @@ export default function ExecutiveDirectMessages({
   const [isScanningModels, setIsScanningModels] = useState(false);
   const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
+
+  // Listen for external navigation events (e.g. from Global Spotlight or Omni-Search)
+  useEffect(() => {
+    const handleSelectContactEvent = (e) => {
+      if (e.detail?.contactId) {
+        setActiveContactId(e.detail.contactId);
+      }
+    };
+    window.addEventListener('regaarder:select-dm-contact', handleSelectContactEvent);
+    return () => window.removeEventListener('regaarder:select-dm-contact', handleSelectContactEvent);
+  }, []);
 
   // Sync detected models from app if available
   useEffect(() => {
@@ -765,6 +815,40 @@ export default function ExecutiveDirectMessages({
 
   const messages = threadMessages[activeContactId] || [];
 
+  // Live in-chat search matching message IDs
+  const inChatMatchingMsgIds = useMemo(() => {
+    if (!isChatSearchOpen || !chatSearchQuery.trim()) return [];
+    const q = chatSearchQuery.trim().toLowerCase();
+    return (messages || [])
+      .filter(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q))
+      .map(m => m.id);
+  }, [messages, isChatSearchOpen, chatSearchQuery]);
+
+  // Reset search match index when query changes
+  useEffect(() => {
+    setChatSearchMatchIndex(0);
+    if (inChatMatchingMsgIds.length > 0) {
+      const targetEl = document.getElementById(`relay-msg-${inChatMatchingMsgIds[0]}`);
+      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [chatSearchQuery]);
+
+  const handleNextSearchMatch = () => {
+    if (inChatMatchingMsgIds.length === 0) return;
+    const nextIdx = (chatSearchMatchIndex + 1) % inChatMatchingMsgIds.length;
+    setChatSearchMatchIndex(nextIdx);
+    const targetEl = document.getElementById(`relay-msg-${inChatMatchingMsgIds[nextIdx]}`);
+    if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handlePrevSearchMatch = () => {
+    if (inChatMatchingMsgIds.length === 0) return;
+    const prevIdx = (chatSearchMatchIndex - 1 + inChatMatchingMsgIds.length) % inChatMatchingMsgIds.length;
+    setChatSearchMatchIndex(prevIdx);
+    const targetEl = document.getElementById(`relay-msg-${inChatMatchingMsgIds[prevIdx]}`);
+    if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const messagesEndRef = useRef(null);
   const chatScrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -1079,13 +1163,16 @@ export default function ExecutiveDirectMessages({
       if (activeTab === 'topics' || activeTab === 'broadcast' || activeTab === 'actions') return true;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        return c.name.toLowerCase().includes(q) || 
+        const matchesHeader = (c.name || '').toLowerCase().includes(q) || 
                (c.username && c.username.toLowerCase().includes(q)) ||
-               c.lastMsg.toLowerCase().includes(q);
+               (c.lastMsg && c.lastMsg.toLowerCase().includes(q));
+        if (matchesHeader) return true;
+        const contactMsgs = threadMessages[c.id] || [];
+        return contactMsgs.some(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
       }
       return true;
     });
-  }, [conversations, activeTab, searchQuery]);
+  }, [conversations, activeTab, searchQuery, threadMessages]);
 
   const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
   
@@ -1127,8 +1214,8 @@ export default function ExecutiveDirectMessages({
           label: 'Compact Local',
           sub: sizeStr || 'Ultra-Fast',
           icon: Zap,
-          iconColor: 'text-amber-500 dark:text-amber-400',
-          badgeBg: 'bg-amber-500/[0.07] dark:bg-amber-400/[0.08] border-amber-500/20 dark:border-amber-400/20 text-amber-800 dark:text-amber-300',
+          iconColor: 'text-slate-600 dark:text-zinc-400',
+          badgeBg: 'bg-slate-500/[0.08] dark:bg-zinc-400/[0.1] border-slate-300/40 dark:border-zinc-700/40 text-slate-700 dark:text-zinc-300',
           title: `Compact Local Model (${sizeStr || '≤3B'}) • Low latency, 100% on-device processing. Tuned for quick Q&A, translations, and focused single-turn tasks.`
         };
       }
@@ -2532,7 +2619,17 @@ ${systemPrompt}`
                         </span>
                       </div>
                       <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 truncate">
-                        {chat.lastMsg}
+                        {(() => {
+                          if (searchQuery.trim()) {
+                            const q = searchQuery.toLowerCase();
+                            const threadMsgs = threadMessages[chat.id] || [];
+                            const matchMsg = threadMsgs.find(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                            if (matchMsg && !(chat.lastMsg || '').toLowerCase().includes(q)) {
+                              return <span className="text-violet-600 dark:text-violet-400 font-medium">Match: "{matchMsg.text || matchMsg.rawTranscript}"</span>;
+                            }
+                          }
+                          return chat.lastMsg;
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -2562,7 +2659,7 @@ ${systemPrompt}`
                 {currentChat.avatar}
               </div>
               
-              <div className="min-w-0 flex flex-col justify-center">
+              <div className="min-w-0 flex flex-col justify-center group/modelheader">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
                     {currentChat.name}
@@ -2639,14 +2736,14 @@ ${systemPrompt}`
                                   >
                                     <div className="flex items-center gap-2 min-w-0">
                                       <div className="w-5 h-5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                                        {isCompact ? <Zap size={11} className="text-amber-500 dark:text-amber-400" /> : <Cpu size={11} className="text-emerald-600 dark:text-emerald-400" />}
+                                        {isCompact ? <Zap size={11} className="text-slate-500 dark:text-zinc-400" /> : <Cpu size={11} className="text-emerald-600 dark:text-emerald-400" />}
                                       </div>
                                       <div className="min-w-0">
                                         <div className="text-xs font-semibold truncate leading-tight flex items-center gap-1.5">
                                           <span className="truncate">{localM.name}</span>
                                           <span className={`shrink-0 text-[9px] font-medium px-1.5 py-0.2 rounded-md border ${
                                             isCompact 
-                                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' 
+                                              ? 'bg-slate-500/10 text-slate-700 dark:text-zinc-300 border-slate-300/30 dark:border-zinc-700/40' 
                                               : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
                                           }`}>
                                             {isCompact ? 'Compact' : 'Standard'}
@@ -2719,10 +2816,10 @@ ${systemPrompt}`
                     </div>
                   )}
 
-                  {/* Apple-Style AI Model Tier & Capability Badge */}
+                  {/* Apple-Style AI Model Tier & Capability Badge (revealed on header hover, neutral glass aesthetic) */}
                   {currentChat.isAi && activeModelTier && (
                     <div 
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium border backdrop-blur-md select-none transition-all shadow-2xs ${activeModelTier.badgeBg}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium border backdrop-blur-md select-none transition-all duration-200 shadow-2xs opacity-0 group-hover/modelheader:opacity-100 pointer-events-none group-hover/modelheader:pointer-events-auto ${activeModelTier.badgeBg}`}
                       title={activeModelTier.title}
                     >
                       <activeModelTier.icon size={11} className={`${activeModelTier.iconColor} shrink-0`} />
@@ -2787,55 +2884,104 @@ ${systemPrompt}`
                       <div
                         data-popover-root="true"
                         onPointerDown={(e) => e.stopPropagation()}
-                        className="absolute right-0 top-8 w-72 bg-white dark:bg-zinc-850 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-2 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs select-none text-left"
+                        className="absolute right-0 top-8 w-96 sm:w-[420px] bg-white/95 dark:bg-zinc-850/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-3 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs select-none text-left"
                       >
-                        <div className="flex items-center justify-between px-2 py-1 mb-1 border-b border-black/[0.05] dark:border-white/[0.05]">
-                          <span className="font-bold text-slate-800 dark:text-zinc-100 flex items-center gap-1.5">
-                            <History size={12} className="text-violet-600" />
-                            AI Chat History
+                        <div className="flex items-center justify-between px-1 pb-2 border-b border-black/[0.05] dark:border-white/[0.05]">
+                          <span className="font-bold text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 text-xs">
+                            <History size={13} className="text-violet-600" />
+                            <span>AI Chat History</span>
+                            <span className="text-[10px] text-slate-400 font-normal">({aiChatSessions.length})</span>
                           </span>
                           <button
                             type="button"
-                            onClick={() => setIsAiHistoryOpen(false)}
-                            className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
+                            onClick={() => { setIsAiHistoryOpen(false); setAiHistorySearchQuery(''); }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-black/[0.04] cursor-pointer"
                           >
-                            <X size={12} />
+                            <X size={13} />
                           </button>
                         </div>
 
-                        <div className="max-h-60 overflow-y-auto thin-scrollbar space-y-1 py-1">
-                          {aiChatSessions.length === 0 ? (
-                            <div className="py-6 text-center text-slate-400 dark:text-zinc-500">
-                              <MessageSquare size={18} className="mx-auto mb-1.5 opacity-40" />
-                              <p className="text-[11px] font-medium">No archived AI chats yet.</p>
-                              <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">Click "New Chat" during a chat to archive it to history.</p>
-                            </div>
-                          ) : (
-                            aiChatSessions.map((sess) => (
-                              <div
-                                key={sess.id}
-                                onClick={() => handleSelectPastAiSession(sess)}
-                                className="flex items-center justify-between p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.05] cursor-pointer group/sess transition-colors"
-                              >
-                                <div className="min-w-0 flex-1 pr-2">
-                                  <p className="font-medium text-slate-800 dark:text-zinc-100 truncate text-[11.5px]">
-                                    {sess.title}
+                        {/* Search Bar in History Popover */}
+                        <div className="relative my-2">
+                          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={aiHistorySearchQuery}
+                            onChange={(e) => setAiHistorySearchQuery(e.target.value)}
+                            placeholder="Search archived prompts, answers, or titles..."
+                            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+                          />
+                        </div>
+
+                        <div className="max-h-72 overflow-y-auto thin-scrollbar space-y-1 py-1">
+                          {(() => {
+                            const filtered = aiChatSessions.filter(sess => {
+                              if (!aiHistorySearchQuery.trim()) return true;
+                              const q = aiHistorySearchQuery.toLowerCase();
+                              const matchTitle = (sess.title || '').toLowerCase().includes(q);
+                              const matchContent = (sess.messages || []).some(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                              return matchTitle || matchContent;
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="py-8 text-center text-slate-400 dark:text-zinc-500">
+                                  <MessageSquare size={18} className="mx-auto mb-1.5 opacity-40" />
+                                  <p className="text-[11.5px] font-medium">
+                                    {aiHistorySearchQuery.trim() ? 'No matching archived sessions' : 'No archived AI chats yet.'}
                                   </p>
-                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">
-                                    {sess.date} • {sess.messages?.length || 0} messages
-                                  </span>
+                                  <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                                    {aiHistorySearchQuery.trim() ? 'Try different keywords' : 'Click "New Chat" during a chat to archive it to history.'}
+                                  </p>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleDeleteAiSession(e, sess.id)}
-                                  className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover/sess:opacity-100 transition-all cursor-pointer"
-                                  title="Delete session"
+                              );
+                            }
+
+                            return filtered.map((sess) => {
+                              let matchingSnippet = null;
+                              if (aiHistorySearchQuery.trim()) {
+                                const q = aiHistorySearchQuery.toLowerCase();
+                                const foundMsg = (sess.messages || []).find(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                                if (foundMsg) {
+                                  matchingSnippet = foundMsg.text || foundMsg.rawTranscript;
+                                }
+                              }
+
+                              return (
+                                <div
+                                  key={sess.id}
+                                  onClick={() => {
+                                    handleSelectPastAiSession(sess);
+                                    setAiHistorySearchQuery('');
+                                  }}
+                                  className="p-2.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.05] cursor-pointer group/sess transition-colors border border-transparent hover:border-black/[0.04] dark:hover:border-white/[0.04]"
                                 >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            ))
-                          )}
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className="font-semibold text-slate-800 dark:text-zinc-100 truncate text-[12px] flex-1 pr-2">
+                                      {sess.title}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleDeleteAiSession(e, sess.id)}
+                                      className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover/sess:opacity-100 transition-all cursor-pointer"
+                                      title="Delete session"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                  {matchingSnippet && (
+                                    <p className="text-[10.5px] text-violet-600 dark:text-violet-400 italic line-clamp-1 mb-1">
+                                      "{matchingSnippet}"
+                                    </p>
+                                  )}
+                                  <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-zinc-500">
+                                    <span>{sess.date}</span>
+                                    <span className="font-mono">{sess.messages?.length || 0} messages</span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
                     )}
@@ -2917,25 +3063,64 @@ ${systemPrompt}`
 
           {/* Search Drawer */}
           {isChatSearchOpen && (
-            <div className="px-6 py-2.5 bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] flex items-center justify-between gap-3 shadow-2xs">
+            <div className="px-6 py-2 bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] flex items-center justify-between gap-3 shadow-2xs">
               <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={chatSearchQuery}
                   onChange={(e) => setChatSearchQuery(e.target.value)}
-                  placeholder="Search keywords in messages..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (e.shiftKey) handlePrevSearchMatch();
+                      else handleNextSearchMatch();
+                    } else if (e.key === 'Escape') {
+                      setIsChatSearchOpen(false);
+                      setChatSearchQuery('');
+                    }
+                  }}
+                  placeholder="Search keywords in messages (Press Enter for next)..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40 transition-all"
                   autoFocus
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => { setIsChatSearchOpen(false); setChatSearchQuery(''); }}
-                className="p-1.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X size={14} />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0 select-none">
+                {chatSearchQuery.trim() && (
+                  <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-medium px-1">
+                    {inChatMatchingMsgIds.length > 0
+                      ? `${chatSearchMatchIndex + 1} of ${inChatMatchingMsgIds.length}`
+                      : '0 matches'}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handlePrevSearchMatch}
+                  disabled={inChatMatchingMsgIds.length === 0}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                  title="Previous match (Shift+Enter)"
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextSearchMatch}
+                  disabled={inChatMatchingMsgIds.length === 0}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                  title="Next match (Enter)"
+                >
+                  <ChevronDown size={14} />
+                </button>
+                <div className="h-3.5 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+                <button
+                  type="button"
+                  onClick={() => { setIsChatSearchOpen(false); setChatSearchQuery(''); }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                  title="Close search (Esc)"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -2971,7 +3156,12 @@ ${systemPrompt}`
                 return (
                   <div 
                     key={msg.id}
-                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative ${activeMoreMenuMsgId === msg.id ? 'z-40' : 'z-10'}`}
+                    id={`relay-msg-${msg.id}`}
+                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative transition-all duration-150 ${
+                      inChatMatchingMsgIds.length > 0 && inChatMatchingMsgIds[chatSearchMatchIndex] === msg.id
+                        ? 'ring-2 ring-violet-500/70 dark:ring-violet-400/70 rounded-2xl p-1 bg-violet-500/[0.04]'
+                        : ''
+                    } ${activeMoreMenuMsgId === msg.id ? 'z-40' : 'z-10'}`}
                   >
                     {!isOutgoing && (
                       <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1">
@@ -3490,12 +3680,12 @@ ${systemPrompt}`
                           {/* Real Speech Transcription Subtitle (if available) */}
                           {msg.rawTranscript && (
                             <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
-                              "{msg.rawTranscript}"
+                              "{highlightTextChunks(msg.rawTranscript, isChatSearchOpen ? chatSearchQuery : '', `trans-${msg.id}`)}"
                             </p>
                           )}
                         </div>
                       ) : (
-                        renderFormattedMessageText(msg.text)
+                        renderFormattedMessageText(msg.text, isChatSearchOpen ? chatSearchQuery : '')
                       )}
 
                       <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">

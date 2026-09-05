@@ -88077,6 +88077,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
           } else if (ws === 'browser') {
             if (productMode !== 'browser') setProductMode('browser');
             showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'relay' || ws === 'dm') {
+            if (productMode !== 'dm') setProductMode('dm');
+            if (entity.metadata?.contactId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
+            }
+            showToast(`Navigated to Relay: ${entity.title}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
@@ -88200,6 +88206,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Navigated to Research: ${entity.title}`);
           } else if (ws === 'people') {
             showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
+          } else if (ws === 'relay' || ws === 'dm') {
+            if (productMode !== 'dm') setProductMode('dm');
+            if (entity.metadata?.contactId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
+            }
+            showToast(`Navigated to Relay: ${entity.title}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }

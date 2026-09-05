@@ -574,6 +574,43 @@ export function buildWorkspaceIndex(context = {}) {
     });
   }
 
+  // 8. Relay Chats & Direct Messages
+  let relayConvs = context.relayConversations || [];
+  let relayThreads = context.relayThreads || {};
+  if (typeof window !== 'undefined' && (!relayConvs.length || !Object.keys(relayThreads).length)) {
+    try {
+      const savedConvs = localStorage.getItem('regaarder_executive_dm_conversations_v1');
+      if (savedConvs) relayConvs = JSON.parse(savedConvs);
+      const savedThreads = localStorage.getItem('regaarder_executive_dm_threads_v1');
+      if (savedThreads) relayThreads = JSON.parse(savedThreads);
+    } catch {
+      // ignore
+    }
+  }
+
+  if (Array.isArray(relayConvs) && relayConvs.length > 0) {
+    relayConvs.forEach((conv) => {
+      const convMsgs = relayThreads[conv.id] || [];
+      const msgTexts = convMsgs.map(m => `${m.author || ''}: ${m.text || m.rawTranscript || ''}`).join(' \n ');
+      items.push({
+        id: `relay-chat-${conv.id}`,
+        type: 'chat',
+        workspace: 'relay',
+        title: conv.name || 'Chat Conversation',
+        subtitle: conv.isAi ? 'AI Persona Session' : conv.isGroup ? 'Group Conversation' : 'Direct Message',
+        location: `Relay > ${conv.name}`,
+        content: `${conv.name} ${conv.username || ''} ${conv.lastMsg || ''} ${msgTexts}`,
+        metadata: {
+          contactId: conv.id,
+          conversationId: conv.id,
+          isAi: conv.isAi,
+          isGroup: conv.isGroup,
+          messageCount: convMsgs.length
+        }
+      });
+    });
+  }
+
   return items;
 }
 
@@ -595,6 +632,7 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
       if (activeFilter === 'room' || activeFilter === 'rooms') return item.workspace === 'room' || item.type === 'meeting';
       if (activeFilter === 'notes' || activeFilter === 'browser') return item.workspace === 'browser' || item.type === 'research_note';
       if (activeFilter === 'people') return item.workspace === 'people' || item.type === 'person';
+      if (activeFilter === 'relay' || activeFilter === 'chat' || activeFilter === 'dm') return item.workspace === 'relay' || item.type === 'chat';
       return item.workspace === activeFilter;
     });
   }
