@@ -1,8 +1,8 @@
-﻿{
+{
   "manifest_version": 3,
   "name": "Meneur Web Experience - Executive Command Deck",
   "version": "1.0.0",
-  "description": "Elevate your workspace with the Meneur Web Experience. Bridge real-time schedule management, intentional tab archiving, and contextual focus directly from a sleek, executive-tier browser dock.",
+  "description": "Elevate your workspace with Meneur: schedule management, intentional tab archiving, and contextual focus from a sleek browser dock.",
   "permissions": [
     "storage",
     "tabs",
@@ -23,9 +23,21 @@
       "css": ["styles.css"]
     }
   ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Meneur Command Deck"
+    "default_title": "Meneur Command Deck",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "commands": {
     "capture-directive": {
