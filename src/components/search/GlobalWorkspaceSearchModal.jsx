@@ -59,6 +59,107 @@ function HighlightedText({ text = '', query = '', className = '' }) {
   );
 }
 
+// Helper component to render rich executive markdown safely
+function FormattedMarkdown({ content = '' }) {
+  if (!content) return null;
+  const paragraphs = content.split(/\n\n+/);
+
+  return (
+    <div className="space-y-2.5 text-[13px] leading-relaxed text-slate-800 dark:text-zinc-200">
+      {paragraphs.map((p, pIdx) => {
+        const trimmed = p.trim();
+        if (!trimmed) return null;
+
+        // Blockquote
+        if (trimmed.startsWith('>')) {
+          return (
+            <blockquote key={pIdx} className="pl-3 border-l-2 border-violet-500/60 italic text-slate-700 dark:text-zinc-300 my-1 bg-violet-500/[0.04] py-1 rounded-r-md">
+              {renderInlineMarkdown(trimmed.replace(/^>\s*/, ''))}
+            </blockquote>
+          );
+        }
+
+        // Bullet list
+        if (/^[-*•]\s+/m.test(trimmed)) {
+          const items = trimmed.split(/\n/).filter(line => /^[-*•]\s+/.test(line.trim()));
+          if (items.length > 0) {
+            return (
+              <ul key={pIdx} className="list-disc list-inside space-y-1 my-1 pl-1">
+                {items.map((item, iIdx) => (
+                  <li key={iIdx} className="text-slate-800 dark:text-zinc-200">
+                    {renderInlineMarkdown(item.trim().replace(/^[-*•]\s+/, ''))}
+                  </li>
+                ))}
+              </ul>
+            );
+          }
+        }
+
+        // Numbered list
+        if (/^\d+\.\s+/m.test(trimmed)) {
+          const items = trimmed.split(/\n/).filter(line => /^\d+\.\s+/.test(line.trim()));
+          if (items.length > 0) {
+            return (
+              <ol key={pIdx} className="list-decimal list-inside space-y-1 my-1 pl-1">
+                {items.map((item, iIdx) => (
+                  <li key={iIdx} className="text-slate-800 dark:text-zinc-200">
+                    {renderInlineMarkdown(item.trim().replace(/^\d+\.\s+/, ''))}
+                  </li>
+                ))}
+              </ol>
+            );
+          }
+        }
+
+        // Regular paragraph with linebreaks
+        const lines = trimmed.split('\n');
+        return (
+          <p key={pIdx}>
+            {lines.map((line, lIdx) => (
+              <React.Fragment key={lIdx}>
+                {renderInlineMarkdown(line)}
+                {lIdx < lines.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderInlineMarkdown(text) {
+  if (!text) return '';
+  const parts = [];
+  const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
+  let lastIdx = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(text.substring(lastIdx, match.index));
+    }
+    if (match[2]) {
+      // Bold
+      parts.push(<strong key={match.index} className="font-semibold text-slate-900 dark:text-white">{match[2]}</strong>);
+    } else if (match[3]) {
+      // Italic
+      parts.push(<em key={match.index} className="italic">{match[3]}</em>);
+    } else if (match[4]) {
+      // Inline code
+      parts.push(<code key={match.index} className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.08] font-mono text-[12px]">{match[4]}</code>);
+    } else if (match[5] && match[6]) {
+      // Link
+      parts.push(<a key={match.index} href={match[6]} target="_blank" rel="noreferrer" className="text-violet-600 dark:text-violet-400 hover:underline">{match[5]}</a>);
+    }
+    lastIdx = regex.lastIndex;
+  }
+  if (lastIdx < text.length) {
+    parts.push(text.substring(lastIdx));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 // Category filter tabs definition using native Regaarder SVG product icons
 const FILTER_TABS = [
   { id: 'all', label: 'All', icon: MemoryIcon },
@@ -220,6 +321,7 @@ export default function GlobalWorkspaceSearchModal({
   isDarkMode = false,
   productMode = 'compose',
   onCallAi = null,
+  aiConfig = null,
   liveWorkspaceContext = {},
   onNavigateToEntity
 }) {
@@ -234,6 +336,20 @@ export default function GlobalWorkspaceSearchModal({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
+
+  // Interactive Follow-up, Prompt Edit & Selection States
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyQuery, setReplyQuery] = useState('');
+  const [quotedSnippet, setQuotedSnippet] = useState('');
+  const [conversationThread, setConversationThread] = useState([]);
+  const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [editingQueryText, setEditingQueryText] = useState('');
+  const [selectionTooltip, setSelectionTooltip] = useState(null);
+
+  const followUpInputRef = useRef(null);
+  const promptEditInputRef = useRef(null);
+  const synthesisCardRef = useRef(null);
 
   // Persona list (supports custom on-device edits)
   const [personas, setPersonas] = useState(() => {
@@ -470,15 +586,23 @@ export default function GlobalWorkspaceSearchModal({
 
     setAiLoading(true);
     setAiResponse(null);
+    setConversationThread([]);
+    setIsReplying(false);
+    setIsEditingPrompt(false);
+    setQuotedSnippet('');
+    setSelectionTooltip(null);
+
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
-      const contextualQuery = `[Agentic Persona: ${activePersona.name} (${activePersona.badge}) - Instruction: ${activePersona.instructions}] [Workspace Brand Rules: ${brandContextSnippet}] Query: ${targetQ}`;
+      const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
 
       const result = await synthesizeWorkspaceKnowledge({
-        query: contextualQuery,
+        query: targetQ.trim(),
         activeFilter,
         workspaceIndex,
-        onCallAi
+        onCallAi,
+        aiConfig,
+        personaInstructions: personaContext
       });
       setAiResponse(result);
     } catch (err) {
@@ -489,6 +613,70 @@ export default function GlobalWorkspaceSearchModal({
       });
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  // Multi-turn conversational follow-up handler
+  const handleSendFollowUp = async () => {
+    const trimmed = replyQuery.trim();
+    if (!trimmed || isSendingFollowUp) return;
+
+    const userMessage = quotedSnippet ? `[Quoting: "${quotedSnippet}"] ${trimmed}` : trimmed;
+    const newTurn = { role: 'user', text: userMessage, timestamp: Date.now() };
+    const updatedThread = [...conversationThread, newTurn];
+
+    setConversationThread(updatedThread);
+    setReplyQuery('');
+    setQuotedSnippet('');
+    setIsSendingFollowUp(true);
+
+    try {
+      const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
+      const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
+
+      const result = await synthesizeWorkspaceKnowledge({
+        query: userMessage,
+        activeFilter,
+        workspaceIndex,
+        onCallAi,
+        aiConfig,
+        previousConversation: [
+          { role: 'user', text: query },
+          ...(aiResponse?.answer ? [{ role: 'assistant', text: aiResponse.answer }] : []),
+          ...conversationThread
+        ],
+        personaInstructions: personaContext
+      });
+
+      if (result?.answer) {
+        setConversationThread(prev => [...prev, { role: 'assistant', text: result.answer, timestamp: Date.now() }]);
+      }
+    } catch (err) {
+      console.error('Error in follow-up synthesis:', err);
+      setConversationThread(prev => [...prev, { role: 'assistant', text: "Unable to process follow-up query right now.", timestamp: Date.now() }]);
+    } finally {
+      setIsSendingFollowUp(false);
+    }
+  };
+
+  // Save and execute edited query in-place
+  const handleSaveEditedPrompt = () => {
+    const trimmed = editingQueryText.trim();
+    if (!trimmed) return;
+    setQuery(trimmed);
+    setIsEditingPrompt(false);
+    handleRunAiSynthesis(trimmed);
+  };
+
+  // Highlight selection quote helper
+  const handleTextSelection = () => {
+    if (typeof window === 'undefined') return;
+    const selection = window.getSelection();
+    const selText = selection?.toString()?.trim();
+    if (selText && selText.length > 4 && synthesisCardRef.current?.contains(selection.anchorNode)) {
+      setSelectionTooltip({ text: selText });
+    } else {
+      setSelectionTooltip(null);
     }
   };
 
@@ -844,7 +1032,11 @@ export default function GlobalWorkspaceSearchModal({
 
               {aiResponse && !aiLoading && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <div className="p-4.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3">
+                  <div
+                    ref={synthesisCardRef}
+                    onMouseUp={handleTextSelection}
+                    className="relative p-4.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3 group"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
@@ -852,19 +1044,196 @@ export default function GlobalWorkspaceSearchModal({
                           Executive Synthesis ({activePersona.name})
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleCopyAiResponse}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
-                      >
-                        {copiedAi ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
-                        <span>{copiedAi ? 'Copied' : 'Copy'}</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReplying(true);
+                            setTimeout(() => followUpInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                          title="Reply or continue chatting"
+                        >
+                          <CornerDownLeft size={11} className="text-violet-600 dark:text-violet-400" />
+                          <span>Reply</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingPrompt(true);
+                            setEditingQueryText(query);
+                            setTimeout(() => promptEditInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                          title="Edit prompt in-place"
+                        >
+                          <Edit3 size={11} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyAiResponse}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                        >
+                          {copiedAi ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                          <span>{copiedAi ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-[13px] text-slate-800 dark:text-zinc-200 leading-relaxed font-normal whitespace-pre-line">
-                      {aiResponse.answer}
-                    </div>
+
+                    {/* Floating Selection Tooltip for Quick Quote & Reply */}
+                    {selectionTooltip && (
+                      <div className="absolute top-2 right-44 z-20 animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setQuotedSnippet(selectionTooltip.text);
+                            setIsReplying(true);
+                            setSelectionTooltip(null);
+                            setTimeout(() => followUpInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold shadow-md transition-colors cursor-pointer"
+                        >
+                          <CornerDownLeft size={11} />
+                          <span>Quote & Reply</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* In-Place Prompt Editor Mode */}
+                    {isEditingPrompt ? (
+                      <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-700 shadow-xs space-y-2">
+                        <div className="text-[11px] font-semibold text-violet-900 dark:text-violet-300 flex items-center gap-1.5">
+                          <Edit3 size={12} />
+                          <span>Edit Prompt:</span>
+                        </div>
+                        <input
+                          ref={promptEditInputRef}
+                          type="text"
+                          value={editingQueryText}
+                          onChange={(e) => setEditingQueryText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSaveEditedPrompt();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setIsEditingPrompt(false);
+                            }
+                          }}
+                          className="w-full px-2.5 py-1.5 text-[12.5px] rounded-md bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingPrompt(false)}
+                            className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEditedPrompt}
+                            className="px-2.5 py-1 text-[11px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                          >
+                            <Check size={11} />
+                            <span>Re-synthesize</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Rich Formatted Markdown Output */
+                      <FormattedMarkdown content={aiResponse.answer} />
+                    )}
                   </div>
+
+                  {/* Multi-Turn Follow-Up Conversation Thread */}
+                  {conversationThread.length > 0 && (
+                    <div className="space-y-3 pt-1">
+                      <div className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 font-mono">
+                        Follow-Up Conversation ({conversationThread.length} turns)
+                      </div>
+                      {conversationThread.map((turn, tIdx) => (
+                        <div key={tIdx} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {turn.role === 'user' ? (
+                            <div className="max-w-[85%] p-2.5 px-3.5 rounded-2xl bg-violet-600 text-white text-[12px] leading-relaxed shadow-xs">
+                              {turn.text}
+                            </div>
+                          ) : (
+                            <div className="max-w-[90%] p-3.5 rounded-xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/50 shadow-xs">
+                              <FormattedMarkdown content={turn.text} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Loading Indicator for Follow-Up */}
+                  {isSendingFollowUp && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-200/40 text-violet-700 dark:text-violet-300 text-xs">
+                      <RegaarderAiIcon size={14} className="animate-spin text-violet-600" />
+                      <span>Synthesizing follow-up as {activePersona.name}…</span>
+                    </div>
+                  )}
+
+                  {/* Inline Follow-Up Prompt Box */}
+                  {isReplying && (
+                    <div className="p-3 rounded-xl bg-white dark:bg-zinc-850 border border-violet-200 dark:border-violet-800/60 shadow-xs space-y-2 animate-in fade-in duration-150">
+                      {quotedSnippet && (
+                        <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/50 text-[11px] text-violet-800 dark:text-violet-300">
+                          <span className="truncate max-w-[90%] italic">Quoting: &ldquo;{quotedSnippet}&rdquo;</span>
+                          <button
+                            type="button"
+                            onClick={() => setQuotedSnippet('')}
+                            className="hover:text-violet-950 dark:hover:text-white cursor-pointer ml-1"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={followUpInputRef}
+                          type="text"
+                          value={replyQuery}
+                          onChange={(e) => setReplyQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendFollowUp();
+                            }
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setIsReplying(false);
+                            }
+                          }}
+                          placeholder="Continue chatting or ask a follow-up about this synthesis…"
+                          className="flex-1 bg-transparent text-[12.5px] text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSendFollowUp}
+                          disabled={!replyQuery.trim() || isSendingFollowUp}
+                          className="px-2.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <span>Send</span>
+                          <CornerDownLeft size={11} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReplying(false);
+                            setQuotedSnippet('');
+                          }}
+                          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {aiResponse.sources?.length > 0 && (
                     <div className="space-y-2">

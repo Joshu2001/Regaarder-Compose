@@ -636,7 +636,9 @@ export async function synthesizeWorkspaceKnowledge({
   activeFilter = 'all',
   workspaceIndex = [],
   onCallAi = null,
-  aiConfig = null
+  aiConfig = null,
+  previousConversation = [],
+  personaInstructions = ''
 }) {
   const matched = queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8);
 
@@ -647,6 +649,31 @@ export async function synthesizeWorkspaceKnowledge({
     };
   }
 
+  // Extract generous context from each matched document (up to 3,000 chars)
+  const contextData = matched.map((m, idx) => {
+    const rawContent = (m.entity.content || m.entity.bodyText || m.snippet || '').trim();
+    const truncatedContent = rawContent.length > 3000 ? rawContent.slice(0, 3000) + '…' : rawContent;
+    return `[Source ${idx + 1}] "${m.entity.title}" (${m.entity.location || m.entity.workspace}):\n${truncatedContent}`;
+  }).join('\n\n---\n\n');
+
+  // Format previous conversation context if follow-up turns exist
+  const convContext = previousConversation?.length > 0
+    ? '\n\nPREVIOUS CONVERSATION TURNS:\n' + previousConversation.map(c => `${c.role === 'user' ? 'User' : 'Assistant'}: ${c.text}`).join('\n')
+    : '';
+
+  const systemPrompt = personaInstructions
+    ? `${personaInstructions}\n\nYou are answering questions based on the user's workspace knowledge base. Provide an authoritative, first-principles synthesis. Analyze relationships, cross-references, and specific factual connections across documents. Format your response using clean executive markdown with bold highlights and bullet points where helpful.`
+    : `You are the Regaarder Executive Workspace Intelligence. Analyze the user's workspace documents to answer their question directly, thoroughly, and with executive precision.
+Identify cross-references, associations, and factual connections between entities across all provided sources. Format your response with clean executive markdown.`;
+
+  const userPrompt = `USER QUESTION:
+${query}${convContext}
+
+WORKSPACE SOURCE MATERIALS:
+${contextData}
+
+Synthesize the answer directly based on the sources above. Explain the exact connections and details found in the workspace:`;
+
   // ── Primary Path: callAiWithTools (live tool-calling harness) ──────────────
   if (aiConfig) {
     try {
@@ -654,13 +681,9 @@ export async function synthesizeWorkspaceKnowledge({
       const { getSavedAiConfig } = await import('./orbAiService.js');
 
       const resolvedConfig = aiConfig || getSavedAiConfig();
-      const contextSummary = matched.map((m, i) =>
-        `[${i + 1}] "${m.entity.title}" (${m.entity.location}): ${m.entity.content?.slice(0, 200) || ''}`
-      ).join('\n\n');
+      const toolPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
-      const prompt = `You have access to workspace tools. The user asked: "${query}"\n\nPre-indexed context from the search engine (use tools to get live/updated data if needed):\n${contextSummary}\n\nProvide a direct, concise executive summary answering the user's question based on the workspace data.`;
-
-      const result = await callAiWithTools(prompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
+      const result = await callAiWithTools(toolPrompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
 
       if (result?.answer) {
         return {
@@ -674,16 +697,25 @@ export async function synthesizeWorkspaceKnowledge({
     }
   }
 
-  // ── Secondary Path: onCallAi plain text callback (legacy) ─────────────────
+  // ── Secondary Path: onCallAi bridge (supports both object & string signatures) ──
   if (onCallAi) {
     try {
-      const contextData = matched.map((m, idx) =>
-        `[Source ${idx + 1}] Title: ${m.entity.title} (${m.entity.location})\nContent: ${m.entity.content}`
-      ).join('\n\n');
+      let response = null;
+      if (typeof onCallAi === 'function') {
+        try {
+          const aiResult = await onCallAi({
+            userPrompt,
+            systemPrompt
+          });
+          response = typeof aiResult === 'string' ? aiResult : (aiResult?.text || aiResult?.content || '');
+        } catch (callErr) {
+          // Fallback to plain string invocation
+          const legacyRes = await onCallAi(`${systemPrompt}\n\n${userPrompt}`);
+          response = typeof legacyRes === 'string' ? legacyRes : (legacyRes?.text || legacyRes?.content || '');
+        }
+      }
 
-      const prompt = `You are the Regaarder Executive Workspace Assistant. Answer the user's question concisely based ONLY on the following workspace data. If the answer cannot be determined from the data, say so politely.\n\nWORKSPACE DATA:\n${contextData}\n\nUSER QUESTION: ${query}\n\nProvide a direct, concise executive summary:`;
-      const response = await onCallAi(prompt);
-      if (response) {
+      if (response && response.trim()) {
         return {
           answer: response.trim(),
           sources: matched.map(m => m.entity)
@@ -694,10 +726,37 @@ export async function synthesizeWorkspaceKnowledge({
     }
   }
 
-  // ── Tertiary Path: Local snippet extraction (no LLM required) ─────────────
-  const topMatch = matched[0];
+  // ── Tertiary Path: Smart Semantic Keyword Extraction (no LLM required) ─────
+  // Search through all matched documents for paragraphs containing query terms
+  const terms = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !['what', 'this', 'that', 'with', 'from', 'your', 'about', 'connection', 'across', 'workspace'].includes(t));
+  
+  let bestExcerpt = '';
+  let bestSource = matched[0]?.entity;
+
+  for (const m of matched) {
+    const content = (m.entity.content || m.snippet || '');
+    const paragraphs = content.split(/\n+/).filter(p => p.trim().length > 20);
+    
+    // Check paragraphs matching multiple terms
+    for (const para of paragraphs) {
+      const pLower = para.toLowerCase();
+      const matchCount = terms.filter(t => pLower.includes(t)).length;
+      if (matchCount >= 2 || (matchCount >= 1 && terms.length === 1)) {
+        bestExcerpt = para.trim();
+        bestSource = m.entity;
+        break;
+      }
+    }
+    if (bestExcerpt) break;
+  }
+
+  if (!bestExcerpt) {
+    const raw = (bestSource?.content || matched[0]?.snippet || '').trim();
+    bestExcerpt = raw.slice(0, 350) + (raw.length > 350 ? '…' : '');
+  }
+
   return {
-    answer: `Based on **${topMatch.entity.title}** (${topMatch.entity.location}):\n${topMatch.snippet || topMatch.entity.content.slice(0, 200) + '…'}`,
+    answer: `Based on **${bestSource?.title || 'Workspace Document'}** (${bestSource?.location || bestSource?.workspace || 'Compose'}):\n\n${bestExcerpt}`,
     sources: matched.map(m => m.entity)
   };
 }

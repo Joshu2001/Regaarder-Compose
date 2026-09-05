@@ -30,7 +30,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive, GitPullRequest } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
 import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
@@ -46,7 +46,7 @@ import {
   ScheduleIcon,
   MemoryIcon,
   TasksIcon,
-  ChatIcon,
+  ChatIcon, RelayIcon,
   AssistIcon,
   AgentsIcon,
   BrowserIcon,
@@ -67,8 +67,24 @@ import HelpSupportPanel from './components/HelpSupportPanel';
 import GlobalWorkspaceSearchModal from './components/search/GlobalWorkspaceSearchModal';
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
 import MemoryDashboard from './MemoryDashboard';
+import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
+import OmniPortalModal from './components/OmniPortalModal';
+import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
+import { subscribeToStaging, getBranchById } from './services/workspaceStagingEngine';
+import WorkspaceStagingReviewModal from './components/staging/WorkspaceStagingReviewModal';
+import * as matrixEngine from './services/matrixSchemaEngine';
+import * as intentScheduler from './services/intentSchedulerEngine';
+import * as omniPortal from './services/omniPortalEngine';
+import * as directiveQueue from './services/directiveQueueEngine';
+import * as spatialTopology from './services/spatialTopologyEngine';
+import * as roomObserver from './services/roomObserverEngine';
+import * as workspaceBus from './services/workspaceStateBus';
+import { initMcpBrowserBridge, stopMcpBrowserBridge } from './services/mcpBrowserClient';
+import * as llmProvider from './services/llmProviderService';
+import * as roomAudioStream from './services/roomAudioStreamService';
+import DesktopDownloadFloatingTrigger from './components/desktop/DesktopDownloadFloatingTrigger';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6868,7 +6884,89 @@ function AppCore() {
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
+  const [memoryTab, setMemoryTab] = useState('timeline');
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
+  const [isOmniPortalOpen, setIsOmniPortalOpen] = useState(false);
+
+  // ── Pillar 3: Human-in-the-Loop Staging & Approval Engine State ─────────
+  const [stagedBranches, setStagedBranches] = useState([]);
+  const [activeReviewBranch, setActiveReviewBranch] = useState(null);
+
+  useEffect(() => {
+    const unsub = subscribeToStaging((branches) => {
+      setStagedBranches(branches);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    window.__REGAARDER_OPEN_STAGING_MODAL__ = (branchIdOrObj) => {
+      if (typeof branchIdOrObj === 'object' && branchIdOrObj) {
+        setActiveReviewBranch(branchIdOrObj);
+      } else {
+        const found = getBranchById(branchIdOrObj) || stagedBranches[0];
+        if (found) setActiveReviewBranch(found);
+      }
+    };
+    window.__REGAARDER_OPEN_MATRIX_ENGINE__ = () => {
+      setMemoryTab('matrix');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_OPEN_CANVAS_INSPECTOR__ = () => {
+      setMemoryTab('canvas');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__ = () => {
+      setMemoryTab('meetings');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_OMNI_PORTAL__ = omniPortal;
+    window.__REGAARDER_OPEN_PORTAL_INSPECTOR__ = () => {
+      setMemoryTab('omni_portal');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_DIRECTIVE_QUEUE__ = directiveQueue;
+    window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__ = () => {
+      setMemoryTab('directives');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_SPATIAL_TOPOLOGY__ = spatialTopology;
+    window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__ = () => {
+      setMemoryTab('topology');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_ROOM_HARVESTER__ = roomObserver;
+    window.__REGAARDER_OPEN_ROOM_HARVESTER__ = () => {
+      setMemoryTab('room');
+      setIsMemoryOpen(true);
+    };
+    window.__REGAARDER_WORKSPACE_BUS__ = workspaceBus;
+    window.__REGAARDER_INTENT_SCHEDULER__ = intentScheduler;
+    window.__REGAARDER_COMMIT_EVENT__ = (event) => {
+      return intentScheduler.commitCalendarEvent(event);
+    };
+    window.__REGAARDER_LLM_PROVIDER__ = llmProvider;
+    window.__REGAARDER_AUDIO_STREAM__ = roomAudioStream;
+    return () => {
+      delete window.__REGAARDER_OPEN_STAGING_MODAL__;
+      delete window.__REGAARDER_OPEN_MATRIX_ENGINE__;
+      delete window.__REGAARDER_OPEN_CANVAS_INSPECTOR__;
+      delete window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__;
+      delete window.__REGAARDER_OMNI_PORTAL__;
+      delete window.__REGAARDER_OPEN_PORTAL_INSPECTOR__;
+      delete window.__REGAARDER_DIRECTIVE_QUEUE__;
+      delete window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__;
+      delete window.__REGAARDER_SPATIAL_TOPOLOGY__;
+      delete window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__;
+      delete window.__REGAARDER_ROOM_HARVESTER__;
+      delete window.__REGAARDER_OPEN_ROOM_HARVESTER__;
+      delete window.__REGAARDER_WORKSPACE_BUS__;
+      delete window.__REGAARDER_INTENT_SCHEDULER__;
+      delete window.__REGAARDER_COMMIT_EVENT__;
+      delete window.__REGAARDER_LLM_PROVIDER__;
+      delete window.__REGAARDER_AUDIO_STREAM__;
+    };
+  }, [stagedBranches]);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -8263,6 +8361,12 @@ function AppCore() {
       timeout: 3000,
       autoConnect: true
     });
+
+    try {
+      initMcpBrowserBridge(socketRef.current, { activeProduct: 'compose' });
+    } catch (err) {
+      console.warn('[MCP Bridge] Failed to initialize browser bridge:', err);
+    }
     
     socketRef.current.on('connect', () => {
       setSocketId(socketRef.current.id);
@@ -8292,6 +8396,9 @@ function AppCore() {
     });
     
     return () => {
+      try {
+        stopMcpBrowserBridge();
+      } catch (e) {}
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
@@ -9162,21 +9269,11 @@ function AppCore() {
     };
 
     const handleOutsideClick = (e) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
-        setShareModalOpen(false);
-      }
-      if (composeShareMenuRef.current && !composeShareMenuRef.current.contains(e.target)) {
-        setShareModalOpen(false);
-      }
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setProfileMenuOpen(false);
       }
       if (composeProfileMenuRef.current && !composeProfileMenuRef.current.contains(e.target)) {
         setComposeProfileMenuOpen(false);
-      }
-      if (replayPanelRef.current && !replayPanelRef.current.contains(e.target)) {
-        setReplayPanelOpen(false);
-        setIsReplayPlaying(false);
       }
       if (emojiControlsRef.current && !emojiControlsRef.current.contains(e.target)) {
         setActiveEmojiEl(null);
@@ -9273,6 +9370,10 @@ function AppCore() {
     const handleGlobalEscape = (e) => {
       if (e.key === 'Escape') {
         setWorkspaceSwitcherOpen(false);
+        if (replayPanelOpen) {
+          setReplayPanelOpen(false);
+          setIsReplayPlaying(false);
+        }
         if (slashMenuRef.current?.open) {
           setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
         }
@@ -16490,15 +16591,16 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex flex-col gap-1">
+          <div className="w-[216px] rounded-xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-2xl p-1.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
+            <div className="flex flex-col gap-0.5">
               {[
-                { mode: 'orb', label: t('nav.orb') || 'Orb', desc: t('workspaceDesc.orb') || 'Unified Intelligence Layer', icon: OrbIcon },
+                { mode: 'orb', label: t('nav.orb') || 'Orb', desc: t('workspaceDesc.orb') || 'Unified Intelligence Layer', icon: RegaarderAiIcon },
                 { mode: 'compose', label: t('nav.docs') || 'Docs', desc: t('workspaceDesc.compose') || 'AI Document Editor', icon: ComposeIcon },
                 { mode: 'sheets', label: t('nav.sheets') || 'Sheets', desc: t('workspaceDesc.sheets') || 'Grid & Data Analysis', icon: SheetIcon },
                 { mode: 'deck', label: t('nav.deck') || 'Decks', desc: t('workspaceDesc.deck') || 'Slide & Presentation', icon: DeckIcon },
                 { mode: 'whiteboard', label: t('nav.whiteboard') || 'Whiteboard', desc: t('workspaceDesc.whiteboard') || 'Visual Canvas & Diagrams', icon: WhiteboardIcon },
                 { mode: 'room', label: t('nav.room') || 'Room', desc: t('workspaceDesc.room') || 'Team Video & Meetings', icon: RoomIcon },
+                { mode: 'dm', label: 'Relay', desc: 'Direct Team & AI Messaging', icon: RelayIcon },
                 { mode: 'browser', label: t('nav.browser') || 'Browser', desc: t('workspaceDesc.browser') || 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
                 const IconComponent = item.icon;
@@ -16507,7 +16609,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   <button
                     key={item.mode}
                     type="button"
-                    onClick={() => {
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       flushSync(() => {
                         setWorkspaceSwitcherOpen(false);
                         setWorkspaceSwitcherAnchorRect(null);
@@ -16540,6 +16644,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                         createComposeExperience();
                         return;
                       }
+                      if (item.mode === 'dm') {
+                        createDmExperience();
+                        return;
+                      }
                       if (item.mode === 'room') {
                         createRoomLandingExperience();
                         return;
@@ -16553,35 +16661,66 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                       setProductMode(item.mode);
                       showToast(`Switched to ${item.label}`);
                     }}
-                    onPointerDown={(e) => e.preventDefault()}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
+                    className={`group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer ${
                       isCurrent
                         ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16] shadow-xs'
                         : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                       isCurrent 
                         ? 'bg-[#7C5ACF]/[0.14] dark:bg-[#7C5ACF]/[0.22] text-[#7C5ACF] dark:text-[#8B6FD1]' 
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
                     }`}>
-                      <IconComponent size={18} strokeWidth={isCurrent ? 2 : 1.8} />
+                      <IconComponent size={15} strokeWidth={isCurrent ? 2 : 1.75} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className={`text-[13.5px] leading-tight whitespace-nowrap ${
+                      <span className={`text-[13px] leading-tight whitespace-nowrap ${
                         isCurrent
                           ? 'text-slate-900 dark:text-zinc-100 font-semibold'
                           : 'text-slate-700 dark:text-zinc-300 font-medium group-hover:text-slate-900 dark:group-hover:text-zinc-100'
                       }`}>
                         {item.label}
                       </span>
-                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
                         {item.desc}
                       </span>
                     </div>
                   </button>
                 );
               })}
+            </div>
+
+            {/* Ambient Intelligence: Memory Hub Fast-lane */}
+            <div className="pt-1 mt-1 border-t border-black/[0.06] dark:border-white/[0.08]">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setWorkspaceSwitcherOpen(false);
+                  setWorkspaceSwitcherAnchorRect(null);
+                  setIsMemorySearchOpen(true);
+                }}
+                className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-violet-50/80 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-900 dark:hover:text-violet-200"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-violet-50 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100 dark:border-violet-900/40">
+                    <MemoryIcon size={14} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[12.5px] font-semibold leading-tight truncate">
+                      Memory Hub
+                    </span>
+                    <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
+                      Guidelines & Habits
+                    </span>
+                  </div>
+                </div>
+                <kbd className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06]">
+                  ⌘K
+                </kbd>
+              </button>
             </div>
           </div>
         </div>
@@ -17986,20 +18125,87 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
-  const [documents, setDocuments] = useState([
-    {
-      id: Date.now(),
-      mode: 'compose',
-      title: '',
-      subtitle: '',
-      initiatives: defaultInitiatives,
-      appendedSections: [],
-      isBlank: true,
-      bodyHtml: '',
-    },
-  ]);
+  const [documents, setDocuments] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('regaarder_documents_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load documents from localStorage:', e);
+    }
+    return [
+      {
+        id: Date.now(),
+        mode: 'compose',
+        title: '',
+        subtitle: '',
+        initiatives: defaultInitiatives,
+        appendedSections: [],
+        isBlank: true,
+        bodyHtml: '',
+      },
+    ];
+  });
   const [activeDocId, setActiveDocId] = useState(null);
+
+  // Auto-persist documents to localStorage
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && documents) {
+        localStorage.setItem('regaarder_documents_v1', JSON.stringify(documents));
+      }
+    } catch (e) {
+      console.warn('Failed to save documents to localStorage:', e);
+    }
+  }, [documents]);
+
+  // Keep active document in documents list updated with latest title and bodyHtml
+  useEffect(() => {
+    if (activeDocId) {
+      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
+        ...d,
+        title: docTitle !== undefined ? docTitle : d.title,
+        bodyHtml: docBodyHtml !== undefined ? docBodyHtml : d.bodyHtml
+      } : d));
+    }
+  }, [docBodyHtml, docTitle, activeDocId]);
+
   const activeDoc = documents.find((doc) => doc.id === activeDocId);
+  const [pdfRotation, setPdfRotation] = useState(0);
+  const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
+
+  const handlePrintPdf = useCallback(() => {
+    if (activeDoc?.pdfBlobUrl) {
+      const printFrame = document.createElement('iframe');
+      printFrame.style.position = 'fixed';
+      printFrame.style.right = '0';
+      printFrame.style.bottom = '0';
+      printFrame.style.width = '0';
+      printFrame.style.height = '0';
+      printFrame.style.border = '0';
+      printFrame.src = activeDoc.pdfBlobUrl;
+      printFrame.onload = () => {
+        try {
+          printFrame.contentWindow.focus();
+          printFrame.contentWindow.print();
+        } catch {
+          window.print();
+        }
+      };
+      document.body.appendChild(printFrame);
+      setTimeout(() => {
+        try {
+          document.body.removeChild(printFrame);
+        } catch {}
+      }, 60000);
+    } else {
+      window.print();
+    }
+  }, [activeDoc?.pdfBlobUrl]);
 
   useEffect(() => {
     window.setActiveDocIdGlobal = setActiveDocId;
@@ -18318,6 +18524,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [fontSearch, setFontSearch] = useState('');
   const [sizeSearch, setSizeSearch] = useState('');
   const [openDocMenuId, setOpenDocMenuId] = useState(null);
+  const [overflowTabMenuOpen, setOverflowTabMenuOpen] = useState(false);
   const [docMenuPos, setDocMenuPos] = useState({ top: 0, left: 0 });
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [renameDocValue, setRenameDocValue] = useState('');
@@ -18378,6 +18585,19 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTopHeaderHovered, setIsTopHeaderHovered] = useState(false);
+  const [isHeaderMoreMenuOpen, setIsHeaderMoreMenuOpen] = useState(false);
+  const headerMoreMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isHeaderMoreMenuOpen) return;
+    const handleOutsidePointerDown = (e) => {
+      if (headerMoreMenuRef.current && !headerMoreMenuRef.current.contains(e.target)) {
+        setIsHeaderMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsidePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown, true);
+  }, [isHeaderMoreMenuOpen]);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
@@ -23093,7 +23313,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   // ── Sheets & Research Notes bridge sync ─────────────────────────────────
   useEffect(() => {
-    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids };
+    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids, activeSheetId };
+    window.__REGAARDER_MATRIX_ENGINE__ = matrixEngine;
     window.__REGAARDER_UPDATE_SHEET_CELLS__ = (updates) => {
       // updates: Array<{ sheetId, row, col, value }>
       if (!Array.isArray(updates)) return { success: false, error: { code: 'INVALID_PARAMS', details: 'updates must be an array.' } };
@@ -23104,6 +23325,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           if (!next[sid]) next[sid] = {};
           const key = `${row},${col}`;
           next[sid][key] = { ...(next[sid][key] || {}), value };
+          if (Array.isArray(next[sid].cells)) {
+            const nextCells = next[sid].cells.map(r => (Array.isArray(r) ? [...r] : []));
+            if (nextCells[row]) {
+              nextCells[row][col] = value;
+              next[sid] = { ...next[sid], cells: nextCells };
+            }
+          }
         }
         return next;
       });
@@ -23170,6 +23398,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     return () => {
       delete window.__REGAARDER_SHEET_DATA__;
+      delete window.__REGAARDER_MATRIX_ENGINE__;
       delete window.__REGAARDER_UPDATE_SHEET_CELLS__;
       delete window.__REGAARDER_FORMAT_SHEET_RANGE__;
       delete window.__REGAARDER_RESEARCH_NOTES__;
@@ -23208,6 +23437,42 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       delete window.__REGAARDER_DELETE_TASK__;
     };
   }, [tasks]);
+
+  // Documents bridge for autonomous agents & citation search
+  useEffect(() => {
+    window.__REGAARDER_WORKSPACE_DOCS__ = documents;
+    window.__REGAARDER_CREATE_DOC__ = ({ title = 'Untitled Document', contentHtml = '', mode = 'compose' } = {}) => {
+      const newDocId = Date.now() + Math.floor(Math.random() * 1000);
+      const newDoc = {
+        id: newDocId,
+        mode: mode || 'compose',
+        title: title || 'Untitled Document',
+        subtitle: '',
+        initiatives: [],
+        appendedSections: [],
+        isBlank: !contentHtml && !title,
+        bodyHtml: contentHtml || '',
+        pinned: false,
+        sheetsTitle: 'Untitled Sheet',
+        sheetsData: [{ id: 1, title: 'Sheet 1', subtitle: '' }],
+        sheetGrids: { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } },
+        activeSheetId: 1,
+        deckTitle: 'Untitled Deck',
+        deckSlidesData: JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)),
+        activeDeckSlideId: 1,
+      };
+      setDocuments(prev => [...prev, newDoc]);
+      setActiveDocId(newDocId);
+      setDocTitle(newDoc.title);
+      setDocBodyHtml(newDoc.bodyHtml);
+      return { success: true, docId: newDocId, title: newDoc.title, newDoc };
+    };
+
+    return () => {
+      delete window.__REGAARDER_WORKSPACE_DOCS__;
+      delete window.__REGAARDER_CREATE_DOC__;
+    };
+  }, [documents]);
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [dueDatePickerTaskId, setDueDatePickerTaskId] = useState(null);
@@ -23874,6 +24139,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   };
 
   const closeTransientMenus = () => {
+    setIsHeaderMoreMenuOpen(false);
     setOpenDropdown(null);
     setTextStyleMenuOpen(false);
     setComposeExportMenuOpen(false);
@@ -25003,7 +25269,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     return `Source materials to ground the response in:\n${blocks.join('\n\n')}`;
   };
 
-  async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
+  async function callGemini(arg) {
+    const { userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider } =
+      typeof arg === 'string' ? { userPrompt: arg } : (arg || {});
     const todayDateString = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const isOrbRequested = hasOrbMention(userPrompt) || hasOrbMention(systemPrompt);
     const orbContext = isOrbRequested ? buildOrbWorkspacePromptContext({
@@ -33499,6 +33767,18 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (targetDoc.whiteboardWidgets !== undefined) setWhiteboardWidgets(targetDoc.whiteboardWidgets || []);
     if (targetDoc.whiteboardStrokes !== undefined) setWhiteboardStrokes(targetDoc.whiteboardStrokes || []);
     if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
+
+    if (productMode === 'landing') {
+      if (targetDoc.mode) {
+        setProductMode(targetDoc.mode);
+      } else if (targetDoc.sheetsData) {
+        setProductMode('sheets');
+      } else if (targetDoc.deckSlidesData) {
+        setProductMode('deck');
+      } else {
+        setProductMode('compose');
+      }
+    }
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
@@ -33656,6 +33936,17 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
+
+    // If options.forceNew is not requested and documents exist, restore active or most recent document
+    if (!options.forceNew && documents && documents.length > 0) {
+      const targetDoc = documents.find(d => String(d.id) === String(activeDocId)) || documents[documents.length - 1];
+      if (targetDoc && (targetDoc.title || targetDoc.bodyHtml)) {
+        setActiveDocId(targetDoc.id);
+        setDocTitle(targetDoc.title || 'Untitled Document');
+        setDocBodyHtml(targetDoc.bodyHtml || '');
+        return;
+      }
+    }
     createNewComposition(options);
   };
 
@@ -34281,6 +34572,148 @@ Respond with valid JSON formatted like this:
     showToast('Manageen workspace ready');
   };
 
+  const handleBatchAbsorbed = (absorbedDocs) => {
+    if (!Array.isArray(absorbedDocs) || absorbedDocs.length === 0) return;
+
+    const normalizedDocs = absorbedDocs.map((item, idx) => {
+      const docId = item.id || (Date.now() + idx);
+      if (item.mode === 'sheets') {
+        return {
+          id: docId,
+          mode: 'sheets',
+          title: item.title || 'Absorbed Sheet',
+          sheetsTitle: item.title || 'Absorbed Sheet',
+          sheetsData: item.sheetsData || (item.sheetGrid ? [{ id: 1, title: item.title || 'Sheet 1', subtitle: 'Absorbed Sheet' }] : []),
+          sheetGrids: item.sheetGrids || { 1: item.sheetGrid || { rows: 22, cols: 26, cells: [] } },
+          activeSheetId: item.activeSheetId || 1,
+          deckTitle: 'Untitled Deck',
+          deckSlidesData: [],
+          activeDeckSlideId: 1,
+          bodyHtml: '',
+          initiatives: [],
+          appendedSections: [],
+          isBlank: false,
+          pinned: false,
+          originalFileName: item.originalFileName || '',
+          originalSize: item.originalSize || '',
+          rawBlob: item.rawBlob || null,
+        };
+      }
+      if (item.mode === 'deck') {
+        return {
+          id: docId,
+          mode: 'deck',
+          title: item.title || 'Absorbed Presentation',
+          deckTitle: item.title || 'Absorbed Presentation',
+          deckSlidesData: item.deckSlides || [],
+          activeDeckSlideId: 1,
+          sheetsTitle: 'Untitled Sheet',
+          sheetsData: [],
+          sheetGrids: { 1: { rows: 22, cols: 26, cells: [] } },
+          activeSheetId: 1,
+          bodyHtml: '',
+          initiatives: [],
+          appendedSections: [],
+          isBlank: false,
+          pinned: false,
+          originalFileName: item.originalFileName || '',
+          originalSize: item.originalSize || '',
+          rawBlob: item.rawBlob || null,
+        };
+      }
+      const isPdf = item.fileType === 'pdf' || item.isPdfDoc || (item.originalFileName && item.originalFileName.toLowerCase().endsWith('.pdf'));
+      const pdfBlobUrl = item.pdfBlobUrl || (item.rawBlob ? URL.createObjectURL(item.rawBlob) : null);
+      return {
+        id: docId,
+        mode: 'compose',
+        title: item.title || 'Absorbed Document',
+        subtitle: isPdf ? 'Native PDF Document' : (item.subtitle || 'Enterprise Document'),
+        bodyHtml: item.bodyHtml || '',
+        cleanExtractedText: item.cleanExtractedText || '',
+        initiatives: item.initiatives || [],
+        appendedSections: [],
+        isBlank: false,
+        pinned: false,
+        sheetsTitle: 'Untitled Sheet',
+        sheetsData: [],
+        sheetGrids: { 1: { rows: 22, cols: 26, cells: [] } },
+        activeSheetId: 1,
+        deckTitle: 'Untitled Deck',
+        deckSlidesData: [],
+        activeDeckSlideId: 1,
+        originalFileName: item.originalFileName || '',
+        originalSize: item.originalSize || '',
+        rawBlob: item.rawBlob || null,
+        fileType: isPdf ? 'pdf' : (item.fileType || 'compose'),
+        isPdfDoc: isPdf,
+        pdfBlobUrl: pdfBlobUrl,
+      };
+    });
+
+    setDocuments((prev) => [...prev, ...normalizedDocs]);
+
+    const first = normalizedDocs[0];
+    if (first) {
+      if (first.mode === 'sheets') {
+        setProductMode('sheets');
+        setActiveDocId(first.id);
+        setSheetsTitle(first.title);
+        if (first.sheetGrids) {
+          setSheetGrids(first.sheetGrids);
+        }
+        setActiveSheetId(first.activeSheetId || 1);
+      } else if (first.mode === 'deck') {
+        setProductMode('deck');
+        setActiveDocId(first.id);
+        setDeckTitle(first.title);
+        if (first.deckSlidesData) {
+          setDeckSlidesData(first.deckSlidesData);
+        }
+        setActiveDeckSlideId(1);
+      } else {
+        setProductMode('compose');
+        setActiveDocId(first.id);
+        setDocTitle(first.title);
+        setDocSubtitle(first.subtitle || '');
+        setDocBodyHtml(first.bodyHtml || '');
+      }
+    }
+
+    showToast(`Absorbed ${absorbedDocs.length} enterprise document${absorbedDocs.length > 1 ? 's' : ''} into workspace`);
+  };
+
+  const handleConvertPdfToEditableDoc = (targetDocId) => {
+    const docId = targetDocId || activeDocId;
+    const docToConvert = documents.find((d) => d.id === docId);
+    if (!docToConvert) return;
+
+    let convertedHtml = docToConvert.cleanExtractedText || '';
+    if (!convertedHtml) {
+      convertedHtml = `<h1 class="text-2xl font-bold my-3 text-slate-900 dark:text-white">${escapeHtml(docToConvert.title || 'Converted Document')}</h1><p class="my-2 text-slate-700 dark:text-zinc-300 leading-relaxed">Document transcribed from ${escapeHtml(docToConvert.originalFileName || 'PDF')}. Ready for editing in Regaarder Compose.</p>`;
+    }
+
+    setDocuments((prev) =>
+      prev.map((d) => {
+        if (d.id === docId) {
+          return {
+            ...d,
+            isPdfDoc: false,
+            bodyHtml: convertedHtml,
+            subtitle: 'Converted from PDF',
+          };
+        }
+        return d;
+      })
+    );
+
+    if (activeDocId === docId) {
+      setDocBodyHtml(convertedHtml);
+      setDocSubtitle('Converted from PDF');
+    }
+
+    showToast('Converted PDF to editable document');
+  };
+
   const openLandingWorkspace = (destination) => {
     setCreationPickerOpen(false);
     enterFullscreen();
@@ -34297,6 +34730,11 @@ Respond with valid JSON formatted like this:
       target = destination.toLowerCase();
     } else {
       target = 'compose';
+    }
+
+    if (target === 'omni-portal' || target === 'import') {
+      setIsOmniPortalOpen(true);
+      return;
     }
 
     if (target === 'compose') {
@@ -34471,9 +34909,12 @@ Respond with valid JSON formatted like this:
 
   const commitRenameDocument = (docId) => {
     const nextTitle = renameDocValue.trim();
-    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle } : doc)));
+    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
     if (activeDocId === docId) {
       setDocTitle(nextTitle);
+      if (isSheetsMode) {
+        setSheetsTitle(nextTitle);
+      }
     }
     setRenamingDocId(null);
     setRenameDocValue('');
@@ -34909,14 +35350,15 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const openShareModal = (docId) => {
+    const isSheet = productMode === 'sheets';
     const target = getDocumentPayload(docId);
     const base = `${window.location.origin}${window.location.pathname}`;
     setShareTargetDocId(docId);
-    setShareTargetDocTitle(target.title?.trim() || docTitle?.trim() || 'Untitled Document');
+    setShareTargetDocTitle(isSheet ? (sheetsTitle?.trim() || 'Untitled Sheet') : (target.title?.trim() || docTitle?.trim() || 'Untitled Document'));
     setShareDestination('friends');
-    setShareFormat('Compose (.cmp)');
+    setShareFormat(isSheet ? 'Excel (.xlsx)' : 'Compose (.cmp)');
     setShareAccess('Viewer');
-    setShareLink(`${base}?doc=${docId}&access=viewer`);
+    setShareLink(`${base}?doc=${docId || (isSheet ? 'sheet' : 'doc')}&access=viewer`);
     closeTransientMenus();
     setRightSidebarOpen(false);
     setShareModalOpen(true);
@@ -36191,6 +36633,33 @@ Respond with a JSON array of slide objects matching the schema.`;
       return a.pinned ? -1 : 1;
     });
   }, [documents, activeWorkspaceMode, getDocMode]);
+
+  const windowedTabDocuments = useMemo(() => {
+    const MAX_VISIBLE_TABS = 16;
+    if (orderedDocuments.length <= MAX_VISIBLE_TABS) {
+      return {
+        visibleDocs: orderedDocuments,
+        hiddenCount: 0,
+        startIndex: 0,
+        hiddenDocs: [],
+      };
+    }
+    const activeIdx = orderedDocuments.findIndex((d) => d.id === activeDocId);
+    const safeIdx = activeIdx >= 0 ? activeIdx : 0;
+    let start = Math.max(0, safeIdx - 7);
+    let end = Math.min(orderedDocuments.length, start + MAX_VISIBLE_TABS);
+    if (end - start < MAX_VISIBLE_TABS) {
+      start = Math.max(0, end - MAX_VISIBLE_TABS);
+    }
+    const visibleDocs = orderedDocuments.slice(start, end);
+    const hiddenDocs = orderedDocuments.filter((d) => !visibleDocs.some((vd) => vd.id === d.id));
+    return {
+      visibleDocs,
+      hiddenCount: hiddenDocs.length,
+      startIndex: start,
+      hiddenDocs,
+    };
+  }, [orderedDocuments, activeDocId]);
 
   useEffect(() => {
     if (productMode === 'landing' || productMode === 'room' || productMode === 'dm') return;
@@ -44740,6 +45209,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'memory' && (
             <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-transparent overflow-hidden">
               <MemoryDashboard 
+                initialTab={memoryTab}
                 onClose={() => setRightSidebarOpen(false)}
                 onNavigateToEntity={(entity) => {
                   setRightSidebarOpen(false);
@@ -44955,7 +45425,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'room',       label: 'Room',       icon: RoomIcon,         pinned: true },
           { key: 'help',       label: 'Help',       icon: HelpCircle,       pinned: true },
           { key: 'comments',   label: 'Comments',   icon: MessageSquareText, conditional: comments.length > 0 },
-          { key: 'dm',         label: 'DMs',        icon: MessageSquare },
+          { key: 'dm',         label: 'Relay',      icon: RelayIcon },
           { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
           { key: 'people',     label: 'People',     icon: Users },
           { key: 'memory',     label: 'Memory',     icon: MemoryIcon },
@@ -45034,7 +45504,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           <>
 
             {/* ── Sleek Sidebar Icon Rail (Scoped between top header and bottom status bar, never blocks top/bottom icons) ──────────── */}
-            {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
+            {productMode !== 'landing' && productMode !== 'browser' && productMode !== 'dm' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
@@ -45176,20 +45646,38 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const sharedReplayPanel = (
     <React.Fragment>
-        {replayPanelOpen && (
+        {replayPanelOpen && typeof document !== 'undefined' && createPortal(
           <div 
             ref={replayPanelRef} 
-            className="absolute right-6 top-16 z-[260] w-[380px] rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-[0_32px_64px_-16px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] p-6 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] animate-in fade-in zoom-in-95 select-none border border-slate-200/50 dark:border-zinc-800 text-slate-800 dark:text-zinc-100"
+            className="fixed right-6 top-14 z-[100001] w-[380px] rounded-2xl bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-[0_24px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.65)] p-5 select-none border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 text-slate-800 dark:text-zinc-100 animate-in zoom-in-[0.98] fade-in duration-100 ease-out font-sans text-left"
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            {/* Header Section: Title, and lightweight step information */}
-            <div className="flex flex-col gap-1 mb-6 text-center">
-              <h4 className="text-[14px] font-bold text-slate-800 tracking-tight">{t('replay.title') || 'Edit Replay'}</h4>
-              <p className="text-[11px] font-semibold text-slate-400">
-                {replayTimeline.length
-                  ? (t('replay.stepOf', { current: replayIndex === null ? replayTimeline.length : replayIndex + 1, total: replayTimeline.length }) || `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`)
-                  : (t('replay.noHistory') || 'No edit history yet')}
-              </p>
-            </div>
+              {/* Header Section: Title, step info, and close button */}
+              <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-slate-200/60 dark:border-zinc-800">
+                <div className="flex flex-col">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{t('replay.title') || 'Edit Replay'}</h4>
+                  <p className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+                    {replayTimeline.length
+                      ? (t('replay.stepOf', { current: replayIndex === null ? replayTimeline.length : replayIndex + 1, total: replayTimeline.length }) || `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`)
+                      : (t('replay.noHistory') || 'No edit history yet')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setReplayPanelOpen(false);
+                    setIsReplayPlaying(false);
+                  }}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M1 1l10 10M11 1L1 11" />
+                  </svg>
+                </button>
+              </div>
 
             {/* Scrubber Area: Range Slider and Labels */}
             <div className="mb-6">
@@ -45315,829 +45803,17 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </div>
               )}
             </div>
-          </div>
+          </div>,
+          document.fullscreenElement ?? document.body
         )}
     </React.Fragment>
   );
 
   if (productMode === 'dm') {
-    const directMessages = dmDirectMessages;
-    const teamChannels = dmTeamChannels;
-    const aiConversations = dmAiConversations;
-    const activeThreadFiles = dmFiles.filter((file) => file.threadId === activeDmThread?.id).slice(0, 3);
-    const dmMentionsItems = activeDmMessages.filter((message) => message.role !== 'you').slice(-6);
-    const dmSavedItems = activeThreadFiles.slice(0, 6);
-    const activeThreadDecisions = dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 3);
-    const activeThreadTasks = activeDmThread?.id === 'thread-beta-launch'
-      ? [
-        { name: 'Review landing page', tag: 'High', when: 'Today' },
-        { name: 'Finalize Product Hunt copy', tag: 'Medium', when: 'Tomorrow' },
-        { name: 'Create launch video', tag: 'Medium', when: 'May 14' },
-      ]
-      : [];
-    const activeThreadMeetings = activeDmThread?.id === 'thread-beta-launch'
-      ? [{ name: 'Launch Planning Meeting', when: 'Tomorrow, 10:00 AM' }]
-      : [];
-    const activeThreadPeople = (() => {
-      const names = new Set();
-      activeDmMessages.forEach((message) => {
-        if (message?.author) {
-          names.add(String(message.author));
-        }
-      });
-      activeThreadDecisions.forEach((decision) => {
-        if (decision?.by) {
-          names.add(String(decision.by));
-        }
-      });
-
-      return Array.from(names)
-        .slice(0, 6)
-        .map((name) => {
-          const nameStr = String(name || 'Unknown');
-          const initials = nameStr
-            .split(/\s+/)
-            .filter(Boolean)
-            .map((part) => part.charAt(0).toUpperCase())
-            .join('')
-            .slice(0, 2) || 'U';
-          return { name: nameStr, initials };
-        });
-    })();
-    const panelHasContent = (activeThreadTasks?.length || 0) > 0 || (activeThreadFiles?.length || 0) > 0 || (activeThreadMeetings?.length || 0) > 0 || (activeThreadPeople?.length || 0) > 0 || (activeThreadDecisions?.length || 0) > 0;
-    const currentUserShort = 'J';
-    const openDmWorkspaceTab = (tabKey, options = {}) => {
-      if (tabKey === 'dm') {
-        createDmExperience();
-        return;
-      }
-      if (tabKey === 'manageen') {
-        createManageenExperience();
-        return;
-      }
-
-      setProductMode('compose');
-      setLeftSidebarOpen(true);
-      if (rightPanelMaximized) {
-        setRightPanelMaximized(false);
-      }
-      setRightSidebarOpen(true);
-      setActiveRightTab(tabKey);
-      if (tabKey === 'room') {
-        setRoomState((prev) => prev || 'active');
-      }
-      if (options.meetingStageTab) {
-        setActiveMeetingStageTab(options.meetingStageTab);
-      }
-    };
-    const handleDmStartNewMessage = () => {
-      setDmConversationTab('chat');
-      setDmComposerValue('');
-      setDmSearchQuery('');
-      setDmActiveParentMessageId(null);
-      showToast('Start a new channel message');
-    };
-    const dmContactDirectory = [
-      'Sarah Johnson',
-      'Alex Morgan',
-      'Michael Chen',
-      'Priya Patel',
-      'Daniel Kim',
-      'Maya Flores',
-      'Rami Hassan',
-      'Naomi Cruz',
-    ];
-    const filteredDmContacts = dmContactDirectory
-      .filter((name) => name.toLowerCase().includes(String(dmContactSearch || '').trim().toLowerCase()))
-      .filter((name) => !directMessages.includes(name));
-
-    const handleDmAddDirectMessage = () => {
-      setDmContactPickerOpen((prev) => !prev);
-      setDmTeamInputOpen(false);
-      setDmChannelInputOpen(false);
-    };
-    const addDirectMessageFromContact = (name) => {
-      const value = String(name || '').trim();
-      if (!value) {
-        return;
-      }
-      setDmDirectMessages((prev) => (prev.includes(value) ? prev : [...prev, value]));
-      setDmContactSearch('');
-      setDmContactPickerOpen(false);
-      showToast(`${value} added`);
-    };
-    const handleDmAddTeam = () => {
-      const value = String(dmTeamInputValue || '').trim();
-      if (!value) {
-        return;
-      }
-      setDmTeamChannels((prev) => (prev.includes(value) ? prev : [...prev, value]));
-      setDmTeamInputValue('');
-      setDmTeamInputOpen(false);
-      showToast(`${value} team created`);
-    };
-    const toggleDmTeamInput = () => {
-      setDmTeamInputOpen((prev) => !prev);
-      setDmContactPickerOpen(false);
-      setDmChannelInputOpen(false);
-    };
-    const handleDmAddChannel = () => {
-      const rawValue = String(dmChannelInputValue || '').trim();
-      const value = rawValue.replace(/^#+/, '').trim();
-      if (!value) {
-        return;
-      }
-      const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      const id = `thread-${slug || Date.now()}`;
-      setDmThreads((prev) => {
-        if (prev.some((thread) => thread.id === id || thread.title.toLowerCase() === value.toLowerCase())) {
-          return prev;
-        }
-        return [
-          ...prev,
-          {
-            id,
-            title: value,
-            members: 1,
-            unread: 0,
-            pinned: false,
-            description: '',
-            lastMessageAt: Date.now(),
-          },
-        ];
-      });
-      setDmChannelInputValue('');
-      setDmChannelInputOpen(false);
-      showToast(`#${slug || value} created`);
-    };
-    const toggleDmChannelInput = () => {
-      setDmChannelInputOpen((prev) => {
-        const nextOpen = !prev;
-        setDmChannelInputValue(nextOpen ? '#' : '');
-        return nextOpen;
-      });
-      setDmContactPickerOpen(false);
-      setDmTeamInputOpen(false);
-    };
-    const handleDmAddAiConversation = () => {
-      setDmAiChatOpen(true);
-      setDmContactPickerOpen(false);
-      setDmTeamInputOpen(false);
-      setDmChannelInputOpen(false);
-    };
-
-    const speakAgentResponse = (text, callback) => {
-      if (!window.speechSynthesis) {
-        if (callback) callback();
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*_#`\[\]]/g, '').trim();
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.onend = () => {
-        if (callback) callback();
-      };
-      utterance.onerror = (e) => {
-        console.error('SpeechSynthesis error:', e);
-        if (callback) callback();
-      };
-      window.speechSynthesis.speak(utterance);
-    };
-
-    const startVoiceCall = () => {
-      setIsVoiceCallActive(true);
-      setVoiceCallState('connecting');
-      setVoiceCallText('Establishing connection...');
-      
-      setTimeout(() => {
-        setVoiceCallState('speaking');
-        const welcome = dmAgentHistories[activeAiAgent]?.[0]?.text || 'Hello, I am connected and ready.';
-        setVoiceCallText(welcome);
-        speakAgentResponse(welcome, () => {
-          setVoiceCallState('listening');
-          setVoiceCallText('Listening...');
-          startCallSpeechRecognition();
-        });
-      }, 1500);
-    };
-
-    const stopVoiceCall = () => {
-      setIsVoiceCallActive(false);
-      setVoiceCallState('disconnected');
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      if (callRecognitionRef.current) {
-        try { callRecognitionRef.current.stop(); } catch (_e) {}
-      }
-      showToast('Voice call ended');
-    };
-
-    const toggleVoiceCallMute = () => {
-      setIsVoiceCallMuted(prev => {
-        const next = !prev;
-        showToast(next ? 'Mic muted' : 'Mic unmuted');
-        if (next && callRecognitionRef.current) {
-          try { callRecognitionRef.current.stop(); } catch (_e) {}
-        } else if (!next && isVoiceCallActive) {
-          startCallSpeechRecognition();
-        }
-        return next;
-      });
-    };
-
-    // Moved callRecognitionRef to top level
-    
-    const startCallSpeechRecognition = () => {
-      if (isVoiceCallMuted || !isVoiceCallActive) return;
-      
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
-      
-      const rec = new SpeechRecognition();
-      callRecognitionRef.current = rec;
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.lang = 'en-US';
-      
-      rec.onresult = (e) => {
-        const transcript = e.results[0]?.[0]?.transcript;
-        if (transcript && isVoiceCallActive) {
-          setVoiceCallText(`You said: "${transcript}"`);
-          processCallResponse(transcript);
-        }
-      };
-      
-      rec.onend = () => {
-        if (isVoiceCallActive && voiceCallState === 'listening' && !isVoiceCallMuted) {
-          try { rec.start(); } catch (_e) {}
-        }
-      };
-      
-      try { rec.start(); } catch (_e) {}
-    };
-
-    const processCallResponse = async (userText) => {
-      setVoiceCallState('connecting');
-      setVoiceCallText('Thinking...');
-      
-      const userMessage = { id: `dm-ai-user-call-${Date.now()}`, role: 'user', text: userText };
-      setDmAgentHistories(prev => ({
-        ...prev,
-        [activeAiAgent]: [...(prev[activeAiAgent] || []), userMessage]
-      }));
-
-      try {
-        let systemPrompt = `You are ${activeAiAgent} on a voice call. Answer the user in 1-2 short, conversational sentences suitable for speech synthesis. Keep it concise.`;
-        
-        const response = await fetch('/api/gemini', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userPrompt: userText,
-            systemPrompt
-          })
-        });
-        
-        const result = await response.json();
-        if (result.ok && result.text) {
-          const replyText = result.text.trim();
-          
-          const assistantMessage = { id: `dm-ai-assistant-call-${Date.now()}`, role: 'assistant', text: replyText };
-          setDmAgentHistories(prev => ({
-            ...prev,
-            [activeAiAgent]: [...(prev[activeAiAgent] || []), assistantMessage]
-          }));
-          
-          setVoiceCallState('speaking');
-          setVoiceCallText(replyText);
-          speakAgentResponse(replyText, () => {
-            setVoiceCallState('listening');
-            setVoiceCallText('Listening...');
-            startCallSpeechRecognition();
-          });
-        } else {
-          throw new Error();
-        }
-      } catch (_err) {
-        const errReply = 'Sorry, I encountered an error. Please try again.';
-        setVoiceCallState('speaking');
-        setVoiceCallText(errReply);
-        speakAgentResponse(errReply, () => {
-          setVoiceCallState('listening');
-          setVoiceCallText('Listening...');
-          startCallSpeechRecognition();
-        });
-      }
-    };
-
-    // Moved coPilotRecognitionRef to top level
-    
-    const toggleMeetingCoPilot = () => {
-      setCoPilotActive(prev => {
-        const next = !prev;
-        if (next) {
-          showToast('Meeting Co-pilot activated');
-          setTimeout(() => startCoPilotListening(), 300);
-        } else {
-          showToast('Meeting Co-pilot deactivated');
-          if (coPilotRecognitionRef.current) {
-            try { coPilotRecognitionRef.current.stop(); } catch (_e) {}
-          }
-        }
-        return next;
-      });
-    };
-
-    const startCoPilotListening = () => {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
-      
-      const rec = new SpeechRecognition();
-      coPilotRecognitionRef.current = rec;
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.lang = 'en-US';
-      
-      rec.onresult = (e) => {
-        const transcript = e.results[0]?.[0]?.transcript;
-        if (transcript) {
-          logMeetingLine('Joshua (You)', transcript);
-        }
-      };
-      
-      rec.onend = () => {
-        if (coPilotRecognitionRef.current && coPilotActive) {
-          try { rec.start(); } catch (_e) {}
-        }
-      };
-      
-      try { rec.start(); } catch (_e) {}
-    };
-
-    const simulateColleagueSpeaking = () => {
-      if (!coPilotActive) {
-        showToast('Please start the Meeting Co-pilot first');
-        return;
-      }
-      const phrases = [
-        { author: 'Sarah Johnson', text: 'Let? finalize the marketing launch copy by tomorrow morning.' },
-        { author: 'Alex Morgan', text: 'I decided to start engineering sprint MVP planning on Monday.' },
-        { author: 'Michael Chen', text: 'We will draft the Q2 operating budget outline for review.' },
-        { author: 'Sarah Johnson', text: 'I approve the new landing page dashboard layouts.' }
-      ];
-      const chosen = phrases[Math.floor(Math.random() * phrases.length)];
-      logMeetingLine(chosen.author, chosen.text);
-    };
-
-    const logMeetingLine = (author, text) => {
-      const now = Date.now();
-      
-      setChatMessages(prev => [...prev, { id: now, sender: author === 'Joshua (You)' ? 'user' : 'assistant', text: `${author}: ${text}` }]);
-      addWorkspaceMemory(`Meeting dialogue transcribed: "${author}: ${text.substring(0, 30)}..."`, "Meeting Co-pilot", ["Meeting Room", "Transcript"]);
-      
-      const lower = text.toLowerCase();
-      if (lower.includes('decide') || lower.includes('finalize') || lower.includes('approve') || lower.includes('agree')) {
-        const decision = {
-          id: `dm-decision-copilot-${now}`,
-          threadId: activeDmThread?.id || 'thread-beta-launch',
-          summary: `${author}: ${text}`,
-          createdAt: now,
-          by: author
-        };
-        setDmDecisions(prev => [decision, ...prev].slice(0, 200));
-        showToast(`Co-pilot logged decision: "${text.substring(0, 30)}..."`);
-        addWorkspaceMemory(`Decision logged: "${text}"`, "Meeting Co-pilot", ["Meeting Room", "Decision Log"]);
-      }
-      
-      if (lower.includes('will') || lower.includes('start') || lower.includes('draft') || lower.includes('create')) {
-        const newTask = {
-          id: `mg-task-copilot-${now}`,
-          title: text,
-          tag: 'Co-pilot Task',
-          project: 'Engineering Delivery',
-          due: 'Jun 20',
-          comments: 0,
-          assignee: author,
-          priority: 'High',
-          status: 'Ideas',
-          progress: 0,
-          description: 'Automatically extracted from live meeting speech by Co-pilot.'
-        };
-        setManageenBoardColumns((prev) => {
-          return prev.map(col => {
-            if (col.id === 'ideas') {
-              return { ...col, tasks: [...col.tasks, newTask] };
-            }
-            return col;
-          });
-        });
-        showToast(`Co-pilot added task: "${text.substring(0, 30)}..."`);
-        addWorkspaceMemory(`Task card added: "${text}"`, "Meeting Co-pilot", ["Meeting Room", "Kanban Board"]);
-      }
-    };
-
-    const handleAgentActionTriggers = (agentName, userPromptText, replyText) => {
-      const userLower = userPromptText.toLowerCase();
-      
-      // Look for structured action tag: [ACTION: ...]
-      const actionRegex = /\[ACTION:\s*({.*?})\]/s;
-      const match = replyText.match(actionRegex);
-      
-      if (match && match[1]) {
-        try {
-          const actionPayload = JSON.parse(match[1]);
-          if (actionPayload.type === 'insert_chart') {
-            const chartType = actionPayload.chartType || 'bar';
-            const labels = actionPayload.labels || ['Jan', 'Feb', 'Mar'];
-            const dataValues = actionPayload.data || [10, 20, 30];
-            
-            if (blankBodyRef.current) {
-              const previewId = `prev_analyst_${Date.now()}`;
-              const container = document.createElement('div');
-              container.className = 'ai-preview-block';
-              container.setAttribute('id', previewId);
-              container.setAttribute('data-block-type', 'graph');
-              container.setAttribute('contenteditable', 'false');
-              
-              blankBodyRef.current.appendChild(container);
-              
-              const spacer = document.createElement('p');
-              spacer.innerHTML = '<br>';
-              blankBodyRef.current.appendChild(spacer);
-              
-              setDocBodyHtml(blankBodyRef.current.innerHTML);
-              
-              handleAIBlockSubmit(`Generate a ${chartType} chart for values ${dataValues.join(', ')} with labels ${labels.join(', ')}`, 'graph', container);
-              showToast('Data Analyst inserted a chart into your document');
-              addWorkspaceMemory('Data Analyst generated and inserted a chart in the document', 'Data Analyst Agent', ['Document Editor', 'AI Chat']);
-            }
-          } else if (actionPayload.type === 'convert_to_deck') {
-            setTimeout(() => {
-              convertDocumentToDeck();
-            }, 500);
-          }
-        } catch (e) {
-          console.error("Failed to parse structured action JSON:", e);
-        }
-      } else {
-        // Fallback for keyword matching if structured output fails
-        if (agentName.includes('Analyst') && (userLower.includes('chart') || userLower.includes('graph') || userLower.includes('plot'))) {
-          const sampleLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-          const sampleValues = [45, 60, 85, 110, 150];
-          
-          const matches = [...userPromptText.matchAll(/\b\d+\b/g)].map(m => Number(m[0]));
-          const dataValues = matches.length >= 3 ? matches.slice(0, 5) : sampleValues;
-          
-          if (blankBodyRef.current) {
-            const previewId = `prev_analyst_${Date.now()}`;
-            const container = document.createElement('div');
-            container.className = 'ai-preview-block';
-            container.setAttribute('id', previewId);
-            container.setAttribute('data-block-type', 'graph');
-            container.setAttribute('contenteditable', 'false');
-            
-            blankBodyRef.current.appendChild(container);
-            
-            const spacer = document.createElement('p');
-            spacer.innerHTML = '<br>';
-            blankBodyRef.current.appendChild(spacer);
-            
-            setDocBodyHtml(blankBodyRef.current.innerHTML);
-            
-            handleAIBlockSubmit(`Generate a bar chart for values ${dataValues.join(', ')}`, 'graph', container);
-            showToast('Data Analyst inserted a chart into your document');
-            addWorkspaceMemory('Data Analyst generated and inserted a chart in the document', 'Data Analyst Agent', ['Document Editor', 'AI Chat']);
-          }
-        } else if ((agentName.includes('Presentation') || agentName.includes('Deck')) && (userLower.includes('convert') || userLower.includes('generate') || userLower.includes('deck') || userLower.includes('slide'))) {
-          setTimeout(() => {
-            convertDocumentToDeck();
-          }, 500);
-        }
-      }
-      
-      if (agentName.includes('Orb') && (userLower.includes('task') || userLower.includes('todo') || userLower.includes('add board'))) {
-        let taskTitle = 'New Task from Orb';
-        const taskMatch = userPromptText.match(/(?:create|add|new)\s+task\s+["']?([^"'\n]+)["']?/i) 
-                       || userPromptText.match(/(?:task|todo)\s+to\s+["']?([^"'\n]+)["']?/i);
-        if (taskMatch?.[1]) {
-          taskTitle = taskMatch[1].trim();
-        }
-        
-        const newTask = {
-          id: `mg-task-orb-${Date.now()}`,
-          title: taskTitle,
-          tag: 'AI Task',
-          project: 'Engineering Delivery',
-          due: 'Jun 15',
-          comments: 0,
-          assignee: 'Orb',
-          priority: 'Medium',
-          status: 'Ideas',
-          progress: 0,
-          description: 'Automatically created by Orb Workspace Assistant.'
-        };
-        
-        setManageenBoardColumns((prev) => {
-          return prev.map(col => {
-            if (col.id === 'ideas') {
-              return {
-                ...col,
-                tasks: [...col.tasks, newTask]
-              };
-            }
-            return col;
-          });
-        });
-        showToast(`Orb added task to board: "${taskTitle}"`);
-        addWorkspaceMemory(`Created task card: "${taskTitle}"`, "Orb Assistant", ["Kanban Board", "AI Chat"]);
-      }
-    };
-
-    const sendDmAiChatMessage = async (overrideText = '') => {
-      const text = (overrideText || String(dmAiChatInput || '')).trim();
-      if (!text) return;
-      
-      const now = Date.now();
-      const userMessage = { id: `dm-ai-user-${now}`, role: 'user', text };
-      
-      setDmAgentHistories((prev) => ({
-        ...prev,
-        [activeAiAgent]: [...(prev[activeAiAgent] || []), userMessage]
-      }));
-      if (!overrideText) {
-        setDmAiChatInput('');
-      }
-
-      const tempAssistantId = `dm-ai-assistant-loading-${now}`;
-      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: `Thinking with ${composeSelectedModel?.name || "Model"}...` };
-      
-      setDmAgentHistories((prev) => ({
-        ...prev,
-        [activeAiAgent]: [...(prev[activeAiAgent] || []), loadingMessage]
-      }));
-
-      setIsComposing(true);
-
-      // Perform specialist routing if user is talking to Orb coordinator
-      let routedAgent = activeAiAgent;
-      if (activeAiAgent === 'Orb (AI Assistant)') {
-        const lowerText = text.toLowerCase();
-        if (lowerText.includes('chart') || lowerText.includes('graph') || lowerText.includes('plot') || lowerText.includes('calculate') || lowerText.includes('stats') || lowerText.includes('spreadsheet')) {
-          routedAgent = 'Data Analyst Agent';
-        } else if (lowerText.includes('slide') || lowerText.includes('presentation') || lowerText.includes('pitch deck') || lowerText.includes('deck') || lowerText.includes('convert to deck')) {
-          routedAgent = 'Presentation Agent';
-        } else if (lowerText.includes('branding') || lowerText.includes('copywrite') || lowerText.includes('marketing')) {
-          routedAgent = 'Marketing Agent';
-        } else if (lowerText.includes('lookup') || lowerText.includes('research') || lowerText.includes('explain') || lowerText.includes('search')) {
-          routedAgent = 'Research Agent';
-        }
-      }
-
-      try {
-        let systemPrompt = '';
-        let documentContext = '';
-        if (blankBodyRef.current) {
-          const rawDocText = (blankBodyRef.current.innerText || '').trim();
-          const isGenericDocText = /^(?:untitled(\s+(document|section|page))?|unsaved\s+draft|create\s+at\s+the\s+speed\s+of\s+thought\.?)$/i.test(rawDocText) || rawDocText.length < 5 || rawDocText.includes('Unable to reach local inference model');
-          if (!isGenericDocText) {
-            documentContext = `\n\nActive Document Context:\n${rawDocText}`;
-          }
-        }
-
-        if (routedAgent.includes('Presentation')) {
-          systemPrompt = `You are the Presentation Agent for Regaarder Compose. You specialize in creating and modifying slide decks.
-When asked to convert the document or generate slides, reply that you are launching the slide generator and append:
-[ACTION: {"type": "convert_to_deck"}]`;
-        } else if (routedAgent.includes('Marketing')) {
-          systemPrompt = `You are the Marketing Agent for Regaarder Compose. Specialized in copy editing, executive positioning, and branding.`;
-        } else if (routedAgent.includes('Analyst')) {
-          systemPrompt = `You are the Data Analyst Agent. You analyze tabular data, spreadsheets, and files.
-If requested to draw a chart or graph, append a structured action JSON block:
-[ACTION: {"type": "insert_chart", "chartType": "bar", "labels": ["Jan", "Feb", "Mar"], "data": [45, 60, 85]}]`;
-        } else if (routedAgent.includes('Research')) {
-          systemPrompt = `You are the Research Agent. You lookup information, synthesize citations, and generate detailed reports.`;
-        } else {
-          systemPrompt = `You are Orb, the central workspace coordinator across Docs, Decks, and Sheets. Assist the user with creating content, tracking decisions, and executing tasks.`;
-        }
-
-        let replyText = '';
-
-        // Check if user selected a Local LLM (Ollama / LM Studio / llama.cpp)
-        if (composeSelectedModel?.isLocal && composeSelectedModel?.endpoint) {
-          const isOllama = composeSelectedModel?.provider === 'Ollama' || composeSelectedModel?.endpoint?.includes('11434');
-          const baseEndpoint = composeSelectedModel?.endpoint?.replace(/\/v1\/?$/, '').replace(/\/api\/.*$/, '') || 'http://127.0.0.1:11434';
-          const primaryUrl = isOllama
-            ? `${baseEndpoint}/api/chat`
-            : `${composeSelectedModel?.endpoint?.endsWith('/v1') ? composeSelectedModel?.endpoint : (composeSelectedModel?.endpoint || '') + '/v1'}/chat/completions`;
-          const fallbackUrl = isOllama
-            ? primaryUrl.replace('127.0.0.1', 'localhost')
-            : null;
-
-          const isCustomOffload = localOffloadConfig?.mode === 'custom' && localOffloadConfig?.enabled;
-          const offloadOptions = isCustomOffload
-            ? {
-                num_gpu: localOffloadConfig?.gpuLayers,
-                num_thread: localOffloadConfig?.threads,
-                num_ctx: localOffloadConfig?.contextSize,
-                use_mmap: localOffloadConfig?.useMmap
-              }
-            : undefined;
-
-          const buildBody = (modelId) => isOllama
-            ? {
-                model: modelId,
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: `${text}${documentContext}` }
-                ],
-                stream: false,
-                ...(offloadOptions ? { options: offloadOptions } : {})
-              }
-            : {
-                model: modelId || 'default',
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: `${text}${documentContext}` }
-                ],
-                stream: false
-              };
-
-          const dmAbortController = new AbortController();
-          const dmTimeoutId = setTimeout(() => dmAbortController.abort(), 240000);
-
-          let localRes = null;
-          try {
-            localRes = await fetch(primaryUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(buildBody(composeSelectedModel?.id)),
-              signal: dmAbortController.signal
-            });
-          } catch (primaryErr) {
-            if (primaryErr.name === 'AbortError') throw primaryErr;
-            // Primary host refused ??retry on alternate host before failing
-            if (fallbackUrl && fallbackUrl !== primaryUrl) {
-              const retryController = new AbortController();
-              const retryTimeout = setTimeout(() => retryController.abort(), 240000);
-              try {
-                localRes = await fetch(fallbackUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(buildBody(composeSelectedModel?.id)),
-                  signal: retryController.signal
-                });
-              } finally {
-                clearTimeout(retryTimeout);
-              }
-            } else {
-              throw primaryErr;
-            }
-          } finally {
-            clearTimeout(dmTimeoutId);
-          }
-
-          if (!localRes.ok) throw new Error(`Local inference model returned HTTP ${localRes.status}. Verify Ollama is running and the model is loaded.`);
-          const localData = await localRes.json();
-
-          if (isOllama && localData.message?.content) {
-            replyText = localData.message.content.trim();
-          } else if (localData.choices?.[0]?.message?.content) {
-            replyText = localData.choices[0].message.content.trim();
-          } else {
-            replyText = JSON.stringify(localData);
-          }
-        } else {
-          // Cloud Fallback (Gemini)
-          const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userPrompt: `${text}${documentContext}`,
-              systemPrompt
-            })
-          });
-          
-          const result = await response.json();
-          if (result.ok && result.text) {
-            replyText = result.text.trim();
-          } else {
-            throw new Error(result.error || 'Gemini error');
-          }
-        }
-        
-        handleAgentActionTriggers(routedAgent, text, replyText);
-
-        if (activeAiAgent === 'Orb (AI Assistant)' && routedAgent !== 'Orb (AI Assistant)') {
-          replyText = `*(Routed to ${routedAgent})*\n\n${replyText}`;
-        }
-
-        setDmAgentHistories((prev) => {
-          const currentHistory = prev[activeAiAgent] || [];
-          const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
-          return {
-            ...prev,
-            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText, modelTag: composeSelectedModel?.name || 'Local AI' }]
-          };
-        });
-
-        addWorkspaceMemory(
-          `Orb (${composeSelectedModel?.name || "Model"}) processed: "${text.substring(0, 30)}..."`,
-          routedAgent !== 'Orb (AI Assistant)' ? `Orb ??${routedAgent.split(' ')[0]}` : 'Orb Assistant',
-          ["AI Chat"]
-        );
-      } catch (err) {
-        console.error('Agent chat failed:', err);
-        setDmAgentHistories((prev) => {
-          const currentHistory = prev[activeAiAgent] || [];
-          const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
-          return {
-            ...prev,
-            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-err-${Date.now()}`, role: 'assistant', text: `Error: ${err.message || 'Unable to connect to Gemini API.'}` }]
-          };
-        });
-      } finally {
-        setIsComposing(false);
-      }
-    };
-    const saveDmThreadTitle = () => {
-      const nextTitle = String(dmThreadTitleDraft || '').trim();
-      if (!nextTitle || !activeDmThread) {
-        setDmEditingThreadTitle(false);
-        setDmThreadTitleDraft(activeDmThread?.title || '');
-        return;
-      }
-      setDmThreads((prev) => prev.map((thread) => (
-        thread.id === activeDmThread.id
-          ? { ...thread, title: nextTitle }
-          : thread
-      )));
-      setDmEditingThreadTitle(false);
-    };
-    const saveDmThreadDescription = () => {
-      if (!activeDmThread) {
-        return;
-      }
-      const nextDescription = String(dmThreadDescriptionDraft || '').trim();
-      setDmThreads((prev) => prev.map((thread) => (
-        thread.id === activeDmThread.id
-          ? { ...thread, description: nextDescription }
-          : thread
-      )));
-      setDmEditingThreadDescription(false);
-    };
-    const handleDmQuickJump = (label) => {
-      if (label === 'Threads') {
-        setDmConversationTab('threads');
-      } else if (label === 'AI Summary') {
-        setDmConversationTab('ai-summary');
-      } else if (label === 'Mentions') {
-        setDmConversationTab('mentions');
-      } else if (label === 'Saved') {
-        setDmConversationTab('saved');
-      } else {
-        setDmConversationTab('chat');
-      }
-      showToast(`${label} opened`);
-    };
-    const handleDmComposerAction = (action) => {
-      if (action === 'attach') {
-        dmAnyAttachmentInputRef.current?.click();
-        return;
-      }
-      if (action === 'emoji') {
-        setDmEmojiPickerOpen((prev) => !prev);
-        setDmFormatMenuOpen(false);
-        setDmComposerQuickMenuOpen(false);
-        setDmScheduleMenuOpen(false);
-        return;
-      }
-      if (action === 'schedule') {
-        setDmScheduleMenuOpen((prev) => !prev);
-        setDmEmojiPickerOpen(false);
-        setDmFormatMenuOpen(false);
-        setDmComposerQuickMenuOpen(false);
-        return;
-      }
-      if (action === 'format') {
-        setDmFormatMenuOpen((prev) => !prev);
-        setDmEmojiPickerOpen(false);
-        setDmComposerQuickMenuOpen(false);
-        setDmScheduleMenuOpen(false);
-        return;
-      }
-      if (action === 'plus') {
-        setDmComposerQuickMenuOpen((prev) => !prev);
-        setDmEmojiPickerOpen(false);
-        setDmFormatMenuOpen(false);
-        setDmScheduleMenuOpen(false);
-      }
-    };
-
     return (
-      <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
-          <div 
+          <div
             onClick={toastCallback ? () => { toastCallback(); setToastMessage(''); } : undefined}
             className={`fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300 ${toastCallback ? 'cursor-pointer hover:bg-slate-50 hover:border-violet-300 hover:shadow-md' : ''}`}
           >
@@ -46145,1099 +45821,99 @@ If requested to draw a chart or graph, append a structured action JSON block:
             <span>{toastMessage}</span>
           </div>
         )}
+        <main className="flex-1 min-w-0 flex bg-white/80 overflow-hidden">
+          <ExecutiveDirectMessages
+            isDarkMode={isDarkMode}
+            threads={dmThreads}
+            activeThreadId={activeDmThread?.id}
+            onSelectThread={(id) => setDmActiveThreadId(id)}
+            onOpenRoom={() => createRoomLandingExperience()}
+            onOpenMemory={() => setIsMemorySearchOpen(true)}
+            onLogDecisionToMemory={(text, source) => {
+              addWorkspaceMemory(text, `Chat (${source})`, ['Team Chat', 'Decision']);
+              showToast('Decision logged to Workspace Memory Hub');
+            }}
+            onNavigateWorkspace={(ref) => {
+              if (!ref) return;
+              if (ref.type === 'landing') {
+                setProductMode('landing');
+                setFocusedModule('landing');
+              } else if (ref.type === 'sheets') {
+                createSheetsExperience();
+                if (ref.sheetId) setActiveSheetId(ref.sheetId);
+              } else if (ref.type === 'deck') {
+                createDeckExperience();
+                if (ref.slideId) setActiveDeckSlideId(ref.slideId);
+              } else {
+                // Compose Docs mode
+                setCreationPickerOpen(false);
+                setProductMode('compose');
+                setFocusedModule('compose');
+                setDockedModules([]);
+                setRoomPanelMode('docked');
+                setLeftSidebarOpen(false);
+                setActiveDocView('document');
 
-        <aside className="w-[250px] shrink-0 border-r border-slate-200/50 bg-[#fbfafc]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <div className="flex items-center justify-between">
-              <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
-              <button type="button" onClick={() => showToast('Workspace switcher coming next')} className="text-gray-400 hover:text-gray-600">
-                <ChevronDown size={16} />
-              </button>
-            </div>
-          </div>
+                const targetDocId = ref.docId || ref.id;
+                if (targetDocId) {
+                  const targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+                  if (targetDoc) {
+                    setActiveDocId(targetDoc.id);
+                    setDocTitle(targetDoc.title || '');
+                    setDocBodyHtml(targetDoc.bodyHtml || '');
+                  }
+                }
 
-          <div className="px-4 pt-4 pb-3">
-            <button type="button" onClick={handleDmStartNewMessage} className="w-full h-9 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium flex items-center gap-2 px-3 hover:bg-slate-50">
-              <Plus size={13} className="text-blue-500" />
-              <span>New message</span>
-            </button>
-          </div>
+                // Deep-link to line and scroll into view with executive outline highlight only for citation clicks
+                if (ref.isCitationClick || (ref.line && ref.line > 1) || (ref.textSnippet && !ref.isDirectOpen)) {
+                  setTimeout(() => {
+                    const editorEl = blankBodyRef.current || document.querySelector('[contenteditable="true"]');
+                    if (!editorEl) return;
+                    let targetEl = null;
 
-          <div className="px-3 space-y-1 text-[14px]">
-            {[
-              { label: 'Inbox', count: 6 },
-              { label: 'Threads', count: dmThreadSummaries.length },
-              { label: 'Mentions', count: dmMentionsItems.length },
-              { label: 'Saved', count: dmSavedItems.length },
-              { label: 'AI Summary', count: visibleDmSearchResults.filter((entry) => entry.type === 'decision').length },
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => handleDmQuickJump(item.label)}
-                className="w-full h-8 px-2 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center justify-between"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded border border-slate-300" />
-                  {item.label}
-                </span>
-                {item.count > 0 ? <span className="text-[11px] font-semibold text-slate-400">{item.count}</span> : <span />}
-              </button>
-            ))}
-          </div>
-
-          <div className="px-3 pt-3 pb-2 border-t border-slate-100 mt-2">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400/80 mb-2">History Scope</div>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setDmMemberView('member')}
-                className={`h-7 rounded-md text-[11px] font-medium border ${dmMemberView === 'member' ? 'border-slate-200 bg-slate-100 text-slate-800' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
-              >
-                Full Log
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setDmMemberView('new-member');
-                  setDmJoinedAt((prev) => prev || Date.now() - (1000 * 60 * 15));
-                }}
-                className={`h-7 rounded-md text-[11px] font-medium border ${dmMemberView === 'new-member' ? 'border-slate-200 bg-slate-100 text-slate-800' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
-              >
-                New Member
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto thin-scrollbar px-3 pt-4 pb-3 space-y-4">
-            <div>
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
-                <span>Direct Messages</span>
-                <button type="button" onClick={handleDmAddDirectMessage} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
-              </div>
-              {dmContactPickerOpen && (
-                <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 space-y-1.5">
-                  <input
-                    value={dmContactSearch}
-                    onChange={(event) => setDmContactSearch(event.target.value)}
-                    placeholder="Search contacts"
-                    className="w-full h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
-                  />
-                  <div className="max-h-28 overflow-y-auto thin-scrollbar space-y-1">
-                    {filteredDmContacts.length === 0 && (
-                      <div className="text-[11px] text-slate-400 px-1 py-1">No matching contacts</div>
-                    )}
-                    {filteredDmContacts.map((contact) => (
-                      <button
-                        key={contact}
-                        type="button"
-                        onClick={() => addDirectMessageFromContact(contact)}
-                        className="w-full h-7 rounded-md px-2 text-xs text-slate-600 hover:bg-violet-50 hover:text-violet-700 text-left"
-                      >
-                        {contact}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="space-y-1 text-[14px]">
-                {directMessages.map((name) => (
-                  <button key={name} type="button" onClick={() => showToast(`${name} conversation opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
-                    <span className="w-2 h-2 rounded-full bg-violet-600 dark:bg-violet-500" />
-                    <span className="truncate">{name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
-                <span>Teams</span>
-                <button type="button" onClick={toggleDmTeamInput} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
-              </div>
-              {dmTeamInputOpen && (
-                <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 flex items-center gap-1.5">
-                  <input
-                    value={dmTeamInputValue}
-                    onChange={(event) => setDmTeamInputValue(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        handleDmAddTeam();
+                    if (ref.line && ref.line > 0) {
+                      const blocks = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, tr, div'))
+                        .filter(el => el.textContent && el.textContent.trim().length > 0);
+                      if (blocks.length > 0) {
+                        const targetIdx = Math.min(ref.line - 1, blocks.length - 1);
+                        targetEl = blocks[targetIdx];
                       }
-                    }}
-                    placeholder="Team name"
-                    className="flex-1 h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
-                  />
-                  <button type="button" onClick={handleDmAddTeam} className="h-8 px-2 rounded-md bg-violet-600 text-white text-xs font-medium hover:bg-violet-700">Add</button>
-                </div>
-              )}
-              <div className="space-y-1 text-[14px]">
-                {teamChannels.map((team, index) => (
-                  <button key={team} type="button" onClick={() => showToast(`${team} team opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
-                    <span className="w-4 h-4 rounded-full bg-slate-200 text-violet-600 text-[9px] font-bold flex items-center justify-center">{team.charAt(0)}</span>
-                    <span className="truncate">{team}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+                    }
 
-            <div>
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
-                <span>Channels</span>
-                <button type="button" onClick={toggleDmChannelInput} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
-              </div>
-              {dmChannelInputOpen && (
-                <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 flex items-center gap-1.5">
-                  <input
-                    value={dmChannelInputValue}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setDmChannelInputValue(nextValue.startsWith('#') ? nextValue : `#${nextValue.replace(/^#+/, '')}`);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        handleDmAddChannel();
-                      }
-                    }}
-                    placeholder="# channel-name"
-                    className="flex-1 h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
-                  />
-                  <button type="button" onClick={handleDmAddChannel} className="h-8 px-2 rounded-md bg-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-300">Add</button>
-                </div>
-              )}
-              <div className="space-y-1 text-[14px]">
-                {dmThreads.map((thread) => {
-                  const active = activeDmThread?.id === thread.id;
-                  return (
-                    <button
-                      key={thread.id}
-                      type="button"
-                      onClick={() => setDmActiveThreadId(thread.id)}
-                      className={`w-full h-8 px-2 rounded-lg flex items-center justify-between text-left text-[14px] ${active ? 'bg-slate-100 text-slate-800' : 'text-slate-700 hover:bg-slate-50'}`}
-                    >
-                      <span className="truncate"># {thread.title.replace(/\s+/g, '-').toLowerCase()}</span>
-                      {thread.unread > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> : <span />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
-                <span>AI Conversations</span>
-                <button type="button" onClick={handleDmAddAiConversation} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
-              </div>
-              <div className="space-y-1 text-[14px]">
-                {aiConversations.map((item, index) => {
-                  const active = activeAiAgent === item && dmAiChatOpen;
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => {
-                        setDmAiChatOpen(true);
-                        setActiveAiAgent(item);
-                        showToast(`${item} opened`);
-                      }}
-                      className={`w-full h-8 px-2 rounded-lg text-[14px] flex items-center justify-between text-left ${active ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
-                    >
-                      <span className="truncate">{item}</span>
-                      {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-100 p-3 flex items-center justify-between bg-[#fbfafc]">
-            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-sm font-semibold flex items-center justify-center">{currentUserShort}</div>
-            <div className="flex items-center gap-2 text-slate-400">
-              <button
-                type="button"
-                onClick={() => setIsDarkMode((prev) => !prev)}
-                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${isDarkMode ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                title={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
-                aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
-              >
-                {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-              <Settings size={15} />
-            </div>
-          </div>
-        </aside>
-
-        <main className="flex-1 min-w-0 flex bg-white/80">
-          <section className="flex-1 min-w-0 flex flex-col bg-white border-r border-slate-200/80">
-            <div className="h-[74px] bg-white border-b border-gray-200 px-6 flex items-center justify-between gap-4">
-              <div>
-                {dmEditingThreadTitle ? (
-                  <input
-                    value={dmThreadTitleDraft}
-                    onChange={(event) => setDmThreadTitleDraft(event.target.value)}
-                    onBlur={saveDmThreadTitle}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        saveDmThreadTitle();
-                      }
-                      if (event.key === 'Escape') {
-                        setDmEditingThreadTitle(false);
-                        setDmThreadTitleDraft(activeDmThread?.title || '');
-                      }
-                    }}
-                    autoFocus
-                    className="h-9 px-2 -mx-2 rounded-md border border-violet-200 bg-white text-2xl font-semibold text-slate-900 outline-none focus:border-violet-300"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setDmEditingThreadTitle(true)}
-                    className="text-2xl font-semibold text-slate-900 hover:text-violet-700 text-left"
-                    title="Edit channel title"
-                  >
-                    {activeDmThread?.title || 'Beta Launch'}
-                  </button>
-                )}
-                <div className="text-sm text-slate-400 mt-1 flex items-center gap-1.5">
-                  <span>{activeDmThread?.members || 12} members</span>
-                  <span>|</span>
-                  {dmEditingThreadDescription ? (
-                    <input
-                      value={dmThreadDescriptionDraft}
-                      onChange={(event) => setDmThreadDescriptionDraft(event.target.value)}
-                      onBlur={saveDmThreadDescription}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          saveDmThreadDescription();
+                    if (!targetEl && ref.textSnippet) {
+                      const cleanSnippet = ref.textSnippet.slice(0, 30).toLowerCase();
+                      const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, null, false);
+                      let n;
+                      while ((n = walker.nextNode())) {
+                        if (n.textContent && n.textContent.toLowerCase().includes(cleanSnippet)) {
+                          targetEl = n.parentElement;
+                          break;
                         }
-                        if (event.key === 'Escape') {
-                          setDmEditingThreadDescription(false);
-                          setDmThreadDescriptionDraft(activeDmThread?.description || '');
-                        }
-                      }}
-                      autoFocus
-                      placeholder="Add a description"
-                      className="h-7 px-2 rounded-md border border-violet-200 bg-white text-sm text-slate-600 outline-none focus:border-violet-300"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setDmEditingThreadDescription(true)}
-                      className={`text-sm ${activeDmThread?.description ? 'text-slate-500 hover:text-slate-700' : 'text-slate-400 hover:text-violet-700'}`}
-                      title="Edit description"
-                    >
-                      {activeDmThread?.description || 'Add a description'}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 w-[520px] max-w-[60%] justify-end">
-                {!dmProjectPanelOpen && (
-                  <button
-                    type="button"
-                    onClick={() => setDmProjectPanelOpen(true)}
-                    className="h-9 px-3 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                  >
-                    Show project panel
-                  </button>
-                )}
-                <div className="relative flex-1">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={dmSearchQuery}
-                    onChange={(event) => setDmSearchQuery(event.target.value)}
-                    placeholder={`Search in ${activeDmThread?.title || 'Beta Launch'}`}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-300"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    toggleDocumentImmersiveMode();
-                  }}
-                  className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
-                  title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
-                  aria-label={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
-                >
-                  {isDocumentImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
-                </button>
-                <button type="button" onClick={() => showToast('Huddle starting flow coming next')} className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
-                <button type="button" onClick={() => showToast('Member list opened')} className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
-                <button type="button" onClick={() => showToast('Channel actions opened')} className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={16} /></button>
-              </div>
-            </div>
+                      }
+                    }
 
-            <div className="h-11 bg-white border-b border-gray-200 px-6 flex items-center gap-7 text-[14px]">
-              {[
-                { key: 'chat', label: 'Chat' },
-                { key: 'threads', label: 'Threads' },
-                { key: 'highlights', label: 'Highlights' },
-                { key: 'ai-summary', label: 'AI Summary' },
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setDmConversationTab(tab.key)}
-                  className={`h-full border-b-2 transition-colors ${dmConversationTab === tab.key ? 'border-violet-400 text-slate-900 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-white">
-              <div className="rounded-xl bg-[#f7f6f9] px-4 py-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Sparkles size={14} className="text-slate-400" />
-                  <div>
-                    <div className="text-xs text-slate-500">Pinned by Sarah</div>
-                    <div className="text-sm text-slate-700">Product Hunt launch is scheduled for May 15! Let&apos;s make it amazing ??</div>
-                  </div>
-                </div>
-                <button type="button" onClick={() => setDmConversationTab('highlights')} className="h-8 px-1 text-xs font-medium text-violet-600 hover:text-violet-700">View details</button>
-              </div>
-            </div>
-
-            <div ref={dmMessagesViewportRef} className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-[#fcfbfd]">
-              {dmMemberView === 'new-member' && effectiveDmJoinedAt && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  New-member mode: viewing history since {new Date(effectiveDmJoinedAt).toLocaleString()}.
-                </div>
-              )}
-
-              {dmConversationTab === 'chat' && (
-                <>
-                  <div className="w-fit mx-auto rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-600">Today</div>
-                  {visibleDmMessages.length === 0 && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center">
-                      <div className="text-sm font-semibold text-slate-700">No messages yet in this channel</div>
-                      <div className="text-xs text-slate-500 mt-1">Start the conversation or attach a file to create searchable context.</div>
-                      <button
-                        type="button"
-                        onClick={handleDmStartNewMessage}
-                        className="mt-3 h-8 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
-                      >
-                        Send first message
-                      </button>
-                    </div>
-                  )}
-                  {visibleDmMessages.map((message, index) => {
-                    const isAssistant = message.role === 'assistant';
-                    const isOutgoing = message.role === 'you';
-                    const initials = message.author.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase();
-                    const bubbleColor = message.role === 'you'
-                      ? 'bg-white border-slate-200 border-l-[3px] border-l-violet-300'
-                      : isAssistant
-                        ? 'bg-[#f7f6fb] border-slate-200'
-                        : 'bg-[#f8f8f8] border-slate-200';
-                    const replyCount = activeDmThreadReplyMap.get(message.id) || 0;
-
-                    return (
-                      <article key={message.id} className={`flex items-start gap-3 ${isOutgoing ? 'justify-end' : ''}`}>
-                        {!isOutgoing && (
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${isAssistant ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>
-                            {isAssistant ? 'Orb' : initials}
-                          </div>
-                        )}
-                        <div className={`min-w-0 max-w-[76%] ${isOutgoing ? 'items-end text-right' : ''}`}>
-                          <div className={`flex items-center gap-2 text-sm ${isOutgoing ? 'justify-end' : ''}`}>
-                            <span className="font-semibold text-slate-900">{message.author}</span>
-                            {isAssistant ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 font-semibold">APP</span> : null}
-                            <span className="text-xs text-slate-400">{formatDmRelative(message.createdAt)}</span>
-                          </div>
-                          <div className={`mt-1 inline-block rounded-2xl border px-3 py-2.5 text-[15px] text-slate-700 ${bubbleColor}`}>
-                            {message.text}
-
-                            {Array.isArray(message.files) && message.files.length > 0 && (
-                              <div className="mt-3 rounded-xl border border-violet-200 bg-[linear-gradient(135deg,rgba(245,243,255,1)_0%,rgba(255,255,255,1)_55%,rgba(249,245,255,1)_100%)] px-3.5 py-2.5 max-w-[290px] flex items-center justify-between shadow-[0_10px_24px_-20px_rgba(124,58,237,0.55)]">
-                                <div className="flex items-center gap-2">
-                                  <span className="h-8 w-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
-                                    <FileText size={15} className="text-violet-700" />
-                                  </span>
-                                  <div>
-                                    <div className="text-sm font-semibold text-slate-800">{message.files[0].name}</div>
-                                    <div className="text-[11px] text-violet-700/70">Updated recently</div>
-                                  </div>
-                                </div>
-                                <button type="button" onClick={() => showToast(`Opened ${message.files[0].name}`)} className="text-xs text-violet-700 font-semibold hover:text-violet-800">Open</button>
-                              </div>
-                            )}
-
-                            {isAssistant && (
-                              <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-slate-700">
-                                <div className="font-semibold mb-1">Summary</div>
-                                <ul className="list-disc pl-5 space-y-0.5 text-sm text-slate-700">
-                                  <li>Landing page v2 is ready for review.</li>
-                                  <li>Team feedback is in the document.</li>
-                                  <li>Next step: Final approval from design team.</li>
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                          <div className={`mt-1.5 flex items-center gap-2 text-xs text-slate-400 ${isOutgoing ? 'justify-end' : ''}`}>
-                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">?? {index === 0 ? 3 : 2}</button>
-                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">?? {index === 0 ? 2 : 0}</button>
-                            <button type="button" onClick={() => showToast('Reaction picker coming next')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">?</button>
-                            <button
-                              type="button"
-                              onClick={() => openDmMessageThread(message.id)}
-                              className="px-1 py-0.5 text-slate-500 hover:text-slate-700"
-                            >
-                              {replyCount > 0 ? `${replyCount} replies` : 'Reply in thread'}
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                  <div ref={chatEndRef} />
-                </>
-              )}
-
-              {dmConversationTab === 'mentions' && (
-                <div className="space-y-3">
-                  {dmMentionsItems.length === 0 && (
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center">
-                      <div className="text-sm font-semibold text-slate-700">No mentions yet</div>
-                      <div className="mt-1 text-xs text-slate-500">When teammates mention you in this workspace, they will appear here with recent context.</div>
-                    </div>
-                  )}
-                  {dmMentionsItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setDmConversationTab('chat')}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left hover:border-violet-300"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-slate-800">{item.author}</div>
-                        <div className="text-xs text-slate-400">{formatDmRelative(item.createdAt)}</div>
-                      </div>
-                      <div className="mt-1 text-sm text-slate-600 line-clamp-2">{item.text}</div>
-                      <div className="mt-2 text-[11px] font-medium text-violet-600">Open in channel</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {dmConversationTab === 'saved' && (
-                <div className="space-y-3">
-                  {dmSavedItems.length === 0 && (
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center">
-                      <div className="text-sm font-semibold text-slate-700">No saved items yet</div>
-                      <div className="mt-1 text-xs text-slate-500">Pin files or notes from this channel to build a quick handoff list for the team.</div>
-                    </div>
-                  )}
-                  {dmSavedItems.map((fileItem) => (
-                    <div key={fileItem.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                      <div className="text-[10px] uppercase tracking-[0.12em] text-slate-400">Saved file</div>
-                      <div className="mt-1 text-sm font-semibold text-slate-800">{fileItem.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">Updated {formatDmRelative(fileItem.updatedAt)}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {dmConversationTab === 'threads' && (
-                <div className="space-y-2">
-                  {dmThreadSummaries.length === 0 && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No threaded conversations yet.</div>
-                  )}
-                  {dmThreadSummaries.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => openDmMessageThread(item.id)}
-                      className="w-full text-left rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-violet-300"
-                    >
-                      <div className="text-sm font-semibold text-slate-800">{item.author}</div>
-                      <div className="text-sm text-slate-600 mt-0.5 line-clamp-2">{item.text}</div>
-                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies 嚙瘟 Open thread</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {dmConversationTab === 'highlights' && (
-                <div className="space-y-2">
-                  {activeThreadDecisions.length === 0 && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No highlights yet. Decisions and notable updates will appear here.</div>
-                  )}
-                  {activeThreadDecisions.map((decision) => (
-                    <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                      <div className="text-sm font-semibold text-amber-900">Decision</div>
-                      <div className="text-sm text-amber-800 mt-0.5">{decision.summary}</div>
-                      <div className="text-xs text-amber-700 mt-1">{decision.by} 嚙瘟 {formatDmRelative(decision.createdAt)}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {dmConversationTab === 'ai-summary' && (
-                <div className="space-y-2">
-                  {visibleDmSearchResults.length === 0 && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No searchable results yet for this scope.</div>
-                  )}
-                  {visibleDmSearchResults.slice(0, 30).map((entry) => (
-                    <div key={entry.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-wide text-slate-400">{entry.type || 'record'}</div>
-                      <div className="text-sm font-semibold text-slate-700">{entry.threadTitle || activeDmThread?.title}</div>
-                      <div className="text-sm text-slate-600 mt-0.5">{entry.text || entry.fileName || entry.decision || 'Archived record'}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {dmAiChatOpen && (
-              <div className="mx-6 mb-3 rounded-2xl border border-violet-200 bg-white shadow-[0_14px_36px_-24px_rgba(109,40,217,0.45)] overflow-hidden">
-                <div className="h-10 px-3 border-b border-violet-100 bg-violet-50/60 flex items-center justify-between relative">
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
-                      <Sparkles size={12} className="text-violet-500" />
-                      <span>{activeAiAgent}</span>
-                    </div>
-
-                    {/* Universal Model Selector Pill */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setComposeModelPickerOpen(!composeModelPickerOpen)}
-                        className="px-2 py-0.5 rounded-full bg-violet-100 hover:bg-violet-200 text-violet-800 text-[10.5px] font-semibold flex items-center gap-1 border border-violet-300 shadow-sm transition-all"
-                        title="Select Local Ollama, LM Studio, or Cloud AI Engine"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>{composeSelectedModel?.name || "Model"}</span>
-                        <ChevronDown size={10} className="text-violet-600" />
-                      </button>
-
-                      {composeModelPickerOpen && (
-                        <div className="absolute top-7 left-0 w-64 bg-zinc-900 text-zinc-100 border border-white/20 rounded-xl shadow-2xl p-2 z-50 backdrop-blur-xl">
-                          <div className="flex items-center justify-between px-2 py-1 border-b border-white/10 mb-1">
-                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">AI Model Engine</span>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); scanComposeLocalModels(); }}
-                              disabled={composeIsScanning}
-                              className="text-[9.5px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-0.5"
-                            >
-                              <RotateCcw size={9} className={composeIsScanning ? 'animate-spin' : ''} />
-                              <span>{composeIsScanning ? 'Scanning...' : 'Rescan'}</span>
-                            </button>
-                          </div>
-
-                          {/* Local Detected Models */}
-                          {composeDetectedModels.length > 0 && (
-                            <div className="mb-2">
-                              <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest px-2 block mb-1">⚡ Local Daemons</span>
-                              {composeDetectedModels.map((m, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
-                                  className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel?.id === m.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
-                                >
-                                  <span className="truncate">{m.name}</span>
-                                  <span className="text-[9px] text-emerald-400/80 font-mono">{m.provider}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Cloud Models */}
-                          <div>
-                            <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest px-2 block mb-1">☁️ Cloud LLMs</span>
-                            {[
-                              { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google Cloud', isLocal: false },
-                              { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isLocal: false },
-                              { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', isLocal: false }
-                            ].map((cM, cIdx) => (
-                              <button
-                                key={cIdx}
-                                type="button"
-                                onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Switched to ${cM.name}`); }}
-                                className={`w-full text-left px-2 py-1 rounded-lg text-xs flex items-center justify-between hover:bg-white/10 transition-colors ${composeSelectedModel?.id === cM.id ? 'bg-violet-600/40 text-violet-200 font-bold' : 'text-slate-300'}`}
-                              >
-                                <span>{cM.name}</span>
-                                <span className="text-[9px] text-cyan-400/80 font-mono">{cM.provider}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={isVoiceCallActive ? stopVoiceCall : startVoiceCall}
-                      className={`p-1 rounded transition-colors ${isVoiceCallActive ? 'text-red-500 hover:bg-red-50' : 'text-violet-500 hover:bg-violet-100/50'}`}
-                      title={isVoiceCallActive ? 'End Call' : 'Start Voice Call'}
-                    >
-                      <Phone size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDmAiChatOpen(false)}
-                      className="text-slate-400 hover:text-slate-600 p-1 rounded"
-                      title="Close AI chat"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                {isVoiceCallActive ? (
-                  <div className="h-56 bg-slate-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-                    <div className="absolute -inset-10 opacity-30 pointer-events-none">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-violet-600 blur-3xl animate-pulse"></div>
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full bg-fuchsia-600 blur-2xl"></div>
-                    </div>
-                    
-                    <div className="z-10 text-center space-y-4 w-full">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-[10px] uppercase tracking-widest text-violet-300 font-bold">Voice Call</span>
-                        <span className="text-xs font-semibold text-white truncate max-w-[200px]">{activeAiAgent}</span>
-                        <span className="text-[9px] text-slate-400 capitalize">{voiceCallState}...</span>
-                      </div>
-
-                      <div className="flex items-center justify-center gap-1 h-10">
-                        {[...Array(9)].map((_, i) => {
-                          let animStyle = {};
-                          if (voiceCallState === 'listening') {
-                            animStyle = { animation: `barPulse 1.2s ease-in-out infinite alternate`, animationDelay: `${i * 0.1}s` };
-                          } else if (voiceCallState === 'speaking') {
-                            animStyle = { animation: `barPulseActive 0.8s ease-in-out infinite alternate`, animationDelay: `${i * 0.08}s` };
-                          } else if (voiceCallState === 'connecting') {
-                            animStyle = { animation: `barPulseSlow 2s ease-in-out infinite alternate`, animationDelay: `${i * 0.2}s` };
-                          } else {
-                            animStyle = { height: '4px' };
-                          }
-                          return (
-                            <div
-                              key={i}
-                              className="w-1 bg-gradient-to-t from-violet-500 to-fuchsia-400 rounded-full transition-all duration-300"
-                              style={animStyle}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      <div className="text-[10px] text-slate-300 italic px-4 truncate w-full">
-                        {voiceCallState === 'speaking' ? voiceCallText : (voiceCallState === 'listening' ? 'Listening... speak now' : 'Connecting...')}
-                      </div>
-
-                      <div className="flex items-center justify-center gap-3 pt-1">
-                        <button
-                          type="button"
-                          onClick={toggleVoiceCallMute}
-                          className={`p-1.5 rounded-full transition-all ${isVoiceCallMuted ? 'bg-red-500/80 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                          title={isVoiceCallMuted ? 'Unmute microphone' : 'Mute microphone'}
-                        >
-                          {isVoiceCallMuted ? <MicOff size={13} /> : <Mic size={13} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={stopVoiceCall}
-                          className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all shadow-md"
-                          title="End call"
-                        >
-                          <PhoneOff size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="max-h-56 overflow-y-auto thin-scrollbar px-3 py-3 space-y-2 bg-white min-h-[120px]">
-                      {(dmAgentHistories[activeAiAgent] || []).map((item) => (
-                        <div key={item.id} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${item.role === 'user' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                            {item.text}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="border-t border-slate-100 p-2.5 flex items-center gap-2 bg-white">
-                      <input
-                        value={dmAiChatInput}
-                        onChange={(event) => setDmAiChatInput(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault();
-                            sendDmAiChatMessage();
-                          }
-                        }}
-                        placeholder={`Ask ${activeAiAgent.split(' ')[0]}...`}
-                        className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-violet-300"
-                      />
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => toggleVoiceRecording('agent-chat')}
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-all ${isVoiceActive && voiceTarget === 'agent-chat' ? 'bg-red-500 border-red-600 text-white animate-pulse' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                        title={isVoiceActive && voiceTarget === 'agent-chat' ? 'Stop voice dictation' : 'Start voice dictation'}
-                      >
-                        <Mic size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => sendDmAiChatMessage()}
-                        className="h-9 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="p-5 border-t border-gray-200 bg-white">
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                <input
-                  ref={dmAnyAttachmentInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleDmAttachmentInputChange}
-                />
-                <input
-                  ref={dmImageAttachmentInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleDmAttachmentInputChange}
-                />
-                <input
-                  ref={dmAudioAttachmentInputRef}
-                  type="file"
-                  multiple
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={handleDmAttachmentInputChange}
-                />
-
-                <textarea
-                  value={dmComposerValue}
-                  onChange={(event) => setDmComposerValue(event.target.value)}
-                  placeholder={`Message #${(activeDmThread?.title || 'beta-launch').replace(/\s+/g, '-').toLowerCase()}`}
-                  rows={String(dmComposerValue || '').trim() ? 2 : 1}
-                  className="w-full min-h-[34px] resize-none bg-transparent outline-none border-none text-sm text-slate-700 placeholder:text-slate-400 leading-6"
-                />
-
-                {dmPendingAttachments.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {dmPendingAttachments.map((attachment) => (
-                      <button
-                        key={attachment.id}
-                        type="button"
-                        onClick={() => setDmPendingAttachments((prev) => prev.filter((item) => item.id !== attachment.id))}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"
-                        title="Click to remove"
-                      >
-                        <Paperclip size={11} />
-                        <span className="truncate max-w-[140px]">{attachment.name}</span>
-                        <X size={11} className="text-slate-400" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {dmComposerQuickMenuOpen && (
-                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-xs">
-                    <button type="button" onClick={() => dmAnyAttachmentInputRef.current?.click()} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Upload file</button>
-                    <button type="button" onClick={() => dmImageAttachmentInputRef.current?.click()} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Upload image</button>
-                    <button type="button" onClick={() => dmAudioAttachmentInputRef.current?.click()} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Upload audio</button>
-                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}https://`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Add link</button>
-                  </div>
-                )}
-
-                {dmFormatMenuOpen && (
-                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-xs">
-                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}**bold**`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Bold</button>
-                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}_italic_`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Italic</button>
-                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? '\n' : ''}> quote`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Quote</button>
-                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? '\n' : ''}- item`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Bullets</button>
-                  </div>
-                )}
-
-                {dmEmojiPickerOpen && (
-                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-lg">
-                    {['??', '??', '?', '??', '??', '??', '??', '??', '??', '??', '??', '??'].map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${emoji}`)}
-                        className="w-8 h-8 rounded-md border border-slate-200 bg-white hover:bg-violet-50"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {dmScheduleMenuOpen && (
-                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-xs">
-                    {['in 10 minutes', 'in 1 hour', 'tomorrow 9:00 AM', 'next Monday 9:00 AM'].map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => {
-                          setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}[scheduled ${slot}]`);
-                          setDmScheduleMenuOpen(false);
-                          showToast(`Scheduled for ${slot}`);
-                        }}
-                        className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300"
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-slate-400">
-                    <button type="button" onClick={() => handleDmComposerAction('plus')} className="hover:text-slate-600"><Plus size={16} /></button>
-                    <button type="button" onClick={() => handleDmComposerAction('format')} className="hover:text-slate-600"><AlignLeft size={15} /></button>
-                    <button type="button" onClick={() => handleDmComposerAction('emoji')} className="hover:text-slate-600"><Smile size={15} /></button>
-                    <button type="button" onClick={() => handleDmComposerAction('attach')} className="hover:text-slate-600"><Paperclip size={15} /></button>
-                    <button type="button" onClick={() => handleDmComposerAction('schedule')} className="hover:text-slate-600"><Clock size={15} /></button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={sendDmMessage}
-                    disabled={!String(dmComposerValue || '').trim()}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${String(dmComposerValue || '').trim() ? 'bg-violet-100 text-violet-600 hover:bg-violet-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
-                  >
-                    <Send size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {activeDmParentMessage && (
-            <aside className="w-[320px] shrink-0 border-r border-gray-200/50 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col">
-              <div className="h-12 px-3 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-800">Thread</div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDmActiveParentMessageId(null);
-                    setDmThreadComposerValue('');
-                  }}
-                  className="text-slate-400 hover:text-slate-700"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-3">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <div className="text-sm font-semibold text-slate-800">{activeDmParentMessage.author}</div>
-                  <div className="text-sm text-slate-700 mt-0.5">{activeDmParentMessage.text}</div>
-                </div>
-
-                {activeDmThreadPanelReplies.length === 0 && (
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
-                    No replies in this thread yet. Be the first to reply.
-                  </div>
-                )}
-
-                {activeDmThreadPanelReplies.map((reply) => (
-                  <div key={reply.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <div className="text-sm font-semibold text-slate-800">{reply.author}</div>
-                    <div className="text-sm text-slate-700 mt-0.5">{reply.text}</div>
-                    <div className="text-xs text-slate-400 mt-1">{formatDmRelative(reply.createdAt)}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-200 p-3">
-                <textarea
-                  value={dmThreadComposerValue}
-                  onChange={(event) => setDmThreadComposerValue(event.target.value)}
-                  rows={2}
-                  placeholder="Reply in thread..."
-                  className="w-full resize-none rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-violet-300"
-                />
-                <div className="mt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={sendDmThreadReply}
-                    className="h-8 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
-                  >
-                    Reply
-                  </button>
-                </div>
-              </div>
-            </aside>
-          )}
-
-          {dmProjectPanelOpen && (
-          <aside className="w-[360px] shrink-0 bg-[#fbfafc]/75 dark:bg-zinc-900/75 backdrop-blur-md p-4 overflow-y-auto thin-scrollbar border-l border-slate-200/50">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-[28px] font-semibold tracking-tight text-slate-900">{activeDmThread?.title || 'Beta Launch'}</div>
-                  <div className="mt-1 text-xs text-slate-400">Private project</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDmProjectPanelOpen(false);
-                    showToast('Project panel hidden');
-                  }}
-                  className="text-slate-400 hover:text-slate-600"
-                  title="Hide project panel"
-                  aria-label="Hide project panel"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-5 text-[11px] text-slate-500">
-                {['Overview', 'Tasks', 'Files', 'Meetings', 'Docs', 'People'].map((tab, index) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    className={`pb-1 border-b-2 transition-colors ${index === 0 ? 'border-slate-900 text-slate-900 font-medium' : 'border-transparent hover:text-slate-700'}`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                <div className="text-sm font-medium text-slate-900">About this project</div>
-                <p className="mt-1 text-sm leading-6 text-slate-500">Coordinating the beta launch with a calm, structured workspace.</p>
-                <p className="mt-1 text-xs leading-5 text-slate-400">Workspace identity and team history are retained for onboarding continuity.</p>
-                <button type="button" onClick={() => showToast('Full project brief opened')} className="mt-3 text-xs font-medium text-slate-900">Show more</button>
-              </div>
-            </div>
-
-            {!panelHasContent && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 mb-3">
-                <div className="text-sm font-medium text-slate-800">Nothing here yet</div>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  This channel has no project artifacts yet. Add a task, upload a file, or log a decision to populate this panel.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setDmComposerValue('Shared first project update and action items.')}
-                  className="mt-3 h-8 px-3 rounded-lg border border-slate-300 bg-white text-xs font-medium text-slate-700 hover:border-slate-400"
-                >
-                  Draft first update
-                </button>
-              </div>
-            )}
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-900">Tasks</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('tasks')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
-              </div>
-              <div className="mt-4 space-y-3 text-sm text-slate-700">
-                {activeThreadTasks.length === 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                    No tasks yet for this channel.
-                  </div>
-                )}
-                {activeThreadTasks.map((task) => (
-                  <div key={task.name} className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="block truncate text-slate-700">{task.name}</span>
-                      <span className="text-[10px] text-slate-400">{task.tag}</span>
-                    </div>
-                    <span className="text-xs text-slate-400">{task.when}</span>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={() => showToast('Task creation flow coming next')} className="mt-3 text-xs font-medium text-slate-900">+ Add task</button>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-900">Files</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('room', { meetingStageTab: 'files' })} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
-              </div>
-              <div className="mt-4 space-y-2.5">
-                {activeThreadFiles.length === 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No files shared in this channel yet.</div>
-                )}
-                {activeThreadFiles.map((fileItem) => (
-                  <div key={fileItem.id} className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <div className="text-sm text-slate-700 truncate">{fileItem.name}</div>
-                        <div className="text-xs text-slate-400">Updated {formatDmRelative(fileItem.updatedAt)}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-900">Upcoming Meetings</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('calendar')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
-              </div>
-              <div className="mt-4 rounded-2xl border border-slate-200 p-3 flex items-center justify-between bg-slate-50/50">
-                {activeThreadMeetings.length > 0 ? (
-                  <div>
-                    <div className="text-sm text-slate-700">{activeThreadMeetings[0].name}</div>
-                    <div className="text-xs text-slate-400">{activeThreadMeetings[0].when}</div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-500">No upcoming meetings for this channel.</div>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-900">People</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('people')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
-              </div>
-              <div className="mt-4 flex items-center gap-2 flex-wrap">
-                {activeThreadPeople.length === 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                    No people activity yet in this channel.
-                  </div>
-                )}
-                {activeThreadPeople.map((person) => (
-                  <div key={person.name} className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center" title={person.name}>{person.initials}</div>
-                ))}
-              </div>
-              {activeThreadDecisions.length > 0 && (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1">Recent Decision</div>
-                  <div className="text-xs leading-5 text-slate-600">{activeThreadDecisions[0].summary}</div>
-                </div>
-              )}
-              {activeThreadDecisions.length === 0 && (
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-                  No decisions logged yet for this channel.
-                </div>
-              )}
-            </div>
-          </aside>
-          )}
+                    if (targetEl) {
+                      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      targetEl.classList.add('regaarder-line-outline-target');
+                      setTimeout(() => {
+                        targetEl.classList.remove('regaarder-line-outline-target');
+                      }, 2600);
+                    }
+                  }, 250);
+                }
+              }
+            }}
+            onToggleFullscreen={toggleDocumentImmersiveMode}
+            onCallAi={callGemini}
+            detectedModelsFromApp={composeDetectedModels}
+            onOpenWorkspaceSwitcher={(rect) => {
+              setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen(true);
+            }}
+          />
         </main>
-
+        {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}
-
-        {sharedRightPanels}
-
       </div>
     );
   }
@@ -49412,6 +48088,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {/* Universal Floating Meeting PIP HUD across Sheets and Decks */}
         {renderFloatingMeetingPipHud()}
+        {renderNotificationsDropdownContent()}
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -49522,8 +48199,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center mb-3">
                     <MessageCircle size={18} />
                   </div>
-                  <div className="text-sm font-semibold text-gray-900 mb-1">DMs</div>
-                  <p className="text-xs text-gray-600">Dedicated team chat workspace with searchable conversation intelligence.</p>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Relay</div>
+                  <p className="text-xs text-gray-600">Dedicated team messaging and AI coordination with searchable conversation intelligence.</p>
                 </button>
               </div>
             </div>
@@ -49542,464 +48219,111 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           {!isSheetsPresentationMode && !isDeckPresentationMode && (
-            <div data-sheets-toolbar="true" className={`h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/70 dark:bg-[#111111] backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 ${
+            <div data-sheets-toolbar="true" onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-11 flex items-center justify-between px-3 border-b border-slate-200/70 dark:border-zinc-800/80 bg-white/85 dark:bg-[#111111]/90 backdrop-blur-xl shrink-0 select-none group/header relative z-[350] transition-all duration-200 gap-2 ${
               isSheetZenMode ? 'fixed top-0 left-0 right-0 z-[9000] opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto shadow-md border-b' : ''
             }`}>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isSheetsMode) {
-                    setSheetsSidebarOpen((prev) => !prev);
-                  } else if (productMode === 'deck') {
-                    setDeckSlidesPanelOpen((prev) => !prev);
-                  } else {
-                    setLeftSidebarOpen((prev) => !prev);
-                  }
-                }}
-                className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
-                title={
-                  isSheetsMode 
-                    ? (sheetsSidebarOpen ? "Hide sheets sidebar" : "Show sheets sidebar")
-                    : productMode === 'deck'
-                      ? (deckSlidesPanelOpen ? "Hide slide deck" : "Show slide deck")
-                      : (leftSidebarOpen ? "Hide navigation sidebar" : "Show navigation sidebar")
-                }
-              >
-                {isSheetsMode
-                  ? (sheetsSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                  : productMode === 'deck'
-                    ? (deckSlidesPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                    : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
-                }
-              </button>
-
-              {/* App Switcher Button */}
-              <div className="relative z-[360] flex items-center">
-                <button
-                  type="button"
-                  data-workspace-switcher="true"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setWorkspaceSwitcherAnchorRect(rect);
-                    setWorkspaceSwitcherOpen((prev) => !prev);
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
-                    workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
-                  }`}
-                  title="Switch Workspace App"
-                >
-                  <LayoutGrid size={15} />
-                </button>
-              </div>
-
-              {isSheetsMode ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    {isEditingUnsavedDraftName ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        value={sheetsTitle}
-                        onChange={(event) => setSheetsTitle(event.target.value)}
-                        onBlur={() => setIsEditingUnsavedDraftName(false)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === 'Escape') {
-                            e.preventDefault();
-                            setIsEditingUnsavedDraftName(false);
-                          }
-                        }}
-                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-slate-400 dark:focus:border-zinc-500 focus:ring-1 focus:ring-slate-300 dark:focus:ring-zinc-600"
-                        placeholder={t('sheets.untitledSheet') || "Untitled Sheet"}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingUnsavedDraftName(true)}
-                        className="text-sm font-semibold text-slate-800 dark:text-zinc-100 hover:text-slate-600 dark:hover:text-zinc-300 px-1 py-0.5 rounded text-left truncate transition-colors"
-                        title="Double-click or tap to rename"
-                      >
-                        {(sheetsTitle === 'Untitled Sheet' || !sheetsTitle?.trim()) ? (t('sheets.untitledSheet') || 'Untitled Sheet') : sheetsTitle}
-                      </button>
-                    )}
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
-                      <Cloud size={14} /> {savedStatusLabel}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-3 hidden sm:flex">
-                    <Cloud size={14} /> {savedStatusLabel}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={undoDocumentChange}
-                  disabled={!canUndo}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    canUndo
-                      ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                      : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                  }`}
-                  title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
-                >
-                  <Undo2 size={15} strokeWidth={1.5} />
-                </button>
-                <button
-                  onClick={redoDocumentChange}
-                  disabled={!canRedo}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    canRedo
-                      ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                      : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                  }`}
-                  title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
-                >
-                  <Redo2 size={15} strokeWidth={1.5} />
-                </button>
-                <button
-                  onClick={openReplayPanel}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                  title={t('toolbar.editReplay') || "Open edit replay"}
-                >
-                  <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
-                </button>
-{/* Preserved save action: auto-saved continuously & Ctrl+S */}
-
-{/* Orb intelligence accessible via global ⌘K shortcut */}
-
+              {/* Left Section: Sidebar Toggle, App Switcher, Dedicated Home Tab */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => {
-                    closeTransientMenus();
-                    setIsMemorySearchOpen(true);
-                  }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
-                  title="Search Workspace (⌘K / Ctrl+K)"
-                >
-                  <Search size={15} strokeWidth={1.5} />
-                </button>
-              </div>
-
-              {/* Export Dropdown Button */}
-              <div className="relative export-menu-container">
-                <button
-                  onClick={() => {
-                    closeTransientMenus();
                     if (isSheetsMode) {
-                      setSheetsExportMenuOpen(!sheetsExportMenuOpen);
+                      setSheetsSidebarOpen((prev) => !prev);
+                    } else if (productMode === 'deck') {
+                      setDeckSlidesPanelOpen((prev) => !prev);
                     } else {
-                      setDeckExportMenuOpen(!deckExportMenuOpen);
+                      setLeftSidebarOpen((prev) => !prev);
                     }
                   }}
-                  className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
-                  title="Export"
+                  className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
+                  title={
+                    isSheetsMode 
+                      ? (sheetsSidebarOpen ? "Hide sheets sidebar" : "Show sheets sidebar")
+                      : productMode === 'deck'
+                        ? (deckSlidesPanelOpen ? "Hide slide deck" : "Show slide deck")
+                        : (leftSidebarOpen ? "Hide navigation sidebar" : "Show navigation sidebar")
+                  }
                 >
-                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
-                  <span>{t('common.export') || 'Export'}</span>
-                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
+                  {isSheetsMode
+                    ? (sheetsSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />)
+                    : productMode === 'deck'
+                      ? (deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />)
+                      : (leftSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />)
+                  }
                 </button>
-                {isSheetsMode && sheetsExportMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                      onClick={() => setSheetsExportMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 py-1">
-                        Export Spreadsheet
-                      </span>
-                      {[
-                        { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)', action: exportActiveSheetToExcel },
-                        { fmt: 'CSV', label: 'CSV Document (.csv)', action: exportActiveSheetToCSV },
-                        { fmt: 'PDF', label: 'PDF Document (.pdf)', action: exportActiveSheetToPDF },
-                        { fmt: 'JSON', label: 'JSON Data (.json)', action: exportActiveSheetToJSON },
-                      ].map(item => (
-                        <button
-                          key={item.fmt}
-                          onClick={() => {
-                            item.action();
-                            setSheetsExportMenuOpen(false);
-                          }}
-                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                      <div className="h-px bg-slate-200/80 dark:bg-zinc-800 my-1" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSheetsExportMenuOpen(false);
-                          setCreateTemplateSource('current');
-                          setCreateTemplateForm((prev) => ({
-                            ...prev,
-                            name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
-                          }));
-                          setIsCreateTemplateModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-2 text-xs py-2 px-3 rounded-xl text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold transition-colors text-left"
-                      >
-                        <Plus size={14} /> Save as Template...
-                      </button>
-                    </div>
-                  </>
-                )}
-                {!isSheetsMode && deckExportMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                      onClick={() => setDeckExportMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">
-                        Export Deck
-                      </span>
-                      {[
-                        { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
-                        { fmt: 'PDF', label: 'PDF Document (.pdf)' },
-                        { fmt: 'Images', label: 'Slide Images (.png)' }
-                      ].map(item => (
-                        <button
-                          key={item.fmt}
-                          onClick={async () => {
-                            showToast(`Exporting as ${item.fmt}...`);
-                            try {
-                              await exportDeck(item.fmt, deckSlidesData || [], deckTitle || 'Presentation');
-                              showToast(`Exported presentation as ${item.fmt}`);
-                            } catch (e) {
-                              console.error('Deck export error:', e);
-                              showToast(`Export failed: ${e.message}`);
-                            } finally {
-                              setDeckExportMenuOpen(false);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
 
-              {/* Share Button */}
-              <div className="relative font-sans" ref={shareMenuRef}>
+                {/* App Switcher Button */}
+                <div className="relative z-[360] flex items-center">
+                  <button
+                    type="button"
+                    data-workspace-switcher="true"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setWorkspaceSwitcherAnchorRect(rect);
+                      setWorkspaceSwitcherOpen((prev) => !prev);
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
+                      workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+                    }`}
+                    title="Switch Workspace App"
+                  >
+                    <LayoutGrid size={15} />
+                  </button>
+                </div>
+
+                <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
+
+                {/* Dedicated Home Tab (pinned before all document tabs, like WPS/browsers) */}
                 <button
                   type="button"
                   onClick={() => {
-                    if (!shareModalOpen) {
-                      openShareModal(activeDocId || documents[0]?.id);
-                    } else {
-                      setShareModalOpen(false);
-                    }
+                    closeTransientMenus();
+                    setProductMode('landing');
                   }}
-                  data-share="true"
-                  className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
-                  style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
+                  className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    productMode === 'landing'
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                      : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+                  }`}
+                  title="Go to Home Dashboard"
                 >
-                  <Users size={13} strokeWidth={1.5} /> {t('common.share') || 'Share'}
+                  <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                  <span>Home</span>
                 </button>
-                  {shareModalOpen && (
-                    <ShareModal
-                      isOpen={shareModalOpen}
-                      onClose={() => setShareModalOpen(false)}
-                      shareTargetDocTitle={shareTargetDocTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (shareTargetDocTitle || (t('common.untitledDoc') || 'Untitled Document'))}
-                      shareDestination={shareDestination}
-                      setShareDestination={setShareDestination}
-                      shareAccess={shareAccess}
-                      setShareAccess={setShareAccess}
-                      shareFormat={shareFormat}
-                      setShareFormat={setShareFormat}
-                      shareLink={shareLink}
-                      handleShareModalConfirm={handleShareModalConfirm}
-                      zeroKnowledgeRedactions={zeroKnowledgeRedactions}
-                      removeProtection={removeProtection}
-                      newRedactionKeyword={newRedactionKeyword}
-                      setNewRedactionKeyword={setNewRedactionKeyword}
-                      protectKeywordInEditor={protectKeywordInEditor}
-                      setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
-                      sharePasswordProtected={sharePasswordProtected}
-                      setSharePasswordProtected={setSharePasswordProtected}
-                      sharePassword={sharePassword}
-                      setSharePassword={setSharePassword}
-                      sharePasswordConfirm={sharePasswordConfirm}
-                      setSharePasswordConfirm={setSharePasswordConfirm}
-                      showSharePassword={showSharePassword}
-                      setShowSharePassword={setShowSharePassword}
-                      isPasswordConfirmed={isPasswordConfirmed}
-                      setIsPasswordConfirmed={setIsPasswordConfirmed}
-                      shareExpiringAccess={shareExpiringAccess}
-                      setShareExpiringAccess={setShareExpiringAccess}
-                      shareExpirationValue={shareExpirationValue}
-                      setShareExpirationValue={setShareExpirationValue}
-                      shareExpirationUnit={shareExpirationUnit}
-                      setShareExpirationUnit={setShareExpirationUnit}
-                      shareExpirationDate={shareExpirationDate}
-                      setShareExpirationDate={setShareExpirationDate}
-                      showToast={showToast}
-                    />
-                  )}
-                </div>
+              </div>
 
-                  {/* Dark Mode Toggle Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsDarkMode((prev) => !prev)}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                    title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                    aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                  >
-                    {isDarkMode ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
-                  </button>
-
-                  {/* Local User Profile Avatar Button */}
-                  <div className="relative" ref={profileMenuRef}>
-                    <button
-                      type="button"
-                      onClick={() => setProfileMenuOpen(prev => !prev)}
-                      className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-tr from-violet-500 via-purple-500 to-cyan-400 hover:scale-105 transition-all shadow-xs focus:outline-none cursor-pointer flex items-center justify-center"
-                      title={currentUser ? `Profile: ${currentUser.name}` : 'Sign In'}
-                    >
-                      <div className="w-full h-full rounded-full bg-slate-900 dark:bg-zinc-950 flex items-center justify-center text-white text-[11px] font-bold">
-                        {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
-                    </button>
-
-
-                    {/* Profile Dropdown Menu */}
-                    {profileMenuOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-[490] bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
-                          onClick={() => setProfileMenuOpen(false)}
-                        />
-                        <div className="absolute right-0 top-9 z-[500] w-[240px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 font-sans animate-in fade-in zoom-in-95 duration-150">
-                          {currentUser ? (
-                            // Logged In State
-                            <div className="flex flex-col gap-3">
-                              <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                                <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-inner">
-                                  {currentUser.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser.name}</span>
-                                  <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser.email}</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
-                                <div className="flex justify-between">
-                                  <span>Sign-in Provider</span>
-                                  <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser.provider}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Status</span>
-                                  <span className="font-medium text-violet-600 dark:text-violet-400">Authenticated ✓</span>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  localStorage.removeItem('rc.token');
-                                  localStorage.removeItem('rc.user');
-                                  setCurrentUser(null);
-                                  setProfileMenuOpen(false);
-                                  showToast('Disconnected successfully');
-                                }}
-                                className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
-                              >
-                                Disconnect Account
-                              </button>
-                            </div>
-                          ) : (
-                            // Guest State (Apple Refined - No Sparkle Icon)
-                            <div className="flex flex-col items-center text-center py-1 px-1 gap-2.5">
-                              <div className="relative my-0.5 group cursor-default">
-                                <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs flex items-center justify-center font-semibold text-[15px] transition-transform duration-200 group-hover:scale-105">
-                                  G
-                                </div>
-                              </div>
-                              <div className="flex flex-col items-center">
-                                <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">{t('auth.guestMode') || 'Guest Mode'}</span>
-                                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
-                                  {t('auth.guestModeDesc') || 'Sign in to sync your work, collaborate, and access premium AI tools.'}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProfileMenuOpen(false);
-                                  setAuthModalOpen(true);
-                                }}
-                                className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
-                              >
-                                {t('auth.signIn') || 'Sign In'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="relative" ref={notificationsPanelRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplaySpeedMenuOpen(false);
-                        setNotificationsOpen((prev) => !prev);
-                      }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
-                      title="Notifications"
-                    >
-                      <RegaarderNotificationIcon size={16} strokeWidth={1.6} />
-                      {notifications.some(n => n.unread) && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
-                      )}
-                    </button>
-                    {notificationsOpen && renderNotificationsDropdownContent()}
-                  </div>
-
-                  {/* Settings Button */}
-                  <button
-                    type="button"
-                    onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                    title="Settings"
-                  >
-                    <Settings size={16} />
-                  </button>
-                </div>
-            </div>
-          )}
-
-          {/* Document Tab Strip - visible when not in presentation mode and not in Zen mode */}
-          {!isSheetsPresentationMode && !isDeckPresentationMode && !isSheetZenMode && (
-            <div data-sheets-toolbar="true" className="h-10 border-b border-slate-200/50 dark:border-[#333333] px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-[#111111] relative z-[140] min-w-0 shrink-0 select-none">
-              {orderedDocuments.map((doc, docIndex) => {
+              {/* Center Section: Document Tab Strip */}
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
+                {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
+                  const docIndex = windowedTabDocuments.startIndex + localIndex;
                 const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
                 const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
                 const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
                   ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
-                  : (!isDefaultTitle ? doc.title : defaultName);
+                  : (isSheetsMode && activeDocId === doc.id && sheetsTitle?.trim() && sheetsTitle !== 'Untitled Sheet'
+                      ? sheetsTitle
+                      : (!isDefaultTitle ? doc.title : defaultName));
                 const isActive = activeDocId === doc.id;
 
                 return (
                   <div
                     key={doc.id}
                     onClick={() => switchDocument(doc.id)}
-                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-[#1e1e1e] border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-[#1e1e1e]/60 hover:border-gray-200'}`}
+                    onDoubleClick={(event) => {
+                      event.stopPropagation();
+                      setRenamingDocId(doc.id);
+                      setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
+                    }}
+                    className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                      isActive 
+                        ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
+                        : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
+                    }`}
                   >
                     {renamingDocId === doc.id ? (
                       <input
@@ -50144,6 +48468,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 );
               })}
+              {windowedTabDocuments.hiddenCount > 0 && (
+                <div className="relative shrink-0 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setOverflowTabMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
+                    title={`${windowedTabDocuments.hiddenCount} more open documents`}
+                  >
+                    <span>+{windowedTabDocuments.hiddenCount} more</span>
+                  </button>
+                  {overflowTabMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[99990]"
+                        onClick={() => setOverflowTabMenuOpen(false)}
+                      />
+                      <div
+                        style={{ zIndex: 99999 }}
+                        className="absolute top-full left-0 mt-1.5 w-64 max-h-80 overflow-y-auto border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                      >
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                          <span>Open Documents ({orderedDocuments.length})</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOverflowTabMenuOpen(false);
+                              setIsMemorySearchOpen(true);
+                            }}
+                            className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                          >
+                            Search all
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {windowedTabDocuments.hiddenDocs.map((hDoc) => (
+                            <button
+                              key={hDoc.id}
+                              type="button"
+                              onClick={() => {
+                                switchDocument(hDoc.id);
+                                setOverflowTabMenuOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
+                            >
+                              <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={createItemForCurrentContext}
@@ -50153,6 +48530,396 @@ if (productMode === 'deck' || productMode === 'sheets') {
               >
                 <Plus size={14} strokeWidth={1.5} />
               </button>
+              </div>
+
+              {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
+              <div className="flex items-center gap-2">
+                {/* Peripheral Actions (Export, Share, ... More Menu) - Fades on work, reveals on hover */}
+                <div className={`flex items-center gap-2 transition-all duration-200 ${
+                  (isTopHeaderHovered || (isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                    ? 'opacity-100 pointer-events-auto' 
+                    : 'opacity-0 pointer-events-none'
+                }`}>
+                  {/* Export Dropdown Button */}
+              <div className="relative export-menu-container">
+                <button
+                  onClick={() => {
+                    closeTransientMenus();
+                    if (isSheetsMode) {
+                      setSheetsExportMenuOpen(!sheetsExportMenuOpen);
+                    } else {
+                      setDeckExportMenuOpen(!deckExportMenuOpen);
+                    }
+                  }}
+                  className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
+                  title="Export"
+                >
+                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
+                  <span>{t('common.export') || 'Export'}</span>
+                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
+                </button>
+                {isSheetsMode && sheetsExportMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                      onClick={() => setSheetsExportMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 py-1">
+                        Export Spreadsheet
+                      </span>
+                      {[
+                        { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)', action: exportActiveSheetToExcel },
+                        { fmt: 'CSV', label: 'CSV Document (.csv)', action: exportActiveSheetToCSV },
+                        { fmt: 'PDF', label: 'PDF Document (.pdf)', action: exportActiveSheetToPDF },
+                        { fmt: 'JSON', label: 'JSON Data (.json)', action: exportActiveSheetToJSON },
+                      ].map(item => (
+                        <button
+                          key={item.fmt}
+                          onClick={() => {
+                            item.action();
+                            setSheetsExportMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                      <div className="h-px bg-slate-200/80 dark:bg-zinc-800 my-1" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSheetsExportMenuOpen(false);
+                          setCreateTemplateSource('current');
+                          setCreateTemplateForm((prev) => ({
+                            ...prev,
+                            name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
+                          }));
+                          setIsCreateTemplateModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2 text-xs py-2 px-3 rounded-xl text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold transition-colors text-left"
+                      >
+                        <Plus size={14} /> Save as Template...
+                      </button>
+                    </div>
+                  </>
+                )}
+                {!isSheetsMode && deckExportMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                      onClick={() => setDeckExportMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">
+                        Export Deck
+                      </span>
+                      {[
+                        { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
+                        { fmt: 'PDF', label: 'PDF Document (.pdf)' },
+                        { fmt: 'Images', label: 'Slide Images (.png)' }
+                      ].map(item => (
+                        <button
+                          key={item.fmt}
+                          onClick={async () => {
+                            showToast(`Exporting as ${item.fmt}...`);
+                            try {
+                              await exportDeck(item.fmt, deckSlidesData || [], deckTitle || 'Presentation');
+                              showToast(`Exported presentation as ${item.fmt}`);
+                            } catch (e) {
+                              console.error('Deck export error:', e);
+                              showToast(`Export failed: ${e.message}`);
+                            } finally {
+                              setDeckExportMenuOpen(false);
+                            }
+                          }}
+                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Share Button */}
+              <div className="relative font-sans" ref={shareMenuRef}>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!shareModalOpen) {
+                      openShareModal(isSheetsMode ? 'sheet' : (activeDocId || documents[0]?.id));
+                    } else {
+                      setShareModalOpen(false);
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  data-share="true"
+                  className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
+                  style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
+                >
+                  <Users size={13} strokeWidth={1.5} /> {t('common.share') || 'Share'}
+                </button>
+                  {shareModalOpen && (
+                    <ShareModal
+                      isOpen={shareModalOpen}
+                      onClose={() => setShareModalOpen(false)}
+                      shareTargetDocTitle={shareTargetDocTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (shareTargetDocTitle || (t('common.untitledDoc') || 'Untitled Document'))}
+                      shareDestination={shareDestination}
+                      setShareDestination={setShareDestination}
+                      shareAccess={shareAccess}
+                      setShareAccess={setShareAccess}
+                      shareFormat={shareFormat}
+                      setShareFormat={setShareFormat}
+                      shareLink={shareLink}
+                      handleShareModalConfirm={handleShareModalConfirm}
+                      zeroKnowledgeRedactions={zeroKnowledgeRedactions}
+                      removeProtection={removeProtection}
+                      newRedactionKeyword={newRedactionKeyword}
+                      setNewRedactionKeyword={setNewRedactionKeyword}
+                      protectKeywordInEditor={protectKeywordInEditor}
+                      setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
+                      sharePasswordProtected={sharePasswordProtected}
+                      setSharePasswordProtected={setSharePasswordProtected}
+                      sharePassword={sharePassword}
+                      setSharePassword={setSharePassword}
+                      sharePasswordConfirm={sharePasswordConfirm}
+                      setSharePasswordConfirm={setSharePasswordConfirm}
+                      showSharePassword={showSharePassword}
+                      setShowSharePassword={setShowSharePassword}
+                      isPasswordConfirmed={isPasswordConfirmed}
+                      setIsPasswordConfirmed={setIsPasswordConfirmed}
+                      shareExpiringAccess={shareExpiringAccess}
+                      setShareExpiringAccess={setShareExpiringAccess}
+                      shareExpirationValue={shareExpirationValue}
+                      setShareExpirationValue={setShareExpirationValue}
+                      shareExpirationUnit={shareExpirationUnit}
+                      setShareExpirationUnit={setShareExpirationUnit}
+                      shareExpirationDate={shareExpirationDate}
+                      setShareExpirationDate={setShareExpirationDate}
+                      showToast={showToast}
+                    />
+                  )}
+                </div>
+
+                  <div className="relative" ref={headerMoreMenuRef}>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        setIsHeaderMoreMenuOpen(prev => !prev);
+                      }}
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-colors cursor-pointer relative ${
+                        isHeaderMoreMenuOpen ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : ''
+                      }`}
+                      title="More Options"
+                    >
+                      <MoreHorizontal size={15} />
+                      {notifications.some(n => n.unread) && (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 ring-1 ring-white dark:ring-zinc-900 animate-pulse" />
+                      )}
+                    </button>
+                    {isHeaderMoreMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-[490] bg-black/15 dark:bg-black/45 backdrop-blur-[2px] transition-opacity animate-in fade-in"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsHeaderMoreMenuOpen(false);
+                          }}
+                        />
+                        <div
+                          className="absolute right-0 top-10 z-[500] w-80 border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-2xl p-2.5 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                        >
+                          {/* User Profile / Account Quick Card */}
+                          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                              {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                                {currentUser ? currentUser.name : (t('auth.guestMode') || 'Guest User')}
+                              </span>
+                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                {currentUser ? (currentUser.email || 'Signed in') : 'Local workspace session'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                setIsHeaderMoreMenuOpen(false);
+                                if (currentUser) {
+                                  setProfileMenuOpen(true);
+                                } else {
+                                  setAuthModalOpen(true);
+                                }
+                              }}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/60 transition-colors shrink-0 cursor-pointer"
+                            >
+                              {currentUser ? 'Account' : 'Sign In'}
+                            </button>
+                          </div>
+
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+
+                          {/* Workspace Search (⌘K) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setIsMemorySearchOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Search size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Workspace Search</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">⌘K</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Full-text semantic search across all docs, sheets & memory</span>
+                            </div>
+                          </button>
+
+                          {/* Edit Replay - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              openReplayPanel();
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderHistoryIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">{t('toolbar.editReplay') || 'Edit Replay'}</span>
+                                <span className="text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800/60 px-1.5 py-0.5 rounded">Timeline</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Scrub and replay revisions like an interactive video</span>
+                            </div>
+                          </button>
+
+                          {/* Notifications - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setNotificationsOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderNotificationIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Notifications</span>
+                                {notifications.some(n => n.unread) && (
+                                  <span className="text-[9px] font-bold text-white bg-violet-600 px-1.5 py-0.5 rounded-full">New</span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Collaboration alerts & workspace activity</span>
+                            </div>
+                          </button>
+
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+
+                          {/* Appearance (Theme) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsDarkMode(prev => !prev);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              {isDarkMode ? <Sun size={15} className="text-amber-500" /> : <Moon size={15} className="text-indigo-500" />}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Appearance</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium capitalize">{isDarkMode ? 'Dark' : 'Light'}</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">{isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}</span>
+                            </div>
+                          </button>
+
+                          {/* Preferences & Settings - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setSettingsModalOpen(true);
+                              setSettingsTab('personalization');
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Settings size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Preferences & Settings</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Personalization, AI providers & shortcut controls</span>
+                            </div>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Subtle Vertical Divider */}
+                <div className={`h-4 w-px bg-slate-200/80 dark:bg-zinc-800 transition-opacity duration-200 ${
+                  (isTopHeaderHovered || (isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                    ? 'opacity-100'
+                    : 'opacity-0'
+                }`} />
+
+                {/* Permanent In-Flow Safety: Undo & Redo (Anchored at Extreme Right Edge) */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={undoDocumentChange}
+                    disabled={!canUndo}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      canUndo
+                        ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                        : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                    }`}
+                    title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
+                  >
+                    <Undo2 size={15} strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={redoDocumentChange}
+                    disabled={!canRedo}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                      canRedo
+                        ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                        : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                    }`}
+                    title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
+                  >
+                    <Redo2 size={15} strokeWidth={1.5} />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -50709,6 +49476,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Right Section: Inline View Controls (when on View) + Collapse Toggle */}
                         <div className="flex items-center gap-2">
+                          {/* Matrix Engine / Inspector Direct Launcher (Pillar 5) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.__REGAARDER_OPEN_MATRIX_ENGINE__) {
+                                window.__REGAARDER_OPEN_MATRIX_ENGINE__();
+                              } else {
+                                setMemoryTab('matrix');
+                                setIsMemoryOpen(true);
+                              }
+                              showToast('Matrix Engine & Schema Inspector active');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100/90 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/60 shadow-2xs transition-all active:scale-[0.97] cursor-pointer"
+                            title="Open In-Browser Matrix Engine, Relational SQL & Formula Schema Inspector (Pillar 5)"
+                          >
+                            <Calculator size={13} className="text-violet-600 dark:text-violet-400" />
+                            <span>Matrix Engine</span>
+                            <span className="text-[9.5px] px-1.5 py-0.2 bg-violet-200/70 dark:bg-violet-800/60 text-violet-800 dark:text-violet-200 rounded font-mono font-semibold">SQL</span>
+                          </button>
+
                           {sheetToolbarTab === 'View' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-150">
                               {/* Gridlines Dropdown */}
@@ -51225,7 +50012,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   className="flex flex-col items-start p-3.5 rounded-xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/30 dark:hover:bg-violet-950/20 text-left transition-all group"
                                 >
                                   <div className="w-8 h-8 rounded-lg bg-violet-100/60 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                                    <Sparkles size={16} />
+                                    <RegaarderAiIcon size={16} className="text-violet-600 dark:text-violet-400" />
                                   </div>
                                   <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-0.5">Ask a question</span>
                                   <span className="text-[11px] text-slate-400 dark:text-zinc-500 leading-tight">Get insights about your data</span>
@@ -72985,44 +71772,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* Global Workspace Search Modal */}
-      <GlobalWorkspaceSearchModal
-        isOpen={isMemorySearchOpen}
-        onClose={() => setIsMemorySearchOpen(false)}
-        onSelectEntity={(entity) => {
-          if (!entity) return;
-          if (entity.type === 'doc') {
-            setProductMode('compose');
-            handleOpenSavedDocument(entity.id || entity.title);
-            showToast(`Opened: ${entity.title}`);
-          } else {
-            showToast(`Opened: ${entity.title}`);
-          }
-        }}
-        onQuickAction={(action) => {
-          if (!action) return;
-          const ws = action.targetWorkspace;
-          if (ws === 'compose') {
-            setProductMode('compose');
-            if (action.actionType === 'new_doc') {
-              handleCreateNewDocument();
-            }
-          } else if (ws === 'sheets') {
-            setProductMode('sheets');
-            showToast('Created new spreadsheet');
-          } else if (ws === 'deck') {
-            setProductMode('deck');
-            showToast('Created new presentation');
-          } else if (ws === 'room') {
-            createRoomExperience();
-          } else if (ws === 'browser') {
-            setProductMode('browser');
-            showToast('Opened Web Research');
-          } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-          }
-        }}
-      />
+
 
       {/* ── Deck Slash Menu Overlay in Sheets/Deck view ── */}
       {productMode === 'deck' && deckSlashMenu.open && typeof document !== 'undefined' && createPortal(
@@ -73713,10 +72463,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center mb-3 shadow-md shadow-indigo-950/30 group-hover:scale-105 transition-transform duration-200">
                     <MessageCircle size={19} />
                   </div>
-                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">DMs</div>
-                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Team chat and specialized multi-agent conversation hubs.</p>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">Relay</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Team messaging and specialized multi-agent conversation hubs.</p>
                 </div>
-                <div className="mt-3 text-[10.5px] font-semibold text-indigo-600 dark:text-indigo-400">Open Chat →</div>
+                <div className="mt-3 text-[10.5px] font-semibold text-indigo-600 dark:text-indigo-400">Open Relay →</div>
               </button>
             </div>
           </div>
@@ -74713,10 +73463,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {isWhiteboardWorkspace && (
           <>
             {/* Top proximity trigger zone to smoothly reveal navigation when hovering near top edge */}
-            <div 
-              onMouseEnter={handleWhiteboardTopNavEnter} 
-              className="absolute top-0 left-0 right-0 h-10 z-[380] cursor-default pointer-events-auto" 
-            />
+            {!isWhiteboardTopNavRevealed && (
+              <div 
+                onMouseEnter={handleWhiteboardTopNavEnter} 
+                className="absolute top-0 left-0 right-0 h-10 z-[380] pointer-events-auto" 
+              />
+            )}
 
             {/* Subtle floating title indicator when top nav is autohidden */}
             {!isWhiteboardTopNavRevealed && (
@@ -74748,7 +73500,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }`}
         >
         {/* Top Header */}
-        <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85 backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
+        <div onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85 backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -74835,55 +73587,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={undoDocumentChange}
-                disabled={!canUndo}
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  canUndo
-                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                }`}
-                title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
-              >
-                <Undo2 size={15} strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={redoDocumentChange}
-                disabled={!canRedo}
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  canRedo
-                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
-                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
-                }`}
-                title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
-              >
-                <Redo2 size={15} strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={openReplayPanel}
-                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10'}`}
-                title="Open edit replay"
-              >
-                <RegaarderHistoryIcon size={15} strokeWidth={1.6} />
-              </button>
-{/* Preserved save action: auto-saved continuously & Ctrl+S */}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setIsMemorySearchOpen(true);
-                  }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 cursor-pointer"
-                  title="Search Workspace (⌘K / Ctrl+K)"
-                >
-                  <Search size={15} strokeWidth={1.5} />
-                </button>
-
-            </div>
-            {/* Export Dropdown Button in Top Header */}
+          {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
+          <div className="flex items-center gap-2">
+            {/* Peripheral Actions (Export, Share, ... More Menu) - Fades on work, reveals on hover */}
+            <div className={`flex items-center gap-2 transition-all duration-200 ${
+              (isTopHeaderHovered || composeExportMenuOpen || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                ? 'opacity-100 pointer-events-auto' 
+                : 'opacity-0 pointer-events-none'
+            }`}>
+              {/* Export Dropdown Button in Top Header */}
             {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
               <div className="relative export-menu-container">
                 <button
@@ -75095,130 +73807,220 @@ if (productMode === 'deck' || productMode === 'sheets') {
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsDarkMode((prev) => !prev)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDarkMode ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
-            </button>
+            <div className="relative" ref={headerMoreMenuRef}>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        setIsHeaderMoreMenuOpen(prev => !prev);
+                      }}
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-colors cursor-pointer relative ${
+                        isHeaderMoreMenuOpen ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : ''
+                      }`}
+                      title="More Options"
+                    >
+                      <MoreHorizontal size={15} />
+                      {notifications.some(n => n.unread) && (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400 ring-1 ring-white dark:ring-zinc-900 animate-pulse" />
+                      )}
+                    </button>
+                    {isHeaderMoreMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-[490] bg-black/15 dark:bg-black/45 backdrop-blur-[2px] transition-opacity animate-in fade-in"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsHeaderMoreMenuOpen(false);
+                          }}
+                        />
+                        <div
+                          className="absolute right-0 top-10 z-[500] w-80 border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-2xl p-2.5 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                        >
+                          {/* User Profile / Account Quick Card */}
+                          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
+                              {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                                {currentUser ? currentUser.name : (t('auth.guestMode') || 'Guest User')}
+                              </span>
+                              <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">
+                                {currentUser ? (currentUser.email || 'Signed in') : 'Local workspace session'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                setIsHeaderMoreMenuOpen(false);
+                                if (currentUser) {
+                                  setProfileMenuOpen(true);
+                                } else {
+                                  setAuthModalOpen(true);
+                                }
+                              }}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/60 transition-colors shrink-0 cursor-pointer"
+                            >
+                              {currentUser ? 'Account' : 'Sign In'}
+                            </button>
+                          </div>
 
-            {/* Local User Profile Avatar Button */}
-            <div className="relative font-sans" ref={composeProfileMenuRef}>
-              <button
-                type="button"
-                onClick={() => setComposeProfileMenuOpen(prev => !prev)}
-                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-sm focus:outline-none ${(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-800'}`}
-                style={{
-                  backgroundColor: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '#f97316' : (currentUser ? '#8b5cf6' : '#64748B'),
-                }}
-                title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
-              >
-                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-              </button>
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
 
-              {/* Profile Dropdown Menu */}
-              {composeProfileMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-[490] bg-slate-950/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-150 animate-in fade-in"
-                    onClick={() => setComposeProfileMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 top-9 z-[500] w-[240px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4 font-sans animate-in fade-in zoom-in-95 duration-150">
-                  {currentUser ? (
-                    // Logged In State
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                        <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-inner">
-                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                          {/* Workspace Search (⌘K) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setIsMemorySearchOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Search size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Workspace Search</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">⌘K</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Full-text semantic search across all docs, sheets & memory</span>
+                            </div>
+                          </button>
+
+                          {/* Edit Replay - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              openReplayPanel();
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderHistoryIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">{t('toolbar.editReplay') || 'Edit Replay'}</span>
+                                <span className="text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800/60 px-1.5 py-0.5 rounded">Timeline</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Scrub and replay revisions like an interactive video</span>
+                            </div>
+                          </button>
+
+                          {/* Notifications - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setNotificationsOpen(true);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <RegaarderNotificationIcon size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Notifications</span>
+                                {notifications.some(n => n.unread) && (
+                                  <span className="text-[9px] font-bold text-white bg-violet-600 px-1.5 py-0.5 rounded-full">New</span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Collaboration alerts & workspace activity</span>
+                            </div>
+                          </button>
+
+                          <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+
+                          {/* Appearance (Theme) - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsDarkMode(prev => !prev);
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              {isDarkMode ? <Sun size={15} className="text-amber-500" /> : <Moon size={15} className="text-indigo-500" />}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Appearance</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium capitalize">{isDarkMode ? 'Dark' : 'Light'}</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">{isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}</span>
+                            </div>
+                          </button>
+
+                          {/* Preferences & Settings - Two-Line Descriptive Item */}
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              setIsHeaderMoreMenuOpen(false);
+                              setSettingsModalOpen(true);
+                              setSettingsTab('personalization');
+                            }}
+                            className="w-full flex items-start gap-3 p-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left group cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-zinc-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 transition-colors mt-0.5">
+                              <Settings size={15} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:group-hover:text-violet-300">Preferences & Settings</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Personalization, AI providers & shortcut controls</span>
+                            </div>
+                          </button>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser?.name || ''}</span>
-                          <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser?.email || ''}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
-                        <div className="flex justify-between">
-                          <span>Sign-in Provider</span>
-                          <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser?.provider || ''}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Status</span>
-                          <span className="font-medium text-violet-600 dark:text-violet-400">Authenticated ✓</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          localStorage.removeItem('rc.token');
-                          localStorage.removeItem('rc.user');
-                          setCurrentUser(null);
-                          setComposeProfileMenuOpen(false);
-                          showToast('Disconnected successfully');
-                        }}
-                        className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
-                      >
-                        Disconnect Account
-                      </button>
-                    </div>
-                  ) : (
-                    // Guest State (Apple Refined - No Sparkle Icon)
-                    <div className="flex flex-col items-center text-center py-1 px-1 gap-2.5">
-                      <div className="relative my-0.5 group cursor-default">
-                        <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs flex items-center justify-center font-semibold text-[15px] transition-transform duration-200 group-hover:scale-105">
-                          G
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-[13.5px] font-semibold text-slate-900 dark:text-white tracking-tight">{t('auth.guestMode') || 'Guest Mode'}</span>
-                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug max-w-[200px] text-center">
-                          {t('auth.guestModeDesc') || 'Sign in to sync your work, collaborate, and access premium AI tools.'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setComposeProfileMenuOpen(false);
-                          setAuthModalOpen(true);
-                        }}
-                        className="w-full mt-1 py-2 px-3 text-[12px] font-medium text-white bg-slate-900 hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-100 rounded-xl shadow-xs transition-all duration-150 active:scale-[0.98]"
-                      >
-                        {t('auth.signIn') || 'Sign In'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                </>
-              )}
+                      </>
+                    )}
+                  </div>
             </div>
 
-            <div className="relative" ref={notificationsPanelRef}>
+            {/* Subtle Vertical Divider */}
+            <div className={`h-4 w-px bg-slate-200/80 dark:bg-zinc-800 transition-opacity duration-200 ${
+              (isTopHeaderHovered || composeExportMenuOpen || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                ? 'opacity-100'
+                : 'opacity-0'
+            }`} />
+
+            {/* Permanent In-Flow Safety: Undo & Redo (Anchored at Extreme Right Edge) */}
+            <div className="flex items-center gap-0.5 shrink-0">
               <button
-                type="button"
-                onClick={() => {
-                  setReplaySpeedMenuOpen(false);
-                  setNotificationsOpen((prev) => !prev);
-                }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
-                title="Notifications"
+                onClick={undoDocumentChange}
+                disabled={!canUndo}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  canUndo
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
               >
-                <Bell size={16} strokeWidth={1.5} />
-                {notifications.some(n => n.unread) && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214] animate-pulse"></span>
-                )}
+                <Undo2 size={15} strokeWidth={1.5} />
               </button>
-              {notificationsOpen && renderNotificationsDropdownContent()}
+              <button
+                onClick={redoDocumentChange}
+                disabled={!canRedo}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  canRedo
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-zinc-200 dark:hover:bg-white/10 opacity-100 cursor-pointer'
+                    : 'text-slate-400 dark:text-zinc-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
+              >
+                <Redo2 size={15} strokeWidth={1.5} />
+              </button>
             </div>
-            {/* Settings Button */}
-            <button
-              type="button"
-              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-              title="Settings"
-            >
-              <Settings size={16} />
-            </button>
           </div>
         </div>
 
@@ -76288,7 +75090,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
             ref={topDocTabsContainerRef}
             className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-1"
           >
-            {orderedDocuments.map((doc, docIndex) => {
+            {/* Dedicated Home Tab */}
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setProductMode('landing');
+              }}
+              className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                productMode === 'landing'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                  : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+              }`}
+              title="Go to Home Dashboard"
+            >
+              <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+              <span>Home</span>
+            </button>
+            {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
+              const docIndex = windowedTabDocuments.startIndex + localIndex;
               const rawTitle = doc.title?.trim();
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
               const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : rawTitle)) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
@@ -76298,7 +75118,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div
                   key={doc.id}
                   onClick={() => switchDocument(doc.id)}
-                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-300 dark:border-zinc-600 text-violet-600 dark:text-violet-400 shadow-xs font-semibold' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/60 hover:border-slate-200'}`}
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
+                    setRenamingDocId(doc.id);
+                    setRenameDocValue(doc.title || '');
+                  }}
+                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    isActive 
+                      ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
+                      : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
+                  }`}
                 >
                   {renamingDocId === doc.id ? (
                     <input
@@ -76442,6 +75271,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               );
             })}
+            {windowedTabDocuments.hiddenCount > 0 && (
+              <div className="relative shrink-0 flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setOverflowTabMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
+                  title={`${windowedTabDocuments.hiddenCount} more open documents`}
+                >
+                  <span>+{windowedTabDocuments.hiddenCount} more</span>
+                </button>
+                {overflowTabMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[99990]"
+                      onClick={() => setOverflowTabMenuOpen(false)}
+                    />
+                    <div
+                      style={{ zIndex: 99999 }}
+                      className="absolute top-full left-0 mt-1.5 w-64 max-h-80 overflow-y-auto border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                    >
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                        <span>Open Documents ({orderedDocuments.length})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOverflowTabMenuOpen(false);
+                            setIsMemorySearchOpen(true);
+                          }}
+                          className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                        >
+                          Search all
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {windowedTabDocuments.hiddenDocs.map((hDoc) => (
+                          <button
+                            key={hDoc.id}
+                            type="button"
+                            onClick={() => {
+                              switchDocument(hDoc.id);
+                              setOverflowTabMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
+                          >
+                            <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <button
               type="button"
               onClick={createItemForCurrentContext}
@@ -76521,7 +75403,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {/* Sub-toolbar details (shown when expanded) */}
           {!isDocumentSubToolbarCollapsed && (
             <div className="flex flex-wrap items-center justify-start gap-3 sm:gap-4 px-1 pt-1.5 border-t border-gray-200/60 dark:border-zinc-800 text-xs font-medium">
-              {docToolbarTab === 'Write' && (
+              {docToolbarTab === 'Write' && activeDoc?.isPdfDoc && (
+                <div className="w-full flex items-center justify-between gap-3 py-0.5 animate-in fade-in duration-150 select-none group">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-6 h-6 rounded-[6px] bg-red-600 text-white flex items-center justify-center font-black text-[9px] tracking-tight shrink-0 shadow-2xs">
+                      PDF
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate max-w-sm sm:max-w-md">
+                        {activeDoc.title || activeDoc.originalFileName || 'PDF Document'}
+                      </span>
+                      {activeDoc.originalSize && (
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0">
+                          ({activeDoc.originalSize})
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.08] shrink-0">
+                        Read-Only Vector
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* PDF Utility Actions (Rotate 90, Annotate/Markup, Print) */}
+                    <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                      <button
+                        type="button"
+                        onClick={() => setPdfRotation((prev) => (prev + 90) % 360)}
+                        className="p-1.5 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                        title="Rotate 90° Clockwise"
+                      >
+                        <RotateCw size={13} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPdfMarkupActive((prev) => !prev)}
+                        className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                          pdfMarkupActive
+                            ? 'text-violet-600 bg-white dark:bg-zinc-800 shadow-xs outline outline-1 outline-violet-500/30 font-semibold'
+                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.08]'
+                        }`}
+                        title={pdfMarkupActive ? 'Hide Markup / Drawing Tools' : 'Annotate / Draw on Document'}
+                      >
+                        <PenTool size={13} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePrintPdf}
+                        className="p-1.5 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                        title="Print PDF Document"
+                      >
+                        <Printer size={13} />
+                      </button>
+                    </div>
+
+                    {activeDoc.pdfBlobUrl && (
+                      <a
+                        href={activeDoc.pdfBlobUrl}
+                        download={activeDoc.originalFileName || `${activeDoc.title || 'document'}.pdf`}
+                        className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+                        title="Download Original PDF"
+                      >
+                        <Download size={14} />
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleConvertPdfToEditableDoc(activeDoc.id)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-[0_2px_8px_rgba(124,58,237,0.25)] active:scale-95 transition-all cursor-pointer select-none"
+                      title="Convert this PDF into an editable rich text Compose document"
+                    >
+                      <FileEdit size={13} />
+                      <span>Convert to Editable Document</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {docToolbarTab === 'Write' && !activeDoc?.isPdfDoc && (
                 <div className="w-full flex flex-col gap-2">
                   <div className="w-full flex flex-wrap items-center justify-start gap-3 sm:gap-4">
             {/* Group 1: Typography Structure */}
@@ -82074,8 +81036,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            );
                         })}
 
-            {/* Page 1 Sheet Wrapper */}
-            <div
+            {/* Native PDF Document Viewer — High Fidelity Vector Presentation */}
+            {activeDoc?.isPdfDoc ? (
+              <NativePdfDocumentViewer
+                pdfBlobUrl={activeDoc.pdfBlobUrl}
+                rawBlob={activeDoc.rawBlob}
+                title={activeDoc.title || activeDoc.originalFileName}
+                zoomLevel={zoomLevel}
+                rotation={pdfRotation}
+                pageOrientation={pageOrientation}
+                docPageSize={docPageSize}
+                markupActive={pdfMarkupActive}
+                onCloseMarkup={() => setPdfMarkupActive(false)}
+                isDarkMode={isDarkMode}
+              />
+            ) : (
+              <>
+                {/* Page 1 Sheet Wrapper */}
+                <div
               data-enterprise-page="true"
               className={`w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border transition-all relative ${
                 isDarkMode 
@@ -82661,6 +81639,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               );
             })}
+              </>
+            )}
 
 
 
@@ -85270,6 +84250,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {renderFloatingMeetingPipHud()}
+        {renderNotificationsDropdownContent()}
 
       <ScreenShareSourceModal
         isOpen={isScreenSourceModalOpen}
@@ -88642,6 +87623,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {/* Main Memory Intelligence Container */}
           <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
             <MemoryDashboard 
+              initialTab={memoryTab}
               onClose={() => setIsMemoryOpen(false)}
               onNavigateToEntity={(entity) => {
                 setIsMemoryOpen(false);
@@ -88659,6 +87641,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isDarkMode={isDarkMode}
         productMode={productMode}
         onCallAi={callGemini}
+        aiConfig={aiConfig || aiProviderConfig}
         liveWorkspaceContext={{
           documents,
           activeDocId,
@@ -88743,7 +87726,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
       />
 
+      {/* ── Layer 6.8: Human-in-the-Loop Workspace Staging & Review Engine Modal ── */}
+      {activeReviewBranch && (
+        <WorkspaceStagingReviewModal
+          branch={activeReviewBranch}
+          onClose={() => setActiveReviewBranch(null)}
+          onCommitted={(commitResult) => {
+            setActiveReviewBranch(null);
+            if (commitResult && commitResult.branch) {
+              showToast(`Committed PR #${commitResult.branch.branchNumber || ''}: ${commitResult.committedCount} mutation(s) merged`);
+            }
+          }}
+          onRejected={(branchId) => {
+            setActiveReviewBranch(null);
+            showToast(`Closed Staged PR #${activeReviewBranch.branchNumber || ''}`);
+          }}
+        />
+      )}
 
+      {/* ── Staging PR Floating Quick-Review Indicator Badge ── */}
+      {stagedBranches && stagedBranches.length > 0 && !activeReviewBranch && (
+        <div className="fixed bottom-6 right-6 z-[999990] animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <button
+            onClick={() => setActiveReviewBranch(stagedBranches[0])}
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 dark:bg-zinc-900/95 text-white rounded-xl shadow-2xl backdrop-blur-md border border-slate-700/80 hover:border-violet-500/80 transition-all hover:scale-[1.02] cursor-pointer group"
+          >
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+            </span>
+            <GitPullRequest size={15} className="text-violet-400 group-hover:rotate-12 transition-transform" />
+            <span className="text-xs font-semibold tracking-wide">
+              {stagedBranches.length} Staged PR{stagedBranches.length > 1 ? 's' : ''} Pending Review
+            </span>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">
+              Review Diff
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Close Document / Whiteboard Confirmation Modal */}
       {renderCloseConfirmModal()}
@@ -88858,6 +87879,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+
+      {/* ── Layer 7: Omni-Portal Batch Ingestion Modal ──────────────── */}
+      <OmniPortalModal
+        isOpen={isOmniPortalOpen}
+        onClose={() => setIsOmniPortalOpen(false)}
+        onBatchAbsorbed={handleBatchAbsorbed}
+      />
+
+      {/* ── Native Desktop Download Floating Action Button ─────────── */}
+      <DesktopDownloadFloatingTrigger />
     </div>
   );
 }

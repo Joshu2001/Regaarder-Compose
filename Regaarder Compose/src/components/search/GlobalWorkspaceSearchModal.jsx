@@ -2,7 +2,10 @@ import { useTranslation } from '../../i18n';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw,
-  Sparkles, Clock, FileText, Database, ShieldCheck, Compass
+  Clock, FileText, Database, ShieldCheck, Compass,
+  Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
+  Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown,
+  Edit3, RotateCcw
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -22,7 +25,9 @@ import {
   OrbIcon,
   RegaarderAiIcon,
   RegaarderHistoryIcon,
-  RegaarderProductIcon
+  RegaarderProductIcon,
+  RegaarderQuickActionIcon,
+  RegaarderHapticIcon
 } from '../RegaarderProductIcons';
 
 // Helper component to highlight matched text
@@ -54,6 +59,107 @@ function HighlightedText({ text = '', query = '', className = '' }) {
   );
 }
 
+// Helper component to render rich executive markdown safely
+function FormattedMarkdown({ content = '' }) {
+  if (!content) return null;
+  const paragraphs = content.split(/\n\n+/);
+
+  return (
+    <div className="space-y-2.5 text-[13px] leading-relaxed text-slate-800 dark:text-zinc-200">
+      {paragraphs.map((p, pIdx) => {
+        const trimmed = p.trim();
+        if (!trimmed) return null;
+
+        // Blockquote
+        if (trimmed.startsWith('>')) {
+          return (
+            <blockquote key={pIdx} className="pl-3 border-l-2 border-violet-500/60 italic text-slate-700 dark:text-zinc-300 my-1 bg-violet-500/[0.04] py-1 rounded-r-md">
+              {renderInlineMarkdown(trimmed.replace(/^>\s*/, ''))}
+            </blockquote>
+          );
+        }
+
+        // Bullet list
+        if (/^[-*•]\s+/m.test(trimmed)) {
+          const items = trimmed.split(/\n/).filter(line => /^[-*•]\s+/.test(line.trim()));
+          if (items.length > 0) {
+            return (
+              <ul key={pIdx} className="list-disc list-inside space-y-1 my-1 pl-1">
+                {items.map((item, iIdx) => (
+                  <li key={iIdx} className="text-slate-800 dark:text-zinc-200">
+                    {renderInlineMarkdown(item.trim().replace(/^[-*•]\s+/, ''))}
+                  </li>
+                ))}
+              </ul>
+            );
+          }
+        }
+
+        // Numbered list
+        if (/^\d+\.\s+/m.test(trimmed)) {
+          const items = trimmed.split(/\n/).filter(line => /^\d+\.\s+/.test(line.trim()));
+          if (items.length > 0) {
+            return (
+              <ol key={pIdx} className="list-decimal list-inside space-y-1 my-1 pl-1">
+                {items.map((item, iIdx) => (
+                  <li key={iIdx} className="text-slate-800 dark:text-zinc-200">
+                    {renderInlineMarkdown(item.trim().replace(/^\d+\.\s+/, ''))}
+                  </li>
+                ))}
+              </ol>
+            );
+          }
+        }
+
+        // Regular paragraph with linebreaks
+        const lines = trimmed.split('\n');
+        return (
+          <p key={pIdx}>
+            {lines.map((line, lIdx) => (
+              <React.Fragment key={lIdx}>
+                {renderInlineMarkdown(line)}
+                {lIdx < lines.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderInlineMarkdown(text) {
+  if (!text) return '';
+  const parts = [];
+  const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
+  let lastIdx = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(text.substring(lastIdx, match.index));
+    }
+    if (match[2]) {
+      // Bold
+      parts.push(<strong key={match.index} className="font-semibold text-slate-900 dark:text-white">{match[2]}</strong>);
+    } else if (match[3]) {
+      // Italic
+      parts.push(<em key={match.index} className="italic">{match[3]}</em>);
+    } else if (match[4]) {
+      // Inline code
+      parts.push(<code key={match.index} className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.08] font-mono text-[12px]">{match[4]}</code>);
+    } else if (match[5] && match[6]) {
+      // Link
+      parts.push(<a key={match.index} href={match[6]} target="_blank" rel="noreferrer" className="text-violet-600 dark:text-violet-400 hover:underline">{match[5]}</a>);
+    }
+    lastIdx = regex.lastIndex;
+  }
+  if (lastIdx < text.length) {
+    parts.push(text.substring(lastIdx));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 // Category filter tabs definition using native Regaarder SVG product icons
 const FILTER_TABS = [
   { id: 'all', label: 'All', icon: MemoryIcon },
@@ -66,104 +172,147 @@ const FILTER_TABS = [
   { id: 'people', label: 'People', icon: PeopleIcon }
 ];
 
-// Context-aware empty state configurations per category
-const EMPTY_STATE_CONFIG = {
-  all: {
-    icon: MemoryIcon,
-    title: 'No recent items in workspace',
-    description: 'Create a document, spreadsheet, presentation, or task to see contextual items here.'
-  },
-  compose: {
-    icon: ComposeIcon,
-    title: 'No documents indexed yet',
-    description: 'Draft and organize rich documents in Compose to view them in workspace memory.'
-  },
-  sheets: {
-    icon: SheetIcon,
-    title: 'No spreadsheets indexed yet',
-    description: 'Build calculation models and formula data grids in Sheets.'
-  },
-  deck: {
-    icon: DeckIcon,
-    title: 'No presentations indexed yet',
-    description: 'Design slides and executive decks to view them here.'
-  },
-  tasks: {
-    icon: TasksIcon,
-    title: 'No tasks or initiatives',
-    description: 'Add project deliverables and action items to track progress across memory.'
-  },
-  room: {
-    icon: RoomIcon,
-    title: 'No meeting rooms active',
-    description: 'Start a video call or ambient room to generate meeting memory records.'
-  },
-  browser: {
-    icon: BrowserIcon,
-    title: 'No research notes saved',
-    description: 'Browse live web sources and save citations to your knowledge notes.'
-  },
-  people: {
-    icon: PeopleIcon,
-    title: 'No collaborators indexed',
-    description: 'Invite teammates and assign roles across workspace projects.'
-  }
-};
-
-// Compact primary quick action chips with native Regaarder SVG product icons
-const COMPACT_QUICK_ACTIONS = [
-  {
-    id: 'action-new-doc',
-    type: 'action',
-    workspace: 'compose',
-    title: 'New Document',
-    targetWorkspace: 'compose',
-    shortcut: '⌘N',
-    actionType: 'new_doc',
-    icon: ComposeIcon
-  },
-  {
-    id: 'action-new-sheet',
-    type: 'action',
-    workspace: 'sheets',
-    title: 'New Spreadsheet',
-    targetWorkspace: 'sheets',
-    shortcut: '⌘⇧S',
-    actionType: 'new_sheet',
-    icon: SheetIcon
-  },
-  {
-    id: 'action-new-deck',
-    type: 'action',
-    workspace: 'deck',
-    title: 'New Presentation',
-    targetWorkspace: 'deck',
-    shortcut: '⌘⇧P',
-    actionType: 'new_deck',
-    icon: DeckIcon
-  },
-  {
-    id: 'action-new-room',
-    type: 'action',
-    workspace: 'room',
-    title: 'Start Room',
-    targetWorkspace: 'room',
-    shortcut: '⌘M',
-    actionType: 'new_room',
-    icon: RoomIcon
-  }
-];
-
-// Suggested Ask AI prompt queries for Deck mode
+// Suggested Ask Memory prompt queries
 const SUGGESTED_AI_PROMPTS = [
   "Summarize key decisions across recent documents",
-  "What are the active milestones and deliverables?",
-  "Review open items in my workspace memory",
+  "Review open financial models and spreadsheet metrics",
+  "Apply active brand guidelines to my recent presentation",
   "Show high-priority tasks and upcoming deadlines"
 ];
 
-export default function GlobalWorkspaceSearchModal({
+// Pre-built Executive Agentic Personas (Claude / ChatGPT style)
+const INITIAL_PRESET_PERSONAS = [
+  {
+    id: 'polymath-genius',
+    name: 'Universal Polymath',
+    badge: 'Executive Genius & Synthesizer',
+    instructions: 'High-agency polymath intelligence with cross-disciplinary mastery across mathematics, architecture, typography, and strategy. Answers with first-principles clarity, zero corporate fluff, verified spreadsheet metrics, and flawless executive synthesis.'
+  },
+  {
+    id: 'peter-thiel',
+    name: 'Peter Thiel',
+    badge: 'Contrarian & Zero-to-One',
+    instructions: 'Challenge conventional consensus. Demand secret truths, network effects, and proprietary durability. Avoid corporate buzzwords, cosmetic fluff, and incrementalism.'
+  },
+  {
+    id: 'steve-jobs',
+    name: 'Steve Jobs',
+    badge: 'Apple Product Minimalist',
+    instructions: 'Focus ruthlessly on elegance, taste, and restraint. Eliminate unnecessary UI clutter. Demand seamless craftsmanship, refined typography, and emotional user delight.'
+  },
+  {
+    id: 'quant-analyst',
+    name: 'Quant Analyst',
+    badge: 'Wall Street Metric Rigor',
+    instructions: 'Analyze spreadsheet formulas, financial margins, and unit economics with strict mathematical rigor. Every statement must be backed by data and formulas.'
+  },
+  {
+    id: 'executive-editor',
+    name: 'Executive Editor',
+    badge: 'Concise & Structured',
+    instructions: 'Communicate with executive brevity. Use clean tables, bold takeaways, and actionable bullet points. Cut preamble and redundant text.'
+  }
+];
 
+// Default executive brand rules and styling guidelines
+const INITIAL_BRAND_RULES = [
+  { id: 'rule-font', label: 'Primary Typography', value: 'Inter & SF Pro System Font', category: 'typography' },
+  { id: 'rule-color', label: 'Brand Color', value: 'Regaarder Violet (#7C3AED)', category: 'palette' },
+  { id: 'rule-tone', label: 'Voice & Tone', value: 'Executive, concise, and analytical', category: 'voice' },
+  { id: 'rule-grid', label: 'Design System', value: '8pt Precision Matrix • 16px Corners', category: 'layout' }
+];
+
+// Semantic Markdown Parser: Decomposes Markdown documents into categorized individual memory cards
+function parseMarkdownToGuidelines(markdownText) {
+  if (!markdownText || typeof markdownText !== 'string') return [];
+  
+  const lines = markdownText.split(/\r?\n/);
+  const guidelines = [];
+  let currentCategory = 'guideline';
+
+  const categoryKeywords = {
+    typography: /(typography|font|type|typeface|text style|heading)/i,
+    palette: /(color|palette|hex|swatch|accent|theme|styling)/i,
+    voice: /(voice|tone|persona|communication|style guide|author)/i,
+    rules: /(rule|do'?s?|don'?t?s?|guideline|instruction|constraint|requirement|never|always)/i,
+    layout: /(layout|grid|spacing|margin|padding|radius|dimension|matrix)/i
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i].trim();
+    if (!rawLine) continue;
+
+    // Check header line for category context (# Typography, ## Brand Colors, etc.)
+    const headerMatch = rawLine.match(/^#{1,4}\s+(.+)$/);
+    if (headerMatch) {
+      const headerTitle = headerMatch[1].trim();
+      for (const [cat, regex] of Object.entries(categoryKeywords)) {
+        if (regex.test(headerTitle)) {
+          currentCategory = cat;
+          break;
+        }
+      }
+      continue;
+    }
+
+    // Check key: value pairs (e.g. "**Primary Color:** #7C3AED", "- Font: Inter", "Tone: Concise")
+    const kvMatch = rawLine.match(/^[-*•]?\s*\*{0,2}([^:*]+)\*{0,2}\s*:\s*(.+)$/);
+    if (kvMatch) {
+      const label = kvMatch[1].trim().replace(/\*{1,2}/g, '');
+      const value = kvMatch[2].trim().replace(/\*{1,2}/g, '');
+      if (label.length > 0 && value.length > 0) {
+        let cat = currentCategory;
+        for (const [c, regex] of Object.entries(categoryKeywords)) {
+          if (regex.test(label) || regex.test(value)) {
+            cat = c;
+            break;
+          }
+        }
+        guidelines.push({
+          id: 'rule-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          label,
+          value,
+          category: cat,
+          source: 'md-extract'
+        });
+        continue;
+      }
+    }
+
+    // Check bullet points or numbered lists
+    const bulletMatch = rawLine.match(/^[-*•\d.]+\s+(.+)$/);
+    if (bulletMatch) {
+      const statement = bulletMatch[1].trim();
+      if (statement.length > 5) {
+        let cat = currentCategory;
+        if (/always|never|must|should|don't|do not/i.test(statement)) {
+          cat = 'rules';
+        }
+        const words = statement.split(' ');
+        const label = words.slice(0, 3).join(' ');
+        const value = words.slice(3).join(' ') || statement;
+        guidelines.push({
+          id: 'rule-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          label: label.charAt(0).toUpperCase() + label.slice(1),
+          value: value,
+          category: cat,
+          source: 'md-extract'
+        });
+      }
+    }
+  }
+
+  return guidelines;
+}
+
+// Ambient learned user habits across workspace
+const LEARNED_HABITS = [
+  { id: 'h-1', title: 'Calculations Engine', desc: 'Frequently inspects SUM & AVERAGE formulas in Sheets', icon: SheetIcon },
+  { id: 'h-2', title: 'Export Preferences', desc: 'Prefers Excel (.xlsx) and clean PDF with dark backdrops', icon: ComposeIcon },
+  { id: 'h-3', title: 'Micro-Interactions', desc: 'Uses 100ms transitions and unblurred live canvas inspectors', icon: RegaarderHapticIcon }
+];
+
+export default function GlobalWorkspaceSearchModal({
   isOpen,
   onClose,
   initialQuery = '',
@@ -172,9 +321,9 @@ export default function GlobalWorkspaceSearchModal({
   isDarkMode = false,
   productMode = 'compose',
   onCallAi = null,
+  aiConfig = null,
   liveWorkspaceContext = {},
-  onNavigateToEntity,
-  onQuickAction
+  onNavigateToEntity
 }) {
   const isDeck = productMode === 'deck';
   const [mode, setMode] = useState(isDeck ? (initialMode || 'search') : 'search');
@@ -188,8 +337,101 @@ export default function GlobalWorkspaceSearchModal({
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
 
+  // Interactive Follow-up, Prompt Edit & Selection States
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyQuery, setReplyQuery] = useState('');
+  const [quotedSnippet, setQuotedSnippet] = useState('');
+  const [conversationThread, setConversationThread] = useState([]);
+  const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [editingQueryText, setEditingQueryText] = useState('');
+  const [selectionTooltip, setSelectionTooltip] = useState(null);
+
+  const followUpInputRef = useRef(null);
+  const promptEditInputRef = useRef(null);
+  const synthesisCardRef = useRef(null);
+
+  // Persona list (supports custom on-device edits)
+  const [personas, setPersonas] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_personas_list');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load custom personas:', e);
+    }
+    return INITIAL_PRESET_PERSONAS;
+  });
+
+  // Active Agentic Persona State
+  const [activePersona, setActivePersona] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_active_persona');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to load active persona:', e);
+    }
+    return INITIAL_PRESET_PERSONAS[0];
+  });
+
+  const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
+
+  // Edit Persona Modal State
+  const [isEditPersonaModalOpen, setIsEditPersonaModalOpen] = useState(false);
+  const [editingPersonaName, setEditingPersonaName] = useState('');
+  const [editingPersonaBadge, setEditingPersonaBadge] = useState('');
+  const [editingPersonaInstructions, setEditingPersonaInstructions] = useState('');
+
+  // Workspace Brand Rules & Guidelines state (persisted on device in localStorage)
+  const [brandRules, setBrandRules] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarder_workspace_brand_rules');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load brand rules:', e);
+    }
+    return INITIAL_BRAND_RULES;
+  });
+
+  // Markdown Upload & Edit Modal State with on-device raw preservation
+  const [isMdModalOpen, setIsMdModalOpen] = useState(false);
+  const [mdInputText, setMdInputText] = useState('');
+  const fileInputRef = useRef(null);
+
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
+
+  // Persist brand rules to localStorage on update
+  useEffect(() => {
+    try {
+      localStorage.setItem('regaarder_workspace_brand_rules', JSON.stringify(brandRules));
+    } catch (e) {
+      console.warn('Failed to persist brand rules:', e);
+    }
+  }, [brandRules]);
+
+  // Persist active persona to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('regaarder_active_persona', JSON.stringify(activePersona));
+    } catch (e) {
+      console.warn('Failed to persist active persona:', e);
+    }
+  }, [activePersona]);
+
+  // Persist personas list to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('regaarder_personas_list', JSON.stringify(personas));
+    } catch (e) {
+      console.warn('Failed to persist personas list:', e);
+    }
+  }, [personas]);
 
   // Build the complete searchable workspace index strictly from real state
   const workspaceIndex = useMemo(() => {
@@ -211,10 +453,7 @@ export default function GlobalWorkspaceSearchModal({
   const flatSelectableItems = useMemo(() => {
     if (mode === 'ai') return [];
     if (!query.trim()) {
-      return [
-        ...COMPACT_QUICK_ACTIONS.map((a) => ({ type: 'action', data: a })),
-        ...searchResults.slice(0, 10).map((r) => ({ type: 'entity', data: r.entity }))
-      ];
+      return searchResults.slice(0, 10).map((r) => ({ type: 'entity', data: r.entity }));
     }
     return searchResults.map((r) => ({ type: 'entity', data: r.entity }));
   }, [query, searchResults, mode]);
@@ -228,9 +467,24 @@ export default function GlobalWorkspaceSearchModal({
       setSelectedIndex(0);
       setAiResponse(null);
       setAiLoading(false);
+      setIsMdModalOpen(false);
+      setIsPersonaMenuOpen(false);
+      setIsEditPersonaModalOpen(false);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [isOpen, initialQuery, initialMode, initialFilter, isDeck]);
+
+  // Pre-fill raw Markdown text from device when opening the markdown modal
+  useEffect(() => {
+    if (isMdModalOpen && !mdInputText) {
+      try {
+        const savedMd = localStorage.getItem('regaarder_raw_brand_markdown');
+        if (savedMd) setMdInputText(savedMd);
+      } catch (e) {
+        console.warn('Failed to load raw markdown from device:', e);
+      }
+    }
+  }, [isMdModalOpen, mdInputText]);
 
   // Reset selected index when query or filter changes
   useEffect(() => {
@@ -248,19 +502,107 @@ export default function GlobalWorkspaceSearchModal({
 
   if (!isOpen) return null;
 
-  // Execute AI Workspace Synthesis
+  // Open the persona customization modal prefilled with the active persona
+  const handleOpenEditPersona = (personaToEdit = activePersona) => {
+    setEditingPersonaName(personaToEdit.name);
+    setEditingPersonaBadge(personaToEdit.badge);
+    setEditingPersonaInstructions(personaToEdit.instructions);
+    setIsEditPersonaModalOpen(true);
+    setIsPersonaMenuOpen(false);
+  };
+
+  // Save customized persona prompt to device
+  const handleSaveCustomPersona = () => {
+    if (!editingPersonaName.trim() || !editingPersonaInstructions.trim()) return;
+    const updatedPersona = {
+      ...activePersona,
+      name: editingPersonaName.trim(),
+      badge: editingPersonaBadge.trim() || 'Custom Lens',
+      instructions: editingPersonaInstructions.trim()
+    };
+    setActivePersona(updatedPersona);
+    setPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+    setIsEditPersonaModalOpen(false);
+  };
+
+  // Reset active persona instructions to defaults
+  const handleResetActivePersona = () => {
+    const original = INITIAL_PRESET_PERSONAS.find(p => p.id === activePersona.id) || INITIAL_PRESET_PERSONAS[0];
+    setEditingPersonaName(original.name);
+    setEditingPersonaBadge(original.badge);
+    setEditingPersonaInstructions(original.instructions);
+  };
+
+  // Handle Markdown file upload from disk with 100% on-device persistence
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        try {
+          localStorage.setItem('regaarder_raw_brand_markdown', content);
+        } catch (err) {
+          console.warn('Failed to save raw md to device:', err);
+        }
+        const extracted = parseMarkdownToGuidelines(content);
+        if (extracted.length > 0) {
+          setBrandRules(prev => [...prev, ...extracted]);
+          setIsMdModalOpen(false);
+        } else {
+          setMdInputText(content);
+        }
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Handle applying pasted Markdown into individual extracted guidelines
+  const handleApplyPastedMarkdown = () => {
+    if (!mdInputText.trim()) return;
+    try {
+      localStorage.setItem('regaarder_raw_brand_markdown', mdInputText);
+    } catch (err) {
+      console.warn('Failed to save raw md to device:', err);
+    }
+    const extracted = parseMarkdownToGuidelines(mdInputText);
+    if (extracted.length > 0) {
+      setBrandRules(prev => [...prev, ...extracted]);
+      setIsMdModalOpen(false);
+    }
+  };
+
+  // Remove an individual guideline
+  const handleRemoveBrandRule = (ruleId) => {
+    setBrandRules(prev => prev.filter(r => r.id !== ruleId));
+  };
+
+  // Execute AI Workspace Synthesis with persona and extracted brand memory context
   const handleRunAiSynthesis = async (promptQuery) => {
     const targetQ = promptQuery || query;
     if (!targetQ || !targetQ.trim()) return;
 
     setAiLoading(true);
     setAiResponse(null);
+    setConversationThread([]);
+    setIsReplying(false);
+    setIsEditingPrompt(false);
+    setQuotedSnippet('');
+    setSelectionTooltip(null);
+
     try {
+      const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
+      const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
+
       const result = await synthesizeWorkspaceKnowledge({
-        query: targetQ,
+        query: targetQ.trim(),
         activeFilter,
         workspaceIndex,
-        onCallAi
+        onCallAi,
+        aiConfig,
+        personaInstructions: personaContext
       });
       setAiResponse(result);
     } catch (err) {
@@ -274,21 +616,76 @@ export default function GlobalWorkspaceSearchModal({
     }
   };
 
-  // Handle opening an entity or executing a quick action
+  // Multi-turn conversational follow-up handler
+  const handleSendFollowUp = async () => {
+    const trimmed = replyQuery.trim();
+    if (!trimmed || isSendingFollowUp) return;
+
+    const userMessage = quotedSnippet ? `[Quoting: "${quotedSnippet}"] ${trimmed}` : trimmed;
+    const newTurn = { role: 'user', text: userMessage, timestamp: Date.now() };
+    const updatedThread = [...conversationThread, newTurn];
+
+    setConversationThread(updatedThread);
+    setReplyQuery('');
+    setQuotedSnippet('');
+    setIsSendingFollowUp(true);
+
+    try {
+      const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
+      const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
+
+      const result = await synthesizeWorkspaceKnowledge({
+        query: userMessage,
+        activeFilter,
+        workspaceIndex,
+        onCallAi,
+        aiConfig,
+        previousConversation: [
+          { role: 'user', text: query },
+          ...(aiResponse?.answer ? [{ role: 'assistant', text: aiResponse.answer }] : []),
+          ...conversationThread
+        ],
+        personaInstructions: personaContext
+      });
+
+      if (result?.answer) {
+        setConversationThread(prev => [...prev, { role: 'assistant', text: result.answer, timestamp: Date.now() }]);
+      }
+    } catch (err) {
+      console.error('Error in follow-up synthesis:', err);
+      setConversationThread(prev => [...prev, { role: 'assistant', text: "Unable to process follow-up query right now.", timestamp: Date.now() }]);
+    } finally {
+      setIsSendingFollowUp(false);
+    }
+  };
+
+  // Save and execute edited query in-place
+  const handleSaveEditedPrompt = () => {
+    const trimmed = editingQueryText.trim();
+    if (!trimmed) return;
+    setQuery(trimmed);
+    setIsEditingPrompt(false);
+    handleRunAiSynthesis(trimmed);
+  };
+
+  // Highlight selection quote helper
+  const handleTextSelection = () => {
+    if (typeof window === 'undefined') return;
+    const selection = window.getSelection();
+    const selText = selection?.toString()?.trim();
+    if (selText && selText.length > 4 && synthesisCardRef.current?.contains(selection.anchorNode)) {
+      setSelectionTooltip({ text: selText });
+    } else {
+      setSelectionTooltip(null);
+    }
+  };
+
+  // Handle opening an entity
   const handleActivateItem = (item) => {
     if (!item) return;
-    if (item.type === 'action') {
-      const act = item.data;
-      if (onQuickAction) {
-        onQuickAction(act);
-      } else if (onNavigateToEntity) {
-        onNavigateToEntity({ workspace: act.targetWorkspace, actionType: act.actionType });
-      }
-    } else {
-      const entity = item.type === 'entity' ? item.data : item;
-      if (onNavigateToEntity) {
-        onNavigateToEntity(entity);
-      }
+    const entity = item.type === 'entity' ? item.data : item;
+    if (onNavigateToEntity) {
+      onNavigateToEntity(entity);
     }
     onClose();
   };
@@ -297,6 +694,14 @@ export default function GlobalWorkspaceSearchModal({
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      if (isEditPersonaModalOpen) {
+        setIsEditPersonaModalOpen(false);
+        return;
+      }
+      if (isMdModalOpen) {
+        setIsMdModalOpen(false);
+        return;
+      }
       onClose();
       return;
     }
@@ -342,35 +747,49 @@ export default function GlobalWorkspaceSearchModal({
     setTimeout(() => setCopiedAi(false), 2000);
   };
 
-  // Semi-transparent glass surface (rgba 0.78) with 28px backdrop blur and restrained white border
-  const backdropClasses = 'bg-slate-900/30 dark:bg-black/55 backdrop-blur-[28px]';
-  const surfaceClasses = 'bg-white/[0.78] dark:bg-[#12141a]/[0.80] backdrop-blur-[28px] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.45)] border border-white/60 dark:border-white/[0.12] ring-1 ring-black/[0.04] dark:ring-white/[0.05]';
-  const categoryBarClasses = 'bg-white/[0.4] dark:bg-black/[0.2] border-b border-black/[0.04] dark:border-white/[0.06]';
-  const footerClasses = 'bg-white/[0.45] dark:bg-black/[0.25] border-t border-black/[0.04] dark:border-white/[0.06]';
+  // Category badge color helper for extracted guidelines
+  const getCategoryBadge = (cat) => {
+    switch (cat) {
+      case 'typography':
+        return 'bg-violet-100/80 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/60';
+      case 'palette':
+        return 'bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/60';
+      case 'voice':
+        return 'bg-blue-100/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200/60';
+      case 'rules':
+        return 'bg-amber-100/80 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200/60';
+      case 'layout':
+      default:
+        return 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200/60 dark:border-zinc-700';
+    }
+  };
 
-  const currentEmptyState = EMPTY_STATE_CONFIG[activeFilter] || EMPTY_STATE_CONFIG.all;
-  const EmptyIcon = currentEmptyState.icon;
+  // Frosted Apple glass surface with 36px backdrop blur
+  const backdropClasses = 'bg-slate-900/35 dark:bg-black/60 backdrop-blur-[24px]';
+  const surfaceClasses = 'bg-white/[0.88] dark:bg-[#14161f]/[0.88] backdrop-blur-[36px] rounded-2xl shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06]';
+  const categoryBarClasses = 'bg-white/[0.45] dark:bg-black/[0.22] border-b border-black/[0.05] dark:border-white/[0.07]';
+  const footerClasses = 'bg-white/[0.45] dark:bg-black/[0.25] border-t border-black/[0.05] dark:border-white/[0.07]';
 
   return (
     <div
-      className={`fixed inset-0 z-[100000] flex items-start justify-center pt-[9vh] sm:pt-[11vh] px-4 pb-6 animate-in fade-in duration-150 select-none ${backdropClasses}`}
+      className={`fixed inset-0 z-[100000] flex items-start justify-center pt-[7vh] sm:pt-[9vh] px-4 pb-6 animate-in fade-in duration-150 select-none ${backdropClasses}`}
       onClick={onClose}
       onKeyDown={handleKeyDown}
       style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
     >
-      {/* ── Search Surface Shell (840px wide, 610px high, 16px radius) ── */}
+      {/* ── Search Surface Shell (920px wide, 650px high, 16px radius) ── */}
       <div
-        className={`w-[840px] max-w-[95vw] h-[610px] max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
+        className={`w-[920px] max-w-[95vw] h-[650px] max-h-[88vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Dominant Search / Header (58px height) ── */}
-        <div className="h-[58px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
+        {/* ── Dominant Search / Header (62px height) ── */}
+        <div className="h-[62px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
           {mode === 'ai' ? (
-            <div className="w-6 h-6 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 border border-violet-500/20">
-              <RegaarderAiIcon size={14} strokeWidth={1.8} />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs ring-1 ring-violet-500/30">
+              <RegaarderAiIcon size={16} strokeWidth={2.0} />
             </div>
           ) : (
-            <Search size={18} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+            <Search size={19} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
           )}
 
           <input
@@ -383,32 +802,16 @@ export default function GlobalWorkspaceSearchModal({
                 setAiResponse(null);
               }
             }}
-            placeholder={mode === 'ai' ? (t('search.askAnything') || 'Ask anything across workspace memory…') : (t('search.searchAnything') || 'Search anything in your workspace…')}
-            className="flex-1 bg-transparent border-none outline-none text-[15px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
+            placeholder={
+              mode === 'ai' 
+                ? (t('search.askAnything') || `Ask Memory as ${activePersona.name} across workspace files & guidelines…`) 
+                : (t('search.searchAnything') || 'Search anything across workspace memory…')
+            }
+            className="flex-1 bg-transparent border-none outline-none text-[15.5px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
           />
 
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2 shrink-0 select-none">
-            {/* ✦ AI Mode Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                const nextMode = mode === 'ai' ? 'search' : 'ai';
-                setMode(nextMode);
-                setAiResponse(null);
-                setTimeout(() => inputRef.current?.focus(), 20);
-              }}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-all duration-150 active:scale-95 cursor-pointer ${
-                mode === 'ai'
-                  ? 'bg-violet-600 text-white font-semibold shadow-2xs border border-violet-500'
-                  : 'bg-violet-500/10 hover:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/20 font-medium'
-              }`}
-              title={mode === 'ai' ? "Switch back to file search" : "Switch to AI knowledge synthesis"}
-            >
-              <RegaarderAiIcon size={12} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
-              <span>{mode === 'ai' ? 'Ask AI' : '✦ AI'}</span>
-            </button>
-
+          {/* Right Action Controls: Clear & Apple Dual Switch */}
+          <div className="flex items-center gap-2.5 shrink-0 select-none">
             {query && (
               <button
                 type="button"
@@ -420,19 +823,56 @@ export default function GlobalWorkspaceSearchModal({
                 className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
                 title="Clear input"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             )}
 
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs">
+            {/* ── Apple-Style Segmented Mode Switcher: Search vs Ask Memory with Regaarder Signature Orbit ── */}
+            <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06]">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('search');
+                  setAiResponse(null);
+                  setTimeout(() => inputRef.current?.focus(), 20);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                  mode === 'search'
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-xs ring-1 ring-black/[0.06] dark:ring-white/[0.08]'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                }`}
+              >
+                <Search size={12} strokeWidth={2} className={mode === 'search' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                <span>Search</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('ai');
+                  setTimeout(() => inputRef.current?.focus(), 20);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                  mode === 'ai'
+                    ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 text-white shadow-xs ring-1 ring-violet-500/50'
+                    : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-500/10'
+                }`}
+              >
+                <RegaarderAiIcon size={13} strokeWidth={2.0} className={mode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                <span>Ask Memory</span>
+              </button>
+            </div>
+
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs ml-0.5">
               ESC
             </kbd>
           </div>
         </div>
 
-        {/* ── Category Navigation Tabs (Apple-style Slightly Rounded Rectangles with Outlines, NO Pills) ── */}
-        <div className={`flex items-center justify-between px-5 py-2 shrink-0 overflow-x-auto no-scrollbar gap-2 select-none ${categoryBarClasses}`}>
-          <div className="flex items-center gap-1 min-w-max">
+        {/* ── Category Navigation Tabs (Clean unclipped split bar) ── */}
+        <div className={`flex items-center justify-between px-5 py-2 shrink-0 gap-3 select-none ${categoryBarClasses}`}>
+          {/* Scrollable category tabs */}
+          <div className="flex items-center gap-1 min-w-0 overflow-x-auto no-scrollbar">
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab.id;
               const Icon = tab.icon;
@@ -446,10 +886,10 @@ export default function GlobalWorkspaceSearchModal({
                       handleRunAiSynthesis(query);
                     }
                   }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
-                      ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs'
-                      : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
+                      ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
+                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                   }`}
                 >
                   <Icon size={13} strokeWidth={1.7} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
@@ -459,96 +899,341 @@ export default function GlobalWorkspaceSearchModal({
             })}
           </div>
 
-          {/* Result Count */}
-          {mode === 'search' && query.trim() && searchResults.length > 0 && (
-            <div className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 pl-3 shrink-0 whitespace-nowrap">
-              {searchResults.length} {searchResults.length === 1 ? (t('common.item') || 'result') : (t('common.items') || 'results')}
-            </div>
-          )}
+          {/* Persona Selector Badge - Strictly Anchored, Shrink-0, Never Clipped */}
+          <div className="relative shrink-0 pr-0.5">
+            <button
+              type="button"
+              onClick={() => setIsPersonaMenuOpen(prev => !prev)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/25 text-violet-700 dark:text-violet-300 text-[11.5px] font-semibold transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+              title="Active Agentic Persona"
+            >
+              <UserCheck size={12} strokeWidth={2.2} />
+              <span>Active Lens: {activePersona.name}</span>
+              <ChevronDown size={11} className={`transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-          {/* AI Mode indicator */}
-          {mode === 'ai' && (
-            <div className="text-[10.5px] font-medium text-violet-600 dark:text-violet-400 flex items-center gap-1.5 pl-3 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-              <span>Workspace Context Layer</span>
-            </div>
-          )}
+            {isPersonaMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
+                <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                  <span>Select Cognitive Lens</span>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditPersona(activePersona)}
+                    className="text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit3 size={10} />
+                    <span>Edit Prompt</span>
+                  </button>
+                </div>
+                {personas.map((p) => {
+                  const isSel = activePersona.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setActivePersona(p);
+                        setIsPersonaMenuOpen(false);
+                      }}
+                      className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-colors cursor-pointer ${
+                        isSel ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <div className="w-5 h-5 rounded flex items-center justify-center bg-violet-500/15 text-violet-700 dark:text-violet-300 font-bold text-[9.5px] shrink-0 mt-0.5 font-mono">
+                        {p.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold">{p.name}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{p.badge}</div>
+                      </div>
+                      {isSel && <Check size={12} className="text-violet-600 mt-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ── Surface Body (Search Mode vs Ask AI Mode) ── */}
+        {/* ── Surface Body (Search Mode vs Ask Memory Mode) ── */}
         <div
           ref={resultsContainerRef}
           className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
         >
           {/* ══════════════════════════════════════════════════════════
-              MODE A: ASK AI WORKSPACE SYNTHESIS
+              MODE A: ASK MEMORY WORKSPACE SYNTHESIS
              ══════════════════════════════════════════════════════════ */}
           {mode === 'ai' && (
             <div className="space-y-4">
               {!aiResponse && !aiLoading && (
-                <div className="space-y-3 py-1">
-                  <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
-                    <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
-                    <span>Suggested Prompts</span>
+                <div className="space-y-4 py-1">
+                  {/* Executive AI Intro Banner */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent border border-violet-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center shadow-xs">
+                        <RegaarderAiIcon size={18} strokeWidth={2.0} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100">
+                            Workspace Intelligence & Persona Layer
+                          </h4>
+                          <span className="text-[9.5px] font-bold uppercase px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-mono">
+                            {activePersona.name} Active
+                          </span>
+                        </div>
+                        <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Synthesizes documents, calculation formulas, slide decks, and active brand rules.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setQuery(promptText);
-                          handleRunAiSynthesis(promptText);
-                        }}
-                        className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-violet-500/30"
-                      >
-                        <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
-                          {promptText}
-                        </span>
-                        <ArrowRight size={12} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
-                      </button>
-                    ))}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
+                      <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
+                      <span>Suggested Knowledge Queries</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setQuery(promptText);
+                            handleRunAiSynthesis(promptText);
+                          }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-violet-500/30"
+                        >
+                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
+                            {promptText}
+                          </span>
+                          <ArrowRight size={12} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
               {aiLoading && (
                 <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                  <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center text-violet-600 dark:text-violet-400 animate-spin shadow-2xs border border-violet-200/50 dark:border-violet-800/40">
-                    <RefreshCw size={16} />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <RegaarderAiIcon size={20} strokeWidth={2.0} className="animate-spin" />
                   </div>
-                  <div className="text-[14px] font-bold text-slate-800 dark:text-zinc-100">
-                    Synthesizing cross-workspace memory…
+                  <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
+                    Synthesizing Workspace Memory as {activePersona.name}…
                   </div>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm">
-                    Analyzing documents, spreadsheet models, slides, and transcripts for &ldquo;{query}&rdquo;
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
+                    Analyzing documents, spreadsheet formulas, slide decks, and active brand guidelines for &ldquo;{query}&rdquo;
                   </p>
                 </div>
               )}
 
               {aiResponse && !aiLoading && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <div className="p-4 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3">
+                  <div
+                    ref={synthesisCardRef}
+                    onMouseUp={handleTextSelection}
+                    className="relative p-4.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3 group"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
                         <span className="text-[10.5px] font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wider font-mono">
-                          AI Executive Synthesis
+                          Executive Synthesis ({activePersona.name})
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleCopyAiResponse}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
-                      >
-                        {copiedAi ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
-                        <span>{copiedAi ? 'Copied' : 'Copy'}</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReplying(true);
+                            setTimeout(() => followUpInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                          title="Reply or continue chatting"
+                        >
+                          <CornerDownLeft size={11} className="text-violet-600 dark:text-violet-400" />
+                          <span>Reply</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingPrompt(true);
+                            setEditingQueryText(query);
+                            setTimeout(() => promptEditInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                          title="Edit prompt in-place"
+                        >
+                          <Edit3 size={11} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyAiResponse}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                        >
+                          {copiedAi ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                          <span>{copiedAi ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-[13px] text-slate-800 dark:text-zinc-200 leading-relaxed font-normal whitespace-pre-line">
-                      {aiResponse.answer}
-                    </div>
+
+                    {/* Floating Selection Tooltip for Quick Quote & Reply */}
+                    {selectionTooltip && (
+                      <div className="absolute top-2 right-44 z-20 animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setQuotedSnippet(selectionTooltip.text);
+                            setIsReplying(true);
+                            setSelectionTooltip(null);
+                            setTimeout(() => followUpInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold shadow-md transition-colors cursor-pointer"
+                        >
+                          <CornerDownLeft size={11} />
+                          <span>Quote & Reply</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* In-Place Prompt Editor Mode */}
+                    {isEditingPrompt ? (
+                      <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-700 shadow-xs space-y-2">
+                        <div className="text-[11px] font-semibold text-violet-900 dark:text-violet-300 flex items-center gap-1.5">
+                          <Edit3 size={12} />
+                          <span>Edit Prompt:</span>
+                        </div>
+                        <input
+                          ref={promptEditInputRef}
+                          type="text"
+                          value={editingQueryText}
+                          onChange={(e) => setEditingQueryText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSaveEditedPrompt();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setIsEditingPrompt(false);
+                            }
+                          }}
+                          className="w-full px-2.5 py-1.5 text-[12.5px] rounded-md bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingPrompt(false)}
+                            className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEditedPrompt}
+                            className="px-2.5 py-1 text-[11px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                          >
+                            <Check size={11} />
+                            <span>Re-synthesize</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Rich Formatted Markdown Output */
+                      <FormattedMarkdown content={aiResponse.answer} />
+                    )}
                   </div>
+
+                  {/* Multi-Turn Follow-Up Conversation Thread */}
+                  {conversationThread.length > 0 && (
+                    <div className="space-y-3 pt-1">
+                      <div className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 font-mono">
+                        Follow-Up Conversation ({conversationThread.length} turns)
+                      </div>
+                      {conversationThread.map((turn, tIdx) => (
+                        <div key={tIdx} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {turn.role === 'user' ? (
+                            <div className="max-w-[85%] p-2.5 px-3.5 rounded-2xl bg-violet-600 text-white text-[12px] leading-relaxed shadow-xs">
+                              {turn.text}
+                            </div>
+                          ) : (
+                            <div className="max-w-[90%] p-3.5 rounded-xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/50 shadow-xs">
+                              <FormattedMarkdown content={turn.text} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Loading Indicator for Follow-Up */}
+                  {isSendingFollowUp && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-200/40 text-violet-700 dark:text-violet-300 text-xs">
+                      <RegaarderAiIcon size={14} className="animate-spin text-violet-600" />
+                      <span>Synthesizing follow-up as {activePersona.name}…</span>
+                    </div>
+                  )}
+
+                  {/* Inline Follow-Up Prompt Box */}
+                  {isReplying && (
+                    <div className="p-3 rounded-xl bg-white dark:bg-zinc-850 border border-violet-200 dark:border-violet-800/60 shadow-xs space-y-2 animate-in fade-in duration-150">
+                      {quotedSnippet && (
+                        <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-800/50 text-[11px] text-violet-800 dark:text-violet-300">
+                          <span className="truncate max-w-[90%] italic">Quoting: &ldquo;{quotedSnippet}&rdquo;</span>
+                          <button
+                            type="button"
+                            onClick={() => setQuotedSnippet('')}
+                            className="hover:text-violet-950 dark:hover:text-white cursor-pointer ml-1"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={followUpInputRef}
+                          type="text"
+                          value={replyQuery}
+                          onChange={(e) => setReplyQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendFollowUp();
+                            }
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setIsReplying(false);
+                            }
+                          }}
+                          placeholder="Continue chatting or ask a follow-up about this synthesis…"
+                          className="flex-1 bg-transparent text-[12.5px] text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSendFollowUp}
+                          disabled={!replyQuery.trim() || isSendingFollowUp}
+                          className="px-2.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <span>Send</span>
+                          <CornerDownLeft size={11} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReplying(false);
+                            setQuotedSnippet('');
+                          }}
+                          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {aiResponse.sources?.length > 0 && (
                     <div className="space-y-2">
@@ -587,67 +1272,210 @@ export default function GlobalWorkspaceSearchModal({
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              MODE B: SEARCH MODE - EMPTY QUERY (Quick Actions & Real Items)
+              MODE B: SEARCH MODE - EMPTY QUERY (Unified 3-Pillar Executive Architecture)
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && !query.trim() && (
             <div className="space-y-4">
-              {/* Compact Quick Action Chips */}
-              <div>
-                <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
-                  <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
-                  <span>{t('quickActions.title') || 'Quick Actions'}</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {COMPACT_QUICK_ACTIONS.map((action, idx) => {
-                    const isSelected = selectedIndex === idx;
-                    const ActionIcon = action.icon;
-                    const workspaceBadgeColors = {
-                      compose: 'bg-blue-500/12 text-blue-600 dark:text-blue-400',
-                      sheets: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
-                      deck: 'bg-violet-500/12 text-violet-600 dark:text-violet-400',
-                      room: 'bg-rose-500/12 text-rose-600 dark:text-rose-400'
-                    };
-                    const badgeClass = workspaceBadgeColors[action.workspace] || 'bg-violet-500/12 text-violet-600 dark:text-violet-300';
-
-                    return (
+              {/* ── 3-Pillar Executive Memory Grid ── */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                
+                {/* ── Pillar 1: Brand & Design System Tokens ── */}
+                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <Palette size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        Brand Rules
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 font-semibold">
+                        {brandRules.length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".md,.markdown,.txt"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
                       <button
-                        key={action.id}
                         type="button"
-                        data-selected={isSelected}
-                        onClick={() => handleActivateItem({ type: 'action', data: action })}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        className={`group flex items-center justify-between px-3 py-2 rounded-[10px] text-left transition-all duration-150 cursor-pointer ${
-                          isSelected
-                            ? 'bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-600 text-slate-900 dark:text-white shadow-xs ring-1 ring-black/[0.04] dark:ring-white/[0.08]'
-                            : 'bg-white/[0.55] dark:bg-zinc-800/[0.45] backdrop-blur-md hover:bg-white/80 dark:hover:bg-zinc-800/80 border border-white/70 dark:border-white/[0.08] hover:border-slate-200/80 dark:hover:border-zinc-700 text-slate-700 dark:text-zinc-300 shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
-                        }`}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1 rounded hover:bg-black/[0.04] text-slate-500 hover:text-violet-600 transition-colors cursor-pointer"
+                        title="Upload .MD file"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${badgeClass}`}>
-                            <ActionIcon size={12} strokeWidth={1.8} />
-                          </div>
-                          <span className="text-[12px] font-medium tracking-tight truncate">{t('quickActions.' + (action.id === 'action-new-doc' ? 'newDoc' : action.id === 'action-new-sheet' ? 'newSheet' : action.id === 'action-new-deck' ? 'newDeck' : 'startRoom')) || action.title}</span>
-                        </div>
-                        <kbd className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05] ml-1 shrink-0">
-                          {action.shortcut}
-                        </kbd>
+                        <FileUp size={12} />
                       </button>
-                    );
-                  })}
+                      <button
+                        type="button"
+                        onClick={() => setIsMdModalOpen(true)}
+                        className="p-1 rounded hover:bg-black/[0.04] text-violet-600 hover:text-violet-700 transition-colors cursor-pointer"
+                        title="Add or Paste MD"
+                      >
+                        <Plus size={13} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3 space-y-1.5 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                    {brandRules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="flex items-start justify-between p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
+                      >
+                        <div className="min-w-0 flex-1 pr-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            {rule.category && (
+                              <span className={`text-[8px] font-bold uppercase font-mono px-1 py-0.2 rounded border ${getCategoryBadge(rule.category)}`}>
+                                {rule.category}
+                              </span>
+                            )}
+                            <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">
+                              {rule.label}
+                            </span>
+                          </div>
+                          <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-tight">
+                            {rule.value}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBrandRule(rule.id)}
+                          className="text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0 cursor-pointer"
+                          title="Delete rule"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* ── Pillar 2: Ambient Learned Habits ── */}
+                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        Ambient Habits
+                      </span>
+                    </div>
+                    <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live
+                    </span>
+                  </div>
+
+                  <div className="p-3 space-y-2 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                    {LEARNED_HABITS.map((habit) => {
+                      const HabitIcon = habit.icon;
+                      return (
+                        <div
+                          key={habit.id}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
+                        >
+                          <div className="w-6 h-6 rounded flex items-center justify-center bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+                            <HabitIcon size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11.5px] font-bold text-slate-800 dark:text-zinc-200 truncate">
+                              {habit.title}
+                            </div>
+                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 leading-snug mt-0.5">
+                              {habit.desc}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Pillar 3: Active Cognitive Lens & Prompt Engine ── */}
+                <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <UserCheck size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        Cognitive Lens
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditPersona(activePersona)}
+                      className="flex items-center gap-1 text-[10.5px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors cursor-pointer"
+                    >
+                      <Edit3 size={11} />
+                      <span>Edit Prompt</span>
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 space-y-3 max-h-[310px] overflow-y-auto thin-scrollbar flex-1 flex flex-col justify-between">
+                    <div className="space-y-2.5">
+                      {/* Active Persona Header Box */}
+                      <div className="flex items-center gap-2.5 p-2 rounded-lg bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/40">
+                        <div className="w-7 h-7 rounded-md flex items-center justify-center bg-violet-600 text-white font-bold text-xs font-mono shrink-0 shadow-2xs">
+                          {activePersona.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                            {activePersona.name}
+                          </div>
+                          <div className="text-[10px] text-violet-700 dark:text-violet-300 font-medium truncate">
+                            {activePersona.badge}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Live Persona Prompt Rules Snippet */}
+                      <div className="p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] space-y-1">
+                        <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                          Active System Directive
+                        </div>
+                        <p className="text-[11px] text-slate-700 dark:text-zinc-300 italic leading-relaxed line-clamp-4">
+                          &ldquo;{activePersona.instructions}&rdquo;
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Switcher Chips */}
+                    <div className="space-y-1.5 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
+                      <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                        Quick Switch Lens
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {personas.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setActivePersona(p)}
+                            className={`px-2 py-1 rounded text-[10.5px] font-semibold text-left truncate transition-all cursor-pointer ${
+                              activePersona.id === p.id
+                                ? 'bg-violet-600 text-white shadow-2xs'
+                                : 'bg-black/[0.03] dark:bg-white/[0.04] text-slate-700 dark:text-zinc-300 hover:bg-black/[0.06]'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Real Items: Continue Where You Left Off */}
-              {searchResults.length > 0 ? (
+              {/* Real Items: Continue Where You Left Off (Only rendered when actual files exist) */}
+              {searchResults.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
                     <RegaarderHistoryIcon size={12} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
-                    <span>Recent Workspace Context</span>
+                    <span>Recent Workspace Files & Context</span>
                   </div>
                   <div className="space-y-1">
-                    {searchResults.slice(0, 6).map((res, itemIdx) => {
-                      const globalIdx = COMPACT_QUICK_ACTIONS.length + itemIdx;
-                      const isSelected = selectedIndex === globalIdx;
+                    {searchResults.slice(0, 5).map((res, itemIdx) => {
+                      const isSelected = selectedIndex === itemIdx;
                       const entity = res.entity;
 
                       return (
@@ -655,7 +1483,7 @@ export default function GlobalWorkspaceSearchModal({
                           key={entity.id}
                           data-selected={isSelected}
                           onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                          onMouseEnter={() => setSelectedIndex(globalIdx)}
+                          onMouseEnter={() => setSelectedIndex(itemIdx)}
                           className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
                             isSelected
                               ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
@@ -698,19 +1526,6 @@ export default function GlobalWorkspaceSearchModal({
                       );
                     })}
                   </div>
-                </div>
-              ) : (
-                /* ── Context-Aware Minimal Apple Empty State ── */
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-xl bg-white/60 dark:bg-zinc-800/40 border border-black/[0.05] dark:border-white/[0.06] my-1">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-2.5 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
-                    <EmptyIcon size={16} strokeWidth={1.6} />
-                  </div>
-                  <h4 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200 mb-1">
-                    {t('emptyState.' + (activeFilter === 'all' ? 'allTitle' : activeFilter === 'compose' ? 'docsTitle' : activeFilter === 'sheets' ? 'sheetsTitle' : activeFilter === 'deck' ? 'deckTitle' : activeFilter === 'tasks' ? 'tasksTitle' : activeFilter === 'room' ? 'roomTitle' : activeFilter === 'browser' ? 'notesTitle' : 'peopleTitle')) || currentEmptyState.title}
-                  </h4>
-                  <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 max-w-xs leading-relaxed">
-                    {t('emptyState.' + (activeFilter === 'all' ? 'allDesc' : activeFilter === 'compose' ? 'docsDesc' : activeFilter === 'sheets' ? 'sheetsDesc' : activeFilter === 'deck' ? 'deckDesc' : activeFilter === 'tasks' ? 'tasksDesc' : activeFilter === 'room' ? 'roomDesc' : activeFilter === 'browser' ? 'notesDesc' : 'peopleDesc')) || currentEmptyState.description}
-                  </p>
                 </div>
               )}
             </div>
@@ -863,11 +1678,180 @@ export default function GlobalWorkspaceSearchModal({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
-            <span>{t('search.footerBrand') || 'Regaarder Context Search'}</span>
+          <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+            <span>{t('search.footerBrand') || 'Regaarder Workspace Memory Hub'}</span>
           </div>
         </div>
       </div>
+
+      {/* ── Edit Cognitive Lens Prompt Modal ── */}
+      {isEditPersonaModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100010] bg-black/45 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-100"
+          onClick={() => setIsEditPersonaModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150 font-sans text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-violet-600 text-white flex items-center justify-center font-bold text-xs">
+                  {editingPersonaName ? editingPersonaName.charAt(0) : 'P'}
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                  Customize Persona System Prompt
+                </h4>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsEditPersonaModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+              Define the tone, behavioral guidelines, what to say, and what to avoid. Saved 100% on your device and applied whenever querying Memory.
+            </p>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-1">
+                    Persona Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPersonaName}
+                    onChange={(e) => setEditingPersonaName(e.target.value)}
+                    placeholder="e.g. Peter Thiel, Warren Buffett"
+                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-1">
+                    Badge / Specialty
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPersonaBadge}
+                    onChange={(e) => setEditingPersonaBadge(e.target.value)}
+                    placeholder="e.g. Contrarian & Zero-to-One"
+                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-100 outline-none focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-1">
+                  System Directive & Behavioral Prompt
+                </label>
+                <textarea
+                  rows={6}
+                  value={editingPersonaInstructions}
+                  onChange={(e) => setEditingPersonaInstructions(e.target.value)}
+                  placeholder="What the persona should focus on, its tone of voice, what it should never do..."
+                  className="w-full text-xs font-mono p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500 resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={handleResetActivePersona}
+                className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={11} />
+                <span>Reset to Default</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditPersonaModalOpen(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCustomPersona}
+                  className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-all cursor-pointer"
+                >
+                  Save Lens to Device
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Semantic Markdown Input Modal with On-Device Persistence ── */}
+      {isMdModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100010] bg-black/45 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setIsMdModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150 font-sans text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-violet-600" />
+                <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                  Import Guidelines or Agentic Rules
+                </h4>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsMdModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+              Paste your company guidelines, design system rules, or custom persona prompt. Saved 100% on your device and semantically parsed into individual memory cards.
+            </p>
+
+            <textarea
+              rows={8}
+              value={mdInputText}
+              onChange={(e) => setMdInputText(e.target.value)}
+              placeholder={`# Typography\n- Font: Inter, -apple-system\n\n# Brand Colors\n- Primary: #7C3AED\n- Surface: #FFFFFF\n\n# Constraints\n- Always format numbers with %\n- Never use pill-shaped buttons`}
+              className="w-full text-xs font-mono p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500 resize-none leading-relaxed"
+            />
+
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800">
+              <span className="text-[10px] text-slate-400 font-mono">
+                Stored in client-side device storage
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMdModalOpen(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApplyPastedMarkdown}
+                  disabled={!mdInputText.trim()}
+                  className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  Decompose & Save Locally
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -25269,7 +25269,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     return `Source materials to ground the response in:\n${blocks.join('\n\n')}`;
   };
 
-  async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
+  async function callGemini(arg) {
+    const { userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider } =
+      typeof arg === 'string' ? { userPrompt: arg } : (arg || {});
     const todayDateString = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const isOrbRequested = hasOrbMention(userPrompt) || hasOrbMention(systemPrompt);
     const orbContext = isOrbRequested ? buildOrbWorkspacePromptContext({
@@ -71770,44 +71772,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* Global Workspace Search Modal */}
-      <GlobalWorkspaceSearchModal
-        isOpen={isMemorySearchOpen}
-        onClose={() => setIsMemorySearchOpen(false)}
-        onSelectEntity={(entity) => {
-          if (!entity) return;
-          if (entity.type === 'doc') {
-            setProductMode('compose');
-            handleOpenSavedDocument(entity.id || entity.title);
-            showToast(`Opened: ${entity.title}`);
-          } else {
-            showToast(`Opened: ${entity.title}`);
-          }
-        }}
-        onQuickAction={(action) => {
-          if (!action) return;
-          const ws = action.targetWorkspace;
-          if (ws === 'compose') {
-            setProductMode('compose');
-            if (action.actionType === 'new_doc') {
-              handleCreateNewDocument();
-            }
-          } else if (ws === 'sheets') {
-            setProductMode('sheets');
-            showToast('Created new spreadsheet');
-          } else if (ws === 'deck') {
-            setProductMode('deck');
-            showToast('Created new presentation');
-          } else if (ws === 'room') {
-            createRoomExperience();
-          } else if (ws === 'browser') {
-            setProductMode('browser');
-            showToast('Opened Web Research');
-          } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-          }
-        }}
-      />
+
 
       {/* ── Deck Slash Menu Overlay in Sheets/Deck view ── */}
       {productMode === 'deck' && deckSlashMenu.open && typeof document !== 'undefined' && createPortal(
@@ -87676,6 +87641,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isDarkMode={isDarkMode}
         productMode={productMode}
         onCallAi={callGemini}
+        aiConfig={aiConfig || aiProviderConfig}
         liveWorkspaceContext={{
           documents,
           activeDocId,
