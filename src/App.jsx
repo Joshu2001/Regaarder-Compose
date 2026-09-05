@@ -84,6 +84,7 @@ import * as workspaceBus from './services/workspaceStateBus';
 import { initMcpBrowserBridge, stopMcpBrowserBridge } from './services/mcpBrowserClient';
 import * as llmProvider from './services/llmProviderService';
 import * as roomAudioStream from './services/roomAudioStreamService';
+import DesktopDownloadFloatingTrigger from './components/desktop/DesktopDownloadFloatingTrigger';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -87919,6 +87920,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsOmniPortalOpen(false)}
         onBatchAbsorbed={handleBatchAbsorbed}
       />
+
+      {/* ── Native Desktop Download Floating Action Button ─────────── */}
+      <DesktopDownloadFloatingTrigger />
     </div>
   );
 }
