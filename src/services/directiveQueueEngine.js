@@ -611,3 +611,16 @@ export function serializeDirectivesToMarkdown(filter = {}) {
 export function serializeDirectivesToJson(filter = {}) {
   return JSON.stringify(getDirectives(filter), null, 2);
 }
+
+export function resetDirectiveQueueForTesting() {
+  directiveQueue = [];
+  runnerLogs = [];
+  isStorageInitialized = false;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.removeItem('regaarder_directive_queue_v1');
+      window.localStorage.removeItem('regaarder_runner_logs_v1');
+    } catch (_) {}
+  }
+}
+

@@ -23,6 +23,8 @@ import * as omniPortal from './omniPortalEngine.js';
 import * as directiveEngine from './directiveQueueEngine.js';
 import * as spatialTopology from './spatialTopologyEngine.js';
 import * as roomObserver from './roomObserverEngine.js';
+import * as webExecutionGateway from './webExecutionGateway.js';
+import * as meneurCommandDeck from './meneurCommandDeckService.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
@@ -2316,6 +2318,165 @@ export const CANONICAL_DOCS_TOOLS = [
           message: `Retrieved active Room context for "${session.title}" (${session.summary.totalTurns} turns, ${session.summary.decisionsCount} decisions).`,
           data: content,
           session
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── AI-NATIVE BROWSER EXECUTION GATEWAY & COMMAND DECK (Pillar 11) ──
+  {
+    name: 'translate_web_semantic_dom',
+    label: 'Translate Web DOM to Semantic Tree',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Compresses noisy raw web HTML/DOM into an ultra-dense, token-optimized Accessibility Tree with @e1..@eN references (>90% token reduction).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        html: { type: 'string', description: 'Raw HTML string or DOM content from the active webpage' },
+        url: { type: 'string', description: 'URL of the page being translated' }
+      },
+      required: ['html']
+    },
+    execute: async (params) => {
+      try {
+        const result = webExecutionGateway.translateDomToSemanticTree(params.html, params.url || 'about:blank');
+        return {
+          success: true,
+          message: `Translated DOM into ${result.elementsCount} semantic nodes (${result.tokenReductionPercent}% token reduction).`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'execute_declarative_web_intent',
+    label: 'Execute Declarative Web Intent',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Executes high-level user intent against an active web page, synthesising actions and extracting structured data.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        intent: { type: 'string', description: 'High-level declarative action instruction (e.g., "extract pricing table")' },
+        url: { type: 'string', description: 'Target website URL' },
+        targetFormat: { type: 'string', enum: ['matrix', 'canvas_blocks', 'json'], description: 'Desired output format' }
+      },
+      required: ['intent']
+    },
+    execute: async (params) => {
+      try {
+        const result = await webExecutionGateway.executeDeclarativeWebIntent(params.intent, params.url, params);
+        return {
+          success: true,
+          message: `Executed web intent "${params.intent}" (${result.actionPlan.length} steps).`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'capture_web_directive',
+    label: 'Capture Web Directive',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Instantly captures a web highlight, note, or research snippet directly into the universal directive queue and calendar block.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Highlighted or selected text content from web' },
+        title: { type: 'string', description: 'Brief title for the directive' },
+        sourceUrl: { type: 'string', description: 'Web source URL' },
+        blockId: { type: 'string', description: 'Optional calendar time-block ID to anchor to' }
+      },
+      required: ['text']
+    },
+    execute: async (params) => {
+      try {
+        const directive = meneurCommandDeck.captureWebDirective(params);
+        return {
+          success: true,
+          message: `Captured web directive "${directive.title}" into task queue.`,
+          data: directive
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'archive_tab_session',
+    label: 'Archive Browser Tab Session',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Bundles active browser tabs into an intentional archived session linked to a calendar time-block.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Session archive label' },
+        tabs: { type: 'array', description: 'Array of tab objects ({ title, url, favicon })' },
+        timeBlockId: { type: 'string', description: 'Optional time block ID' }
+      },
+      required: ['tabs']
+    },
+    execute: async (params) => {
+      try {
+        const session = meneurCommandDeck.archiveTabSession(params.title, params.tabs, params.timeBlockId);
+        return {
+          success: true,
+          message: `Archived ${session.tabs.length} tabs under session "${session.title}".`,
+          data: session
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'evaluate_site_focus_block',
+    label: 'Evaluate Site Focus Shield',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Evaluates whether a target URL is suppressed under the active deep-work focus block mode.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to evaluate against focus shield rules' }
+      },
+      required: ['url']
+    },
+    execute: async (params) => {
+      try {
+        const result = meneurCommandDeck.evaluateSiteFocusBlock(params.url);
+        return {
+          success: true,
+          message: result.isBlocked ? `Site ${result.domain} is BLOCKED under active deep-work focus shield.` : `Site is allowed.`,
+          data: result
         };
       } catch (err) {
         return { success: false, error: err.message };

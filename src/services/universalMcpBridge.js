@@ -40,6 +40,7 @@ import * as omniPortal from './omniPortalEngine.js';
 import * as directiveEngine from './directiveQueueEngine.js';
 import * as spatialTopology from './spatialTopologyEngine.js';
 import * as roomObserver from './roomObserverEngine.js';
+import * as meneurCommandDeck from './meneurCommandDeckService.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MCP RESOURCE CATALOG SPECIFICATION
@@ -146,6 +147,12 @@ export const MCP_RESOURCES = [
     uri: 'workspace://room/live-context',
     name: 'Room Live In-Meeting Context Stream',
     description: 'Real-time feed of active meeting session, speaker turns, epistemic consensus log, and pending PR mutations in token-dense Markdown.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://browser/command-deck',
+    name: 'Meneur Browser Command Deck State',
+    description: 'Active timetable, contextual focus shields, pending research directives, and tab session archives in structured Markdown.',
     mimeType: 'text/markdown'
   }
 ];
@@ -722,6 +729,22 @@ ${cleanText}`;
 
   if (uri === 'workspace://room/live-context') {
     const md = roomObserver.serializeRoomContextToMarkdown();
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
+  if (uri === 'workspace://browser/command-deck') {
+    const focusMode = meneurCommandDeck.getFocusModeRule();
+    const activeBlocks = meneurCommandDeck.getActiveBlockRules();
+    const archives = meneurCommandDeck.listTabArchives();
+    const md = `### MENEUR BROWSER COMMAND DECK\n` +
+      `**Focus Shield:** ${focusMode.enabled ? 'ACTIVE (Deep-Work Enforcement)' : 'INACTIVE'}\n` +
+      `**Blocked Domains (${activeBlocks.length}):** ${activeBlocks.join(', ') || 'None'}\n` +
+      `**Saved Tab Archives:** ${archives.length} sessions\n` +
+      (archives.length > 0 ? archives.map(a => `- **${a.title}** (${a.tabs.length} tabs) - *${new Date(a.createdAt).toLocaleTimeString()}*`).join('\n') : '*No saved tab sessions.*');
     return {
       uri,
       mimeType: 'text/markdown',

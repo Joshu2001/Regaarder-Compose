@@ -14,6 +14,8 @@ import FlowExecutionModal from './flows/FlowExecutionModal';
 import BrowserFontPopover from './BrowserFontPopover';
 import BrowserOverflowMenu from './BrowserOverflowMenu';
 import BrowserUtilitiesPopover from './BrowserUtilitiesPopover';
+import MeneurCommandDeckSidebar from './MeneurCommandDeckSidebar';
+import { evaluateSiteFocusBlock, captureWebDirective } from '../../services/meneurCommandDeckService';
 import { globalActivityObserver, synthesizeFlowFromActions, getSavedFlows } from '../../services/flowEngine';
 
 const STORAGE_KEY = 'regaarder_research_tabs_v2';
@@ -48,11 +50,15 @@ export const BrowserWorkspace = ({
     }
   });
 
+  const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
+
   useEffect(() => {
     try {
       localStorage.setItem(SIDE_PANEL_STORAGE_KEY, JSON.stringify(isSidePanelOpen));
     } catch (e) {}
   }, [isSidePanelOpen]);
+
+
 
   const [isDarkModeState, setIsDarkModeState] = useState(() => {
     if (typeof isDarkMode === 'boolean') return isDarkMode;
@@ -389,6 +395,25 @@ export const BrowserWorkspace = ({
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
   const isBookmarked = savedItems.some((item) => item.url === activeTab?.url);
 
+  // Global hotkey: Cmd/Ctrl+Shift+D for Instant Directive Capture
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        const selection = typeof window !== 'undefined' && window.getSelection ? window.getSelection().toString().trim() : '';
+        const snippet = selection || activeTab?.title || activeTab?.url || 'Captured research excerpt';
+        captureWebDirective({
+          text: snippet,
+          sourceUrl: activeTab?.url || 'regaarder://research',
+          title: `Web Directive: ${snippet.slice(0, 35)}`
+        });
+        if (showToast) showToast(`Meneur: Captured "${snippet.slice(0, 30)}..." into Tasks`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, showToast]);
+
   // Listen for actions dispatched from popovers running in standalone Electron windows
   useEffect(() => {
     if (!isElectron || !window.electronAPI?.onPopoverAction) return;
@@ -585,6 +610,12 @@ export const BrowserWorkspace = ({
         const protocol = trimmed.startsWith('localhost') || trimmed.startsWith('127.0.0.1') ? 'http://' : 'https://';
         formattedUrl = protocol + trimmed;
       }
+    }
+
+    // Contextual focus enforcement check
+    const focusCheck = evaluateSiteFocusBlock(formattedUrl);
+    if (focusCheck.isBlocked && showToast) {
+      showToast(`Focus Shield: ${focusCheck.domain} suppressed during deep-work block`);
     }
 
     setTabs((prev) =>
@@ -917,6 +948,8 @@ export const BrowserWorkspace = ({
         isSecure={activeTab?.isSecure !== false}
         isBookmarked={isBookmarked}
         isSidePanelOpen={isSidePanelOpen}
+        isCommandDeckOpen={isCommandDeckOpen}
+        onToggleCommandDeck={() => setIsCommandDeckOpen(prev => !prev)}
         isFlowRecording={isFlowRecording}
         isFlowsPopoverOpen={Boolean(flowsPopoverRect)}
         isFontPopoverOpen={Boolean(fontPopoverRect)}
@@ -1019,6 +1052,23 @@ export const BrowserWorkspace = ({
               showToast={showToast}
             />
           </div>
+        )}
+
+        {/* Meneur Command Deck Slide-Over Sidebar */}
+        {isCommandDeckOpen && (
+          <MeneurCommandDeckSidebar
+            isOpen={isCommandDeckOpen}
+            onClose={() => setIsCommandDeckOpen(false)}
+            currentUrl={activeTab?.url}
+            activeTabs={tabs}
+            onRestoreTabs={(restoredTabs) => {
+              if (restoredTabs && restoredTabs.length > 0) {
+                setTabs(restoredTabs);
+                setActiveTabId(restoredTabs[0].id);
+              }
+            }}
+            onShowToast={showToast}
+          />
         )}
       </div>
 

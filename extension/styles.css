@@ -1,0 +1,28 @@
+﻿/* Meneur Executive Web Experience Styles */
+.meneur-toast-banner {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(24, 24, 27, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  padding: 10px 16px;
+  border-radius: 8px;
+  z-index: 2147483647;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.meneur-command-deck-frame {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 340px;
+  height: 100vh;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  background: #18181b;
+  z-index: 2147483646;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+}
