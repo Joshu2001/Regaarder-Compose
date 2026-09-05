@@ -115,4 +115,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   storeSecret: (key, value) => ipcRenderer.invoke('secure:store-secret', { key, value }),
   getSecret: (key) => ipcRenderer.invoke('secure:get-secret', { key }),
   deleteSecret: (key) => ipcRenderer.invoke('secure:delete-secret', { key }),
+
+  // Native Desktop Auto-Updater & Channel Lifecycle
+  checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download-update'),
+  quitAndInstallUpdate: () => ipcRenderer.invoke('updater:quit-and-install'),
+  getAppVersion: () => ipcRenderer.invoke('updater:get-app-version'),
+  getUpdateChannel: () => ipcRenderer.invoke('updater:get-channel'),
+  setUpdateChannel: (channel) => ipcRenderer.invoke('updater:set-channel', channel),
+  onUpdaterStatus: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('updater:status', handler);
+    return () => ipcRenderer.removeListener('updater:status', handler);
+  },
 });

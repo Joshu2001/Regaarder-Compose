@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, session, desktopCapturer, safeStorage } = r
 const path = require('path');
 const fs = require('fs');
 const BrowserViewManager = require('./browserViewManager.cjs');
+const { initAutoUpdater } = require('./autoUpdater.cjs');
 
 // Disable hardware acceleration to eliminate exit_code=34 Chromium GPU process crashes on Windows
 app.disableHardwareAcceleration();
@@ -184,6 +185,7 @@ $ws.AppActivate('${targetName}')
   });
 
   browserViewManager = new BrowserViewManager(mainWindow);
+  initAutoUpdater(mainWindow);
 
   // Layout resize listener to sync browser view bounds when window resizes
   mainWindow.on('resize', () => {
@@ -215,6 +217,18 @@ $ws.AppActivate('${targetName}')
       event.preventDefault();
     }
   });
+
+  // Packaged production executable loads compiled dist/index.html immediately
+  if (app.isPackaged || process.env.NODE_ENV === 'production') {
+    const prodPath = path.join(__dirname, '../dist/index.html');
+    mainWindow.loadFile(prodPath).then(() => {
+      activeAppUrl = `file://${prodPath}`;
+      console.log('[Electron Main] Packaged production bundle loaded successfully.');
+    }).catch(err => {
+      console.error('[Electron Main] Failed to load packaged dist/index.html:', err);
+    });
+    return;
+  }
 
   const portsToTry = [
     process.env.VITE_DEV_SERVER_URL,

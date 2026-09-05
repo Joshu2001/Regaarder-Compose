@@ -1,0 +1,121 @@
+{
+  "appId": "com.regaarder.compose",
+  "productName": "Regaarder Compose",
+  "electronVersion": "43.4.0",
+  "copyright": "Copyright © 2026 Regaarder / Meneur",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "protocols": [
+    {
+      "name": "Regaarder Compose Protocol",
+      "schemes": [
+        "regaarder"
+      ]
+    }
+  ],
+  "mac": {
+    "category": "public.app-category.productivity",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
+      {
+        "target": "zip",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      }
+    ],
+    "icon": "build/icon.png",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.inherit.plist"
+  },
+  "dmg": {
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "window": {
+      "width": 540,
+      "height": 380
+    }
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
+        "target": "portable",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "signtoolOptions": {
+      "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+    }
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Regaarder Compose",
+    "include": "build/installer.nsh"
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
+        "target": "deb",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "build/icons",
+    "category": "Office;Utility;Development;",
+    "synopsis": "Executive AI-Native Workspace & Timetable Intelligence Platform"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Joshu2001",
+      "repo": "Regaarder-Compose",
+      "releaseType": "release"
+    }
+  ]
+}
