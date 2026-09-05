@@ -23,6 +23,7 @@ import { mcpClient } from './universalMcpBridge.js';
 import * as intentScheduler from './intentSchedulerEngine.js';
 import * as spatialTopology from './spatialTopologyEngine.js';
 import * as roomObserver from './roomObserverEngine.js';
+import { runAgentExecutionLoop } from './llmProviderService.js';
 
 /**
  * Converts markdown text into executive-tier, semantic document HTML.
@@ -472,6 +473,38 @@ export async function processRelayAgentMessage(args = {}) {
       }
     } catch (aiErr) {
       console.warn('[RelayAgent] AI invocation failed, using deterministic execution fallback:', aiErr);
+    }
+  }
+
+  // Attempt dynamic multi-turn tool calling loop if model not yet answered and provider/config given
+  if (!replyText && !modelJson && (customProvider || options.aiConfig)) {
+    try {
+      const loopResult = await runAgentExecutionLoop({
+        prompt: trimmed,
+        systemPrompt: activeSystemPrompt,
+        aiConfig: {
+          provider: customProvider,
+          activeModel: customModel,
+          ...(options.aiConfig || {})
+        }
+      });
+
+      if (loopResult && loopResult.success) {
+        replyText = loopResult.replyText;
+        const tools = loopResult.executedTools || [];
+        if (tools.length > 0) {
+          const primary = tools[0];
+          actionCard = {
+            type: primary.toolName.includes('document') || primary.toolName.includes('content') ? 'document' : 'action',
+            subType: 'llm_executed',
+            title: `Tool: ${primary.toolName.replace(/_/g, ' ')}`,
+            description: primary.result?.message || `Executed ${primary.toolName} dynamically via agent loop (${loopResult.turnsCount} turns).`,
+            previewSnippet: typeof primary.arguments === 'object' ? JSON.stringify(primary.arguments, null, 2) : String(primary.arguments)
+          };
+        }
+      }
+    } catch (loopErr) {
+      console.warn('[RelayAgent] runAgentExecutionLoop fallback error:', loopErr);
     }
   }
 

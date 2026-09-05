@@ -21,6 +21,7 @@ import { patchMatrixCells } from './matrixSchemaEngine.js';
 import { insertBlock, patchBlock, getActiveBlockTree } from './blockCanvasEngine.js';
 import { createStagingBranch, stageMutation, approveAndCommitBranch, rejectBranch, getActiveStagedBranches } from './workspaceStagingEngine.js';
 import { recordRoomObserverGraphNode } from './universalContextGraph.js';
+import { syncCrossAppIntent } from './workspaceStateBus.js';
 
 // ── CONSTANTS & ENUMS ─────────────────────────────────────────────────────────
 
@@ -199,7 +200,10 @@ export const classifySpeechIntent = (speaker, text) => {
     lower.includes('task for') ||
     lower.includes('will benchmark') ||
     lower.includes('follow up on') ||
-    lower.includes('assigned to')
+    lower.includes('assigned to') ||
+    lower.includes('please prepare') ||
+    lower.includes('prepare the') ||
+    lower.includes('schedule task')
   ) {
     const isP0 = lower.includes('p0') || lower.includes('urgent') || lower.includes('critical');
     const isP1 = lower.includes('p1') || lower.includes('high priority');
@@ -424,6 +428,16 @@ export const mutateWorkspaceFromIntent = (intent, options = { stage: true }) => 
     } catch (e) {
       console.warn('[RoomObserverEngine] stageMutation fallback:', e.message);
     }
+  }
+
+  // Broadcast mutation through central Workspace State Bus for reactive cross-app propagation
+  try {
+    syncCrossAppIntent(intent, {
+      ...mutationRecord,
+      branchId: currentSession.activePrBranchId
+    });
+  } catch (busErr) {
+    console.warn('[RoomObserverEngine] State bus dispatch fallback:', busErr.message);
   }
 
   return mutationRecord;

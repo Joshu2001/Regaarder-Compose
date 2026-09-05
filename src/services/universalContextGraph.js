@@ -944,3 +944,37 @@ export const recordRoomObserverGraphNode = (session) => {
   notifySubscribers('graph_entities', graphEntitiesCache);
   return node;
 };
+
+/**
+ * Record a cross-app workspace state mutation into the Universal Context Graph.
+ */
+export const recordWorkspaceMutationNode = (mutationEvent) => {
+  if (!mutationEvent || !mutationEvent.id) return null;
+  initializeContextGraph();
+
+  const node = {
+    id: `ent_mut_${mutationEvent.id}`,
+    type: 'TASK',
+    workspace: mutationEvent.targetApp || 'workspace',
+    title: `Workspace Mutation: ${mutationEvent.description || mutationEvent.action}`,
+    author: mutationEvent.origin || 'State Bus',
+    authorRole: 'Cross-App Mutator',
+    updatedAt: mutationEvent.timestamp || new Date().toISOString(),
+    project: 'Cross-App Workspace Synchronization',
+    tags: ['Mutation', mutationEvent.targetApp || 'workspace', mutationEvent.status || 'committed'],
+    excerpt: mutationEvent.description || 'Reactive cross-app mutation',
+    content: JSON.stringify(mutationEvent, null, 2),
+    metadata: {
+      action: mutationEvent.action,
+      targetApp: mutationEvent.targetApp,
+      status: mutationEvent.status,
+      branchId: mutationEvent.branchId
+    }
+  };
+
+  graphEntitiesCache = [node, ...graphEntitiesCache];
+  safeSetItem(GRAPH_ENTITIES_STORAGE_KEY, graphEntitiesCache);
+  notifySubscribers('workspace_mutation', mutationEvent);
+  return node;
+};
+

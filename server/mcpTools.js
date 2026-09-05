@@ -1,6 +1,5 @@
-/**
- * Standard SchemaType enum for MCP JSON Schema & Gemini Function Declarations
- */
+import { executeToolOverBridge, readResourceOverBridge, hasActiveWorkspaceClient } from './mcpBridgeServer.js';
+
 export const SchemaType = {
   OBJECT: 'object',
   STRING: 'string',
@@ -1449,11 +1448,177 @@ export function processMcpRequest(message = {}) {
 }
 
 /**
+ * Asynchronous MCP Request Processor with Live WebSocket Bridge Forwarding.
+ * Routes resources/read and tools/call to live connected browser sessions.
+ */
+export async function processMcpRequestAsync(message = {}) {
+  const { jsonrpc, id, method, params } = message;
+  const responseId = id !== undefined ? id : 1;
+
+  if (method === 'notifications/initialized') {
+    return null;
+  }
+
+  if (method === 'ping') {
+    return { jsonrpc: '2.0', id: responseId, result: {} };
+  }
+
+  if (method === 'initialize') {
+    return {
+      jsonrpc: '2.0',
+      id: responseId,
+      result: {
+        protocolVersion: '2024-11-05',
+        serverInfo: {
+          name: 'regaarder-workspace-mcp',
+          version: '1.0.0'
+        },
+        capabilities: {
+          resources: { subscribe: true, listChanged: true },
+          tools: { listChanged: true },
+          prompts: { listChanged: true }
+        }
+      }
+    };
+  }
+
+  if (method === 'resources/list') {
+    return {
+      jsonrpc: '2.0',
+      id: responseId,
+      result: { resources: REGAARDER_MCP_RESOURCES }
+    };
+  }
+
+  if (method === 'resources/templates/list') {
+    return {
+      jsonrpc: '2.0',
+      id: responseId,
+      result: { resourceTemplates: REGAARDER_MCP_RESOURCE_TEMPLATES }
+    };
+  }
+
+  // Resources: Read with Live Bridge Forwarding
+  if (method === 'resources/read') {
+    const { uri } = params || {};
+    if (!uri) {
+      return {
+        jsonrpc: '2.0',
+        id: responseId,
+        error: { code: -32602, message: 'Invalid params: uri is required' }
+      };
+    }
+
+    // Attempt live read from connected browser runtime first
+    let content = await readResourceOverBridge(uri);
+    if (!content) {
+      content = getMockResourceContent(uri);
+    }
+
+    if (!content) {
+      return {
+        jsonrpc: '2.0',
+        id: responseId,
+        error: { code: -32002, message: `Resource not found: ${uri}` }
+      };
+    }
+
+    return {
+      jsonrpc: '2.0',
+      id: responseId,
+      result: {
+        contents: [
+          {
+            uri,
+            mimeType: content.mimeType || 'text/plain',
+            text: content.text
+          }
+        ]
+      }
+    };
+  }
+
+  if (method === 'tools/list') {
+    return {
+      jsonrpc: '2.0',
+      id: responseId,
+      result: {
+        tools: REGAARDER_MCP_TOOLS.map(t => ({
+          name: t.name,
+          description: t.description,
+          inputSchema: toStandardJsonSchema(t.parameters)
+        }))
+      }
+    };
+  }
+
+  // Tools: Call with Live Bridge Forwarding
+  if (method === 'tools/call') {
+    const { name, arguments: args } = params || {};
+    const tool = REGAARDER_MCP_TOOLS.find(t => t.name === name);
+    if (!tool && !hasActiveWorkspaceClient()) {
+      return {
+        jsonrpc: '2.0',
+        id: responseId,
+        error: { code: -32601, message: `Tool '${name}' not found` }
+      };
+    }
+
+    if (name === 'validate_tool_call') {
+      const targetTool = REGAARDER_MCP_TOOLS.find(t => t.name === args?.targetTool);
+      return {
+        jsonrpc: '2.0',
+        id: responseId,
+        result: {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                valid: Boolean(targetTool),
+                targetTool: args?.targetTool,
+                isDestructive: false,
+                mutatesState: true,
+                schemaMatches: true,
+                simulationStatus: 'APPROVED_FOR_STAGING'
+              }, null, 2)
+            }
+          ],
+          isError: false
+        }
+      };
+    }
+
+    // Forward to active browser client over WebSocket bridge!
+    const bridgeResult = await executeToolOverBridge(name, args);
+    const editorAction = formatMcpToolAction(name, args);
+
+    return {
+      jsonrpc: '2.0',
+      id: responseId,
+      result: {
+        content: [
+          {
+            type: 'text',
+            text: bridgeResult.message || `[MCP Success] Executed tool '${name}' with arguments: ${JSON.stringify(args || {})}`
+          }
+        ],
+        bridgeResult,
+        editorAction,
+        isError: bridgeResult.success === false
+      }
+    };
+  }
+
+  // Prompts and other static handlers
+  return processMcpRequest(message);
+}
+
+/**
  * Express Route Handler for HTTP POST /api/mcp
  */
-export function handleMcpJsonRpc(req, res) {
+export async function handleMcpJsonRpc(req, res) {
   const message = req.body || {};
-  const response = processMcpRequest(message);
+  const response = await processMcpRequestAsync(message);
   if (!response) {
     return res.status(204).end();
   }

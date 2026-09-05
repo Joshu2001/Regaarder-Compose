@@ -80,6 +80,10 @@ import * as omniPortal from './services/omniPortalEngine';
 import * as directiveQueue from './services/directiveQueueEngine';
 import * as spatialTopology from './services/spatialTopologyEngine';
 import * as roomObserver from './services/roomObserverEngine';
+import * as workspaceBus from './services/workspaceStateBus';
+import { initMcpBrowserBridge, stopMcpBrowserBridge } from './services/mcpBrowserClient';
+import * as llmProvider from './services/llmProviderService';
+import * as roomAudioStream from './services/roomAudioStreamService';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6935,10 +6939,13 @@ function AppCore() {
       setMemoryTab('room');
       setIsMemoryOpen(true);
     };
+    window.__REGAARDER_WORKSPACE_BUS__ = workspaceBus;
     window.__REGAARDER_INTENT_SCHEDULER__ = intentScheduler;
     window.__REGAARDER_COMMIT_EVENT__ = (event) => {
       return intentScheduler.commitCalendarEvent(event);
     };
+    window.__REGAARDER_LLM_PROVIDER__ = llmProvider;
+    window.__REGAARDER_AUDIO_STREAM__ = roomAudioStream;
     return () => {
       delete window.__REGAARDER_OPEN_STAGING_MODAL__;
       delete window.__REGAARDER_OPEN_MATRIX_ENGINE__;
@@ -6952,8 +6959,11 @@ function AppCore() {
       delete window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__;
       delete window.__REGAARDER_ROOM_HARVESTER__;
       delete window.__REGAARDER_OPEN_ROOM_HARVESTER__;
+      delete window.__REGAARDER_WORKSPACE_BUS__;
       delete window.__REGAARDER_INTENT_SCHEDULER__;
       delete window.__REGAARDER_COMMIT_EVENT__;
+      delete window.__REGAARDER_LLM_PROVIDER__;
+      delete window.__REGAARDER_AUDIO_STREAM__;
     };
   }, [stagedBranches]);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
@@ -8350,6 +8360,12 @@ function AppCore() {
       timeout: 3000,
       autoConnect: true
     });
+
+    try {
+      initMcpBrowserBridge(socketRef.current, { activeProduct: 'compose' });
+    } catch (err) {
+      console.warn('[MCP Bridge] Failed to initialize browser bridge:', err);
+    }
     
     socketRef.current.on('connect', () => {
       setSocketId(socketRef.current.id);
@@ -8379,6 +8395,9 @@ function AppCore() {
     });
     
     return () => {
+      try {
+        stopMcpBrowserBridge();
+      } catch (e) {}
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);

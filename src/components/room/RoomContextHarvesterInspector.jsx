@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Radio, Play, Square, RefreshCw, Send, CheckCircle2,
   AlertCircle, ArrowRight, GitPullRequest, ListTodo,
-  Network, Calculator, FileText, Users, Mic,
+  Network, Calculator, FileText, Users, Mic, MicOff,
   Volume2, Shield, Copy, Check, Sparkles, Layers,
   ChevronRight, ArrowUpRight, Zap
 } from 'lucide-react';
@@ -22,6 +22,14 @@ import {
   HARVESTER_STATUS,
   DEFAULT_IN_ROOM_OBSERVERS
 } from '../../services/roomObserverEngine.js';
+import {
+  startLiveAudioStream,
+  stopLiveAudioStream,
+  toggleMuteAudioStream,
+  getAudioStreamState,
+  subscribeToAudioStream,
+  AUDIO_STREAM_STATUS
+} from '../../services/roomAudioStreamService.js';
 
 export default function RoomContextHarvesterInspector({ isDarkMode = false }) {
   const [session, setSession] = useState(getLiveSession());
@@ -31,20 +39,51 @@ export default function RoomContextHarvesterInspector({ isDarkMode = false }) {
   const [isAutoStreaming, setIsAutoStreaming] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [actionFeedback, setActionFeedback] = useState(null);
+  const [audioStreamState, setAudioStreamState] = useState(getAudioStreamState());
 
   useEffect(() => {
     const unsubscribe = subscribeToRoomObserver((updated) => {
       setSession({ ...updated });
     });
+    const unsubAudio = subscribeToAudioStream((state) => {
+      setAudioStreamState(state);
+    });
     return () => {
       unsubscribe();
+      unsubAudio();
       stopLiveSimulationStream();
+      stopLiveAudioStream();
     };
   }, []);
 
   const showFeedback = (msg) => {
     setActionFeedback(msg);
     setTimeout(() => setActionFeedback(null), 3500);
+  };
+
+  const handleToggleLiveMic = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    if (audioStreamState.isStreaming) {
+      stopLiveAudioStream();
+      showFeedback('Stopped physical microphone stream');
+    } else {
+      try {
+        await startLiveAudioStream({
+          speaker: customSpeaker || 'You (Live Voice)',
+          autoIngest: true,
+          onError: (err) => showFeedback(`Mic error: ${err.message || err}`)
+        });
+        showFeedback('Live microphone stream active: speech will auto-ingest into Room session');
+      } catch (err) {
+        showFeedback(`Failed to start microphone: ${err.message || 'Permission denied'}`);
+      }
+    }
+  };
+
+  const handleToggleMute = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    const muted = toggleMuteAudioStream();
+    showFeedback(muted ? 'Microphone muted' : 'Microphone unmuted');
   };
 
   const handleSendCustomTurn = (e) => {
@@ -159,6 +198,39 @@ export default function RoomContextHarvesterInspector({ isDarkMode = false }) {
 
         {/* Live Controls Bar */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Real Physical Microphone Stream Button */}
+          <button
+            type="button"
+            onPointerDown={handleToggleLiveMic}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+              audioStreamState.isStreaming
+                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 outline outline-1 outline-rose-400/40 shadow-xs'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+            }`}
+          >
+            {audioStreamState.isStreaming ? (
+              <Square size={13} className="text-rose-600 dark:text-rose-400" />
+            ) : (
+              <Mic size={13} className="text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span>{audioStreamState.isStreaming ? 'Stop Mic' : 'Live Mic Stream'}</span>
+          </button>
+
+          {audioStreamState.isStreaming && (
+            <button
+              type="button"
+              onPointerDown={handleToggleMute}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center transition-colors cursor-pointer border ${
+                audioStreamState.isMuted
+                  ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border-amber-300'
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700'
+              }`}
+              title={audioStreamState.isMuted ? 'Unmute microphone' : 'Mute microphone'}
+            >
+              {audioStreamState.isMuted ? <MicOff size={13} /> : <Mic size={13} />}
+            </button>
+          )}
+
           <button
             type="button"
             onPointerDown={handleToggleAutoStream}
@@ -169,7 +241,7 @@ export default function RoomContextHarvesterInspector({ isDarkMode = false }) {
             }`}
           >
             {isAutoStreaming ? <Square size={13} /> : <Play size={13} />}
-            <span>{isAutoStreaming ? 'Stop Audio Stream' : 'Live Audio Stream'}</span>
+            <span>{isAutoStreaming ? 'Stop Simulation' : 'Simulate Stream'}</span>
           </button>
 
           <button
@@ -191,6 +263,36 @@ export default function RoomContextHarvesterInspector({ isDarkMode = false }) {
           </button>
         </div>
       </div>
+
+      {/* Real-Time Live Microphone Waveform & Activity Strip */}
+      {audioStreamState.isStreaming && (
+        <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-2.5 h-2.5 rounded-xs bg-emerald-500 animate-ping shrink-0" />
+            <span className="font-semibold text-emerald-800 dark:text-emerald-200 font-mono shrink-0">
+              LIVE MICROPHONE ACTIVE
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-zinc-400 shrink-0">
+              ({audioStreamState.speaker})
+            </span>
+            {audioStreamState.lastTranscript && (
+              <span className="text-xs text-slate-700 dark:text-zinc-200 italic truncate max-w-md">
+                "{audioStreamState.lastTranscript}"
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 font-mono text-[11px] text-emerald-700 dark:text-emerald-300 shrink-0">
+            <span>Level: {Math.round(audioStreamState.volumeLevel * 100)}%</span>
+            <div className="w-24 h-2 rounded-md bg-emerald-200/50 dark:bg-emerald-950/50 overflow-hidden">
+              <div 
+                className="h-full bg-emerald-500 transition-all duration-75 rounded-md"
+                style={{ width: `${Math.min(100, Math.max(8, audioStreamState.volumeLevel * 100))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {actionFeedback && (
         <div className="px-4 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-xs text-violet-800 dark:text-violet-200 flex items-center gap-2 animate-in fade-in duration-150">

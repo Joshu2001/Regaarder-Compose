@@ -8,11 +8,18 @@ import { setupWSConnection } from 'y-websocket/bin/utils';
 import { 
   handleMcpJsonRpc, 
   processMcpRequest, 
+  processMcpRequestAsync,
   REGAARDER_MCP_TOOLS, 
   REGAARDER_MCP_RESOURCES, 
   REGAARDER_MCP_PROMPTS, 
   toStandardJsonSchema 
 } from './mcpTools.js';
+import {
+  registerWorkspaceClient,
+  unregisterWorkspaceClient,
+  handleClientToolResult,
+  handleClientResourceResult
+} from './mcpBridgeServer.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -231,10 +238,10 @@ app.get('/mcp/sse', (req, res) => {
   });
 });
 
-app.post('/mcp/message', (req, res) => {
+app.post('/mcp/message', async (req, res) => {
   const { sessionId } = req.query;
   const message = req.body || {};
-  const response = processMcpRequest(message);
+  const response = await processMcpRequestAsync(message);
 
   const clientRes = sessionId ? mcpSseClients.get(sessionId) : null;
   if (clientRes && response) {
@@ -727,7 +734,21 @@ io.on('connection', (socket) => {
     }
   });
 
+  // MCP WebSocket Bridge Handlers
+  socket.on('mcp_register_workspace', (data) => {
+    registerWorkspaceClient(socket, data);
+  });
+
+  socket.on('mcp_tool_result', (payload) => {
+    handleClientToolResult(payload);
+  });
+
+  socket.on('mcp_resource_result', (payload) => {
+    handleClientResourceResult(payload);
+  });
+
   socket.on('disconnect', () => {
+    unregisterWorkspaceClient(socket.id);
     console.log('Socket.IO Client disconnected:', socket.id);
   });
 });

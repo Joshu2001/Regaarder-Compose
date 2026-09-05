@@ -9,7 +9,7 @@
 
 import { getToolByName } from './docsToolRegistry.js';
 import * as docsCommandApi from './docsCommandApi.js';
-import { stageMutation } from './workspaceStagingEngine.js';
+import { stageMutation, evaluateSecurityGate, isDestructiveTool } from './workspaceStagingEngine.js';
 
 // In-memory transaction stack for document state undo/redo tracking
 const transactionHistory = [];
@@ -136,9 +136,17 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
     return dryRunResult;
   }
 
-  // 3b. Handle Isolated Staging Mode (Pillar 3 Sandbox Execution)
-  const isStagedMode = Boolean(options.stage || context?.stage);
-  if (isStagedMode && toolDef.mutatesDocument) {
+  // 3b. Handle Isolated Staging Mode & Security Clearance Gates (Pillar 3 Sandbox Execution)
+  const gateEvaluation = evaluateSecurityGate(toolName, params, context);
+  const isDestructive = gateEvaluation.isDestructive || Boolean(toolDef.destructive) || isDestructiveTool(toolName);
+  const isExplicitlyConfirmed = Boolean(options.confirmed || context?.confirmed);
+
+  // High-risk/destructive tools must NEVER silently wipe or alter data in production.
+  // If a destructive tool is triggered without explicit confirmation, automatically route it to staging PR.
+  const isSecurityDiverted = isDestructive && !isExplicitlyConfirmed && !options.stage && !context?.stage;
+  const isStagedMode = Boolean(options.stage || context?.stage || isSecurityDiverted);
+
+  if (isStagedMode && (toolDef.mutatesDocument || isDestructive)) {
     let beforeText = currentSnapshot.text || '';
     let proposedText = params.text || params.contentHtml || params.replacementText || (params.title ? `# ${params.title}\n\n${beforeText}` : beforeText);
     
@@ -190,18 +198,30 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
       params,
       beforeText,
       afterText: proposedText,
-      metadata: { requestId, toolLabel: toolDef.label, destructive: toolDef.destructive, blockId: params.blockId }
+      metadata: { 
+        requestId, 
+        toolLabel: toolDef.label, 
+        destructive: isDestructive, 
+        blockId: params.blockId,
+        securityGate: gateEvaluation,
+        forcedStaging: isSecurityDiverted
+      }
     });
 
     const stagedOutput = {
       success: true,
       isStaged: true,
+      requiresConfirmation: gateEvaluation.requiresConfirmation,
+      securityClearance: gateEvaluation.clearanceLevel,
+      forcedStaging: isSecurityDiverted,
       toolName,
       requestId,
       branchId: stagedResult.branchId,
       mutationId: stagedResult.mutationId,
       prNumber: stagedResult.prNumber,
-      message: `[STAGED FOR APPROVAL] Propose changes for "${toolDef.label}" into PR #${stagedResult.prNumber}.`,
+      message: isSecurityDiverted
+        ? `[SECURITY GATE ACTIVATED] Destructive tool "${toolDef.label}" safely diverted into staging PR #${stagedResult.prNumber} pending human director approval.`
+        : `[STAGED FOR APPROVAL] Propose changes for "${toolDef.label}" into PR #${stagedResult.prNumber}.`,
       data: stagedResult,
       error: null,
       warnings,

@@ -13,6 +13,56 @@
 import DiffMatchPatch from 'diff-match-patch';
 import { mutateAndPropagate } from './universalContextGraph.js';
 import * as docsCommandApi from './docsCommandApi.js';
+import { dispatchWorkspaceMutation } from './workspaceStateBus.js';
+
+export const SECURITY_CLEARANCE_LEVELS = {
+  STANDARD: 'STANDARD',
+  HIGH_RISK: 'HIGH_RISK',
+  CONFIRMATION_REQUIRED: 'CONFIRMATION_REQUIRED',
+  STRICT: 'STRICT'
+};
+
+export const DESTRUCTIVE_TOOLS = new Set([
+  'delete_block',
+  'clear_content',
+  'clear_document',
+  'delete_task',
+  'delete_deck_slide',
+  'drop_column',
+  'reset_memory',
+  'remove_all_blocks'
+]);
+
+export function isDestructiveTool(toolName) {
+  return DESTRUCTIVE_TOOLS.has(toolName);
+}
+
+export function evaluateSecurityGate(toolName, params = {}, context = {}) {
+  const isDestructive = isDestructiveTool(toolName);
+  let clearanceLevel = SECURITY_CLEARANCE_LEVELS.STANDARD;
+  let requiresConfirmation = false;
+  let reason = 'Standard non-destructive operation permitted into sandbox staging.';
+
+  if (isDestructive) {
+    clearanceLevel = SECURITY_CLEARANCE_LEVELS.HIGH_RISK;
+    requiresConfirmation = true;
+    reason = `Destructive tool '${toolName}' requires human director confirmation.`;
+  }
+
+  if (context.isStrictRuleViolation || context.safetyLevel === 'STRICT') {
+    clearanceLevel = SECURITY_CLEARANCE_LEVELS.STRICT;
+    requiresConfirmation = true;
+    reason = 'Operation intersects strict project rules in memory bank.';
+  }
+
+  return {
+    allowed: true,
+    isDestructive,
+    requiresConfirmation,
+    clearanceLevel,
+    reason
+  };
+}
 
 const DiffTool = DiffMatchPatch.diff_match_patch || DiffMatchPatch;
 const dmp = new DiffTool();
@@ -156,12 +206,16 @@ export function createStagingBranch({
   description = '',
   agentId = 'relay_agent',
   sourceApp = 'relay',
-  targetApps = ['compose']
+  targetApps = ['compose'],
+  appId,
+  origin,
+  meetingId
 }) {
   initializeStaging();
 
   const prNumber = prSequenceCounter++;
   const branchId = customBranchId || `pr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const resolvedAppId = appId || (origin === 'room_observer' ? 'room' : sourceApp);
 
   const newBranch = {
     id: branchId,
@@ -170,7 +224,10 @@ export function createStagingBranch({
     title: title || `Agent Proposed PR #${prNumber}`,
     description,
     agentId,
-    sourceApp,
+    sourceApp: resolvedAppId,
+    appId: resolvedAppId,
+    origin: origin || resolvedAppId,
+    meetingId: meetingId || null,
     targetApps,
     status: 'pending_review',
     createdAt: new Date().toISOString(),
@@ -210,6 +267,7 @@ export function stageMutation({
   }
 
   const { chunks, stats } = computeVisualDiff(beforeText, afterText);
+  const securityGate = evaluateSecurityGate(toolName, params, metadata);
 
   const mutation = {
     mutationId: `mut_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -223,6 +281,7 @@ export function stageMutation({
     diffChunks: chunks,
     stats,
     metadata,
+    securityGate,
     selected: true,
     stagedAt: new Date().toISOString()
   };
@@ -360,6 +419,25 @@ export async function approveAndCommitBranch(branchId, selectedMutationIds = nul
   safeSetItem(STAGING_STORAGE_KEY, stagingBranchesCache);
   notifyStagingListeners();
 
+  // Dispatch state bus event for reactive app sync
+  try {
+    dispatchWorkspaceMutation({
+      appId: branch.sourceApp || 'relay',
+      targetApp: branch.targetApps?.[0] || 'compose',
+      action: 'STAGING_PR_COMMITTED',
+      entityId: branch.id,
+      delta: {
+        prNumber: branch.prNumber,
+        committedCount: mutationsToApply.length,
+        committedMutationIds: mutationsToApply.map(m => m.mutationId),
+        branchTitle: branch.title
+      },
+      source: 'workspace_staging_engine'
+    });
+  } catch (busErr) {
+    console.warn('[StagingEngine] Failed to dispatch STAGING_PR_COMMITTED to state bus:', busErr);
+  }
+
   return {
     success: true,
     branchId: branch.id,
@@ -367,6 +445,89 @@ export async function approveAndCommitBranch(branchId, selectedMutationIds = nul
     committedCount: mutationsToApply.length,
     totalMutations: branch.mutations.length,
     results: commitResults
+  };
+}
+
+/**
+ * Commit cherry-picked mutations explicitly.
+ */
+export async function commitCherryPickedMutations(branchId, mutationIds) {
+  return approveAndCommitBranch(branchId, mutationIds);
+}
+
+/**
+ * Reject and remove a single staged mutation from a branch without discarding the entire PR.
+ * If all mutations are removed, the branch itself is marked as rejected.
+ */
+export function rejectStagedMutation(branchId, mutationId, reason = 'Discarded by Human Director') {
+  initializeStaging();
+
+  const branch = stagingBranchesCache.find(b => b.id === branchId);
+  if (!branch) {
+    throw new Error(`Staging branch '${branchId}' not found.`);
+  }
+
+  const mutIndex = branch.mutations.findIndex(m => m.mutationId === mutationId);
+  if (mutIndex === -1) {
+    return {
+      success: false,
+      message: `Mutation '${mutationId}' not found in branch '${branchId}'.`
+    };
+  }
+
+  const [removedMutation] = branch.mutations.splice(mutIndex, 1);
+
+  if (branch.mutations.length === 0) {
+    branch.status = 'rejected';
+    branch.rejectedAt = new Date().toISOString();
+    branch.rejectionReason = 'All staged mutations discarded';
+
+    try {
+      dispatchWorkspaceMutation({
+        appId: branch.sourceApp || 'relay',
+        targetApp: branch.targetApps?.[0] || 'compose',
+        action: 'STAGING_PR_REJECTED',
+        entityId: branch.id,
+        delta: {
+          prNumber: branch.prNumber,
+          reason: 'All staged mutations discarded'
+        },
+        source: 'workspace_staging_engine'
+      });
+    } catch (busErr) {
+      console.warn('[StagingEngine] Failed to dispatch STAGING_PR_REJECTED:', busErr);
+    }
+  } else {
+    try {
+      dispatchWorkspaceMutation({
+        appId: branch.sourceApp || 'relay',
+        targetApp: branch.targetApps?.[0] || 'compose',
+        action: 'STAGING_MUTATION_REJECTED',
+        entityId: branch.id,
+        delta: {
+          prNumber: branch.prNumber,
+          mutationId,
+          remainingCount: branch.mutations.length,
+          reason
+        },
+        source: 'workspace_staging_engine'
+      });
+    } catch (busErr) {
+      console.warn('[StagingEngine] Failed to dispatch STAGING_MUTATION_REJECTED:', busErr);
+    }
+  }
+
+  safeSetItem(STAGING_STORAGE_KEY, stagingBranchesCache);
+  notifyStagingListeners();
+
+  return {
+    success: true,
+    branchId: branch.id,
+    prNumber: branch.prNumber,
+    discardedMutationId: mutationId,
+    remainingMutations: branch.mutations.length,
+    branchStatus: branch.status,
+    mutation: removedMutation
   };
 }
 
@@ -387,6 +548,23 @@ export function rejectBranch(branchId, reason = 'Rejected by Human Director') {
 
   safeSetItem(STAGING_STORAGE_KEY, stagingBranchesCache);
   notifyStagingListeners();
+
+  // Dispatch state bus event
+  try {
+    dispatchWorkspaceMutation({
+      appId: branch.sourceApp || 'relay',
+      targetApp: branch.targetApps?.[0] || 'compose',
+      action: 'STAGING_PR_REJECTED',
+      entityId: branch.id,
+      delta: {
+        prNumber: branch.prNumber,
+        reason
+      },
+      source: 'workspace_staging_engine'
+    });
+  } catch (busErr) {
+    console.warn('[StagingEngine] Failed to dispatch STAGING_PR_REJECTED:', busErr);
+  }
 
   return {
     success: true,
