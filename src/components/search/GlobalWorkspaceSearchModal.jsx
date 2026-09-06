@@ -183,16 +183,16 @@ const SUGGESTED_AI_PROMPTS = [
 // Pre-built Executive Agentic Personas (Claude / ChatGPT style)
 const INITIAL_PRESET_PERSONAS = [
   {
-    id: 'polymath-genius',
-    name: 'Universal Polymath',
-    badge: 'Executive Genius & Synthesizer',
-    instructions: 'High-agency polymath intelligence with cross-disciplinary mastery across mathematics, architecture, typography, and strategy. Answers with first-principles clarity, zero corporate fluff, verified spreadsheet metrics, and flawless executive synthesis.'
+    id: 'executive-editor',
+    name: 'Executive Editor',
+    badge: 'Concise & Structured',
+    instructions: 'Communicate with executive brevity, strategic precision, and decisive focus. Use clean tables, bold takeaways, and actionable bullet points. Cut preamble, corporate buzzwords, and redundant text.'
   },
   {
-    id: 'peter-thiel',
-    name: 'Peter Thiel',
-    badge: 'Contrarian & Zero-to-One',
-    instructions: 'Challenge conventional consensus. Demand secret truths, network effects, and proprietary durability. Avoid corporate buzzwords, cosmetic fluff, and incrementalism.'
+    id: 'executive-strategist',
+    name: 'Strategist',
+    badge: 'High-Agency Synthesis',
+    instructions: 'High-agency polymath intelligence with cross-disciplinary mastery across strategy, unit economics, architecture, and long-term moat. Answers with first-principles clarity, zero corporate fluff, and verified metrics.'
   },
   {
     id: 'steve-jobs',
@@ -207,10 +207,10 @@ const INITIAL_PRESET_PERSONAS = [
     instructions: 'Analyze spreadsheet formulas, financial margins, and unit economics with strict mathematical rigor. Every statement must be backed by data and formulas.'
   },
   {
-    id: 'executive-editor',
-    name: 'Executive Editor',
-    badge: 'Concise & Structured',
-    instructions: 'Communicate with executive brevity. Use clean tables, bold takeaways, and actionable bullet points. Cut preamble and redundant text.'
+    id: 'peter-thiel',
+    name: 'Peter Thiel',
+    badge: 'Contrarian & Zero-to-One',
+    instructions: 'Challenge conventional consensus. Demand secret truths, network effects, and proprietary durability. Avoid corporate buzzwords, cosmetic fluff, and incrementalism.'
   }
 ];
 
@@ -426,10 +426,18 @@ export default function GlobalWorkspaceSearchModal({
   // Persona list (supports custom on-device edits)
   const [personas, setPersonas] = useState(() => {
     try {
-      const saved = localStorage.getItem('regaarder_personas_list');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedV2 = localStorage.getItem('regaarder_personas_list_v2');
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      // If legacy storage exists without the new Executive Editor default, reset to updated presets
+      const legacySaved = localStorage.getItem('regaarder_personas_list');
+      if (legacySaved) {
+        const parsedLegacy = JSON.parse(legacySaved);
+        if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0 && parsedLegacy[0]?.id !== 'peter-thiel') {
+          return parsedLegacy;
+        }
       }
     } catch (e) {
       console.warn('Failed to load custom personas:', e);
@@ -437,11 +445,22 @@ export default function GlobalWorkspaceSearchModal({
     return INITIAL_PRESET_PERSONAS;
   });
 
-  // Active Agentic Persona State
+  // Active Agentic Persona State - Default is Executive Editor / Strategist (never Peter Thiel)
   const [activePersona, setActivePersona] = useState(() => {
     try {
-      const saved = localStorage.getItem('regaarder_active_persona');
-      if (saved) return JSON.parse(saved);
+      const savedV2 = localStorage.getItem('regaarder_active_persona_v2');
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
+        if (parsed && parsed.id) return parsed;
+      }
+      const legacySaved = localStorage.getItem('regaarder_active_persona');
+      if (legacySaved) {
+        const parsedLegacy = JSON.parse(legacySaved);
+        // If legacy storage defaulted to peter-thiel, explicitly override to executive-editor
+        if (parsedLegacy && parsedLegacy.id && parsedLegacy.id !== 'peter-thiel') {
+          return parsedLegacy;
+        }
+      }
     } catch (e) {
       console.warn('Failed to load active persona:', e);
     }
@@ -490,6 +509,7 @@ export default function GlobalWorkspaceSearchModal({
   // Persist active persona to localStorage
   useEffect(() => {
     try {
+      localStorage.setItem('regaarder_active_persona_v2', JSON.stringify(activePersona));
       localStorage.setItem('regaarder_active_persona', JSON.stringify(activePersona));
     } catch (e) {
       console.warn('Failed to persist active persona:', e);
@@ -499,6 +519,7 @@ export default function GlobalWorkspaceSearchModal({
   // Persist personas list to localStorage
   useEffect(() => {
     try {
+      localStorage.setItem('regaarder_personas_list_v2', JSON.stringify(personas));
       localStorage.setItem('regaarder_personas_list', JSON.stringify(personas));
     } catch (e) {
       console.warn('Failed to persist personas list:', e);
