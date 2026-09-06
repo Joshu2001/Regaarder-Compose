@@ -4,18 +4,16 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
 /**
  * DesktopDownloadFloatingTrigger
  * 
- * Final Visual Polish:
- * 1. Physical Stack Depth: -8px to -10px vertical overlap between platform cards,
- *    with progressive visual hierarchy (subtly lighter glass and higher z-index on top).
- * 2. Restrained Detected State: Soft elevation and subtle border treatment instead of
- *    a high-contrast ring, letting the "Detected" badge be the primary signal.
- * 3. Minimal Anchor Button: Removed redundant `.exe` badge from collapsed button.
- *    Clean: "↓ Download Desktop ˄"
- * 4. Spatial Continuity: Cards smoothly slide upward from behind the button and
- *    collapse back into the button with a subtle cubic-bezier spring curve.
- * 5. Download State: Responsive in-card downloading state before/while initiating download.
- * 6. Preserved Regaarder visual language: dark navy/slate glass surfaces, minimal shadows,
- *    Apple-like restraint, and zero layout shift.
+ * Micro-Refinements:
+ * 1. Breathing room: Increased card height slightly (+2–4px via py-3) while keeping
+ *    the -8px overlapping stack effect crisp and compact.
+ * 2. Shortened Linux subtitle to "Ubuntu · Fedora · Arch" to prevent truncation.
+ * 3. Icon prominence: Reduced circular platform icon wrapper size to 24x24px (w-6 h-6,
+ *    size 12 icon, subtle opacity) so the visual hierarchy is:
+ *    Platform name → platform details → file format → download action.
+ * 4. Preserved Windows "Detected" badge and subtle border treatment.
+ * 5. Maintained bottom-right positioning, dark surfaces, clean anchor button,
+ *    and smooth native Apple-style expansion.
  */
 export default function DesktopDownloadFloatingTrigger() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -113,7 +111,7 @@ export default function DesktopDownloadFloatingTrigger() {
     {
       key: 'linux',
       name: 'Linux',
-      subtitle: 'Ubuntu, Fedora, Arch · AppImage',
+      subtitle: 'Ubuntu · Fedora · Arch',
       ext: '.AppImage',
       icon: Terminal,
       url: `${releasesBaseUrl}/latest/download/Regaarder-Compose.AppImage`
@@ -204,7 +202,7 @@ export default function DesktopDownloadFloatingTrigger() {
         role="menu"
         aria-label="Platform options"
         aria-hidden={!isExpanded}
-        className={`flex flex-col items-stretch w-[284px] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-bottom ${
+        className={`flex flex-col items-stretch w-[288px] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-bottom ${
           isExpanded
             ? 'opacity-100 translate-y-0 pointer-events-auto mb-1.5'
             : 'opacity-0 translate-y-3 pointer-events-none mb-0 h-0 overflow-hidden'
@@ -217,7 +215,6 @@ export default function DesktopDownloadFloatingTrigger() {
           const isThisCompleted = downloadState.platformKey === platform.key && downloadState.status === 'completed';
           
           // Layered visual hierarchy: Top cards have higher z-index & slightly crisper contrast
-          // Lower cards have slight overlap and progressive subordination
           const zIndex = 30 - index;
           const marginTop = index === 0 ? '0px' : '-8px';
           
@@ -248,29 +245,30 @@ export default function DesktopDownloadFloatingTrigger() {
                 marginTop,
                 transitionDelay: isExpanded ? `${index * 30}ms` : `${(2 - index) * 20}ms`
               }}
-              className={`relative overflow-hidden flex flex-col px-3.5 py-2.5 rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 backdrop-blur-xl ${cardBg}`}
+              className={`relative overflow-hidden flex flex-col px-3.5 py-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 backdrop-blur-xl ${cardBg}`}
             >
               {/* Card Top Row */}
               <div className="flex items-center justify-between w-full">
                 {/* Left Side: Icon + OS Details */}
                 <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  {/* Subtle, 15% reduced circular icon wrapper */}
                   <div
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
                       isThisCompleted
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30'
                         : isThisDownloading
                         ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30'
                         : isDetected
-                        ? 'bg-white/10 text-white border border-white/15'
-                        : 'bg-white/[0.06] text-slate-400 border border-white/[0.08] group-hover:text-white'
+                        ? 'bg-white/10 text-slate-300 border border-white/15'
+                        : 'bg-white/[0.05] text-slate-400 border border-white/[0.08] group-hover:text-slate-200'
                     }`}
                   >
                     {isThisCompleted ? (
-                      <CheckCircle2 size={14} className="text-emerald-400" />
+                      <CheckCircle2 size={13} className="text-emerald-400" />
                     ) : isThisDownloading ? (
-                      <Loader2 size={14} className="animate-spin text-indigo-300" />
+                      <Loader2 size={13} className="animate-spin text-indigo-300" />
                     ) : (
-                      <Icon size={14} />
+                      <Icon size={12} />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -376,7 +374,7 @@ export default function DesktopDownloadFloatingTrigger() {
             )}
           </div>
 
-          {/* Clean Label (Redundant .exe badge removed) */}
+          {/* Clean Label */}
           <span className="text-xs font-semibold text-white tracking-tight">
             {downloadState.status === 'downloading'
               ? `Downloading (${downloadState.progress}%)`
