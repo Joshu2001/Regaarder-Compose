@@ -3,7 +3,7 @@ import {
   Search, Video, Plus, Check, CheckCheck, Send, Smile, Paperclip, 
   Sparkles, FileText, Table, Presentation, X, ArrowRight, MoreVertical,
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
-  Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
+  Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown, ChevronUp,
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
   Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
