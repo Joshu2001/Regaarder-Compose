@@ -73,16 +73,16 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
       {/* ── Outer Ecosystem Stage (Aspect 1060 x 415: Compact single-viewport height) ── */}
       <div className="w-full max-w-[1060px] h-[395px] sm:h-[415px] relative flex items-center justify-center overflow-visible">
         
-        {/* ── Soft Atmospheric Background Illumination (Clean canvas, pale soft diffusion) ── */}
+        {/* ── Soft Atmospheric Background Illumination (Clean canvas, luminous soft diffusion) ── */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
           {/* Pale soft ambient field */}
-          <div className="w-[740px] h-[280px] rounded-[100%] bg-gradient-to-r from-blue-100/35 via-indigo-50/20 to-purple-100/30 dark:from-blue-950/15 dark:via-indigo-950/10 dark:to-purple-950/15 blur-[80px] transform -translate-y-1 opacity-75" />
+          <div className="w-[820px] h-[300px] rounded-[100%] bg-gradient-to-r from-blue-100/40 via-indigo-50/30 to-purple-100/40 dark:from-blue-950/20 dark:via-indigo-950/15 dark:to-purple-950/20 blur-[85px] transform -translate-y-1 opacity-85" />
           {/* Luminous lavender glow specifically behind Memory (left center) */}
-          <div className="absolute w-[280px] h-[190px] -translate-x-16 rounded-full bg-purple-300/35 dark:bg-purple-900/25 blur-[55px] opacity-80" />
+          <div className="absolute w-[300px] h-[210px] -translate-x-16 rounded-full bg-purple-400/35 dark:bg-purple-900/30 blur-[60px] opacity-85" />
           {/* Luminous blue glow specifically behind Relay (right center) */}
-          <div className="absolute w-[280px] h-[190px] translate-x-16 rounded-full bg-blue-300/35 dark:bg-blue-900/25 blur-[55px] opacity-80" />
+          <div className="absolute w-[300px] h-[210px] translate-x-16 rounded-full bg-sky-400/35 dark:bg-blue-900/30 blur-[60px] opacity-85" />
           {/* Faint white center bloom floating behind the ecosystem core */}
-          <div className="w-[420px] h-[180px] rounded-full bg-white/75 dark:bg-white/[0.04] blur-[40px] opacity-85" />
+          <div className="w-[440px] h-[190px] rounded-full bg-white/80 dark:bg-white/[0.05] blur-[42px] opacity-90" />
         </div>
 
         {/* ── SVG Connection Network Layer (Calculated against a 1060 × 415 ViewBox) ── */}
@@ -92,17 +92,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           fill="none"
         >
           <defs>
-            {/* Extremely delicate arrowheads - subtle, low-opacity */}
+            {/* Directional arrowheads matching reference line weights */}
             <marker
               id="arrow-subtle-purple"
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
-              markerWidth="3.2"
-              markerHeight="3.2"
+              markerWidth="3.6"
+              markerHeight="3.6"
               orient="auto-start-reverse"
             >
-              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#a855f7" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#a855f7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
             </marker>
 
             <marker
@@ -110,11 +110,11 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
-              markerWidth="3.2"
-              markerHeight="3.2"
+              markerWidth="3.6"
+              markerHeight="3.6"
               orient="auto-start-reverse"
             >
-              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#3b82f6" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#3b82f6" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
             </marker>
 
             <marker
@@ -122,54 +122,60 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
-              markerWidth="3.2"
-              markerHeight="3.2"
+              markerWidth="3.6"
+              markerHeight="3.6"
               orient="auto-start-reverse"
             >
-              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#818cf8" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#818cf8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
             </marker>
 
-            {/* Soft, low-opacity linear gradients for paths */}
+            {/* Vibrant, smooth linear gradients for connection paths */}
             <linearGradient id="grad-subtle-docs" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.55" />
+              <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.75" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-sheets" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.25" />
-              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.6" />
+              <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.4" />
+              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.8" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-deck" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fdba74" stopOpacity="0.25" />
-              <stop offset="50%" stopColor="#c4b5fd" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.6" />
+              <stop offset="0%" stopColor="#fdba74" stopOpacity="0.4" />
+              <stop offset="50%" stopColor="#c4b5fd" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.8" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-import" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.6" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-whiteboard" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.6" />
-              <stop offset="40%" stopColor="#818cf8" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.8" />
+              <stop offset="40%" stopColor="#818cf8" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.4" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-room" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#5eead4" stopOpacity="0.25" />
-              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.45" />
+              <stop offset="0%" stopColor="#5eead4" stopOpacity="0.4" />
+              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.8" />
+            </linearGradient>
+
+            {/* Radiant orbital ring gradients matching Reference Image 1 */}
+            <linearGradient id="grad-orbit-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.6" />
+              <stop offset="35%" stopColor="#818cf8" stopOpacity="0.75" />
+              <stop offset="70%" stopColor="#60a5fa" stopOpacity="0.7" />
               <stop offset="100%" stopColor="#c084fc" stopOpacity="0.6" />
             </linearGradient>
 
-            {/* Ethereal orbital ring gradients (subconscious subtlety) */}
-            <linearGradient id="grad-orbit-primary" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.18" />
-              <stop offset="35%" stopColor="#818cf8" stopOpacity="0.24" />
-              <stop offset="70%" stopColor="#93c5fd" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.15" />
+            <linearGradient id="grad-orbit-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="#818cf8" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.3" />
             </linearGradient>
 
             {/* Luminous Core Interlink Bridge Gradient */}
@@ -192,30 +198,44 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </filter>
           </defs>
 
-          {/* ── Ethereal Translucent Orbital Curves (Subconscious spatial depth) ── */}
-          {/* Main sweeping outer orbital arc (softened by ~25-30%) */}
+          {/* ── Ethereal Translucent Orbital Curves (Prominent glass cosmic track matching Reference Image 1) ── */}
+          {/* Ambient soft glow aura track */}
+          <path
+            d="M 80 208 C 70 115, 210 38, 530 36 C 850 34, 990 105, 980 208 C 970 310, 820 378, 530 380 C 240 382, 90 310, 80 208"
+            stroke="url(#grad-orbit-glow)"
+            strokeWidth="3.6"
+            fill="none"
+            filter="url(#soft-ethereal-glow)"
+            opacity="0.55"
+          />
+
+          {/* Crisp, radiant primary orbital track */}
           <path
             d="M 80 208 C 70 115, 210 38, 530 36 C 850 34, 990 105, 980 208 C 970 310, 820 378, 530 380 C 240 382, 90 310, 80 208"
             stroke="url(#grad-orbit-primary)"
-            strokeWidth="0.8"
+            strokeWidth="1.5"
             fill="none"
-            opacity="0.18"
+            opacity="0.6"
           />
 
           {/* Secondary delicate sweeping arc connecting Deck & Whiteboard */}
           <path
             d="M 680 95 C 850 118, 990 178, 930 278 C 880 345, 730 382, 530 380"
             stroke="url(#grad-orbit-primary)"
-            strokeWidth="0.7"
+            strokeWidth="1.1"
             fill="none"
-            opacity="0.12"
+            opacity="0.4"
           />
 
-          {/* Occasional tiny luminous celestial nodes along the curves */}
-          <circle cx="190" cy="98" r="1.4" fill="#a5b4fc" opacity="0.35" />
-          <circle cx="905" cy="155" r="1.4" fill="#93c5fd" opacity="0.35" />
-          <circle cx="365" cy="372" r="1.4" fill="#c084fc" opacity="0.3" />
-          <circle cx="775" cy="368" r="1.4" fill="#a5b4fc" opacity="0.3" />
+          {/* Glowing celestial nodes along the orbital curves */}
+          <circle cx="190" cy="98" r="2.2" fill="#a5b4fc" opacity="0.8" filter="url(#soft-ethereal-glow)" />
+          <circle cx="190" cy="98" r="1.1" fill="#ffffff" opacity="0.95" />
+          <circle cx="905" cy="155" r="2.2" fill="#93c5fd" opacity="0.8" filter="url(#soft-ethereal-glow)" />
+          <circle cx="905" cy="155" r="1.1" fill="#ffffff" opacity="0.95" />
+          <circle cx="365" cy="372" r="2.2" fill="#c084fc" opacity="0.8" filter="url(#soft-ethereal-glow)" />
+          <circle cx="365" cy="372" r="1.1" fill="#ffffff" opacity="0.95" />
+          <circle cx="775" cy="368" r="2.2" fill="#a5b4fc" opacity="0.8" filter="url(#soft-ethereal-glow)" />
+          <circle cx="775" cy="368" r="1.1" fill="#ffffff" opacity="0.95" />
 
           {/* ── MEMORY ↔ RELAY LUMINOUS CONNECTION BRIDGE ── */}
           {/* Communicates: Memory = shared context ↔ Relay = connectivity */}
@@ -274,114 +294,114 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </g>
 
           {/* ── 1. Top Center: Docs → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'compose' ? 'opacity-100' : 'opacity-75'}`}>
+          <g className={`transition-all duration-300 ${hoveredNode === 'compose' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-docs"
               d="M 525 58 C 525 88, 490 114, 480 139"
               stroke="url(#grad-subtle-docs)"
-              strokeWidth={hoveredNode === 'compose' ? "1.4" : "1"}
+              strokeWidth={hoveredNode === 'compose' ? "1.6" : "1.2"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-purple)"
             />
-            <circle cx="525" cy="58" r="1.5" fill="#93c5fd" opacity="0.65" />
+            <circle cx="525" cy="58" r="1.6" fill="#93c5fd" opacity="0.8" />
             {/* Flowing energy particle */}
-            <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
+            <circle r="1.6" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
               offsetPath: "path('M 525 58 C 525 88, 490 114, 480 139')",
               animation: "flowParticleSubtle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
             }} />
           </g>
 
           {/* ── 2. Upper Left: Sheets → Memory (Directional flow into Memory) ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'sheet' ? 'opacity-100' : 'opacity-75'}`}>
+          <g className={`transition-all duration-300 ${hoveredNode === 'sheet' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-sheets"
               d="M 302 85 C 322 110, 335 140, 352 168"
               stroke="url(#grad-subtle-sheets)"
-              strokeWidth={hoveredNode === 'sheet' ? "1.4" : "1"}
+              strokeWidth={hoveredNode === 'sheet' ? "1.6" : "1.2"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-purple)"
             />
-            <circle cx="302" cy="85" r="1.5" fill="#6ee7b7" opacity="0.65" />
+            <circle cx="302" cy="85" r="1.6" fill="#6ee7b7" opacity="0.8" />
             {/* Flowing energy particle */}
-            <circle r="1.5" fill="#a5b4fc" filter="url(#soft-ethereal-glow)" style={{
+            <circle r="1.6" fill="#a5b4fc" filter="url(#soft-ethereal-glow)" style={{
               offsetPath: "path('M 302 85 C 322 110, 335 140, 352 168')",
               animation: "flowParticleSubtle 4s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s",
             }} />
           </g>
 
           {/* ── 3. Upper Right: Deck → Relay (Directional flow into Relay) ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'deck' ? 'opacity-100' : 'opacity-75'}`}>
+          <g className={`transition-all duration-300 ${hoveredNode === 'deck' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-deck"
               d="M 758 88 C 738 110, 725 140, 708 168"
               stroke="url(#grad-subtle-deck)"
-              strokeWidth={hoveredNode === 'deck' ? "1.4" : "1"}
+              strokeWidth={hoveredNode === 'deck' ? "1.6" : "1.2"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-blue)"
             />
-            <circle cx="758" cy="88" r="1.5" fill="#fdba74" opacity="0.65" />
+            <circle cx="758" cy="88" r="1.6" fill="#fdba74" opacity="0.8" />
             {/* Flowing energy particle */}
-            <circle r="1.5" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
+            <circle r="1.6" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
               offsetPath: "path('M 758 88 C 738 110, 725 140, 708 168')",
               animation: "flowParticleSubtle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.2s",
             }} />
           </g>
 
           {/* ── 4. Mid Left: Import → Memory (Directional flow into Memory) ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'omni-portal' ? 'opacity-100' : 'opacity-75'}`}>
+          <g className={`transition-all duration-300 ${hoveredNode === 'omni-portal' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-import"
               d="M 240 208 L 348 208"
               stroke="url(#grad-subtle-import)"
-              strokeWidth={hoveredNode === 'omni-portal' ? "1.4" : "1"}
+              strokeWidth={hoveredNode === 'omni-portal' ? "1.6" : "1.2"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-purple)"
             />
-            <circle cx="240" cy="208" r="1.5" fill="#c084fc" opacity="0.65" />
+            <circle cx="240" cy="208" r="1.6" fill="#c084fc" opacity="0.8" />
             {/* Flowing energy particle */}
-            <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
+            <circle r="1.6" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
               offsetPath: "path('M 240 208 L 348 208')",
               animation: "flowParticleSubtle 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s",
             }} />
           </g>
 
           {/* ── 5. Lower Right: Relay → Whiteboard (Directional flow outward to Whiteboard) ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'whiteboard' ? 'opacity-100' : 'opacity-75'}`}>
+          <g className={`transition-all duration-300 ${hoveredNode === 'whiteboard' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-whiteboard"
               d="M 708 235 C 728 245, 750 252, 773 262"
               stroke="url(#grad-subtle-whiteboard)"
-              strokeWidth={hoveredNode === 'whiteboard' ? "1.4" : "1"}
+              strokeWidth={hoveredNode === 'whiteboard' ? "1.6" : "1.2"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-blue)"
             />
-            <circle cx="708" cy="235" r="1.5" fill="#60a5fa" opacity="0.65" />
+            <circle cx="708" cy="235" r="1.6" fill="#60a5fa" opacity="0.8" />
             {/* Flowing energy particle */}
-            <circle r="1.5" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
+            <circle r="1.6" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
               offsetPath: "path('M 708 235 C 728 245, 750 252, 773 262')",
               animation: "flowParticleSubtle 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.8s",
             }} />
           </g>
 
           {/* ── 6. Lower Left/Bottom: Room → Memory (Directional flow into Memory) ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-75'}`}>
+          <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-room"
               d="M 432 328 L 432 278"
               stroke="url(#grad-subtle-room)"
-              strokeWidth={hoveredNode === 'room' ? "1.4" : "1"}
+              strokeWidth={hoveredNode === 'room' ? "1.6" : "1.2"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-indigo)"
             />
-            <circle cx="432" cy="328" r="1.5" fill="#5eead4" opacity="0.65" />
+            <circle cx="432" cy="328" r="1.6" fill="#5eead4" opacity="0.8" />
             {/* Flowing energy particle */}
-            <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
+            <circle r="1.6" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
               offsetPath: "path('M 432 328 L 432 278')",
               animation: "flowParticleSubtle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.9s",
             }} />
@@ -407,13 +427,13 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 "w-[148px] sm:w-[158px] h-[130px] sm:h-[138px]",
                 "rounded-[26px] p-4",
                 "flex flex-col items-center justify-center text-center",
-                // Luminous lavender/violet frosted visionOS glass infusion matching Reference Image 2
-                "bg-gradient-to-b from-white/95 via-purple-50/75 to-purple-100/60 dark:from-zinc-900/90 dark:via-purple-950/40 dark:to-purple-900/30",
+                // Luminous lavender/violet frosted visionOS glass infusion matching Reference Image 1
+                "bg-gradient-to-b from-white/95 via-purple-50/80 to-purple-100/65 dark:from-zinc-900/90 dark:via-purple-950/45 dark:to-purple-900/35",
                 "backdrop-blur-2xl",
-                "border border-purple-300/70 dark:border-purple-400/35",
-                "shadow-[0_12px_40px_-6px_rgba(168,85,247,0.24),0_2px_8px_rgba(168,85,247,0.08),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(168,85,247,0.12)]",
+                "border border-purple-300/80 dark:border-purple-400/40",
+                "shadow-[0_20px_50px_-8px_rgba(168,85,247,0.28),0_4px_16px_rgba(168,85,247,0.1),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(168,85,247,0.15)]",
                 "transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'memory' ? "scale-[1.03] -translate-y-1 shadow-[0_18px_46px_-4px_rgba(168,85,247,0.34)] border-purple-400/80" : "",
+                hoveredNode === 'memory' ? "scale-[1.03] -translate-y-1 shadow-[0_24px_56px_-6px_rgba(168,85,247,0.38)] border-purple-400" : "",
               ].join(" ")}
             >
               {/* Memory icon matching switchworkspace dropdown */}
@@ -438,13 +458,13 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 "w-[148px] sm:w-[158px] h-[130px] sm:h-[138px]",
                 "rounded-[26px] p-4",
                 "flex flex-col items-center justify-center text-center",
-                // Luminous sky-blue frosted visionOS glass infusion matching Reference Image 2
-                "bg-gradient-to-b from-white/95 via-sky-50/75 to-blue-100/60 dark:from-zinc-900/90 dark:via-sky-950/40 dark:to-blue-900/30",
+                // Luminous sky-blue frosted visionOS glass infusion matching Reference Image 1
+                "bg-gradient-to-b from-white/95 via-sky-50/80 to-blue-100/65 dark:from-zinc-900/90 dark:via-sky-950/45 dark:to-blue-900/35",
                 "backdrop-blur-2xl",
-                "border border-blue-300/70 dark:border-blue-400/35",
-                "shadow-[0_12px_40px_-6px_rgba(59,130,246,0.24),0_2px_8px_rgba(59,130,246,0.08),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(59,130,246,0.12)]",
+                "border border-blue-300/80 dark:border-blue-400/40",
+                "shadow-[0_20px_50px_-8px_rgba(59,130,246,0.28),0_4px_16px_rgba(59,130,246,0.1),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(59,130,246,0.15)]",
                 "transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'relay' ? "scale-[1.03] -translate-y-1 shadow-[0_18px_46px_-4px_rgba(59,130,246,0.34)] border-blue-400/80" : "",
+                hoveredNode === 'relay' ? "scale-[1.03] -translate-y-1 shadow-[0_24px_56px_-6px_rgba(59,130,246,0.38)] border-blue-400" : "",
               ].join(" ")}
             >
               {/* Connection transfer icon matching reference with soft radiance */}
@@ -462,7 +482,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </div>
 
           {/* ========================================================================= */}
-          {/* ── PERIPHERAL TOOLS (Frosted VisionOS Glass Cards, Specular Edge Bevels) ── */}
+          {/* ── PERIPHERAL TOOLS (Frosted VisionOS Glass Cards, Floating Shadows) ───── */}
           {/* ========================================================================= */}
 
           {/* ── 1. Top Center: DOCS (Translucent frosted acrylic glass with inner specular rim) ── */}
@@ -474,16 +494,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent frosted visionOS acrylic glass allowing underlying background to shine through
-                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbital ring to shine through
+                "bg-gradient-to-b from-white/75 via-white/60 to-white/50 dark:from-[#18181b]/75 dark:via-[#18181b]/60 dark:to-[#18181b]/50",
                 "backdrop-blur-xl",
-                "border border-white/80 dark:border-white/15",
-                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
-                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
-                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
+                "border border-white/90 dark:border-white/20",
+                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
+                // Deep floating ambient shadows matching Reference Image 1
+                "shadow-[0_16px_36px_-6px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,23,42,0.03),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.4)]",
+                "hover:bg-white/85 dark:hover:bg-[#1f1f23]/85 hover:border-white dark:hover:border-white/30",
+                "hover:shadow-[0_20px_42px_-6px_rgba(15,23,42,0.12),0_6px_16px_rgba(15,23,42,0.05),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
-                hoveredNode === 'compose' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
+                hoveredNode === 'compose' ? "border-slate-300 dark:border-white/30 shadow-xl" : "",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(59,130,246,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
@@ -505,16 +526,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
-                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbital ring to shine through
+                "bg-gradient-to-b from-white/75 via-white/60 to-white/50 dark:from-[#18181b]/75 dark:via-[#18181b]/60 dark:to-[#18181b]/50",
                 "backdrop-blur-xl",
-                "border border-white/80 dark:border-white/15",
-                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
-                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
-                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
+                "border border-white/90 dark:border-white/20",
+                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
+                // Deep floating ambient shadows matching Reference Image 1
+                "shadow-[0_16px_36px_-6px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,23,42,0.03),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.4)]",
+                "hover:bg-white/85 dark:hover:bg-[#1f1f23]/85 hover:border-white dark:hover:border-white/30",
+                "hover:shadow-[0_20px_42px_-6px_rgba(15,23,42,0.12),0_6px_16px_rgba(15,23,42,0.05),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
-                hoveredNode === 'sheet' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
+                hoveredNode === 'sheet' ? "border-slate-300 dark:border-white/30 shadow-xl" : "",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(16,185,129,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
@@ -536,16 +558,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
-                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbital ring to shine through
+                "bg-gradient-to-b from-white/75 via-white/60 to-white/50 dark:from-[#18181b]/75 dark:via-[#18181b]/60 dark:to-[#18181b]/50",
                 "backdrop-blur-xl",
-                "border border-white/80 dark:border-white/15",
-                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
-                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
-                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
+                "border border-white/90 dark:border-white/20",
+                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
+                // Deep floating ambient shadows matching Reference Image 1
+                "shadow-[0_16px_36px_-6px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,23,42,0.03),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.4)]",
+                "hover:bg-white/85 dark:hover:bg-[#1f1f23]/85 hover:border-white dark:hover:border-white/30",
+                "hover:shadow-[0_20px_42px_-6px_rgba(15,23,42,0.12),0_6px_16px_rgba(15,23,42,0.05),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
-                hoveredNode === 'deck' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
+                hoveredNode === 'deck' ? "border-slate-300 dark:border-white/30 shadow-xl" : "",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(245,158,11,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
@@ -558,7 +581,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 4. Left: IMPORT (Translucent frosted acrylic glass with upload tray glyph) ── */}
+          {/* ── 4. Left: IMPORT (Translucent frosted acrylic glass with ImportPortalIcon) ── */}
           <div className="absolute top-[50%] -translate-y-[50%] left-[5%] sm:left-[7%] pointer-events-auto">
             <button
               type="button"
@@ -567,16 +590,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
-                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbital ring to shine through
+                "bg-gradient-to-b from-white/75 via-white/60 to-white/50 dark:from-[#18181b]/75 dark:via-[#18181b]/60 dark:to-[#18181b]/50",
                 "backdrop-blur-xl",
-                "border border-white/80 dark:border-white/15",
-                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
-                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
-                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
+                "border border-white/90 dark:border-white/20",
+                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
+                // Deep floating ambient shadows matching Reference Image 1
+                "shadow-[0_16px_36px_-6px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,23,42,0.03),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.4)]",
+                "hover:bg-white/85 dark:hover:bg-[#1f1f23]/85 hover:border-white dark:hover:border-white/30",
+                "hover:shadow-[0_20px_42px_-6px_rgba(15,23,42,0.12),0_6px_16px_rgba(15,23,42,0.05),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
-                hoveredNode === 'omni-portal' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
+                hoveredNode === 'omni-portal' ? "border-slate-300 dark:border-white/30 shadow-xl" : "",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-400 to-violet-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(168,85,247,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
@@ -598,16 +622,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
-                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbital ring to shine through
+                "bg-gradient-to-b from-white/75 via-white/60 to-white/50 dark:from-[#18181b]/75 dark:via-[#18181b]/60 dark:to-[#18181b]/50",
                 "backdrop-blur-xl",
-                "border border-white/80 dark:border-white/15",
-                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
-                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
-                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
+                "border border-white/90 dark:border-white/20",
+                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
+                // Deep floating ambient shadows matching Reference Image 1
+                "shadow-[0_16px_36px_-6px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,23,42,0.03),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.4)]",
+                "hover:bg-white/85 dark:hover:bg-[#1f1f23]/85 hover:border-white dark:hover:border-white/30",
+                "hover:shadow-[0_20px_42px_-6px_rgba(15,23,42,0.12),0_6px_16px_rgba(15,23,42,0.05),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
-                hoveredNode === 'whiteboard' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
+                hoveredNode === 'whiteboard' ? "border-slate-300 dark:border-white/30 shadow-xl" : "",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(79,70,229,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
@@ -629,16 +654,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
-                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbital ring to shine through
+                "bg-gradient-to-b from-white/75 via-white/60 to-white/50 dark:from-[#18181b]/75 dark:via-[#18181b]/60 dark:to-[#18181b]/50",
                 "backdrop-blur-xl",
-                "border border-white/80 dark:border-white/15",
-                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
-                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
-                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
+                "border border-white/90 dark:border-white/20",
+                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
+                // Deep floating ambient shadows matching Reference Image 1
+                "shadow-[0_16px_36px_-6px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,23,42,0.03),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.4)]",
+                "hover:bg-white/85 dark:hover:bg-[#1f1f23]/85 hover:border-white dark:hover:border-white/30",
+                "hover:shadow-[0_20px_42px_-6px_rgba(15,23,42,0.12),0_6px_16px_rgba(15,23,42,0.05),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
-                hoveredNode === 'room' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
+                hoveredNode === 'room' ? "border-slate-300 dark:border-white/30 shadow-xl" : "",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(20,184,166,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
