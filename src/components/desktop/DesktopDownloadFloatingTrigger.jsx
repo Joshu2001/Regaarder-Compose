@@ -4,13 +4,11 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
 /**
  * DesktopDownloadFloatingTrigger
  * 
- * Stacked Anchored Download Popover with Download Progress Feedback:
- * - Anchored "Download Desktop" bottom-right button with 180-deg rotating chevron.
- * - Stays stably open when a platform download is triggered.
- * - Displays active downloading progress / feedback animation directly within the card
- *   and anchor button (Progress bar %, bytes simulated or live trigger, completed state).
- * - Remains open for several seconds after download before gracefully auto-collapsing.
- * - Eliminates unwanted premature dismissals.
+ * Stacked Anchored Download Popover:
+ * - Remains rock-solid open when toggled.
+ * - When a download is initiated, it stays prominently open for at least 10 full seconds
+ *   displaying live progress and download confirmation.
+ * - Prevents all accidental outside-click closures during download.
  */
 export default function DesktopDownloadFloatingTrigger() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -27,6 +25,10 @@ export default function DesktopDownloadFloatingTrigger() {
   const anchorButtonRef = useRef(null);
   const progressTimerRef = useRef(null);
   const autoCloseTimerRef = useRef(null);
+  const isExpandedRef = useRef(isExpanded);
+  isExpandedRef.current = isExpanded;
+  const downloadStateRef = useRef(downloadState);
+  downloadStateRef.current = downloadState;
 
   // Detect user OS
   useEffect(() => {
@@ -42,28 +44,31 @@ export default function DesktopDownloadFloatingTrigger() {
     }
   }, []);
 
-  // Dismiss on outside click ONLY when not actively downloading
+  // Dismiss on click outside ONLY when idle and user clicks genuinely outside
   useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (downloadState.status === 'downloading') {
-        return; // Keep popover open while downloading
+    const handleDocumentClick = (e) => {
+      // Never close if actively downloading or showing recent download confirmation
+      if (downloadStateRef.current.status !== 'idle') {
+        return;
+      }
+      if (!isExpandedRef.current) {
+        return;
       }
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsExpanded(false);
       }
     };
-    if (isExpanded) {
-      document.addEventListener('pointerdown', handleOutsideClick);
-    }
-    return () => {
-      document.removeEventListener('pointerdown', handleOutsideClick);
-    };
-  }, [isExpanded, downloadState.status]);
 
-  // Keyboard navigation: Escape to close
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, []);
+
+  // Keyboard navigation: Escape to close when idle
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isExpanded && downloadState.status !== 'downloading') {
+      if (e.key === 'Escape' && isExpandedRef.current && downloadStateRef.current.status === 'idle') {
         e.preventDefault();
         setIsExpanded(false);
         anchorButtonRef.current?.focus();
@@ -71,7 +76,7 @@ export default function DesktopDownloadFloatingTrigger() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isExpanded, downloadState.status]);
+  }, []);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -113,45 +118,48 @@ export default function DesktopDownloadFloatingTrigger() {
     e?.preventDefault?.();
     e?.stopPropagation?.();
 
-    // Prevent re-triggering if already in progress
+    // Prevent re-triggering if already downloading
     if (downloadState.status === 'downloading') return;
 
-    // Ensure popover remains open and starts progress feedback
+    // Immediately pin the popover OPEN
     setIsExpanded(true);
     setDownloadState({
       platformKey: osKey,
       status: 'downloading',
-      progress: 5
+      progress: 8
     });
 
     if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
     if (progressTimerRef.current) clearInterval(progressTimerRef.current);
 
-    // Progressive download animation feedback
-    let currentProgress = 5;
+    // 1. Progressive download animation feedback
+    let currentProgress = 8;
     progressTimerRef.current = setInterval(() => {
-      currentProgress += Math.floor(Math.random() * 15) + 10;
+      currentProgress += Math.floor(Math.random() * 14) + 12;
       if (currentProgress >= 100) {
         currentProgress = 100;
         clearInterval(progressTimerRef.current);
 
-        // Execute actual OS download / native reveal
-        if (typeof window !== 'undefined' && window.electronAPI?.isElectron) {
-          if (osKey === 'windows' && window.electronAPI.showItemInFolder) {
-            window.electronAPI.showItemInFolder();
-          } else if (window.electronAPI.openExternal) {
-            window.electronAPI.openExternal(url);
+        // 2. Trigger binary download or native Electron reveal
+        try {
+          if (typeof window !== 'undefined' && window.electronAPI?.isElectron) {
+            if (osKey === 'windows' && window.electronAPI.showItemInFolder) {
+              window.electronAPI.showItemInFolder();
+            } else if (window.electronAPI.openExternal) {
+              window.electronAPI.openExternal(url);
+            }
+          } else if (typeof window !== 'undefined') {
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', '');
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
           }
-        } else if (typeof window !== 'undefined') {
-          // Trigger file download in browser
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', '');
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        } catch (err) {
+          console.error('Download trigger error:', err);
         }
 
         setDownloadState({
@@ -160,10 +168,9 @@ export default function DesktopDownloadFloatingTrigger() {
           progress: 100
         });
 
-        // Keep open for 4 seconds after download completes so user can see verification, then gently collapse
+        // 3. User requested: Remain open for AT LEAST 10 full seconds so cards stay visible!
         autoCloseTimerRef.current = setTimeout(() => {
           setIsExpanded(false);
-          // Reset status after collapse animation
           setTimeout(() => {
             setDownloadState({
               platformKey: null,
@@ -171,14 +178,14 @@ export default function DesktopDownloadFloatingTrigger() {
               progress: 0
             });
           }, 400);
-        }, 4000);
+        }, 10000); // 10 full seconds duration
       } else {
         setDownloadState(prev => ({
           ...prev,
           progress: currentProgress
         }));
       }
-    }, 160);
+    }, 140);
   };
 
   const detectedPlatform = downloadPlatforms.find(p => p.key === detectedOs) || downloadPlatforms[0];
@@ -210,12 +217,16 @@ export default function DesktopDownloadFloatingTrigger() {
           const zIndex = 30 - index;
           
           return (
-            <button
+            <div
               key={platform.key}
               role="menuitem"
               tabIndex={isExpanded ? 0 : -1}
               onClick={(e) => handleDownload(e, platform.url, platform.key)}
-              onPointerDown={(e) => handleDownload(e, platform.url, platform.key)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleDownload(e, platform.url, platform.key);
+                }
+              }}
               style={{
                 zIndex,
                 marginTop: index > 0 ? '-6px' : '0px',
@@ -307,7 +318,7 @@ export default function DesktopDownloadFloatingTrigger() {
                   />
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -321,10 +332,7 @@ export default function DesktopDownloadFloatingTrigger() {
           aria-expanded={isExpanded}
           aria-controls="desktop-download-deck"
           onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(prev => !prev);
-          }}
-          onPointerDown={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
