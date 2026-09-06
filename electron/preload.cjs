@@ -128,4 +128,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('updater:status', handler);
     return () => ipcRenderer.removeListener('updater:status', handler);
   },
+
+  // Shell Bridge
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  showItemInFolder: (fullPath) => ipcRenderer.invoke('shell:show-item-in-folder', fullPath),
 });

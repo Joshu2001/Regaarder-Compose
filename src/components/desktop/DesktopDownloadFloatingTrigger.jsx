@@ -86,6 +86,20 @@ export default function DesktopDownloadFloatingTrigger() {
     }
   };
 
+  const handleDownload = (e, url, osKey) => {
+    if (typeof window !== 'undefined' && window.electronAPI?.isElectron) {
+      e.preventDefault();
+      if (osKey === 'windows' && window.electronAPI.showItemInFolder) {
+        window.electronAPI.showItemInFolder();
+        return;
+      }
+      if (window.electronAPI.openExternal) {
+        window.electronAPI.openExternal(url);
+        return;
+      }
+    }
+  };
+
   // Minimized Floating Orb Button (Restores full dock when clicked)
   if (isMinimized) {
     return (
@@ -257,6 +271,7 @@ export default function DesktopDownloadFloatingTrigger() {
             href={downloadLinks.windows.url}
             target="_blank"
             rel="noopener noreferrer"
+            onPointerDown={(e) => handleDownload(e, downloadLinks.windows.url, 'windows')}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
               detectedOs === 'windows'
                 ? 'bg-indigo-600 text-white border-indigo-400/50 shadow-md ring-1 ring-indigo-400/40'
@@ -278,6 +293,7 @@ export default function DesktopDownloadFloatingTrigger() {
             href={downloadLinks.mac.url}
             target="_blank"
             rel="noopener noreferrer"
+            onPointerDown={(e) => handleDownload(e, downloadLinks.mac.url, 'mac')}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
               detectedOs === 'mac'
                 ? 'bg-indigo-600 text-white border-indigo-400/50 shadow-md ring-1 ring-indigo-400/40'
@@ -299,6 +315,7 @@ export default function DesktopDownloadFloatingTrigger() {
             href={downloadLinks.linux.url}
             target="_blank"
             rel="noopener noreferrer"
+            onPointerDown={(e) => handleDownload(e, downloadLinks.linux.url, 'linux')}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
               detectedOs === 'linux'
                 ? 'bg-indigo-600 text-white border-indigo-400/50 shadow-md ring-1 ring-indigo-400/40'

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, desktopCapturer, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, session, desktopCapturer, safeStorage, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const BrowserViewManager = require('./browserViewManager.cjs');
@@ -186,6 +186,14 @@ $ws.AppActivate('${targetName}')
 
   browserViewManager = new BrowserViewManager(mainWindow);
   initAutoUpdater(mainWindow);
+
+  // Delegate target="_blank" and external links to the OS default browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      shell.openExternal(url);
+    } catch (_e) {}
+    return { action: 'deny' };
+  });
 
   // Layout resize listener to sync browser view bounds when window resizes
   mainWindow.on('resize', () => {
@@ -865,6 +873,29 @@ ipcMain.handle('secure:delete-secret', async (event, { key }) => {
     const store = readSecureStore();
     delete store[key];
     writeSecureStore(store);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// Shell Operations: Open system browser or reveal in file explorer
+ipcMain.handle('shell:open-external', async (event, url) => {
+  try {
+    if (url && typeof url === 'string') {
+      await shell.openExternal(url);
+      return { success: true };
+    }
+    return { success: false, error: 'Invalid URL' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('shell:show-item-in-folder', async (event, fullPath) => {
+  try {
+    const resolvedPath = fullPath || path.join(__dirname, '..', 'release', 'Regaarder-Compose-Setup.exe');
+    shell.showItemInFolder(resolvedPath);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
