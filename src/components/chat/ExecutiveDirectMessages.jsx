@@ -3016,7 +3016,7 @@ ${systemPrompt}`
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <div className="w-5 h-5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-                                    <Sparkles size={11} />
+                                    <RegaarderAiIcon size={12} strokeWidth={2.0} />
                                   </div>
                                   <div className="min-w-0">
                                     <div className="text-xs font-semibold truncate leading-tight flex items-center gap-1.5">
@@ -3145,7 +3145,7 @@ ${systemPrompt}`
                                     : 'text-violet-600 dark:text-violet-400 hover:text-violet-700'
                                 }`}
                               >
-                                <Sparkles size={10} className={aiHistoryMode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                                <RegaarderAiIcon size={12} strokeWidth={2.0} className={aiHistoryMode === 'ai' ? 'text-white' : 'text-violet-500'} />
                                 <span>Ask AI</span>
                               </button>
                             </div>
@@ -3163,7 +3163,7 @@ ${systemPrompt}`
                         {/* Search / Prompt Bar in History Popover */}
                         <div className="relative my-2">
                           {aiHistoryMode === 'ai' ? (
-                            <Sparkles size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+                            <RegaarderAiIcon size={13} strokeWidth={2.0} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
                           ) : (
                             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                           )}
@@ -3205,7 +3205,7 @@ ${systemPrompt}`
                               onClick={() => handleRunHistoryAiSearch(aiHistorySearchQuery)}
                               className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 cursor-pointer shadow-2xs"
                             >
-                              <Sparkles size={11} />
+                              <RegaarderAiIcon size={12} strokeWidth={2.0} />
                               <span>Synthesize Answer</span>
                             </button>
                           </div>
@@ -3224,7 +3224,7 @@ ${systemPrompt}`
                               <div className="space-y-2.5">
                                 <div className="flex items-center justify-between">
                                   <span className="font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5 text-xs">
-                                    <Sparkles size={12} className="text-violet-600" />
+                                    <RegaarderAiIcon size={13} strokeWidth={2.0} className="text-violet-600" />
                                     <span>Archive Synthesis</span>
                                   </span>
                                   <div className="flex items-center gap-1">
@@ -3289,7 +3289,7 @@ ${systemPrompt}`
                               </div>
                             ) : (
                               <div className="py-6 text-center text-slate-400 dark:text-zinc-500 space-y-2">
-                                <Sparkles size={20} className="mx-auto text-violet-500 opacity-60" />
+                                <RegaarderAiIcon size={22} strokeWidth={1.8} className="mx-auto text-violet-500 opacity-60" />
                                 <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Ask Memory across Past AI Sessions</p>
                                 <p className="text-[10.5px] max-w-xs mx-auto leading-normal">
                                   Type any natural language question above to receive a synthesized answer from all {aiChatSessions.length} archived chats.
@@ -3480,7 +3480,7 @@ ${systemPrompt}`
               <div className="px-6 py-2 flex items-center justify-between gap-3">
                 <div className="relative flex-1">
                   {chatSearchMode === 'ai' ? (
-                    <Sparkles size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+                    <RegaarderAiIcon size={14} strokeWidth={2.0} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
                   ) : (
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   )}
@@ -3548,7 +3548,7 @@ ${systemPrompt}`
                         : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}
                   >
-                    <Sparkles size={11} className={chatSearchMode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                    <RegaarderAiIcon size={12} strokeWidth={2.0} className={chatSearchMode === 'ai' ? 'text-white' : 'text-violet-500'} />
                     <span>Ask AI</span>
                   </button>
                 </div>
@@ -3592,7 +3592,7 @@ ${systemPrompt}`
                     disabled={!chatSearchQuery.trim() || chatAiLoading}
                     className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
                   >
-                    {chatAiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {chatAiLoading ? <Loader2 size={12} className="animate-spin" /> : <RegaarderAiIcon size={12} strokeWidth={2.0} />}
                     <span>Synthesize</span>
                   </button>
                 )}
@@ -3622,7 +3622,7 @@ ${systemPrompt}`
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold">
-                          <Sparkles size={13} className="text-violet-600" />
+                          <RegaarderAiIcon size={13} strokeWidth={2.0} className="text-violet-600" />
                           <span>AI Chat Synthesis</span>
                           <span className="text-[10.5px] font-normal text-slate-400 dark:text-zinc-500">for "{chatAiAnswer.query}"</span>
                         </div>
@@ -4119,7 +4119,7 @@ ${systemPrompt}`
                       {msg.referenceSources && msg.referenceSources.length > 0 && (
                         <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-violet-200/80 dark:border-violet-900/60 shadow-xs space-y-2">
                           <div className="flex items-center gap-1.5 text-[11px] font-bold text-violet-700 dark:text-violet-400">
-                            <Sparkles size={12} className="text-violet-500 shrink-0" />
+                            <RegaarderAiIcon size={12} strokeWidth={2.0} className="text-violet-500 shrink-0" />
                             <span>Referenced Sources (Click to jump to line)</span>
                           </div>
 
