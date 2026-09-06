@@ -351,18 +351,20 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-4 sm:px-8 py-4 sm:py-6 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[1020px] mx-auto flex flex-col items-center my-auto">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-8 sm:pt-10 pb-12 sm:pb-16 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[1020px] mx-auto flex flex-col items-center">
 
           {/*
             ── Hero Section ──
             Pure Apple typography & authoritative monochrome Regaarder brand glyph.
             Matches reference image:
+            - Regaarder brand mark with generous breathing room below header
             - "Every tool your team needs," (Line 1)
             - "connected as one." with subtle purple/blue gradient (Line 2)
             - Centered, dark navy typography
+            - Subtitle directly beneath
           */}
-          <div className="text-center mb-2 sm:mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
             <div className="mb-2.5 flex items-center justify-center">
@@ -389,8 +391,8 @@ export default function RegaarderComposeLanding({
           */}
           <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
-          {/* ── Progressive Disclosure Recent Work Strip ── */}
-          <div className="w-full max-w-[840px] mx-auto">
+          {/* ── Progressive Disclosure Recent Work Strip (generous breathing room below ecosystem) ── */}
+          <div className="w-full max-w-[840px] mx-auto mt-6 sm:mt-10">
             <LandingRecentWorkStrip
               onLaunch={onLaunch}
               onOpenRecentModal={onOpenRecentModal}
