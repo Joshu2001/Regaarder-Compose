@@ -45,7 +45,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
   };
 
   return (
-    <div className="w-full relative select-none flex items-center justify-center my-0">
+    <div className="w-full relative select-none flex items-center justify-center -mt-2.5 sm:-mt-3 my-0">
       {/* ── Keyframes for Gentle Core Light Breathing & Subtle Light Streams ── */}
       <style>{`
         @keyframes pulseApertureFlareSubtle {
@@ -155,25 +155,25 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               <stop offset="100%" stopColor="#c084fc" stopOpacity="0.65" />
             </linearGradient>
 
-            {/* Subconscious, Whisper-Soft Orbital Track Gradients (60–75% lower opacity) */}
+            {/* Subconscious, Whisper-Soft Orbital Track Gradients (ambient atmospheric light) */}
             <linearGradient id="grad-celestial-subtle" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.22" />
-              <stop offset="30%" stopColor="#a78bfa" stopOpacity="0.28" />
-              <stop offset="70%" stopColor="#60a5fa" stopOpacity="0.26" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.22" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.16" />
+              <stop offset="30%" stopColor="#a78bfa" stopOpacity="0.20" />
+              <stop offset="70%" stopColor="#60a5fa" stopOpacity="0.19" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.16" />
             </linearGradient>
 
             <linearGradient id="grad-celestial-glow-soft" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.10" />
-              <stop offset="50%" stopColor="#818cf8" stopOpacity="0.14" />
-              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.10" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.07" />
+              <stop offset="50%" stopColor="#818cf8" stopOpacity="0.10" />
+              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.07" />
             </linearGradient>
 
             {/* Delicate ripple gradient */}
             <linearGradient id="grad-ripple-whisper" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.06" />
-              <stop offset="50%" stopColor="#818cf8" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.06" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.04" />
+              <stop offset="50%" stopColor="#818cf8" stopOpacity="0.06" />
+              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.04" />
             </linearGradient>
 
             {/* Core Bridge Interlink Gradient */}
@@ -189,6 +189,12 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
 
+            {/* Atmosphere light blur filter specifically for orbital ribbon softening */}
+            <filter id="orbital-atmosphere-soft" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.2" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+
             {/* Bridge Aperture Flare Filter */}
             <filter id="bridge-aperture-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2.8" result="blur" />
@@ -197,63 +203,64 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </defs>
 
           {/* ── SUBTLE CONCENTRIC ACOUSTIC RIPPLES (Subconscious background depth) ── */}
-          <g className="opacity-60 dark:opacity-30">
+          <g className="opacity-50 dark:opacity-25">
             <ellipse cx="530" cy="190" rx="270" ry="110" stroke="url(#grad-ripple-whisper)" strokeWidth="0.85" fill="none" />
             <ellipse cx="530" cy="190" rx="350" ry="142" stroke="url(#grad-ripple-whisper)" strokeWidth="0.85" fill="none" />
             <ellipse cx="530" cy="190" rx="430" ry="174" stroke="url(#grad-ripple-whisper)" strokeWidth="0.85" fill="none" />
           </g>
 
-          {/* ── DRAMATICALLY SOFTENED ORBITAL RING (Atmospheric depth, not a prominent diagram) ── */}
+          {/* ── WHISPER-SOFT AMBIENT ORBITAL FIELD (Ambient atmospheric light, not a drawn ellipse) ── */}
           <g className="transition-opacity duration-300">
             {/* Extremely soft ambient glow under-stroke */}
             <path
               d="M 95 190 C 85 92, 225 32, 530 30 C 835 28, 975 92, 965 190 C 955 288, 815 352, 530 354 C 245 356, 105 288, 95 190"
               stroke="url(#grad-celestial-glow-soft)"
-              strokeWidth="3.0"
+              strokeWidth="2.8"
               fill="none"
               filter="url(#soft-whisper-glow)"
-              opacity="0.6"
+              opacity="0.42"
             />
 
-            {/* Whisper-soft continuous glass track (65–75% reduction in prominence) */}
+            {/* Ambient atmospheric light track (softened with blur filter, 25% lower opacity) */}
             <path
               d="M 95 190 C 85 92, 225 32, 530 30 C 835 28, 975 92, 965 190 C 955 288, 815 352, 530 354 C 245 356, 105 288, 95 190"
               stroke="url(#grad-celestial-subtle)"
-              strokeWidth="1.1"
+              strokeWidth="1.0"
               fill="none"
-              opacity="0.65"
+              filter="url(#orbital-atmosphere-soft)"
+              opacity="0.48"
             />
 
             {/* Specular glass core highlight */}
             <path
               d="M 95 190 C 85 92, 225 32, 530 30 C 835 28, 975 92, 965 190 C 955 288, 815 352, 530 354 C 245 356, 105 288, 95 190"
               stroke="#ffffff"
-              strokeWidth="0.5"
+              strokeWidth="0.45"
               fill="none"
-              opacity="0.25"
+              opacity="0.16"
             />
 
             {/* Secondary sweeping arc */}
             <path
               d="M 680 90 C 850 115, 985 170, 925 265 C 875 330, 725 354, 530 354"
               stroke="url(#grad-celestial-subtle)"
-              strokeWidth="0.8"
+              strokeWidth="0.75"
               fill="none"
-              opacity="0.35"
+              opacity="0.22"
             />
 
             {/* Delicate celestial star nodes along the track (subtle light specks) */}
-            <circle cx="195" cy="85" r="2.2" fill="#a5b4fc" opacity="0.35" filter="url(#soft-whisper-glow)" />
-            <circle cx="195" cy="85" r="1.1" fill="#ffffff" opacity="0.6" />
+            <circle cx="195" cy="85" r="2.0" fill="#a5b4fc" opacity="0.25" filter="url(#soft-whisper-glow)" />
+            <circle cx="195" cy="85" r="1.0" fill="#ffffff" opacity="0.45" />
 
-            <circle cx="895" cy="135" r="2.2" fill="#93c5fd" opacity="0.35" filter="url(#soft-whisper-glow)" />
-            <circle cx="895" cy="135" r="1.1" fill="#ffffff" opacity="0.6" />
+            <circle cx="895" cy="135" r="2.0" fill="#93c5fd" opacity="0.25" filter="url(#soft-whisper-glow)" />
+            <circle cx="895" cy="135" r="1.0" fill="#ffffff" opacity="0.45" />
 
-            <circle cx="360" cy="348" r="2.2" fill="#c084fc" opacity="0.35" filter="url(#soft-whisper-glow)" />
-            <circle cx="360" cy="348" r="1.1" fill="#ffffff" opacity="0.6" />
+            <circle cx="360" cy="348" r="2.0" fill="#c084fc" opacity="0.25" filter="url(#soft-whisper-glow)" />
+            <circle cx="360" cy="348" r="1.0" fill="#ffffff" opacity="0.45" />
 
-            <circle cx="760" cy="345" r="2.2" fill="#a5b4fc" opacity="0.35" filter="url(#soft-whisper-glow)" />
-            <circle cx="760" cy="345" r="1.1" fill="#ffffff" opacity="0.6" />
+            <circle cx="760" cy="345" r="2.0" fill="#a5b4fc" opacity="0.25" filter="url(#soft-whisper-glow)" />
+            <circle cx="760" cy="345" r="1.0" fill="#ffffff" opacity="0.45" />
           </g>
 
           {/* ── MEMORY ↔ RELAY CORE BRIDGE WITH SOFTENED APERTURE LIGHT ── */}

@@ -121,7 +121,7 @@ export default function RegaarderComposeLanding({
       </div>
 
       {/* ── Global Navigation Bar ── */}
-      <header className="h-14 flex items-center justify-between px-6 sm:px-8 bg-transparent shrink-0 select-none z-30 relative">
+      <header className="h-12 flex items-center justify-between px-6 sm:px-8 bg-transparent shrink-0 select-none z-30 relative">
 
         {/* Left: Workspace Selector with Silhouette Mark */}
         <button
@@ -351,7 +351,7 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-1 sm:pt-1.5 pb-2.5 sm:pb-3 overflow-y-auto thin-scrollbar relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-0.5 sm:pt-1 pb-3 sm:pb-4 overflow-y-auto thin-scrollbar relative z-10">
         <div className="w-full max-w-[1240px] mx-auto flex flex-col items-center">
 
           {/*
@@ -367,13 +367,13 @@ export default function RegaarderComposeLanding({
           <div className="text-center mb-1 sm:mb-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
-            <div className="mb-1.5 flex items-center justify-center">
+            <div className="mb-1 flex items-center justify-center">
               <div className="w-9 h-9 rounded-xl bg-white/90 dark:bg-[#18181b]/90 border border-slate-200/50 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
                 <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
 
-            <h1 className="text-[26px] sm:text-[32px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.18] mb-1 text-balance max-w-2xl mx-auto">
+            <h1 className="text-[26px] sm:text-[32px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.16] mb-0.5 text-balance max-w-2xl mx-auto">
               <span>Every tool your team needs,</span>
               <br />
               <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-400 dark:via-indigo-300 dark:to-blue-400 bg-clip-text text-transparent">
@@ -392,7 +392,7 @@ export default function RegaarderComposeLanding({
           <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
           {/* ── Progressive Disclosure Recent Work Strip (cleanly positioned beneath ecosystem) ── */}
-          <div className="w-full max-w-[860px] mx-auto mt-1 sm:mt-1.5">
+          <div className="w-full max-w-[860px] mx-auto mt-0.5 sm:mt-1">
             <LandingRecentWorkStrip
               onLaunch={onLaunch}
               onOpenRecentModal={onOpenRecentModal}
