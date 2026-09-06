@@ -91,3 +91,11 @@ Avoid monolithic blocks, band-aid fixes, or summarized placeholders. Treat this 
 - **Percentage Formatting:** Percentage values in progress or metric columns MUST be formatted natively with `%` symbols (e.g., `65%`, `40%`, `100%`) from the start, rather than raw unformatted decimals (e.g., `0.65`, `0.4`).
 
 
+## 10. Regaarder AI Signature Icon Mandate
+
+### Strict AI Visual Identity: Circle AI Signature vs Generic Sparkles
+- **Mandatory Icon Usage:** Whenever AI is represented, toggled, or invoked in UI elements (buttons, segmented switchers, badges, headers, search inputs, modal titles, synthesized cards, tool triggers, or status indicators), you MUST ALWAYS use the official Regaarder circle AI signature icon (`RegaarderAiIcon` from `RegaarderProductIcons`).
+- **Zero Generic Sparkles:** NEVER use generic star or sparkle icons (`Sparkles`, `Sparkle`, or similar) from Lucide or any icon library to represent AI features. The Regaarder signature circular AI icon is the single, unified brand identity for all AI capabilities across the entire system.
+
+
+
