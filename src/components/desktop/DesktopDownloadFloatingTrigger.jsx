@@ -1,30 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Monitor, Laptop, Terminal, ChevronUp, ChevronDown, X, ShieldCheck, ExternalLink } from 'lucide-react';
-import { RegaarderAiIcon } from '../RegaarderProductIcons';
+import { Download, Monitor, Laptop, Terminal, ChevronDown } from 'lucide-react';
 
 /**
  * DesktopDownloadFloatingTrigger
  * 
- * Executive-tier floating corner flag docked at the bottom-right corner.
- * - Stays compact, unobtrusive, and docked like a flag by default.
- * - Glides upward smoothly into an Apple-style vertical stack on hover or click.
- * - Direct 1-tap download buttons stacked vertically:
- *     1. Windows (.exe)
- *     2. macOS (.dmg)
- *     3. Linux (.AppImage)
- * - Secondary drawer for Extension & .deb package.
+ * Stacked Anchored Download Popover for Regaarder Desktop.
  * 
- * Directives Followed:
- * - Rule 3: Slightly rounded rectangles (rounded-xl, rounded-2xl), NO pill shapes or ellipses.
- * - Rule 6: Touch-safe onPointerDown + onClick stopPropagation.
- * - Rule 10: RegaarderAiIcon used exclusively, zero generic sparkles.
+ * Key Requirements:
+ * - "Download Desktop" anchored as the primary bottom-right button.
+ * - Smooth physical stacked-deck interaction: 3 platform cards layered/overlapping vertically
+ *   expanding upward from behind the button on click.
+ * - Platform cards:
+ *     - Windows: Windows 10/11 · 64-bit · .exe · download icon
+ *     - macOS: macOS 12+ · Universal · .dmg · download icon
+ *     - Linux: Ubuntu, Fedora, Arch · AppImage · download icon
+ * - Detected OS receives subtle primary emphasis (refined outline & crisp contrast, not washed out).
+ * - Refined chevron that smoothly rotates 180° when open.
+ * - Escape key dismiss, focus trap/outline navigation, click-outside dismissal.
+ * - Spatial continuity: cards collapse back toward the anchor button cleanly.
+ * - Restrained glassmorphism, subtle borders/shadows matching Regaarder design.
  */
 export default function DesktopDownloadFloatingTrigger() {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [detectedOs, setDetectedOs] = useState('windows');
   const containerRef = useRef(null);
-  const closeTimeoutRef = useRef(null);
+  const anchorButtonRef = useRef(null);
 
   // Detect user OS
   useEffect(() => {
@@ -45,66 +45,56 @@ export default function DesktopDownloadFloatingTrigger() {
     const handleOutsideClick = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsExpanded(false);
-        setShowMoreOptions(false);
       }
     };
-    document.addEventListener('pointerdown', handleOutsideClick);
+    if (isExpanded) {
+      document.addEventListener('pointerdown', handleOutsideClick);
+    }
     return () => {
       document.removeEventListener('pointerdown', handleOutsideClick);
     };
-  }, []);
+  }, [isExpanded]);
 
-  // Smooth hover open/close with slight debounce
-  const handleMouseEnter = () => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-    }
-    setIsExpanded(true);
-  };
-
-  const handleMouseLeave = () => {
-    closeTimeoutRef.current = setTimeout(() => {
-      setIsExpanded(false);
-      setShowMoreOptions(false);
-    }, 350);
-  };
+  // Keyboard navigation: Escape to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isExpanded) {
+        e.preventDefault();
+        setIsExpanded(false);
+        anchorButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExpanded]);
 
   const releasesBaseUrl = 'https://github.com/Joshu2001/Regaarder-Compose/releases';
-  const downloadLinks = {
-    windows: {
-      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose-Setup.exe`,
+  const downloadPlatforms = [
+    {
+      key: 'windows',
       name: 'Windows',
-      label: 'Windows 10 / 11 (64-bit)',
+      subtitle: 'Windows 10/11 · 64-bit',
       ext: '.exe',
-      icon: Monitor
+      icon: Monitor,
+      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose-Setup.exe`
     },
-    mac: {
-      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose.dmg`,
+    {
+      key: 'mac',
       name: 'macOS',
-      label: 'macOS 12+ (Universal)',
+      subtitle: 'macOS 12+ · Universal',
       ext: '.dmg',
-      icon: Laptop
+      icon: Laptop,
+      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose.dmg`
     },
-    linux: {
-      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose.AppImage`,
+    {
+      key: 'linux',
       name: 'Linux',
-      label: 'Ubuntu, Fedora, Arch',
+      subtitle: 'Ubuntu, Fedora, Arch · AppImage',
       ext: '.AppImage',
-      icon: Terminal
-    },
-    deb: {
-      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose.deb`,
-      name: 'Debian / Ubuntu',
-      ext: '.deb',
-      icon: Terminal
-    },
-    extension: {
-      url: 'https://github.com/Joshu2001/Regaarder-Compose/raw/main/meneur-extension.zip',
-      name: 'Meneur Extension',
-      label: 'Chrome Web Store Bundle',
-      ext: '.zip'
+      icon: Terminal,
+      url: `${releasesBaseUrl}/latest/download/Regaarder-Compose.AppImage`
     }
-  };
+  ];
 
   const handleDownload = (e, url, osKey) => {
     e?.preventDefault?.();
@@ -128,185 +118,108 @@ export default function DesktopDownloadFloatingTrigger() {
     }
   };
 
-  const primary = downloadLinks[detectedOs] || downloadLinks.windows;
-
-  // OS platforms in ordered stack
-  const platformOrder = ['windows', 'mac', 'linux'];
+  const detectedPlatform = downloadPlatforms.find(p => p.key === detectedOs) || downloadPlatforms[0];
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       role="region"
       aria-label="Download Desktop App"
       className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans select-none"
     >
-      {/* ── Auxiliary Extended Drawer (Extension / .deb) ── */}
-      {showMoreOptions && isExpanded && (
-        <div className="mb-2 w-72 p-3 rounded-2xl bg-slate-900/95 dark:bg-[#12141a]/95 backdrop-blur-2xl border border-white/15 text-white shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-3">
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
-            <span className="text-[11px] font-semibold text-slate-300 tracking-tight">Additional Ecosystem</span>
-            <button
-              type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                setShowMoreOptions(false);
-              }}
-              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <X size={12} />
-            </button>
-          </div>
-
-          <div className="mt-2 space-y-1.5">
-            {/* Chrome Web Store Extension */}
-            <a
-              href={downloadLinks.extension.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-violet-500/20 border border-violet-400/30 flex items-center justify-center text-violet-300">
-                  <RegaarderAiIcon size={12} />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-slate-100">Meneur Extension</p>
-                  <p className="text-[9px] text-slate-400">Chrome Web Store (MV3)</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 text-slate-300">
-                .zip
-              </span>
-            </a>
-
-            {/* Debian .deb package */}
-            <a
-              href={downloadLinks.deb.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
-                  <Terminal size={12} />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-slate-100">Debian / Ubuntu</p>
-                  <p className="text-[9px] text-slate-400">Debian x86_64 Package</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 text-slate-300">
-                .deb
-              </span>
-            </a>
-          </div>
-
-          <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[9px] text-slate-400">
-            <span className="flex items-center gap-1 text-emerald-400">
-              <ShieldCheck size={11} />
-              <span>Verified Releases</span>
-            </span>
-            <a
-              href={releasesBaseUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-white underline transition-colors"
-            >
-              <span>View All</span>
-              <ExternalLink size={9} />
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* ── Vertically Stacked Platform Items (Glides Upward) ── */}
+      {/* ── Overlapping Physical Stacked Deck (Expands upward from behind the button) ── */}
       <div
-        className={`flex flex-col items-end gap-1.5 transition-all duration-300 ease-out origin-bottom ${
+        id="desktop-download-deck"
+        role="menu"
+        aria-label="Platform options"
+        aria-hidden={!isExpanded}
+        className={`flex flex-col items-stretch w-[280px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-bottom ${
           isExpanded
-            ? 'opacity-100 translate-y-0 pointer-events-auto mb-2 max-h-96'
-            : 'opacity-0 translate-y-4 pointer-events-none mb-0 max-h-0 overflow-hidden'
+            ? 'opacity-100 translate-y-0 pointer-events-auto mb-2'
+            : 'opacity-0 translate-y-4 pointer-events-none mb-0 h-0 overflow-hidden'
         }`}
       >
-        {/* Dock Header Banner */}
-        <div className="w-64 flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-900/90 dark:bg-[#12141a]/90 backdrop-blur-xl border border-white/15 text-white shadow-lg">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-semibold text-slate-200">Regaarder Desktop</span>
-            <span className="text-[9px] font-mono text-slate-400">v1.0</span>
-          </div>
-          <button
-            type="button"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              setShowMoreOptions(prev => !prev);
-            }}
-            className="text-[10px] text-indigo-300 hover:text-indigo-200 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <span>More</span>
-            {showMoreOptions ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
-          </button>
-        </div>
-
-        {/* 3 Vertically Stacked Download Buttons */}
-        {platformOrder.map((key) => {
-          const item = downloadLinks[key];
-          const Icon = item.icon;
-          const isDetected = detectedOs === key;
-
+        {downloadPlatforms.map((platform, index) => {
+          const Icon = platform.icon;
+          const isDetected = detectedOs === platform.key;
+          // Calculate card stacking z-index & subtle overlap
+          // Top card index 0 has highest visual level when stacked, or bottom up
+          const zIndex = 30 - index;
+          
           return (
             <button
-              key={key}
-              type="button"
-              onClick={(e) => handleDownload(e, item.url, key)}
-              onPointerDown={(e) => handleDownload(e, item.url, key)}
-              className={`w-64 flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold backdrop-blur-xl border shadow-lg transition-all duration-200 cursor-pointer text-left group ${
+              key={platform.key}
+              role="menuitem"
+              tabIndex={isExpanded ? 0 : -1}
+              onClick={(e) => handleDownload(e, platform.url, platform.key)}
+              onPointerDown={(e) => handleDownload(e, platform.url, platform.key)}
+              style={{
+                zIndex,
+                marginTop: index > 0 ? '-6px' : '0px',
+                transitionDelay: isExpanded ? `${index * 35}ms` : `${(2 - index) * 20}ms`
+              }}
+              className={`relative flex items-center justify-between px-3.5 py-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-md ${
                 isDetected
-                  ? 'bg-indigo-600/95 hover:bg-indigo-500 text-white border-indigo-400/50 ring-1 ring-indigo-400/30'
-                  : 'bg-slate-900/90 dark:bg-[#12141a]/90 hover:bg-slate-800 text-slate-200 hover:text-white border-white/15'
+                  ? 'bg-slate-900/95 dark:bg-[#141720]/95 text-white border-indigo-500/40 ring-1 ring-indigo-500/30 hover:border-indigo-400 hover:bg-slate-800/95'
+                  : 'bg-slate-900/90 dark:bg-[#12141a]/90 hover:bg-slate-800/95 text-slate-200 hover:text-white border-white/10 hover:border-white/20'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${
-                  isDetected ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
-                }`}>
-                  <Icon size={13} />
+              {/* Left Side: Icon + OS Details */}
+              <div className="flex items-center gap-3 min-w-0 pr-2">
+                <div
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                    isDetected
+                      ? 'bg-indigo-600/30 border border-indigo-500/40 text-indigo-300'
+                      : 'bg-white/10 border border-white/10 text-slate-300 group-hover:text-white'
+                  }`}
+                >
+                  <Icon size={14} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-[12px]">{item.name}</span>
+                    <span className="font-semibold text-xs text-white leading-tight">
+                      {platform.name}
+                    </span>
                     {isDetected && (
-                      <span className="text-[9px] px-1 py-0.2 rounded-md bg-white/25 text-white font-medium">
-                        Your OS
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-500/25 border border-indigo-400/30 text-indigo-300 font-medium">
+                        Detected
                       </span>
                     )}
                   </div>
-                  <span className={`text-[10px] block font-normal ${isDetected ? 'text-indigo-100' : 'text-slate-400'}`}>
-                    {item.label}
+                  <span className="text-[10px] text-slate-400 group-hover:text-slate-300 block truncate leading-snug mt-0.5">
+                    {platform.subtitle}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
-                  isDetected ? 'bg-indigo-800/80 text-indigo-100' : 'bg-white/10 text-slate-300'
-                }`}>
-                  {item.ext}
+              {/* Right Side: Extension Tag + Action Icon */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                    isDetected
+                      ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/20'
+                      : 'bg-white/10 text-slate-300'
+                  }`}
+                >
+                  {platform.ext}
                 </span>
-                <Download size={13} className={`transition-transform group-hover:translate-y-0.5 ${
-                  isDetected ? 'text-white' : 'text-slate-400 group-hover:text-white'
-                }`} />
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-white group-hover:translate-y-0.5 transition-all">
+                  <Download size={13} />
+                </div>
               </div>
             </button>
           );
         })}
       </div>
 
-      {/* ── Docked Anchor Flag (Persistent Bottom-Right Tab) ── */}
-      <div className="flex items-center shadow-2xl rounded-xl">
+      {/* ── Primary Bottom-Right Anchor Button ── */}
+      <div className="relative z-40">
         <button
+          ref={anchorButtonRef}
           type="button"
+          aria-haspopup="menu"
+          aria-expanded={isExpanded}
+          aria-controls="desktop-download-deck"
           onClick={(e) => {
             e.stopPropagation();
             setIsExpanded(prev => !prev);
@@ -315,37 +228,43 @@ export default function DesktopDownloadFloatingTrigger() {
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
-          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border backdrop-blur-xl transition-all duration-200 cursor-pointer shadow-lg group ${
+          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 cursor-pointer shadow-xl group outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
             isExpanded
-              ? 'bg-indigo-600 text-white border-indigo-400/60 ring-2 ring-indigo-400/40'
-              : 'bg-slate-900/95 dark:bg-[#12141a]/95 hover:bg-slate-800 text-white border-white/15 hover:border-white/25'
+              ? 'bg-indigo-600 text-white border-indigo-400/60 ring-1 ring-indigo-400/40 shadow-indigo-500/20'
+              : 'bg-slate-900/95 dark:bg-[#12141a]/95 hover:bg-slate-800/95 text-white border-white/15 hover:border-white/25'
           }`}
           title="Download Regaarder Desktop App"
         >
-          {/* Icon Badge */}
-          <div className={`w-5 h-5 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${
-            isExpanded ? 'bg-white/20 text-white' : 'bg-indigo-500/20 border border-indigo-400/30 text-indigo-400'
-          }`}>
-            <Download size={12} />
+          {/* Download Icon Badge */}
+          <div
+            className={`w-6 h-6 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
+              isExpanded
+                ? 'bg-white/20 text-white'
+                : 'bg-indigo-500/20 border border-indigo-400/30 text-indigo-400'
+            }`}
+          >
+            <Download size={13} />
           </div>
 
-          {/* Text Info */}
+          {/* Label + Detected Extension */}
           <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <span>Download Desktop</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
-              isExpanded ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
-            }`}>
-              {primary.ext}
+            <span className="text-white tracking-tight">Download Desktop</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                isExpanded ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
+              }`}
+            >
+              {detectedPlatform.ext}
             </span>
           </div>
 
-          {/* Glide / Collapse indicator */}
-          <div className="text-slate-400 group-hover:text-white transition-transform">
-            {isExpanded ? (
-              <ChevronDown size={14} className="text-white" />
-            ) : (
-              <ChevronUp size={14} />
-            )}
+          {/* Refined Chevron with 180-degree rotation */}
+          <div
+            className={`text-slate-400 group-hover:text-white transition-transform duration-300 ease-out ${
+              isExpanded ? 'rotate-180 text-white' : 'rotate-0'
+            }`}
+          >
+            <ChevronDown size={14} />
           </div>
         </button>
       </div>
