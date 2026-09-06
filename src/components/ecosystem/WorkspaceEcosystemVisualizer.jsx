@@ -163,12 +163,12 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               <stop offset="100%" stopColor="#c084fc" stopOpacity="0.6" />
             </linearGradient>
 
-            {/* Ethereal orbital ring gradients */}
+            {/* Ethereal orbital ring gradients (subconscious subtlety) */}
             <linearGradient id="grad-orbit-primary" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.24" />
-              <stop offset="35%" stopColor="#818cf8" stopOpacity="0.32" />
-              <stop offset="70%" stopColor="#93c5fd" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.18" />
+              <stop offset="35%" stopColor="#818cf8" stopOpacity="0.24" />
+              <stop offset="70%" stopColor="#93c5fd" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.15" />
             </linearGradient>
 
             {/* Luminous Core Interlink Bridge Gradient */}
@@ -191,30 +191,30 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </filter>
           </defs>
 
-          {/* ── Ethereal Translucent Orbital Curves (Spatial depth floating in light) ── */}
-          {/* Main sweeping outer orbital arc (scaled inward by ~12%) */}
+          {/* ── Ethereal Translucent Orbital Curves (Subconscious spatial depth) ── */}
+          {/* Main sweeping outer orbital arc (softened by ~25-30%) */}
           <path
             d="M 80 235 C 70 135, 210 50, 530 48 C 850 45, 990 125, 980 235 C 970 345, 820 422, 530 424 C 240 426, 90 345, 80 235"
             stroke="url(#grad-orbit-primary)"
-            strokeWidth="0.9"
+            strokeWidth="0.8"
             fill="none"
-            opacity="0.3"
+            opacity="0.18"
           />
 
           {/* Secondary delicate sweeping arc connecting Deck & Whiteboard */}
           <path
             d="M 680 115 C 850 140, 990 205, 930 315 C 880 390, 730 430, 530 425"
             stroke="url(#grad-orbit-primary)"
-            strokeWidth="0.75"
+            strokeWidth="0.7"
             fill="none"
-            opacity="0.2"
+            opacity="0.12"
           />
 
           {/* Occasional tiny luminous celestial nodes along the curves */}
-          <circle cx="190" cy="115" r="1.4" fill="#a5b4fc" opacity="0.55" />
-          <circle cx="905" cy="180" r="1.4" fill="#93c5fd" opacity="0.55" />
-          <circle cx="365" cy="418" r="1.4" fill="#c084fc" opacity="0.5" />
-          <circle cx="775" cy="412" r="1.4" fill="#a5b4fc" opacity="0.5" />
+          <circle cx="190" cy="115" r="1.4" fill="#a5b4fc" opacity="0.35" />
+          <circle cx="905" cy="180" r="1.4" fill="#93c5fd" opacity="0.35" />
+          <circle cx="365" cy="418" r="1.4" fill="#c084fc" opacity="0.3" />
+          <circle cx="775" cy="412" r="1.4" fill="#a5b4fc" opacity="0.3" />
 
           {/* ── MEMORY ↔ RELAY LUMINOUS CONNECTION BRIDGE ── */}
           {/* Communicates: Memory = shared context ↔ Relay = connectivity */}
@@ -371,17 +371,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-75'}`}>
             <path
               id="path-room"
-              d="M 432 380 L 432 310"
+              d="M 432 352 L 432 310"
               stroke="url(#grad-subtle-room)"
               strokeWidth={hoveredNode === 'room' ? "1.4" : "1"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-indigo)"
             />
-            <circle cx="432" cy="380" r="1.5" fill="#5eead4" opacity="0.65" />
+            <circle cx="432" cy="352" r="1.5" fill="#5eead4" opacity="0.65" />
             {/* Flowing energy particle */}
             <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 432 380 L 432 310')",
+              offsetPath: "path('M 432 352 L 432 310')",
               animation: "flowParticleSubtle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.9s",
             }} />
           </g>
@@ -392,7 +392,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           
           {/* ========================================================================= */}
           {/* ── CENTRAL CONNECTED CORE: Memory (left) & Relay (right) ─────────────── */}
-          {/* Sized 164px × 144px with translucent, light-diffusing Apple glass        ── */}
+          {/* Sized 158px × 138px with translucent, light-diffusing Apple glass        ── */}
           {/* ========================================================================= */}
           <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] flex items-center gap-7 sm:gap-8 pointer-events-auto">
             
@@ -403,8 +403,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseEnter={() => setHoveredNode('memory')}
               onMouseLeave={() => setHoveredNode(null)}
               className={[
-                "w-[152px] sm:w-[164px] h-[134px] sm:h-[144px]",
-                "rounded-[28px] p-4",
+                "w-[148px] sm:w-[158px] h-[130px] sm:h-[138px]",
+                "rounded-[26px] p-4",
                 "flex flex-col items-center justify-center text-center",
                 // Translucent white glass surface, strong backdrop blur, subtle inner highlight
                 "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl",
@@ -435,8 +435,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseEnter={() => setHoveredNode('relay')}
               onMouseLeave={() => setHoveredNode(null)}
               className={[
-                "w-[152px] sm:w-[164px] h-[134px] sm:h-[144px]",
-                "rounded-[28px] p-4",
+                "w-[148px] sm:w-[158px] h-[130px] sm:h-[138px]",
+                "rounded-[26px] p-4",
                 "flex flex-col items-center justify-center text-center",
                 // Translucent white glass surface, strong backdrop blur, subtle inner highlight
                 "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl",
@@ -614,8 +614,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 6. Lower Left/Bottom: ROOM (Moved inward toward center, translucent glass) ── */}
-          <div className="absolute bottom-[6%] sm:bottom-[7%] left-[30%] sm:left-[33%] pointer-events-auto">
+          {/* ── 6. Lower Left/Bottom: ROOM (Moved upward with comfortable breathing room below) ── */}
+          <div className="absolute bottom-[12%] sm:bottom-[13%] left-[30%] sm:left-[33%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('room')}
