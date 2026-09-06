@@ -16,6 +16,12 @@ import {
   submitNegotiationCounterOffer,
   updateHandoff
 } from '../../services/agentHandoffBus.js';
+import {
+  getActiveAiConfig,
+  saveAiConfig,
+  testProviderConnection,
+  SUPPORTED_PROVIDERS
+} from '../../services/llmProviderService.js';
 
 export default function MultiAgentHandoffStudio() {
   const [handoffs, setHandoffs] = useState([]);
@@ -27,6 +33,10 @@ export default function MultiAgentHandoffStudio() {
   const [isDispatching, setIsDispatching] = useState(false);
   const [isCounterOffering, setIsCounterOffering] = useState(false);
   const [activeFilter, setActiveFilter] = useState('ALL');
+  const [aiConfig, setAiConfig] = useState(() => getActiveAiConfig());
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeToHandoffs((items) => {
@@ -133,6 +143,15 @@ export default function MultiAgentHandoffStudio() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowConfigPanel(!showConfigPanel)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] dark:border-white/[0.1] bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-800 text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-all cursor-pointer shadow-2xs"
+          >
+            <Bot size={13} className="text-violet-600 dark:text-violet-400" />
+            <span className="capitalize">{aiConfig.provider || 'gemini'}</span>
+            <span className="text-[10px] text-slate-400 font-mono font-normal">({aiConfig.activeModel})</span>
+          </button>
           <div className="text-right hidden sm:block">
             <span className="text-[11px] font-mono font-bold text-slate-800 dark:text-zinc-200">
               {REGISTERED_SPECIALIST_AGENTS.length} Specialized Agents Online
@@ -141,6 +160,130 @@ export default function MultiAgentHandoffStudio() {
           </div>
         </div>
       </div>
+
+      {/* ── Collapsible Provider Configuration Drawer ── */}
+      {showConfigPanel && (
+        <div className="p-4 rounded-xl border border-violet-500/30 bg-violet-500/[0.03] dark:bg-violet-500/[0.06] shadow-2xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={13} className="text-violet-600 dark:text-violet-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                Frontier & Local LLM Provider Settings
+              </span>
+            </div>
+            <span className="text-[10.5px] text-slate-400 dark:text-zinc-500">Auto-routes all specialist agents</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-600 dark:text-zinc-300">Active Provider</label>
+              <select
+                value={aiConfig.provider}
+                onChange={(e) => {
+                  const updated = saveAiConfig({ provider: e.target.value });
+                  setAiConfig(updated);
+                  setConnectionStatus(null);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/50"
+              >
+                <option value="gemini">Google Gemini (API Key)</option>
+                <option value="ollama">Local Ollama (Local Daemon)</option>
+                <option value="openai">OpenAI (gpt-4o / gpt-4o-mini)</option>
+                <option value="claude">Anthropic Claude (Sonnet / Haiku)</option>
+                <option value="deepseek">DeepSeek (deepseek-chat)</option>
+                <option value="mock">Offline Mock Provider (Deterministic)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-600 dark:text-zinc-300">Active Model</label>
+              <input
+                type="text"
+                value={aiConfig.activeModel || ''}
+                onChange={(e) => {
+                  const updated = saveAiConfig({ activeModel: e.target.value });
+                  setAiConfig(updated);
+                }}
+                placeholder="e.g. gemini-2.0-flash or llama3:latest"
+                className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-black/[0.08] dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/50"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-600 dark:text-zinc-300">
+                {aiConfig.provider === 'ollama' ? 'Ollama Daemon Endpoint' : 'API Key (Hidden)'}
+              </label>
+              {aiConfig.provider === 'ollama' ? (
+                <input
+                  type="text"
+                  value={aiConfig.ollamaEndpoint || 'http://localhost:11434'}
+                  onChange={(e) => {
+                    const updated = saveAiConfig({ ollamaEndpoint: e.target.value });
+                    setAiConfig(updated);
+                  }}
+                  className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-black/[0.08] dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/50"
+                />
+              ) : (
+                <input
+                  type="password"
+                  value={
+                    aiConfig.provider === 'gemini' ? (aiConfig.geminiApiKey || '') :
+                    aiConfig.provider === 'openai' ? (aiConfig.openaiApiKey || '') :
+                    aiConfig.provider === 'claude' ? (aiConfig.claudeApiKey || '') :
+                    aiConfig.provider === 'deepseek' ? (aiConfig.deepseekApiKey || '') : ''
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const patch = {};
+                    if (aiConfig.provider === 'gemini') patch.geminiApiKey = val;
+                    if (aiConfig.provider === 'openai') patch.openaiApiKey = val;
+                    if (aiConfig.provider === 'claude') patch.claudeApiKey = val;
+                    if (aiConfig.provider === 'deepseek') patch.deepseekApiKey = val;
+                    const updated = saveAiConfig(patch);
+                    setAiConfig(updated);
+                  }}
+                  placeholder="Paste API Key here..."
+                  className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-black/[0.08] dark:border-white/[0.1] text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-violet-500/50"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2">
+              {connectionStatus && (
+                <span className={`text-xs flex items-center gap-1 font-medium ${
+                  connectionStatus.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {connectionStatus.success ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+                  <span>{connectionStatus.message}</span>
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              disabled={isTestingConnection}
+              onClick={async () => {
+                setIsTestingConnection(true);
+                setConnectionStatus(null);
+                try {
+                  const res = await testProviderConnection(aiConfig);
+                  setConnectionStatus(res);
+                } catch (err) {
+                  setConnectionStatus({ success: false, message: err.message });
+                } finally {
+                  setIsTestingConnection(false);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+            >
+              {isTestingConnection ? <RefreshCw size={12} className="animate-spin" /> : <Zap size={12} />}
+              <span>Test Provider Connection</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Specialist Agent Topology Grid ── */}
       <div className="space-y-2">

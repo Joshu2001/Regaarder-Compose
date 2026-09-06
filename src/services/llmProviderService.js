@@ -38,11 +38,13 @@ export const SUPPORTED_PROVIDERS = {
   MOCK: 'mock'
 };
 
+let inMemoryAiConfigCache = null;
+
 /**
  * Retrieve active AI configuration from environment, localStorage, or defaults.
  */
 export function getActiveAiConfig(explicitOverrides = {}) {
-  let saved = {};
+  let saved = inMemoryAiConfigCache || {};
   if (typeof localStorage !== 'undefined') {
     try {
       const raw = localStorage.getItem('regaarder_ai_config');
@@ -613,3 +615,107 @@ export async function runAgentExecutionLoop({
     turnsCount
   };
 }
+
+/**
+ * Persist AI configuration into local storage and memory cache.
+ */
+export function saveAiConfig(newConfig = {}) {
+  const current = getActiveAiConfig();
+  const merged = { ...current, ...newConfig };
+  inMemoryAiConfigCache = merged;
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('regaarder_ai_config', JSON.stringify(merged));
+    } catch (_) {}
+  }
+  return merged;
+}
+
+/**
+ * Actively tests provider connectivity and authentication.
+ */
+export async function testProviderConnection(customConfig = {}) {
+  const cfg = getActiveAiConfig(customConfig);
+  const provider = (cfg.provider || '').toLowerCase();
+
+  try {
+    if (provider === SUPPORTED_PROVIDERS.OLLAMA) {
+      const ep = (cfg.ollamaEndpoint || 'http://localhost:11434').replace(/\/+$/, '');
+      const res = await fetch(`${ep}/api/tags`, { method: 'GET' });
+      if (!res.ok) throw new Error(`Ollama returned status ${res.status}`);
+      const data = await res.json();
+      const models = (data.models || []).map(m => m.name);
+      return {
+        success: true,
+        provider: 'ollama',
+        endpoint: ep,
+        models,
+        message: `Connected to local Ollama daemon (${models.length} models installed).`
+      };
+    }
+
+    if (provider === SUPPORTED_PROVIDERS.GEMINI) {
+      if (!cfg.geminiApiKey) throw new Error('Missing Gemini API Key');
+      const testRes = await executeAiTurn(
+        [{ role: 'user', content: 'Ping. Respond with "pong".' }],
+        [],
+        cfg
+      );
+      if (testRes.type === 'error') throw new Error(testRes.error);
+      return {
+        success: true,
+        provider: 'gemini',
+        model: cfg.activeModel,
+        message: 'Connected to Google Gemini API.'
+      };
+    }
+
+    if (provider === SUPPORTED_PROVIDERS.OPENAI || provider === SUPPORTED_PROVIDERS.DEEPSEEK) {
+      const key = provider === SUPPORTED_PROVIDERS.OPENAI ? cfg.openaiApiKey : cfg.deepseekApiKey;
+      if (!key) throw new Error(`Missing ${provider.toUpperCase()} API Key`);
+      const testRes = await executeAiTurn(
+        [{ role: 'user', content: 'Ping. Respond with "pong".' }],
+        [],
+        cfg
+      );
+      if (testRes.type === 'error') throw new Error(testRes.error);
+      return {
+        success: true,
+        provider,
+        model: cfg.activeModel,
+        message: `Connected to ${provider.toUpperCase()} API.`
+      };
+    }
+
+    if (provider === SUPPORTED_PROVIDERS.CLAUDE || provider === SUPPORTED_PROVIDERS.ANTHROPIC) {
+      if (!cfg.claudeApiKey) throw new Error('Missing Anthropic Claude API Key');
+      const testRes = await executeAiTurn(
+        [{ role: 'user', content: 'Ping. Respond with "pong".' }],
+        [],
+        cfg
+      );
+      if (testRes.type === 'error') throw new Error(testRes.error);
+      return {
+        success: true,
+        provider: 'claude',
+        model: cfg.activeModel,
+        message: 'Connected to Anthropic Claude API.'
+      };
+    }
+
+    // Default mock / offline fallback
+    return {
+      success: true,
+      provider: provider || 'mock',
+      message: 'Operating in local offline deterministic test mode.'
+    };
+  } catch (err) {
+    return {
+      success: false,
+      provider,
+      error: err.message,
+      message: `Connection test failed: ${err.message}`
+    };
+  }
+}
+
