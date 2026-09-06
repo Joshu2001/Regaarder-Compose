@@ -87,8 +87,11 @@ export default function DesktopDownloadFloatingTrigger() {
   };
 
   const handleDownload = (e, url, osKey) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
+    // 1. Inside Electron desktop app
     if (typeof window !== 'undefined' && window.electronAPI?.isElectron) {
-      e.preventDefault();
       if (osKey === 'windows' && window.electronAPI.showItemInFolder) {
         window.electronAPI.showItemInFolder();
         return;
@@ -97,6 +100,11 @@ export default function DesktopDownloadFloatingTrigger() {
         window.electronAPI.openExternal(url);
         return;
       }
+    }
+
+    // 2. In normal web browser
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -267,10 +275,9 @@ export default function DesktopDownloadFloatingTrigger() {
         {/* 3 Direct Download Buttons (Windows, macOS, Linux) */}
         <div className="flex items-center gap-1.5">
           {/* 1. Windows Button */}
-          <a
-            href={downloadLinks.windows.url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={(e) => handleDownload(e, downloadLinks.windows.url, 'windows')}
             onPointerDown={(e) => handleDownload(e, downloadLinks.windows.url, 'windows')}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
               detectedOs === 'windows'
@@ -286,13 +293,12 @@ export default function DesktopDownloadFloatingTrigger() {
             }`}>
               .exe
             </span>
-          </a>
+          </button>
 
           {/* 2. macOS Button */}
-          <a
-            href={downloadLinks.mac.url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={(e) => handleDownload(e, downloadLinks.mac.url, 'mac')}
             onPointerDown={(e) => handleDownload(e, downloadLinks.mac.url, 'mac')}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
               detectedOs === 'mac'
@@ -308,13 +314,12 @@ export default function DesktopDownloadFloatingTrigger() {
             }`}>
               .dmg
             </span>
-          </a>
+          </button>
 
           {/* 3. Linux Button */}
-          <a
-            href={downloadLinks.linux.url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={(e) => handleDownload(e, downloadLinks.linux.url, 'linux')}
             onPointerDown={(e) => handleDownload(e, downloadLinks.linux.url, 'linux')}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
               detectedOs === 'linux'
@@ -330,7 +335,7 @@ export default function DesktopDownloadFloatingTrigger() {
             }`}>
               .AppImage
             </span>
-          </a>
+          </button>
         </div>
       </div>
     </div>
