@@ -4,11 +4,18 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
 /**
  * DesktopDownloadFloatingTrigger
  * 
- * Stacked Anchored Download Popover:
- * - Remains rock-solid open when toggled.
- * - When a download is initiated, it stays prominently open for at least 10 full seconds
- *   displaying live progress and download confirmation.
- * - Prevents all accidental outside-click closures during download.
+ * Final Visual Polish:
+ * 1. Physical Stack Depth: -8px to -10px vertical overlap between platform cards,
+ *    with progressive visual hierarchy (subtly lighter glass and higher z-index on top).
+ * 2. Restrained Detected State: Soft elevation and subtle border treatment instead of
+ *    a high-contrast ring, letting the "Detected" badge be the primary signal.
+ * 3. Minimal Anchor Button: Removed redundant `.exe` badge from collapsed button.
+ *    Clean: "↓ Download Desktop ˄"
+ * 4. Spatial Continuity: Cards smoothly slide upward from behind the button and
+ *    collapse back into the button with a subtle cubic-bezier spring curve.
+ * 5. Download State: Responsive in-card downloading state before/while initiating download.
+ * 6. Preserved Regaarder visual language: dark navy/slate glass surfaces, minimal shadows,
+ *    Apple-like restraint, and zero layout shift.
  */
 export default function DesktopDownloadFloatingTrigger() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -47,7 +54,6 @@ export default function DesktopDownloadFloatingTrigger() {
   // Dismiss on click outside ONLY when idle and user clicks genuinely outside
   useEffect(() => {
     const handleDocumentClick = (e) => {
-      // Never close if actively downloading or showing recent download confirmation
       if (downloadStateRef.current.status !== 'idle') {
         return;
       }
@@ -118,29 +124,26 @@ export default function DesktopDownloadFloatingTrigger() {
     e?.preventDefault?.();
     e?.stopPropagation?.();
 
-    // Prevent re-triggering if already downloading
     if (downloadState.status === 'downloading') return;
 
-    // Immediately pin the popover OPEN
+    // Immediately keep popover open and initiate active downloading state
     setIsExpanded(true);
     setDownloadState({
       platformKey: osKey,
       status: 'downloading',
-      progress: 8
+      progress: 10
     });
 
     if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
     if (progressTimerRef.current) clearInterval(progressTimerRef.current);
 
-    // 1. Progressive download animation feedback
-    let currentProgress = 8;
+    let currentProgress = 10;
     progressTimerRef.current = setInterval(() => {
-      currentProgress += Math.floor(Math.random() * 14) + 12;
+      currentProgress += Math.floor(Math.random() * 15) + 12;
       if (currentProgress >= 100) {
         currentProgress = 100;
         clearInterval(progressTimerRef.current);
 
-        // 2. Trigger binary download or native Electron reveal
         try {
           if (typeof window !== 'undefined' && window.electronAPI?.isElectron) {
             if (osKey === 'windows' && window.electronAPI.showItemInFolder) {
@@ -168,7 +171,7 @@ export default function DesktopDownloadFloatingTrigger() {
           progress: 100
         });
 
-        // 3. User requested: Remain open for AT LEAST 10 full seconds so cards stay visible!
+        // Keep visible for feedback, then gently collapse
         autoCloseTimerRef.current = setTimeout(() => {
           setIsExpanded(false);
           setTimeout(() => {
@@ -177,18 +180,16 @@ export default function DesktopDownloadFloatingTrigger() {
               status: 'idle',
               progress: 0
             });
-          }, 400);
-        }, 10000); // 10 full seconds duration
+          }, 350);
+        }, 8000);
       } else {
         setDownloadState(prev => ({
           ...prev,
           progress: currentProgress
         }));
       }
-    }, 140);
+    }, 130);
   };
-
-  const detectedPlatform = downloadPlatforms.find(p => p.key === detectedOs) || downloadPlatforms[0];
 
   return (
     <div
@@ -197,16 +198,16 @@ export default function DesktopDownloadFloatingTrigger() {
       aria-label="Download Desktop App"
       className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans select-none"
     >
-      {/* ── Overlapping Physical Stacked Deck (Expands upward from behind the button) ── */}
+      {/* ── Overlapping Physical Stacked Deck (Slides smoothly upward from behind the button) ── */}
       <div
         id="desktop-download-deck"
         role="menu"
         aria-label="Platform options"
         aria-hidden={!isExpanded}
-        className={`flex flex-col items-stretch w-[290px] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-bottom ${
+        className={`flex flex-col items-stretch w-[284px] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-bottom ${
           isExpanded
-            ? 'opacity-100 translate-y-0 pointer-events-auto mb-2'
-            : 'opacity-0 translate-y-4 pointer-events-none mb-0 h-0 overflow-hidden'
+            ? 'opacity-100 translate-y-0 pointer-events-auto mb-1.5'
+            : 'opacity-0 translate-y-3 pointer-events-none mb-0 h-0 overflow-hidden'
         }`}
       >
         {downloadPlatforms.map((platform, index) => {
@@ -214,8 +215,23 @@ export default function DesktopDownloadFloatingTrigger() {
           const isDetected = detectedOs === platform.key;
           const isThisDownloading = downloadState.platformKey === platform.key && downloadState.status === 'downloading';
           const isThisCompleted = downloadState.platformKey === platform.key && downloadState.status === 'completed';
-          const zIndex = 30 - index;
           
+          // Layered visual hierarchy: Top cards have higher z-index & slightly crisper contrast
+          // Lower cards have slight overlap and progressive subordination
+          const zIndex = 30 - index;
+          const marginTop = index === 0 ? '0px' : '-8px';
+          
+          // Subtle restrained styling for detected OS: soft border & elevation without harsh neon outlines
+          let cardBg = 'bg-[#141722]/95 hover:bg-[#1a1e2b]/95 text-slate-200 hover:text-white border-white/10 hover:border-white/15';
+          if (isThisDownloading || isThisCompleted) {
+            cardBg = 'bg-[#181c2b]/98 text-white border-indigo-500/50 shadow-lg shadow-indigo-950/40';
+          } else if (isDetected) {
+            cardBg = 'bg-[#171b28]/95 hover:bg-[#1d2232]/95 text-white border-slate-600/40 shadow-md shadow-black/20';
+          } else if (index === 2) {
+            // Lowest card (Linux) has slightly softer contrast for layered depth
+            cardBg = 'bg-[#12141d]/90 hover:bg-[#171a26]/95 text-slate-300 hover:text-white border-white/[0.07] hover:border-white/15';
+          }
+
           return (
             <div
               key={platform.key}
@@ -229,36 +245,30 @@ export default function DesktopDownloadFloatingTrigger() {
               }}
               style={{
                 zIndex,
-                marginTop: index > 0 ? '-6px' : '0px',
-                transitionDelay: isExpanded ? `${index * 35}ms` : `${(2 - index) * 20}ms`
+                marginTop,
+                transitionDelay: isExpanded ? `${index * 30}ms` : `${(2 - index) * 20}ms`
               }}
-              className={`relative overflow-hidden flex flex-col px-3.5 py-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-md ${
-                isThisDownloading || isThisCompleted
-                  ? 'bg-slate-900/98 dark:bg-[#141720]/98 text-white border-indigo-500 ring-2 ring-indigo-500/40 shadow-indigo-500/20'
-                  : isDetected
-                  ? 'bg-slate-900/95 dark:bg-[#141720]/95 text-white border-indigo-500/40 ring-1 ring-indigo-500/30 hover:border-indigo-400 hover:bg-slate-800/95'
-                  : 'bg-slate-900/90 dark:bg-[#12141a]/90 hover:bg-slate-800/95 text-slate-200 hover:text-white border-white/10 hover:border-white/20'
-              }`}
+              className={`relative overflow-hidden flex flex-col px-3.5 py-2.5 rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 backdrop-blur-xl ${cardBg}`}
             >
               {/* Card Top Row */}
               <div className="flex items-center justify-between w-full">
                 {/* Left Side: Icon + OS Details */}
-                <div className="flex items-center gap-3 min-w-0 pr-2">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
                   <div
                     className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
                       isThisCompleted
-                        ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-400'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30'
                         : isThisDownloading
-                        ? 'bg-indigo-600/30 border border-indigo-500/40 text-indigo-300'
+                        ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30'
                         : isDetected
-                        ? 'bg-indigo-600/30 border border-indigo-500/40 text-indigo-300'
-                        : 'bg-white/10 border border-white/10 text-slate-300 group-hover:text-white'
+                        ? 'bg-white/10 text-white border border-white/15'
+                        : 'bg-white/[0.06] text-slate-400 border border-white/[0.08] group-hover:text-white'
                     }`}
                   >
                     {isThisCompleted ? (
-                      <CheckCircle2 size={15} className="text-emerald-400" />
+                      <CheckCircle2 size={14} className="text-emerald-400" />
                     ) : isThisDownloading ? (
-                      <Loader2 size={15} className="animate-spin text-indigo-300" />
+                      <Loader2 size={14} className="animate-spin text-indigo-300" />
                     ) : (
                       <Icon size={14} />
                     )}
@@ -269,15 +279,15 @@ export default function DesktopDownloadFloatingTrigger() {
                         {platform.name}
                       </span>
                       {isThisCompleted ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 font-medium">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 font-medium">
                           Downloaded
                         </span>
                       ) : isThisDownloading ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-500/25 border border-indigo-400/30 text-indigo-300 font-medium animate-pulse">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-500/25 text-indigo-300 font-medium animate-pulse">
                           {downloadState.progress}%
                         </span>
                       ) : isDetected ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-500/25 border border-indigo-400/30 text-indigo-300 font-medium">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-white/10 text-slate-300 font-medium border border-white/10">
                           Detected
                         </span>
                       ) : null}
@@ -289,17 +299,17 @@ export default function DesktopDownloadFloatingTrigger() {
                 </div>
 
                 {/* Right Side: Extension Tag + Action Icon */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span
                     className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
                       isDetected || isThisDownloading
-                        ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/20'
-                        : 'bg-white/10 text-slate-300'
+                        ? 'bg-white/10 text-slate-200'
+                        : 'bg-white/[0.06] text-slate-400'
                     }`}
                   >
                     {platform.ext}
                   </span>
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-white group-hover:translate-y-0.5 transition-all">
+                  <div className="w-5 h-5 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-white group-hover:translate-y-0.5 transition-all">
                     {isThisCompleted ? (
                       <CheckCircle2 size={13} className="text-emerald-400" />
                     ) : (
@@ -309,11 +319,11 @@ export default function DesktopDownloadFloatingTrigger() {
                 </div>
               </div>
 
-              {/* In-Card Progress Bar when downloading */}
+              {/* In-Card Progress Track */}
               {isThisDownloading && (
                 <div className="w-full mt-2 bg-white/10 rounded-full h-1 overflow-hidden">
                   <div
-                    className="bg-indigo-500 h-full rounded-full transition-all duration-150 ease-out"
+                    className="bg-indigo-400 h-full rounded-full transition-all duration-120 ease-out"
                     style={{ width: `${downloadState.progress}%` }}
                   />
                 </div>
@@ -336,12 +346,12 @@ export default function DesktopDownloadFloatingTrigger() {
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
-          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 cursor-pointer shadow-xl group outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 cursor-pointer shadow-lg group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 ${
             downloadState.status === 'downloading'
-              ? 'bg-slate-900/95 text-white border-indigo-500/60 ring-2 ring-indigo-500/40 shadow-indigo-500/20'
+              ? 'bg-[#181c2b]/98 text-white border-indigo-500/50 shadow-indigo-950/40'
               : isExpanded
-              ? 'bg-indigo-600 text-white border-indigo-400/60 ring-1 ring-indigo-400/40 shadow-indigo-500/20'
-              : 'bg-slate-900/95 dark:bg-[#12141a]/95 hover:bg-slate-800/95 text-white border-white/15 hover:border-white/25'
+              ? 'bg-indigo-600 text-white border-indigo-500/60 shadow-indigo-900/30'
+              : 'bg-[#141722]/95 hover:bg-[#1a1e2b]/95 text-white border-white/15 hover:border-white/25'
           }`}
           title="Download Regaarder Desktop App"
         >
@@ -349,12 +359,12 @@ export default function DesktopDownloadFloatingTrigger() {
           <div
             className={`w-6 h-6 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
               downloadState.status === 'downloading'
-                ? 'bg-indigo-500/20 border border-indigo-400/40 text-indigo-300'
+                ? 'bg-indigo-500/20 text-indigo-300'
                 : downloadState.status === 'completed'
-                ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
+                ? 'bg-emerald-500/20 text-emerald-300'
                 : isExpanded
                 ? 'bg-white/20 text-white'
-                : 'bg-indigo-500/20 border border-indigo-400/30 text-indigo-400'
+                : 'bg-white/10 text-slate-200'
             }`}
           >
             {downloadState.status === 'downloading' ? (
@@ -366,27 +376,18 @@ export default function DesktopDownloadFloatingTrigger() {
             )}
           </div>
 
-          {/* Label + Progress Status */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <span className="text-white tracking-tight">
-              {downloadState.status === 'downloading'
-                ? `Downloading (${downloadState.progress}%)`
-                : downloadState.status === 'completed'
-                ? 'Download Complete'
-                : 'Download Desktop'}
-            </span>
-            <span
-              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
-                isExpanded ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
-              }`}
-            >
-              {detectedPlatform.ext}
-            </span>
-          </div>
+          {/* Clean Label (Redundant .exe badge removed) */}
+          <span className="text-xs font-semibold text-white tracking-tight">
+            {downloadState.status === 'downloading'
+              ? `Downloading (${downloadState.progress}%)`
+              : downloadState.status === 'completed'
+              ? 'Download Complete'
+              : 'Download Desktop'}
+          </span>
 
           {/* Refined Chevron with 180-degree rotation */}
           <div
-            className={`text-slate-400 group-hover:text-white transition-transform duration-300 ease-out ${
+            className={`text-slate-400 group-hover:text-white transition-transform duration-300 ease-out ml-0.5 ${
               isExpanded ? 'rotate-180 text-white' : 'rotate-0'
             }`}
           >
