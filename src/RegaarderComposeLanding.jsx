@@ -352,7 +352,7 @@ export default function RegaarderComposeLanding({
 
       {/* ── Main Content Stage ── */}
       <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-2 sm:pt-3 pb-8 sm:pb-12 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[1140px] mx-auto flex flex-col items-center">
+        <div className="w-full max-w-[1240px] mx-auto flex flex-col items-center">
 
           {/*
             ── Hero Section ──
