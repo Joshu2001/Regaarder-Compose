@@ -201,7 +201,7 @@ export default function DesktopDownloadFloatingTrigger() {
         aria-hidden={!isExpanded}
         className={`flex flex-col items-stretch w-[304px] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-bottom ${
           isExpanded
-            ? 'opacity-100 translate-y-0 pointer-events-auto mb-2'
+            ? 'opacity-100 translate-y-0 pointer-events-auto mb-3.5'
             : 'opacity-0 translate-y-3 pointer-events-none mb-0 h-0 overflow-hidden'
         }`}
         style={{ marginRight: 0 }}
