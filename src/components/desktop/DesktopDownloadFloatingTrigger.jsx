@@ -4,13 +4,12 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
 /**
  * DesktopDownloadFloatingTrigger
  * 
- * Enhanced Breathing Room & Polish:
- * - Increased card height & internal breathing room (py-3.5, px-4, min-h-[58px]).
- * - Adjusted vertical overlap to a comfortable -4px so the stacked cards have generous
- *   vertical presence and no cramped feeling, while preserving the layered physical deck effect.
- * - Widened deck slightly to 304px for elegant, airy layout.
- * - Subtitle "Ubuntu · Fedora · Arch" with comfortable line height and spacing.
- * - 24x24px subtle icon wrapper with crisp contrast.
+ * Micro-Alignment Polish:
+ * - Perfectly aligns the right edge of the Windows/macOS/Linux stacked deck
+ *   with the right edge of the "Download Desktop" button.
+ * - Both elements share the exact same right-side visual axis.
+ * - Preserves card height, vertical overlap (-4px), spacing, typography,
+ *   colors, shadows, detected badge, and smooth Apple-style easing.
  */
 export default function DesktopDownloadFloatingTrigger() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -192,6 +191,7 @@ export default function DesktopDownloadFloatingTrigger() {
       role="region"
       aria-label="Download Desktop App"
       className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans select-none"
+      style={{ paddingRight: 0, marginRight: 0 }}
     >
       {/* ── Overlapping Physical Stacked Deck (Slides smoothly upward from behind the button) ── */}
       <div
@@ -204,6 +204,7 @@ export default function DesktopDownloadFloatingTrigger() {
             ? 'opacity-100 translate-y-0 pointer-events-auto mb-2'
             : 'opacity-0 translate-y-3 pointer-events-none mb-0 h-0 overflow-hidden'
         }`}
+        style={{ marginRight: 0 }}
       >
         {downloadPlatforms.map((platform, index) => {
           const Icon = platform.icon;
@@ -241,7 +242,8 @@ export default function DesktopDownloadFloatingTrigger() {
               style={{
                 zIndex,
                 marginTop,
-                transitionDelay: isExpanded ? `${index * 30}ms` : `${(2 - index) * 20}ms`
+                transitionDelay: isExpanded ? `${index * 30}ms` : `${(2 - index) * 20}ms`,
+                marginRight: 0
               }}
               className={`relative overflow-hidden flex flex-col justify-center px-4 py-3.5 min-h-[58px] rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 backdrop-blur-xl ${cardBg}`}
             >
@@ -330,7 +332,7 @@ export default function DesktopDownloadFloatingTrigger() {
       </div>
 
       {/* ── Primary Bottom-Right Anchor Button ── */}
-      <div className="relative z-40">
+      <div className="relative z-40 flex justify-end w-full" style={{ marginRight: 0 }}>
         <button
           ref={anchorButtonRef}
           type="button"
@@ -350,6 +352,7 @@ export default function DesktopDownloadFloatingTrigger() {
               : 'bg-[#141722]/95 hover:bg-[#1a1e2b]/95 text-white border-white/15 hover:border-white/25'
           }`}
           title="Download Regaarder Desktop App"
+          style={{ marginRight: 0 }}
         >
           {/* Download Icon Badge / Spinner */}
           <div
