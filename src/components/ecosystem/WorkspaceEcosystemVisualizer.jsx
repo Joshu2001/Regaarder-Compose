@@ -58,6 +58,18 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             transform: scale(1.04);
           }
         }
+        @keyframes pulseBridgeDiamond {
+          0%, 100% {
+            opacity: 0.65;
+            transform: scale(0.94);
+            filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.35));
+          }
+          50% {
+            opacity: 0.98;
+            transform: scale(1.10);
+            filter: drop-shadow(0 0 7px rgba(96, 165, 250, 0.65));
+          }
+        }
         @keyframes flowParticleGentle {
           0% { offset-distance: 0%; opacity: 0; }
           20% { opacity: 0.6; }
@@ -301,16 +313,18 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             {/* Right anchor node */}
             <circle cx="545" cy="190" r="1.8" fill="#60a5fa" opacity="0.85" />
 
-            {/* SOFT APERTURE LIGHT in the exact center (light passing through frosted glass) */}
-            <g className="animate-pulse-flare" style={{ transformOrigin: '530px 190px', animation: 'pulseApertureFlareSubtle 4s ease-in-out infinite' }}>
+            {/* MICRO-CHROMATIC STARBURST APERTURE in the exact center */}
+            <g className="animate-pulse-flare" style={{ transformOrigin: '530px 190px', animation: 'pulseBridgeDiamond 3.8s ease-in-out infinite' }}>
               {/* Diffuse horizontal flare */}
-              <ellipse cx="530" cy="190" rx="9" ry="2" fill="#ffffff" opacity="0.6" filter="url(#bridge-aperture-glow)" />
+              <ellipse cx="530" cy="190" rx="10" ry="2.2" fill="#ffffff" opacity="0.65" filter="url(#bridge-aperture-glow)" />
               {/* Vertical starburst ray */}
-              <polygon points="530,182 531.8,190 530,198 528.2,190" fill="#ffffff" opacity="0.7" filter="url(#soft-whisper-glow)" />
+              <polygon points="530,181 531.8,190 530,199 528.2,190" fill="#ffffff" opacity="0.85" filter="url(#soft-whisper-glow)" />
               {/* Horizontal starburst ray */}
-              <polygon points="522,190 530,191.8 538,190 530,188.2" fill="#ffffff" opacity="0.7" filter="url(#soft-whisper-glow)" />
-              {/* Inner core */}
-              <circle cx="530" cy="190" r="1.8" fill="#ffffff" opacity="0.9" />
+              <polygon points="521,190 530,191.8 539,190 530,188.2" fill="#ffffff" opacity="0.85" filter="url(#soft-whisper-glow)" />
+              {/* Diamond facet highlight */}
+              <polygon points="530,187 533,190 530,193 527,190" fill="#ffffff" opacity="0.9" />
+              {/* Inner core pinpoint */}
+              <circle cx="530" cy="190" r="1.6" fill="#ffffff" opacity="0.98" />
             </g>
           </g>
 
@@ -319,114 +333,120 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           {/* ══════════════════════════════════════════════════════════════ */}
 
           {/* ── 1. Top Center: Docs → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'compose' ? 'opacity-100' : 'opacity-85'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'compose' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
             <path
               id="path-docs"
               d="M 508 68 C 502 92, 488 112, 475 125"
               stroke="url(#grad-path-docs)"
-              strokeWidth={hoveredNode === 'compose' ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'compose' || hoveredNode === 'memory') ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
+              filter={hoveredNode === 'compose' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="508" cy="68" r="1.4" fill="#93c5fd" opacity="0.7" />
+            <circle cx="508" cy="68" r="1.4" fill="#93c5fd" opacity={hoveredNode === 'compose' ? "1" : "0.7"} />
             {/* Flowing energy particle */}
-            <circle r="1.4" fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'compose' ? "1.8" : "1.4"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 508 68 C 502 92, 488 112, 475 125')",
               animation: "flowParticleGentle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
             }} />
           </g>
 
           {/* ── 2. Upper Left: Sheets → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'sheet' ? 'opacity-100' : 'opacity-85'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'sheet' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
             <path
               id="path-sheets"
               d="M 285 86 C 335 104, 380 126, 432 146"
               stroke="url(#grad-path-sheets)"
-              strokeWidth={hoveredNode === 'sheet' ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'sheet' || hoveredNode === 'memory') ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
+              filter={hoveredNode === 'sheet' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="285" cy="86" r="1.4" fill="#6ee7b7" opacity="0.7" />
+            <circle cx="285" cy="86" r="1.4" fill="#6ee7b7" opacity={hoveredNode === 'sheet' ? "1" : "0.7"} />
             {/* Flowing energy particle */}
-            <circle r="1.4" fill="#a5b4fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'sheet' ? "1.8" : "1.4"} fill="#a5b4fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 285 86 C 335 104, 380 126, 432 146')",
               animation: "flowParticleGentle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.5s",
             }} />
           </g>
 
-          {/* ── 3. Upper Right: Deck → Relay ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'deck' ? 'opacity-100' : 'opacity-85'}`}>
+          {/* ── 3. Upper Right: Deck → Relay (Harmonized sweeping curve) ── */}
+          <g className={`transition-all duration-300 ${(hoveredNode === 'deck' || hoveredNode === 'relay') ? 'opacity-100' : 'opacity-80'}`}>
             <path
               id="path-deck"
-              d="M 775 86 C 725 104, 680 126, 628 146"
+              d="M 775 86 C 722 104, 675 124, 628 146"
               stroke="url(#grad-path-deck)"
-              strokeWidth={hoveredNode === 'deck' ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'deck' || hoveredNode === 'relay') ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
+              filter={hoveredNode === 'deck' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-blue)"
             />
-            <circle cx="775" cy="86" r="1.4" fill="#fdba74" opacity="0.7" />
+            <circle cx="775" cy="86" r="1.4" fill="#fdba74" opacity={hoveredNode === 'deck' ? "1" : "0.7"} />
             {/* Flowing energy particle */}
-            <circle r="1.4" fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
-              offsetPath: "path('M 775 86 C 725 104, 680 126, 628 146')",
+            <circle r={hoveredNode === 'deck' ? "1.8" : "1.4"} fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
+              offsetPath: "path('M 775 86 C 722 104, 675 124, 628 146')",
               animation: "flowParticleGentle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.1s",
             }} />
           </g>
 
           {/* ── 4. Mid Left: Import → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'omni-portal' ? 'opacity-100' : 'opacity-85'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'omni-portal' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
             <path
               id="path-import"
               d="M 230 190 L 428 190"
               stroke="url(#grad-path-import)"
-              strokeWidth={hoveredNode === 'omni-portal' ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'omni-portal' || hoveredNode === 'memory') ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
+              filter={hoveredNode === 'omni-portal' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="230" cy="190" r="1.4" fill="#c084fc" opacity="0.7" />
+            <circle cx="230" cy="190" r="1.4" fill="#c084fc" opacity={hoveredNode === 'omni-portal' ? "1" : "0.7"} />
             {/* Flowing energy particle */}
-            <circle r="1.4" fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'omni-portal' ? "1.8" : "1.4"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 230 190 L 428 190')",
               animation: "flowParticleGentle 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.2s",
             }} />
           </g>
 
-          {/* ── 5. Lower Right: Whiteboard → Relay ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'whiteboard' ? 'opacity-100' : 'opacity-85'}`}>
+          {/* ── 5. Lower Right: Whiteboard → Relay (Harmonized smooth arc) ── */}
+          <g className={`transition-all duration-300 ${(hoveredNode === 'whiteboard' || hoveredNode === 'relay') ? 'opacity-100' : 'opacity-80'}`}>
             <path
               id="path-whiteboard"
-              d="M 770 246 C 725 240, 680 228, 628 212"
+              d="M 770 246 C 718 242, 670 230, 628 214"
               stroke="url(#grad-path-whiteboard)"
-              strokeWidth={hoveredNode === 'whiteboard' ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'whiteboard' || hoveredNode === 'relay') ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
+              filter={hoveredNode === 'whiteboard' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-blue)"
             />
-            <circle cx="770" cy="246" r="1.4" fill="#818cf8" opacity="0.7" />
+            <circle cx="770" cy="246" r="1.4" fill="#818cf8" opacity={hoveredNode === 'whiteboard' ? "1" : "0.7"} />
             {/* Flowing energy particle */}
-            <circle r="1.4" fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
-              offsetPath: "path('M 770 246 C 725 240, 680 228, 628 212')",
+            <circle r={hoveredNode === 'whiteboard' ? "1.8" : "1.4"} fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
+              offsetPath: "path('M 770 246 C 718 242, 670 230, 628 214')",
               animation: "flowParticleGentle 4.0s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.6s",
             }} />
           </g>
 
           {/* ── 6. Lower Left/Center: Room → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-85'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'room' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
             <path
               id="path-room"
               d="M 438 282 C 446 272, 460 264, 472 258"
               stroke="url(#grad-path-room)"
-              strokeWidth={hoveredNode === 'room' ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'room' || hoveredNode === 'memory') ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
+              filter={hoveredNode === 'room' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="438" cy="282" r="1.4" fill="#5eead4" opacity="0.7" />
+            <circle cx="438" cy="282" r="1.4" fill="#5eead4" opacity={hoveredNode === 'room' ? "1" : "0.7"} />
             {/* Flowing energy particle */}
-            <circle r="1.4" fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'room' ? "1.8" : "1.4"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 438 282 C 446 272, 460 264, 472 258')",
               animation: "flowParticleGentle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.8s",
             }} />
@@ -455,10 +475,12 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 // Soft light passing through frosted glass
                 "bg-gradient-to-b from-white/88 via-white/75 to-purple-50/35 dark:from-zinc-900/85 dark:via-zinc-900/70 dark:to-purple-950/20",
                 "backdrop-blur-2xl",
-                "border border-purple-200/60 dark:border-purple-500/25",
-                "shadow-[0_14px_36px_-8px_rgba(168,85,247,0.13),0_2px_8px_rgba(168,85,247,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(168,85,247,0.05)]",
-                "transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'memory' ? "scale-[1.025] -translate-y-0.5 shadow-[0_18px_44px_-6px_rgba(168,85,247,0.22)] border-purple-300" : "",
+                "border transition-all duration-300 cursor-pointer group outline-none",
+                hoveredNode === 'memory'
+                  ? "scale-[1.025] -translate-y-0.5 border-purple-300 dark:border-purple-400 shadow-[0_18px_44px_-6px_rgba(168,85,247,0.22)]"
+                  : ['compose', 'sheet', 'omni-portal', 'room'].includes(hoveredNode)
+                    ? "border-purple-300/80 dark:border-purple-400/40 shadow-[0_16px_40px_-8px_rgba(168,85,247,0.18)] -translate-y-0.5"
+                    : "border-purple-200/60 dark:border-purple-500/25 shadow-[0_14px_36px_-8px_rgba(168,85,247,0.13),0_2px_8px_rgba(168,85,247,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(168,85,247,0.05)]",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-purple-600 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_1.5px_4px_rgba(168,85,247,0.25)]">
@@ -485,10 +507,12 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 // Soft light passing through frosted glass
                 "bg-gradient-to-b from-white/88 via-white/75 to-sky-50/35 dark:from-zinc-900/85 dark:via-zinc-900/70 dark:to-sky-950/20",
                 "backdrop-blur-2xl",
-                "border border-sky-200/60 dark:border-sky-500/25",
-                "shadow-[0_14px_36px_-8px_rgba(56,189,248,0.13),0_2px_8px_rgba(56,189,248,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(56,189,248,0.05)]",
-                "transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'relay' ? "scale-[1.025] -translate-y-0.5 shadow-[0_18px_44px_-6px_rgba(56,189,248,0.22)] border-sky-300" : "",
+                "border transition-all duration-300 cursor-pointer group outline-none",
+                hoveredNode === 'relay'
+                  ? "scale-[1.025] -translate-y-0.5 border-sky-300 dark:border-sky-400 shadow-[0_18px_44px_-6px_rgba(56,189,248,0.22)]"
+                  : ['deck', 'whiteboard'].includes(hoveredNode)
+                    ? "border-sky-300/80 dark:border-sky-400/40 shadow-[0_16px_40px_-8px_rgba(56,189,248,0.18)] -translate-y-0.5"
+                    : "border-sky-200/60 dark:border-sky-500/25 shadow-[0_14px_36px_-8px_rgba(56,189,248,0.13),0_2px_8px_rgba(56,189,248,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(56,189,248,0.05)]",
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-sky-600 dark:text-sky-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_1.5px_4px_rgba(56,189,248,0.25)]">
