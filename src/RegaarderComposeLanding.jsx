@@ -351,36 +351,36 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-8 sm:pt-10 pb-12 sm:pb-16 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[1020px] mx-auto flex flex-col items-center">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-2 sm:pt-3 pb-8 sm:pb-12 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[1140px] mx-auto flex flex-col items-center">
 
           {/*
             ── Hero Section ──
             Pure Apple typography & authoritative monochrome Regaarder brand glyph.
             Matches reference image:
-            - Regaarder brand mark with generous breathing room below header
+            - Regaarder brand mark comfortably positioned beneath header
             - "Every tool your team needs," (Line 1)
             - "connected as one." with subtle purple/blue gradient (Line 2)
             - Centered, dark navy typography
             - Subtitle directly beneath
           */}
-          <div className="text-center mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-1 sm:mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
-            <div className="mb-2.5 flex items-center justify-center">
+            <div className="mb-2 flex items-center justify-center">
               <div className="w-9 h-9 rounded-xl bg-white/90 dark:bg-[#18181b]/90 border border-slate-200/50 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
                 <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
 
-            <h1 className="text-[28px] sm:text-[34px] md:text-[38px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.18] mb-2 text-balance max-w-2xl mx-auto">
+            <h1 className="text-[28px] sm:text-[34px] md:text-[38px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.18] mb-1.5 text-balance max-w-2xl mx-auto">
               <span>Every tool your team needs,</span>
               <br />
               <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-400 dark:via-indigo-300 dark:to-blue-400 bg-clip-text text-transparent">
                 connected as one.
               </span>
             </h1>
-            <p className="text-[14px] sm:text-[14.5px] text-slate-500 dark:text-zinc-400 font-normal max-w-lg mx-auto leading-relaxed">
+            <p className="text-[13.5px] sm:text-[14px] text-slate-500 dark:text-zinc-400 font-normal max-w-lg mx-auto leading-relaxed">
               {t('landing.subheadline') || 'Docs, sheets, decks, and AI intelligence — completely private.'}
             </p>
           </div>
@@ -391,8 +391,8 @@ export default function RegaarderComposeLanding({
           */}
           <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
-          {/* ── Progressive Disclosure Recent Work Strip (generous breathing room below ecosystem) ── */}
-          <div className="w-full max-w-[840px] mx-auto mt-6 sm:mt-10">
+          {/* ── Progressive Disclosure Recent Work Strip (cleanly positioned beneath ecosystem) ── */}
+          <div className="w-full max-w-[860px] mx-auto mt-2 sm:mt-4">
             <LandingRecentWorkStrip
               onLaunch={onLaunch}
               onOpenRecentModal={onOpenRecentModal}

@@ -14,18 +14,18 @@ import {
  * 
  * Accurately reproduces the reference design:
  * - Central connected core: Memory (left, soft lavender/purple glow, spark glyph) and Relay (right, soft blue glow, bidirectional glyph)
- * - Subtle luminous horizontal bridge between Memory and Relay with breathing glow
- * - Peripheral satellite tools positioned radially around the core in balanced, organic harmony:
- *   - Docs: top center
- *   - Sheets: upper-left
- *   - Deck: upper-right
- *   - Import: left
- *   - Whiteboard: lower-right
+ * - Strengthened, elegant luminous horizontal connection between Memory and Relay with breathing light
+ * - Peripheral satellite tools positioned radially with expanded horizontal footprint (10-12% wider):
+ *   - Docs: top center (closer to subtitle)
+ *   - Sheets: upper-left (spread wider)
+ *   - Deck: upper-right (spread wider)
+ *   - Import: left (spread wider)
+ *   - Whiteboard: lower-right (spread wider)
  *   - Room: lower-left/bottom
- * - No dark dotted ellipse. Instead, ethereal, translucent orbital arcs with soft white/lavender gradients and tiny glowing nodes.
- * - Gentle curved connection paths with low opacity, subtle directional accents, and tiny flowing particles.
- * - Neutral glass-card resting state for all peripheral cards (no persistent purple borders!).
- * - Cards remain spatially fixed (no spinning/rotation).
+ * - Reduced vertical footprint so Recent Work is naturally visible in standard viewports
+ * - 20% subtler, whisper-thin, low-opacity ethereal connection paths and orbital sweeps
+ * - Highly refined glass-like translucent surfaces on Memory & Relay
+ * - Cards remain spatially fixed (no spinning/rotation)
  */
 
 export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
@@ -47,21 +47,21 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
   };
 
   return (
-    <div className="w-full relative select-none flex items-center justify-center my-2 sm:my-4">
+    <div className="w-full relative select-none flex items-center justify-center -my-1 sm:-my-2">
       {/* ── Internal Keyframes for Fluid Particle Flow & Soft Bridge Breathing ── */}
       <style>{`
-        @keyframes pulseBridge {
-          0%, 100% { opacity: 0.45; }
-          50% { opacity: 0.85; }
+        @keyframes pulseBridgeLuminous {
+          0%, 100% { opacity: 0.55; filter: drop-shadow(0 0 4px rgba(168,85,247,0.3)); }
+          50% { opacity: 0.95; filter: drop-shadow(0 0 8px rgba(99,102,241,0.6)); }
         }
-        @keyframes flowParticle {
+        @keyframes flowParticleSubtle {
           0% { offset-distance: 0%; opacity: 0; }
-          15% { opacity: 0.9; }
-          85% { opacity: 0.9; }
+          15% { opacity: 0.75; }
+          85% { opacity: 0.75; }
           100% { offset-distance: 100%; opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .animate-pulse-bridge {
+          .animate-pulse-bridge-luminous {
             animation: none !important;
           }
           circle[style*="offset-path"] {
@@ -70,35 +70,35 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
         }
       `}</style>
 
-      {/* ── Outer Ecosystem Stage (Aspect 1000 x 530) ── */}
-      <div className="w-full max-w-[1020px] h-[510px] sm:h-[540px] relative flex items-center justify-center overflow-visible">
+      {/* ── Outer Ecosystem Stage (Aspect 1100 x 470: Widen horizontally by ~10%, reduce vertical footprint) ── */}
+      <div className="w-full max-w-[1120px] h-[450px] sm:h-[475px] relative flex items-center justify-center overflow-visible">
         
         {/* ── Soft Atmospheric Background Illumination (subtle, pure Apple aesthetic) ── */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
           {/* Subtle lavender/blue ambient glow */}
-          <div className="w-[720px] h-[400px] rounded-[100%] bg-gradient-to-r from-blue-100/40 via-indigo-100/30 to-purple-100/40 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20 blur-[85px] transform -translate-y-1 opacity-70" />
+          <div className="w-[820px] h-[350px] rounded-[100%] bg-gradient-to-r from-blue-100/35 via-indigo-100/25 to-purple-100/35 dark:from-blue-950/15 dark:via-indigo-950/15 dark:to-purple-950/15 blur-[90px] transform -translate-y-1 opacity-65" />
           {/* Soft core glow directly behind central pair */}
-          <div className="w-[420px] h-[220px] rounded-full bg-gradient-to-r from-purple-200/35 to-blue-200/35 dark:from-purple-900/15 dark:to-blue-900/15 blur-[55px] opacity-60" />
+          <div className="w-[450px] h-[200px] rounded-full bg-gradient-to-r from-purple-200/30 to-blue-200/30 dark:from-purple-900/12 dark:to-blue-900/12 blur-[50px] opacity-55" />
         </div>
 
-        {/* ── SVG Connection Network Layer (Calculated against a 1000 × 530 ViewBox) ── */}
+        {/* ── SVG Connection Network Layer (Calculated against a 1100 × 470 ViewBox) ── */}
         <svg
-          viewBox="0 0 1000 530"
+          viewBox="0 0 1100 470"
           className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible"
           fill="none"
         >
           <defs>
-            {/* Extremely delicate arrowheads */}
+            {/* Extremely delicate arrowheads - 20% subtler */}
             <marker
               id="arrow-subtle-purple"
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
-              markerWidth="3.8"
-              markerHeight="3.8"
+              markerWidth="3.2"
+              markerHeight="3.2"
               orient="auto-start-reverse"
             >
-              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#a855f7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#a855f7" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.45" />
             </marker>
 
             <marker
@@ -106,11 +106,11 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
-              markerWidth="3.8"
-              markerHeight="3.8"
+              markerWidth="3.2"
+              markerHeight="3.2"
               orient="auto-start-reverse"
             >
-              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#3b82f6" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#3b82f6" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.45" />
             </marker>
 
             <marker
@@ -118,243 +118,268 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               viewBox="0 0 10 10"
               refX="6"
               refY="5"
-              markerWidth="3.8"
-              markerHeight="3.8"
+              markerWidth="3.2"
+              markerHeight="3.2"
               orient="auto-start-reverse"
             >
-              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#818cf8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+              <path d="M 1 2.5 L 6.5 5 L 1 7.5" fill="none" stroke="#818cf8" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.45" />
             </marker>
 
-            {/* Soft, low-opacity linear gradients for paths */}
+            {/* Soft, low-opacity linear gradients for paths (subtler by ~20%) */}
             <linearGradient id="grad-subtle-docs" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.6" />
+              <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.48" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-sheets" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.3" />
-              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.65" />
+              <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.22" />
+              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.38" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.52" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-deck" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fdba74" stopOpacity="0.25" />
-              <stop offset="50%" stopColor="#c4b5fd" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.65" />
+              <stop offset="0%" stopColor="#fdba74" stopOpacity="0.18" />
+              <stop offset="50%" stopColor="#c4b5fd" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.52" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-import" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.65" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.5" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-whiteboard" x1="100%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.25" />
-              <stop offset="70%" stopColor="#818cf8" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.65" />
+              <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.18" />
+              <stop offset="70%" stopColor="#818cf8" stopOpacity="0.38" />
+              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.52" />
             </linearGradient>
 
             <linearGradient id="grad-subtle-room" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#5eead4" stopOpacity="0.25" />
-              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.65" />
+              <stop offset="0%" stopColor="#5eead4" stopOpacity="0.18" />
+              <stop offset="60%" stopColor="#a5b4fc" stopOpacity="0.38" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.52" />
             </linearGradient>
 
-            {/* Ethereal orbital ring gradients */}
+            {/* Ethereal orbital ring gradients - reduced opacity by 20% */}
             <linearGradient id="grad-orbit-primary" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.28" />
-              <stop offset="35%" stopColor="#818cf8" stopOpacity="0.38" />
-              <stop offset="70%" stopColor="#93c5fd" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.22" />
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.2" />
+              <stop offset="35%" stopColor="#818cf8" stopOpacity="0.28" />
+              <stop offset="70%" stopColor="#93c5fd" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#c084fc" stopOpacity="0.16" />
             </linearGradient>
 
-            <linearGradient id="grad-subtle-bridge" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.75" />
-              <stop offset="50%" stopColor="#a5b4fc" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.75" />
+            {/* Luminous Core Interlink Bridge Gradient */}
+            <linearGradient id="grad-luminous-bridge" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#c084fc" stopOpacity="0.85" />
+              <stop offset="50%" stopColor="#a5b4fc" stopOpacity="1" />
+              <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.85" />
             </linearGradient>
 
             {/* Delicate glow filter */}
             <filter id="soft-ethereal-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feGaussianBlur stdDeviation="1.8" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+
+            {/* Bridge Glow Filter */}
+            <filter id="bridge-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3.2" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
 
-          {/* ── Ethereal Translucent Orbital Curves (NO dark dotted rings!) ── */}
+          {/* ── Ethereal Translucent Orbital Curves (Reduced opacity, wider reach) ── */}
           {/* Main sweeping outer orbital arc */}
           <path
-            d="M 115 285 C 105 170, 240 85, 510 82 C 780 79, 915 160, 905 280 C 895 390, 755 465, 490 468 C 235 470, 125 390, 115 285"
+            d="M 90 235 C 80 135, 230 55, 550 52 C 870 49, 1020 125, 1010 230 C 1000 335, 840 415, 530 418 C 220 420, 100 335, 90 235"
             stroke="url(#grad-orbit-primary)"
-            strokeWidth="1"
+            strokeWidth="0.9"
             fill="none"
-            opacity="0.35"
+            opacity="0.26"
           />
 
           {/* Secondary delicate sweeping arc connecting Deck & Whiteboard */}
           <path
-            d="M 640 145 C 800 170, 930 235, 875 355 C 825 435, 680 475, 480 470"
+            d="M 720 115 C 890 140, 1030 200, 970 310 C 915 385, 760 425, 530 420"
             stroke="url(#grad-orbit-primary)"
-            strokeWidth="0.85"
+            strokeWidth="0.75"
             fill="none"
-            opacity="0.22"
+            opacity="0.17"
           />
 
-          {/* Occasional tiny luminous planetary nodes along the curves */}
-          <circle cx="215" cy="148" r="1.5" fill="#a5b4fc" opacity="0.6" />
-          <circle cx="850" cy="225" r="1.5" fill="#93c5fd" opacity="0.6" />
-          <circle cx="340" cy="460" r="1.5" fill="#c084fc" opacity="0.5" />
-          <circle cx="730" cy="455" r="1.5" fill="#a5b4fc" opacity="0.5" />
+          {/* Occasional tiny luminous celestial nodes along the curves */}
+          <circle cx="205" cy="120" r="1.3" fill="#a5b4fc" opacity="0.45" />
+          <circle cx="940" cy="185" r="1.3" fill="#93c5fd" opacity="0.45" />
+          <circle cx="370" cy="412" r="1.3" fill="#c084fc" opacity="0.4" />
+          <circle cx="810" cy="408" r="1.3" fill="#a5b4fc" opacity="0.4" />
 
-          {/* ── Central Memory ↔ Relay Interlink Bridge ── */}
+          {/* ── STRENGTHENED MEMORY ↔ RELAY LUMINOUS CONNECTION ── */}
+          {/* Communicates: Memory = shared context ↔ Relay = connectivity */}
           <g className="transition-opacity duration-300">
-            {/* Luminous soft glow track */}
+            {/* Luminous wide atmospheric aura track */}
             <line
-              x1="472"
-              y1="265"
-              x2="528"
-              y2="265"
-              stroke="url(#grad-subtle-bridge)"
-              strokeWidth="3.5"
-              opacity="0.35"
+              x1="522"
+              y1="235"
+              x2="578"
+              y2="235"
+              stroke="url(#grad-luminous-bridge)"
+              strokeWidth="5"
+              opacity="0.45"
+              filter="url(#bridge-glow)"
+            />
+            {/* Inner radiant beam */}
+            <line
+              x1="522"
+              y1="235"
+              x2="578"
+              y2="235"
+              stroke="url(#grad-luminous-bridge)"
+              strokeWidth="2"
+              opacity="0.8"
               filter="url(#soft-ethereal-glow)"
             />
-            {/* Crisp hairline spine */}
+            {/* Crisp central spine */}
             <line
-              x1="472"
-              y1="265"
-              x2="528"
-              y2="265"
-              stroke="url(#grad-subtle-bridge)"
-              strokeWidth="1.2"
-              opacity="0.75"
+              x1="522"
+              y1="235"
+              x2="578"
+              y2="235"
+              stroke="#ffffff"
+              strokeWidth="1"
+              opacity="0.9"
             />
-            {/* Left anchor node */}
-            <circle cx="474" cy="265" r="1.8" fill="#c084fc" opacity="0.8" />
-            {/* Right anchor node */}
-            <circle cx="526" cy="265" r="1.8" fill="#93c5fd" opacity="0.8" />
+            {/* Left anchor node (Memory shared context connection) */}
+            <circle cx="524" cy="235" r="2" fill="#c084fc" opacity="0.9" />
+            {/* Right anchor node (Relay connectivity connection) */}
+            <circle cx="576" cy="235" r="2" fill="#93c5fd" opacity="0.9" />
             {/* Pulsating energy node in center */}
             <circle
-              cx="500"
-              cy="265"
-              r="2.5"
+              cx="550"
+              cy="235"
+              r="3"
+              fill="#ffffff"
+              filter="url(#bridge-glow)"
+              className="animate-pulse-bridge-luminous"
+            />
+            <circle
+              cx="550"
+              cy="235"
+              r="1.8"
               fill="#a5b4fc"
-              filter="url(#soft-ethereal-glow)"
-              className="animate-pulse-bridge"
             />
           </g>
 
-          {/* ── 1. Top Center: Docs → Core ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'compose' ? 'opacity-100' : 'opacity-70'}`}>
+          {/* ── 1. Top Center: Docs → Core (Slightly closer) ── */}
+          <g className={`transition-all duration-300 ${hoveredNode === 'compose' ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-docs"
-              d="M 503 162 C 503 195, 492 205, 488 220"
+              d="M 550 120 C 550 158, 540 178, 536 195"
               stroke="url(#grad-subtle-docs)"
-              strokeWidth={hoveredNode === 'compose' ? "1.6" : "1"}
+              strokeWidth={hoveredNode === 'compose' ? "1.4" : "0.9"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-purple)"
             />
-            <circle cx="503" cy="162" r="1.8" fill="#93c5fd" opacity="0.7" />
+            <circle cx="550" cy="120" r="1.5" fill="#93c5fd" opacity="0.55" />
             {/* Flowing energy particle */}
-            <circle r="1.8" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 503 162 C 503 195, 492 205, 488 220')",
-              animation: "flowParticle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+            <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
+              offsetPath: "path('M 550 120 C 550 158, 540 178, 536 195')",
+              animation: "flowParticleSubtle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
             }} />
           </g>
 
-          {/* ── 2. Upper Left: Sheets → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'sheet' ? 'opacity-100' : 'opacity-70'}`}>
+          {/* ── 2. Upper Left: Sheets → Memory (Expanded horizontally) ── */}
+          <g className={`transition-all duration-300 ${hoveredNode === 'sheet' ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-sheets"
-              d="M 345 178 C 370 205, 395 228, 418 238"
+              d="M 335 142 C 375 175, 415 198, 458 208"
               stroke="url(#grad-subtle-sheets)"
-              strokeWidth={hoveredNode === 'sheet' ? "1.6" : "1"}
+              strokeWidth={hoveredNode === 'sheet' ? "1.4" : "0.9"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-purple)"
             />
-            <circle cx="345" cy="178" r="1.8" fill="#6ee7b7" opacity="0.7" />
+            <circle cx="335" cy="142" r="1.5" fill="#6ee7b7" opacity="0.55" />
             {/* Flowing energy particle */}
-            <circle r="1.8" fill="#a5b4fc" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 345 178 C 370 205, 395 228, 418 238')",
-              animation: "flowParticle 4s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s",
+            <circle r="1.5" fill="#a5b4fc" filter="url(#soft-ethereal-glow)" style={{
+              offsetPath: "path('M 335 142 C 375 175, 415 198, 458 208')",
+              animation: "flowParticleSubtle 4s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s",
             }} />
           </g>
 
-          {/* ── 3. Upper Right: Deck → Relay ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'deck' ? 'opacity-100' : 'opacity-70'}`}>
+          {/* ── 3. Upper Right: Deck → Relay (Expanded horizontally) ── */}
+          <g className={`transition-all duration-300 ${hoveredNode === 'deck' ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-deck"
-              d="M 700 198 C 665 215, 645 225, 630 235"
+              d="M 770 160 C 725 185, 695 198, 650 208"
               stroke="url(#grad-subtle-deck)"
-              strokeWidth={hoveredNode === 'deck' ? "1.6" : "1"}
+              strokeWidth={hoveredNode === 'deck' ? "1.4" : "0.9"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-blue)"
             />
-            <circle cx="700" cy="198" r="1.8" fill="#fdba74" opacity="0.7" />
+            <circle cx="770" cy="160" r="1.5" fill="#fdba74" opacity="0.55" />
             {/* Flowing energy particle */}
-            <circle r="1.8" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 700 198 C 665 215, 645 225, 630 235')",
-              animation: "flowParticle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.2s",
+            <circle r="1.5" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
+              offsetPath: "path('M 770 160 C 725 185, 695 198, 650 208')",
+              animation: "flowParticleSubtle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.2s",
             }} />
           </g>
 
-          {/* ── 4. Mid Left: Import → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'omni-portal' ? 'opacity-100' : 'opacity-70'}`}>
+          {/* ── 4. Mid Left: Import → Memory (Expanded horizontally) ── */}
+          <g className={`transition-all duration-300 ${hoveredNode === 'omni-portal' ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-import"
-              d="M 315 265 C 348 265, 375 265, 404 265"
+              d="M 285 235 C 340 235, 395 235, 444 235"
               stroke="url(#grad-subtle-import)"
-              strokeWidth={hoveredNode === 'omni-portal' ? "1.6" : "1"}
+              strokeWidth={hoveredNode === 'omni-portal' ? "1.4" : "0.9"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-purple)"
             />
-            <circle cx="315" cy="265" r="1.8" fill="#c084fc" opacity="0.7" />
+            <circle cx="285" cy="235" r="1.5" fill="#c084fc" opacity="0.55" />
             {/* Flowing energy particle */}
-            <circle r="1.8" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 315 265 C 348 265, 375 265, 404 265')",
-              animation: "flowParticle 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s",
+            <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
+              offsetPath: "path('M 285 235 C 340 235, 395 235, 444 235')",
+              animation: "flowParticleSubtle 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.3s",
             }} />
           </g>
 
-          {/* ── 5. Bottom Right: Whiteboard → Relay ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'whiteboard' ? 'opacity-100' : 'opacity-70'}`}>
+          {/* ── 5. Lower Right: Whiteboard → Relay (Expanded horizontally) ── */}
+          <g className={`transition-all duration-300 ${hoveredNode === 'whiteboard' ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-whiteboard"
-              d="M 705 330 C 675 322, 652 310, 632 292"
+              d="M 795 305 C 750 292, 715 275, 656 258"
               stroke="url(#grad-subtle-whiteboard)"
-              strokeWidth={hoveredNode === 'whiteboard' ? "1.6" : "1"}
+              strokeWidth={hoveredNode === 'whiteboard' ? "1.4" : "0.9"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-blue)"
             />
-            <circle cx="705" cy="330" r="1.8" fill="#93c5fd" opacity="0.7" />
+            <circle cx="795" cy="305" r="1.5" fill="#93c5fd" opacity="0.55" />
             {/* Flowing energy particle */}
-            <circle r="1.8" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 705 330 C 675 322, 652 310, 632 292')",
-              animation: "flowParticle 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.8s",
+            <circle r="1.5" fill="#93c5fd" filter="url(#soft-ethereal-glow)" style={{
+              offsetPath: "path('M 795 305 C 750 292, 715 275, 656 258')",
+              animation: "flowParticleSubtle 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.8s",
             }} />
           </g>
 
-          {/* ── 6. Bottom Center/Left: Room → Memory ── */}
-          <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-70'}`}>
+          {/* ── 6. Lower Left/Bottom: Room → Memory ── */}
+          <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-room"
-              d="M 458 348 C 464 328, 465 312, 465 300"
+              d="M 488 335 C 498 308, 502 288, 506 268"
               stroke="url(#grad-subtle-room)"
-              strokeWidth={hoveredNode === 'room' ? "1.6" : "1"}
+              strokeWidth={hoveredNode === 'room' ? "1.4" : "0.9"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-subtle-indigo)"
             />
-            <circle cx="458" cy="348" r="1.8" fill="#5eead4" opacity="0.7" />
+            <circle cx="488" cy="335" r="1.5" fill="#5eead4" opacity="0.55" />
             {/* Flowing energy particle */}
-            <circle r="1.8" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
-              offsetPath: "path('M 458 348 C 464 328, 465 312, 465 300')",
-              animation: "flowParticle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.9s",
+            <circle r="1.5" fill="#c084fc" filter="url(#soft-ethereal-glow)" style={{
+              offsetPath: "path('M 488 335 C 498 308, 502 288, 506 268')",
+              animation: "flowParticleSubtle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.9s",
             }} />
           </g>
         </svg>
@@ -365,24 +390,25 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           {/* ========================================================================= */}
           {/* ── CENTRAL CONNECTED CORE: Memory (left) & Relay (right) ─────────────── */}
           {/* ========================================================================= */}
+          {/* Distance between Memory & Relay kept preserved */}
           <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] flex items-center gap-7 sm:gap-9 pointer-events-auto">
             
-            {/* ── MEMORY CARD (Contextual Core) ── */}
+            {/* ── MEMORY CARD (Contextual Core - Refined Apple Glass Surface) ── */}
             <button
               type="button"
               onClick={() => handleLaunch('memory')}
               onMouseEnter={() => setHoveredNode('memory')}
               onMouseLeave={() => setHoveredNode(null)}
               className={[
-                "w-[144px] sm:w-[154px] h-[130px] sm:h-[138px]",
+                "w-[144px] sm:w-[154px] h-[128px] sm:h-[136px]",
                 "rounded-[26px] p-3.5 sm:p-4",
                 "flex flex-col items-center justify-center text-center",
-                // Soft purple/lavender glass glow
-                "bg-gradient-to-b from-white/95 via-purple-50/80 to-white/95 dark:from-zinc-900/95 dark:via-purple-950/40 dark:to-zinc-900/95",
-                "border border-purple-200/80 dark:border-purple-500/30",
-                "shadow-[0_12px_32px_-8px_rgba(168,85,247,0.2),0_2px_6px_rgba(15,23,42,0.03)] dark:shadow-[0_12px_32px_-8px_rgba(168,85,247,0.3)]",
-                "backdrop-blur-xl transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'memory' ? "scale-[1.03] -translate-y-1 shadow-[0_16px_36px_-6px_rgba(168,85,247,0.3)]" : "",
+                // Highly refined translucent glass surface, subtle backdrop blur, soft border
+                "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl",
+                "border border-purple-200/60 dark:border-purple-500/25",
+                "shadow-[0_10px_30px_-6px_rgba(168,85,247,0.16),0_2px_6px_rgba(15,23,42,0.02)] dark:shadow-[0_10px_30px_-6px_rgba(168,85,247,0.25)]",
+                "transition-all duration-300 cursor-pointer group outline-none",
+                hoveredNode === 'memory' ? "scale-[1.03] -translate-y-0.5 shadow-[0_14px_36px_-4px_rgba(168,85,247,0.25)] border-purple-300/80" : "",
               ].join(" ")}
             >
               {/* 4-point curved intelligence spark icon matching reference */}
@@ -399,22 +425,22 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               </span>
             </button>
 
-            {/* ── RELAY CARD (Connectivity Core) ── */}
+            {/* ── RELAY CARD (Connectivity Core - Refined Apple Glass Surface) ── */}
             <button
               type="button"
               onClick={() => handleLaunch('relay')}
               onMouseEnter={() => setHoveredNode('relay')}
               onMouseLeave={() => setHoveredNode(null)}
               className={[
-                "w-[144px] sm:w-[154px] h-[130px] sm:h-[138px]",
+                "w-[144px] sm:w-[154px] h-[128px] sm:h-[136px]",
                 "rounded-[26px] p-3.5 sm:p-4",
                 "flex flex-col items-center justify-center text-center",
-                // Soft blue glass glow
-                "bg-gradient-to-b from-white/95 via-blue-50/80 to-white/95 dark:from-zinc-900/95 dark:via-blue-950/40 dark:to-zinc-900/95",
-                "border border-blue-200/80 dark:border-blue-500/30",
-                "shadow-[0_12px_32px_-8px_rgba(59,130,246,0.2),0_2px_6px_rgba(15,23,42,0.03)] dark:shadow-[0_12px_32px_-8px_rgba(59,130,246,0.3)]",
-                "backdrop-blur-xl transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'relay' ? "scale-[1.03] -translate-y-1 shadow-[0_16px_36px_-6px_rgba(59,130,246,0.3)]" : "",
+                // Highly refined translucent glass surface, subtle backdrop blur, soft border
+                "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl",
+                "border border-blue-200/60 dark:border-blue-500/25",
+                "shadow-[0_10px_30px_-6px_rgba(59,130,246,0.16),0_2px_6px_rgba(15,23,42,0.02)] dark:shadow-[0_10px_30px_-6px_rgba(59,130,246,0.25)]",
+                "transition-all duration-300 cursor-pointer group outline-none",
+                hoveredNode === 'relay' ? "scale-[1.03] -translate-y-0.5 shadow-[0_14px_36px_-4px_rgba(59,130,246,0.25)] border-blue-300/80" : "",
               ].join(" ")}
             >
               {/* Connection transfer icon matching reference */}
@@ -432,11 +458,11 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </div>
 
           {/* ========================================================================= */}
-          {/* ── PERIPHERAL TOOLS (Quieter secondary cards, neutral resting glass) ─── */}
+          {/* ── PERIPHERAL TOOLS (Preserved secondary cards, wider horizontal reach) ─ */}
           {/* ========================================================================= */}
 
-          {/* ── 1. Top Center: DOCS ── */}
-          <div className="absolute top-[8%] sm:top-[9%] left-[50%] -translate-x-[50%] pointer-events-auto">
+          {/* ── 1. Top Center: DOCS (Positioned closer to subtitle) ── */}
+          <div className="absolute top-[4%] sm:top-[5%] left-[50%] -translate-x-[50%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('compose')}
@@ -444,7 +470,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                "bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-md",
+                "bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-md",
                 "border border-slate-200/50 dark:border-white/[0.07]",
                 "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-none",
                 "hover:bg-white dark:hover:bg-[#1f1f23] hover:border-slate-300 dark:hover:border-white/20",
@@ -463,8 +489,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 2. Upper Left: SHEETS (Neutral resting glass, no persistent purple border!) ── */}
-          <div className="absolute top-[17%] sm:top-[19%] left-[9%] sm:left-[13%] pointer-events-auto">
+          {/* ── 2. Upper Left: SHEETS (Expanded horizontally) ── */}
+          <div className="absolute top-[14%] sm:top-[16%] left-[6%] sm:left-[8%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('sheet')}
@@ -472,7 +498,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                "bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-md",
+                "bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-md",
                 "border border-slate-200/50 dark:border-white/[0.07]",
                 "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-none",
                 "hover:bg-white dark:hover:bg-[#1f1f23] hover:border-slate-300 dark:hover:border-white/20",
@@ -491,8 +517,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 3. Upper Right: DECK ── */}
-          <div className="absolute top-[19%] sm:top-[21%] right-[9%] sm:right-[12%] pointer-events-auto">
+          {/* ── 3. Upper Right: DECK (Expanded horizontally) ── */}
+          <div className="absolute top-[16%] sm:top-[18%] right-[6%] sm:right-[8%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('deck')}
@@ -500,7 +526,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                "bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-md",
+                "bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-md",
                 "border border-slate-200/50 dark:border-white/[0.07]",
                 "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-none",
                 "hover:bg-white dark:hover:bg-[#1f1f23] hover:border-slate-300 dark:hover:border-white/20",
@@ -519,8 +545,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 4. Left: IMPORT ── */}
-          <div className="absolute top-[49%] -translate-y-[50%] left-[5%] sm:left-[9%] pointer-events-auto">
+          {/* ── 4. Left: IMPORT (Expanded horizontally) ── */}
+          <div className="absolute top-[49%] -translate-y-[50%] left-[2%] sm:left-[4%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('omni-portal')}
@@ -528,7 +554,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                "bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-md",
+                "bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-md",
                 "border border-slate-200/50 dark:border-white/[0.07]",
                 "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-none",
                 "hover:bg-white dark:hover:bg-[#1f1f23] hover:border-slate-300 dark:hover:border-white/20",
@@ -547,8 +573,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 5. Lower Right: WHITEBOARD ── */}
-          <div className="absolute top-[59%] sm:top-[61%] right-[7%] sm:right-[11%] pointer-events-auto">
+          {/* ── 5. Lower Right: WHITEBOARD (Expanded horizontally) ── */}
+          <div className="absolute top-[59%] sm:top-[61%] right-[4%] sm:right-[6%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('whiteboard')}
@@ -556,7 +582,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                "bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-md",
+                "bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-md",
                 "border border-slate-200/50 dark:border-white/[0.07]",
                 "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-none",
                 "hover:bg-white dark:hover:bg-[#1f1f23] hover:border-slate-300 dark:hover:border-white/20",
@@ -575,8 +601,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 6. Lower Left/Bottom: ROOM (Neutral resting glass, no persistent purple border!) ── */}
-          <div className="absolute bottom-[9%] sm:bottom-[11%] left-[28%] sm:left-[32%] pointer-events-auto">
+          {/* ── 6. Lower Left/Bottom: ROOM ── */}
+          <div className="absolute bottom-[7%] sm:bottom-[9%] left-[28%] sm:left-[32%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('room')}
@@ -584,7 +610,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                "bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-md",
+                "bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-md",
                 "border border-slate-200/50 dark:border-white/[0.07]",
                 "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] dark:shadow-none",
                 "hover:bg-white dark:hover:bg-[#1f1f23] hover:border-slate-300 dark:hover:border-white/20",
