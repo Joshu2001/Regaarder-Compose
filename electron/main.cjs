@@ -174,6 +174,7 @@ $ws.AppActivate('${targetName}')
     minHeight: 700,
     title: 'Regaarder',
     backgroundColor: '#0f172a',
+    icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
