@@ -45,7 +45,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
   };
 
   return (
-    <div className="w-full relative select-none flex items-center justify-center -mt-5 sm:-mt-6 my-0">
+    <div className="w-full relative select-none flex items-center justify-center my-0">
       {/* ── Keyframes for Gentle Core Light Breathing & Subtle Light Streams ── */}
       <style>{`
         @keyframes pulseApertureFlareSubtle {
