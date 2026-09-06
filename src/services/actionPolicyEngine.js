@@ -25,9 +25,49 @@ export const POLICY_SEVERITY = {
   ADVISORY: 'ADVISORY'
 };
 
+export const AUTONOMY_TIERS = {
+  DRAFT_ONLY: {
+    id: 'DRAFT_ONLY',
+    label: 'Draft Only',
+    shortLabel: 'Drafts only',
+    description: 'All tool mutations and updates must be staged into an isolated PR sandbox for manual director sign-off.',
+    defaultThreshold: 0,
+    level: 1
+  },
+  DEFAULT_PERMISSIONS: {
+    id: 'DEFAULT_PERMISSIONS',
+    label: 'Default Permissions',
+    shortLabel: 'Default permissions',
+    description: 'Safe edits & reading auto-execute. Mutations over budget limit or destructive commands require staging review.',
+    defaultThreshold: 500,
+    level: 2
+  },
+  HIGH_AUTONOMY: {
+    id: 'HIGH_AUTONOMY',
+    label: 'High Autonomy',
+    shortLabel: 'Auto-exec < $2.5k',
+    description: 'Expands autonomous clearance up to $2,500 budget delta. Non-destructive actions execute directly.',
+    defaultThreshold: 2500,
+    level: 3
+  },
+  FULL_AUTONOMOUS: {
+    id: 'FULL_AUTONOMOUS',
+    label: 'Full Autonomous',
+    shortLabel: 'Unrestricted',
+    description: 'Direct autonomous execution across all tools and mutations without routing to staging.',
+    defaultThreshold: Infinity,
+    level: 4
+  }
+};
+
 const STORAGE_KEY_POLICIES = 'regaarder_action_policies_v1';
+const STORAGE_KEY_ACTIVE_TIER = 'regaarder_autonomy_tier_v1';
+const STORAGE_KEY_CUSTOM_THRESHOLD = 'regaarder_autonomy_threshold_v1';
 const policyListeners = new Set();
+const tierListeners = new Set();
 let policiesCache = null;
+let currentTierCache = null;
+let customThresholdCache = null;
 
 export const DEFAULT_POLICIES = [
   {
@@ -192,6 +232,73 @@ export function resetPoliciesToDefault() {
   return policiesCache;
 }
 
+function initializeTier() {
+  if (currentTierCache) return;
+  const storedTier = safeStorageGet(STORAGE_KEY_ACTIVE_TIER, 'DEFAULT_PERMISSIONS');
+  currentTierCache = AUTONOMY_TIERS[storedTier] ? storedTier : 'DEFAULT_PERMISSIONS';
+  const storedThreshold = safeStorageGet(STORAGE_KEY_CUSTOM_THRESHOLD, null);
+  customThresholdCache = storedThreshold !== null ? Number(storedThreshold) : null;
+}
+
+function notifyTierSubscribers() {
+  const current = getCurrentAutonomyTier();
+  tierListeners.forEach(listener => {
+    try {
+      listener(current);
+    } catch (err) {
+      console.error('[ActionPolicyEngine] Tier listener notification error:', err);
+    }
+  });
+}
+
+/**
+ * Returns current autonomy tier object with active threshold.
+ */
+export function getCurrentAutonomyTier() {
+  initializeTier();
+  const tierDef = AUTONOMY_TIERS[currentTierCache] || AUTONOMY_TIERS.DEFAULT_PERMISSIONS;
+  const threshold = customThresholdCache !== null ? customThresholdCache : tierDef.defaultThreshold;
+  return {
+    ...tierDef,
+    activeThreshold: threshold
+  };
+}
+
+/**
+ * Update current autonomy tier and optional custom threshold.
+ */
+export function setAutonomyTier(tierKey, customThreshold = null) {
+  initializeTier();
+  if (!AUTONOMY_TIERS[tierKey]) {
+    tierKey = 'DEFAULT_PERMISSIONS';
+  }
+  currentTierCache = tierKey;
+  safeStorageSet(STORAGE_KEY_ACTIVE_TIER, tierKey);
+
+  if (customThreshold !== null && !isNaN(customThreshold)) {
+    customThresholdCache = Math.max(0, Number(customThreshold));
+    safeStorageSet(STORAGE_KEY_CUSTOM_THRESHOLD, customThresholdCache);
+  } else {
+    customThresholdCache = null;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(STORAGE_KEY_CUSTOM_THRESHOLD);
+    }
+  }
+
+  notifyTierSubscribers();
+  return getCurrentAutonomyTier();
+}
+
+/**
+ * Subscribe to autonomy tier changes.
+ */
+export function subscribeToAutonomyTier(listener) {
+  initializeTier();
+  tierListeners.add(listener);
+  listener(getCurrentAutonomyTier());
+  return () => tierListeners.delete(listener);
+}
+
 /**
  * Tests if a toolName matches a glob pattern (e.g. "sheets:*" or "delete_*|clear_*").
  */
@@ -263,10 +370,51 @@ function extractNumericDelta(params = {}) {
  */
 export function evaluateActionAutonomy(toolName, params = {}, context = {}) {
   initializePolicies();
+  const currentTier = getCurrentAutonomyTier();
+
+  // Tier 1 Override: DRAFT_ONLY routes all mutating actions to Staging PR
+  const isReadAction = /^(get_|read_|query_|list_|fetch_|search_|validate_|solve_)/i.test(toolName);
+  if (currentTier.id === 'DRAFT_ONLY' && !isReadAction) {
+    return {
+      decision: AUTONOMY_DECISION.REQUIRE_STAGING_PR,
+      requiresStaging: true,
+      allowed: true,
+      matchedPolicies: [{
+        policyId: 'tier_draft_only',
+        name: 'Draft Only Policy',
+        decision: AUTONOMY_DECISION.REQUIRE_STAGING_PR,
+        reason: 'Workspace is locked in Draft Only mode. All mutations require director review.'
+      }],
+      reason: 'Draft Only mode: All mutations must be reviewed and signed off in Staging Sandbox.',
+      metrics: {
+        numericDelta: extractNumericDelta(params),
+        targetBlockId: params.blockId || params.block?.id || null,
+        recipientCount: 1,
+        activeTier: currentTier.id
+      }
+    };
+  }
+
+  // Tier 4 Override: FULL_AUTONOMOUS bypasses staging checks unless explicitly denied
+  if (currentTier.id === 'FULL_AUTONOMOUS') {
+    return {
+      decision: AUTONOMY_DECISION.AUTO_EXECUTE,
+      requiresStaging: false,
+      allowed: true,
+      matchedPolicies: [],
+      reason: 'Action cleared under Full Autonomous permissions tier.',
+      metrics: {
+        numericDelta: extractNumericDelta(params),
+        targetBlockId: params.blockId || params.block?.id || null,
+        recipientCount: 1,
+        activeTier: currentTier.id
+      }
+    };
+  }
 
   const matchedPolicies = [];
   let finalDecision = AUTONOMY_DECISION.AUTO_EXECUTE;
-  let primaryReason = 'Action cleared under default autonomous execution policy.';
+  let primaryReason = `Action cleared under ${currentTier.label} tier.`;
   let requiresStaging = false;
 
   const numericDelta = extractNumericDelta(params);
@@ -280,9 +428,10 @@ export function evaluateActionAutonomy(toolName, params = {}, context = {}) {
       continue;
     }
 
-    // Rule 1: Numeric threshold (e.g. Budget delta <= $500)
+    // Rule 1: Numeric threshold (incorporate currentTier.activeThreshold if set)
     if (policy.rules?.type === 'numeric_threshold') {
-      const maxAllowed = policy.rules.maxAllowedAuto || 500;
+      const tierThreshold = currentTier.activeThreshold !== undefined ? currentTier.activeThreshold : null;
+      const maxAllowed = (tierThreshold !== null && policy.category === 'finance') ? tierThreshold : (policy.rules.maxAllowedAuto || 500);
       const testedVal = policy.rules.field === 'recipientCount' ? recipientCount : numericDelta;
 
       if (testedVal > maxAllowed) {

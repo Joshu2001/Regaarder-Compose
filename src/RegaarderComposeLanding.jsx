@@ -51,6 +51,7 @@ export default function RegaarderComposeLanding({
   onOpenFeedback,
   onOpenShortcuts,
   isDarkMode = false,
+  onOpenStagingPr,
 }) {
   const { t } = useTranslation();
   const [legalModalTab, setLegalModalTab] = useState(null);
@@ -349,27 +350,28 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-8 py-6 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center">
+      <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-6 sm:px-8 py-6 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center my-auto">
 
           {/*
             ── Hero Section ──
             Pure Apple typography & authoritative monochrome Regaarder brand glyph.
+            Compact vertical margins to ensure zero viewport clipping.
           */}
-          <div className="text-center mb-8 sm:mb-9 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-6 sm:mb-7 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
-            <div className="mb-2 sm:mb-2.5 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#18181b] border border-slate-200/40 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.02)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
-                <RegaarderBrandIcon size={21} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
+            <div className="mb-2 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#18181b] border border-slate-200/40 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.02)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
+                <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
 
-            <h1 className="text-[28px] sm:text-[34px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2 text-balance max-w-2xl mx-auto">
-              {t('landing.headline') || 'Everything your team thinks, in one place.'}
+            <h1 className="text-[26px] sm:text-[32px] md:text-[34px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-1.5 text-balance max-w-2xl mx-auto">
+              {t('landing.headline') || 'Every tool your team builds with. Connected as one.'}
             </h1>
-            <p className="text-[14.5px] sm:text-[15px] text-slate-500 dark:text-zinc-400 font-normal max-w-md mx-auto leading-relaxed">
-              {t('landing.subheadline') || 'Open a product to start building.'}
+            <p className="text-[14px] sm:text-[14.5px] text-slate-500 dark:text-zinc-400 font-normal max-w-lg mx-auto leading-relaxed">
+              {t('landing.subheadline') || 'Docs, sheets, decks, and AI intelligence — completely private.'}
             </p>
           </div>
 
@@ -377,9 +379,9 @@ export default function RegaarderComposeLanding({
             ── 4×2 Product Launcher Grid ──
             - White/almost-white surfaces with subtle borders and very soft elevation.
             - Dark navy labels and restrained purple accents on hover.
-            - Generous whitespace (p-6).
+            - Balanced whitespace (p-5).
           */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
             {sortedProducts.map((product, idx) => {
               const IconComp = product.icon;
               return (
@@ -399,12 +401,12 @@ export default function RegaarderComposeLanding({
                   }}
                   style={{ animationDelay: `${idx * 25}ms` }}
                   className={[
-                    "flex flex-col items-center justify-center gap-3",
+                    "flex flex-col items-center justify-center gap-2.5",
                     // Near-white surface
                     "bg-white dark:bg-[#18181b]",
                     // Subtle border and extremely soft elevation
                     "border border-slate-200/40 dark:border-white/[0.04]",
-                    "rounded-2xl p-6",
+                    "rounded-2xl p-5",
                     "shadow-[0_1px_3px_rgba(15,23,42,0.02)] dark:shadow-none",
                     // Gentle hover state with restrained purple accent
                     "hover:bg-white dark:hover:bg-[#1f1f23]",
@@ -419,11 +421,11 @@ export default function RegaarderComposeLanding({
                 >
                   {/* Bare vector icon with restrained purple hover */}
                   <div className="text-slate-600 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200">
-                    <IconComp size={26} strokeWidth={1.5} />
+                    <IconComp size={24} strokeWidth={1.5} />
                   </div>
 
                   {/* Dark navy product label */}
-                  <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors duration-200">
+                  <span className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors duration-200">
                     {t('landing.' + product.id) || product.title}
                   </span>
                 </button>

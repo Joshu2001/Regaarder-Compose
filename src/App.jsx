@@ -78,6 +78,7 @@ import * as matrixEngine from './services/matrixSchemaEngine';
 import * as intentScheduler from './services/intentSchedulerEngine';
 import * as omniPortal from './services/omniPortalEngine';
 import * as directiveQueue from './services/directiveQueueEngine';
+import PromptAutonomyBar from './components/autonomy/PromptAutonomyBar';
 import * as spatialTopology from './services/spatialTopologyEngine';
 import * as roomObserver from './services/roomObserverEngine';
 import * as workspaceBus from './services/workspaceStateBus';
@@ -8784,10 +8785,11 @@ function AppCore() {
         if (key && key.startsWith('rc.savedDoc.')) {
           try {
             const data = JSON.parse(localStorage.getItem(key));
-            if (!isMeaningfulWork(data)) continue;
+            if (!data) continue;
+            if (!data.isSaved && !isMeaningfulWork(data)) continue;
             docs.push({
               id: Number(key.replace('rc.savedDoc.', '')),
-              title: data.docTitle || data.title || 'Untitled Document',
+              title: data.docTitle || data.title || data.sheetsTitle || data.deckTitle || 'Untitled Document',
               savedAt: data.savedAt || 0,
               data: data
             });
@@ -18239,18 +18241,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
 
-  useEffect(() => {
-    if (!docBodyHtml) {
-      setDocTitle('Untitled Document');
-      return;
-    }
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(docBodyHtml, 'text/html');
-    const firstBlock = doc.body.firstElementChild;
-    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    setDocTitle(titleText || 'Untitled Document');
-  }, [docBodyHtml]);
-
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
@@ -18276,10 +18266,35 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         appendedSections: [],
         isBlank: true,
         bodyHtml: '',
+        isTitleCustom: false,
       },
     ];
   });
   const [activeDocId, setActiveDocId] = useState(null);
+
+  useEffect(() => {
+    // Only derive title from document body if the active document does not have a custom user-defined title
+    const activeDoc = documents.find((doc) => doc.id === activeDocId);
+    if (activeDoc?.isTitleCustom) {
+      return;
+    }
+
+    if (!docBodyHtml) {
+      if (!docTitle || docTitle === 'Untitled Document') {
+        setDocTitle('Untitled Document');
+      }
+      return;
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(docBodyHtml, 'text/html');
+    const firstBlock = doc.body.firstElementChild;
+    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
+    if (titleText) {
+      setDocTitle(titleText);
+    } else if (!docTitle) {
+      setDocTitle('Untitled Document');
+    }
+  }, [docBodyHtml, activeDocId]);
 
   // Auto-persist documents to localStorage
   useEffect(() => {
@@ -20794,23 +20809,45 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   }, [isReplayPlaying, replayIndex, replayTimeline, replayDirection, replaySpeed]);
 
   const saveDocumentLocally = ({ silent = false, trackAction = true } = {}) => {
-    if (!activeDocId) {
+    let currentId = activeDocId;
+    if (!currentId) {
+      currentId = Date.now();
+      setActiveDocId(currentId);
+    }
+
+    const payload = getDocumentPayload(currentId);
+    // For auto-save (silent), skip only if completely blank without any title or body or slides
+    if (silent && !payload?.bodyHtml && !payload?.title && !payload?.sheetsData && !payload?.deckSlidesData) {
       return;
     }
 
-    const payload = getDocumentPayload(activeDocId);
-    if (!isMeaningfulWork(payload)) {
-      return;
-    }
     const savedAt = Date.now();
-    localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify({
+    const docRecord = {
       ...payload,
+      id: currentId,
+      isSaved: true,
       savedAt,
-    }));
+    };
+
+    try {
+      localStorage.setItem(`rc.savedDoc.${currentId}`, JSON.stringify(docRecord));
+      localStorage.setItem('rc.activeDocId', String(currentId));
+    } catch (_err) {}
+
     setLastSavedAt(savedAt);
+    setDocuments((prev) => {
+      const idx = prev.findIndex((d) => String(d.id) === String(currentId));
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...docRecord };
+        return next;
+      }
+      return [...prev, docRecord];
+    });
+
     if (trackAction) {
       trackMemoryAction('document', 'Saved document locally', {
-        documentId: String(activeDocId),
+        documentId: String(currentId),
       });
     }
     if (!silent) {
@@ -34951,6 +34988,18 @@ Respond with valid JSON formatted like this:
 
     let target = destination;
     if (typeof destination === 'object' && destination !== null) {
+      if (destination.doc) {
+        const docItem = destination.doc;
+        const targetDocId = docItem.id;
+        const docData = docItem.data || docItem;
+        const isAlreadyInList = documents.find((d) => String(d.id) === String(targetDocId));
+        if (!isAlreadyInList) {
+          setDocuments((prev) => [...prev, { ...docData, id: targetDocId }]);
+        }
+        switchDocument(targetDocId);
+        setActivePrimaryNav(destination.name === 'deck' ? 'library' : 'drafts');
+        return;
+      }
       if (destination.type === 'action' || destination.type === 'product') {
         target = destination.name.toLowerCase();
       } else {
@@ -35178,7 +35227,12 @@ Respond with valid JSON formatted like this:
 
   const commitRenameDocument = (docId) => {
     const nextTitle = renameDocValue.trim();
-    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
+    if (!nextTitle) {
+      setRenamingDocId(null);
+      setRenameDocValue('');
+      return;
+    }
+    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, isTitleCustom: true, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
     if (activeDocId === docId) {
       setDocTitle(nextTitle);
       if (isSheetsMode) {
@@ -35188,6 +35242,9 @@ Respond with valid JSON formatted like this:
     setRenamingDocId(null);
     setRenameDocValue('');
     showToast('Document renamed');
+    setTimeout(() => {
+      saveDocumentLocally({ silent: true, trackAction: false });
+    }, 50);
   };
 
   const beginUnsavedDraftRename = () => {
@@ -35206,12 +35263,15 @@ Respond with valid JSON formatted like this:
     }
 
     if (activeDocId) {
-      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle, isTitleCustom: true } : doc)));
     }
     setDocTitle(nextTitle);
     setIsEditingUnsavedDraftName(false);
     setUnsavedDraftNameInput('');
     showToast('Document renamed');
+    setTimeout(() => {
+      saveDocumentLocally({ silent: true, trackAction: false });
+    }, 50);
   };
 
   const getDocumentPayload = (docId = activeDocId) => {
@@ -42045,6 +42105,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                             </button>
                           )}
                         </div>
+
+                        {/* Autonomy & Permissions Micro-Bar (Antigravity/VS Code Style) */}
+                        <div className="border-t border-slate-100/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/60 opacity-80 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <PromptAutonomyBar 
+                            isLocal={composeSelectedModel?.isLocal} 
+                            engineLabel={composeSelectedModel?.isLocal ? 'Local' : (composeSelectedModel?.provider || 'Cloud')} 
+                          />
+                        </div>
                       </div>
                     </form>
                     
@@ -42946,6 +43014,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <Send size={13} strokeWidth={1.75} className={chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive ? "text-violet-600 dark:text-violet-300" : "text-slate-300 dark:text-zinc-600"} />
                         </button>
                       )}
+                    </div>
+
+                    {/* Autonomy & Permissions Micro-Bar (Antigravity/VS Code Style) */}
+                    <div className="border-t border-slate-100/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/60 opacity-80 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <PromptAutonomyBar 
+                        isLocal={composeSelectedModel?.isLocal} 
+                        engineLabel={composeSelectedModel?.isLocal ? 'Local' : (composeSelectedModel?.provider || 'Cloud')} 
+                      />
                     </div>
                   </div>
                   <div className="text-center mt-2 pb-1">
@@ -73437,6 +73513,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setComposeProfileMenuOpen(true);
               } else {
                 setAuthModalOpen(true);
+              }
+            }}
+            onOpenStagingPr={(branchId) => {
+              if (window.__REGAARDER_OPEN_STAGING_MODAL__) {
+                window.__REGAARDER_OPEN_STAGING_MODAL__(branchId);
               }
             }}
           />

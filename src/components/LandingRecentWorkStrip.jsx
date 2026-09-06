@@ -46,12 +46,17 @@ const PRODUCT_INFO = {
 export function isMeaningfulWork(data) {
   if (!data || typeof data !== "object") return false;
 
+  // 0. Explicit saved flag or user timestamp check
+  if (data.savedAt || data.isSaved || data.lastSavedAt) {
+    // If explicitly saved or has user actions, always qualify
+    if (data.isSaved) return true;
+  }
+
   // 1. Title verification (strictly match all default system titles)
   const rawTitle = (data.docTitle || data.title || data.sheetsTitle || data.deckTitle || "").trim();
   const isDefaultTitle = !rawTitle || /^(untitled(\s+(document|sheet|sheets|spreadsheet|deck|presentation|whiteboard|canvas))?|document\s*#\d+|composition|sheet\s*\d+|untitled\s*sheet)$/i.test(rawTitle);
 
-  // If title is a generic default "Untitled Sheet" / "Untitled", do NOT qualify as recent work by title alone!
-  // It MUST have actual user-written content (body, custom cells, slides) below:
+  // If title is customized by the user, qualify immediately
   if (rawTitle && !isDefaultTitle) {
     return true;
   }
@@ -177,12 +182,8 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
             if (raw) {
               const data = JSON.parse(raw);
 
-              // Minimum criteria validation: untouched empty drafts do NOT qualify as recent work
-              if (!isMeaningfulWork(data)) {
-                // Prune ghost empty draft from localStorage so it never pollutes the workspace
-                try {
-                  localStorage.removeItem(key);
-                } catch {}
+              // Untouched empty drafts without content or save record do not qualify
+              if (!data.isSaved && !isMeaningfulWork(data)) {
                 continue;
               }
 
@@ -255,7 +256,7 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
   };
 
   return (
-    <div className="w-full mt-6 animate-in fade-in slide-in-from-bottom-1 duration-300">
+    <div className="w-full mt-3 sm:mt-3.5 animate-in fade-in slide-in-from-bottom-1 duration-300">
       {/* Visually Quiet Section Header */}
       <div className="flex items-center justify-between px-1 mb-1.5 select-none">
         <div className="flex items-center gap-1.5 text-[9.5px] font-semibold tracking-[0.08em] uppercase text-slate-400 dark:text-zinc-500">
