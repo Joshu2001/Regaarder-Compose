@@ -11,7 +11,9 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
  * - Preserves card height, vertical overlap (-4px), spacing, typography,
  *   colors, shadows, detected badge, and smooth Apple-style easing.
  */
-export default function DesktopDownloadFloatingTrigger() {
+export default function DesktopDownloadFloatingTrigger({ visible = true } = {}) {
+  if (!visible) return null;
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [detectedOs, setDetectedOs] = useState('windows');
   

@@ -88483,8 +88483,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onBatchAbsorbed={handleBatchAbsorbed}
       />
 
-      {/* ── Native Desktop Download Floating Action Button ─────────── */}
-      <DesktopDownloadFloatingTrigger />
+      {/* ── Native Desktop Download Floating Action Button (Only on Home / Landing page) ── */}
+      {productMode === 'landing' && (
+        <DesktopDownloadFloatingTrigger />
+      )}
     </div>
   );
 }
