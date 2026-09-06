@@ -351,7 +351,7 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-2 sm:pt-3 pb-8 sm:pb-12 overflow-y-auto thin-scrollbar relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-1 sm:pt-2 pb-4 sm:pb-6 overflow-y-auto thin-scrollbar relative z-10">
         <div className="w-full max-w-[1240px] mx-auto flex flex-col items-center">
 
           {/*
@@ -364,7 +364,7 @@ export default function RegaarderComposeLanding({
             - Centered, dark navy typography
             - Subtitle directly beneath
           */}
-          <div className="text-center mb-4 sm:mb-5 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-1.5 sm:mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
             <div className="mb-2 flex items-center justify-center">
@@ -392,7 +392,7 @@ export default function RegaarderComposeLanding({
           <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
           {/* ── Progressive Disclosure Recent Work Strip (cleanly positioned beneath ecosystem) ── */}
-          <div className="w-full max-w-[860px] mx-auto mt-2 sm:mt-4">
+          <div className="w-full max-w-[860px] mx-auto mt-1.5 sm:mt-2">
             <LandingRecentWorkStrip
               onLaunch={onLaunch}
               onOpenRecentModal={onOpenRecentModal}
@@ -401,7 +401,7 @@ export default function RegaarderComposeLanding({
           </div>
 
           {/* ── Subtle Workspace Utility Layer ── */}
-          <div className={`${hasRecentWork ? "mt-6" : "mt-8 sm:mt-9"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>
+          <div className={`${hasRecentWork ? "mt-3 sm:mt-4" : "mt-5 sm:mt-6"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>
             <button
               type="button"
               onClick={() => onOpenHelp ? onOpenHelp() : onLaunch?.({ type: 'action', name: 'help' })}
@@ -435,7 +435,7 @@ export default function RegaarderComposeLanding({
           </div>
 
           {/* ── Footer with Terms of Service, Privacy Policy & Legal ── */}
-          <div className="mt-8 sm:mt-9 flex items-center gap-5 sm:gap-6 text-[11px] sm:text-[11.5px] text-slate-400/70 dark:text-zinc-600 select-none">
+          <div className="mt-4 sm:mt-5 flex items-center gap-5 sm:gap-6 text-[11px] sm:text-[11.5px] text-slate-400/70 dark:text-zinc-600 select-none">
             <button
               type="button"
               onClick={() => setLegalModalTab("terms")}
