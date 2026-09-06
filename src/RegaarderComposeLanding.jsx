@@ -392,7 +392,7 @@ export default function RegaarderComposeLanding({
           <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
           {/* ── Progressive Disclosure Recent Work Strip (cleanly positioned beneath ecosystem) ── */}
-          <div className="w-full max-w-[860px] mx-auto mt-0.5 sm:mt-1">
+          <div className="w-full max-w-[860px] mx-auto -mt-2 sm:-mt-2.5">
             <LandingRecentWorkStrip
               onLaunch={onLaunch}
               onOpenRecentModal={onOpenRecentModal}

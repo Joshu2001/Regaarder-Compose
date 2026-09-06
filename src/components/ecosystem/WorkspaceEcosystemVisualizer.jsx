@@ -45,7 +45,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
   };
 
   return (
-    <div className="w-full relative select-none flex items-center justify-center -mt-2.5 sm:-mt-3 my-0">
+    <div className="w-full relative select-none flex items-center justify-center -mt-5 sm:-mt-6 my-0">
       {/* ── Keyframes for Gentle Core Light Breathing & Subtle Light Streams ── */}
       <style>{`
         @keyframes pulseApertureFlareSubtle {
@@ -417,17 +417,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           <g className={`transition-all duration-300 ${hoveredNode === 'room' ? 'opacity-100' : 'opacity-85'}`}>
             <path
               id="path-room"
-              d="M 438 296 C 446 282, 460 270, 472 258"
+              d="M 438 282 C 446 272, 460 264, 472 258"
               stroke="url(#grad-path-room)"
               strokeWidth={hoveredNode === 'room' ? "1.4" : "1.05"}
               strokeLinecap="round"
               fill="none"
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="438" cy="296" r="1.4" fill="#5eead4" opacity="0.7" />
+            <circle cx="438" cy="282" r="1.4" fill="#5eead4" opacity="0.7" />
             {/* Flowing energy particle */}
             <circle r="1.4" fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
-              offsetPath: "path('M 438 296 C 446 282, 460 270, 472 258')",
+              offsetPath: "path('M 438 282 C 446 272, 460 264, 472 258')",
               animation: "flowParticleGentle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.8s",
             }} />
           </g>
@@ -664,7 +664,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </div>
 
           {/* ── 6. Lower Left/Bottom: ROOM ── */}
-          <div className="absolute bottom-[6%] sm:bottom-[7%] left-[30%] sm:left-[33%] pointer-events-auto">
+          <div className="absolute bottom-[9.5%] sm:bottom-[10.5%] left-[30%] sm:left-[33%] pointer-events-auto">
             <button
               type="button"
               onClick={() => handleLaunch('room')}
