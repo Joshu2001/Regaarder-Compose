@@ -3,9 +3,7 @@ import {
   ComposeIcon,
   SheetIcon,
   DeckIcon,
-  ImportPortalIcon,
   WhiteboardIcon,
-  RoomIcon,
   RelayIcon,
 } from '../RegaarderProductIcons';
 
@@ -76,12 +74,12 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
           {/* Pale soft ambient field */}
           <div className="w-[740px] h-[280px] rounded-[100%] bg-gradient-to-r from-blue-100/35 via-indigo-50/20 to-purple-100/30 dark:from-blue-950/15 dark:via-indigo-950/10 dark:to-purple-950/15 blur-[80px] transform -translate-y-1 opacity-75" />
-          {/* Subtle lavender glow specifically behind Memory (left center) */}
-          <div className="absolute w-[260px] h-[170px] -translate-x-16 rounded-full bg-purple-200/30 dark:bg-purple-900/15 blur-[50px] opacity-70" />
-          {/* Subtle blue glow specifically behind Relay (right center) */}
-          <div className="absolute w-[260px] h-[170px] translate-x-16 rounded-full bg-blue-200/30 dark:bg-blue-900/15 blur-[50px] opacity-70" />
+          {/* Luminous lavender glow specifically behind Memory (left center) */}
+          <div className="absolute w-[280px] h-[190px] -translate-x-16 rounded-full bg-purple-300/35 dark:bg-purple-900/25 blur-[55px] opacity-80" />
+          {/* Luminous blue glow specifically behind Relay (right center) */}
+          <div className="absolute w-[280px] h-[190px] translate-x-16 rounded-full bg-blue-300/35 dark:bg-blue-900/25 blur-[55px] opacity-80" />
           {/* Faint white center bloom floating behind the ecosystem core */}
-          <div className="w-[380px] h-[170px] rounded-full bg-white/70 dark:bg-white/[0.03] blur-[35px] opacity-80" />
+          <div className="w-[420px] h-[180px] rounded-full bg-white/75 dark:bg-white/[0.04] blur-[40px] opacity-85" />
         </div>
 
         {/* ── SVG Connection Network Layer (Calculated against a 1060 × 415 ViewBox) ── */}
@@ -392,11 +390,11 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           
           {/* ========================================================================= */}
           {/* ── CENTRAL CONNECTED CORE: Memory (left) & Relay (right) ─────────────── */}
-          {/* Sized 158px × 138px with translucent, light-diffusing Apple glass        ── */}
+          {/* Luminous visionOS frosted glass infused with delicate gradient tints    ── */}
           {/* ========================================================================= */}
           <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] flex items-center gap-7 sm:gap-8 pointer-events-auto">
             
-            {/* ── MEMORY CARD (Contextual Core - Luminous Lavender Glass) ── */}
+            {/* ── MEMORY CARD (Contextual Core - Luminous Lavender Frosted Glass) ── */}
             <button
               type="button"
               onClick={() => handleLaunch('memory')}
@@ -406,16 +404,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 "w-[148px] sm:w-[158px] h-[130px] sm:h-[138px]",
                 "rounded-[26px] p-4",
                 "flex flex-col items-center justify-center text-center",
-                // Translucent white glass surface, strong backdrop blur, subtle inner highlight
-                "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl",
-                "border border-purple-200/60 dark:border-purple-500/25",
-                "shadow-[0_12px_36px_-6px_rgba(168,85,247,0.18),0_1px_2px_rgba(255,255,255,0.95)_inset,0_2px_8px_rgba(15,23,42,0.03)] dark:shadow-[0_12px_36px_-6px_rgba(168,85,247,0.3),0_1px_2px_rgba(255,255,255,0.1)_inset]",
+                // Luminous lavender/violet frosted visionOS glass infusion matching Reference Image 2
+                "bg-gradient-to-b from-white/95 via-purple-50/75 to-purple-100/60 dark:from-zinc-900/90 dark:via-purple-950/40 dark:to-purple-900/30",
+                "backdrop-blur-2xl",
+                "border border-purple-300/70 dark:border-purple-400/35",
+                "shadow-[0_12px_40px_-6px_rgba(168,85,247,0.24),0_2px_8px_rgba(168,85,247,0.08),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(168,85,247,0.12)]",
                 "transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'memory' ? "scale-[1.03] -translate-y-1 shadow-[0_16px_40px_-4px_rgba(168,85,247,0.28)] border-purple-300/80" : "",
+                hoveredNode === 'memory' ? "scale-[1.03] -translate-y-1 shadow-[0_18px_46px_-4px_rgba(168,85,247,0.34)] border-purple-400/80" : "",
               ].join(" ")}
             >
-              {/* 4-point curved intelligence spark icon matching reference */}
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-purple-600 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200">
+              {/* 4-point curved intelligence spark icon matching reference with soft radiance */}
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-purple-600 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_2px_6px_rgba(168,85,247,0.35)]">
                 <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C12 7.5 16.5 12 22 12C16.5 12 12 16.5 12 22C12 16.5 7.5 12 2 12C7.5 12 12 7.5 12 2Z" />
                 </svg>
@@ -428,7 +427,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               </span>
             </button>
 
-            {/* ── RELAY CARD (Connectivity Core - Luminous Sky-Blue Glass) ── */}
+            {/* ── RELAY CARD (Connectivity Core - Luminous Sky-Blue Frosted Glass) ── */}
             <button
               type="button"
               onClick={() => handleLaunch('relay')}
@@ -438,16 +437,17 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 "w-[148px] sm:w-[158px] h-[130px] sm:h-[138px]",
                 "rounded-[26px] p-4",
                 "flex flex-col items-center justify-center text-center",
-                // Translucent white glass surface, strong backdrop blur, subtle inner highlight
-                "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl",
-                "border border-blue-200/60 dark:border-blue-500/25",
-                "shadow-[0_12px_36px_-6px_rgba(59,130,246,0.18),0_1px_2px_rgba(255,255,255,0.95)_inset,0_2px_8px_rgba(15,23,42,0.03)] dark:shadow-[0_12px_36px_-6px_rgba(59,130,246,0.3),0_1px_2px_rgba(255,255,255,0.1)_inset]",
+                // Luminous sky-blue frosted visionOS glass infusion matching Reference Image 2
+                "bg-gradient-to-b from-white/95 via-sky-50/75 to-blue-100/60 dark:from-zinc-900/90 dark:via-sky-950/40 dark:to-blue-900/30",
+                "backdrop-blur-2xl",
+                "border border-blue-300/70 dark:border-blue-400/35",
+                "shadow-[0_12px_40px_-6px_rgba(59,130,246,0.24),0_2px_8px_rgba(59,130,246,0.08),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-2px_4px_rgba(59,130,246,0.12)]",
                 "transition-all duration-300 cursor-pointer group outline-none",
-                hoveredNode === 'relay' ? "scale-[1.03] -translate-y-1 shadow-[0_16px_40px_-4px_rgba(59,130,246,0.28)] border-blue-300/80" : "",
+                hoveredNode === 'relay' ? "scale-[1.03] -translate-y-1 shadow-[0_18px_46px_-4px_rgba(59,130,246,0.34)] border-blue-400/80" : "",
               ].join(" ")}
             >
-              {/* Connection transfer icon matching reference */}
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-blue-600 dark:text-blue-300 group-hover:scale-105 transition-transform duration-200">
+              {/* Connection transfer icon matching reference with soft radiance */}
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-blue-600 dark:text-blue-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_2px_6px_rgba(59,130,246,0.35)]">
                 <RelayIcon size={21} className="text-blue-600 dark:text-blue-300" strokeWidth={1.8} />
               </div>
               <span className="text-[14.5px] sm:text-[15.5px] font-semibold text-slate-900 dark:text-white tracking-[-0.01em]">
@@ -461,10 +461,10 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </div>
 
           {/* ========================================================================= */}
-          {/* ── PERIPHERAL TOOLS (Translucent Glass Cards, Compressed Inward by 12%) ── */}
+          {/* ── PERIPHERAL TOOLS (Frosted VisionOS Glass Cards, Specular Edge Bevels) ── */}
           {/* ========================================================================= */}
 
-          {/* ── 1. Top Center: DOCS (Positioned cleanly beneath subtitle with breathing room) ── */}
+          {/* ── 1. Top Center: DOCS (Translucent frosted acrylic glass with inner specular rim) ── */}
           <div className="absolute top-[1%] sm:top-[2%] left-[50%] -translate-x-[50%] pointer-events-auto">
             <button
               type="button"
@@ -473,18 +473,19 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent white glass surface with subtle inner highlight & delicate 1px border
-                "bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl",
-                "border border-white/90 dark:border-white/[0.08]",
-                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
-                "shadow-[0_2px_12px_-2px_rgba(15,23,42,0.04),0_1px_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/95 dark:hover:bg-[#1f1f23]/95 hover:border-slate-200 dark:hover:border-white/15",
-                "hover:shadow-[0_6px_20px_-3px_rgba(15,23,42,0.07),0_1px_1px_rgba(255,255,255,0.95)_inset] hover:-translate-y-0.5",
+                // Translucent frosted visionOS acrylic glass allowing underlying background to shine through
+                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                "backdrop-blur-xl",
+                "border border-white/80 dark:border-white/15",
+                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
+                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
+                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
+                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
                 hoveredNode === 'compose' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(59,130,246,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
                 <ComposeIcon size={16} strokeWidth={1.7} className="text-white" />
               </div>
               <div className="flex flex-col min-w-0 pr-1">
@@ -494,7 +495,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 2. Upper Left: SHEETS (Moved inward toward center, translucent glass) ── */}
+          {/* ── 2. Upper Left: SHEETS (Translucent frosted acrylic glass) ── */}
           <div className="absolute top-[11%] sm:top-[13%] left-[10%] sm:left-[12%] pointer-events-auto">
             <button
               type="button"
@@ -503,18 +504,19 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent white glass surface with subtle inner highlight & delicate 1px border
-                "bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl",
-                "border border-white/90 dark:border-white/[0.08]",
-                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
-                "shadow-[0_2px_12px_-2px_rgba(15,23,42,0.04),0_1px_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/95 dark:hover:bg-[#1f1f23]/95 hover:border-slate-200 dark:hover:border-white/15",
-                "hover:shadow-[0_6px_20px_-3px_rgba(15,23,42,0.07),0_1px_1px_rgba(255,255,255,0.95)_inset] hover:-translate-y-0.5",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
+                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                "backdrop-blur-xl",
+                "border border-white/80 dark:border-white/15",
+                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
+                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
+                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
+                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
                 hoveredNode === 'sheet' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(16,185,129,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
                 <SheetIcon size={16} strokeWidth={1.7} className="text-white" />
               </div>
               <div className="flex flex-col min-w-0 pr-1">
@@ -524,7 +526,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 3. Upper Right: DECK (Moved inward toward center, translucent glass) ── */}
+          {/* ── 3. Upper Right: DECK (Translucent frosted acrylic glass) ── */}
           <div className="absolute top-[12%] sm:top-[14%] right-[10%] sm:right-[12%] pointer-events-auto">
             <button
               type="button"
@@ -533,18 +535,19 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent white glass surface with subtle inner highlight & delicate 1px border
-                "bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl",
-                "border border-white/90 dark:border-white/[0.08]",
-                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
-                "shadow-[0_2px_12px_-2px_rgba(15,23,42,0.04),0_1px_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/95 dark:hover:bg-[#1f1f23]/95 hover:border-slate-200 dark:hover:border-white/15",
-                "hover:shadow-[0_6px_20px_-3px_rgba(15,23,42,0.07),0_1px_1px_rgba(255,255,255,0.95)_inset] hover:-translate-y-0.5",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
+                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                "backdrop-blur-xl",
+                "border border-white/80 dark:border-white/15",
+                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
+                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
+                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
+                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
                 hoveredNode === 'deck' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(245,158,11,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
                 <DeckIcon size={16} strokeWidth={1.7} className="text-white" />
               </div>
               <div className="flex flex-col min-w-0 pr-1">
@@ -554,7 +557,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 4. Left: IMPORT (Moved inward toward center, translucent glass) ── */}
+          {/* ── 4. Left: IMPORT (Translucent frosted acrylic glass with upload tray glyph) ── */}
           <div className="absolute top-[50%] -translate-y-[50%] left-[5%] sm:left-[7%] pointer-events-auto">
             <button
               type="button"
@@ -563,19 +566,25 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent white glass surface with subtle inner highlight & delicate 1px border
-                "bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl",
-                "border border-white/90 dark:border-white/[0.08]",
-                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
-                "shadow-[0_2px_12px_-2px_rgba(15,23,42,0.04),0_1px_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/95 dark:hover:bg-[#1f1f23]/95 hover:border-slate-200 dark:hover:border-white/15",
-                "hover:shadow-[0_6px_20px_-3px_rgba(15,23,42,0.07),0_1px_1px_rgba(255,255,255,0.95)_inset] hover:-translate-y-0.5",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
+                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                "backdrop-blur-xl",
+                "border border-white/80 dark:border-white/15",
+                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
+                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
+                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
+                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
                 hoveredNode === 'omni-portal' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl bg-purple-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <ImportPortalIcon size={16} strokeWidth={1.7} className="text-white" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-400 to-violet-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(168,85,247,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
+                {/* Upload tray glyph matching Reference Image 2 */}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
               </div>
               <div className="flex flex-col min-w-0 pr-1">
                 <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-100 leading-tight">Import</span>
@@ -584,7 +593,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 5. Lower Right: WHITEBOARD (Moved inward toward center, translucent glass) ── */}
+          {/* ── 5. Lower Right: WHITEBOARD (Translucent frosted acrylic glass) ── */}
           <div className="absolute top-[56%] sm:top-[58%] right-[7%] sm:right-[9%] pointer-events-auto">
             <button
               type="button"
@@ -593,18 +602,19 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent white glass surface with subtle inner highlight & delicate 1px border
-                "bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl",
-                "border border-white/90 dark:border-white/[0.08]",
-                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
-                "shadow-[0_2px_12px_-2px_rgba(15,23,42,0.04),0_1px_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/95 dark:hover:bg-[#1f1f23]/95 hover:border-slate-200 dark:hover:border-white/15",
-                "hover:shadow-[0_6px_20px_-3px_rgba(15,23,42,0.07),0_1px_1px_rgba(255,255,255,0.95)_inset] hover:-translate-y-0.5",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
+                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                "backdrop-blur-xl",
+                "border border-white/80 dark:border-white/15",
+                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
+                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
+                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
+                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
                 hoveredNode === 'whiteboard' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(79,70,229,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
                 <WhiteboardIcon size={16} strokeWidth={1.7} className="text-white" />
               </div>
               <div className="flex flex-col min-w-0 pr-1">
@@ -614,7 +624,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 6. Lower Left/Bottom: ROOM (Moved upward with comfortable breathing room below) ── */}
+          {/* ── 6. Lower Left/Bottom: ROOM (Translucent frosted acrylic glass with video camera glyph) ── */}
           <div className="absolute bottom-[8%] sm:bottom-[9%] left-[30%] sm:left-[33%] pointer-events-auto">
             <button
               type="button"
@@ -623,19 +633,24 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               onMouseLeave={() => setHoveredNode(null)}
               className={[
                 "flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl",
-                // Translucent white glass surface with subtle inner highlight & delicate 1px border
-                "bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl",
-                "border border-white/90 dark:border-white/[0.08]",
-                "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.04]",
-                "shadow-[0_2px_12px_-2px_rgba(15,23,42,0.04),0_1px_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)]",
-                "hover:bg-white/95 dark:hover:bg-[#1f1f23]/95 hover:border-slate-200 dark:hover:border-white/15",
-                "hover:shadow-[0_6px_20px_-3px_rgba(15,23,42,0.07),0_1px_1px_rgba(255,255,255,0.95)_inset] hover:-translate-y-0.5",
+                // Translucent frosted visionOS acrylic glass allowing underlying orbits to shine through
+                "bg-gradient-to-b from-white/70 via-white/55 to-white/45 dark:from-[#18181b]/70 dark:via-[#18181b]/55 dark:to-[#18181b]/45",
+                "backdrop-blur-xl",
+                "border border-white/80 dark:border-white/15",
+                "ring-1 ring-slate-900/[0.03] dark:ring-white/[0.04]",
+                "shadow-[0_4px_18px_-3px_rgba(15,23,42,0.06),inset_0_1.5px_1.5px_rgba(255,255,255,0.95),inset_0_-1px_1px_rgba(255,255,255,0.3)] dark:shadow-[0_4px_18px_-3px_rgba(0,0,0,0.3)]",
+                "hover:bg-white/80 dark:hover:bg-[#1f1f23]/80 hover:border-white dark:hover:border-white/20",
+                "hover:shadow-[0_8px_24px_-4px_rgba(15,23,42,0.08),inset_0_1.5px_1.5px_rgba(255,255,255,1)] hover:-translate-y-0.5",
                 "active:scale-[0.985] transition-all duration-200 cursor-pointer group text-left outline-none",
                 hoveredNode === 'room' ? "border-slate-300 dark:border-white/20 shadow-md" : "",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <RoomIcon size={16} strokeWidth={1.7} className="text-white" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(20,184,166,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
+                {/* Video camera glyph matching Reference Image 2 */}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <rect x="2" y="6" width="13" height="12" rx="2.5" />
+                  <polygon points="17 10 22 7 22 17 17 14" fill="currentColor" stroke="currentColor" />
+                </svg>
               </div>
               <div className="flex flex-col min-w-0 pr-1">
                 <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-100 leading-tight">Room</span>
