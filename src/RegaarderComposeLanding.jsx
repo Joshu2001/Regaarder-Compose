@@ -26,6 +26,7 @@ import {
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 import LegalPolicyModal from "./components/LegalPolicyModal";
 import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
+import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
 
 const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
@@ -350,25 +351,32 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-6 sm:px-8 py-6 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center my-auto">
+      <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-4 sm:px-8 py-4 sm:py-6 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[1020px] mx-auto flex flex-col items-center my-auto">
 
           {/*
             ── Hero Section ──
             Pure Apple typography & authoritative monochrome Regaarder brand glyph.
-            Compact vertical margins to ensure zero viewport clipping.
+            Matches reference image:
+            - "Every tool your team needs," (Line 1)
+            - "connected as one." with subtle purple/blue gradient (Line 2)
+            - Centered, dark navy typography
           */}
-          <div className="text-center mb-6 sm:mb-7 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-2 sm:mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
-            <div className="mb-2 flex items-center justify-center">
-              <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#18181b] border border-slate-200/40 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.02)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
+            <div className="mb-2.5 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-white/90 dark:bg-[#18181b]/90 border border-slate-200/50 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
                 <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
 
-            <h1 className="text-[26px] sm:text-[32px] md:text-[34px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-1.5 text-balance max-w-2xl mx-auto">
-              {t('landing.headline') || 'Every tool your team builds with. Connected as one.'}
+            <h1 className="text-[28px] sm:text-[34px] md:text-[38px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.18] mb-2 text-balance max-w-2xl mx-auto">
+              <span>Every tool your team needs,</span>
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-400 dark:via-indigo-300 dark:to-blue-400 bg-clip-text text-transparent">
+                connected as one.
+              </span>
             </h1>
             <p className="text-[14px] sm:text-[14.5px] text-slate-500 dark:text-zinc-400 font-normal max-w-lg mx-auto leading-relaxed">
               {t('landing.subheadline') || 'Docs, sheets, decks, and AI intelligence — completely private.'}
@@ -376,69 +384,19 @@ export default function RegaarderComposeLanding({
           </div>
 
           {/*
-            ── 4×2 Product Launcher Grid ──
-            - White/almost-white surfaces with subtle borders and very soft elevation.
-            - Dark navy labels and restrained purple accents on hover.
-            - Balanced whitespace (p-5).
+            ── Connected Radial Ecosystem Visualization ──
+            Replaces static 2×4 grid with a spatial, connected radial ecosystem matching the reference design.
           */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
-            {sortedProducts.map((product, idx) => {
-              const IconComp = product.icon;
-              return (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => {
-                    try {
-                      localStorage.setItem('rc.lastOpenedApp', product.id);
-                      const raw = localStorage.getItem('rc.mruAppsHistory');
-                      const prevList = raw ? JSON.parse(raw) : [];
-                      const nextList = [product.id, ...prevList.filter(id => id !== product.id)];
-                      localStorage.setItem('rc.mruAppsHistory', JSON.stringify(nextList));
-                    } catch {}
-                    const targetName = product.id === 'relay' ? 'dm' : product.id;
-                    onLaunch?.({ type: 'action', name: targetName });
-                  }}
-                  style={{ animationDelay: `${idx * 25}ms` }}
-                  className={[
-                    "flex flex-col items-center justify-center gap-2.5",
-                    // Near-white surface
-                    "bg-white dark:bg-[#18181b]",
-                    // Subtle border and extremely soft elevation
-                    "border border-slate-200/40 dark:border-white/[0.04]",
-                    "rounded-2xl p-5",
-                    "shadow-[0_1px_3px_rgba(15,23,42,0.02)] dark:shadow-none",
-                    // Gentle hover state with restrained purple accent
-                    "hover:bg-white dark:hover:bg-[#1f1f23]",
-                    "hover:border-violet-200 dark:hover:border-violet-500/30",
-                    "hover:shadow-[0_8px_20px_-6px_rgba(15,23,42,0.06)] dark:hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.4)]",
-                    "hover:-translate-y-0.5",
-                    "active:scale-[0.985] active:translate-y-0",
-                    // Strict outline elimination
-                    "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
-                    "transition-all duration-200 group cursor-pointer animate-in fade-in slide-in-from-bottom-2",
-                  ].join(" ")}
-                >
-                  {/* Bare vector icon with restrained purple hover */}
-                  <div className="text-slate-600 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200">
-                    <IconComp size={24} strokeWidth={1.5} />
-                  </div>
-
-                  {/* Dark navy product label */}
-                  <span className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors duration-200">
-                    {t('landing.' + product.id) || product.title}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
           {/* ── Progressive Disclosure Recent Work Strip ── */}
-          <LandingRecentWorkStrip
-            onLaunch={onLaunch}
-            onOpenRecentModal={onOpenRecentModal}
-            onRecentCountChange={(count) => setHasRecentWork(count > 0)}
-          />
+          <div className="w-full max-w-[840px] mx-auto">
+            <LandingRecentWorkStrip
+              onLaunch={onLaunch}
+              onOpenRecentModal={onOpenRecentModal}
+              onRecentCountChange={(count) => setHasRecentWork(count > 0)}
+            />
+          </div>
 
           {/* ── Subtle Workspace Utility Layer ── */}
           <div className={`${hasRecentWork ? "mt-6" : "mt-8 sm:mt-9"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>

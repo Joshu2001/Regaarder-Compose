@@ -282,14 +282,15 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
 
       {/*
         Compact Horizontal Shelf (Up to 3 items):
-        - 1 item: single compact card
-        - 2 items: 2-column compact shelf
-        - 3 items: 3-column compact shelf
-        Items are visually quiet and subordinate to product launcher cards.
+        - Matches reference image exactly:
+          - Rounded rectangular cards (rounded-xl / rounded-2xl) with subtle border & quiet shadow
+          - Left document/product icon
+          - Title and badge/metadata
+          - Vertical three-dots affordance on the right
       */}
       <div
         className={[
-          "grid gap-2 w-full",
+          "grid gap-3 w-full",
           isFewItems
             ? visibleItems.length === 1
               ? "grid-cols-1 max-w-sm"
@@ -306,44 +307,46 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
               onClick={() => handleOpenDoc(item)}
               className={[
                 "group relative flex items-center justify-between",
-                // Compact padding and quiet height
-                "px-3 py-1.5 rounded-lg",
-                // Ultra-quiet background and hairline border
-                "bg-black/[0.012] dark:bg-white/[0.018]",
-                "border border-slate-200/40 dark:border-white/[0.035]",
-                "shadow-none",
+                // Refined padding and height matching reference card
+                "px-3.5 py-2.5 rounded-xl",
+                // Ultra-quiet translucent white background & soft border
+                "bg-white/80 dark:bg-white/[0.04]",
+                "border border-slate-200/60 dark:border-white/[0.06]",
+                "shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none",
                 // Soft hover reveal
-                "hover:bg-white/80 dark:hover:bg-[#1a1a1d]",
-                "hover:border-slate-300/50 dark:hover:border-white/[0.07]",
-                "hover:shadow-[0_2px_6px_rgba(15,23,42,0.03)] dark:hover:shadow-[0_2px_6px_rgba(0,0,0,0.3)]",
-                "active:scale-[0.99]",
+                "hover:bg-white dark:hover:bg-[#1a1a1d]",
+                "hover:border-slate-300/80 dark:hover:border-white/[0.12]",
+                "hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
+                "hover:-translate-y-0.5",
+                "active:scale-[0.99] active:translate-y-0",
                 "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
                 "transition-all duration-150 ease-out cursor-pointer text-left",
               ].join(" ")}
             >
               {/* Product Icon & Compact Metadata */}
-              <div className="flex items-center gap-2 min-w-0 pr-1.5">
-                <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                  <IconComp size={13} strokeWidth={1.5} />
+              <div className="flex items-center gap-2.5 min-w-0 pr-1">
+                <div className="w-4 h-4 flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                  <IconComp size={14} strokeWidth={1.5} />
                 </div>
 
-                <div className="min-w-0 flex items-center gap-1.5 text-[11.5px] leading-normal truncate">
-                  <span className="font-medium text-slate-600 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-zinc-100 truncate transition-colors">
+                <div className="min-w-0 flex items-center gap-2 text-[12px] leading-normal truncate">
+                  <span className="font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white truncate transition-colors">
                     {item.title}
                   </span>
-                  <span className="text-slate-300/80 dark:text-zinc-600/80 shrink-0 select-none">·</span>
-                  <span className="text-[9.5px] text-slate-400/80 dark:text-zinc-500/80 font-normal shrink-0">
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal shrink-0">
                     {item.productName} · {item.editedLabel}
                   </span>
                 </div>
               </div>
 
-              {/* Subtle Navigation Affordance */}
-              <ArrowUpRight
-                size={11}
-                strokeWidth={1.8}
-                className="shrink-0 text-slate-300 dark:text-zinc-600 group-hover:text-slate-500 dark:group-hover:text-zinc-400 transition-colors ml-1"
-              />
+              {/* Three-dots icon matching reference */}
+              <div className="shrink-0 text-slate-300 dark:text-zinc-600 group-hover:text-slate-500 dark:group-hover:text-zinc-400 transition-colors p-0.5">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="3" r="1.5" />
+                  <circle cx="8" cy="8" r="1.5" />
+                  <circle cx="8" cy="13" r="1.5" />
+                </svg>
+              </div>
             </button>
           );
         })}
