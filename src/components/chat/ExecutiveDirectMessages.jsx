@@ -308,7 +308,16 @@ export default function ExecutiveDirectMessages({
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [chatSearchMatchIndex, setChatSearchMatchIndex] = useState(0);
+  const [chatSearchMode, setChatSearchMode] = useState('find'); // 'find' | 'ai'
+  const [chatAiAnswer, setChatAiAnswer] = useState(null);
+  const [chatAiLoading, setChatAiLoading] = useState(false);
+  const [chatAiCopied, setChatAiCopied] = useState(false);
+
   const [aiHistorySearchQuery, setAiHistorySearchQuery] = useState('');
+  const [aiHistoryMode, setAiHistoryMode] = useState('filter'); // 'filter' | 'ai'
+  const [historyAiAnswer, setHistoryAiAnswer] = useState(null);
+  const [historyAiLoading, setHistoryAiLoading] = useState(false);
+  const [historyAiCopied, setHistoryAiCopied] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -1796,6 +1805,218 @@ export default function ExecutiveDirectMessages({
     }
   };
 
+  // ── Executive AI Query Execution Pipeline (Multi-Tier Resilience) ──────────
+  const executeExecutiveAiQuery = async (systemPrompt, userPrompt) => {
+    let resultText = '';
+    const aiFetchPromise = (async () => {
+      // 1. Direct Local Endpoint (e.g. Ollama or LM Studio)
+      const targetLocal = (detectedLocalModels || []).find(m => m.id === selectedAiModel) || detectedLocalModels?.[0];
+      if (targetLocal?.endpoint) {
+        try {
+          const res = await fetch(`${targetLocal.endpoint.replace(/\/+$/, '')}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: targetLocal.id || targetLocal.name,
+              prompt: userPrompt,
+              system: systemPrompt,
+              stream: false,
+              options: { temperature: 0.3 }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.response?.trim()) return data.response.trim();
+          }
+        } catch (e) {
+          console.warn('[ExecutiveAI] Direct local endpoint error:', e);
+        }
+      }
+
+      // 2. Electron Native Local AI IPC
+      if (targetLocal && typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
+        try {
+          const ipcRes = await window.electronAPI.generateLocalAI({
+            endpoint: targetLocal.endpoint || 'http://127.0.0.1:11434',
+            model: targetLocal.id || targetLocal.name,
+            prompt: userPrompt,
+            systemPrompt
+          });
+          if (ipcRes?.success && ipcRes?.text?.trim()) {
+            return ipcRes.text.trim();
+          }
+        } catch (ipcErr) {
+          console.warn('[ExecutiveAI] Tier 2 Native Local AI error:', ipcErr);
+        }
+      }
+
+      // 3. Direct Provider via callAiProvider (Gemini / Claude / OpenAI / Configured)
+      try {
+        const savedConfig = getSavedAiConfig();
+        const messages = [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          { role: 'user', content: userPrompt }
+        ];
+        const providerRes = await callAiProvider(messages, savedConfig || {});
+        if (providerRes) {
+          const str = typeof providerRes === 'string'
+            ? providerRes
+            : (providerRes.content || providerRes.text || '');
+          if (str && str.trim()) return str.trim();
+        }
+      } catch (pErr) {
+        console.warn('[ExecutiveAI] Tier 3 callAiProvider error:', pErr);
+      }
+
+      return '';
+    })();
+
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(''), 30000));
+    resultText = await Promise.race([aiFetchPromise, timeoutPromise]);
+    return resultText;
+  };
+
+  // Run in-chat AI synthesis across current conversation
+  const handleRunInChatAiSearch = async (queryToRun) => {
+    const q = (queryToRun || chatSearchQuery || '').trim();
+    if (!q) return;
+
+    setChatAiLoading(true);
+    setChatAiAnswer(null);
+
+    const threadMsgs = threadMessages[activeContactId] || [];
+    const activeContact = conversations.find(c => c.id === activeContactId) || { name: 'Contact' };
+
+    const queryWords = q.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const matchedSources = threadMsgs.filter(m => {
+      const txt = (m.text || m.rawTranscript || '').toLowerCase();
+      return queryWords.some(w => txt.includes(w));
+    }).slice(-4);
+
+    const formattedTranscript = threadMsgs.slice(-30).map(m => {
+      const sender = m.sender === 'user' ? 'User' : (activeContact.name || 'Assistant');
+      const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return `[${time}] ${sender}: ${m.text || m.rawTranscript || ''}`;
+    }).join('\n');
+
+    const systemPrompt = `You are Regaarder Relay's Executive Intelligence Engine.
+You synthesize information across the user's active direct message conversation thread.
+Analyze the provided chat transcript and answer the user's inquiry accurately, concisely, and with executive clarity.
+Format your answer with bullet points or clean takeaways where appropriate.
+If the requested information is not mentioned in the conversation, state that clearly without guessing.`;
+
+    const userPrompt = `Conversation Participants: User and ${activeContact.name}
+Chat Transcript:
+${formattedTranscript || '(No messages in this chat yet)'}
+
+User Inquiry: "${q}"
+
+Provide a concise, direct natural language answer synthesizing what was discussed in this chat:`;
+
+    try {
+      let answer = await executeExecutiveAiQuery(systemPrompt, userPrompt);
+      if (!answer || !answer.trim()) {
+        if (threadMsgs.length === 0) {
+          answer = `No messages have been exchanged in this conversation with **${activeContact.name}** yet. Start chatting to ask questions about it.`;
+        } else if (matchedSources.length > 0) {
+          const sample = matchedSources.slice(-3).map(m => `• **${m.sender === 'user' ? 'You' : activeContact.name}**: "${m.text || m.rawTranscript}"`).join('\n');
+          answer = `Based on the conversation with **${activeContact.name}**, here are the relevant discussions found:\n\n${sample}`;
+        } else {
+          answer = `I analyzed the recent messages with **${activeContact.name}**, but could not find a direct mention of "${q}". The conversation currently covers: ${threadMsgs.slice(-3).map(m => `"${m.text?.slice(0, 40)}..."`).join(', ')}.`;
+        }
+      }
+
+      setChatAiAnswer({
+        query: q,
+        answer: answer.trim(),
+        sources: matchedSources.map(m => ({
+          id: m.id,
+          sender: m.sender === 'user' ? 'You' : activeContact.name,
+          time: m.timestamp,
+          snippet: (m.text || m.rawTranscript || '').slice(0, 80)
+        }))
+      });
+    } catch (err) {
+      console.error('Error running in-chat AI search:', err);
+      setChatAiAnswer({
+        query: q,
+        answer: 'Unable to synthesize chat knowledge at this time. Please try again.',
+        sources: []
+      });
+    } finally {
+      setChatAiLoading(false);
+    }
+  };
+
+  // Run AI synthesis across all archived AI history sessions
+  const handleRunHistoryAiSearch = async (queryToRun) => {
+    const q = (queryToRun || aiHistorySearchQuery || '').trim();
+    if (!q) return;
+
+    setHistoryAiLoading(true);
+    setHistoryAiAnswer(null);
+
+    const matchingSessions = [];
+    const queryWords = q.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+    const allSessionSummaries = aiChatSessions.map((sess, idx) => {
+      const msgs = (sess.messages || []).map(m => `${m.sender === 'user' ? 'User' : 'AI'}: ${m.text || m.rawTranscript || ''}`).join(' | ');
+      const isMatch = queryWords.some(w => (sess.title || '').toLowerCase().includes(w) || msgs.toLowerCase().includes(w));
+      if (isMatch) {
+        matchingSessions.push(sess);
+      }
+      return `Session #${idx + 1} (${sess.title || 'Untitled'}, ${sess.date || 'Past'}): ${msgs.slice(0, 400)}`;
+    }).join('\n\n');
+
+    const systemPrompt = `You are Regaarder Relay's AI Archive Intelligence Engine.
+You synthesize information across the user's past archived AI conversations, queries, and research sessions.
+Answer the user's question directly based on their past AI interactions.
+Use clear executive formatting and cite relevant past sessions if applicable.`;
+
+    const userPrompt = `Archived AI Chat Sessions (${aiChatSessions.length} total):
+${allSessionSummaries || '(No past AI chat sessions saved yet)'}
+
+User Inquiry: "${q}"
+
+Provide a concise natural language synthesis answering the user's question from their archived sessions:`;
+
+    try {
+      let answer = await executeExecutiveAiQuery(systemPrompt, userPrompt);
+      if (!answer || !answer.trim()) {
+        if (aiChatSessions.length === 0) {
+          answer = 'No archived AI chat sessions were found. Click "+ New Chat" while chatting with Assistant to archive sessions into history.';
+        } else if (matchingSessions.length > 0) {
+          const sample = matchingSessions.slice(0, 3).map(s => {
+            const firstMsg = (s.messages || [])[0]?.text || s.title || 'Session';
+            return `• **${s.title || 'Archived Session'}** (${s.date || 'Recent'}): "${firstMsg.slice(0, 100)}"`;
+          }).join('\n');
+          answer = `Found relevant historical sessions discussing this:\n\n${sample}`;
+        } else {
+          answer = `Searched through ${aiChatSessions.length} archived sessions, but found no matching records for "${q}".`;
+        }
+      }
+
+      setHistoryAiAnswer({
+        query: q,
+        answer: answer.trim(),
+        sources: (matchingSessions.length > 0 ? matchingSessions : aiChatSessions).slice(0, 3).map(s => ({
+          id: s.id,
+          title: s.title || 'Archived Session',
+          date: s.date || 'Past'
+        }))
+      });
+    } catch (err) {
+      console.error('Error running history AI search:', err);
+      setHistoryAiAnswer({
+        query: q,
+        answer: 'Unable to synthesize archive knowledge at this time.',
+        sources: []
+      });
+    } finally {
+      setHistoryAiLoading(false);
+    }
+  };
+
   // Dispatch prompt to real model (Ollama / Local LM / Cloud)
   const handleSendMessage = async (e) => {
     e?.preventDefault();
@@ -2892,97 +3113,289 @@ ${systemPrompt}`
                             <span>AI Chat History</span>
                             <span className="text-[10px] text-slate-400 font-normal">({aiChatSessions.length})</span>
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => { setIsAiHistoryOpen(false); setAiHistorySearchQuery(''); }}
-                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-black/[0.04] cursor-pointer"
-                          >
-                            <X size={13} />
-                          </button>
+
+                          <div className="flex items-center gap-2">
+                            {/* Segmented Mode Switcher: Apple-style slightly rounded rectangle */}
+                            <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06] select-none">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setAiHistoryMode('filter');
+                                }}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                                  aiHistoryMode === 'filter'
+                                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold outline outline-1 outline-black/[0.08] dark:outline-white/[0.1]'
+                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                                }`}
+                              >
+                                <Search size={10} className={aiHistoryMode === 'filter' ? 'text-violet-600' : 'text-slate-400'} />
+                                <span>Filter</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setAiHistoryMode('ai');
+                                }}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                                  aiHistoryMode === 'ai'
+                                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-2xs font-bold outline outline-1 outline-violet-500/50'
+                                    : 'text-violet-600 dark:text-violet-400 hover:text-violet-700'
+                                }`}
+                              >
+                                <Sparkles size={10} className={aiHistoryMode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                                <span>Ask AI</span>
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => { setIsAiHistoryOpen(false); setAiHistorySearchQuery(''); setHistoryAiAnswer(null); }}
+                              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-black/[0.04] cursor-pointer"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Search Bar in History Popover */}
+                        {/* Search / Prompt Bar in History Popover */}
                         <div className="relative my-2">
-                          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          {aiHistoryMode === 'ai' ? (
+                            <Sparkles size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+                          ) : (
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          )}
                           <input
                             type="text"
                             value={aiHistorySearchQuery}
-                            onChange={(e) => setAiHistorySearchQuery(e.target.value)}
-                            placeholder="Search archived prompts, answers, or titles..."
+                            onChange={(e) => {
+                              setAiHistorySearchQuery(e.target.value);
+                              if (aiHistoryMode === 'ai' && historyAiAnswer) {
+                                setHistoryAiAnswer(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (aiHistoryMode === 'ai') {
+                                  handleRunHistoryAiSearch(aiHistorySearchQuery);
+                                }
+                              } else if (e.key === 'Escape') {
+                                setIsAiHistoryOpen(false);
+                                setAiHistorySearchQuery('');
+                                setHistoryAiAnswer(null);
+                              }
+                            }}
+                            placeholder={
+                              aiHistoryMode === 'ai'
+                                ? "Ask questions across all archived AI chats (Press Enter)..."
+                                : "Search archived prompts, answers, or titles..."
+                            }
                             className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
                           />
                         </div>
 
-                        <div className="max-h-72 overflow-y-auto thin-scrollbar space-y-1 py-1">
-                          {(() => {
-                            const filtered = aiChatSessions.filter(sess => {
-                              if (!aiHistorySearchQuery.trim()) return true;
-                              const q = aiHistorySearchQuery.toLowerCase();
-                              const matchTitle = (sess.title || '').toLowerCase().includes(q);
-                              const matchContent = (sess.messages || []).some(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
-                              return matchTitle || matchContent;
-                            });
+                        {/* Ask AI Mode Synthesize Button if query entered */}
+                        {aiHistoryMode === 'ai' && aiHistorySearchQuery.trim() && !historyAiLoading && (
+                          <div className="flex justify-end mb-2">
+                            <button
+                              type="button"
+                              onClick={() => handleRunHistoryAiSearch(aiHistorySearchQuery)}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            >
+                              <Sparkles size={11} />
+                              <span>Synthesize Answer</span>
+                            </button>
+                          </div>
+                        )}
 
-                            if (filtered.length === 0) {
-                              return (
-                                <div className="py-8 text-center text-slate-400 dark:text-zinc-500">
-                                  <MessageSquare size={18} className="mx-auto mb-1.5 opacity-40" />
-                                  <p className="text-[11.5px] font-medium">
-                                    {aiHistorySearchQuery.trim() ? 'No matching archived sessions' : 'No archived AI chats yet.'}
-                                  </p>
-                                  <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">
-                                    {aiHistorySearchQuery.trim() ? 'Try different keywords' : 'Click "New Chat" during a chat to archive it to history.'}
-                                  </p>
-                                </div>
-                              );
-                            }
-
-                            return filtered.map((sess) => {
-                              let matchingSnippet = null;
-                              if (aiHistorySearchQuery.trim()) {
-                                const q = aiHistorySearchQuery.toLowerCase();
-                                const foundMsg = (sess.messages || []).find(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
-                                if (foundMsg) {
-                                  matchingSnippet = foundMsg.text || foundMsg.rawTranscript;
-                                }
-                              }
-
-                              return (
-                                <div
-                                  key={sess.id}
-                                  onClick={() => {
-                                    handleSelectPastAiSession(sess);
-                                    setAiHistorySearchQuery('');
-                                  }}
-                                  className="p-2.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.05] cursor-pointer group/sess transition-colors border border-transparent hover:border-black/[0.04] dark:hover:border-white/[0.04]"
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <p className="font-semibold text-slate-800 dark:text-zinc-100 truncate text-[12px] flex-1 pr-2">
-                                      {sess.title}
-                                    </p>
+                        {/* AI Mode Natural Language Synthesis View */}
+                        {aiHistoryMode === 'ai' ? (
+                          <div className="max-h-80 overflow-y-auto thin-scrollbar py-1">
+                            {historyAiLoading ? (
+                              <div className="py-8 text-center text-violet-600 dark:text-violet-300">
+                                <Loader2 size={18} className="animate-spin mx-auto mb-2 text-violet-600" />
+                                <p className="text-xs font-semibold">Synthesizing archive knowledge...</p>
+                                <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">Searching across {aiChatSessions.length} archived AI sessions</p>
+                              </div>
+                            ) : historyAiAnswer ? (
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5 text-xs">
+                                    <Sparkles size={12} className="text-violet-600" />
+                                    <span>Archive Synthesis</span>
+                                  </span>
+                                  <div className="flex items-center gap-1">
                                     <button
                                       type="button"
-                                      onClick={(e) => handleDeleteAiSession(e, sess.id)}
-                                      className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover/sess:opacity-100 transition-all cursor-pointer"
-                                      title="Delete session"
+                                      onClick={() => {
+                                        navigator.clipboard?.writeText(historyAiAnswer.answer);
+                                        setHistoryAiCopied(true);
+                                        setTimeout(() => setHistoryAiCopied(false), 2000);
+                                      }}
+                                      className="px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] flex items-center gap-1 cursor-pointer"
+                                      title="Copy synthesized answer"
                                     >
-                                      <Trash2 size={12} />
+                                      {historyAiCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                                      <span>{historyAiCopied ? 'Copied' : 'Copy'}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setHistoryAiAnswer(null)}
+                                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer"
+                                      title="Clear answer"
+                                    >
+                                      <X size={12} />
                                     </button>
                                   </div>
-                                  {matchingSnippet && (
-                                    <p className="text-[10.5px] text-violet-600 dark:text-violet-400 italic line-clamp-1 mb-1">
-                                      "{matchingSnippet}"
-                                    </p>
-                                  )}
-                                  <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-zinc-500">
-                                    <span>{sess.date}</span>
-                                    <span className="font-mono">{sess.messages?.length || 0} messages</span>
-                                  </div>
                                 </div>
-                              );
-                            });
-                          })()}
-                        </div>
+
+                                <div className="text-slate-800 dark:text-zinc-200 leading-relaxed font-normal bg-violet-50/40 dark:bg-violet-950/20 p-3 rounded-xl border border-violet-200/50 dark:border-violet-900/30">
+                                  {renderFormattedMessageText(historyAiAnswer.answer, null)}
+                                </div>
+
+                                {historyAiAnswer.sources && historyAiAnswer.sources.length > 0 && (
+                                  <div className="pt-1 border-t border-black/[0.05] dark:border-white/[0.05]">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 tracking-wider block mb-1">
+                                      Referenced Archived Sessions:
+                                    </span>
+                                    <div className="space-y-1">
+                                      {historyAiAnswer.sources.map((src) => {
+                                        const actualSession = aiChatSessions.find(s => s.id === src.id);
+                                        return (
+                                          <div
+                                            key={src.id}
+                                            onClick={() => {
+                                              if (actualSession) {
+                                                handleSelectPastAiSession(actualSession);
+                                                setIsAiHistoryOpen(false);
+                                              }
+                                            }}
+                                            className="p-1.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.04] hover:bg-violet-50 dark:hover:bg-violet-950/40 border border-transparent hover:border-violet-200 dark:hover:border-violet-800/40 cursor-pointer transition-colors flex items-center justify-between"
+                                            title="Click to open this session in chat"
+                                          >
+                                            <span className="font-semibold text-[11px] text-slate-700 dark:text-zinc-300 truncate max-w-[240px]">
+                                              {src.title}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 dark:text-zinc-500">{src.date}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="py-6 text-center text-slate-400 dark:text-zinc-500 space-y-2">
+                                <Sparkles size={20} className="mx-auto text-violet-500 opacity-60" />
+                                <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Ask Memory across Past AI Sessions</p>
+                                <p className="text-[10.5px] max-w-xs mx-auto leading-normal">
+                                  Type any natural language question above to receive a synthesized answer from all {aiChatSessions.length} archived chats.
+                                </p>
+                                {aiChatSessions.length > 0 && (
+                                  <div className="pt-2 flex flex-wrap gap-1.5 justify-center max-w-xs mx-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const prompt = "Summarize our previous research";
+                                        setAiHistorySearchQuery(prompt);
+                                        handleRunHistoryAiSearch(prompt);
+                                      }}
+                                      className="px-2 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-violet-50 dark:hover:bg-violet-950/40 text-[10.5px] text-violet-600 dark:text-violet-400 font-medium cursor-pointer transition-colors"
+                                    >
+                                      "Summarize our previous research"
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const prompt = "What decisions were made?";
+                                        setAiHistorySearchQuery(prompt);
+                                        handleRunHistoryAiSearch(prompt);
+                                      }}
+                                      className="px-2 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-violet-50 dark:hover:bg-violet-950/40 text-[10.5px] text-violet-600 dark:text-violet-400 font-medium cursor-pointer transition-colors"
+                                    >
+                                      "What decisions were made?"
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Filter Mode: Session List */
+                          <div className="max-h-72 overflow-y-auto thin-scrollbar space-y-1 py-1">
+                            {(() => {
+                              const filtered = aiChatSessions.filter(sess => {
+                                if (!aiHistorySearchQuery.trim()) return true;
+                                const q = aiHistorySearchQuery.toLowerCase();
+                                const matchTitle = (sess.title || '').toLowerCase().includes(q);
+                                const matchContent = (sess.messages || []).some(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                                return matchTitle || matchContent;
+                              });
+
+                              if (filtered.length === 0) {
+                                return (
+                                  <div className="py-8 text-center text-slate-400 dark:text-zinc-500">
+                                    <MessageSquare size={18} className="mx-auto mb-1.5 opacity-40" />
+                                    <p className="text-[11.5px] font-medium">
+                                      {aiHistorySearchQuery.trim() ? 'No matching archived sessions' : 'No archived AI chats yet.'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                                      {aiHistorySearchQuery.trim() ? 'Try different keywords' : 'Click "New Chat" during a chat to archive it to history.'}
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              return filtered.map((sess) => {
+                                let matchingSnippet = null;
+                                if (aiHistorySearchQuery.trim()) {
+                                  const q = aiHistorySearchQuery.toLowerCase();
+                                  const foundMsg = (sess.messages || []).find(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                                  if (foundMsg) {
+                                    matchingSnippet = foundMsg.text || foundMsg.rawTranscript;
+                                  }
+                                }
+
+                                return (
+                                  <div
+                                    key={sess.id}
+                                    onClick={() => {
+                                      handleSelectPastAiSession(sess);
+                                      setAiHistorySearchQuery('');
+                                    }}
+                                    className="p-2.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.05] cursor-pointer group/sess transition-colors border border-transparent hover:border-black/[0.04] dark:hover:border-white/[0.04]"
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="font-semibold text-slate-800 dark:text-zinc-100 truncate text-[12px] flex-1 pr-2">
+                                        {sess.title}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleDeleteAiSession(e, sess.id)}
+                                        className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover/sess:opacity-100 transition-all cursor-pointer"
+                                        title="Delete session"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                    {matchingSnippet && (
+                                      <p className="text-[10.5px] text-violet-600 dark:text-violet-400 italic line-clamp-1 mb-1">
+                                        "{matchingSnippet}"
+                                      </p>
+                                    )}
+                                    <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-zinc-500">
+                                      <span>{sess.date}</span>
+                                      <span className="font-mono">{sess.messages?.length || 0} messages</span>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -3061,66 +3474,208 @@ ${systemPrompt}`
             </div>
           </header>
 
-          {/* Search Drawer */}
+          {/* Search Drawer with Dual-Mode (Find / Ask AI) */}
           {isChatSearchOpen && (
-            <div className="px-6 py-2 bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] flex items-center justify-between gap-3 shadow-2xs">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={chatSearchQuery}
-                  onChange={(e) => setChatSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (e.shiftKey) handlePrevSearchMatch();
-                      else handleNextSearchMatch();
-                    } else if (e.key === 'Escape') {
-                      setIsChatSearchOpen(false);
-                      setChatSearchQuery('');
+            <div className="bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+              <div className="px-6 py-2 flex items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  {chatSearchMode === 'ai' ? (
+                    <Sparkles size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+                  ) : (
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  )}
+                  <input
+                    type="text"
+                    value={chatSearchQuery}
+                    onChange={(e) => {
+                      setChatSearchQuery(e.target.value);
+                      if (chatSearchMode === 'ai' && chatAiAnswer) {
+                        setChatAiAnswer(null);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (chatSearchMode === 'ai') {
+                          handleRunInChatAiSearch(chatSearchQuery);
+                        } else {
+                          if (e.shiftKey) handlePrevSearchMatch();
+                          else handleNextSearchMatch();
+                        }
+                      } else if (e.key === 'Escape') {
+                        setIsChatSearchOpen(false);
+                        setChatSearchQuery('');
+                        setChatAiAnswer(null);
+                      }
+                    }}
+                    placeholder={
+                      chatSearchMode === 'ai'
+                        ? `Ask anything about this chat with ${currentChat?.name || 'contact'} in natural language (Press Enter)...`
+                        : "Search keywords in messages (Press Enter for next)..."
                     }
-                  }}
-                  placeholder="Search keywords in messages (Press Enter for next)..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40 transition-all"
-                  autoFocus
-                />
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0 select-none">
-                {chatSearchQuery.trim() && (
-                  <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-medium px-1">
-                    {inChatMatchingMsgIds.length > 0
-                      ? `${chatSearchMatchIndex + 1} of ${inChatMatchingMsgIds.length}`
-                      : '0 matches'}
-                  </span>
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40 transition-all"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Segmented Mode Switcher: Slightly rounded rectangle (Apple-style) */}
+                <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06] select-none shrink-0">
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setChatSearchMode('find');
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                      chatSearchMode === 'find'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold outline outline-1 outline-black/[0.08] dark:outline-white/[0.1]'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    <Search size={11} className={chatSearchMode === 'find' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                    <span>Find</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setChatSearchMode('ai');
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                      chatSearchMode === 'ai'
+                        ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-2xs font-bold outline outline-1 outline-violet-500/50'
+                        : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300'
+                    }`}
+                  >
+                    <Sparkles size={11} className={chatSearchMode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                    <span>Ask AI</span>
+                  </button>
+                </div>
+
+                {/* Find Mode Controls (Counter & Chevrons) */}
+                {chatSearchMode === 'find' && (
+                  <div className="flex items-center gap-1.5 shrink-0 select-none">
+                    {chatSearchQuery.trim() && (
+                      <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-medium px-1">
+                        {inChatMatchingMsgIds.length > 0
+                          ? `${chatSearchMatchIndex + 1} of ${inChatMatchingMsgIds.length}`
+                          : '0 matches'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handlePrevSearchMatch}
+                      disabled={inChatMatchingMsgIds.length === 0}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      title="Previous match (Shift+Enter)"
+                    >
+                      <ChevronUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextSearchMatch}
+                      disabled={inChatMatchingMsgIds.length === 0}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      title="Next match (Enter)"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={handlePrevSearchMatch}
-                  disabled={inChatMatchingMsgIds.length === 0}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                  title="Previous match (Shift+Enter)"
-                >
-                  <ChevronUp size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextSearchMatch}
-                  disabled={inChatMatchingMsgIds.length === 0}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                  title="Next match (Enter)"
-                >
-                  <ChevronDown size={14} />
-                </button>
+
+                {/* Ask AI Mode Synthesize Button */}
+                {chatSearchMode === 'ai' && (
+                  <button
+                    type="button"
+                    onClick={() => handleRunInChatAiSearch(chatSearchQuery)}
+                    disabled={!chatSearchQuery.trim() || chatAiLoading}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                  >
+                    {chatAiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    <span>Synthesize</span>
+                  </button>
+                )}
+
                 <div className="h-3.5 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+
+                {/* Close Drawer */}
                 <button
                   type="button"
-                  onClick={() => { setIsChatSearchOpen(false); setChatSearchQuery(''); }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                  onClick={() => { setIsChatSearchOpen(false); setChatSearchQuery(''); setChatAiAnswer(null); }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer shrink-0"
                   title="Close search (Esc)"
                 >
                   <X size={14} />
                 </button>
               </div>
+
+              {/* In-Chat AI Synthesized Answer Card */}
+              {chatSearchMode === 'ai' && (chatAiLoading || chatAiAnswer) && (
+                <div className="px-6 py-3 bg-violet-50/50 dark:bg-violet-950/20 border-t border-violet-100 dark:border-violet-900/30 text-xs">
+                  {chatAiLoading ? (
+                    <div className="flex items-center gap-2.5 py-2 text-violet-700 dark:text-violet-300 font-medium">
+                      <Loader2 size={15} className="animate-spin text-violet-600" />
+                      <span>Analyzing chat transcript and synthesizing natural language response...</span>
+                    </div>
+                  ) : chatAiAnswer && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold">
+                          <Sparkles size={13} className="text-violet-600" />
+                          <span>AI Chat Synthesis</span>
+                          <span className="text-[10.5px] font-normal text-slate-400 dark:text-zinc-500">for "{chatAiAnswer.query}"</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard?.writeText(chatAiAnswer.answer);
+                              setChatAiCopied(true);
+                              setTimeout(() => setChatAiCopied(false), 2000);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] flex items-center gap-1 cursor-pointer"
+                            title="Copy answer"
+                          >
+                            {chatAiCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                            <span>{chatAiCopied ? 'Copied' : 'Copy'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChatAiAnswer(null)}
+                            className="p-1 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer"
+                            title="Dismiss answer"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Natural language synthesized answer with markdown */}
+                      <div className="text-slate-800 dark:text-zinc-200 leading-relaxed font-normal bg-white dark:bg-zinc-900 p-3 rounded-xl border border-violet-200/50 dark:border-violet-800/40 shadow-2xs">
+                        {renderFormattedMessageText(chatAiAnswer.answer, null)}
+                      </div>
+
+                      {/* Citations */}
+                      {chatAiAnswer.sources && chatAiAnswer.sources.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 tracking-wider">Relevant Citations:</span>
+                          {chatAiAnswer.sources.map((s, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-[10.5px] text-slate-600 dark:text-zinc-300"
+                              title={s.snippet}
+                            >
+                              <span className="font-semibold text-violet-600 dark:text-violet-400">{s.sender}:</span>
+                              <span className="truncate max-w-[140px]">{s.snippet}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
