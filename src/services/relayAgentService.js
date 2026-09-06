@@ -773,9 +773,91 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
     }
   }
 
+  // Extract interactive clarification multi-choice card if present
+  const { cleanText, clarification } = extractClarificationFromText(replyText);
+
   return {
-    replyText,
+    replyText: cleanText || replyText,
     actionCard,
-    referenceSources
+    referenceSources,
+    clarification
   };
 }
+
+/**
+ * Extracts interactive clarification question and options from agent responses.
+ * Detects explicit clarification JSON/markdown blocks as well as heuristic
+ * numbered/bulleted options presented after a clarifying question.
+ */
+export function extractClarificationFromText(text) {
+  if (!text || typeof text !== 'string') return { cleanText: text || '', clarification: null };
+
+  // 1. Explicit fenced clarification block: ```clarification ... ```
+  const blockMatch = text.match(/```(?:clarification|json:clarification)\s*([\s\S]*?)```/i);
+  if (blockMatch) {
+    try {
+      const parsed = JSON.parse(blockMatch[1].trim());
+      const cleanText = text.replace(blockMatch[0], '').trim();
+      if (parsed.question && Array.isArray(parsed.options) && parsed.options.length >= 2) {
+        return {
+          cleanText,
+          clarification: {
+            question: parsed.question,
+            options: parsed.options,
+            allowCustom: parsed.allowCustom !== false,
+            allowSkip: parsed.allowSkip !== false
+          }
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 2. Embedded JSON { "clarification": { ... } }
+  const jsonMatch = text.match(/\{[\s\n\r]*"clarification"[\s\n\r]*:\s*\{[\s\S]*?\}[\s\n\r]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const cleanText = text.replace(jsonMatch[0], '').trim();
+      if (parsed.clarification?.question && Array.isArray(parsed.clarification?.options)) {
+        return {
+          cleanText,
+          clarification: {
+            question: parsed.clarification.question,
+            options: parsed.clarification.options,
+            allowCustom: parsed.clarification.allowCustom !== false,
+            allowSkip: parsed.clarification.allowSkip !== false
+          }
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 3. Heuristic clarification detection:
+  // Check if text ends with or contains a clarifying question followed by 2 to 6 numbered or bulleted options
+  const optionRegex = /(?:^|\n)\s*(?:(\d+)[.)]|[-*•])\s+([^\n]+)/g;
+  const matches = [...text.matchAll(optionRegex)];
+  if (matches.length >= 2 && matches.length <= 6) {
+    const firstMatchIdx = matches[0].index;
+    const preText = text.slice(0, firstMatchIdx).trim();
+    const hasPromptSignal = preText.includes('?') || preText.endsWith(':') || /(options|which|choose|select|prefer|target)/i.test(preText);
+
+    if (hasPromptSignal) {
+      const sentences = preText.split(/(?<=[.?!:])\s+/);
+      const questionTitle = sentences[sentences.length - 1] || 'Please select an option:';
+      const extractedOptions = matches.map(m => m[2].trim());
+
+      return {
+        cleanText: preText,
+        clarification: {
+          question: questionTitle.replace(/^[-*•#\s]+/, '').trim(),
+          options: extractedOptions,
+          allowCustom: true,
+          allowSkip: true
+        }
+      };
+    }
+  }
+
+  return { cleanText: text, clarification: null };
+}
+

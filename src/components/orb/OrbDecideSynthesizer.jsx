@@ -5,12 +5,14 @@ import {
   TrendingUp, HelpCircle, FileText, Table, Presentation, Video,
   CheckSquare, ShieldAlert, Plus, Layers, Search, SlidersHorizontal,
   GitBranch, Check, Compass, ShieldCheck, Loader2, ChevronDown,
-  Settings, Server, Cpu, Sparkles, Wifi, WifiOff, X, Key, RefreshCw,
+  Settings, Server, Cpu, Wifi, WifiOff, X, Key, RefreshCw,
   ExternalLink, Eye, Maximize2, Minimize2, Network, Shield, Scale,
   BookOpen, Target, Activity, AlertCircle, ArrowUpRight, Zap, MessageSquare
 } from 'lucide-react';
 import { RegaarderProductIcon, RegaarderAiIcon, OrbIcon } from '../RegaarderProductIcons';
 import OrbDecideSelectionPill from './OrbDecideSelectionPill';
+import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
+import { extractClarificationFromText } from '../../services/relayAgentService';
 import { synthesizeStrategicDecision } from '../../services/orbKnowledgeGraphService';
 import { 
   generateOrbDecisionSynthesis, 
@@ -55,6 +57,9 @@ export default function OrbDecideSynthesizer({
   // Text selection & Quote Reply state
   const [selectionState, setSelectionState] = useState(null);
   const [activeQuoteContext, setActiveQuoteContext] = useState(null);
+  
+  // Adaptive Clarification Card state
+  const [activeClarification, setActiveClarification] = useState(null);
   
   const timerRef = useRef(null);
   const modelPickerRef = useRef(null);
@@ -240,11 +245,27 @@ export default function OrbDecideSynthesizer({
       if (result?.visualReasoning?.visualType) {
         setVisualMode(result.visualReasoning.visualType);
       }
+
+      // Check for structured clarification or extract from direct answer
+      if (result?.clarification) {
+        setActiveClarification(result.clarification);
+      } else if (result?.directAnswer) {
+        const parsed = extractClarificationFromText(result.directAnswer);
+        if (parsed && parsed.clarification) {
+          setActiveClarification(parsed.clarification);
+          result.directAnswer = parsed.cleanText;
+        } else {
+          setActiveClarification(null);
+        }
+      } else {
+        setActiveClarification(null);
+      }
     } catch (err) {
       console.warn('Live AI synthesis failed, falling back to deterministic reasoning:', err);
       const fallback = synthesizeStrategicDecision(queryText, { entities, edges });
       setLiveSynthesis(fallback);
       setActiveQuery(queryText);
+      setActiveClarification(null);
     } finally {
       setIsSynthesizing(false);
       setSynthesisStepText('');
@@ -526,6 +547,28 @@ export default function OrbDecideSynthesizer({
               <div className="w-20 h-1 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
                 <div className="h-full bg-[#7C5ACF] rounded-full animate-pulse w-3/4" />
               </div>
+            </div>
+          )}
+
+          {/* ── Adaptive Clarification Card (Compact Variant for Orb Decisions) ── */}
+          {activeClarification && !isSynthesizing && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+              <InteractiveClarificationCard
+                clarification={activeClarification}
+                variant="compact"
+                onSelectOption={(optionLabel) => {
+                  setActiveClarification(null);
+                  const followUp = `[Clarification Response]: ${optionLabel}`;
+                  setQuestion(followUp);
+                  triggerSynthesize(followUp);
+                }}
+                onCustomReply={() => {
+                  setActiveClarification(null);
+                  queryInputRef.current?.focus();
+                }}
+                onSkip={() => setActiveClarification(null)}
+                onDismiss={() => setActiveClarification(null)}
+              />
             </div>
           )}
 

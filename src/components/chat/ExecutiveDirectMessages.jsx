@@ -17,7 +17,8 @@ import {
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
-import { processRelayAgentMessage } from '../../services/relayAgentService';
+import { processRelayAgentMessage, extractClarificationFromText } from '../../services/relayAgentService';
+import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
 
 // Quick Translation Languages for Selection Writing Tools
 const TRANSLATE_LANGUAGES = [
@@ -326,6 +327,13 @@ export default function ExecutiveDirectMessages({
   const [emojiSearch, setEmojiSearch] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // ── Agent Clarification & Multi-Choice Follow-up Card ──
+  const [activeClarification, setActiveClarification] = useState(null);
+
+  useEffect(() => {
+    setActiveClarification(null);
+  }, [activeContactId]);
 
   // ── Floating AI Writing Tools Toolbar (Triggered on text selection in input) ──
   const [selectionToolbarState, setSelectionToolbarState] = useState(null); // { start, end, text }
@@ -2018,11 +2026,13 @@ Provide a concise natural language synthesis answering the user's question from 
   };
 
   // Dispatch prompt to real model (Ollama / Local LM / Cloud)
-  const handleSendMessage = async (e) => {
-    e?.preventDefault();
-    if (!messageInput.trim()) return;
+  const handleSendMessage = async (e, directText = null) => {
+    e?.preventDefault?.();
+    const rawText = typeof directText === 'string' ? directText : messageInput;
+    if (!rawText || !rawText.trim()) return;
 
-    const trimmed = messageInput.trim();
+    const trimmed = rawText.trim();
+    setActiveClarification(null);
 
     if (editingMessageId) {
       setThreadMessages(prev => ({
@@ -2085,10 +2095,11 @@ Provide a concise natural language synthesis answering the user's question from 
 
       let actionCard = null;
       let referenceSources = [];
+      let agentOutcome = null;
 
       try {
         // 1. Execute Relay Autonomous Agent Harness (Layer 2 intent routing & tool execution)
-        const agentOutcome = await processRelayAgentMessage({
+        agentOutcome = await processRelayAgentMessage({
           userPrompt: trimmed,
           onCallAi,
           customModel: activeEngineId,
@@ -2177,6 +2188,19 @@ ${systemPrompt}`
         } else {
           aiResponseText = `Connected to ${activeModelDisplay.name}. Ready to assist with your workspace tasks.`;
         }
+      }
+
+      // ── Process Agent Clarification Card (Interactive Follow-up) ──
+      let detectedClarification = agentOutcome?.clarification || null;
+      if (!detectedClarification && aiResponseText) {
+        const parsed = extractClarificationFromText(aiResponseText);
+        if (parsed && parsed.clarification) {
+          detectedClarification = parsed.clarification;
+          aiResponseText = parsed.cleanText;
+        }
+      }
+      if (detectedClarification) {
+        setActiveClarification(detectedClarification);
       }
 
       setIsTyping(false);
@@ -4415,6 +4439,26 @@ ${systemPrompt}`
                     >
                       <X size={13} />
                     </button>
+                  </div>
+                )}
+
+                {/* ── Docked Agent Clarification Card (Interactive Multi-Choice & Follow-up) ── */}
+                {activeClarification && (
+                  <div className="mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <InteractiveClarificationCard
+                      clarification={activeClarification}
+                      variant="docked"
+                      isDarkMode={isDarkMode}
+                      onSelectOption={(optionLabel) => {
+                        handleSendMessage(null, optionLabel);
+                      }}
+                      onCustomReply={() => {
+                        setActiveClarification(null);
+                        textInputRef.current?.focus();
+                      }}
+                      onSkip={() => setActiveClarification(null)}
+                      onDismiss={() => setActiveClarification(null)}
+                    />
                   </div>
                 )}
 
