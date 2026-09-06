@@ -14,6 +14,7 @@ import DiffMatchPatch from 'diff-match-patch';
 import { mutateAndPropagate } from './universalContextGraph.js';
 import * as docsCommandApi from './docsCommandApi.js';
 import { dispatchWorkspaceMutation } from './workspaceStateBus.js';
+import { runAcceptanceCriteria } from './workspaceTestEngine.js';
 
 export const SECURITY_CLEARANCE_LEVELS = {
   STANDARD: 'STANDARD',
@@ -292,6 +293,19 @@ export function stageMutation({
     branch.targetApps.push(targetApp);
   }
 
+  // Evaluate automated acceptance criteria & verification checks (Pillar 5B)
+  try {
+    branch.acceptanceChecks = runAcceptanceCriteria({
+      branchId: branch.id,
+      mutations: branch.mutations,
+      beforeText,
+      afterText,
+      diffChunks: chunks
+    });
+  } catch (testErr) {
+    console.warn('[StagingEngine] Acceptance criteria check failed:', testErr);
+  }
+
   safeSetItem(STAGING_STORAGE_KEY, stagingBranchesCache);
   notifyStagingListeners();
 
@@ -301,6 +315,7 @@ export function stageMutation({
     mutationId: mutation.mutationId,
     prNumber: branch.prNumber,
     targetApp: mutation.targetApp,
+    acceptanceChecks: branch.acceptanceChecks || null,
     mutation
   };
 }

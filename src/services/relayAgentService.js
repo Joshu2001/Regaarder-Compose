@@ -23,6 +23,7 @@ import { mcpClient } from './universalMcpBridge.js';
 import * as intentScheduler from './intentSchedulerEngine.js';
 import * as spatialTopology from './spatialTopologyEngine.js';
 import * as roomObserver from './roomObserverEngine.js';
+import * as agentHandoffBus from './agentHandoffBus.js';
 import { runAgentExecutionLoop } from './llmProviderService.js';
 
 /**
@@ -182,15 +183,20 @@ export function classifyRelayIntent(prompt) {
     /(?:harvest|observe|transcribe|listen|monitor|join)\s+(?:an?|the)?\s*(?:room|meeting|audio|call|speech|discussion|in-meeting)/i.test(text) ||
     /(?:meeting observer|room observer|room context|in-meeting observer|meeting transcript|harvest meeting)/i.test(text)
   );
-  const isDocCreation = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
-  const isTaskSchedule = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
+  const isAgentHandoff = !isTranslation && !isMemoryInstruction && (
+    /(?:handoff|hand-off|delegate to|dispatch to|subagent|multi-agent|peer agent|specialist agent)/i.test(text) ||
+    /(?:browser researcher|calendar negotiator|finance modeler|doc synthesizer)\b/i.test(text)
+  );
+  const isDocCreation = !isTranslation && !isMemoryInstruction && !isAgentHandoff && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
+  const isTaskSchedule = !isTranslation && !isMemoryInstruction && !isAgentHandoff && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
   const isSheetUpdate = !isTranslation && !isMemoryInstruction && (/(update|set|change|write|fill)\s+(the\s+)?(sheet|cell|row|column|cells)\s+([a-z]\d+|\d+)/i.test(text) || /(update|modify)\s+(spreadsheet|sheets)/i.test(text));
   const isCitationQuery = !isTranslation && !isMemoryInstruction && (/(where is|where does it mention|find in docs|search docs for|cite where|what doc discusses|reference for|show me where)/i.test(text) || /\b(citation|citations|source reference)\b/i.test(text));
   const isIngestDocument = !isSheetUpdate && !isCitationQuery && !isDocCreation && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester &&
     /(ingest|import|upload|parse|absorb)\s+(a\s+)?(file|document|pdf|csv|spreadsheet|docx|pptx)/i.test(text);
 
   return {
-    isAction: isDocCreation || isTaskSchedule || isScheduleMeeting || isSheetUpdate || isCitationQuery || isMemoryInstruction || isIngestDocument || isDirectiveQueue || isWhiteboardTopology || isRoomHarvester,
+    isAction: isDocCreation || isTaskSchedule || isScheduleMeeting || isSheetUpdate || isCitationQuery || isMemoryInstruction || isIngestDocument || isDirectiveQueue || isWhiteboardTopology || isRoomHarvester || isAgentHandoff,
+    isAgentHandoff,
     isDocCreation,
     isTaskSchedule,
     isDirectiveQueue,
@@ -426,6 +432,51 @@ export async function processRelayAgentMessage(args = {}) {
     };
 
     replyText = `The **Room Context Harvester & Multi-Agent In-Meeting Observer** is actively monitoring "${updatedSession.title}".\n\n- **Active Observers:** ${updatedSession.activeObservers.map(o => o.name).join(', ')}\n- **Speaker Turns Processed:** ${updatedSession.summary.totalTurns}\n- **Epistemic Decisions Harvested:** ${updatedSession.summary.decisionsCount}\n- **Directives Queued:** ${updatedSession.summary.directivesCount}\n${updatedSession.activePrBranchId ? `- **Staged Meeting PR:** \`${updatedSession.activePrBranchId}\`\n` : ''}\nYou can inspect live transcripts, consensus cards, and staged PR diffs in the Room Observer Inspector.`;
+
+    return {
+      replyText,
+      actionCard,
+      referenceSources: []
+    };
+  }
+
+  // Handle Multi-Agent Handoff & Specialist Delegation Substrate
+  if (intent.isAgentHandoff) {
+    const isBrowser = /browser|web|scrape|research|url|http/i.test(trimmed);
+    const isScheduler = /schedule|calendar|slot|meeting|negotiat/i.test(trimmed);
+    const isFinance = /finance|sheet|financial|matrix|reconcil|model/i.test(trimmed);
+    const targetCapability = isBrowser
+      ? 'browser_research'
+      : (isScheduler ? 'scheduler_negotiation' : (isFinance ? 'finance_modeling' : 'doc_synthesis'));
+
+    const envelope = await agentHandoffBus.dispatchAgentHandoff({
+      sourceAgentId: 'agent_relay_orchestrator',
+      targetCapability,
+      intent: trimmed,
+      contextPayload: {
+        rawDirective: trimmed,
+        targetUrl: isBrowser ? 'https://ec.europa.eu/energy/data-analysis' : undefined
+      },
+      parameters: {
+        searchTopic: trimmed,
+        maxRounds: 4
+      }
+    });
+
+    actionCard = {
+      type: 'agent_handoff',
+      subType: 'dispatched',
+      title: `A2A Handoff: ${envelope.handoffId}`,
+      handoffId: envelope.handoffId,
+      sourceAgentId: envelope.sourceAgentId,
+      targetAgentId: envelope.targetAgentId,
+      targetCapability: envelope.targetCapability,
+      lifecycle: envelope.lifecycle,
+      description: `Delegated directive to ${envelope.targetAgentId} (${envelope.targetCapability}) with standardized envelope and alternating offer loop.`,
+      previewSnippet: trimmed
+    };
+
+    replyText = `I have dispatched an **Agent-to-Agent (A2A) Handoff** (\`${envelope.handoffId}\`).\n\n- **Source:** \`${envelope.sourceAgentId}\` (Relay Director)\n- **Specialist:** \`${envelope.targetAgentId}\` (\`${envelope.targetCapability}\`)\n- **State:** \`${envelope.lifecycle}\`\n- **Directive:** "${trimmed}"\n\nYou can track alternating counter-offers, utility convergence, and staged PR diffs in the **Agent Handoffs** tab in Memory Dashboard.`;
 
     return {
       replyText,

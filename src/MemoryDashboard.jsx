@@ -6,7 +6,7 @@ import {
   SlidersHorizontal, Calendar, Zap, MessageSquare, Database, X,
   Maximize2, Minimize2, Eye, ExternalLink, ShieldCheck, Compass,
   AlertTriangle, Tag as TagIcon, Hash, CheckCircle2, ChevronRight,
-  Copy, Terminal, Code2, Play, Calculator, UploadCloud, Radio
+  Copy, Terminal, Code2, Play, Calculator, UploadCloud, Radio, ShieldAlert
 } from 'lucide-react';
 import { MemoryIcon, TasksIcon, OrbIcon, RegaarderAiIcon, RegaarderProductIcon } from './components/RegaarderProductIcons';
 import { 
@@ -28,11 +28,15 @@ import OmniPortalInspector from './components/portal/OmniPortalInspector';
 import DirectiveQueueInspector from './components/tasks/DirectiveQueueInspector';
 import SpatialTopologyInspector from './components/whiteboard/SpatialTopologyInspector';
 import RoomContextHarvesterInspector from './components/room/RoomContextHarvesterInspector';
+import AutonomyGuardrailsInspector from './components/autonomy/AutonomyGuardrailsInspector';
+import MultiAgentHandoffStudio from './components/agents/MultiAgentHandoffStudio';
 
 const MEMORY_TABS = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'decisions', label: 'Decisions', icon: TasksIcon },
   { id: 'rules', label: 'Rules & Propagation', icon: ShieldCheck },
+  { id: 'autonomy_guardrails', label: 'Autonomy & Tests', icon: ShieldAlert },
+  { id: 'agent_handoffs', label: 'Agent Handoffs', icon: Network },
   { id: 'mcp', label: 'MCP Protocol', icon: Zap },
   { id: 'canvas_blocks', label: 'Canvas AST', icon: Layers },
   { id: 'matrix_engine', label: 'Matrix Engine', icon: Calculator },
@@ -402,6 +406,18 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                 label="Rules & Propagation" 
                 isActive={activeTab === 'rules'} 
                 onClick={() => setActiveTab('rules')} 
+              />
+              <SidebarNavItem 
+                icon={<ShieldAlert size={14} />} 
+                label="Autonomy & Tests" 
+                isActive={activeTab === 'autonomy_guardrails'} 
+                onClick={() => setActiveTab('autonomy_guardrails')} 
+              />
+              <SidebarNavItem 
+                icon={<Network size={14} />} 
+                label="Agent Handoffs" 
+                isActive={activeTab === 'agent_handoffs'} 
+                onClick={() => setActiveTab('agent_handoffs')} 
               />
               <SidebarNavItem 
                 icon={<Network size={14} />} 
@@ -846,6 +862,14 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                         )}
                       </div>
                     </div>
+                  )}
+
+                  {activeTab === 'autonomy_guardrails' && (
+                    <AutonomyGuardrailsInspector />
+                  )}
+
+                  {activeTab === 'agent_handoffs' && (
+                    <MultiAgentHandoffStudio />
                   )}
 
                   {activeTab === 'mcp' && (

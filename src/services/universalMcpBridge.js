@@ -41,6 +41,9 @@ import * as directiveEngine from './directiveQueueEngine.js';
 import * as spatialTopology from './spatialTopologyEngine.js';
 import * as roomObserver from './roomObserverEngine.js';
 import * as meneurCommandDeck from './meneurCommandDeckService.js';
+import * as actionPolicyEngine from './actionPolicyEngine.js';
+import * as workspaceTestEngine from './workspaceTestEngine.js';
+import * as agentHandoffBus from './agentHandoffBus.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MCP RESOURCE CATALOG SPECIFICATION
@@ -153,6 +156,24 @@ export const MCP_RESOURCES = [
     uri: 'workspace://browser/command-deck',
     name: 'Meneur Browser Command Deck State',
     description: 'Active timetable, contextual focus shields, pending research directives, and tab session archives in structured Markdown.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://policies/active',
+    name: 'Active Autonomy & Guardrail Policies',
+    description: 'Declarative per-action autonomy tier policies, monetary limits, and destructive action quarantine rules in structured JSON.',
+    mimeType: 'application/json'
+  },
+  {
+    uri: 'workspace://tests/results',
+    name: 'Acceptance Criteria & Verification Test Log',
+    description: 'Recent verification and unit test suite runs across staged documents, models, and tasks in structured Markdown.',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'workspace://agents/handoff-queue',
+    name: 'Multi-Agent Handoff & Alternating Negotiation Queue',
+    description: 'Active and completed A2A handoff envelopes, alternating negotiation rounds, and Pareto convergence logs in Markdown.',
     mimeType: 'text/markdown'
   }
 ];
@@ -493,6 +514,175 @@ export const MCP_STATE_TOOLS = [
         data: res
       };
     }
+  },
+  {
+    name: 'evaluate_action_autonomy',
+    label: 'Evaluate Action Autonomy Tier',
+    category: 'autonomy_guardrails',
+    description: 'Inspect whether an impending action/tool call will be permitted to auto-execute or redirected into a staging PR.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        toolName: { type: 'string', description: 'Tool name to evaluate' },
+        params: { type: 'object', description: 'Arguments planned for the tool' }
+      },
+      required: ['toolName']
+    },
+    execute: async (params) => {
+      const check = actionPolicyEngine.evaluateActionAutonomy(params.toolName, params.params || {});
+      return {
+        success: true,
+        message: `Autonomy Decision: ${check.decision}. ${check.reason}`,
+        data: check
+      };
+    }
+  },
+  {
+    name: 'configure_action_policy',
+    label: 'Configure Action Policy',
+    category: 'autonomy_guardrails',
+    description: 'Register or update a per-action autonomy policy (e.g. monetary budget threshold or protected block).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Policy name' },
+        actionPattern: { type: 'string', description: 'Action or tool glob pattern (e.g. sheets:* or delete_*)' },
+        maxAllowedAuto: { type: 'number', description: 'Maximum numeric value permitted to auto-execute' },
+        description: { type: 'string', description: 'Policy rationale' }
+      },
+      required: ['name', 'actionPattern']
+    },
+    execute: async (params) => {
+      const policy = actionPolicyEngine.savePolicy({
+        name: params.name,
+        actionPattern: params.actionPattern,
+        description: params.description || 'Configured via MCP',
+        category: 'governance',
+        severity: 'STRICT',
+        enabled: true,
+        rules: {
+          type: 'numeric_threshold',
+          field: 'deltaAmount',
+          maxAllowedAuto: params.maxAllowedAuto || 500
+        },
+        defaultDecision: 'REQUIRE_STAGING_PR'
+      });
+      return {
+        success: true,
+        message: `Saved policy '${policy.name}' (${policy.id}).`,
+        data: policy
+      };
+    }
+  },
+  {
+    name: 'run_acceptance_tests',
+    label: 'Run Acceptance & Verification Tests',
+    category: 'verification_tests',
+    description: 'Run automated acceptance criteria assertions against workspace content or staged pull request diffs.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        branchId: { type: 'string', description: 'Optional staging branch ID to test' },
+        beforeText: { type: 'string', description: 'Optional baseline content' },
+        afterText: { type: 'string', description: 'Proposed content to verify' }
+      }
+    },
+    execute: async (params) => {
+      let branch = null;
+      if (params.branchId) {
+        branch = getBranchById(params.branchId);
+      }
+      const testResult = workspaceTestEngine.runAcceptanceCriteria({
+        branchId: params.branchId,
+        mutations: branch?.mutations || [],
+        beforeText: params.beforeText || '',
+        afterText: params.afterText || ''
+      });
+      return {
+        success: testResult.strictPassed,
+        message: testResult.passed ? `All ${testResult.total} acceptance checks PASSED.` : `Verification FAILED: ${testResult.failedCount}/${testResult.total} checks failed.`,
+        data: testResult
+      };
+    }
+  },
+  {
+    name: 'dispatch_agent_handoff',
+    label: 'Dispatch Agent-to-Agent Handoff',
+    category: 'multi_agent',
+    description: 'Dispatch a structured A2A handoff envelope to a specialist agent (browser researcher, calendar negotiator, finance modeler, doc synthesizer).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        targetCapability: { type: 'string', description: 'Capability (browser_research, scheduler_negotiation, finance_modeling, doc_synthesis)' },
+        targetAgentId: { type: 'string', description: 'Optional explicit agent ID' },
+        intent: { type: 'string', description: 'Objective of the handoff' },
+        contextPayload: { type: 'object', description: 'Arbitrary context payload' },
+        parameters: { type: 'object', description: 'Execution parameters' }
+      },
+      required: ['targetCapability', 'intent']
+    },
+    execute: async (params) => {
+      const envelope = await agentHandoffBus.dispatchAgentHandoff({
+        sourceAgentId: 'agent_relay_orchestrator',
+        targetAgentId: params.targetAgentId,
+        targetCapability: params.targetCapability,
+        intent: params.intent,
+        contextPayload: params.contextPayload || {},
+        parameters: params.parameters || {}
+      });
+      return {
+        success: true,
+        message: `Dispatched handoff ${envelope.handoffId} to ${envelope.targetAgentId}.`,
+        data: envelope
+      };
+    }
+  },
+  {
+    name: 'submit_agent_counter_offer',
+    label: 'Submit Peer Agent Counter-Offer',
+    category: 'multi_agent',
+    description: 'Submit an alternating negotiation counter-offer for an active agent handoff session.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        handoffId: { type: 'string', description: 'ID of the active handoff' },
+        counterParams: { type: 'object', description: 'Updated constraints or parameter adjustments' }
+      },
+      required: ['handoffId']
+    },
+    execute: async (params) => {
+      const updated = await agentHandoffBus.submitNegotiationCounterOffer(params.handoffId, params.counterParams || {});
+      return {
+        success: true,
+        message: `Processed counter-offer for ${params.handoffId} (Round: ${updated.negotiationState?.round}, Status: ${updated.negotiationState?.status}).`,
+        data: updated
+      };
+    }
   }
 ];
 
@@ -745,6 +935,65 @@ ${cleanText}`;
       `**Blocked Domains (${activeBlocks.length}):** ${activeBlocks.join(', ') || 'None'}\n` +
       `**Saved Tab Archives:** ${archives.length} sessions\n` +
       (archives.length > 0 ? archives.map(a => `- **${a.title}** (${a.tabs.length} tabs) - *${new Date(a.createdAt).toLocaleTimeString()}*`).join('\n') : '*No saved tab sessions.*');
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
+  if (uri === 'workspace://policies/active') {
+    const policies = actionPolicyEngine.getActivePolicies();
+    return {
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(policies, null, 2)
+    };
+  }
+
+  if (uri === 'workspace://tests/results') {
+    const activeBranches = getActiveBranches();
+    let md = '### WORKSPACE VERIFICATION & ACCEPTANCE TEST AUDIT\n\n';
+    if (activeBranches.length === 0) {
+      md += '*No active staged pull requests awaiting verification.*';
+    } else {
+      activeBranches.forEach(b => {
+        const checks = b.acceptanceChecks || workspaceTestEngine.runAcceptanceCriteria({ branchId: b.id, mutations: b.mutations });
+        md += `#### PR #${b.prNumber}: ${b.title}\n`;
+        md += `- **Status:** ${checks.passed ? '✓ ALL CHECKS PASSED' : (checks.strictPassed ? '⚠️ ADVISORY WARNINGS' : '❌ STRICT CHECKS FAILED')}\n`;
+        md += `- **Pass Rate:** ${checks.passedCount}/${checks.total} tests passing\n`;
+        checks.testResults.forEach(r => {
+          md += `  - ${r.passed ? '✓' : '❌'} **${r.name}** [${r.severity}]: ${r.message}\n`;
+        });
+        md += '\n';
+      });
+    }
+    return {
+      uri,
+      mimeType: 'text/markdown',
+      text: md
+    };
+  }
+
+  if (uri === 'workspace://agents/handoff-queue') {
+    const queue = agentHandoffBus.getActiveHandoffs();
+    let md = `### MULTI-AGENT HANDOFF & ALTERNATING NEGOTIATION QUEUE (${queue.length} Envelopes)\n\n`;
+    if (queue.length === 0) {
+      md += '*No active agent handoffs in queue.*';
+    } else {
+      queue.forEach(h => {
+        md += `#### Handoff: ${h.handoffId} [${h.lifecycle}]\n`;
+        md += `- **Route:** \`${h.sourceAgentId}\` &rarr; \`${h.targetAgentId}\` (${h.targetCapability})\n`;
+        md += `- **Intent:** ${h.intent}\n`;
+        if (h.negotiationState) {
+          md += `- **Negotiation Status:** ${h.negotiationState.status} (Round ${h.negotiationState.round}/${h.negotiationState.maxRounds}, Utility: ${h.negotiationState.convergenceScore})\n`;
+        }
+        if (h.artifacts && h.artifacts.length > 0) {
+          md += `- **Artifacts Produced:** ${h.artifacts.map(a => a.title || a.type).join(', ')}\n`;
+        }
+        md += '\n';
+      });
+    }
     return {
       uri,
       mimeType: 'text/markdown',

@@ -142,6 +142,39 @@ export default function WorkspaceStagingReviewModal({
             {branch.description && (
               <p className="text-xs text-slate-500 dark:text-zinc-400">{branch.description}</p>
             )}
+
+            {/* Pillar 5B Acceptance Checks Status Pill */}
+            {branch.acceptanceChecks && (
+              <div className="mt-1 flex items-center gap-2 flex-wrap text-xs">
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-medium text-[11px] border ${
+                  branch.acceptanceChecks.passed
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                    : (branch.acceptanceChecks.strictPassed
+                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                        : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20')
+                }`}>
+                  {branch.acceptanceChecks.passed ? (
+                    <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <AlertCircle size={13} className={branch.acceptanceChecks.strictPassed ? 'text-amber-600' : 'text-rose-600'} />
+                  )}
+                  <span>
+                    Verification: {branch.acceptanceChecks.passedCount}/{branch.acceptanceChecks.total} Checks Passed
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                  {branch.acceptanceChecks.testResults.map(t => (
+                    <span key={t.id} title={`${t.name}: ${t.message}`} className={`px-1.5 py-0.2 rounded border font-mono ${
+                      t.passed 
+                        ? 'bg-emerald-500/5 text-emerald-600 border-emerald-500/15' 
+                        : (t.severity === 'STRICT' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold' : 'bg-amber-500/10 text-amber-600 border-amber-500/20')
+                    }`}>
+                      {t.passed ? '✓' : '✗'} {t.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <button

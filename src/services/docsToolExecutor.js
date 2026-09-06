@@ -10,6 +10,7 @@
 import { getToolByName } from './docsToolRegistry.js';
 import * as docsCommandApi from './docsCommandApi.js';
 import { stageMutation, evaluateSecurityGate, isDestructiveTool } from './workspaceStagingEngine.js';
+import { evaluateActionAutonomy, AUTONOMY_DECISION } from './actionPolicyEngine.js';
 
 // In-memory transaction stack for document state undo/redo tracking
 const transactionHistory = [];
@@ -136,15 +137,34 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
     return dryRunResult;
   }
 
-  // 3b. Handle Isolated Staging Mode & Security Clearance Gates (Pillar 3 Sandbox Execution)
+  // 3b. Handle Isolated Staging Mode & Per-Action Autonomy Policy Gates (Pillar 4B & Pillar 3 Sandbox Execution)
+  const policyCheck = evaluateActionAutonomy(toolName, params, context);
   const gateEvaluation = evaluateSecurityGate(toolName, params, context);
   const isDestructive = gateEvaluation.isDestructive || Boolean(toolDef.destructive) || isDestructiveTool(toolName);
   const isExplicitlyConfirmed = Boolean(options.confirmed || context?.confirmed);
 
-  // High-risk/destructive tools must NEVER silently wipe or alter data in production.
-  // If a destructive tool is triggered without explicit confirmation, automatically route it to staging PR.
+  // If policy denies action completely, abort immediately
+  if (policyCheck.decision === AUTONOMY_DECISION.DENY) {
+    const deniedResult = {
+      success: false,
+      toolName,
+      requestId,
+      transactionId: null,
+      message: `[POLICY DENIED] ${policyCheck.reason}`,
+      data: { policyCheck },
+      error: { code: 'AUTONOMY_POLICY_DENIAL', details: policyCheck.reason },
+      warnings: [],
+      timestamp: new Date().toISOString()
+    };
+    executionLogs.push({ ...deniedResult, durationMs: Date.now() - startTime });
+    return deniedResult;
+  }
+
+  // High-risk/destructive tools or actions violating numerical autonomy thresholds
+  // must NEVER silently alter production state; they automatically divert to staging PR.
+  const isPolicyDiverted = policyCheck.decision === AUTONOMY_DECISION.REQUIRE_STAGING_PR;
   const isSecurityDiverted = isDestructive && !isExplicitlyConfirmed && !options.stage && !context?.stage;
-  const isStagedMode = Boolean(options.stage || context?.stage || isSecurityDiverted);
+  const isStagedMode = Boolean(options.stage || context?.stage || isPolicyDiverted || isSecurityDiverted);
 
   if (isStagedMode && (toolDef.mutatesDocument || isDestructive)) {
     let beforeText = currentSnapshot.text || '';
