@@ -364,7 +364,7 @@ export default function RegaarderComposeLanding({
             - Centered, dark navy typography
             - Subtitle directly beneath
           */}
-          <div className="text-center mb-1 sm:mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-7 sm:mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
             <div className="mb-2 flex items-center justify-center">
