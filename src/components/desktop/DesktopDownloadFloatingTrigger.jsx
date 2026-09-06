@@ -4,16 +4,13 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
 /**
  * DesktopDownloadFloatingTrigger
  * 
- * Micro-Refinements:
- * 1. Breathing room: Increased card height slightly (+2–4px via py-3) while keeping
- *    the -8px overlapping stack effect crisp and compact.
- * 2. Shortened Linux subtitle to "Ubuntu · Fedora · Arch" to prevent truncation.
- * 3. Icon prominence: Reduced circular platform icon wrapper size to 24x24px (w-6 h-6,
- *    size 12 icon, subtle opacity) so the visual hierarchy is:
- *    Platform name → platform details → file format → download action.
- * 4. Preserved Windows "Detected" badge and subtle border treatment.
- * 5. Maintained bottom-right positioning, dark surfaces, clean anchor button,
- *    and smooth native Apple-style expansion.
+ * Enhanced Breathing Room & Polish:
+ * - Increased card height & internal breathing room (py-3.5, px-4, min-h-[58px]).
+ * - Adjusted vertical overlap to a comfortable -4px so the stacked cards have generous
+ *   vertical presence and no cramped feeling, while preserving the layered physical deck effect.
+ * - Widened deck slightly to 304px for elegant, airy layout.
+ * - Subtitle "Ubuntu · Fedora · Arch" with comfortable line height and spacing.
+ * - 24x24px subtle icon wrapper with crisp contrast.
  */
 export default function DesktopDownloadFloatingTrigger() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -202,9 +199,9 @@ export default function DesktopDownloadFloatingTrigger() {
         role="menu"
         aria-label="Platform options"
         aria-hidden={!isExpanded}
-        className={`flex flex-col items-stretch w-[288px] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-bottom ${
+        className={`flex flex-col items-stretch w-[304px] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-bottom ${
           isExpanded
-            ? 'opacity-100 translate-y-0 pointer-events-auto mb-1.5'
+            ? 'opacity-100 translate-y-0 pointer-events-auto mb-2'
             : 'opacity-0 translate-y-3 pointer-events-none mb-0 h-0 overflow-hidden'
         }`}
       >
@@ -216,7 +213,8 @@ export default function DesktopDownloadFloatingTrigger() {
           
           // Layered visual hierarchy: Top cards have higher z-index & slightly crisper contrast
           const zIndex = 30 - index;
-          const marginTop = index === 0 ? '0px' : '-8px';
+          // Refined overlap: -4px gives clear layered deck feel without compressing the contents
+          const marginTop = index === 0 ? '0px' : '-4px';
           
           // Subtle restrained styling for detected OS: soft border & elevation without harsh neon outlines
           let cardBg = 'bg-[#141722]/95 hover:bg-[#1a1e2b]/95 text-slate-200 hover:text-white border-white/10 hover:border-white/15';
@@ -245,13 +243,13 @@ export default function DesktopDownloadFloatingTrigger() {
                 marginTop,
                 transitionDelay: isExpanded ? `${index * 30}ms` : `${(2 - index) * 20}ms`
               }}
-              className={`relative overflow-hidden flex flex-col px-3.5 py-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 backdrop-blur-xl ${cardBg}`}
+              className={`relative overflow-hidden flex flex-col justify-center px-4 py-3.5 min-h-[58px] rounded-2xl border text-left cursor-pointer transition-all duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 backdrop-blur-xl ${cardBg}`}
             >
               {/* Card Top Row */}
               <div className="flex items-center justify-between w-full">
                 {/* Left Side: Icon + OS Details */}
-                <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                  {/* Subtle, 15% reduced circular icon wrapper */}
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  {/* Subtle circular icon wrapper */}
                   <div
                     className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
                       isThisCompleted
@@ -272,32 +270,32 @@ export default function DesktopDownloadFloatingTrigger() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-xs text-white leading-tight">
+                    <div className="flex items-center gap-1.5 leading-none">
+                      <span className="font-semibold text-xs text-white">
                         {platform.name}
                       </span>
                       {isThisCompleted ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 font-medium">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-medium leading-none">
                           Downloaded
                         </span>
                       ) : isThisDownloading ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-500/25 text-indigo-300 font-medium animate-pulse">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-indigo-500/25 text-indigo-300 font-medium animate-pulse leading-none">
                           {downloadState.progress}%
                         </span>
                       ) : isDetected ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-white/10 text-slate-300 font-medium border border-white/10">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/10 text-slate-300 font-medium border border-white/10 leading-none">
                           Detected
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-[10px] text-slate-400 group-hover:text-slate-300 block truncate leading-snug mt-0.5">
+                    <span className="text-[11px] text-slate-400 group-hover:text-slate-300 block truncate leading-snug mt-1">
                       {isThisDownloading ? `Downloading binary (${downloadState.progress}%)...` : platform.subtitle}
                     </span>
                   </div>
                 </div>
 
                 {/* Right Side: Extension Tag + Action Icon */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <span
                     className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
                       isDetected || isThisDownloading
@@ -319,7 +317,7 @@ export default function DesktopDownloadFloatingTrigger() {
 
               {/* In-Card Progress Track */}
               {isThisDownloading && (
-                <div className="w-full mt-2 bg-white/10 rounded-full h-1 overflow-hidden">
+                <div className="w-full mt-2.5 bg-white/10 rounded-full h-1 overflow-hidden">
                   <div
                     className="bg-indigo-400 h-full rounded-full transition-all duration-120 ease-out"
                     style={{ width: `${downloadState.progress}%` }}
@@ -344,7 +342,7 @@ export default function DesktopDownloadFloatingTrigger() {
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
-          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 cursor-pointer shadow-lg group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 ${
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 cursor-pointer shadow-lg group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 ${
             downloadState.status === 'downloading'
               ? 'bg-[#181c2b]/98 text-white border-indigo-500/50 shadow-indigo-950/40'
               : isExpanded
