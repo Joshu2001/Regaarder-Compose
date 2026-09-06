@@ -3,7 +3,10 @@ import {
   ComposeIcon,
   SheetIcon,
   DeckIcon,
+  ImportPortalIcon,
   WhiteboardIcon,
+  RoomIcon,
+  MemoryIcon,
   RelayIcon,
 } from '../RegaarderProductIcons';
 
@@ -413,11 +416,9 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 hoveredNode === 'memory' ? "scale-[1.03] -translate-y-1 shadow-[0_18px_46px_-4px_rgba(168,85,247,0.34)] border-purple-400/80" : "",
               ].join(" ")}
             >
-              {/* 4-point curved intelligence spark icon matching reference with soft radiance */}
+              {/* Memory icon matching switchworkspace dropdown */}
               <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-purple-600 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_2px_6px_rgba(168,85,247,0.35)]">
-                <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C12 7.5 16.5 12 22 12C16.5 12 12 16.5 12 22C12 16.5 7.5 12 2 12C7.5 12 12 7.5 12 2Z" />
-                </svg>
+                <MemoryIcon size={21} strokeWidth={1.75} className="text-purple-600 dark:text-purple-300" />
               </div>
               <span className="text-[14.5px] sm:text-[15.5px] font-semibold text-slate-900 dark:text-white tracking-[-0.01em]">
                 Memory
@@ -579,12 +580,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-400 to-violet-600 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(168,85,247,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
-                {/* Upload tray glyph matching Reference Image 2 */}
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
+                <ImportPortalIcon size={16} strokeWidth={1.7} className="text-white" />
               </div>
               <div className="flex flex-col min-w-0 pr-1">
                 <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-100 leading-tight">Import</span>
@@ -624,7 +620,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             </button>
           </div>
 
-          {/* ── 6. Lower Left/Bottom: ROOM (Translucent frosted acrylic glass with video camera glyph) ── */}
+          {/* ── 6. Lower Left/Bottom: ROOM (Translucent frosted acrylic glass with RoomIcon matching switchworkspace dropdown) ── */}
           <div className="absolute bottom-[8%] sm:bottom-[9%] left-[30%] sm:left-[33%] pointer-events-auto">
             <button
               type="button"
@@ -646,11 +642,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               ].join(" ")}
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 text-white flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(20,184,166,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)]">
-                {/* Video camera glyph matching Reference Image 2 */}
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                  <rect x="2" y="6" width="13" height="12" rx="2.5" />
-                  <polygon points="17 10 22 7 22 17 17 14" fill="currentColor" stroke="currentColor" />
-                </svg>
+                <RoomIcon size={16} strokeWidth={1.7} className="text-white" />
               </div>
               <div className="flex flex-col min-w-0 pr-1">
                 <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-100 leading-tight">Room</span>
