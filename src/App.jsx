@@ -73566,16 +73566,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onNotificationsClick={() => setNotificationsOpen(true)}
             notifications={notifications}
             currentUser={currentUser}
-            onProfileClick={() => {
-              if (currentUser) {
-                setComposeProfileMenuOpen(true);
-              } else {
-                setAuthModalOpen(true);
-              }
-            }}
             onAuthSuccess={(user) => {
               setCurrentUser(user);
               showToast(`Welcome, ${user.name || 'user'}!`);
+            }}
+            onSignOut={() => {
+              setCurrentUser(null);
+              showToast('Signed out successfully');
             }}
             apiBaseUrl={API_BASE_URL}
             onOpenStagingPr={(branchId) => {

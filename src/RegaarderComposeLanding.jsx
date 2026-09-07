@@ -28,6 +28,7 @@ import LegalPolicyModal from "./components/LegalPolicyModal";
 import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
 import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
 import AuthPopoverDropdown from "./components/auth/AuthPopoverDropdown";
+import { logoutFirebase } from "./services/firebaseAuthService";
 
 const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
@@ -55,6 +56,7 @@ export default function RegaarderComposeLanding({
   isDarkMode = false,
   onOpenStagingPr,
   onAuthSuccess,
+  onSignOut,
   apiBaseUrl = '',
 }) {
   const { t } = useTranslation();
@@ -239,11 +241,8 @@ export default function RegaarderComposeLanding({
                 type="button"
                 onClick={() => {
                   setShowNotificationsMenu(false);
-                  if (onProfileClick) {
-                    onProfileClick();
-                  } else {
-                    setShowProfileMenu(prev => !prev);
-                  }
+                  setShowProfileMenu(prev => !prev);
+                  onProfileClick?.();
                 }}
                 className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all hover:opacity-85 focus:outline-none cursor-pointer bg-slate-500"
                 title={`Profile: ${currentUser?.name || ''}`}
@@ -281,13 +280,22 @@ export default function RegaarderComposeLanding({
 
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
+                        try {
+                          await logoutFirebase();
+                        } catch (err) {
+                          console.warn('[Auth] Firebase logout error:', err);
+                        }
                         try {
                           localStorage.removeItem('rc.token');
                           localStorage.removeItem('rc.user');
                         } catch {}
                         setShowProfileMenu(false);
-                        window.location.reload();
+                        if (onSignOut) {
+                          onSignOut();
+                        } else {
+                          window.location.reload();
+                        }
                       }}
                       className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-rose-600 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors cursor-pointer text-center"
                     >
