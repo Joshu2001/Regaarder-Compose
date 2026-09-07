@@ -38,6 +38,7 @@
         "electron-updater": "^6.8.9",
         "exceljs": "^3.4.0",
         "file-saver": "^2.0.5",
+        "firebase": "^10.14.1",
         "hot-formula-parser": "^4.0.0",
         "html2canvas": "^1.4.1",
         "html2pdf.js": "^0.14.0",

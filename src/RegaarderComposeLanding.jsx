@@ -27,6 +27,7 @@ import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 import LegalPolicyModal from "./components/LegalPolicyModal";
 import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
 import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
+import AuthPopoverDropdown from "./components/auth/AuthPopoverDropdown";
 
 const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
@@ -53,6 +54,8 @@ export default function RegaarderComposeLanding({
   onOpenShortcuts,
   isDarkMode = false,
   onOpenStagingPr,
+  onAuthSuccess,
+  apiBaseUrl = '',
 }) {
   const { t } = useTranslation();
   const [legalModalTab, setLegalModalTab] = useState(null);
@@ -60,6 +63,7 @@ export default function RegaarderComposeLanding({
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackCategory, setFeedbackCategory] = useState('Idea');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -298,11 +302,8 @@ export default function RegaarderComposeLanding({
               <button
                 type="button"
                 onClick={() => {
-                  if (onProfileClick) {
-                    onProfileClick();
-                  } else {
-                    setShowProfileMenu(prev => !prev);
-                  }
+                  setShowAuthDropdown(prev => !prev);
+                  setShowNotificationsMenu(false);
                 }}
                 className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-medium hover:bg-black dark:hover:bg-zinc-100 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
                 title="Sign In or Create Account"
@@ -311,39 +312,15 @@ export default function RegaarderComposeLanding({
                 <span>Sign in</span>
               </button>
 
-              {/* Guest / Sign-in options dropdown */}
-              {showProfileMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowProfileMenu(false)}
-                  />
-                  <div
-                    className="absolute right-0 top-10 z-50 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xl p-4 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150 font-sans"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center mx-auto text-sm font-semibold">
-                      <User size={18} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Welcome to Regaarder</div>
-                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug">
-                        Sign in to sync your work, collaborate, and access premium AI tools.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onProfileClick?.();
-                      }}
-                      className="w-full py-1.5 px-3 rounded-lg text-xs font-medium bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black transition-colors cursor-pointer shadow-xs"
-                    >
-                      Sign In / Sign Up
-                    </button>
-                  </div>
-                </>
-              )}
+              <AuthPopoverDropdown
+                isOpen={showAuthDropdown}
+                onClose={() => setShowAuthDropdown(false)}
+                onSuccess={(user) => {
+                  setShowAuthDropdown(false);
+                  onAuthSuccess?.(user);
+                }}
+                apiBaseUrl={apiBaseUrl}
+              />
             </div>
           )}
 

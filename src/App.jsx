@@ -38,6 +38,15 @@ import RegaarderBrandIcon from './components/RegaarderBrandIcon';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
 import {
+  isFirebaseConfigured,
+  registerWithEmail,
+  loginWithEmail,
+  loginWithGoogle,
+  loginWithApple,
+  logoutFirebase
+} from './services/firebaseAuthService';
+import AuthPopoverDropdown from './components/auth/AuthPopoverDropdown';
+import {
   ComposeIcon,
   DeckIcon,
   SheetIcon,
@@ -48020,27 +48029,55 @@ const renderRoomTopHeader = () => (
     setAuthLoading(true);
 
     try {
-      const endpoint = authTab === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = authTab === 'login' 
-        ? { email: authEmail, password: authPassword }
-        : { email: authEmail, password: authPassword, name: authName };
+      let token = null;
+      let user = null;
 
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      if (isFirebaseConfigured()) {
+        const result = authTab === 'login'
+          ? await loginWithEmail(authEmail, authPassword)
+          : await registerWithEmail(authEmail, authPassword, authName);
+        token = result.token;
+        user = result.user;
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Authentication failed.');
+        // Sync with backend SQLite/Postgres database
+        try {
+          await fetch(`${API_BASE_URL}/api/auth/firebase-sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ token, user })
+          });
+        } catch (syncErr) {
+          console.warn('[Auth] Firebase backend sync warning:', syncErr);
+        }
+      } else {
+        const endpoint = authTab === 'login' ? '/api/auth/login' : '/api/auth/register';
+        const body = authTab === 'login' 
+          ? { email: authEmail, password: authPassword }
+          : { email: authEmail, password: authPassword, name: authName };
+
+        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Authentication failed.');
+        }
+
+        token = data.token;
+        user = data.user;
       }
 
-      localStorage.setItem('rc.token', data.token);
-      localStorage.setItem('rc.user', JSON.stringify(data.user));
-      setCurrentUser(data.user);
+      localStorage.setItem('rc.token', token);
+      localStorage.setItem('rc.user', JSON.stringify(user));
+      setCurrentUser(user);
       setAuthModalOpen(false);
-      showToast(authTab === 'login' ? `Welcome back, ${data.user.name}! ✓` : `Account created! Welcome, ${data.user.name}! ✓`);
+      showToast(authTab === 'login' ? `Welcome back, ${user.name}! ✓` : `Account created! Welcome, ${user.name}! ✓`);
       
       setAuthEmail('');
       setAuthPassword('');
@@ -48056,44 +48093,72 @@ const renderRoomTopHeader = () => (
     setAuthError('');
     setAuthLoading(true);
 
-    // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
-    let deviceId = localStorage.getItem('rc.device_id');
-    if (!deviceId) {
-      const arr = new Uint8Array(8);
-      if (typeof window !== 'undefined' && window.crypto) {
-        window.crypto.getRandomValues(arr);
-      } else {
-        for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
-      }
-      deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-      localStorage.setItem('rc.device_id', deviceId);
-    }
-
-    const targetEmail = authEmail && authEmail.includes('@')
-      ? authEmail.trim().toLowerCase()
-      : `social_${provider}_${deviceId}@regaarder.local`;
-
-    const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
-
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider,
-          email: targetEmail,
-          name: targetName
-        })
-      });
+      let token = null;
+      let user = null;
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Social sign-in failed.');
+      if (isFirebaseConfigured()) {
+        const result = provider === 'google' 
+          ? await loginWithGoogle()
+          : await loginWithApple();
+        token = result.token;
+        user = result.user;
+
+        // Sync with backend SQLite/Postgres database
+        try {
+          await fetch(`${API_BASE_URL}/api/auth/firebase-sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ token, user })
+          });
+        } catch (syncErr) {
+          console.warn('[Auth] Firebase backend sync warning:', syncErr);
+        }
+      } else {
+        // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
+        let deviceId = localStorage.getItem('rc.device_id');
+        if (!deviceId) {
+          const arr = new Uint8Array(8);
+          if (typeof window !== 'undefined' && window.crypto) {
+            window.crypto.getRandomValues(arr);
+          } else {
+            for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
+          }
+          deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+          localStorage.setItem('rc.device_id', deviceId);
+        }
+
+        const targetEmail = authEmail && authEmail.includes('@')
+          ? authEmail.trim().toLowerCase()
+          : `social_${provider}_${deviceId}@regaarder.local`;
+
+        const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
+
+        const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider,
+            email: targetEmail,
+            name: targetName
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Social sign-in failed.');
+        }
+
+        token = data.token;
+        user = data.user;
       }
 
-      localStorage.setItem('rc.token', data.token);
-      localStorage.setItem('rc.user', JSON.stringify(data.user));
-      setCurrentUser(data.user);
+      localStorage.setItem('rc.token', token);
+      localStorage.setItem('rc.user', JSON.stringify(user));
+      setCurrentUser(user);
       setAuthModalOpen(false);
       showToast(`Connected with ${provider === 'google' ? 'Google' : 'Apple'} ✓`);
       
@@ -48110,180 +48175,17 @@ const renderRoomTopHeader = () => (
   const renderAuthModal = () => {
     if (!authModalOpen) return null;
     return (
-      <div 
-        className="fixed inset-0 bg-slate-950/40 backdrop-blur-md z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
-        onMouseDown={() => setAuthModalOpen(false)}
-      >
-        <div 
-          className="bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-[400px] p-8 relative flex flex-col gap-6 animate-in zoom-in-95 duration-200"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {/* Close button */}
-          <button 
-            type="button"
-            onClick={() => setAuthModalOpen(false)}
-            aria-label="Close authentication modal"
-            className="absolute top-5 right-5 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
-            title="Close"
-          >
-            <X size={14} />
-          </button>
-
-          {/* Integrated Brand Header */}
-          <div className="flex flex-col items-center text-center gap-2">
-            <div className="relative group cursor-pointer mb-1">
-              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-[#27272a] border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-center group-hover:border-violet-300 dark:group-hover:border-violet-500/40 transition-all duration-200">
-                <RegaarderBrandIcon size={22} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
-              </div>
-            </div>
-            <h2 className="text-[20px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
-            <p className="text-[12px] text-slate-400 dark:text-zinc-500 font-normal -mt-0.5">One workspace for all your office needs.</p>
-          </div>
-
-          {/* Primary Social Authentication Methods */}
-          <div className="flex flex-col gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleSocialAuth('google')}
-              disabled={authLoading}
-              className="w-full h-[44px] flex items-center justify-center gap-3 bg-white hover:bg-slate-50 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/90 dark:border-zinc-750 rounded-xl text-[13px] font-medium text-slate-800 dark:text-zinc-100 transition-all duration-150 active:scale-[0.985] shadow-xs"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSocialAuth('apple')}
-              disabled={authLoading}
-              className="w-full h-[44px] flex items-center justify-center gap-3 bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-[13px] font-medium transition-all duration-150 active:scale-[0.985] shadow-xs"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.5-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.59 2.94-1.4"/>
-              </svg>
-              Continue with Apple
-            </button>
-          </div>
-
-          {/* Hairline Divider with Spaced Badge */}
-          <div className="relative flex items-center justify-center my-0.5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200/80 dark:border-zinc-800" />
-            </div>
-            <span className="relative px-3.5 bg-white dark:bg-[#1c1c1e] text-[11px] font-normal text-slate-400 dark:text-zinc-500">
-              or continue with email
-            </span>
-          </div>
-
-          {/* Compact Sliding Segmented Control */}
-          <div className="relative p-0.5 bg-slate-100/90 dark:bg-zinc-900/90 rounded-xl border border-slate-200/50 dark:border-zinc-800/60 flex h-8">
-            <div 
-              className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-slate-200/60 dark:border-zinc-700/50 transition-all duration-200 ease-out"
-              style={{
-                left: authTab === 'login' ? '2px' : 'calc(50%)'
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => { setAuthTab('login'); setAuthError(''); }}
-              className={`relative flex-1 z-10 text-[11.5px] font-medium transition-colors duration-150 flex items-center justify-center ${
-                authTab === 'login' 
-                  ? 'text-slate-900 dark:text-white' 
-                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAuthTab('register'); setAuthError(''); }}
-              className={`relative flex-1 z-10 text-[11.5px] font-medium transition-colors duration-150 flex items-center justify-center ${
-                authTab === 'register' 
-                  ? 'text-slate-900 dark:text-white' 
-                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
-
-          {/* Email Form */}
-          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3.5">
-            {authError && (
-              <div className="p-2.5 bg-rose-50 border border-rose-200/60 dark:bg-rose-950/30 dark:border-rose-900/40 rounded-xl text-rose-600 dark:text-rose-400 text-[11px] font-medium leading-relaxed">
-                {authError}
-              </div>
-            )}
-
-            {authTab === 'register' && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Sarah Johnson"
-                  value={authName}
-                  onChange={(e) => setAuthName(e.target.value)}
-                  disabled={authLoading}
-                  className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
-                  required
-                />
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Email address</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                disabled={authLoading}
-                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                disabled={authLoading}
-                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={authLoading}
-              className="w-full h-10 mt-1 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 dark:bg-white dark:hover:bg-slate-100 dark:disabled:bg-zinc-600 text-white dark:text-slate-900 rounded-xl text-[12.5px] font-medium shadow-xs flex items-center justify-center gap-2 active:scale-[0.985] transition-all duration-150"
-            >
-              {authLoading ? (
-                <>
-                  <Loader2 size={13} className="animate-spin" />
-                  Please wait...
-                </>
-              ) : authTab === 'login' ? 'Sign In with Email' : 'Create Account'}
-            </button>
-          </form>
-
-          {/* Trust Microcopy */}
-          <p className="text-[10.5px] text-slate-400 dark:text-zinc-500 text-center leading-relaxed -mt-2">
-            By continuing, you agree to Regaarder's{' '}
-            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Terms of Service</span>
-            {' '}and{' '}
-            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Privacy Policy</span>.
-          </p>
-        </div>
-      </div>
+      <AuthPopoverDropdown
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={(user) => {
+          setCurrentUser(user);
+          setAuthModalOpen(false);
+          showToast(`Welcome back, ${user.name}! ✓`);
+        }}
+        apiBaseUrl={API_BASE_URL}
+        className="fixed top-12 right-6"
+      />
     );
   };
 
@@ -73671,6 +73573,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setAuthModalOpen(true);
               }
             }}
+            onAuthSuccess={(user) => {
+              setCurrentUser(user);
+              showToast(`Welcome, ${user.name || 'user'}!`);
+            }}
+            apiBaseUrl={API_BASE_URL}
             onOpenStagingPr={(branchId) => {
               if (window.__REGAARDER_OPEN_STAGING_MODAL__) {
                 window.__REGAARDER_OPEN_STAGING_MODAL__(branchId);

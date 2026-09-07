@@ -26,6 +26,7 @@ import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import admin from 'firebase-admin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,37 @@ const USERS_FILE = path.join(__dirname, 'users.json');
 
 // --- In-Memory Active Session Cache (token -> user) ---
 const activeSessions = new Map();
+
+// --- Firebase Admin Initialization (Graceful Fallback) ---
+let firebaseAdmin = null;
+try {
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+
+  if (serviceAccountKey) {
+    const creds = JSON.parse(serviceAccountKey);
+    firebaseAdmin = admin.initializeApp({
+      credential: admin.credential.cert(creds)
+    });
+    console.log('[Firebase Admin] Initialized with inline service account credentials.');
+  } else if (serviceAccountPath && fs.existsSync(path.resolve(__dirname, serviceAccountPath))) {
+    const creds = JSON.parse(fs.readFileSync(path.resolve(__dirname, serviceAccountPath), 'utf8'));
+    firebaseAdmin = admin.initializeApp({
+      credential: admin.credential.cert(creds)
+    });
+    console.log('[Firebase Admin] Initialized with service account file:', serviceAccountPath);
+  } else if (projectId && !projectId.includes('your_')) {
+    firebaseAdmin = admin.initializeApp({
+      projectId
+    });
+    console.log('[Firebase Admin] Initialized with Project ID:', projectId);
+  } else {
+    console.log('[Firebase Admin] No active credentials in environment. Operating in standard session mode.');
+  }
+} catch (err) {
+  console.warn('[Firebase Admin] Initialization skipped or failed:', err.message);
+}
 
 // --- Secure Scrypt Password Hashing with Legacy SHA-256 Migration ---
 const hashPassword = async (password) => {
@@ -436,11 +468,72 @@ app.get('/api/auth/me', async (req, res) => {
     } catch (e) {}
   }
 
+  // Check if token is a valid Firebase ID token
+  if (!user && firebaseAdmin) {
+    try {
+      const decoded = await firebaseAdmin.auth().verifyIdToken(token);
+      if (decoded && decoded.uid) {
+        const email = decoded.email ? String(decoded.email).toLowerCase() : '';
+        const name = decoded.name || (email ? email.split('@')[0] : 'User');
+        user = { id: decoded.uid, email, name, provider: 'firebase' };
+        activeSessions.set(token, user);
+      }
+    } catch (e) {}
+  }
+
   if (!user) {
     return res.status(401).json({ message: 'Session expired or invalid.' });
   }
 
   res.json({ user });
+});
+
+app.post('/api/auth/firebase-sync', async (req, res) => {
+  const { token, user: clientUser } = req.body || {};
+  const bearerToken = req.headers.authorization?.startsWith('Bearer ') 
+    ? req.headers.authorization.split(' ')[1] 
+    : token;
+
+  if (!bearerToken) {
+    return res.status(400).json({ message: 'Token is required for Firebase sync.' });
+  }
+
+  try {
+    let verifiedUser = null;
+    if (firebaseAdmin) {
+      const decoded = await firebaseAdmin.auth().verifyIdToken(bearerToken);
+      const email = decoded.email ? String(decoded.email).toLowerCase() : (clientUser?.email || '');
+      const name = decoded.name || clientUser?.name || (email ? email.split('@')[0] : 'User');
+      verifiedUser = { id: decoded.uid, email, name, provider: 'firebase' };
+    } else {
+      // Fallback when admin SDK is not configured in local dev
+      if (!clientUser?.id) {
+        return res.status(400).json({ message: 'Invalid client user payload.' });
+      }
+      verifiedUser = {
+        id: clientUser.id,
+        email: clientUser.email || '',
+        name: clientUser.name || 'User',
+        provider: 'firebase'
+      };
+    }
+
+    if (db && verifiedUser) {
+      const existing = await db.get('SELECT id FROM users WHERE id = ?', [verifiedUser.id]);
+      if (!existing) {
+        await db.run(
+          'INSERT INTO users (id, email, name, password_hash, provider, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+          [verifiedUser.id, verifiedUser.email, verifiedUser.name, null, 'firebase', new Date().toISOString()]
+        );
+      }
+    }
+
+    activeSessions.set(bearerToken, verifiedUser);
+    res.json({ success: true, user: verifiedUser, token: bearerToken });
+  } catch (err) {
+    console.error('[Firebase Sync Error]', err);
+    res.status(401).json({ message: 'Failed to verify Firebase token: ' + err.message });
+  }
 });
 
 app.post('/api/auth/logout', async (req, res) => {
@@ -477,6 +570,30 @@ const requireAuth = async (req, res, next) => {
         activeSessions.set(token, user);
       }
     } catch (e) {}
+  }
+
+  // Verify Firebase ID token if session is not in local database
+  if (!user && firebaseAdmin) {
+    try {
+      const decoded = await firebaseAdmin.auth().verifyIdToken(token);
+      if (decoded && decoded.uid) {
+        const email = decoded.email ? String(decoded.email).toLowerCase() : '';
+        const name = decoded.name || (email ? email.split('@')[0] : 'User');
+        
+        if (db) {
+          const existing = await db.get('SELECT id FROM users WHERE id = ?', [decoded.uid]);
+          if (!existing) {
+            await db.run(
+              'INSERT INTO users (id, email, name, password_hash, provider, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+              [decoded.uid, email, name, null, 'firebase', new Date().toISOString()]
+            );
+          }
+        }
+        
+        user = { id: decoded.uid, email, name, provider: 'firebase' };
+        activeSessions.set(token, user);
+      }
+    } catch (firebaseErr) {}
   }
 
   if (!user) {
@@ -763,14 +880,24 @@ wss.on('connection', (ws, req) => {
   setupWSConnection(ws, req);
 });
 
-server.on('upgrade', (request, socket, head) => {
+server.on('upgrade', async (request, socket, head) => {
   const parsedUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
   // Route Yjs connections to the WebSocket Server with security check
   if (pathname.startsWith('/yjs')) {
     const token = parsedUrl.searchParams.get('token');
-    const user = token ? activeSessions.get(token) : null;
+    let user = token ? activeSessions.get(token) : null;
+
+    if (!user && token && firebaseAdmin) {
+      try {
+        const decoded = await firebaseAdmin.auth().verifyIdToken(token);
+        if (decoded?.uid) {
+          user = { id: decoded.uid, email: decoded.email, name: decoded.name || 'User', provider: 'firebase' };
+          activeSessions.set(token, user);
+        }
+      } catch (e) {}
+    }
 
     // In production, require authenticated session
     if (!user && process.env.NODE_ENV === 'production') {

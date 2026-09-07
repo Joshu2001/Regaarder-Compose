@@ -90,6 +90,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      fs: {
+        allow: ['..'],
+      },
       host: true,
       proxy: {
         '/api/auth': 'http://localhost:3001',
