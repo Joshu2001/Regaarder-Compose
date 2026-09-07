@@ -26,7 +26,7 @@ import {
  * 6. Clean canvas preserved: Pure minimalist Apple-tier atmospheric depth.
  */
 
-export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
+export default function WorkspaceEcosystemVisualizer({ onLaunch, className = '' }) {
   const [hoveredNode, setHoveredNode] = useState(null);
 
   const handleLaunch = (targetId) => {
@@ -58,22 +58,20 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             transform: scale(1.04);
           }
         }
-        @keyframes pulseBridgeDiamond {
+        @keyframes pulseBridgeLink {
           0%, 100% {
-            opacity: 0.65;
-            transform: scale(0.94);
-            filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.35));
+            opacity: 0.8;
+            transform: scale(0.96);
           }
           50% {
-            opacity: 0.98;
-            transform: scale(1.10);
-            filter: drop-shadow(0 0 7px rgba(96, 165, 250, 0.65));
+            opacity: 1;
+            transform: scale(1.04);
           }
         }
         @keyframes flowParticleGentle {
           0% { offset-distance: 0%; opacity: 0; }
-          20% { opacity: 0.6; }
-          80% { opacity: 0.6; }
+          20% { opacity: 0.28; }
+          80% { opacity: 0.28; }
           100% { offset-distance: 100%; opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
@@ -87,18 +85,18 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
       `}</style>
 
       {/* ── Outer Ecosystem Stage (Aspect 980 x 340: Compact single-viewport height with breathing room) ── */}
-      <div className="w-full max-w-[980px] h-[320px] sm:h-[340px] relative flex items-center justify-center overflow-visible">
+      <div className={`w-full max-w-[980px] h-[320px] sm:h-[340px] relative flex items-center justify-center overflow-visible ${className}`}>
         
         {/* ── Soft Atmospheric Background Illumination (Clean canvas, luminous soft diffusion) ── */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible">
           {/* Broad soft ambient field */}
-          <div className="w-[860px] h-[280px] rounded-[100%] bg-gradient-to-r from-blue-100/25 via-indigo-50/15 to-purple-100/25 dark:from-blue-950/15 dark:via-indigo-950/10 dark:to-purple-950/15 blur-[90px] transform -translate-y-1 opacity-70" />
+          <div className="w-[860px] h-[280px] rounded-[100%] bg-gradient-to-r from-blue-100/15 via-indigo-50/10 to-purple-100/15 dark:from-blue-950/10 dark:via-indigo-950/8 dark:to-purple-950/10 blur-[90px] transform -translate-y-1 opacity-40" />
           {/* Delicate lavender aura specifically behind Memory (reduced saturation by 25-30%) */}
-          <div className="absolute w-[340px] h-[220px] -translate-x-24 rounded-full bg-purple-300/18 dark:bg-purple-900/18 blur-[75px] opacity-75" />
+          <div className="absolute w-[340px] h-[220px] -translate-x-24 rounded-full bg-purple-300/12 dark:bg-purple-900/12 blur-[75px] opacity-40" />
           {/* Delicate sky-blue aura specifically behind Relay (reduced saturation by 25-30%) */}
-          <div className="absolute w-[340px] h-[220px] translate-x-24 rounded-full bg-sky-300/18 dark:bg-blue-900/18 blur-[75px] opacity-75" />
+          <div className="absolute w-[340px] h-[220px] translate-x-24 rounded-full bg-sky-300/12 dark:bg-blue-900/12 blur-[75px] opacity-40" />
           {/* Faint white center core wash */}
-          <div className="w-[440px] h-[180px] rounded-full bg-white/75 dark:bg-white/[0.03] blur-[45px] opacity-80" />
+          <div className="w-[440px] h-[180px] rounded-full bg-white/50 dark:bg-white/[0.02] blur-[45px] opacity-40" />
         </div>
 
         {/* ── SVG Connection Network & Subconscious Orbital Layer (1060 × 380 ViewBox) ── */}
@@ -118,7 +116,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               markerHeight="2.8"
               orient="auto-start-reverse"
             >
-              <path d="M 1.5 2.5 L 5.5 5 L 1.5 7.5" fill="none" stroke="#a855f7" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.65" />
+              <path d="M 1.5 2.5 L 5.5 5 L 1.5 7.5" fill="none" stroke="#a855f7" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.45" />
             </marker>
 
             <marker
@@ -130,7 +128,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               markerHeight="2.8"
               orient="auto-start-reverse"
             >
-              <path d="M 1.5 2.5 L 5.5 5 L 1.5 7.5" fill="none" stroke="#60a5fa" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.65" />
+              <path d="M 1.5 2.5 L 5.5 5 L 1.5 7.5" fill="none" stroke="#60a5fa" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.45" />
             </marker>
 
             {/* Delicate linear gradients for flowing light streams */}
@@ -215,10 +213,10 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           </defs>
 
           {/* ── SUBTLE CONCENTRIC ACOUSTIC RIPPLES (Subconscious background depth) ── */}
-          <g className="opacity-50 dark:opacity-25">
-            <ellipse cx="530" cy="190" rx="270" ry="110" stroke="url(#grad-ripple-whisper)" strokeWidth="0.85" fill="none" />
-            <ellipse cx="530" cy="190" rx="350" ry="142" stroke="url(#grad-ripple-whisper)" strokeWidth="0.85" fill="none" />
-            <ellipse cx="530" cy="190" rx="430" ry="174" stroke="url(#grad-ripple-whisper)" strokeWidth="0.85" fill="none" />
+          <g className="opacity-30 dark:opacity-15">
+            <ellipse cx="530" cy="190" rx="270" ry="110" stroke="url(#grad-ripple-whisper)" strokeWidth="0.7" fill="none" />
+            <ellipse cx="530" cy="190" rx="350" ry="142" stroke="url(#grad-ripple-whisper)" strokeWidth="0.7" fill="none" />
+            <ellipse cx="530" cy="190" rx="430" ry="174" stroke="url(#grad-ripple-whisper)" strokeWidth="0.7" fill="none" />
           </g>
 
           {/* ── WHISPER-SOFT AMBIENT ORBITAL FIELD (Ambient atmospheric light, not a drawn ellipse) ── */}
@@ -227,65 +225,65 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
             <path
               d="M 95 190 C 85 92, 225 32, 530 30 C 835 28, 975 92, 965 190 C 955 288, 815 352, 530 354 C 245 356, 105 288, 95 190"
               stroke="url(#grad-celestial-glow-soft)"
-              strokeWidth="2.8"
+              strokeWidth="2.4"
               fill="none"
               filter="url(#soft-whisper-glow)"
-              opacity="0.42"
+              opacity="0.22"
             />
 
-            {/* Ambient atmospheric light track (softened with blur filter, 25% lower opacity) */}
+            {/* Ambient atmospheric light track */}
             <path
               d="M 95 190 C 85 92, 225 32, 530 30 C 835 28, 975 92, 965 190 C 955 288, 815 352, 530 354 C 245 356, 105 288, 95 190"
               stroke="url(#grad-celestial-subtle)"
-              strokeWidth="1.0"
+              strokeWidth="0.8"
               fill="none"
               filter="url(#orbital-atmosphere-soft)"
-              opacity="0.48"
+              opacity="0.28"
             />
 
             {/* Specular glass core highlight */}
             <path
               d="M 95 190 C 85 92, 225 32, 530 30 C 835 28, 975 92, 965 190 C 955 288, 815 352, 530 354 C 245 356, 105 288, 95 190"
               stroke="#ffffff"
-              strokeWidth="0.45"
+              strokeWidth="0.35"
               fill="none"
-              opacity="0.16"
+              opacity="0.12"
             />
 
             {/* Secondary sweeping arc */}
             <path
               d="M 680 90 C 850 115, 985 170, 925 265 C 875 330, 725 354, 530 354"
               stroke="url(#grad-celestial-subtle)"
-              strokeWidth="0.75"
+              strokeWidth="0.65"
               fill="none"
-              opacity="0.22"
+              opacity="0.15"
             />
 
             {/* Delicate celestial star nodes along the track (subtle light specks) */}
-            <circle cx="195" cy="85" r="2.0" fill="#a5b4fc" opacity="0.25" filter="url(#soft-whisper-glow)" />
-            <circle cx="195" cy="85" r="1.0" fill="#ffffff" opacity="0.45" />
+            <circle cx="195" cy="85" r="1.6" fill="#a5b4fc" opacity="0.15" filter="url(#soft-whisper-glow)" />
+            <circle cx="195" cy="85" r="0.8" fill="#ffffff" opacity="0.3" />
 
-            <circle cx="895" cy="135" r="2.0" fill="#93c5fd" opacity="0.25" filter="url(#soft-whisper-glow)" />
-            <circle cx="895" cy="135" r="1.0" fill="#ffffff" opacity="0.45" />
+            <circle cx="895" cy="135" r="1.6" fill="#93c5fd" opacity="0.15" filter="url(#soft-whisper-glow)" />
+            <circle cx="895" cy="135" r="0.8" fill="#ffffff" opacity="0.3" />
 
-            <circle cx="360" cy="348" r="2.0" fill="#c084fc" opacity="0.25" filter="url(#soft-whisper-glow)" />
-            <circle cx="360" cy="348" r="1.0" fill="#ffffff" opacity="0.45" />
+            <circle cx="360" cy="348" r="1.6" fill="#c084fc" opacity="0.15" filter="url(#soft-whisper-glow)" />
+            <circle cx="360" cy="348" r="0.8" fill="#ffffff" opacity="0.3" />
 
-            <circle cx="760" cy="345" r="2.0" fill="#a5b4fc" opacity="0.25" filter="url(#soft-whisper-glow)" />
-            <circle cx="760" cy="345" r="1.0" fill="#ffffff" opacity="0.45" />
+            <circle cx="760" cy="345" r="1.6" fill="#a5b4fc" opacity="0.15" filter="url(#soft-whisper-glow)" />
+            <circle cx="760" cy="345" r="0.8" fill="#ffffff" opacity="0.3" />
           </g>
 
-          {/* ── MEMORY ↔ RELAY CORE BRIDGE WITH SOFTENED APERTURE LIGHT ── */}
+          {/* ── MEMORY ↔ RELAY CORE BRIDGE (Architectural link) ── */}
           <g className="transition-opacity duration-300">
-            {/* Luminous aura track */}
+            {/* Soft luminous bridge aura */}
             <line
               x1="514"
               y1="190"
               x2="546"
               y2="190"
               stroke="url(#grad-luminous-bridge)"
-              strokeWidth="3.5"
-              opacity="0.35"
+              strokeWidth="2.5"
+              opacity="0.25"
               filter="url(#bridge-aperture-glow)"
             />
             {/* Inner radiant beam */}
@@ -295,8 +293,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               x2="546"
               y2="190"
               stroke="url(#grad-luminous-bridge)"
-              strokeWidth="1.6"
-              opacity="0.75"
+              strokeWidth="1.2"
+              opacity="0.6"
             />
             {/* Crisp central spine */}
             <line
@@ -305,26 +303,18 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
               x2="546"
               y2="190"
               stroke="#ffffff"
-              strokeWidth="0.9"
-              opacity="0.85"
+              strokeWidth="0.8"
+              opacity="0.75"
             />
             {/* Left anchor node */}
-            <circle cx="515" cy="190" r="1.8" fill="#c084fc" opacity="0.85" />
+            <circle cx="515" cy="190" r="1.5" fill="#c084fc" opacity="0.75" />
             {/* Right anchor node */}
-            <circle cx="545" cy="190" r="1.8" fill="#60a5fa" opacity="0.85" />
+            <circle cx="545" cy="190" r="1.5" fill="#60a5fa" opacity="0.75" />
 
-            {/* MICRO-CHROMATIC STARBURST APERTURE in the exact center */}
-            <g className="animate-pulse-flare" style={{ transformOrigin: '530px 190px', animation: 'pulseBridgeDiamond 3.8s ease-in-out infinite' }}>
-              {/* Diffuse horizontal flare */}
-              <ellipse cx="530" cy="190" rx="10" ry="2.2" fill="#ffffff" opacity="0.65" filter="url(#bridge-aperture-glow)" />
-              {/* Vertical starburst ray */}
-              <polygon points="530,181 531.8,190 530,199 528.2,190" fill="#ffffff" opacity="0.85" filter="url(#soft-whisper-glow)" />
-              {/* Horizontal starburst ray */}
-              <polygon points="521,190 530,191.8 539,190 530,188.2" fill="#ffffff" opacity="0.85" filter="url(#soft-whisper-glow)" />
-              {/* Diamond facet highlight */}
-              <polygon points="530,187 533,190 530,193 527,190" fill="#ffffff" opacity="0.9" />
-              {/* Inner core pinpoint */}
-              <circle cx="530" cy="190" r="1.6" fill="#ffffff" opacity="0.98" />
+            {/* ARCHITECTURAL DIAMOND BRIDGE LINK NODE in the exact center */}
+            <g style={{ transformOrigin: '530px 190px', animation: 'pulseBridgeLink 4s ease-in-out infinite' }}>
+              <polygon points="530,186 534,190 530,194 526,190" fill="#ffffff" stroke="#c084fc" strokeWidth="0.75" opacity="0.92" />
+              <circle cx="530" cy="190" r="1.2" fill="#60a5fa" opacity="0.9" />
             </g>
           </g>
 
@@ -333,120 +323,120 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
           {/* ══════════════════════════════════════════════════════════════ */}
 
           {/* ── 1. Top Center: Docs → Memory ── */}
-          <g className={`transition-all duration-300 ${(hoveredNode === 'compose' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'compose' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-docs"
               d="M 508 68 C 502 92, 488 112, 475 125"
               stroke="url(#grad-path-docs)"
-              strokeWidth={(hoveredNode === 'compose' || hoveredNode === 'memory') ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'compose' || hoveredNode === 'memory') ? "1.3" : "0.9"}
               strokeLinecap="round"
               fill="none"
               filter={hoveredNode === 'compose' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="508" cy="68" r="1.4" fill="#93c5fd" opacity={hoveredNode === 'compose' ? "1" : "0.7"} />
+            <circle cx="508" cy="68" r="1.3" fill="#93c5fd" opacity={hoveredNode === 'compose' ? "1" : "0.6"} />
             {/* Flowing energy particle */}
-            <circle r={hoveredNode === 'compose' ? "1.8" : "1.4"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'compose' ? "1.5" : "1.2"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 508 68 C 502 92, 488 112, 475 125')",
               animation: "flowParticleGentle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
             }} />
           </g>
 
           {/* ── 2. Upper Left: Sheets → Memory ── */}
-          <g className={`transition-all duration-300 ${(hoveredNode === 'sheet' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'sheet' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-sheets"
               d="M 285 86 C 335 104, 380 126, 432 146"
               stroke="url(#grad-path-sheets)"
-              strokeWidth={(hoveredNode === 'sheet' || hoveredNode === 'memory') ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'sheet' || hoveredNode === 'memory') ? "1.3" : "0.9"}
               strokeLinecap="round"
               fill="none"
               filter={hoveredNode === 'sheet' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="285" cy="86" r="1.4" fill="#6ee7b7" opacity={hoveredNode === 'sheet' ? "1" : "0.7"} />
+            <circle cx="285" cy="86" r="1.3" fill="#6ee7b7" opacity={hoveredNode === 'sheet' ? "1" : "0.6"} />
             {/* Flowing energy particle */}
-            <circle r={hoveredNode === 'sheet' ? "1.8" : "1.4"} fill="#a5b4fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'sheet' ? "1.5" : "1.2"} fill="#a5b4fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 285 86 C 335 104, 380 126, 432 146')",
               animation: "flowParticleGentle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.5s",
             }} />
           </g>
 
           {/* ── 3. Upper Right: Deck → Relay (Harmonized sweeping curve) ── */}
-          <g className={`transition-all duration-300 ${(hoveredNode === 'deck' || hoveredNode === 'relay') ? 'opacity-100' : 'opacity-80'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'deck' || hoveredNode === 'relay') ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-deck"
               d="M 775 86 C 722 104, 675 124, 628 146"
               stroke="url(#grad-path-deck)"
-              strokeWidth={(hoveredNode === 'deck' || hoveredNode === 'relay') ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'deck' || hoveredNode === 'relay') ? "1.3" : "0.9"}
               strokeLinecap="round"
               fill="none"
               filter={hoveredNode === 'deck' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-blue)"
             />
-            <circle cx="775" cy="86" r="1.4" fill="#fdba74" opacity={hoveredNode === 'deck' ? "1" : "0.7"} />
+            <circle cx="775" cy="86" r="1.3" fill="#fdba74" opacity={hoveredNode === 'deck' ? "1" : "0.6"} />
             {/* Flowing energy particle */}
-            <circle r={hoveredNode === 'deck' ? "1.8" : "1.4"} fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'deck' ? "1.5" : "1.2"} fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 775 86 C 722 104, 675 124, 628 146')",
               animation: "flowParticleGentle 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.1s",
             }} />
           </g>
 
           {/* ── 4. Mid Left: Import → Memory ── */}
-          <g className={`transition-all duration-300 ${(hoveredNode === 'omni-portal' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'omni-portal' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-import"
               d="M 230 190 L 428 190"
               stroke="url(#grad-path-import)"
-              strokeWidth={(hoveredNode === 'omni-portal' || hoveredNode === 'memory') ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'omni-portal' || hoveredNode === 'memory') ? "1.3" : "0.9"}
               strokeLinecap="round"
               fill="none"
               filter={hoveredNode === 'omni-portal' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="230" cy="190" r="1.4" fill="#c084fc" opacity={hoveredNode === 'omni-portal' ? "1" : "0.7"} />
+            <circle cx="230" cy="190" r="1.3" fill="#c084fc" opacity={hoveredNode === 'omni-portal' ? "1" : "0.6"} />
             {/* Flowing energy particle */}
-            <circle r={hoveredNode === 'omni-portal' ? "1.8" : "1.4"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'omni-portal' ? "1.5" : "1.2"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 230 190 L 428 190')",
               animation: "flowParticleGentle 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.2s",
             }} />
           </g>
 
           {/* ── 5. Lower Right: Whiteboard → Relay (Harmonized smooth arc) ── */}
-          <g className={`transition-all duration-300 ${(hoveredNode === 'whiteboard' || hoveredNode === 'relay') ? 'opacity-100' : 'opacity-80'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'whiteboard' || hoveredNode === 'relay') ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-whiteboard"
               d="M 770 246 C 718 242, 670 230, 628 214"
               stroke="url(#grad-path-whiteboard)"
-              strokeWidth={(hoveredNode === 'whiteboard' || hoveredNode === 'relay') ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'whiteboard' || hoveredNode === 'relay') ? "1.3" : "0.9"}
               strokeLinecap="round"
               fill="none"
               filter={hoveredNode === 'whiteboard' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-blue)"
             />
-            <circle cx="770" cy="246" r="1.4" fill="#818cf8" opacity={hoveredNode === 'whiteboard' ? "1" : "0.7"} />
+            <circle cx="770" cy="246" r="1.3" fill="#818cf8" opacity={hoveredNode === 'whiteboard' ? "1" : "0.6"} />
             {/* Flowing energy particle */}
-            <circle r={hoveredNode === 'whiteboard' ? "1.8" : "1.4"} fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'whiteboard' ? "1.5" : "1.2"} fill="#93c5fd" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 770 246 C 718 242, 670 230, 628 214')",
               animation: "flowParticleGentle 4.0s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.6s",
             }} />
           </g>
 
           {/* ── 6. Lower Left/Center: Room → Memory ── */}
-          <g className={`transition-all duration-300 ${(hoveredNode === 'room' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-80'}`}>
+          <g className={`transition-all duration-300 ${(hoveredNode === 'room' || hoveredNode === 'memory') ? 'opacity-100' : 'opacity-65'}`}>
             <path
               id="path-room"
               d="M 438 282 C 446 272, 460 264, 472 258"
               stroke="url(#grad-path-room)"
-              strokeWidth={(hoveredNode === 'room' || hoveredNode === 'memory') ? "1.4" : "1.05"}
+              strokeWidth={(hoveredNode === 'room' || hoveredNode === 'memory') ? "1.3" : "0.9"}
               strokeLinecap="round"
               fill="none"
               filter={hoveredNode === 'room' ? "url(#soft-whisper-glow)" : "none"}
               markerEnd="url(#arrow-soft-purple)"
             />
-            <circle cx="438" cy="282" r="1.4" fill="#5eead4" opacity={hoveredNode === 'room' ? "1" : "0.7"} />
+            <circle cx="438" cy="282" r="1.3" fill="#5eead4" opacity={hoveredNode === 'room' ? "1" : "0.6"} />
             {/* Flowing energy particle */}
-            <circle r={hoveredNode === 'room' ? "1.8" : "1.4"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
+            <circle r={hoveredNode === 'room' ? "1.5" : "1.2"} fill="#c084fc" filter="url(#soft-whisper-glow)" style={{
               offsetPath: "path('M 438 282 C 446 272, 460 264, 472 258')",
               animation: "flowParticleGentle 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.8s",
             }} />
@@ -473,23 +463,23 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 "rounded-[26px] p-3.5 sm:p-4",
                 "flex flex-col items-center justify-center text-center",
                 // Soft light passing through frosted glass
-                "bg-gradient-to-b from-white/88 via-white/75 to-purple-50/35 dark:from-zinc-900/85 dark:via-zinc-900/70 dark:to-purple-950/20",
+                "bg-gradient-to-b from-white/92 via-white/80 to-purple-50/35 dark:from-zinc-900/90 dark:via-zinc-900/75 dark:to-purple-950/20",
                 "backdrop-blur-2xl",
                 "border transition-all duration-300 cursor-pointer group outline-none",
                 hoveredNode === 'memory'
-                  ? "scale-[1.025] -translate-y-0.5 border-purple-300 dark:border-purple-400 shadow-[0_18px_44px_-6px_rgba(168,85,247,0.22)]"
+                  ? "scale-[1.02] -translate-y-0.5 border-purple-300 dark:border-purple-400 shadow-[0_16px_36px_-6px_rgba(168,85,247,0.18)]"
                   : ['compose', 'sheet', 'omni-portal', 'room'].includes(hoveredNode)
-                    ? "border-purple-300/80 dark:border-purple-400/40 shadow-[0_16px_40px_-8px_rgba(168,85,247,0.18)] -translate-y-0.5"
-                    : "border-purple-200/60 dark:border-purple-500/25 shadow-[0_14px_36px_-8px_rgba(168,85,247,0.13),0_2px_8px_rgba(168,85,247,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(168,85,247,0.05)]",
+                    ? "border-purple-300/80 dark:border-purple-400/40 shadow-[0_14px_32px_-8px_rgba(168,85,247,0.15)] -translate-y-0.5"
+                    : "border-purple-200/80 dark:border-purple-500/35 shadow-[0_8px_28px_-6px_rgba(168,85,247,0.12),0_1px_3px_rgba(0,0,0,0.03),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(168,85,247,0.04)]",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-purple-600 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_1.5px_4px_rgba(168,85,247,0.25)]">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-purple-600 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_1.5px_3px_rgba(168,85,247,0.2)]">
                 <MemoryIcon size={21} strokeWidth={1.75} className="text-purple-600 dark:text-purple-300" />
               </div>
-              <span className="text-[14.5px] sm:text-[15px] font-semibold text-slate-900 dark:text-white tracking-[-0.01em]">
+              <span className="text-[15px] sm:text-[15.5px] font-semibold text-slate-900 dark:text-white tracking-[-0.01em]">
                 Memory
               </span>
-              <span className="text-[11px] sm:text-[11.5px] text-slate-500 dark:text-zinc-400 font-normal mt-0.5 leading-snug">
+              <span className="text-[11.5px] sm:text-[12px] text-slate-500 dark:text-zinc-400 font-normal mt-0.5 leading-snug">
                 Your team's<br />shared context
               </span>
             </button>
@@ -505,23 +495,23 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 "rounded-[26px] p-3.5 sm:p-4",
                 "flex flex-col items-center justify-center text-center",
                 // Soft light passing through frosted glass
-                "bg-gradient-to-b from-white/88 via-white/75 to-sky-50/35 dark:from-zinc-900/85 dark:via-zinc-900/70 dark:to-sky-950/20",
+                "bg-gradient-to-b from-white/92 via-white/80 to-sky-50/35 dark:from-zinc-900/90 dark:via-zinc-900/75 dark:to-sky-950/20",
                 "backdrop-blur-2xl",
                 "border transition-all duration-300 cursor-pointer group outline-none",
                 hoveredNode === 'relay'
-                  ? "scale-[1.025] -translate-y-0.5 border-sky-300 dark:border-sky-400 shadow-[0_18px_44px_-6px_rgba(56,189,248,0.22)]"
+                  ? "scale-[1.02] -translate-y-0.5 border-sky-300 dark:border-sky-400 shadow-[0_16px_36px_-6px_rgba(56,189,248,0.18)]"
                   : ['deck', 'whiteboard'].includes(hoveredNode)
-                    ? "border-sky-300/80 dark:border-sky-400/40 shadow-[0_16px_40px_-8px_rgba(56,189,248,0.18)] -translate-y-0.5"
-                    : "border-sky-200/60 dark:border-sky-500/25 shadow-[0_14px_36px_-8px_rgba(56,189,248,0.13),0_2px_8px_rgba(56,189,248,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(56,189,248,0.05)]",
+                    ? "border-sky-300/80 dark:border-sky-400/40 shadow-[0_14px_32px_-8px_rgba(56,189,248,0.15)] -translate-y-0.5"
+                    : "border-sky-200/80 dark:border-sky-500/35 shadow-[0_8px_28px_-6px_rgba(56,189,248,0.12),0_1px_3px_rgba(0,0,0,0.03),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1.5px_2px_rgba(56,189,248,0.04)]",
               ].join(" ")}
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-sky-600 dark:text-sky-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_1.5px_4px_rgba(56,189,248,0.25)]">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-1 text-sky-600 dark:text-sky-300 group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_1.5px_3px_rgba(56,189,248,0.2)]">
                 <RelayIcon size={21} strokeWidth={1.75} className="text-sky-600 dark:text-sky-300" />
               </div>
-              <span className="text-[14.5px] sm:text-[15px] font-semibold text-slate-900 dark:text-white tracking-[-0.01em]">
+              <span className="text-[15px] sm:text-[15.5px] font-semibold text-slate-900 dark:text-white tracking-[-0.01em]">
                 Relay
               </span>
-              <span className="text-[11px] sm:text-[11.5px] text-slate-500 dark:text-zinc-400 font-normal mt-0.5 leading-snug">
+              <span className="text-[11.5px] sm:text-[12px] text-slate-500 dark:text-zinc-400 font-normal mt-0.5 leading-snug">
                 Connect tools,<br />people and ideas
               </span>
             </button>

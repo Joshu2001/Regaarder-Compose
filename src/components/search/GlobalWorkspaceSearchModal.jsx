@@ -479,9 +479,9 @@ export default function GlobalWorkspaceSearchModal({
   const [brandRules, setBrandRules] = useState(() => {
     try {
       const saved = localStorage.getItem('regaarder_workspace_brand_rules');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.warn('Failed to load brand rules:', e);
@@ -673,8 +673,17 @@ export default function GlobalWorkspaceSearchModal({
 
   // Remove an individual guideline
   const handleRemoveBrandRule = (ruleId) => {
-    setBrandRules(prev => prev.filter(r => r.id !== ruleId));
+    setBrandRules(prev => {
+      const next = prev.filter(r => r.id !== ruleId);
+      try {
+        localStorage.setItem('regaarder_workspace_brand_rules', JSON.stringify(next));
+      } catch (err) {
+        console.warn('Failed to persist brand rules:', err);
+      }
+      return next;
+    });
   };
+  const handleDeleteBrandRule = handleRemoveBrandRule;
 
   // Execute AI Workspace Synthesis with persona and extracted brand memory context
   const handleRunAiSynthesis = async (promptQuery) => {
@@ -859,16 +868,16 @@ export default function GlobalWorkspaceSearchModal({
   const getCategoryBadge = (cat) => {
     switch (cat) {
       case 'typography':
-        return 'bg-violet-100/80 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/60';
+        return 'text-violet-600 dark:text-violet-400 bg-violet-500/[0.08]';
       case 'palette':
-        return 'bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/60';
+        return 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.08]';
       case 'voice':
-        return 'bg-blue-100/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200/60';
+        return 'text-blue-600 dark:text-blue-400 bg-blue-500/[0.08]';
       case 'rules':
-        return 'bg-amber-100/80 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200/60';
+        return 'text-amber-600 dark:text-amber-400 bg-amber-500/[0.08]';
       case 'layout':
       default:
-        return 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200/60 dark:border-zinc-700';
+        return 'text-slate-500 dark:text-zinc-400 bg-black/[0.04] dark:bg-white/[0.05]';
     }
   };
 
@@ -893,11 +902,11 @@ export default function GlobalWorkspaceSearchModal({
         {/* ── Dominant Search / Header (62px height) ── */}
         <div className="h-[62px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
           {mode === 'ai' ? (
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs ring-1 ring-violet-500/30">
-              <RegaarderAiIcon size={16} strokeWidth={2.0} />
+            <div className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <RegaarderAiIcon size={15} strokeWidth={1.9} />
             </div>
           ) : (
-            <Search size={19} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+            <Search size={18} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
           )}
 
           <input
@@ -913,9 +922,9 @@ export default function GlobalWorkspaceSearchModal({
             placeholder={
               mode === 'ai' 
                 ? (t('search.askAnything') || `Ask Memory as ${activePersona.name} across workspace files & guidelines…`) 
-                : (t('search.searchAnything') || 'Search anything across workspace memory…')
+                : (t('search.searchAnything') || 'Search anything in your workspace…')
             }
-            className="flex-1 bg-transparent border-none outline-none text-[15.5px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
+            className="flex-1 bg-transparent border-none outline-none text-[15px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
           />
 
           {/* Right Action Controls: Clear & Apple Dual Switch */}
@@ -936,7 +945,7 @@ export default function GlobalWorkspaceSearchModal({
             )}
 
             {/* ── Apple-Style Segmented Mode Switcher: Search vs Ask Memory with Regaarder Signature Orbit ── */}
-            <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06]">
+            <div className="flex items-center p-0.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06]">
               <button
                 type="button"
                 onClick={() => {
@@ -944,13 +953,14 @@ export default function GlobalWorkspaceSearchModal({
                   setAiResponse(null);
                   setTimeout(() => inputRef.current?.focus(), 20);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-medium transition-all duration-150 cursor-pointer ${
                   mode === 'search'
-                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-xs ring-1 ring-black/[0.06] dark:ring-white/[0.08]'
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-2xs border border-black/[0.05] dark:border-white/[0.08]'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
+                title="Search across workspace memory"
               >
-                <Search size={12} strokeWidth={2} className={mode === 'search' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                <Search size={12} strokeWidth={1.9} className={mode === 'search' ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-500'} />
                 <span>Search</span>
               </button>
 
@@ -960,13 +970,14 @@ export default function GlobalWorkspaceSearchModal({
                   setMode('ai');
                   setTimeout(() => inputRef.current?.focus(), 20);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold transition-all duration-150 cursor-pointer ${
                   mode === 'ai'
-                    ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 text-white shadow-xs ring-1 ring-violet-500/50'
-                    : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-500/10'
+                    ? 'bg-violet-600 text-white shadow-2xs'
+                    : 'text-violet-700/90 dark:text-violet-300/90 hover:text-violet-900 dark:hover:text-violet-200 hover:bg-violet-50/60 dark:hover:bg-violet-950/30'
                 }`}
+                title="Ask Memory - Intelligent contextual synthesis"
               >
-                <RegaarderAiIcon size={13} strokeWidth={2.0} className={mode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                <RegaarderAiIcon size={12} strokeWidth={1.8} className={mode === 'ai' ? 'text-white' : 'text-violet-600 dark:text-violet-400'} />
                 <span>Ask Memory</span>
               </button>
             </div>
@@ -983,7 +994,6 @@ export default function GlobalWorkspaceSearchModal({
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto no-scrollbar">
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab.id;
-              const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
@@ -994,13 +1004,12 @@ export default function GlobalWorkspaceSearchModal({
                       handleRunAiSynthesis(query);
                     }
                   }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer shrink-0 ${
+                  className={`px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
-                      ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
-                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
+                      ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/30'
+                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] font-medium'
                   }`}
                 >
-                  <Icon size={13} strokeWidth={1.7} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
                   <span>{tab.id === 'all' ? (t('common.all') || 'All') : (tab.id === 'compose' ? (t('nav.docs') || t('nav.compose') || 'Docs') : (tab.id === 'browser' ? (t('nav.notes') || t('nav.browser') || 'Notes') : (t('nav.' + tab.id) || tab.label)))}</span>
                 </button>
               );
@@ -1012,12 +1021,12 @@ export default function GlobalWorkspaceSearchModal({
             <button
               type="button"
               onClick={() => setIsPersonaMenuOpen(prev => !prev)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/25 text-violet-700 dark:text-violet-300 text-[11.5px] font-semibold transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
-              title="Active Agentic Persona"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-violet-500/[0.07] hover:bg-violet-500/[0.12] border border-violet-500/20 text-violet-700 dark:text-violet-300 text-[11.5px] font-medium transition-all duration-150 cursor-pointer whitespace-nowrap shadow-2xs"
+              title={`Active Lens: ${activePersona.name}`}
             >
-              <UserCheck size={12} strokeWidth={2.2} />
-              <span>Active Lens: {activePersona.name}</span>
-              <ChevronDown size={11} className={`transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
+              <Compass size={12} strokeWidth={1.8} className="text-violet-600/80 dark:text-violet-400/80" />
+              <span className="font-semibold text-slate-800 dark:text-zinc-200">{activePersona.name}</span>
+              <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isPersonaMenuOpen && (
@@ -1389,18 +1398,17 @@ export default function GlobalWorkspaceSearchModal({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                   
                   {/* ── Pillar 1: Brand & Design System Tokens ── */}
-                  <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
-                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                  <div className="rounded-xl bg-white/60 dark:bg-zinc-850/50 border border-black/[0.05] dark:border-white/[0.07] overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
                       <div className="flex items-center gap-1.5">
-                        <Palette size={13} className="text-violet-600 dark:text-violet-400" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200">
                           Brand Rules
                         </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 font-semibold">
-                          {brandRules.length}
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">
+                          · {brandRules.length}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <input
                           ref={fileInputRef}
                           type="file"
@@ -1411,50 +1419,57 @@ export default function GlobalWorkspaceSearchModal({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="p-1 rounded hover:bg-black/[0.04] text-slate-500 hover:text-violet-600 transition-colors cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                           title="Upload .MD file"
                         >
-                          <FileUp size={12} />
+                          <FileUp size={12} strokeWidth={1.8} />
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsMdModalOpen(true)}
-                          className="p-1 rounded hover:bg-black/[0.04] text-violet-600 hover:text-violet-700 transition-colors cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                           title="Add or Paste MD"
                         >
-                          <Plus size={13} strokeWidth={2.5} />
+                          <Plus size={13} strokeWidth={2.0} />
                         </button>
                       </div>
                     </div>
 
-                    <div className="p-3 space-y-1.5 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                    <div className="p-2.5 pt-0 space-y-1 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
                       {brandRules.map((rule) => (
                         <div
                           key={rule.id}
-                          className="flex items-start justify-between p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] group hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-colors"
+                          className="flex items-start justify-between p-2 rounded-lg hover:bg-black/[0.025] dark:hover:bg-white/[0.03] group transition-colors"
                         >
                           <div className="min-w-0 flex-1 pr-1">
                             <div className="flex items-center gap-1.5 mb-0.5">
                               {rule.category && (
-                                <span className={`text-[8px] font-bold uppercase font-mono px-1 py-0.2 rounded border ${getCategoryBadge(rule.category)}`}>
+                                <span className={`text-[8.5px] font-medium uppercase font-mono px-1 py-0.2 rounded ${getCategoryBadge(rule.category)}`}>
                                   {rule.category}
                                 </span>
                               )}
-                              <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">
+                              <span className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
                                 {rule.label}
                               </span>
                             </div>
-                            <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-tight">
+                            <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 line-clamp-2 leading-snug">
                               {rule.value}
                             </div>
                           </div>
                           <button
                             type="button"
-                            onClick={() => handleDeleteBrandRule(rule.id)}
-                            className="text-slate-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveBrandRule(rule.id);
+                            }}
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                            className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/30 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-75 cursor-pointer shrink-0"
                             title="Delete rule"
+                            aria-label="Delete rule"
                           >
-                            <Trash2 size={11} />
+                            <Trash2 size={12} strokeWidth={1.8} />
                           </button>
                         </div>
                       ))}
@@ -1462,36 +1477,35 @@ export default function GlobalWorkspaceSearchModal({
                   </div>
 
                   {/* ── Pillar 2: Learned Ambient Habits ── */}
-                  <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
-                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                  <div className="rounded-xl bg-white/60 dark:bg-zinc-850/50 border border-black/[0.05] dark:border-white/[0.07] overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
                       <div className="flex items-center gap-1.5">
-                        <Compass size={13} className="text-violet-600 dark:text-violet-400" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200">
                           Ambient Habits
                         </span>
                       </div>
-                      <span className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-mono font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] text-emerald-600/90 dark:text-emerald-400/90 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
                         Live
                       </span>
                     </div>
 
-                    <div className="p-3 space-y-2 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
+                    <div className="p-2.5 pt-0 space-y-1 max-h-[310px] overflow-y-auto thin-scrollbar flex-1">
                       {LEARNED_HABITS.map((habit) => {
                         const IconComponent = habit.icon;
                         return (
                           <div
                             key={habit.id}
-                            className="flex items-start gap-2.5 p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]"
+                            className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-black/[0.025] dark:hover:bg-white/[0.03] transition-colors"
                           >
-                            <div className="w-6 h-6 rounded-md bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5 border border-black/[0.05] dark:border-white/[0.06]">
+                            <div className="w-6 h-6 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-500 dark:text-zinc-400 shrink-0 mt-0.5">
                               <IconComponent size={12} strokeWidth={1.6} />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">
+                              <div className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200">
                                 {habit.title}
                               </div>
-                              <div className="text-[10.5px] text-slate-500 dark:text-zinc-400 leading-snug mt-0.5">
+                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 leading-snug mt-0.5">
                                 {habit.desc}
                               </div>
                             </div>
@@ -1502,18 +1516,17 @@ export default function GlobalWorkspaceSearchModal({
                   </div>
 
                   {/* ── Pillar 3: Active Cognitive Lens ── */}
-                  <div className="rounded-xl bg-white/75 dark:bg-zinc-800/55 border border-black/[0.06] dark:border-white/[0.08] overflow-hidden shadow-xs flex flex-col">
-                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02]">
+                  <div className="rounded-xl bg-white/60 dark:bg-zinc-850/50 border border-black/[0.05] dark:border-white/[0.07] overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
                       <div className="flex items-center gap-1.5">
-                        <UserCheck size={13} className="text-violet-600 dark:text-violet-400" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 font-mono">
+                        <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200">
                           Cognitive Lens
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleOpenEditPersona(activePersona)}
-                        className="text-[10.5px] text-violet-600 dark:text-violet-400 hover:text-violet-700 font-semibold flex items-center gap-1 cursor-pointer"
+                        className="text-[11px] text-slate-400 hover:text-violet-600 dark:text-zinc-500 dark:hover:text-violet-400 font-medium flex items-center gap-1 cursor-pointer transition-colors"
                         title="Customize this persona's prompt"
                       >
                         <Edit3 size={11} />
@@ -1521,38 +1534,38 @@ export default function GlobalWorkspaceSearchModal({
                       </button>
                     </div>
 
-                    <div className="p-3.5 space-y-3 max-h-[310px] overflow-y-auto thin-scrollbar flex-1 flex flex-col justify-between">
-                      <div className="space-y-2.5">
+                    <div className="p-3 pt-0 space-y-2.5 max-h-[310px] overflow-y-auto thin-scrollbar flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
                         {/* Active Persona Header Box */}
-                        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/50 dark:border-violet-800/40">
-                          <div className="w-7 h-7 rounded-md flex items-center justify-center bg-violet-600 text-white font-bold text-xs font-mono shrink-0 shadow-2xs">
+                        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-violet-500/[0.05] dark:bg-violet-950/20 border border-violet-500/15">
+                          <div className="w-6 h-6 rounded-md flex items-center justify-center bg-violet-500/15 text-violet-700 dark:text-violet-300 font-semibold text-[11px] font-mono shrink-0">
                             {activePersona.name.split(' ').map(n => n[0]).join('')}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                            <div className="text-[12px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
                               {activePersona.name}
                             </div>
-                            <div className="text-[10px] text-violet-700 dark:text-violet-300 font-medium truncate">
+                            <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
                               {activePersona.badge}
                             </div>
                           </div>
                         </div>
 
                         {/* Live Persona Prompt Rules Snippet */}
-                        <div className="p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04] space-y-1">
-                          <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                            Active System Directive
+                        <div className="p-2 rounded-lg bg-black/[0.015] dark:bg-white/[0.02] border border-black/[0.03] dark:border-white/[0.04] space-y-1">
+                          <div className="text-[9px] font-medium uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
+                            System Directive
                           </div>
-                          <p className="text-[11px] text-slate-700 dark:text-zinc-300 italic leading-relaxed line-clamp-4">
+                          <p className="text-[11px] text-slate-600 dark:text-zinc-400 italic leading-relaxed line-clamp-3">
                             &ldquo;{activePersona.instructions}&rdquo;
                           </p>
                         </div>
                       </div>
 
                       {/* Quick Switcher Chips */}
-                      <div className="space-y-1.5 pt-2 border-t border-black/[0.04] dark:border-white/[0.05]">
-                        <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                          Quick Switch Lens
+                      <div className="space-y-1.5 pt-2 border-t border-black/[0.03] dark:border-white/[0.04]">
+                        <div className="text-[9px] font-medium uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
+                          Switch Lens
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           {personas.map((p) => (
@@ -1560,10 +1573,10 @@ export default function GlobalWorkspaceSearchModal({
                               key={p.id}
                               type="button"
                               onClick={() => setActivePersona(p)}
-                              className={`px-2 py-1 rounded text-[10.5px] font-semibold text-left truncate transition-all cursor-pointer ${
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-medium text-left truncate transition-all duration-150 cursor-pointer ${
                                 activePersona.id === p.id
-                                  ? 'bg-violet-600 text-white shadow-2xs'
-                                  : 'bg-black/[0.03] dark:bg-white/[0.04] text-slate-700 dark:text-zinc-300 hover:bg-black/[0.06]'
+                                  ? 'bg-violet-600 text-white font-semibold shadow-2xs'
+                                  : 'bg-black/[0.025] dark:bg-white/[0.03] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-black/[0.05]'
                               }`}
                             >
                               {p.name}
@@ -1579,7 +1592,7 @@ export default function GlobalWorkspaceSearchModal({
                 {/* Real Items: Continue Where You Left Off */}
                 {searchResults.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2 px-1 font-mono">
+                    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600 dark:text-zinc-400 mb-2 px-1">
                       <RegaarderHistoryIcon size={12} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
                       <span>Recent Workspace Files & Context</span>
                     </div>
@@ -1594,35 +1607,35 @@ export default function GlobalWorkspaceSearchModal({
                             data-selected={isSelected}
                             onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
-                            className={`flex items-center justify-between p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                            className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                               isSelected
-                                ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
-                                : 'hover:bg-white/60 dark:hover:bg-zinc-800/40 border border-transparent'
+                                ? 'bg-black/[0.03] dark:bg-white/[0.05]'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05]">
+                              <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
                                 <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                  <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
                                     {entity.title}
                                   </span>
                                   {entity.isCurrent && (
-                                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono">
+                                    <span className="text-[9px] font-medium uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono">
                                       Active
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
                                   {entity.location} • {entity.author}
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
                                 {entity.updatedAt}
                               </span>
                               <ArrowRight
@@ -1645,11 +1658,11 @@ export default function GlobalWorkspaceSearchModal({
                 {searchResults.length > 0 ? (
                   <div>
                     <div className="flex items-center justify-between px-1 mb-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 font-mono">
+                      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600 dark:text-zinc-400">
                         <RegaarderProductIcon name={activeFilter} size={13} strokeWidth={1.7} className="text-violet-600 dark:text-violet-400" />
                         <span>Workspace {activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono">
-                          {searchResults.length}
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">
+                          · {searchResults.length}
                         </span>
                       </div>
                       <button
@@ -1660,9 +1673,9 @@ export default function GlobalWorkspaceSearchModal({
                             onNavigateToEntity({ workspace: activeFilter, actionType: 'create' });
                           }
                         }}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors cursor-pointer"
+                        className="flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-violet-600 dark:text-zinc-400 dark:hover:text-violet-400 transition-colors cursor-pointer"
                       >
-                        <Plus size={12} strokeWidth={2.5} />
+                        <Plus size={12} strokeWidth={2.0} />
                         <span>New {activeFilter === 'sheets' ? 'Sheet' : activeFilter === 'deck' ? 'Slide Deck' : activeFilter === 'docs' ? 'Document' : activeFilter.slice(0, -1)}</span>
                       </button>
                     </div>
@@ -1678,39 +1691,39 @@ export default function GlobalWorkspaceSearchModal({
                             data-selected={isSelected}
                             onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
-                            className={`flex items-center justify-between p-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                            className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                               isSelected
-                                ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
-                                : 'hover:bg-white/60 dark:hover:bg-zinc-800/40 border border-transparent'
+                                ? 'bg-black/[0.03] dark:bg-white/[0.05]'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05]">
-                                <RegaarderProductIcon name={entity.workspace} size={15} strokeWidth={1.6} />
+                              <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
+                                <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                  <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
                                     {entity.title}
                                   </span>
                                   {entity.isCurrent && (
-                                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono">
+                                    <span className="text-[9px] font-medium uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono">
                                       Active
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
                                   {entity.location} • {entity.author}
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-mono">
+                              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
                                 {entity.updatedAt}
                               </span>
                               <ArrowRight
-                                size={13}
+                                size={12}
                                 className={`transition-transform duration-150 ${
                                   isSelected ? 'translate-x-0.5 text-violet-600 dark:text-violet-400' : 'text-slate-300 dark:text-zinc-600'
                                 }`}
@@ -1724,14 +1737,14 @@ export default function GlobalWorkspaceSearchModal({
                 ) : (
                   /* Empty State for Selected Category */
                   <div className="py-14 text-center max-w-sm mx-auto space-y-3">
-                    <div className="w-12 h-12 mx-auto rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-slate-400 dark:text-zinc-500 shadow-2xs">
-                      <RegaarderProductIcon name={activeFilter} size={24} strokeWidth={1.5} />
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.07] flex items-center justify-center text-slate-400 dark:text-zinc-500 shadow-2xs">
+                      <RegaarderProductIcon name={activeFilter} size={22} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h4 className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-200">
+                      <h4 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200">
                         No {activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Found
                       </h4>
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                      <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 leading-relaxed">
                         There are no {activeFilter} created in your workspace yet.
                       </p>
                     </div>
@@ -1743,9 +1756,9 @@ export default function GlobalWorkspaceSearchModal({
                           onNavigateToEntity({ workspace: activeFilter, actionType: 'create' });
                         }
                       }}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-all cursor-pointer"
                     >
-                      <Plus size={12} strokeWidth={2.5} />
+                      <Plus size={12} strokeWidth={2.0} />
                       <span>Create New {activeFilter === 'sheets' ? 'Spreadsheet' : activeFilter === 'deck' ? 'Slide Deck' : activeFilter === 'docs' ? 'Document' : activeFilter}</span>
                     </button>
                   </div>
@@ -1759,10 +1772,10 @@ export default function GlobalWorkspaceSearchModal({
              ══════════════════════════════════════════════════════════ */}
           {mode === 'search' && query.trim() && searchResults.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-3 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-3 border border-black/[0.05] dark:border-white/[0.07] shadow-2xs">
                 <Search size={18} strokeWidth={1.6} />
               </div>
-              <h4 className="text-[14px] font-bold text-slate-900 dark:text-zinc-100 mb-1">
+              <h4 className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 mb-1">
                 No results for &ldquo;{query}&rdquo;
               </h4>
               <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
@@ -1777,13 +1790,13 @@ export default function GlobalWorkspaceSearchModal({
                 <div key={group.label} className="space-y-1">
                   {/* Category Section Header with Native Regaarder SVG Icon */}
                   <div className="flex items-center justify-between px-1 mb-1">
-                    <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
                       <RegaarderProductIcon name={group.workspace} size={12} strokeWidth={1.7} />
                       <span>{group.label}</span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">
+                        · {group.items.length}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">
-                      {group.items.length}
-                    </span>
                   </div>
 
                   {/* Results List */}
@@ -1798,10 +1811,10 @@ export default function GlobalWorkspaceSearchModal({
                         data-selected={isSelected}
                         onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                         onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
-                        className={`group relative flex flex-col p-3 rounded-xl transition-all duration-150 cursor-pointer ${
+                        className={`group relative flex flex-col p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                           isSelected
                             ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
-                            : 'bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.05] dark:border-white/[0.06]'
+                            : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]'
                         }`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
@@ -1814,23 +1827,23 @@ export default function GlobalWorkspaceSearchModal({
                                 className="w-6 h-6 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1] shrink-0 mt-0.5"
                               />
                             ) : (
-                              <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
+                              <div className="w-6 h-6 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
                                 <RegaarderProductIcon name={entity.workspace} size={12} strokeWidth={1.6} />
                               </div>
                             )}
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <h4 className="text-[13px] font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
                                   <HighlightedText text={entity.title} query={query} />
                                 </h4>
                                 {entity.type === 'person' && entity.role && (
-                                  <span className="text-[9.5px] font-medium px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.04] text-slate-600 dark:text-zinc-400 shrink-0">
+                                  <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 dark:text-zinc-400 shrink-0">
                                     {entity.role}
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
                                 <HighlightedText text={entity.location} query={query} />
                                 {entity.author && ` • ${entity.author}`}
                               </div>
@@ -1840,21 +1853,21 @@ export default function GlobalWorkspaceSearchModal({
                           {/* Metric / Formula / Status Pill */}
                           <div className="flex items-center gap-1.5 shrink-0">
                             {entity.metadata?.cellValue && (
-                              <span className="px-2 py-0.5 text-xs font-mono font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70 rounded-md">
+                              <span className="px-2 py-0.5 text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 rounded">
                                 <HighlightedText text={entity.metadata.cellValue} query={query} />
                               </span>
                             )}
                             {entity.metadata?.priority && (
-                              <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-md uppercase tracking-wider font-mono ${
+                              <span className={`px-1.5 py-0.2 text-[9px] font-medium rounded uppercase tracking-wider font-mono ${
                                 entity.metadata.priority === 'High'
-                                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-rose-200/60'
-                                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300 border border-amber-200/60'
+                                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                               }`}>
                                 {entity.metadata.priority}
                               </span>
                             )}
                             {entity.metadata?.status && (
-                              <span className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-md">
+                              <span className="px-1.5 py-0.2 text-[9.5px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 rounded">
                                 {entity.metadata.status}
                               </span>
                             )}
@@ -1863,15 +1876,15 @@ export default function GlobalWorkspaceSearchModal({
 
                         {/* Snippet preview with keyword highlighting */}
                         {res.snippet && (
-                          <p className="text-[11.5px] text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed pl-8.5 mt-0.5">
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed pl-8 mt-0.5">
                             <HighlightedText text={res.snippet} query={query} />
                           </p>
                         )}
 
                         {/* Formula row if available */}
                         {entity.metadata?.formula && (
-                          <div className="flex items-center gap-1.5 text-[10.5px] font-mono text-slate-700 dark:text-zinc-300 pl-8.5 mt-1">
-                            <span className="text-[9px] font-sans font-bold uppercase text-slate-400">Formula:</span>
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-600 dark:text-zinc-400 pl-8 mt-1">
+                            <span className="text-[9px] font-sans font-medium text-slate-400">Formula:</span>
                             <HighlightedText text={entity.metadata.formula} query={query} />
                           </div>
                         )}
@@ -1918,16 +1931,16 @@ export default function GlobalWorkspaceSearchModal({
         {/* ── Footer Cheatsheet Bar ── */}
         <div className={`flex items-center justify-between px-5 py-2.5 text-[11px] text-slate-500 dark:text-zinc-400 shrink-0 ${footerClasses}`}>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">↑↓</kbd>
+            <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
+              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↑↓</kbd>
               <span>{t('search.navigate') || 'Navigate'}</span>
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">↵</kbd>
+            <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
+              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↵</kbd>
               <span>{t('search.open') || 'Open'}</span>
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-black/[0.08] dark:border-white/[0.1] font-mono text-[10px] shadow-2xs">Esc</kbd>
+            <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
+              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>
               <span>{t('common.close') || 'Close'}</span>
             </span>
 
@@ -1935,7 +1948,7 @@ export default function GlobalWorkspaceSearchModal({
               <button
                 type="button"
                 onClick={handleClearMemorySynthesis}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-950/40 text-slate-600 hover:text-rose-600 dark:text-zinc-300 dark:hover:text-rose-400 border border-slate-200/80 dark:border-zinc-700 font-medium text-[10.5px] transition-colors cursor-pointer ml-1"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.03] hover:bg-rose-50 dark:bg-white/[0.04] dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 font-medium text-[10.5px] transition-colors cursor-pointer ml-1"
                 title="Reset search and clear current synthesis"
               >
                 <RotateCcw size={10} />
@@ -1944,9 +1957,9 @@ export default function GlobalWorkspaceSearchModal({
             )}
           </div>
 
-          <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 font-mono text-[10.5px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            <span>{t('search.footerBrand') || 'Regaarder Workspace Memory Hub'}</span>
+          <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 text-[10.5px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 inline-block" />
+            <span>{t('search.footerBrand') || 'Regaarder Context Search'}</span>
           </div>
         </div>
       </div>
