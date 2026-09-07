@@ -17,6 +17,7 @@ export default function AuthPopoverDropdown({
   isOpen,
   onClose,
   onSuccess,
+  onOpenLegal,
   apiBaseUrl = '',
   className = 'right-0 top-9'
 }) {
@@ -349,6 +350,26 @@ export default function AuthPopoverDropdown({
               'Create Account'
             )}
           </button>
+
+          <p className="text-[10px] text-center text-slate-400 dark:text-zinc-500 leading-normal pt-1 select-none">
+            By continuing, you agree to our{' '}
+            <button
+              type="button"
+              onClick={() => onOpenLegal?.('terms')}
+              className="underline hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+            >
+              Terms
+            </button>{' '}
+            and{' '}
+            <button
+              type="button"
+              onClick={() => onOpenLegal?.('privacy')}
+              className="underline hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            .
+          </p>
         </form>
       </div>
     </>

@@ -315,6 +315,10 @@ export default function RegaarderComposeLanding({
               <AuthPopoverDropdown
                 isOpen={showAuthDropdown}
                 onClose={() => setShowAuthDropdown(false)}
+                onOpenLegal={(tab) => {
+                  setLegalModalTab(tab);
+                  setShowAuthDropdown(false);
+                }}
                 onSuccess={(user) => {
                   setShowAuthDropdown(false);
                   onAuthSuccess?.(user);
