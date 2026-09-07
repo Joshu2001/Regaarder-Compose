@@ -522,7 +522,7 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
                 Relay
               </span>
               <span className="text-[11px] sm:text-[11.5px] text-slate-500 dark:text-zinc-400 font-normal mt-0.5 leading-snug">
-                Connects tools,<br />people and ideas
+                Connect tools,<br />people and ideas
               </span>
             </button>
           </div>

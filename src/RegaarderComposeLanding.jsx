@@ -10,7 +10,8 @@ import {
   LogIn,
   User,
   Check,
-  Sparkles
+  ArrowRight,
+  ShieldCheck
 } from "lucide-react";
 import {
   ComposeIcon,
@@ -20,7 +21,8 @@ import {
   WhiteboardIcon,
   ImportPortalIcon,
   MemoryIcon,
-  RelayIcon
+  RelayIcon,
+  RegaarderAiIcon
 } from "./components/RegaarderProductIcons";
 
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
@@ -29,7 +31,6 @@ import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRe
 import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
 import AuthPopoverDropdown from "./components/auth/AuthPopoverDropdown";
 import { logoutFirebase } from "./services/firebaseAuthService";
-import DesktopDownloadFloatingTrigger from "./components/desktop/DesktopDownloadFloatingTrigger";
 
 const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
@@ -67,6 +68,7 @@ export default function RegaarderComposeLanding({
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAuthDropdown, setShowAuthDropdown] = useState(false);
+  const [authDropdownInitialTab, setAuthDropdownInitialTab] = useState('login');
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackCategory, setFeedbackCategory] = useState('Idea');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -307,23 +309,38 @@ export default function RegaarderComposeLanding({
               )}
             </div>
           ) : (
-            <div className="relative ml-1 flex items-center">
+            <div className="relative ml-1 flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => {
-                  setShowAuthDropdown(prev => !prev);
+                  setAuthDropdownInitialTab('login');
+                  setShowAuthDropdown(prev => !prev || authDropdownInitialTab !== 'login');
                   setShowNotificationsMenu(false);
                 }}
-                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-medium hover:bg-black dark:hover:bg-zinc-100 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
-                title="Sign In or Create Account"
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-xs font-medium transition-all duration-150 cursor-pointer outline-none focus:outline-none"
+                title="Sign In"
               >
                 <LogIn size={12} strokeWidth={2} />
                 <span>Sign in</span>
               </button>
 
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthDropdownInitialTab('register');
+                  setShowAuthDropdown(true);
+                  setShowNotificationsMenu(false);
+                }}
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold hover:bg-black dark:hover:bg-zinc-100 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
+                title="Start Free"
+              >
+                <span>Start free</span>
+              </button>
+
               <AuthPopoverDropdown
                 isOpen={showAuthDropdown}
                 onClose={() => setShowAuthDropdown(false)}
+                initialTab={authDropdownInitialTab}
                 onOpenLegal={(tab) => {
                   setLegalModalTab(tab);
                   setShowAuthDropdown(false);
@@ -346,33 +363,66 @@ export default function RegaarderComposeLanding({
 
           {/*
             ── Hero Section ──
-            Pure Apple typography & authoritative monochrome Regaarder brand glyph.
-            Matches reference image:
-            - Regaarder brand mark comfortably positioned beneath header
-            - "Every tool your team needs," (Line 1)
-            - "connected as one." with subtle purple/blue gradient (Line 2)
-            - Centered, dark navy typography
-            - Subtitle directly beneath
+            Authority monochrome Regaarder brand glyph, high-converting concrete value proposition.
+            - "Your team's work," (Line 1)
+            - "finally connected." with subtle purple/indigo/blue gradient (Line 2)
+            - Supporting line: "Docs, Sheets, Decks, Meetings, Whiteboards and AI — in one private workspace."
+            - Primary CTA: "Start free" (prominent action)
+            - Secondary CTA: "See how it works" (smooth scrolls to #how-it-works)
+            - Reassurance: "No credit card required"
           */}
-          <div className="text-center mb-1.5 sm:mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-0.5 sm:mb-1 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
-            <div className="mb-1 flex items-center justify-center">
+            <div className="mb-1.5 flex items-center justify-center">
               <div className="w-9 h-9 rounded-xl bg-white/90 dark:bg-[#18181b]/90 border border-slate-200/50 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
                 <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
 
-            <h1 className="text-[26px] sm:text-[32px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.16] mb-0.5 text-balance max-w-2xl mx-auto">
-              <span>Every tool your team needs,</span>
+            <h1 className="text-[28px] sm:text-[34px] md:text-[38px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.14] mb-1 text-balance max-w-2xl mx-auto">
+              <span>Your team's work,</span>
               <br />
               <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-400 dark:via-indigo-300 dark:to-blue-400 bg-clip-text text-transparent">
-                connected as one.
+                finally connected.
               </span>
             </h1>
-            <p className="text-[13px] sm:text-[13.5px] text-slate-500 dark:text-zinc-400 font-normal max-w-lg mx-auto leading-relaxed">
-              {t('landing.subheadline') || 'Docs, sheets, decks, and AI intelligence — completely private.'}
+            <p className="text-[13px] sm:text-[14px] text-slate-500 dark:text-zinc-400 font-normal max-w-xl mx-auto leading-relaxed">
+              Docs, Sheets, Decks, Meetings, Whiteboards and AI — in one private workspace.
             </p>
+
+            {/* ── Conversion CTAs ── */}
+            <div className="mt-2.5 sm:mt-3 flex items-center justify-center gap-2 sm:gap-2.5 select-none">
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentUser) {
+                    onLaunch?.({ type: 'action', name: 'compose' });
+                  } else {
+                    setAuthDropdownInitialTab('register');
+                    setShowAuthDropdown(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="h-8.5 sm:h-9 px-4 sm:px-4.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs sm:text-[13px] font-semibold hover:bg-black dark:hover:bg-zinc-100 shadow-xs hover:shadow-sm transition-all duration-150 active:scale-[0.98] flex items-center gap-1.5 group cursor-pointer outline-none focus:outline-none"
+              >
+                <span>Start free</span>
+                <ArrowRight size={13} className="text-slate-300 dark:text-slate-600 group-hover:translate-x-0.5 transition-transform duration-150" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('how-it-works');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                className="h-8.5 sm:h-9 px-3.5 sm:px-4 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] text-slate-700 dark:text-zinc-200 text-xs sm:text-[13px] font-medium border border-slate-200/70 dark:border-white/10 transition-all duration-150 cursor-pointer outline-none focus:outline-none"
+              >
+                <span>See how it works</span>
+              </button>
+            </div>
           </div>
 
           {/*
@@ -381,8 +431,78 @@ export default function RegaarderComposeLanding({
           */}
           <WorkspaceEcosystemVisualizer onLaunch={onLaunch} />
 
+          {/*
+            ── Sub-Hero Differentiator: One workspace. Shared context. ──
+            Anchors the "See how it works" secondary CTA and concretely reinforces
+            how Regaarder unifies documents, data, meetings, and AI context.
+          */}
+          <section
+            id="how-it-works"
+            className="w-full max-w-[700px] mx-auto text-center mt-2 sm:mt-3 mb-2.5 sm:mb-3 px-4 scroll-mt-6 animate-in fade-in duration-500"
+            aria-label="How it works"
+          >
+            <h2 className="text-[18px] sm:text-[21px] md:text-[23px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+              One workspace. Shared context.
+            </h2>
+            <p className="text-[13px] sm:text-[14px] text-slate-500 dark:text-zinc-400 font-normal max-w-[520px] mx-auto leading-relaxed mt-1.5">
+              Your documents, data, meetings, ideas and AI share the same context.
+            </p>
+          </section>
+
+          {/* ── Compact Value Points Layer (Restrained, Apple-style 3-column) ── */}
+          <div className="w-full max-w-[860px] mx-auto px-1 mb-2.5 sm:mb-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+              
+              {/* Point 1: Shared Context */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-white/70 dark:bg-zinc-900/50 border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.02)] backdrop-blur-md flex flex-col items-start text-left transition-all duration-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-5 h-5 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                    <RegaarderAiIcon size={13} strokeWidth={1.8} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 tracking-wider uppercase">
+                    Shared Context
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-500 dark:text-zinc-400 font-normal leading-relaxed">
+                  AI understands your documents, data, meetings and ideas.
+                </p>
+              </div>
+
+              {/* Point 2: Connected Tools */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-white/70 dark:bg-zinc-900/50 border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.02)] backdrop-blur-md flex flex-col items-start text-left transition-all duration-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-5 h-5 rounded-md bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0">
+                    <RelayIcon size={13} strokeWidth={1.7} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 tracking-wider uppercase">
+                    Connected Tools
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-500 dark:text-zinc-400 font-normal leading-relaxed">
+                  Move naturally between Docs, Sheets, Decks, Room and Whiteboard.
+                </p>
+              </div>
+
+              {/* Point 3: Private by Design */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-white/70 dark:bg-zinc-900/50 border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.02)] backdrop-blur-md flex flex-col items-start text-left transition-all duration-200">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-5 h-5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={13} strokeWidth={1.7} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-100 tracking-wider uppercase">
+                    Private by Design
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-500 dark:text-zinc-400 font-normal leading-relaxed">
+                  Your team's work stays within your private workspace.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
           {/* ── Progressive Disclosure Recent Work Strip (cleanly positioned beneath ecosystem) ── */}
-          <div className="w-full max-w-[860px] mx-auto -mt-2 sm:-mt-2.5">
+          <div className="w-full max-w-[860px] mx-auto -mt-1 sm:-mt-1.5">
             <LandingRecentWorkStrip
               onLaunch={onLaunch}
               onOpenRecentModal={onOpenRecentModal}

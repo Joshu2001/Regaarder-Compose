@@ -18,10 +18,11 @@ export default function AuthPopoverDropdown({
   onClose,
   onSuccess,
   onOpenLegal,
+  initialTab = 'login',
   apiBaseUrl = '',
   className = 'right-0 top-9'
 }) {
-  const [authTab, setAuthTab] = useState('login'); // 'login' | 'register'
+  const [authTab, setAuthTab] = useState(initialTab); // 'login' | 'register'
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
@@ -30,11 +31,15 @@ export default function AuthPopoverDropdown({
   const containerRef = useRef(null);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setAuthTab(initialTab);
+      setAuthError('');
+      setAuthLoading(false);
+    } else {
       setAuthError('');
       setAuthLoading(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialTab]);
 
   // Handle ESC key to dismiss
   useEffect(() => {

@@ -346,39 +346,41 @@ export default function DesktopDownloadFloatingTrigger({ visible = true, classNa
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border backdrop-blur-2xl transition-all duration-200 cursor-pointer shadow-lg group outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 ${
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-xl transition-all duration-200 cursor-pointer shadow-xs group outline-none focus-visible:ring-1 focus-visible:ring-slate-400 ${
             downloadState.status === 'downloading'
               ? 'bg-[#181c2b]/98 text-white border-indigo-500/50 shadow-indigo-950/40'
               : isExpanded
-              ? 'bg-indigo-600 text-white border-indigo-500/60 shadow-indigo-900/30'
-              : 'bg-[#141722]/95 hover:bg-[#1a1e2b]/95 text-white border-white/15 hover:border-white/25'
+              ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-800 dark:border-white shadow-md'
+              : 'bg-white/80 dark:bg-zinc-900/80 hover:bg-white dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
           }`}
           title="Download Regaarder Desktop App"
           style={{ marginRight: 0 }}
         >
           {/* Download Icon Badge / Spinner */}
           <div
-            className={`w-6 h-6 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
+            className={`w-5 h-5 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${
               downloadState.status === 'downloading'
                 ? 'bg-indigo-500/20 text-indigo-300'
                 : downloadState.status === 'completed'
                 ? 'bg-emerald-500/20 text-emerald-300'
                 : isExpanded
-                ? 'bg-white/20 text-white'
-                : 'bg-white/10 text-slate-200'
+                ? 'bg-white/20 dark:bg-black/10 text-white dark:text-slate-900'
+                : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200'
             }`}
           >
             {downloadState.status === 'downloading' ? (
-              <Loader2 size={13} className="animate-spin text-indigo-300" />
+              <Loader2 size={12} className="animate-spin text-indigo-300" />
             ) : downloadState.status === 'completed' ? (
-              <CheckCircle2 size={13} className="text-emerald-400" />
+              <CheckCircle2 size={12} className="text-emerald-400" />
             ) : (
-              <Download size={13} />
+              <Download size={12} />
             )}
           </div>
 
           {/* Clean Label */}
-          <span className="text-xs font-semibold text-white tracking-tight">
+          <span className={`text-[11.5px] font-medium tracking-tight ${
+            isExpanded ? 'text-white dark:text-slate-900' : 'text-slate-600 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white'
+          }`}>
             {downloadState.status === 'downloading'
               ? `Downloading (${downloadState.progress}%)`
               : downloadState.status === 'completed'
@@ -388,11 +390,11 @@ export default function DesktopDownloadFloatingTrigger({ visible = true, classNa
 
           {/* Refined Chevron with 180-degree rotation */}
           <div
-            className={`text-slate-400 group-hover:text-white transition-transform duration-300 ease-out ml-0.5 ${
-              isExpanded ? 'rotate-180 text-white' : 'rotate-0'
+            className={`text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-transform duration-300 ease-out ml-0.5 ${
+              isExpanded ? 'rotate-180 text-white dark:text-slate-900' : 'rotate-0'
             }`}
           >
-            <ChevronDown size={14} />
+            <ChevronDown size={12} />
           </div>
         </button>
       </div>
