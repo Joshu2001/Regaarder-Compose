@@ -10,7 +10,8 @@ import {
   LogIn,
   User,
   Check,
-  Sparkles
+  ArrowRight,
+  ShieldCheck
 } from "lucide-react";
 import {
   ComposeIcon,
@@ -18,24 +19,28 @@ import {
   SheetIcon,
   RoomIcon,
   WhiteboardIcon,
-  ScheduleIcon,
+  ImportPortalIcon,
   MemoryIcon,
-  TasksIcon
+  RelayIcon,
+  RegaarderAiIcon
 } from "./components/RegaarderProductIcons";
 
 import RegaarderBrandIcon from "./components/RegaarderBrandIcon";
 import LegalPolicyModal from "./components/LegalPolicyModal";
 import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRecentWorkStrip";
+import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
+import AuthPopoverDropdown from "./components/auth/AuthPopoverDropdown";
+import { logoutFirebase } from "./services/firebaseAuthService";
 
-const products = [
+const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
   { id: "deck", title: "Deck", icon: DeckIcon },
   { id: "sheet", title: "Sheet", icon: SheetIcon },
   { id: "room", title: "Room", icon: RoomIcon },
+  { id: "relay", title: "Relay", icon: RelayIcon },
   { id: "whiteboard", title: "Whiteboard", icon: WhiteboardIcon },
-  { id: "schedule", title: "Schedule", icon: ScheduleIcon },
+  { id: "omni-portal", title: "Import", icon: ImportPortalIcon },
   { id: "memory", title: "Memory", icon: MemoryIcon },
-  { id: "tasks", title: "Tasks", icon: TasksIcon },
 ];
 
 export default function RegaarderComposeLanding({
@@ -51,6 +56,10 @@ export default function RegaarderComposeLanding({
   onOpenFeedback,
   onOpenShortcuts,
   isDarkMode = false,
+  onOpenStagingPr,
+  onAuthSuccess,
+  onSignOut,
+  apiBaseUrl = '',
 }) {
   const { t } = useTranslation();
   const [legalModalTab, setLegalModalTab] = useState(null);
@@ -58,9 +67,34 @@ export default function RegaarderComposeLanding({
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
+  const [authDropdownInitialTab, setAuthDropdownInitialTab] = useState('login');
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackCategory, setFeedbackCategory] = useState('Idea');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  // Dynamic MRU (Most Recently Used) Product Ordering
+  const [sortedProducts, setSortedProducts] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const lastApp = localStorage.getItem('rc.lastOpenedApp') || 'compose';
+        const mruHistoryRaw = localStorage.getItem('rc.mruAppsHistory');
+        const mruList = mruHistoryRaw ? JSON.parse(mruHistoryRaw) : [lastApp];
+        
+        // Sort DEFAULT_PRODUCTS by index in mruList (most recent first)
+        const sorted = [...DEFAULT_PRODUCTS].sort((a, b) => {
+          const idxA = mruList.indexOf(a.id);
+          const idxB = mruList.indexOf(b.id);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return 0;
+        });
+        return sorted;
+      }
+    } catch {}
+    return DEFAULT_PRODUCTS;
+  });
   const [hasRecentWork, setHasRecentWork] = useState(() => {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
@@ -96,7 +130,7 @@ export default function RegaarderComposeLanding({
       </div>
 
       {/* ── Global Navigation Bar ── */}
-      <header className="h-14 flex items-center justify-between px-6 sm:px-8 bg-transparent shrink-0 select-none z-30 relative">
+      <header className="h-12 flex items-center justify-between px-6 sm:px-8 bg-transparent shrink-0 select-none z-30 relative">
 
         {/* Left: Workspace Selector with Silhouette Mark */}
         <button
@@ -210,11 +244,8 @@ export default function RegaarderComposeLanding({
                 type="button"
                 onClick={() => {
                   setShowNotificationsMenu(false);
-                  if (onProfileClick) {
-                    onProfileClick();
-                  } else {
-                    setShowProfileMenu(prev => !prev);
-                  }
+                  setShowProfileMenu(prev => !prev);
+                  onProfileClick?.();
                 }}
                 className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all hover:opacity-85 focus:outline-none cursor-pointer bg-slate-500"
                 title={`Profile: ${currentUser?.name || ''}`}
@@ -252,13 +283,22 @@ export default function RegaarderComposeLanding({
 
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
+                        try {
+                          await logoutFirebase();
+                        } catch (err) {
+                          console.warn('[Auth] Firebase logout error:', err);
+                        }
                         try {
                           localStorage.removeItem('rc.token');
                           localStorage.removeItem('rc.user');
                         } catch {}
                         setShowProfileMenu(false);
-                        window.location.reload();
+                        if (onSignOut) {
+                          onSignOut();
+                        } else {
+                          window.location.reload();
+                        }
                       }}
                       className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-rose-600 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors cursor-pointer text-center"
                     >
@@ -269,56 +309,48 @@ export default function RegaarderComposeLanding({
               )}
             </div>
           ) : (
-            <div className="relative ml-1 flex items-center">
+            <div className="relative ml-1 flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => {
-                  if (onProfileClick) {
-                    onProfileClick();
-                  } else {
-                    setShowProfileMenu(prev => !prev);
-                  }
+                  setAuthDropdownInitialTab('login');
+                  setShowAuthDropdown(prev => !prev || authDropdownInitialTab !== 'login');
+                  setShowNotificationsMenu(false);
                 }}
-                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-medium hover:bg-black dark:hover:bg-zinc-100 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
-                title="Sign In or Create Account"
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-xs font-medium transition-all duration-150 cursor-pointer outline-none focus:outline-none"
+                title="Sign In"
               >
                 <LogIn size={12} strokeWidth={2} />
                 <span>Sign in</span>
               </button>
 
-              {/* Guest / Sign-in options dropdown */}
-              {showProfileMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowProfileMenu(false)}
-                  />
-                  <div
-                    className="absolute right-0 top-10 z-50 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xl p-4 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150 font-sans"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center mx-auto text-sm font-semibold">
-                      <User size={18} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Welcome to Regaarder</div>
-                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug">
-                        Sign in to sync your work, collaborate, and access premium AI tools.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onProfileClick?.();
-                      }}
-                      className="w-full py-1.5 px-3 rounded-lg text-xs font-medium bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black transition-colors cursor-pointer shadow-xs"
-                    >
-                      Sign In / Sign Up
-                    </button>
-                  </div>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthDropdownInitialTab('register');
+                  setShowAuthDropdown(true);
+                  setShowNotificationsMenu(false);
+                }}
+                className="flex items-center gap-1.5 h-7.5 px-3.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black dark:hover:bg-zinc-100 text-xs font-semibold shadow-xs transition-all duration-150 cursor-pointer outline-none focus:outline-none"
+                title="Start Free"
+              >
+                <span>Start free</span>
+              </button>
+
+              <AuthPopoverDropdown
+                isOpen={showAuthDropdown}
+                onClose={() => setShowAuthDropdown(false)}
+                initialTab={authDropdownInitialTab}
+                onOpenLegal={(tab) => {
+                  setLegalModalTab(tab);
+                  setShowAuthDropdown(false);
+                }}
+                onSuccess={(user) => {
+                  setShowAuthDropdown(false);
+                  onAuthSuccess?.(user);
+                }}
+                apiBaseUrl={apiBaseUrl}
+              />
             </div>
           )}
 
@@ -326,87 +358,125 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-8 py-6 overflow-y-auto thin-scrollbar relative z-10">
-        <div className="w-full max-w-[800px] mx-auto flex flex-col items-center">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-0 pb-3 overflow-y-auto thin-scrollbar relative z-10">
+        <div className="w-full max-w-[1240px] mx-auto flex flex-col items-center">
 
           {/*
             ── Hero Section ──
-            Pure Apple typography & authoritative monochrome Regaarder brand glyph.
+            Authority monochrome Regaarder brand glyph, confident proposition.
+            - "Your team's work," (Line 1)
+            - "finally connected." with subtle purple/indigo/blue gradient (Line 2)
+            - Supporting line: "Docs, Sheets, Decks, Meetings, Whiteboards and AI — in one private workspace."
+            - Seamless, natural continuation into the Memory ↔ Relay product visualization.
           */}
-          <div className="text-center mb-8 sm:mb-9 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-5 sm:mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
             <div className="mb-2 sm:mb-2.5 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#18181b] border border-slate-200/40 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(15,23,42,0.02)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
-                <RegaarderBrandIcon size={21} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
+              <div className="w-9 h-9 rounded-xl bg-white/90 dark:bg-[#18181b]/90 border border-slate-200/50 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none flex items-center justify-center group hover:border-violet-200/80 dark:hover:border-violet-500/30 transition-all duration-200">
+                <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
 
-            <h1 className="text-[28px] sm:text-[34px] md:text-[36px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2 text-balance max-w-2xl mx-auto">
-              {t('landing.headline') || 'Everything your team thinks, in one place.'}
+            <h1 className="text-[28px] sm:text-[34px] md:text-[38px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.14] mb-1.5 sm:mb-2 text-balance max-w-2xl mx-auto">
+              <span>Your team's work,</span>
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-400 dark:via-indigo-300 dark:to-blue-400 bg-clip-text text-transparent">
+                finally connected.
+              </span>
             </h1>
-            <p className="text-[14.5px] sm:text-[15px] text-slate-500 dark:text-zinc-400 font-normal max-w-md mx-auto leading-relaxed">
-              {t('landing.subheadline') || 'Open a product to start building.'}
+            <p className="text-[13px] sm:text-[14px] text-slate-500 dark:text-zinc-400 font-normal max-w-xl mx-auto leading-relaxed">
+              Docs, Sheets, Decks, Meetings, Whiteboards and AI — in one private workspace.
             </p>
           </div>
 
           {/*
-            ── 4×2 Product Launcher Grid ──
-            - White/almost-white surfaces with subtle borders and very soft elevation.
-            - Dark navy labels and restrained purple accents on hover.
-            - Generous whitespace (p-6).
+            ── Connected Radial Ecosystem Visualization ──
+            Spatial, connected radial ecosystem where Memory ↔ Relay serves as the natural continuation of the headline.
           */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 w-full">
-            {products.map((product, idx) => {
-              const IconComp = product.icon;
-              return (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => onLaunch?.({ type: 'action', name: product.id })}
-                  style={{ animationDelay: `${idx * 25}ms` }}
-                  className={[
-                    "flex flex-col items-center justify-center gap-3",
-                    // Near-white surface
-                    "bg-white dark:bg-[#18181b]",
-                    // Subtle border and extremely soft elevation
-                    "border border-slate-200/40 dark:border-white/[0.04]",
-                    "rounded-2xl p-6",
-                    "shadow-[0_1px_3px_rgba(15,23,42,0.02)] dark:shadow-none",
-                    // Gentle hover state with restrained purple accent
-                    "hover:bg-white dark:hover:bg-[#1f1f23]",
-                    "hover:border-violet-200 dark:hover:border-violet-500/30",
-                    "hover:shadow-[0_8px_20px_-6px_rgba(15,23,42,0.06)] dark:hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.4)]",
-                    "hover:-translate-y-0.5",
-                    "active:scale-[0.985] active:translate-y-0",
-                    // Strict outline elimination
-                    "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
-                    "transition-all duration-200 group cursor-pointer animate-in fade-in slide-in-from-bottom-2",
-                  ].join(" ")}
-                >
-                  {/* Bare vector icon with restrained purple hover */}
-                  <div className="text-slate-600 dark:text-zinc-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200">
-                    <IconComp size={26} strokeWidth={1.5} />
-                  </div>
+          <WorkspaceEcosystemVisualizer onLaunch={onLaunch} className="mt-1 sm:mt-2" />
 
-                  {/* Dark navy product label */}
-                  <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white transition-colors duration-200">
-                    {t('landing.' + product.id) || product.title}
+          {/*
+            ── Sub-Hero Differentiator: One workspace. Shared context. ──
+            Anchors the "See how it works" secondary CTA and concretely reinforces
+            how Regaarder unifies documents, data, meetings, and AI context.
+          */}
+          <section
+            id="how-it-works"
+            className="w-full max-w-[700px] mx-auto text-center mt-2 sm:mt-3 mb-2.5 sm:mb-3 px-4 scroll-mt-6 animate-in fade-in duration-500"
+            aria-label="How it works"
+          >
+            <h2 className="text-[18px] sm:text-[21px] md:text-[23px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+              One workspace. Shared context.
+            </h2>
+            <p className="text-[13px] sm:text-[14px] text-slate-500 dark:text-zinc-400 font-normal max-w-[520px] mx-auto leading-relaxed mt-1.5">
+              Your documents, data, meetings, ideas and AI share the same context.
+            </p>
+          </section>
+
+          {/* ── Compact Value Points Layer (Restrained, Apple-style 3-column) ── */}
+          <div className="w-full max-w-[860px] mx-auto px-1 mb-2.5 sm:mb-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+              
+              {/* Point 1: Shared Context */}
+              <div className="p-3.5 sm:p-4 rounded-xl bg-black/[0.015] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.06] hover:bg-black/[0.025] dark:hover:bg-white/[0.035] transition-all duration-200 flex flex-col items-start text-left">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-5 h-5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                    <RegaarderAiIcon size={12} strokeWidth={1.8} />
+                  </div>
+                  <span className="text-[12.5px] sm:text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-[-0.01em]">
+                    Shared Context
                   </span>
-                </button>
-              );
-            })}
+                </div>
+                <p className="text-[12px] text-slate-400 dark:text-zinc-400 font-normal leading-relaxed mt-1">
+                  AI understands your documents, data, meetings and ideas.
+                </p>
+              </div>
+
+              {/* Point 2: Connected Tools */}
+              <div className="p-3.5 sm:p-4 rounded-xl bg-black/[0.015] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.06] hover:bg-black/[0.025] dark:hover:bg-white/[0.035] transition-all duration-200 flex flex-col items-start text-left">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-5 h-5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0">
+                    <RelayIcon size={12} strokeWidth={1.7} />
+                  </div>
+                  <span className="text-[12.5px] sm:text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-[-0.01em]">
+                    Connected Tools
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-400 dark:text-zinc-400 font-normal leading-relaxed mt-1">
+                  Move naturally between Docs, Sheets, Decks, Room and Whiteboard.
+                </p>
+              </div>
+
+              {/* Point 3: Private by Design */}
+              <div className="p-3.5 sm:p-4 rounded-xl bg-black/[0.015] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.06] hover:bg-black/[0.025] dark:hover:bg-white/[0.035] transition-all duration-200 flex flex-col items-start text-left">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={12} strokeWidth={1.7} />
+                  </div>
+                  <span className="text-[12.5px] sm:text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-[-0.01em]">
+                    Private by Design
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-400 dark:text-zinc-400 font-normal leading-relaxed mt-1">
+                  Your team's work stays within your private workspace.
+                </p>
+              </div>
+
+            </div>
           </div>
 
-          {/* ── Progressive Disclosure Recent Work Strip ── */}
-          <LandingRecentWorkStrip
-            onLaunch={onLaunch}
-            onOpenRecentModal={onOpenRecentModal}
-            onRecentCountChange={(count) => setHasRecentWork(count > 0)}
-          />
+          {/* ── Progressive Disclosure Recent Work Strip (cleanly positioned beneath ecosystem) ── */}
+          <div className="w-full max-w-[860px] mx-auto -mt-1 sm:-mt-1.5">
+            <LandingRecentWorkStrip
+              onLaunch={onLaunch}
+              onOpenRecentModal={onOpenRecentModal}
+              onRecentCountChange={(count) => setHasRecentWork(count > 0)}
+            />
+          </div>
 
           {/* ── Subtle Workspace Utility Layer ── */}
-          <div className={`${hasRecentWork ? "mt-6" : "mt-8 sm:mt-9"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>
+          <div className={`${hasRecentWork ? "mt-2.5 sm:mt-3" : "mt-4 sm:mt-5"} flex items-center justify-center gap-5 sm:gap-6 text-[12px] text-slate-400 dark:text-zinc-500 select-none transition-all duration-200`}>
             <button
               type="button"
               onClick={() => onOpenHelp ? onOpenHelp() : onLaunch?.({ type: 'action', name: 'help' })}
@@ -440,7 +510,7 @@ export default function RegaarderComposeLanding({
           </div>
 
           {/* ── Footer with Terms of Service, Privacy Policy & Legal ── */}
-          <div className="mt-8 sm:mt-9 flex items-center gap-5 sm:gap-6 text-[11px] sm:text-[11.5px] text-slate-400/70 dark:text-zinc-600 select-none">
+          <div className="mt-2.5 sm:mt-3 flex items-center gap-5 sm:gap-6 text-[11px] sm:text-[11.5px] text-slate-400/70 dark:text-zinc-600 select-none">
             <button
               type="button"
               onClick={() => setLegalModalTab("terms")}
