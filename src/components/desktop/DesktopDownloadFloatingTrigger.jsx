@@ -11,7 +11,7 @@ import { Download, Monitor, Laptop, Terminal, ChevronDown, CheckCircle2, Loader2
  * - Preserves card height, vertical overlap (-4px), spacing, typography,
  *   colors, shadows, detected badge, and smooth Apple-style easing.
  */
-export default function DesktopDownloadFloatingTrigger({ visible = true } = {}) {
+export default function DesktopDownloadFloatingTrigger({ visible = true, className = '' } = {}) {
   if (!visible) return null;
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -192,7 +192,7 @@ export default function DesktopDownloadFloatingTrigger({ visible = true } = {}) 
       ref={containerRef}
       role="region"
       aria-label="Download Desktop App"
-      className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans select-none"
+      className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end font-sans select-none ${className}`}
       style={{ paddingRight: 0, marginRight: 0 }}
     >
       {/* ── Overlapping Physical Stacked Deck (Slides smoothly upward from behind the button) ── */}

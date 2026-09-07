@@ -29,6 +29,7 @@ import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRe
 import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
 import AuthPopoverDropdown from "./components/auth/AuthPopoverDropdown";
 import { logoutFirebase } from "./services/firebaseAuthService";
+import DesktopDownloadFloatingTrigger from "./components/desktop/DesktopDownloadFloatingTrigger";
 
 const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
@@ -340,7 +341,7 @@ export default function RegaarderComposeLanding({
       </header>
 
       {/* ── Main Content Stage ── */}
-      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-0.5 sm:pt-1 pb-3 sm:pb-4 overflow-y-auto thin-scrollbar relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-0 pb-3 overflow-y-auto thin-scrollbar relative z-10">
         <div className="w-full max-w-[1240px] mx-auto flex flex-col items-center">
 
           {/*
@@ -353,7 +354,7 @@ export default function RegaarderComposeLanding({
             - Centered, dark navy typography
             - Subtitle directly beneath
           */}
-          <div className="text-center mb-2 sm:mb-2.5 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
+          <div className="text-center mb-1.5 sm:mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
             
             {/* Minimal Regaarder Hero Mark */}
             <div className="mb-1 flex items-center justify-center">

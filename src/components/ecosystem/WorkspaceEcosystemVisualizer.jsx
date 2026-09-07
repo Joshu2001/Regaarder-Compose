@@ -86,8 +86,8 @@ export default function WorkspaceEcosystemVisualizer({ onLaunch }) {
         }
       `}</style>
 
-      {/* ── Outer Ecosystem Stage (Aspect 1060 x 380: Compact single-viewport height) ── */}
-      <div className="w-full max-w-[1060px] h-[360px] sm:h-[380px] relative flex items-center justify-center overflow-visible">
+      {/* ── Outer Ecosystem Stage (Aspect 980 x 340: Compact single-viewport height with breathing room) ── */}
+      <div className="w-full max-w-[980px] h-[320px] sm:h-[340px] relative flex items-center justify-center overflow-visible">
         
         {/* ── Soft Atmospheric Background Illumination (Clean canvas, luminous soft diffusion) ── */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible">
