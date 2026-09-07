@@ -20,7 +20,6 @@ import {
   Calendar,
   Clock,
   Users,
-  Sparkles,
   Bot,
   AlertTriangle,
   CheckCircle2,
@@ -41,7 +40,7 @@ import {
   Check,
   X
 } from 'lucide-react';
-
+import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import * as intentScheduler from '../../services/intentSchedulerEngine.js';
 
 export default function IntentSchedulerInspector({ onClose }) {
@@ -254,7 +253,7 @@ export default function IntentSchedulerInspector({ onClose }) {
       </div>
 
       {/* ── Main Tab Content Viewport ───────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 thin-scrollbar">
         {/* ── TAB 1: CALENDAR & TIMELINE ────────────────────────────── */}
         {activeTab === 'calendar' && (
           <div className="space-y-6 max-w-6xl mx-auto">
@@ -273,26 +272,58 @@ export default function IntentSchedulerInspector({ onClose }) {
               <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-black/[0.07] dark:border-white/[0.08] shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Active Agent Profiles</div>
                 <div className="text-2xl font-bold mt-1 text-sky-600 dark:text-sky-400">{participants.length}</div>
-                <div className="text-xs text-slate-500 mt-0.5">Joshua, Alex, Elena, David</div>
+                <div className="text-xs text-slate-500 mt-0.5 truncate">{participants.map(p => p.name.split(' ')[0]).join(', ')}</div>
               </div>
               <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-black/[0.07] dark:border-white/[0.08] shadow-2xs">
                 <div className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">CSP Optimization</div>
-                <div className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">92% Avg</div>
-                <div className="text-xs text-slate-500 mt-0.5">Utility preference alignment</div>
+                <div className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+                  {events.length > 0 ? '92% Avg' : '—'}
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {events.length > 0 ? 'Utility preference alignment' : 'No active sessions'}
+                </div>
               </div>
             </div>
 
             {/* Event Timeline Cards */}
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-200 flex items-center justify-between">
-                <span>Universal Calendar Events</span>
-                <span className="text-xs font-normal text-slate-400">Chronological schedule order</span>
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                  Universal Calendar Events
+                </h3>
+                {events.length > 0 && (
+                  <span className="text-xs font-normal text-slate-400">Chronological schedule order</span>
+                )}
+              </div>
 
               {events.length === 0 ? (
-                <div className="p-12 text-center border border-dashed border-slate-300 dark:border-zinc-800 rounded-2xl">
-                  <Clock className="w-8 h-8 mx-auto text-slate-400" />
-                  <p className="mt-2 text-sm text-slate-500">No scheduled sessions in universal storage.</p>
+                <div className="p-10 sm:p-14 text-center border border-dashed border-slate-300 dark:border-zinc-800 rounded-2xl bg-white/50 dark:bg-zinc-900/40 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
+                    <Calendar size={24} />
+                  </div>
+                  <div className="max-w-md space-y-1">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">No Scheduled Sessions</h4>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                      The Intent Scheduler coordinates multi-agent meeting windows, automates CSP constraint resolution, and commits commitments to universal storage.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateOpen(true)}
+                      className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Plus size={13} strokeWidth={2.5} />
+                      <span>Schedule First Session</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => intentScheduler.loadSampleSchedule()}
+                      className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-semibold border border-slate-200 dark:border-zinc-700 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span>Load Example Schedule</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 events.map((evt) => {
@@ -493,7 +524,28 @@ export default function IntentSchedulerInspector({ onClose }) {
             </div>
 
             {/* Negotiation Output & Rounds */}
-            {activeNegotiation && (
+            {!activeNegotiation ? (
+              <div className="p-8 sm:p-12 rounded-2xl bg-white/50 dark:bg-zinc-900/40 border border-dashed border-slate-200 dark:border-zinc-800 text-center flex flex-col items-center justify-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
+                  <Bot size={24} />
+                </div>
+                <div className="max-w-md space-y-1">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Negotiation Protocol Standby</h4>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                    Select initiator and counterparty agent profiles above and execute the protocol to simulate monotonic concessions and Pareto convergence.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRunNegotiation}
+                  disabled={isNegotiating}
+                  className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Play size={13} strokeWidth={2.5} />
+                  <span>Execute Negotiation Protocol</span>
+                </button>
+              </div>
+            ) : (
               <div className="space-y-4">
                 {/* Result Summary Card */}
                 <div className={`p-4 rounded-xl border flex items-center justify-between ${
@@ -631,12 +683,32 @@ export default function IntentSchedulerInspector({ onClose }) {
             </div>
 
             {/* Solver Output */}
-            {solverResults && (
+            {!solverResults ? (
+              <div className="p-8 sm:p-12 rounded-2xl bg-white/50 dark:bg-zinc-900/40 border border-dashed border-slate-200 dark:border-zinc-800 text-center flex flex-col items-center justify-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
+                  <Sliders size={24} />
+                </div>
+                <div className="max-w-md space-y-1">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Constraint Solver Ready</h4>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                    Enter a colloquial intent above or click any preset chip to trigger Rule 4 domain mapping and evaluate candidate time windows.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRunSolver('Board prep sync')}
+                  className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Play size={13} strokeWidth={2.5} />
+                  <span>Test "Board prep sync"</span>
+                </button>
+              </div>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left: Rule 4 Semantic Domain Specification */}
                 <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.08] space-y-3">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-sky-500" />
+                    <RegaarderAiIcon size={13} className="text-sky-500" />
                     <span>Rule 4 Intent Mapping Output</span>
                   </h4>
 
@@ -675,7 +747,7 @@ export default function IntentSchedulerInspector({ onClose }) {
                     <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">CSP Solved</span>
                   </h4>
 
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-72 overflow-y-auto thin-scrollbar pr-1">
                     {(solverResults.solution?.candidateSlots || []).map((slot, idx) => (
                       <div
                         key={idx}

@@ -177,10 +177,20 @@ function getStoredEvents() {
   if (stored && Array.isArray(stored)) {
     memoryEvents = stored;
   } else {
-    memoryEvents = [...SEED_EVENTS];
+    memoryEvents = [];
     writeStorage(STORAGE_KEY_EVENTS, memoryEvents);
   }
   return memoryEvents;
+}
+
+export function loadSampleSchedule() {
+  saveEvents([...SEED_EVENTS]);
+  return SEED_EVENTS;
+}
+
+export function clearAllScheduleEvents() {
+  saveEvents([]);
+  return [];
 }
 
 function saveEvents(events) {

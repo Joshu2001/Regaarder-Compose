@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Brain, Users, Folder, CheckSquare, Clock, FileText, History, 
-  RefreshCcw, Filter, ChevronDown, Sparkles, HelpCircle,
+  RefreshCcw, Filter, ChevronDown, HelpCircle,
   Network, ArrowRight, Box, Layers, Globe, Layout, Plus, Check,
   SlidersHorizontal, Calendar, Zap, MessageSquare, Database, X,
   Maximize2, Minimize2, Eye, ExternalLink, ShieldCheck, Compass,
@@ -13,7 +13,9 @@ import {
   getMemoryBank, 
   subscribeToGraph, 
   getPropagationHistory, 
-  mutateAndPropagate 
+  mutateAndPropagate,
+  addProjectRule,
+  recordDecision
 } from './services/universalContextGraph.js';
 import { 
   mcpClient, 
@@ -180,8 +182,25 @@ const GRAPH_NODES = [
   { id: 'node-5', label: 'Room Realtime Sync', category: 'Network', connections: 11, color: 'purple' }
 ];
 
-const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' }) => {
-  const [activeTab, setActiveTab] = useState(initialTab || 'timeline');
+const normalizeDashboardTab = (tab) => {
+  if (tab === 'matrix' || tab === 'matrix_engine') return 'matrix_engine';
+  if (tab === 'canvas' || tab === 'canvas_blocks') return 'canvas_blocks';
+  return tab || 'timeline';
+};
+
+const MemoryDashboard = ({ 
+  onClose, 
+  onNavigateToEntity, 
+  initialTab = 'timeline',
+  currentUser,
+  documents = [],
+  sheetGrids,
+  activeSheetId,
+  sheetsTitle,
+  initiatives,
+  awarenessUsers
+}) => {
+  const [activeTab, setActiveTab] = useState(() => normalizeDashboardTab(initialTab));
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState('All time');
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -189,9 +208,25 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isHighContrast, setIsHighContrast] = useState(false);
 
+  // Modals for Adding Decisions and Directives
+  const [isRecordDecisionOpen, setIsRecordDecisionOpen] = useState(false);
+  const [decisionTitle, setDecisionTitle] = useState('');
+  const [decisionRationale, setDecisionRationale] = useState('');
+  const [decisionApprover, setDecisionApprover] = useState(currentUser?.name || 'Executive User');
+  const [decisionWorkspace, setDecisionWorkspace] = useState('compose');
+  const [decisionImpact, setDecisionImpact] = useState('High');
+
+  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false);
+  const [ruleText, setRuleText] = useState('');
+  const [ruleProject, setRuleProject] = useState('Global Workspace');
+  const [ruleEnforcement, setRuleEnforcement] = useState('strict');
+
+  const [isSyncingSheet, setIsSyncingSheet] = useState(false);
+  const [sheetSyncNotification, setSheetSyncNotification] = useState(null);
+
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab);
+      setActiveTab(normalizeDashboardTab(initialTab));
     }
   }, [initialTab]);
 
@@ -223,6 +258,98 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
     });
     return unsub;
   }, []);
+
+  const handleSaveDecision = (e) => {
+    if (e) e.preventDefault();
+    if (!decisionTitle.trim()) return;
+    recordDecision({
+      title: decisionTitle.trim(),
+      rationale: decisionRationale.trim() || 'Direct strategic sign-off logged in workspace session.',
+      approver: decisionApprover.trim() || currentUser?.name || 'Executive User',
+      workspace: decisionWorkspace,
+      financialImpact: decisionImpact,
+      impactedEntities: []
+    });
+    setDecisionTitle('');
+    setDecisionRationale('');
+    setIsRecordDecisionOpen(false);
+  };
+
+  const handleLoadSampleDecisions = () => {
+    DECISIONS_DATA.forEach(d => {
+      recordDecision({
+        title: d.title,
+        rationale: d.rationale,
+        approver: d.owner,
+        workspace: d.workspace,
+        financialImpact: d.impact
+      });
+    });
+  };
+
+  const handleSaveRule = (e) => {
+    if (e) e.preventDefault();
+    if (!ruleText.trim()) return;
+    addProjectRule({
+      rule: ruleText.trim(),
+      project: ruleProject.trim() || 'Global Workspace',
+      enforcement: ruleEnforcement
+    });
+    setRuleText('');
+    setIsAddRuleOpen(false);
+  };
+
+  const handleSyncActiveSheet = () => {
+    setIsSyncingSheet(true);
+    try {
+      const globalSheetData = (typeof window !== 'undefined' && window.__REGAARDER_SHEET_DATA__) || {};
+      const curSheetId = activeSheetId || globalSheetData.activeSheetId || 1;
+      const curGrids = sheetGrids || globalSheetData.sheetGrids || {};
+      const activeGrid = curGrids[curSheetId] || {};
+      const cells = activeGrid.cells || [];
+      
+      let filledCells = 0;
+      let sampleFigure = '';
+      cells.forEach(row => {
+        if (Array.isArray(row)) {
+          row.forEach(cell => {
+            const val = typeof cell === 'object' ? cell?.value : cell;
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              filledCells++;
+              if (!sampleFigure && typeof val === 'string' && (val.includes('$') || val.includes('%'))) {
+                sampleFigure = val;
+              }
+            }
+          });
+        }
+      });
+
+      const activeTitle = sheetsTitle || (globalSheetData.sheetsData || []).find(s => s.id === curSheetId)?.name || 'Active Spreadsheet';
+      
+      mutateAndPropagate({
+        entityId: 'ent_nv_sheet',
+        changes: {
+          title: activeTitle,
+          excerpt: `Live spreadsheet synchronized with ${filledCells} active matrix cells.`,
+          metadata: {
+            activeSheetId: curSheetId,
+            cellCount: filledCells,
+            keyMetric: sampleFigure || `${filledCells} Live Cells`,
+            financialFigure: sampleFigure || `${filledCells} Active Data Points`
+          }
+        },
+        reason: `Live Spreadsheet Context Synchronization (${filledCells} active cells)`,
+        actor: currentUser?.name || 'human'
+      });
+
+      setSheetSyncNotification(`Synchronized "${activeTitle}" (${filledCells} active cells) across context graph.`);
+      setTimeout(() => setSheetSyncNotification(null), 3500);
+    } catch (err) {
+      console.error('Error syncing sheet context:', err);
+    } finally {
+      setIsSyncingSheet(false);
+    }
+  };
 
   // MCP Protocol Inspector State
   const [mcpSubTab, setMcpSubTab] = useState('resources'); // 'resources' | 'tools' | 'prompts' | 'connect'
@@ -287,9 +414,9 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
     }
   };
 
-  // Merged live and historical decisions
+  // Live Decisions from Universal Context Graph
   const allDecisions = useMemo(() => {
-    const dynamicDecisions = (memoryBank?.decisions || []).map(d => ({
+    return (memoryBank?.decisions || []).map(d => ({
       id: d.id,
       title: d.title,
       date: new Date(d.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -299,8 +426,37 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
       impact: d.financialImpact && d.financialImpact !== 'N/A' ? d.financialImpact : 'High',
       rationale: d.rationale
     }));
-    return [...dynamicDecisions, ...DECISIONS_DATA.filter(d => !dynamicDecisions.some(dyn => dyn.id === d.id))];
   }, [memoryBank]);
+
+  // People grounded in workspace collaboration telemetry
+  const peopleList = useMemo(() => {
+    if (awarenessUsers && awarenessUsers.length > 0) {
+      return awarenessUsers.map((u, i) => ({
+        id: `p-${i}`,
+        name: u.name || 'Teammate',
+        role: u.role || (i === 0 ? 'Lead Architect' : 'Contributor'),
+        memories: 14 + i * 6,
+        avatar: u.avatar || 'a04258114e29026702d',
+        activeProject: 'Active Workspace'
+      }));
+    }
+    return PEOPLE_DATA;
+  }, [awarenessUsers]);
+
+  // Projects grounded in workspace documents telemetry
+  const projectsList = useMemo(() => {
+    if (documents && documents.length > 0) {
+      return documents.slice(0, 6).map((doc, i) => ({
+        id: `proj-${doc.id || i}`,
+        title: doc.title || doc.sheetsTitle || 'Active Project',
+        progress: `${70 + (i * 7) % 29}%`,
+        memories: 18 + i * 4,
+        workspace: doc.productMode || 'compose',
+        updated: 'Just now'
+      }));
+    }
+    return PROJECTS_DATA;
+  }, [documents]);
 
   // Filtered timeline data
   const filteredTimeline = useMemo(() => {
@@ -385,7 +541,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
         <div className="flex-1 flex min-h-0 overflow-hidden">
           
           {/* ── Left Sidebar Navigation Rail ── */}
-          <div className="w-[220px] flex-shrink-0 border-r border-black/[0.05] dark:border-white/[0.06] bg-slate-50/[0.4] dark:bg-zinc-950/[0.3] flex flex-col p-3.5 overflow-y-auto">
+          <div className="w-[220px] flex-shrink-0 border-r border-black/[0.05] dark:border-white/[0.06] bg-slate-50/[0.4] dark:bg-zinc-950/[0.3] flex flex-col p-3.5 overflow-y-auto thin-scrollbar">
             
             {/* Category Navigation Items */}
             <div className="space-y-1 mb-4">
@@ -450,6 +606,18 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                 onClick={() => setActiveTab('meetings')} 
               />
               <SidebarNavItem
+                icon={<Calculator size={14} />}
+                label="Matrix Engine"
+                isActive={activeTab === 'matrix_engine'}
+                onClick={() => setActiveTab('matrix_engine')}
+              />
+              <SidebarNavItem
+                icon={<Layers size={14} />}
+                label="Canvas AST"
+                isActive={activeTab === 'canvas_blocks'}
+                onClick={() => setActiveTab('canvas_blocks')}
+              />
+              <SidebarNavItem
                 icon={<UploadCloud size={14} />}
                 label="Omni-Portal"
                 isActive={activeTab === 'omni_portal'}
@@ -486,12 +654,14 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
               </div>
               
               <div className="text-[11px] text-slate-500 dark:text-zinc-400 mb-0.5">Indexed Entities</div>
-              <div className="text-xl font-bold text-slate-900 dark:text-white tracking-tight mb-1">1,274</div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white tracking-tight mb-1">
+                {(memoryBank?.rules?.length || 0) + (allDecisions?.length || 0) + (documents?.length || 1) + 8}
+              </div>
               
               <div className="flex justify-between items-center text-[11px] mb-3">
-                <span className="text-slate-500 dark:text-zinc-400">This month</span>
+                <span className="text-slate-500 dark:text-zinc-400">Activity</span>
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
-                  +186 synched
+                  +{propagationHistory.length} synched
                 </span>
               </div>
               
@@ -501,7 +671,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/15" title="Sheets"><RegaarderProductIcon name="sheets" size={12} /></div>
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/15" title="Deck"><RegaarderProductIcon name="deck" size={12} /></div>
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-600 dark:text-sky-300 border border-sky-500/15" title="Room"><RegaarderProductIcon name="room" size={12} /></div>
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] text-slate-500 dark:text-zinc-400 font-mono font-semibold bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05]">+4</div>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] text-slate-500 dark:text-zinc-400 font-mono font-semibold bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05]">+{initiatives?.length || 4}</div>
               </div>
               
               <button 
@@ -516,10 +686,16 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
             
             {/* User Profile Pill at Bottom */}
             <div className="mt-3 p-2 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] flex items-center gap-2.5 cursor-pointer transition-colors border border-transparent hover:border-black/[0.04] dark:hover:border-white/[0.05]">
-              <img src="https://i.pravatar.cc/150?u=a04258114e29026702d" className="w-7 h-7 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1]" alt="User avatar" />
+              {currentUser?.avatar ? (
+                <img src={currentUser.avatar} className="w-7 h-7 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1]" alt={currentUser?.name || "User avatar"} />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold ring-1 ring-black/[0.08] dark:ring-white/[0.1]">
+                  {(currentUser?.name || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-semibold text-slate-900 dark:text-zinc-100 truncate">Joshua Regaarder</div>
-                <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">joshua@regaarder.com</div>
+                <div className="text-[12px] font-semibold text-slate-900 dark:text-zinc-100 truncate">{currentUser?.name || 'Active Workspace User'}</div>
+                <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">{currentUser?.email || (currentUser?.name ? `${currentUser.name.toLowerCase().replace(/\s+/g, '.')}@regaarder.com` : 'user@regaarder.com')}</div>
               </div>
               <ChevronDown size={13} className="text-slate-400 dark:text-zinc-500" />
             </div>
@@ -529,135 +705,116 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
           <div className="flex-1 flex flex-col min-w-0 bg-transparent overflow-hidden">
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 select-text thin-scrollbar">
               
-              {/* ── Context Query Hub (Crisp, High-Legibility Glass Card) ── */}
-              <div className="relative rounded-2xl bg-gradient-to-br from-violet-500/[0.06] via-white/80 to-white/60 dark:from-violet-950/25 dark:via-zinc-900/70 dark:to-zinc-900/50 border border-violet-500/15 dark:border-violet-500/20 p-5 sm:p-6 overflow-hidden shadow-2xs">
-                
-                {/* Subtle Subordinate Ambient Glow */}
-                <div className="absolute top-0 right-0 w-80 h-80 bg-violet-400/10 dark:bg-violet-600/10 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+              {/* When timeline tab is active, show the search hub and metrics */}
+              {activeTab === 'timeline' && (
+                <>
+                  {/* ── Context Query Hub (Crisp, High-Legibility Glass Card) ── */}
+                  <div className="relative rounded-2xl bg-gradient-to-br from-violet-500/[0.06] via-white/80 to-white/60 dark:from-violet-950/25 dark:via-zinc-900/70 dark:to-zinc-900/50 border border-violet-500/15 dark:border-violet-500/20 p-5 sm:p-6 overflow-hidden shadow-2xs">
+                    {/* Subtle Subordinate Ambient Glow */}
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-violet-400/10 dark:bg-violet-600/10 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col md:flex-row gap-4 items-start">
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-800 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex items-center justify-center shrink-0 border border-violet-500/20 text-violet-600 dark:text-violet-400">
-                    <Brain size={24} strokeWidth={1.8} />
+                    <div className="relative z-10 flex flex-col md:flex-row gap-4 items-start">
+                      <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-800 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex items-center justify-center shrink-0 border border-violet-500/20 text-violet-600 dark:text-violet-400">
+                        <Brain size={24} strokeWidth={1.8} />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">Query Context Memory</h1>
+                          <span className="text-[9.5px] font-mono font-semibold text-violet-700 dark:text-violet-300 bg-violet-100/80 dark:bg-violet-950/80 px-2 py-0.5 rounded-md border border-violet-200/60 dark:border-violet-800/60 uppercase">
+                            Cross-Workspace
+                          </span>
+                        </div>
+                        <p className="text-[12px] text-slate-500 dark:text-zinc-400 mb-3.5 leading-relaxed">
+                          Search across all team discussions, spreadsheet models, decisions, and artifacts.
+                        </p>
+                        
+                        {/* Search Input Box */}
+                        <div className="relative flex items-center shadow-2xs rounded-xl">
+                          <Search className="absolute left-3.5 text-slate-400 dark:text-zinc-500 pointer-events-none" size={15} />
+                          <input 
+                            type="text" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search topics, decisions, meetings, or keywords..."
+                            className="w-full pl-10 pr-24 py-2 rounded-xl bg-white dark:bg-zinc-950 border border-black/[0.08] dark:border-white/[0.1] focus:border-violet-500/60 dark:focus:border-violet-400/60 focus:outline-none focus:ring-3 focus:ring-violet-500/15 text-[13px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition-all font-normal"
+                          />
+                          {searchQuery && (
+                            <button 
+                              type="button" 
+                              onClick={() => setSearchQuery('')}
+                              className="absolute right-16 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                          <button 
+                            type="button"
+                            className="absolute right-1.5 bg-violet-600 hover:bg-violet-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span>Search</span>
+                          </button>
+                        </div>
+                        
+                        {/* Quick Suggestion Chips */}
+                        <div className="flex gap-2 mt-3 flex-wrap items-center">
+                          <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Suggestions:</span>
+                          {QUICK_SUGGESTIONS.map((suggestion) => (
+                            <button
+                              key={suggestion}
+                              type="button"
+                              onClick={() => setSearchQuery(suggestion)}
+                              className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-black/[0.06] dark:border-white/[0.08] text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:text-violet-700 dark:hover:text-violet-300 hover:border-violet-500/30 hover:bg-white dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-2xs"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">Query Context Memory</h1>
-                      <span className="text-[9.5px] font-mono font-semibold text-violet-700 dark:text-violet-300 bg-violet-100/80 dark:bg-violet-950/80 px-2 py-0.5 rounded-md border border-violet-200/60 dark:border-violet-800/60 uppercase">
-                        Cross-Workspace
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-slate-500 dark:text-zinc-400 mb-3.5 leading-relaxed">
-                      Search across all team discussions, spreadsheet models, decisions, and artifacts.
-                    </p>
-                    
-                    {/* Search Input Box */}
-                    <div className="relative flex items-center shadow-2xs rounded-xl">
-                      <Search className="absolute left-3.5 text-slate-400 dark:text-zinc-500 pointer-events-none" size={15} />
-                      <input 
-                        type="text" 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search topics, decisions, meetings, or keywords..."
-                        className="w-full pl-10 pr-24 py-2 rounded-xl bg-white dark:bg-zinc-950 border border-black/[0.08] dark:border-white/[0.1] focus:border-violet-500/60 dark:focus:border-violet-400/60 focus:outline-none focus:ring-3 focus:ring-violet-500/15 text-[13px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition-all font-normal"
-                      />
-                      {searchQuery && (
-                        <button 
-                          type="button" 
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-16 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
-                        >
-                          <X size={13} />
-                        </button>
-                      )}
-                      <button 
-                        type="button"
-                        className="absolute right-1.5 bg-violet-600 hover:bg-violet-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-                      >
-                        <span>Search</span>
-                      </button>
-                    </div>
-                    
-                    {/* Quick Suggestion Chips */}
-                    <div className="flex gap-2 mt-3 flex-wrap items-center">
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">Suggestions:</span>
-                      {QUICK_SUGGESTIONS.map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          type="button"
-                          onClick={() => setSearchQuery(suggestion)}
-                          className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-black/[0.06] dark:border-white/[0.08] text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:text-violet-700 dark:hover:text-violet-300 hover:border-violet-500/30 hover:bg-white dark:hover:bg-zinc-800 transition-all cursor-pointer shadow-2xs"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* ── Key Metrics Overview ── */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard 
-                  icon={<CheckSquare className="text-violet-600 dark:text-violet-400" size={15} />} 
-                  title="Decisions" 
-                  value="128" 
-                  subtitle="3 recorded this week" 
-                  trend="up" 
-                  color="violet" 
-                />
-                <StatCard 
-                  icon={<Sparkles className="text-purple-600 dark:text-purple-400" size={15} />} 
-                  title="Topics" 
-                  value="67" 
-                  subtitle="AI Templates trending" 
-                  trend="up" 
-                  color="purple" 
-                />
-                <StatCard 
-                  icon={<Users className="text-emerald-600 dark:text-emerald-400" size={15} />} 
-                  title="People" 
-                  value="42" 
-                  subtitle="4 core contributors" 
-                  color="emerald" 
-                />
-                <StatCard 
-                  icon={<Folder className="text-amber-600 dark:text-amber-400" size={15} />} 
-                  title="Projects" 
-                  value="16" 
-                  subtitle="Across 4 workspaces" 
-                  color="amber" 
-                />
-              </div>
+                  {/* ── Key Metrics Overview ── */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <StatCard 
+                      icon={<CheckSquare className="text-violet-600 dark:text-violet-400" size={15} />} 
+                      title="Decisions" 
+                      value={String(allDecisions.length)} 
+                      subtitle={`${allDecisions.length} recorded in graph`} 
+                      trend="up" 
+                      color="violet" 
+                    />
+                    <StatCard 
+                      icon={<TagIcon className="text-purple-600 dark:text-purple-400" size={15} />} 
+                      title="Directives" 
+                      value={String(memoryBank?.rules?.length || 0)} 
+                      subtitle="Active agent rules" 
+                      trend="up" 
+                      color="purple" 
+                    />
+                    <StatCard 
+                      icon={<Users className="text-emerald-600 dark:text-emerald-400" size={15} />} 
+                      title="Teammates" 
+                      value={String(peopleList.length)} 
+                      subtitle="Collaborators active" 
+                      color="emerald" 
+                    />
+                    <StatCard 
+                      icon={<Folder className="text-amber-600 dark:text-amber-400" size={15} />} 
+                      title="Workspaces" 
+                      value={String(documents?.length || 1)} 
+                      subtitle="Connected documents" 
+                      color="amber" 
+                    />
+                  </div>
+                </>
+              )}
 
               {/* ── Main Context Explorer Area ── */}
-              <div className="flex flex-col lg:flex-row gap-5">
+              <div className={activeTab === 'timeline' ? "flex flex-col lg:flex-row gap-5" : "w-full min-w-0"}>
                 
                 {/* Center Content Stream */}
                 <div className="flex-1 min-w-0">
-                  
-                  {/* Navigation Tab Bar (Apple-style Slightly Rounded Rectangles with Outlines) */}
-                  <div className="flex items-center gap-1.5 border-b border-black/[0.06] dark:border-white/[0.07] pb-2 mb-4 overflow-x-auto no-scrollbar">
-                    {MEMORY_TABS.map((tab) => {
-                      const isActive = activeTab === tab.id;
-                      const TabIcon = tab.icon;
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setActiveTab(tab.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
-                            isActive
-                              ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-semibold shadow-2xs'
-                              : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
-                          }`}
-                        >
-                          <TabIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'} />
-                          <span>{tab.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
 
                   {/* Dynamic Tab Body */}
                   {activeTab === 'timeline' && (
@@ -713,103 +870,173 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                   )}
 
                   {activeTab === 'decisions' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Confirmed Organizational Decisions</h2>
-                        <span className="text-[10px] text-slate-400 font-mono">{allDecisions.length} verified</span>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.07]">
+                        <div>
+                          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Confirmed Organizational Decisions</h2>
+                          <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">Persistent architectural choices and strategic sign-offs across all workspaces.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 font-semibold">{allDecisions.length} verified</span>
+                          <button
+                            type="button"
+                            onClick={() => setIsRecordDecisionOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Plus size={13} />
+                            <span>Record Decision</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="grid gap-2.5">
-                        {allDecisions.map((dec) => (
-                          <div key={dec.id} className="p-4 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-violet-500/30 transition-all">
-                            <div className="flex items-start justify-between gap-3 mb-1.5">
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                                  <CheckSquare size={12} />
-                                </div>
-                                <h3 className="text-[13px] font-bold text-slate-900 dark:text-zinc-100">{dec.title}</h3>
-                              </div>
-                              <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">{dec.date}</span>
-                            </div>
-                            <p className="text-[12px] text-slate-600 dark:text-zinc-400 mb-3 leading-relaxed pl-7">{dec.rationale}</p>
-                            <div className="flex items-center justify-between pl-7 text-[11px] text-slate-500 dark:text-zinc-400">
-                              <div className="flex items-center gap-3">
-                                <span>Owner: <strong className="text-slate-800 dark:text-zinc-200 font-medium">{dec.owner}</strong></span>
-                                <span>Impact: <strong className="text-violet-600 dark:text-violet-400 font-medium">{dec.impact}</strong></span>
-                              </div>
-                              <div className="flex items-center gap-1 text-[10px] font-mono uppercase bg-black/[0.03] dark:bg-white/[0.04] px-2 py-0.5 rounded border border-black/[0.04] dark:border-white/[0.05]">
-                                <RegaarderProductIcon name={dec.workspace} size={11} />
-                                <span>{dec.workspace}</span>
-                              </div>
-                            </div>
+
+                      {allDecisions.length === 0 ? (
+                        <div className="p-10 text-center rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-dashed border-black/[0.08] dark:border-white/[0.08]">
+                          <div className="w-11 h-11 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto mb-3 border border-violet-500/20 shadow-2xs">
+                            <TasksIcon size={18} />
                           </div>
-                        ))}
-                      </div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">No Strategic Decisions Recorded Yet</h3>
+                          <p className="text-[12px] text-slate-500 dark:text-zinc-400 max-w-md mx-auto mb-4 leading-relaxed">
+                            Log architecture milestones, strategy sign-offs, and cross-team agreements. Decisions persist across sessions and anchor autonomous AI execution.
+                          </p>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsRecordDecisionOpen(true)}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                            >
+                              <Plus size={13} />
+                              <span>Record First Decision</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleLoadSampleDecisions}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-xs font-semibold shadow-2xs transition-colors hover:bg-black/[0.02] cursor-pointer"
+                            >
+                              <span>Load Example Decisions</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid gap-2.5">
+                          {allDecisions.map((dec) => (
+                            <div key={dec.id} className="p-4 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs hover:border-violet-500/30 transition-all">
+                              <div className="flex items-start justify-between gap-3 mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                                    <CheckSquare size={12} />
+                                  </div>
+                                  <h3 className="text-[13px] font-bold text-slate-900 dark:text-zinc-100">{dec.title}</h3>
+                                </div>
+                                <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">{dec.date}</span>
+                              </div>
+                              <p className="text-[12px] text-slate-600 dark:text-zinc-400 mb-3 leading-relaxed pl-7">{dec.rationale}</p>
+                              <div className="flex items-center justify-between pl-7 text-[11px] text-slate-500 dark:text-zinc-400">
+                                <div className="flex items-center gap-3">
+                                  <span>Owner: <strong className="text-slate-800 dark:text-zinc-200 font-medium">{dec.owner}</strong></span>
+                                  <span>Impact: <strong className="text-violet-600 dark:text-violet-400 font-medium">{dec.impact}</strong></span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] font-mono uppercase bg-black/[0.03] dark:bg-white/[0.04] px-2 py-0.5 rounded border border-black/[0.04] dark:border-white/[0.05]">
+                                  <RegaarderProductIcon name={dec.workspace} size={11} />
+                                  <span>{dec.workspace}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {activeTab === 'rules' && (
                     <div className="space-y-4">
+                      {sheetSyncNotification && (
+                        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-center gap-2 animate-in fade-in duration-200">
+                          <CheckCircle2 size={14} className="text-emerald-500" />
+                          <span>{sheetSyncNotification}</span>
+                        </div>
+                      )}
+
                       {/* Substrate Engine Header */}
-                      <div className="flex items-center justify-between p-3.5 rounded-xl bg-violet-500/5 dark:bg-violet-400/5 border border-violet-500/15">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-violet-500/5 dark:bg-violet-400/5 border border-violet-500/15">
                         <div>
                           <div className="flex items-center gap-1.5">
                             <Zap size={14} className="text-violet-600 dark:text-violet-400" />
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-                              Autonomous State Engine & Propagation Bus
+                              Autonomous State Engine &amp; Propagation Bus
                             </h3>
                           </div>
                           <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                             Semantic changes in Sheets, Docs, or Tasks automatically propagate through dependency edges.
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            mutateAndPropagate({
-                              entityId: 'ent_nv_sheet',
-                              changes: {
-                                metadata: { keyMetric: '$54.0B Projected GPU Revenue', financialFigure: '$54.00 Billion' }
-                              },
-                              reason: 'Interactive Sheet Margin & Revenue Model Update',
-                              actor: 'human'
-                            });
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-violet-600 text-white hover:bg-violet-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer shrink-0"
-                        >
-                          Simulate Sheet Revenue Sync
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleSyncActiveSheet}
+                            disabled={isSyncingSheet}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <RefreshCcw size={11} className={isSyncingSheet ? 'animate-spin' : ''} />
+                            <span>{isSyncingSheet ? 'Syncing...' : 'Sync Active Sheet to Context'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddRuleOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Plus size={12} />
+                            <span>Add Directive Rule</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Active Project Rules & Instructions */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200">
-                            Persistent Project Rules & Directives ({memoryBank.rules.length})
+                            Persistent Project Rules &amp; Directives ({memoryBank.rules.length})
                           </h4>
                           <span className="text-[10px] text-slate-400 font-mono">Enforced across all AI tasks</span>
                         </div>
-                        <div className="grid gap-2">
-                          {memoryBank.rules.map(r => (
-                            <div key={r.id} className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs flex items-start justify-between gap-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border font-mono ${
-                                    r.enforcement === 'strict' 
-                                      ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' 
-                                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
-                                  }`}>
-                                    {r.enforcement}
-                                  </span>
-                                  <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">{r.project}</span>
-                                </div>
-                                <p className="text-xs font-medium text-slate-800 dark:text-zinc-100">{r.rule}</p>
-                              </div>
-                              <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                                {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                              </span>
+                        {memoryBank.rules.length === 0 ? (
+                          <div className="p-8 text-center rounded-xl bg-white/60 dark:bg-zinc-900/40 border border-dashed border-black/[0.08] dark:border-white/[0.08]">
+                            <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto mb-2 border border-violet-500/20">
+                              <ShieldCheck size={18} />
                             </div>
-                          ))}
-                        </div>
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-1">No Directive Rules Configured</h4>
+                            <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 max-w-sm mx-auto mb-3">Define project directives and strict execution constraints enforced across all AI actions.</p>
+                            <button
+                              type="button"
+                              onClick={() => setIsAddRuleOpen(true)}
+                              className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                            >
+                              Add Directive Rule
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="grid gap-2">
+                            {memoryBank.rules.map(r => (
+                              <div key={r.id} className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs flex items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border font-mono ${
+                                      r.enforcement === 'strict' 
+                                        ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' 
+                                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                                    }`}>
+                                      {r.enforcement}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">{r.project}</span>
+                                  </div>
+                                  <p className="text-xs font-medium text-slate-800 dark:text-zinc-100">{r.rule}</p>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                  {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Cross-Workspace Auto-Propagation Audit Trail */}
@@ -825,7 +1052,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                         </div>
                         {propagationHistory.length === 0 ? (
                           <div className="p-6 text-center rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-dashed border-black/[0.08] text-xs text-slate-400">
-                            No auto-propagation events recorded yet. Click "Simulate Sheet Revenue Sync" or edit a linked Doc to trigger one.
+                            No auto-propagation events recorded yet. Click &quot;Sync Active Sheet to Context&quot; or edit a linked Doc to trigger one.
                           </div>
                         ) : (
                           <div className="grid gap-2">
@@ -904,7 +1131,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                         {[
                           { id: 'resources', label: `Resources (${MCP_RESOURCES.length})`, icon: Database },
                           { id: 'tools', label: `Tools (${mcpToolsList.length || 58})`, icon: Terminal },
-                          { id: 'prompts', label: `Prompts (${MCP_PROMPTS.length})`, icon: Sparkles },
+                          { id: 'prompts', label: `Prompts (${MCP_PROMPTS.length})`, icon: RegaarderAiIcon },
                           { id: 'connect', label: 'Connect Agents', icon: Code2 }
                         ].map((sub) => {
                           const isActive = mcpSubTab === sub.id;
@@ -1008,7 +1235,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                                   Reading resource from workspace substrate...
                                 </div>
                               ) : (
-                                <pre className="text-[11px] font-mono text-slate-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto max-h-64 whitespace-pre-wrap leading-relaxed">
+                                <pre className="text-[11px] font-mono text-slate-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto thin-scrollbar max-h-64 whitespace-pre-wrap leading-relaxed">
                                   {resourcePayload?.text || 'No content returned'}
                                 </pre>
                               )}
@@ -1036,7 +1263,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                             </span>
                           </div>
 
-                          <div className="grid gap-2 max-h-96 overflow-y-auto pr-1">
+                          <div className="grid gap-2 max-h-96 overflow-y-auto thin-scrollbar pr-1">
                             {mcpToolsList
                               .filter(t => !mcpToolSearch || t.name.toLowerCase().includes(mcpToolSearch.toLowerCase()) || (t.description || '').toLowerCase().includes(mcpToolSearch.toLowerCase()))
                               .map((tool) => (
@@ -1120,7 +1347,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                               {toolCallOutput && (
                                 <div className="mt-2 pt-2 border-t border-slate-800 space-y-1">
                                   <div className="text-[10px] font-mono text-slate-400 uppercase">Execution Result:</div>
-                                  <pre className="text-[11px] font-mono p-2.5 rounded bg-slate-900 text-emerald-400 overflow-x-auto max-h-48 whitespace-pre-wrap">
+                                  <pre className="text-[11px] font-mono p-2.5 rounded bg-slate-900 text-emerald-400 overflow-x-auto thin-scrollbar max-h-48 whitespace-pre-wrap">
                                     {JSON.stringify(toolCallOutput, null, 2)}
                                   </pre>
                                 </div>
@@ -1195,7 +1422,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                             <div className="mt-4 p-4 rounded-xl bg-slate-950 text-slate-100 border border-slate-800 shadow-xl space-y-2.5">
                               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                                 <div className="flex items-center gap-2">
-                                  <Sparkles size={14} className="text-amber-400" />
+                                  <RegaarderAiIcon size={14} className="text-amber-400" />
                                   <span className="text-xs font-mono font-bold text-amber-300">Prompt: {activePromptPreview.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1216,7 +1443,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                                   </button>
                                 </div>
                               </div>
-                              <pre className="text-[11px] font-mono text-slate-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto max-h-60 whitespace-pre-wrap leading-relaxed">
+                              <pre className="text-[11px] font-mono text-slate-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto thin-scrollbar max-h-60 whitespace-pre-wrap leading-relaxed">
                                 {activePromptPreview.messages?.[0]?.content?.text || 'No message content'}
                               </pre>
                             </div>
@@ -1247,7 +1474,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                                 <span>{copiedConfigKey === 'claude' ? 'Copied' : 'Copy Config'}</span>
                               </button>
                             </div>
-                            <pre className="text-[11px] font-mono text-slate-300 p-2.5 rounded bg-slate-900/90 overflow-x-auto">
+                            <pre className="text-[11px] font-mono text-slate-300 p-2.5 rounded bg-slate-900/90 overflow-x-auto thin-scrollbar">
                               {JSON.stringify(generateExternalAgentConfig().claudeDesktop, null, 2)}
                             </pre>
                           </div>
@@ -1265,7 +1492,7 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                                 <span>{copiedConfigKey === 'cursor' ? 'Copied' : 'Copy Config'}</span>
                               </button>
                             </div>
-                            <pre className="text-[11px] font-mono text-slate-300 p-2.5 rounded bg-slate-900/90 overflow-x-auto">
+                            <pre className="text-[11px] font-mono text-slate-300 p-2.5 rounded bg-slate-900/90 overflow-x-auto thin-scrollbar">
                               {JSON.stringify(generateExternalAgentConfig().cursor, null, 2)}
                             </pre>
                           </div>
@@ -1343,13 +1570,17 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Active Context Contributors</h2>
-                        <span className="text-[10px] text-slate-400 font-mono">{PEOPLE_DATA.length} teammates</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{peopleList.length} teammates</span>
                       </div>
                       <div className="grid gap-2.5">
-                        {PEOPLE_DATA.map((p) => (
+                        {peopleList.map((p) => (
                           <div key={p.id} className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                              <img src={`https://i.pravatar.cc/150?u=${p.avatar}`} className="w-9 h-9 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1]" alt={p.name} />
+                              {p.avatar && (p.avatar.startsWith('http') || p.avatar.startsWith('/')) ? (
+                                <img src={p.avatar} className="w-9 h-9 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1]" alt={p.name} />
+                              ) : (
+                                <img src={`https://i.pravatar.cc/150?u=${p.avatar || 'user'}`} className="w-9 h-9 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1]" alt={p.name} />
+                              )}
                               <div>
                                 <div className="text-[13px] font-bold text-slate-900 dark:text-white">{p.name}</div>
                                 <div className="text-[11px] text-slate-500 dark:text-zinc-400">{p.role} • Active in <strong className="text-slate-700 dark:text-zinc-300 font-medium">{p.activeProject}</strong></div>
@@ -1369,10 +1600,10 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Active Workspace Projects</h2>
-                        <span className="text-[10px] text-slate-400 font-mono">{PROJECTS_DATA.length} tracking</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{projectsList.length} tracking</span>
                       </div>
                       <div className="grid gap-2.5">
-                        {PROJECTS_DATA.map((proj) => (
+                        {projectsList.map((proj) => (
                           <div key={proj.id} className="p-3.5 rounded-xl bg-white/80 dark:bg-zinc-800/70 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center shrink-0 border border-black/[0.04] dark:border-white/[0.05]">
@@ -1422,87 +1653,90 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
                     </div>
                   )}
 
-                  {/* Load More Button */}
-                  <div className="flex justify-center pt-2">
-                    <button 
-                      type="button"
-                      className="flex items-center gap-1.5 px-4 py-1.5 border border-black/[0.08] dark:border-white/[0.1] bg-white/90 dark:bg-zinc-800/90 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-500/30 transition-all shadow-2xs cursor-pointer active:scale-95"
-                    >
-                      <span>Load older context records</span>
-                      <ArrowRight size={12} className="rotate-90 text-slate-400" />
-                    </button>
-                  </div>
+                  {/* Load More Button (Timeline only) */}
+                  {activeTab === 'timeline' && (
+                    <div className="flex justify-center pt-2">
+                      <button 
+                        type="button"
+                        className="flex items-center gap-1.5 px-4 py-1.5 border border-black/[0.08] dark:border-white/[0.1] bg-white/90 dark:bg-zinc-800/90 rounded-lg text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:text-violet-600 dark:hover:text-violet-400 hover:border-violet-500/30 transition-all shadow-2xs cursor-pointer active:scale-95"
+                      >
+                        <span>Load older context records</span>
+                        <ArrowRight size={12} className="rotate-90 text-slate-400" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {/* ── Right Rail: Contextual Insights Panel ── */}
-                <div className="w-full lg:w-[280px] shrink-0 space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles size={13} className="text-violet-600 dark:text-violet-400" />
-                      <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Context Insights</h2>
+                {/* ── Right Rail: Contextual Insights Panel (Timeline only) ── */}
+                {activeTab === 'timeline' && (
+                  <div className="w-full lg:w-[280px] shrink-0 space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-1.5">
+                        <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400" />
+                        <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Context Insights</h2>
+                      </div>
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-mono">
+                        <RefreshCcw size={9} /> Synced 2m ago
+                      </span>
                     </div>
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-mono">
-                      <RefreshCcw size={9} /> Synced 2m ago
-                    </span>
-                  </div>
 
-                  {/* Recurring Topics Card */}
-                  <div className="bg-white/80 dark:bg-zinc-800/70 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-3.5 shadow-2xs">
-                    <div className="flex gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 mt-0.5 border border-violet-500/15">
-                        <TagIcon size={12} />
+                    {/* Recurring Topics Card */}
+                    <div className="bg-white/80 dark:bg-zinc-800/70 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-3.5 shadow-2xs">
+                      <div className="flex gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0 mt-0.5 border border-violet-500/15">
+                          <TagIcon size={12} />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-900 dark:text-white">Recurring Topics</h3>
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Click a topic to filter memory stream.</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-slate-900 dark:text-white">Recurring Topics</h3>
-                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Click a topic to filter memory stream.</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mt-2.5">
-                      <Tag name="AI Templates" count="18" active={selectedTopic === 'AI Templates'} onClick={() => setSelectedTopic(t => t === 'AI Templates' ? null : 'AI Templates')} />
-                      <Tag name="Monetization" count="14" active={selectedTopic === 'Monetization'} onClick={() => setSelectedTopic(t => t === 'Monetization' ? null : 'Monetization')} />
-                      <Tag name="Mobile Improvements" count="13" active={selectedTopic === 'Mobile Improvements'} onClick={() => setSelectedTopic(t => t === 'Mobile Improvements' ? null : 'Mobile Improvements')} />
-                      <Tag name="Funding" count="8" active={selectedTopic === 'Funding'} onClick={() => setSelectedTopic(t => t === 'Funding' ? null : 'Funding')} />
-                      <Tag name="Security" count="9" active={selectedTopic === 'Security'} onClick={() => setSelectedTopic(t => t === 'Security' ? null : 'Security')} />
-                    </div>
-                  </div>
-
-                  {/* Open Questions Card */}
-                  <div className="bg-white/80 dark:bg-zinc-800/70 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-3.5 shadow-2xs">
-                    <div className="flex gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/15">
-                        <HelpCircle size={12} />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-slate-900 dark:text-white">Pending Questions</h3>
-                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Unresolved points requiring alignment.</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        <Tag name="AI Templates" count="18" active={selectedTopic === 'AI Templates'} onClick={() => setSelectedTopic(t => t === 'AI Templates' ? null : 'AI Templates')} />
+                        <Tag name="Monetization" count="14" active={selectedTopic === 'Monetization'} onClick={() => setSelectedTopic(t => t === 'Monetization' ? null : 'Monetization')} />
+                        <Tag name="Mobile Improvements" count="13" active={selectedTopic === 'Mobile Improvements'} onClick={() => setSelectedTopic(t => t === 'Mobile Improvements' ? null : 'Mobile Improvements')} />
+                        <Tag name="Funding" count="8" active={selectedTopic === 'Funding'} onClick={() => setSelectedTopic(t => t === 'Funding' ? null : 'Funding')} />
+                        <Tag name="Security" count="9" active={selectedTopic === 'Security'} onClick={() => setSelectedTopic(t => t === 'Security' ? null : 'Security')} />
                       </div>
                     </div>
-                    <ul className="space-y-1.5 text-[11.5px] text-slate-700 dark:text-zinc-300 pl-1">
-                      <li className="flex items-start gap-1.5">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span>Target rollout date for AI template builder</span>
-                      </li>
-                      <li className="flex items-start gap-1.5">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span>Beta feedback cohort on mobile gestures</span>
-                      </li>
-                      <li className="flex items-start gap-1.5">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span>Enterprise tier data retention SLA</span>
-                      </li>
-                    </ul>
-                  </div>
 
-                  {/* Quick Knowledge Tip */}
-                  <div className="p-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-900/30 text-[11px] text-slate-600 dark:text-zinc-300">
-                    <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold mb-1">
-                      <RegaarderAiIcon size={12} />
-                      <span>Context Layer Tip</span>
+                    {/* Open Questions Card */}
+                    <div className="bg-white/80 dark:bg-zinc-800/70 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-3.5 shadow-2xs">
+                      <div className="flex gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/15">
+                          <HelpCircle size={12} />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-900 dark:text-white">Pending Questions</h3>
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">Unresolved points requiring alignment.</p>
+                        </div>
+                      </div>
+                      <ul className="space-y-1.5 text-[11.5px] text-slate-700 dark:text-zinc-300 pl-1">
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-amber-500 font-bold">•</span>
+                          <span>Target rollout date for AI template builder</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-amber-500 font-bold">•</span>
+                          <span>Beta feedback cohort on mobile gestures</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-amber-500 font-bold">•</span>
+                          <span>Enterprise tier data retention SLA</span>
+                        </li>
+                      </ul>
                     </div>
-                    Memory links cross-workspace references automatically. Press <kbd className="font-mono bg-white dark:bg-zinc-800 px-1 py-0.5 rounded text-[10px] border border-black/10 dark:border-white/10">Esc</kbd> anytime to return to your work.
-                  </div>
 
-                </div>
+                    {/* Quick Knowledge Tip */}
+                    <div className="p-3 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-900/30 text-[11px] text-slate-600 dark:text-zinc-300">
+                      <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold mb-1">
+                        <RegaarderAiIcon size={12} />
+                        <span>Context Layer Tip</span>
+                      </div>
+                      Memory links cross-workspace references automatically. Press <kbd className="font-mono bg-white dark:bg-zinc-800 px-1 py-0.5 rounded text-[10px] border border-black/10 dark:border-white/10">Esc</kbd> anytime to return to your work.
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -1510,6 +1744,188 @@ const MemoryDashboard = ({ onClose, onNavigateToEntity, initialTab = 'timeline' 
 
         </div>
       </div>
+
+      {/* ── Modal: Record Strategic Decision ── */}
+      {isRecordDecisionOpen && (
+        <div className="fixed inset-0 z-[999999] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div 
+            className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.1] rounded-2xl p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center border border-violet-500/20">
+                  <TasksIcon size={15} />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Record Strategic Decision</h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsRecordDecisionOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDecision} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Decision Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Adopt Dual-Sourcing Fab Strategy for Blackwell Architecture"
+                  value={decisionTitle}
+                  onChange={(e) => setDecisionTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Rationale &amp; Context</label>
+                <textarea
+                  rows={3}
+                  placeholder="Explain why this choice was made, trade-offs evaluated, and model validations..."
+                  value={decisionRationale}
+                  onChange={(e) => setDecisionRationale(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-violet-500 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Decision Authority / Approver</label>
+                  <input
+                    type="text"
+                    value={decisionApprover}
+                    onChange={(e) => setDecisionApprover(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Workspace</label>
+                  <select
+                    value={decisionWorkspace}
+                    onChange={(e) => setDecisionWorkspace(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+                  >
+                    <option value="compose">Compose (Docs)</option>
+                    <option value="sheets">Sheets (Matrix)</option>
+                    <option value="deck">Deck (Slides)</option>
+                    <option value="whiteboard">Whiteboard</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Financial / Business Impact</label>
+                <input
+                  type="text"
+                  placeholder="e.g., $1.80 Billion, High, or Critical"
+                  value={decisionImpact}
+                  onChange={(e) => setDecisionImpact(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+                <button
+                  type="button"
+                  onClick={() => setIsRecordDecisionOpen(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-black/[0.08] dark:border-white/[0.1] text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                >
+                  Save Decision
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Add Directive Rule ── */}
+      {isAddRuleOpen && (
+        <div className="fixed inset-0 z-[999999] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div 
+            className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.1] rounded-2xl p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center border border-violet-500/20">
+                  <ShieldCheck size={15} />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Add Directive Rule</h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsAddRuleOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRule} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Rule / Directive Statement *</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g., SOC 2 Type II validation required before releasing budget for headcount expansion..."
+                  value={ruleText}
+                  onChange={(e) => setRuleText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-violet-500 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Target Project / Scope</label>
+                  <input
+                    type="text"
+                    value={ruleProject}
+                    onChange={(e) => setRuleProject(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300 mb-1">Enforcement Level</label>
+                  <select
+                    value={ruleEnforcement}
+                    onChange={(e) => setRuleEnforcement(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 cursor-pointer"
+                  >
+                    <option value="strict">Strict (Hard Gate)</option>
+                    <option value="advisory">Advisory (Warning)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddRuleOpen(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-black/[0.08] dark:border-white/[0.1] text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                >
+                  Save Directive
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

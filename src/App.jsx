@@ -6910,11 +6910,11 @@ function AppCore() {
       }
     };
     window.__REGAARDER_OPEN_MATRIX_ENGINE__ = () => {
-      setMemoryTab('matrix');
+      setMemoryTab('matrix_engine');
       setIsMemoryOpen(true);
     };
     window.__REGAARDER_OPEN_CANVAS_INSPECTOR__ = () => {
-      setMemoryTab('canvas');
+      setMemoryTab('canvas_blocks');
       setIsMemoryOpen(true);
     };
     window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__ = () => {
@@ -34046,6 +34046,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
         setProductMode('compose');
       }
     }
+
+    if (targetDoc.mode === 'sheets' || targetDoc.sheetsData || productMode === 'sheets') {
+      if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
+        setSheetToolbarTab('View');
+      }
+    }
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
@@ -34093,6 +34099,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       setSheetsData(initialSheetsData);
       setSheetGrids(initialSheetGrids);
       setActiveSheetId(1);
+      setSheetToolbarTab('View');
     } else if (productMode === 'deck') {
       setDeckTitle(initialTitle || 'Untitled Deck');
       setDeckSlidesData(initialDeckSlidesData);
@@ -34929,6 +34936,7 @@ Respond with valid JSON formatted like this:
           setSheetGrids(first.sheetGrids);
         }
         setActiveSheetId(first.activeSheetId || 1);
+        setSheetToolbarTab('View');
       } else if (first.mode === 'deck') {
         setProductMode('deck');
         setActiveDocId(first.id);
@@ -38571,6 +38579,9 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
     setActiveSheetId(nextId);
     setSheetsTitle(worksheet.title);
+    if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
+      setSheetToolbarTab('View');
+    }
     showToast(`${worksheet.title} created`);
   };
 
@@ -39931,6 +39942,9 @@ Respond with a JSON array of slide objects matching the schema.`;
           }));
           setActiveSheetId(nextId);
           setSheetsTitle(clone.title);
+          if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
+            setSheetToolbarTab('View');
+          }
           showToast('Worksheet duplicated');
         }
       } else {
@@ -45569,6 +45583,13 @@ Respond with a JSON array of slide objects matching the schema.`;
             <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-transparent overflow-hidden">
               <MemoryDashboard 
                 initialTab={memoryTab}
+                currentUser={currentUser}
+                documents={documents}
+                sheetGrids={sheetGrids}
+                activeSheetId={activeSheetId}
+                sheetsTitle={sheetsTitle}
+                initiatives={initiatives}
+                awarenessUsers={awarenessUsers}
                 onClose={() => setRightSidebarOpen(false)}
                 onNavigateToEntity={(entity) => {
                   setRightSidebarOpen(false);
@@ -48664,6 +48685,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onPointerDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          if (isSheetsMode && (sheetToolbarTab === 'Data' || !sheetToolbarTab)) {
+                            setSheetToolbarTab('View');
+                          }
                           setHeaderWorkbookSearchQuery('');
                           setHeaderWorkbookDropdownOpen((prev) => !prev);
                         }}
@@ -48759,6 +48783,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         switchDocument(doc.id);
+                                        if (isSheetsMode || doc.mode === 'sheets') {
+                                          setSheetToolbarTab('View');
+                                        }
                                         setHeaderWorkbookDropdownOpen(false);
                                       }}
                                       className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer ${
@@ -49791,6 +49818,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   onClick={() => {
                                     if (isSheetsMode) {
                                       setActiveSheetId(item.id);
+                                      if (sheetToolbarTab === 'Data') {
+                                        setSheetToolbarTab('View');
+                                      }
                                     } else {
                                       setActiveDeckSlideId(item.id);
                                     }
@@ -50006,25 +50036,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Right Section: Inline View Controls (when on View) + Collapse Toggle */}
                         <div className="flex items-center gap-2">
-                          {/* Matrix Engine / Inspector Direct Launcher (Pillar 5) */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.__REGAARDER_OPEN_MATRIX_ENGINE__) {
-                                window.__REGAARDER_OPEN_MATRIX_ENGINE__();
-                              } else {
-                                setMemoryTab('matrix');
-                                setIsMemoryOpen(true);
-                              }
-                              showToast('Matrix Engine & Schema Inspector active');
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100/90 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/60 shadow-2xs transition-all active:scale-[0.97] cursor-pointer"
-                            title="Open In-Browser Matrix Engine, Relational SQL & Formula Schema Inspector (Pillar 5)"
-                          >
-                            <Calculator size={13} className="text-violet-600 dark:text-violet-400" />
-                            <span>Matrix Engine</span>
-                            <span className="text-[9.5px] px-1.5 py-0.2 bg-violet-200/70 dark:bg-violet-800/60 text-violet-800 dark:text-violet-200 rounded font-mono font-semibold">SQL</span>
-                          </button>
+                          {/* Matrix Engine / Inspector Direct Launcher (Pillar 5) - Temporarily hidden for refinement (see MATRIX_ENGINE_VISIBILITY_AND_REFINEMENT_ROADMAP.md) */}
+                          {false && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.__REGAARDER_OPEN_MATRIX_ENGINE__) {
+                                  window.__REGAARDER_OPEN_MATRIX_ENGINE__();
+                                } else {
+                                  setMemoryTab('matrix_engine');
+                                  setIsMemoryOpen(true);
+                                }
+                                showToast('Matrix Engine & Schema Inspector active');
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100/90 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/60 shadow-2xs transition-all active:scale-[0.97] cursor-pointer"
+                              title="Open In-Browser Matrix Engine, Relational SQL & Formula Schema Inspector (Pillar 5)"
+                            >
+                              <Calculator size={13} className="text-violet-600 dark:text-violet-400" />
+                              <span>Matrix Engine</span>
+                              <span className="text-[9.5px] px-1.5 py-0.2 bg-violet-200/70 dark:bg-violet-800/60 text-violet-800 dark:text-violet-200 rounded font-mono font-semibold">SQL</span>
+                            </button>
+                          )}
 
                           {sheetToolbarTab === 'View' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-150">
@@ -53591,6 +53623,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               onClick={() => {
                                 setActiveSheetId(sheet.id);
                                 setSheetsTitle(sheet.title);
+                                if (sheetToolbarTab === 'Data') {
+                                  setSheetToolbarTab('View');
+                                }
                               }}
                               className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-full transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.97] ${
                                 isActive
@@ -72344,6 +72379,127 @@ if (productMode === 'deck' || productMode === 'sheets') {
         document.fullscreenElement ?? document.body
       )}
 
+      {/* ── Layer 6.7: Contextual Memory Intelligence Layer Modal (Deck / Sheets) ─────────────── */}
+      {isMemoryOpen && (
+        <div 
+          className="fixed inset-0 z-[999998] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-150"
+          style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+        >
+          {/* Translucent Backdrop Overlay (28px blur) */}
+          <div 
+            className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-[14px] transition-opacity"
+            onClick={() => setIsMemoryOpen(false)}
+          />
+
+          {/* Main Memory Intelligence Container */}
+          <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
+            <MemoryDashboard 
+              initialTab={memoryTab}
+              currentUser={currentUser}
+              documents={documents}
+              sheetGrids={sheetGrids}
+              activeSheetId={activeSheetId}
+              sheetsTitle={sheetsTitle}
+              initiatives={initiatives}
+              awarenessUsers={awarenessUsers}
+              onClose={() => setIsMemoryOpen(false)}
+              onNavigateToEntity={(entity) => {
+                setIsMemoryOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Layer 6.6: Global Workspace Search Modal (Memory Spotlight - Deck / Sheets) ─────────────── */}
+      <GlobalWorkspaceSearchModal
+        isOpen={isMemorySearchOpen}
+        onClose={() => setIsMemorySearchOpen(false)}
+        initialQuery={orbInitialQuery}
+        initialFilter={orbInitialFilter}
+        isDarkMode={isDarkMode}
+        productMode={productMode}
+        onCallAi={callGemini}
+        aiConfig={aiProviderConfig}
+        selectedModel={composeSelectedModel}
+        detectedModels={composeDetectedModels}
+        liveWorkspaceContext={{
+          documents,
+          activeDocId,
+          docTitle,
+          docBodyHtml,
+          docSubtitle,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          scheduleAgendaItems,
+          whiteboardWidgets,
+          whiteboardShapes
+        }}
+        onNavigateToEntity={(entity) => {
+          if (!entity) return;
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            if (entity.metadata?.docId) {
+              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || '');
+              }
+            }
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.sheetId) {
+              setActiveSheetId(entity.metadata.sheetId);
+            }
+            showToast(`Navigated to Sheets: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Deck: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Meeting: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+            showToast(`Navigated to Tasks: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'relay' || ws === 'dm') {
+            if (productMode !== 'dm') setProductMode('dm');
+            if (entity.metadata?.contactId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
+            }
+            showToast(`Navigated to Relay: ${entity.title}`);
+          } else {
+            showToast(`Opened: ${entity.title}`);
+          }
+        }}
+        onAddTask={(act) => {
+          showToast(`Added action to Tasks: ${act.title}`);
+        }}
+      />
+
       </div>
     );
   }
@@ -88189,6 +88345,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
             <MemoryDashboard 
               initialTab={memoryTab}
+              currentUser={currentUser}
+              documents={documents}
+              sheetGrids={sheetGrids}
+              activeSheetId={activeSheetId}
+              sheetsTitle={sheetsTitle}
+              initiatives={initiatives}
+              awarenessUsers={awarenessUsers}
               onClose={() => setIsMemoryOpen(false)}
               onNavigateToEntity={(entity) => {
                 setIsMemoryOpen(false);
