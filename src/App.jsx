@@ -18269,7 +18269,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       {
         id: Date.now(),
         mode: 'compose',
-        title: '',
+        title: 'Untitled Document',
         subtitle: '',
         initiatives: defaultInitiatives,
         appendedSections: [],
@@ -18279,18 +18279,42 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       },
     ];
   });
-  const [activeDocId, setActiveDocId] = useState(null);
+  const [activeDocId, setActiveDocId] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const savedActiveId = localStorage.getItem('rc.activeDocId');
+        if (savedActiveId) return savedActiveId;
+      }
+    } catch (_) {}
+    return null;
+  });
+
+  // Ensure activeDocId always falls back to the active document if null
+  useEffect(() => {
+    if (!activeDocId && documents.length > 0) {
+      setActiveDocId(documents[0].id);
+    }
+  }, [activeDocId, documents]);
 
   useEffect(() => {
-    // Only derive title from document body if the active document does not have a custom user-defined title
-    const activeDoc = documents.find((doc) => doc.id === activeDocId);
-    if (activeDoc?.isTitleCustom) {
+    const currentDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
+    // Strictly preserve user-given custom title: if user gave a title, never autotitle
+    if (currentDoc?.isTitleCustom) {
+      return;
+    }
+
+    // Auto-title ONLY if no title has been given
+    const currentTitle = (currentDoc?.title || docTitle || '').trim();
+    const hasExplicitTitle = currentTitle && currentTitle !== 'Untitled Document' && currentTitle !== 'Untitled Whiteboard' && currentTitle !== 'Compose Draft' && currentTitle !== 'Untitled';
+    if (hasExplicitTitle) {
       return;
     }
 
     if (!docBodyHtml) {
       if (!docTitle || docTitle === 'Untitled Document') {
-        setDocTitle('Untitled Document');
+        if (docTitle !== 'Untitled Document') {
+          setDocTitle('Untitled Document');
+        }
       }
       return;
     }
@@ -18299,11 +18323,16 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const firstBlock = doc.body.firstElementChild;
     const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
     if (titleText) {
-      setDocTitle(titleText);
+      if (docTitle !== titleText) {
+        setDocTitle(titleText);
+      }
+      if (currentDoc?.id && currentDoc.title !== titleText) {
+        setDocuments((prev) => prev.map((d) => String(d.id) === String(currentDoc.id) ? { ...d, title: titleText, isTitleCustom: false } : d));
+      }
     } else if (!docTitle) {
       setDocTitle('Untitled Document');
     }
-  }, [docBodyHtml, activeDocId]);
+  }, [docBodyHtml, activeDocId, docTitle, documents]);
 
   // Auto-persist documents to localStorage
   useEffect(() => {
@@ -18427,7 +18456,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   }, [productMode]);
 
-  const activeDoc = documents.find((doc) => doc.id === activeDocId);
+  const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0] || null;
   const [pdfRotation, setPdfRotation] = useState(0);
   const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
 
@@ -34015,7 +34044,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const switchDocument = (docId) => {
-    const targetDoc = documents.find((doc) => doc.id === docId);
+    const targetDoc = documents.find((doc) => String(doc.id) === String(docId));
     if (!targetDoc) {
       return;
     }
@@ -34069,7 +34098,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
 
     const currentWorkspaceMode = (activeRightTab === 'whiteboard' || productMode === 'whiteboard') ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
-    const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : '');
+    const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : 'Untitled Document');
 
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
@@ -34080,6 +34109,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       appendedSections: [],
       isBlank: !initialHtml && !initialTitle,
       bodyHtml: initialHtml,
+      isTitleCustom: Boolean(initialTitle),
       pinned: false,
       sheetsTitle: productMode === 'sheets' ? (initialTitle || 'Untitled Sheet') : 'Untitled Sheet',
       sheetsData: initialSheetsData,
@@ -35127,19 +35157,19 @@ Respond with valid JSON formatted like this:
 
   const handleSaveAndCloseDocument = (docId) => {
     const targetId = docId || closeConfirmDocId;
-    const targetDoc = documents.find((d) => d.id === targetId);
+    const targetDoc = documents.find((d) => String(d.id) === String(targetId));
     if (!targetDoc) {
       setCloseConfirmDocId(null);
       return;
     }
 
     const updatedDocs = documents.map((d) => {
-      if (d.id === targetId) {
+      if (String(d.id) === String(targetId)) {
         return {
           ...d,
-          bodyHtml: targetId === activeDocId ? docBodyHtml : d.bodyHtml,
-          title: targetId === activeDocId ? docTitle : d.title,
-          subtitle: targetId === activeDocId ? docSubtitle : d.subtitle,
+          bodyHtml: String(targetId) === String(activeDocId) ? docBodyHtml : d.bodyHtml,
+          title: String(targetId) === String(activeDocId) ? docTitle : d.title,
+          subtitle: String(targetId) === String(activeDocId) ? docSubtitle : d.subtitle,
           updatedAt: Date.now(),
           isSaved: true
         };
@@ -35152,8 +35182,8 @@ Respond with valid JSON formatted like this:
     showToast(`"${targetDoc.title || 'Document'}" saved to Library`);
 
     // If closing active document, switch to remaining or create clean
-    if (targetId === activeDocId) {
-      const remaining = updatedDocs.filter((d) => d.id !== targetId);
+    if (String(targetId) === String(activeDocId)) {
+      const remaining = updatedDocs.filter((d) => String(d.id) !== String(targetId));
       if (remaining.length > 0) {
         switchDocument(remaining[0].id);
       } else {
@@ -35164,10 +35194,10 @@ Respond with valid JSON formatted like this:
 
   const handleDiscardAndCloseDocument = (docId) => {
     const targetId = docId || closeConfirmDocId;
-    const targetDoc = documents.find((d) => d.id === targetId);
+    const targetDoc = documents.find((d) => String(d.id) === String(targetId));
     const targetDocMode = targetDoc ? getDocMode(targetDoc) : activeWorkspaceMode;
 
-    const remaining = documents.filter((doc) => doc.id !== targetId);
+    const remaining = documents.filter((doc) => String(doc.id) !== String(targetId));
     const remainingInMode = remaining.filter((doc) => getDocMode(doc) === targetDocMode);
 
     setDocuments(remaining);
@@ -35249,9 +35279,13 @@ Respond with valid JSON formatted like this:
       setRenameDocValue('');
       return;
     }
-    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, isTitleCustom: true, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
-    if (activeDocId === docId) {
+    setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(docId) ? { ...doc, title: nextTitle, isTitleCustom: true, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
+    const isCurrentActive = String(activeDocId) === String(docId) || (!activeDocId && String(documents[0]?.id) === String(docId));
+    if (isCurrentActive) {
       setDocTitle(nextTitle);
+      if (!activeDocId) {
+        setActiveDocId(docId);
+      }
       if (isSheetsMode) {
         setSheetsTitle(nextTitle);
       }
@@ -35265,9 +35299,9 @@ Respond with valid JSON formatted like this:
   };
 
   const beginUnsavedDraftRename = () => {
-    const activeDoc = documents.find((doc) => doc.id === activeDocId);
-    const currentName = (activeDoc?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
-    setUnsavedDraftNameInput(currentName);
+    const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
+    const currentName = (activeDoc?.title || docTitle || 'Untitled Document').trim() || 'Untitled Document';
+    setUnsavedDraftNameInput(currentName === 'Unsaved draft' ? 'Untitled Document' : currentName);
     setIsEditingUnsavedDraftName(true);
   };
 
@@ -35279,8 +35313,12 @@ Respond with valid JSON formatted like this:
       return;
     }
 
-    if (activeDocId) {
-      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle, isTitleCustom: true } : doc)));
+    const targetDocId = activeDocId || documents[0]?.id;
+    if (targetDocId) {
+      setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(targetDocId) ? { ...doc, title: nextTitle, isTitleCustom: true } : doc)));
+      if (!activeDocId) {
+        setActiveDocId(targetDocId);
+      }
     }
     setDocTitle(nextTitle);
     setIsEditingUnsavedDraftName(false);
@@ -35306,12 +35344,12 @@ Respond with valid JSON formatted like this:
       return fallback;
     }
 
-    const target = documents.find((doc) => doc.id === docId);
+    const target = documents.find((doc) => String(doc.id) === String(docId));
     if (target) {
-      const isCurrent = activeDocId === docId;
+      const isCurrent = String(activeDocId) === String(docId);
       return {
         ...target,
-        title: isCurrent ? docTitle : target.title,
+        title: isCurrent ? (docTitle || target.title) : target.title,
         subtitle: isCurrent ? docSubtitle : target.subtitle,
         bodyHtml: isCurrent ? sanitizeHtmlForExport(blankBodyRef.current?.innerHTML || target.bodyHtml) : sanitizeHtmlForExport(target.bodyHtml),
         sheetsTitle: isCurrent ? sheetsTitle : target.sheetsTitle,
@@ -40350,9 +40388,10 @@ Respond with a JSON array of slide objects matching the schema.`;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
   const activeDraftDisplayTitle = (() => {
-    const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
+    const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
+    const rawTitle = (activeDoc?.title || docTitle || '').trim();
     if (rawTitle === 'Untitled Whiteboard') return t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard';
-    return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.unsavedDraft') || 'Unsaved draft'));
+    return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.untitledDoc') || 'Untitled Document'));
   })();
   const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
     && !String(docSubtitle || '').trim()
@@ -48825,8 +48864,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                         <div
                           style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
-                          className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                          className="w-48 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] bg-white dark:bg-[#1c1c1e] rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                          data-popover
                           data-doc-menu-root
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex flex-col gap-0.5">
                             <button
