@@ -18258,6 +18258,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
+  const productModeCreateGuardRef = useRef({ sheets: false, deck: false });
 
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
@@ -18497,8 +18498,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   // Ensure an active document exists in documents collection when entering Sheets or Deck mode
   useEffect(() => {
     if (productMode === 'sheets') {
+      if (productModeCreateGuardRef.current.sheets) {
+        return;
+      }
+
       const existingSheetsDoc = documents.find((doc) => getDocMode(doc) === 'sheets');
       if (!existingSheetsDoc) {
+        productModeCreateGuardRef.current.sheets = true;
         const initialDocId = Date.now();
         const newSheetsDoc = {
           id: initialDocId,
@@ -18512,12 +18518,24 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         };
         setDocuments(prev => [...prev, newSheetsDoc]);
         setActiveDocId(initialDocId);
-      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'sheets')) {
+        return;
+      }
+
+      if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'sheets')) {
         switchDocument(existingSheetsDoc.id);
       }
-    } else if (productMode === 'deck') {
+      productModeCreateGuardRef.current.sheets = false;
+      return;
+    }
+
+    if (productMode === 'deck') {
+      if (productModeCreateGuardRef.current.deck) {
+        return;
+      }
+
       const existingDeckDoc = documents.find((doc) => getDocMode(doc) === 'deck');
       if (!existingDeckDoc) {
+        productModeCreateGuardRef.current.deck = true;
         const initialDocId = Date.now();
         const newDeckDoc = {
           id: initialDocId,
@@ -18530,11 +18548,19 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         };
         setDocuments(prev => [...prev, newDeckDoc]);
         setActiveDocId(initialDocId);
-      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'deck')) {
+        return;
+      }
+
+      if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'deck')) {
         switchDocument(existingDeckDoc.id);
       }
+      productModeCreateGuardRef.current.deck = false;
+      return;
     }
-  }, [productMode]);
+
+    productModeCreateGuardRef.current.sheets = false;
+    productModeCreateGuardRef.current.deck = false;
+  }, [productMode, documents, activeDocId, getDocMode, sheetsTitle, sheetsData, sheetGrids, activeSheetId, deckTitle, deckSlidesData, activeDeckSlideId]);
 
   const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0] || null;
   const [pdfRotation, setPdfRotation] = useState(0);
@@ -34444,6 +34470,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createDeckExperience = (options = {}) => {
+    productModeCreateGuardRef.current.deck = true;
     setCreationPickerOpen(false);
     setProductMode('deck');
     setFocusedModule('deck');
@@ -34503,6 +34530,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createSheetsExperience = (options = {}) => {
+    productModeCreateGuardRef.current.sheets = true;
     setCreationPickerOpen(false);
     setProductMode('sheets');
     setFocusedModule('sheets');
