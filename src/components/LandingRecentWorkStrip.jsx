@@ -105,6 +105,7 @@ export function isMeaningfulWork(data) {
     };
 
     if (Array.isArray(grid)) {
+      // grid itself is a raw 2D row/col matrix
       for (const row of grid) {
         if (Array.isArray(row)) {
           for (const cell of row) {
@@ -112,7 +113,18 @@ export function isMeaningfulWork(data) {
           }
         }
       }
+    } else if (Array.isArray(grid.cells)) {
+      // Primary sheetGrids format: { cells: Array<Array>, rows, cols, formats, … }
+      // MUST be checked before the object branch — Array.isArray wins over typeof object.
+      for (const row of grid.cells) {
+        if (Array.isArray(row)) {
+          for (const cell of row) {
+            if (checkVal(cell)) return true;
+          }
+        }
+      }
     } else if (grid.cells && typeof grid.cells === "object") {
+      // Sparse coordinate-keyed format: { "R1C1": value, … }
       for (const c of Object.values(grid.cells)) {
         if (checkVal(c)) return true;
       }
@@ -182,21 +194,53 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
             if (raw) {
               const data = JSON.parse(raw);
 
-              // Untouched empty drafts without content or save record do not qualify
+              // Untouched empty drafts without content or save record do not qualify.
+              // SAFETY: Do NOT delete from localStorage here — passive skip only.
               if (!data.isSaved && !isMeaningfulWork(data)) {
                 continue;
               }
 
+              // Resolve title — prefer mode-specific title fields over the generic one
               let title = (data.docTitle || data.title || data.sheetsTitle || data.deckTitle || "").trim();
 
-              if (!title) {
-                title = "Untitled";
+              // Smart excerpt extraction if title is still empty or a bare default
+              if (!title || /^untitled/i.test(title)) {
+                if (data.bodyHtml) {
+                  const plain = data.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+                  if (plain.length > 3) {
+                    title = plain.slice(0, 26) + (plain.length > 26 ? "..." : "");
+                  }
+                } else if (data.initiatives && data.initiatives[0] && data.initiatives[0].title) {
+                  title = data.initiatives[0].title;
+                }
               }
 
-              let detectedProduct = "compose";
-              if (/sheet/i.test(title)) detectedProduct = "sheet";
-              else if (/deck|presentation/i.test(title)) detectedProduct = "deck";
-              else if (/whiteboard|canvas/i.test(title)) detectedProduct = "whiteboard";
+              if (!title) {
+                title = `Document #${key.replace("rc.savedDoc.", "").slice(-4)}`;
+              }
+
+              // Product detection: check stored mode first, then structural signals,
+              // then title-regex as last resort. Avoids misclassifying renamed Sheets/Decks.
+              let detectedProduct = (data.mode || "").toLowerCase();
+              if (!detectedProduct || !PRODUCT_INFO[detectedProduct]) {
+                if (data.sheetsTitle || data.sheetGrids) {
+                  detectedProduct = "sheet";
+                } else if (data.deckSlidesData || data.deckTitle) {
+                  detectedProduct = "deck";
+                } else if (data.whiteboardWidgets || data.whiteboardShapes || data.whiteboardStrokes) {
+                  detectedProduct = "whiteboard";
+                } else if (/sheet/i.test(title)) {
+                  detectedProduct = "sheet";
+                } else if (/deck|presentation/i.test(title)) {
+                  detectedProduct = "deck";
+                } else if (/whiteboard|canvas/i.test(title)) {
+                  detectedProduct = "whiteboard";
+                } else {
+                  detectedProduct = "compose";
+                }
+              }
+              // Normalise "sheets" → "sheet" to match PRODUCT_INFO keys
+              if (detectedProduct === "sheets") detectedProduct = "sheet";
 
               const info = PRODUCT_INFO[detectedProduct] || PRODUCT_INFO.compose;
 
@@ -215,6 +259,55 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
           }
         }
       }
+
+      // Supplement with open documents from regaarder_documents_v1 to capture active background tabs
+      try {
+        const rawDocs = localStorage.getItem("regaarder_documents_v1");
+        if (rawDocs) {
+          const docsList = JSON.parse(rawDocs);
+          if (Array.isArray(docsList)) {
+            docsList.forEach((d, idx) => {
+              if (!d || d.id == null) return;
+              if (parsed.some(p => String(p.id) === String(d.id))) return;
+
+              let title = (d.docTitle || d.title || d.sheetsTitle || d.deckTitle || "").trim();
+              if (!title || /^untitled/i.test(title)) {
+                if (d.bodyHtml) {
+                  const plain = d.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+                  if (plain.length > 3) {
+                    title = plain.slice(0, 26) + (plain.length > 26 ? "..." : "");
+                  }
+                }
+              }
+              if (!title) {
+                const shortId = String(d.id).slice(-4);
+                title = `Document #${shortId}`;
+              }
+
+              let detectedProduct = (d.mode || "").toLowerCase();
+              if (!detectedProduct || !PRODUCT_INFO[detectedProduct]) {
+                if (d.sheetsTitle || d.sheetGrids) detectedProduct = "sheet";
+                else if (d.deckSlidesData || d.deckTitle) detectedProduct = "deck";
+                else if (d.whiteboardWidgets) detectedProduct = "whiteboard";
+                else detectedProduct = "compose";
+              }
+              if (detectedProduct === "sheets") detectedProduct = "sheet";
+
+              const info = PRODUCT_INFO[detectedProduct] || PRODUCT_INFO.compose;
+
+              parsed.push({
+                id: d.id,
+                title,
+                savedAt: Date.now() - (idx * 1000),
+                product: detectedProduct,
+                productName: info.name,
+                icon: info.icon,
+                data: d
+              });
+            });
+          }
+        }
+      } catch (_) {}
 
       parsed.sort((a, b) => b.savedAt - a.savedAt);
 

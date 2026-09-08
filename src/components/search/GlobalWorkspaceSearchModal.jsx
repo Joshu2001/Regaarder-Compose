@@ -334,6 +334,15 @@ export default function GlobalWorkspaceSearchModal({
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'all');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // Natural language question or AI prompt intent detection
+  const isQuestionQuery = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed || trimmed.length < 8) return false;
+    if (trimmed.endsWith('?')) return true;
+    const questionStarters = ['what', 'how', 'why', 'who', 'where', 'when', 'which', 'can you', 'could you', 'explain', 'summarize', 'tell me', 'find all', 'analyze', 'is there', 'are there', 'list all', 'give me'];
+    return questionStarters.some(starter => trimmed.startsWith(starter + ' ') || trimmed.startsWith(starter));
+  }, [query]);
+
   // AI Synthesis state
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
@@ -583,10 +592,10 @@ export default function GlobalWorkspaceSearchModal({
     }
   }, [isMdModalOpen, mdInputText]);
 
-  // Reset selected index when query or filter changes
+  // Reset selected index when query or filter changes (when question query is detected, don't auto-highlight result 0)
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query, activeFilter, mode]);
+    setSelectedIndex(isQuestionQuery ? -1 : 0);
+  }, [query, activeFilter, mode, isQuestionQuery]);
 
   // Auto-scroll selected result into view
   useEffect(() => {
@@ -849,8 +858,18 @@ export default function GlobalWorkspaceSearchModal({
 
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (flatSelectableItems.length > 0 && flatSelectableItems[selectedIndex]) {
+      // If user typed a natural language question and didn't manually navigate down into results, route to Ask Memory synthesis
+      if (isQuestionQuery && selectedIndex === -1) {
+        setMode('ai');
+        handleRunAiSynthesis(query);
+        return;
+      }
+      if (flatSelectableItems.length > 0 && selectedIndex >= 0 && flatSelectableItems[selectedIndex]) {
         handleActivateItem(flatSelectableItems[selectedIndex]);
+      } else if (isQuestionQuery || query.trim().length > 15) {
+        // Fallback: route question to Ask Memory
+        setMode('ai');
+        handleRunAiSynthesis(query);
       }
       return;
     }
@@ -899,33 +918,46 @@ export default function GlobalWorkspaceSearchModal({
         className={`w-[920px] max-w-[95vw] h-[650px] max-h-[88vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Dominant Search / Header (62px height) ── */}
-        <div className="h-[62px] flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent">
+        {/* ── Dominant Search / Header (Adaptive min-h-[62px] fluid height) ── */}
+        <div className="min-h-[62px] py-2.5 flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent transition-all duration-150">
           {mode === 'ai' ? (
-            <div className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-2xs self-center">
               <RegaarderAiIcon size={15} strokeWidth={1.9} />
             </div>
           ) : (
-            <Search size={18} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+            <Search size={18} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0 self-center" />
           )}
 
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (mode === 'ai' && aiResponse) {
-                setAiResponse(null);
+          <div className="flex-1 flex items-center min-w-0">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={query}
+              onChange={(e) => {
+                const val = e.target.value;
+                setQuery(val);
+                if (mode === 'ai' && aiResponse) {
+                  setAiResponse(null);
+                }
+                // Auto-adjust height up to 3 lines
+                e.target.style.height = 'auto';
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 88)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleKeyDown(e);
+                }
+              }}
+              placeholder={
+                mode === 'ai' 
+                  ? (t('search.askAnything') || `Ask Memory as ${activePersona.name} across workspace files & guidelines…`) 
+                  : (t('search.searchAnything') || 'Search anything in your workspace…')
               }
-            }}
-            placeholder={
-              mode === 'ai' 
-                ? (t('search.askAnything') || `Ask Memory as ${activePersona.name} across workspace files & guidelines…`) 
-                : (t('search.searchAnything') || 'Search anything in your workspace…')
-            }
-            className="flex-1 bg-transparent border-none outline-none text-[15px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight"
-          />
+              className="w-full bg-transparent border-none outline-none text-[15px] font-normal text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 tracking-tight resize-none py-1.5 leading-relaxed thin-scrollbar max-h-[88px] overflow-y-auto"
+              style={{ minHeight: '28px' }}
+            />
+          </div>
 
           {/* Right Action Controls: Clear & Apple Dual Switch */}
           <div className="flex items-center gap-2.5 shrink-0 select-none">
@@ -1786,6 +1818,41 @@ export default function GlobalWorkspaceSearchModal({
 
           {mode === 'search' && query.trim() && searchResults.length > 0 && (
             <div className="space-y-4">
+              {/* Natural Language Prompt Suggestion Card */}
+              {isQuestionQuery && (
+                <div 
+                  onClick={() => {
+                    setMode('ai');
+                    handleRunAiSynthesis(query);
+                  }}
+                  className="p-3.5 rounded-xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent border border-violet-500/25 flex items-center justify-between cursor-pointer hover:border-violet-500/40 hover:bg-violet-500/[0.12] transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <RegaarderAiIcon size={16} strokeWidth={2.0} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100">
+                          Ask Memory with AI Intelligence
+                        </span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-violet-600/15 text-violet-700 dark:text-violet-300 font-mono">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                        Synthesize an executive answer for &ldquo;{query}&rdquo; using {activePersona.name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-violet-600/10 text-violet-700 dark:text-violet-300 text-[10px] font-mono font-semibold border border-violet-500/20">
+                      ↵ Enter
+                    </kbd>
+                    <ArrowRight size={14} className="text-violet-600 dark:text-violet-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              )}
               {groupedResults.map((group) => (
                 <div key={group.label} className="space-y-1">
                   {/* Category Section Header with Native Regaarder SVG Icon */}
@@ -1937,7 +2004,7 @@ export default function GlobalWorkspaceSearchModal({
             </span>
             <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
               <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↵</kbd>
-              <span>{t('search.open') || 'Open'}</span>
+              <span>{mode === 'ai' || isQuestionQuery ? 'Ask Memory' : (t('search.open') || 'Open')}</span>
             </span>
             <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
               <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>

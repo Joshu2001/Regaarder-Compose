@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Network, Code2, Sparkles, Layers, RefreshCw, Copy, Check, Plus, 
+  Network, Code2, Layers, RefreshCw, Copy, Check, Plus, 
   ArrowRight, Database, Server, Globe, Cpu, GitFork, CheckCircle2, 
   AlertTriangle, ShieldCheck, Terminal, Download, Zap, MoveRight, 
   Boxes, FileCode, CheckSquare, RefreshCcw, Share2, Compass
 } from 'lucide-react';
+import { RegaarderAiIcon } from '../RegaarderProductIcons.jsx';
 import {
   subscribeToTopology,
   getTopologyGraph,
@@ -333,7 +334,7 @@ export default function SpatialTopologyInspector() {
       {actionNotice && (
         <div className="px-4 py-2 bg-teal-500/10 border-b border-teal-500/20 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center justify-between shrink-0">
           <div className="flex items-center gap-1.5">
-            <Sparkles size={13} className="text-teal-500" />
+            <RegaarderAiIcon size={13} className="text-teal-500" />
             <span>{actionNotice}</span>
           </div>
           <button 
@@ -386,7 +387,7 @@ export default function SpatialTopologyInspector() {
               : 'text-slate-600 dark:text-zinc-400 border-transparent hover:text-slate-900 dark:hover:text-zinc-200'
           }`}
         >
-          <Sparkles size={13} />
+          <RegaarderAiIcon size={13} />
           <span>Agent Plan Canvas Synthesis</span>
         </button>
 
@@ -694,7 +695,7 @@ export default function SpatialTopologyInspector() {
           <div className="h-full flex flex-col max-w-2xl mx-auto space-y-4 py-4">
             <div className="p-4 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-3">
               <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-teal-500" />
+                <RegaarderAiIcon size={16} className="text-teal-500" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
                   Synthesize Multi-Stage Architecture to Whiteboard
                 </h3>
@@ -748,7 +749,7 @@ export default function SpatialTopologyInspector() {
                   onPointerDown={(e) => { e.preventDefault(); handleRunAgentSynthesis(); }}
                   className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
                 >
-                  <Sparkles size={14} />
+                  <RegaarderAiIcon size={14} />
                   <span>{isSynthesizing ? 'Synthesizing onto Canvas...' : 'Render Architecture to Canvas'}</span>
                 </button>
 

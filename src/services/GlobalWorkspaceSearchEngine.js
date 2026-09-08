@@ -134,8 +134,71 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   const typeLower = (type || '').toLowerCase();
   const explicitLower = (explicitWorkspace || '').toLowerCase();
 
+  if (explicitLower === 'compose' || explicitLower === 'docs' || explicitLower === 'document') {
+    return {
+      workspace: 'compose',
+      type: 'document',
+      prefix: 'Compose'
+    };
+  }
+
+  if (explicitLower === 'deck') {
+    return {
+      workspace: 'deck',
+      type: 'deck',
+      prefix: 'Deck'
+    };
+  }
+
+  if (explicitLower === 'sheets' || explicitLower === 'sheet') {
+    return {
+      workspace: 'sheets',
+      type: 'sheet',
+      prefix: 'Sheets'
+    };
+  }
+
+  if (explicitLower === 'whiteboard') {
+    return {
+      workspace: 'whiteboard',
+      type: 'whiteboard',
+      prefix: 'Whiteboard'
+    };
+  }
+
+  if (explicitLower === 'room') {
+    return {
+      workspace: 'room',
+      type: 'meeting',
+      prefix: 'Room'
+    };
+  }
+
+  if (explicitLower === 'tasks') {
+    return {
+      workspace: 'tasks',
+      type: 'task',
+      prefix: 'Tasks'
+    };
+  }
+
+  if (explicitLower === 'browser' || explicitLower === 'notes') {
+    return {
+      workspace: 'browser',
+      type: 'research_note',
+      prefix: 'Research'
+    };
+  }
+
+  if (explicitLower === 'people') {
+    return {
+      workspace: 'people',
+      type: 'person',
+      prefix: 'People'
+    };
+  }
+
   if (
-    explicitLower === 'deck' ||
     typeLower === 'deck' ||
     typeLower === 'slide' ||
     typeLower === 'slides' ||
@@ -151,8 +214,6 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   }
 
   if (
-    explicitLower === 'sheets' ||
-    explicitLower === 'sheet' ||
     typeLower === 'sheet' ||
     typeLower === 'sheets' ||
     tLower.includes('sheet') ||
@@ -168,7 +229,6 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   }
 
   if (
-    explicitLower === 'whiteboard' ||
     typeLower === 'whiteboard' ||
     tLower.includes('whiteboard')
   ) {
@@ -180,7 +240,6 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   }
 
   if (
-    explicitLower === 'room' ||
     typeLower === 'meeting' ||
     typeLower === 'room' ||
     tLower.includes('room') ||
@@ -195,7 +254,6 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   }
 
   if (
-    explicitLower === 'tasks' ||
     typeLower === 'task' ||
     tLower.includes('task') ||
     tLower.includes('initiative')
@@ -208,7 +266,6 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   }
 
   if (
-    explicitLower === 'browser' ||
     typeLower === 'research' ||
     typeLower === 'note' ||
     typeLower === 'research_note' ||
@@ -222,7 +279,6 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   }
 
   if (
-    explicitLower === 'people' ||
     typeLower === 'person'
   ) {
     return {
@@ -247,8 +303,89 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
 export function buildWorkspaceIndex(context = {}) {
   const items = [];
 
-  // 1. Real Documents & Active Files
-  const docs = context.documents || [];
+  // 1. Real Documents & Active Files (live open tabs + explicitly saved library items)
+  // Primary source: live React state passed via liveWorkspaceContext.documents
+  // Secondary source: regaarder_documents_v1 localStorage (supplements React state in case of stale props)
+  let openDocs = Array.isArray(context.documents) ? [...context.documents] : [];
+
+  // Supplement openDocs from localStorage so no tabs are missed due to React state propagation timing
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const rawSavedDocs = localStorage.getItem('regaarder_documents_v1');
+      if (rawSavedDocs) {
+        const savedDocs = JSON.parse(rawSavedDocs);
+        if (Array.isArray(savedDocs)) {
+          for (const d of savedDocs) {
+            if (d && d.id != null && !openDocs.some(od => String(od.id) === String(d.id))) {
+              openDocs.push(d);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[buildWorkspaceIndex] Failed to supplement openDocs from localStorage:', e);
+    }
+  }
+
+  let libraryDocs = [];
+  if (Array.isArray(context.libraryDocuments)) {
+    libraryDocs = [...context.libraryDocuments];
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      // Pull only explicitly saved library documents
+      const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+      if (rawLib) {
+        const parsed = JSON.parse(rawLib);
+        if (Array.isArray(parsed)) {
+          for (const d of parsed) {
+            if (d && !libraryDocs.some(ld => String(ld.id) === String(d.id))) {
+              libraryDocs.push(d);
+            }
+          }
+        }
+      }
+
+      // Also scan all autosaved durable documents in rc.savedDoc.*
+      // This ensures all work ever created or edited on this device is discoverable in search!
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('rc.savedDoc.')) {
+          try {
+            const rawSaved = localStorage.getItem(key);
+            if (rawSaved) {
+              const parsedSaved = JSON.parse(rawSaved);
+              if (parsedSaved && typeof parsedSaved === 'object') {
+                const docId = parsedSaved.id != null ? parsedSaved.id : key.replace('rc.savedDoc.', '');
+                if (!libraryDocs.some(ld => String(ld.id) === String(docId)) && !openDocs.some(od => String(od.id) === String(docId))) {
+                  libraryDocs.push({
+                    ...parsedSaved,
+                    id: docId
+                  });
+                }
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      console.warn('[buildWorkspaceIndex] Failed to parse library/saved documents from localStorage:', e);
+    }
+  }
+
+  // Deduplicate by ID prioritizing live openDocs, then libraryDocs
+  const docsMap = new Map();
+  for (const doc of [...openDocs, ...libraryDocs]) {
+    if (doc && doc.id != null) {
+      const docKey = String(doc.id);
+      if (!docsMap.has(docKey)) {
+        docsMap.set(docKey, doc);
+      }
+    }
+  }
+  const docs = Array.from(docsMap.values());
+
   const activeDocId = context.activeDocId;
   const currentDocTitle = (context.docTitle || '').trim();
   const currentDocSubtitle = (context.docSubtitle || '').trim();
@@ -354,9 +491,17 @@ export function buildWorkspaceIndex(context = {}) {
           isCurrent: true
         }
       });
-    } else if (hasActiveContent) {
-      const activeRes = resolveWorkspaceForEntity(currentDocTitle || 'Untitled Document', '', currentProductMode);
-      const titleToUse = currentDocTitle || 'Untitled Document';
+    } else {
+      let titleToUse = currentDocTitle || '';
+      if ((!titleToUse || !isRealTitle(titleToUse)) && currentPlainText) {
+        const firstLine = currentPlainText.split(/\n+/)[0]?.trim();
+        if (firstLine && firstLine.length > 2 && firstLine.length < 90) {
+          titleToUse = firstLine;
+        }
+      }
+      if (!titleToUse) titleToUse = 'Untitled Document';
+
+      const activeRes = resolveWorkspaceForEntity(titleToUse, '', currentProductMode || 'compose');
       items.push({
         id: `doc-active-${activeDocId}`,
         type: activeRes.type,
@@ -364,7 +509,7 @@ export function buildWorkspaceIndex(context = {}) {
         title: titleToUse,
         subtitle: currentDocSubtitle || `Currently open in ${activeRes.prefix}`,
         location: `${activeRes.prefix} > ${titleToUse}`,
-        content: currentPlainText,
+        content: currentPlainText || 'Active document workspace.',
         rawHtml: currentDocBodyHtml,
         author: 'You (Author)',
         authorRole: 'Editor',
@@ -387,16 +532,27 @@ export function buildWorkspaceIndex(context = {}) {
     const isWhiteboard = doc.mode === 'whiteboard';
 
     if (isSheets) {
-      const rawTitle = (doc.sheetsTitle || doc.title || '').trim();
+      let rawTitle = (doc.sheetsTitle || doc.title || '').trim();
       const gridText = extractTextFromGrid(doc.sheetGrids);
       const sheetCount = doc.sheetsData?.length || 1;
+
+      // Smart title extraction for Untitled Sheets with content
+      if (!rawTitle || rawTitle.toLowerCase() === 'untitled sheet' || rawTitle.toLowerCase() === 'untitled') {
+        if (gridText && gridText.length > 3) {
+          const firstWord = gridText.split(/\s+/).slice(0, 4).join(' ');
+          rawTitle = `Sheet: ${firstWord}`;
+        } else {
+          rawTitle = doc.sheetsTitle || doc.title || `Spreadsheet #${String(doc.id).slice(-4)}`;
+        }
+      }
+
       items.push({
         id: `sheet-${doc.id || idx}`,
         type: 'sheet',
         workspace: 'sheets',
-        title: rawTitle || `Spreadsheet ${idx + 1}`,
+        title: rawTitle,
         subtitle: `Spreadsheet (${sheetCount} Sheet${sheetCount > 1 ? 's' : ''})`,
-        location: `Sheets > ${rawTitle || `Spreadsheet ${idx + 1}`}`,
+        location: `Sheets > ${rawTitle}`,
         content: gridText || 'Spreadsheet calculation workbook and data models.',
         rawHtml: '',
         author: doc.author || 'You (Author)',
@@ -409,17 +565,28 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else if (isDeck) {
-      const rawTitle = (doc.deckTitle || doc.title || '').trim();
+      let rawTitle = (doc.deckTitle || doc.title || '').trim();
       const slides = doc.deckSlidesData || [];
       const deckText = extractTextFromSlides(slides);
       const slideCount = slides.length || 1;
+
+      // Smart title extraction for Untitled Decks with content
+      if (!rawTitle || rawTitle.toLowerCase() === 'untitled deck' || rawTitle.toLowerCase() === 'untitled') {
+        const firstSlideTitle = slides.find(s => s.title && s.title.trim())?.title?.trim();
+        if (firstSlideTitle) {
+          rawTitle = firstSlideTitle;
+        } else {
+          rawTitle = doc.deckTitle || doc.title || `Presentation #${String(doc.id).slice(-4)}`;
+        }
+      }
+
       items.push({
         id: `deck-${doc.id || idx}`,
         type: 'deck',
         workspace: 'deck',
-        title: rawTitle || `Presentation ${idx + 1}`,
+        title: rawTitle,
         subtitle: `Presentation (${slideCount} Slide${slideCount > 1 ? 's' : ''})`,
-        location: `Deck > ${rawTitle || `Presentation ${idx + 1}`}`,
+        location: `Deck > ${rawTitle}`,
         content: deckText || 'Presentation slides and speaker notes.',
         rawHtml: '',
         author: doc.author || 'You (Author)',
@@ -449,26 +616,52 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else {
-      const plainText = stripHtml(doc.bodyHtml || doc.content || '').trim();
-      const rawTitle = (doc.title || '').trim();
-      if (!plainText && (!rawTitle || !isRealTitle(rawTitle))) {
-        return; // Skip empty placeholder documents
+      const isOpenTab = openDocs.some(od => String(od.id) === String(doc.id));
+      const plainText = stripHtml(doc.bodyHtml || doc.content || doc.docBodyHtml || '').trim();
+      let rawTitle = (doc.title || doc.docTitle || '').trim();
+
+      // If title is missing or generic 'Untitled Document', attempt to extract first heading/line from content
+      if (!isRealTitle(rawTitle) && plainText) {
+        const firstLine = plainText.split(/\n+/)[0]?.trim();
+        if (firstLine && firstLine.length > 2 && firstLine.length < 90) {
+          rawTitle = firstLine;
+        }
       }
-      const docRes = resolveWorkspaceForEntity(rawTitle || '', doc.type || doc.format || '');
+
+      // Smart fallback title for untitled documents
+      if (!rawTitle || !isRealTitle(rawTitle)) {
+        if (plainText && plainText.length > 3) {
+          const firstWords = plainText.split(/\s+/).slice(0, 4).join(' ');
+          rawTitle = `Doc: ${firstWords}`;
+        } else {
+          const shortId = doc.id != null ? String(doc.id).slice(-4) : String(idx + 1);
+          rawTitle = (doc.title && doc.title !== 'Untitled Document' && doc.title !== 'Untitled') ? doc.title : `Document #${shortId}`;
+        }
+      }
+
+      // Skip only if not an open tab AND has zero content AND zero title
+      if (!isOpenTab && !plainText && (!doc.bodyHtml && !doc.content)) {
+        return;
+      }
+
+      const effectiveTitle = rawTitle;
+      const explicitMode = doc.mode || (doc.type === 'sheet' ? 'sheets' : doc.type === 'deck' ? 'deck' : 'compose');
+      const docRes = resolveWorkspaceForEntity(effectiveTitle, doc.type || doc.format || '', explicitMode);
       items.push({
         id: `doc-${doc.id || idx}`,
         type: docRes.type,
         workspace: docRes.workspace,
-        title: rawTitle || `${docRes.prefix} ${idx + 1}`,
-        subtitle: doc.subtitle || `${docRes.prefix} File`,
-        location: `${docRes.prefix} > ${rawTitle || `${docRes.prefix} ${idx + 1}`}`,
-        content: plainText,
-        rawHtml: doc.bodyHtml || '',
+        title: effectiveTitle,
+        subtitle: doc.subtitle || (isOpenTab ? `Open Tab in ${docRes.prefix}` : `${docRes.prefix} File`),
+        location: `${docRes.prefix} > ${effectiveTitle}`,
+        content: plainText || 'Document file.',
+        rawHtml: doc.bodyHtml || doc.docBodyHtml || '',
         author: doc.author || 'You (Author)',
         authorRole: 'Editor',
-        updatedAt: doc.updatedAt || 'Recently saved',
+        updatedAt: doc.updatedAt || (doc.savedAt ? 'Saved' : 'Recently saved'),
         metadata: {
-          docId: doc.id
+          docId: doc.id,
+          docSnapshot: doc
         }
       });
     }
@@ -887,37 +1080,64 @@ Synthesize the answer directly based on the sources above. Explain the exact con
     }
   }
 
-  // ── Tertiary Path: Smart Semantic Keyword Extraction (no LLM required) ─────
+  // ── Tertiary Path: Smart Semantic Keyword Extraction & Multi-Source Synthesis (no LLM required) ─────
   // Search through all matched documents for paragraphs containing query terms
-  const terms = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !['what', 'this', 'that', 'with', 'from', 'your', 'about', 'connection', 'across', 'workspace'].includes(t));
+  const terms = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !['what', 'this', 'that', 'with', 'from', 'your', 'about', 'connection', 'across', 'workspace', 'tell', 'show'].includes(t));
   
-  let bestExcerpt = '';
-  let bestSource = matched[0]?.entity;
+  const extractedExcerpts = [];
 
   for (const m of matched) {
-    const content = (m.entity.content || m.snippet || '');
-    const paragraphs = content.split(/\n+/).filter(p => p.trim().length > 20);
-    
-    // Check paragraphs matching multiple terms
+    const docTitle = m.entity.title || 'Untitled Document';
+    const docLoc = m.entity.location || m.entity.workspace || 'Workspace';
+    const content = (m.entity.content || m.snippet || '').trim();
+    if (!content) continue;
+
+    const paragraphs = content.split(/\n+/).map(p => p.trim()).filter(p => p.length > 15);
+    let matchedParas = [];
+
     for (const para of paragraphs) {
       const pLower = para.toLowerCase();
       const matchCount = terms.filter(t => pLower.includes(t)).length;
-      if (matchCount >= 2 || (matchCount >= 1 && terms.length === 1)) {
-        bestExcerpt = para.trim();
-        bestSource = m.entity;
-        break;
+      if (terms.length === 0 || matchCount >= 1) {
+        matchedParas.push({ text: para, matchCount });
       }
     }
-    if (bestExcerpt) break;
+
+    if (matchedParas.length > 0) {
+      matchedParas.sort((a, b) => b.matchCount - a.matchCount);
+      const topSnippets = matchedParas.slice(0, 2).map(p => p.text);
+      extractedExcerpts.push({
+        title: docTitle,
+        location: docLoc,
+        text: topSnippets.join('\n\n')
+      });
+    } else if (content.length > 0) {
+      extractedExcerpts.push({
+        title: docTitle,
+        location: docLoc,
+        text: content.slice(0, 320) + (content.length > 320 ? '…' : '')
+      });
+    }
   }
 
-  if (!bestExcerpt) {
-    const raw = (bestSource?.content || matched[0]?.snippet || '').trim();
-    bestExcerpt = raw.slice(0, 350) + (raw.length > 350 ? '…' : '');
+  if (extractedExcerpts.length > 0) {
+    const synthesisSections = extractedExcerpts.map((ex, i) => 
+      `### ${i + 1}. **${ex.title}** *(${ex.location})*\n${ex.text}`
+    ).join('\n\n');
+
+    const synthesisSummary = `Found **${extractedExcerpts.length} relevant workspace ${extractedExcerpts.length === 1 ? 'source' : 'sources'}** regarding "${query}":\n\n${synthesisSections}\n\n> *Tip: Connect Ollama locally or configure an API key in Settings for full generative reasoning and synthesis.*`;
+
+    return {
+      answer: synthesisSummary,
+      sources: matched.map(m => m.entity)
+    };
   }
+
+  const primarySource = matched[0]?.entity;
+  const rawFallback = (primarySource?.content || matched[0]?.snippet || '').trim();
 
   return {
-    answer: `Based on **${bestSource?.title || 'Workspace Document'}** (${bestSource?.location || bestSource?.workspace || 'Compose'}):\n\n${bestExcerpt}`,
+    answer: `Based on **${primarySource?.title || 'Workspace Document'}** (${primarySource?.location || primarySource?.workspace || 'Compose'}):\n\n${rawFallback.slice(0, 450)}${rawFallback.length > 450 ? '…' : ''}\n\n> *Tip: Connect Ollama locally or configure an API key in Settings for full generative reasoning and synthesis.*`,
     sources: matched.map(m => m.entity)
   };
 }

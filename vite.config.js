@@ -90,6 +90,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      watch: {
+        usePolling: true,
+        interval: 300,
+      },
       fs: {
         allow: ['..'],
       },

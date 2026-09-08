@@ -527,6 +527,8 @@ export const RegaarderAiIcon = ({ size = 24, className = "", strokeWidth = 1.8, 
       strokeLinecap="round"
       strokeLinejoin="round"
     />
+    {/* Focal intelligence core */}
+    <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
   </svg>
 );
 

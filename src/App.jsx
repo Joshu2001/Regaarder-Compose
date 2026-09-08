@@ -8680,6 +8680,8 @@ function AppCore() {
   const [activeSheetId, setActiveSheetId] = useState(1);
   const [headerWorkbookDropdownOpen, setHeaderWorkbookDropdownOpen] = useState(false);
   const [headerWorkbookSearchQuery, setHeaderWorkbookSearchQuery] = useState('');
+  const composeDropdownTriggerRef = useRef(null);
+  const [composeDropdownPos, setComposeDropdownPos] = useState({ top: 0, left: 0 });
   const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
   const [addressTemp, setAddressTemp] = useState(null);
@@ -10593,7 +10595,7 @@ const DEFAULT_DECK_SLIDES = [
       console.warn('[Deck] Failed to persist deck slides to localStorage:', e);
     }
   }, [deckSlidesData]);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
   const [whiteboardPenVariant, setWhiteboardPenVariant] = useState('felt-pen');
@@ -10758,7 +10760,7 @@ const DEFAULT_DECK_SLIDES = [
   }, []);
 
   useEffect(() => {
-    const isWb = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
+    const isWb = productMode === 'whiteboard';
     if (isWb && !prevWhiteboardModeRef.current) {
       setIsWhiteboardTopNavHovered(false);
       setIsWhiteboardInitialPeek(false);
@@ -11262,8 +11264,7 @@ const DEFAULT_DECK_SLIDES = [
   };
 
   useEffect(() => {
-    if (activeRightTab !== 'whiteboard') {
-      setIsWhiteboardImmersive(false);
+    if (productMode !== 'whiteboard') {
       return undefined;
     }
     const timer = window.setInterval(() => {
@@ -12501,7 +12502,7 @@ const DEFAULT_DECK_SLIDES = [
 
   useEffect(() => {
     const handleWhiteboardEscape = (event) => {
-      if (event.key !== 'Escape' || activeRightTab !== 'whiteboard') {
+      if (event.key !== 'Escape' || productMode !== 'whiteboard') {
         return;
       }
       setWhiteboardTool('select');
@@ -16777,7 +16778,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                         return;
                       }
                       if (item.mode === 'sheets') {
-                        createSheetsExperience();
+                        createSheetsExperience({ fromHomePage: true });
                         return;
                       }
                       if (item.mode === 'compose') {
@@ -18247,6 +18248,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     setter(target.innerHTML || '');
   };
 
+  const getDocMode = useCallback((doc) => {
+    if (!doc) return 'compose';
+    if (doc.mode) return doc.mode;
+    if (doc.sheetsData && doc.sheetsData.length > 0 && (doc.title?.toLowerCase().includes('sheet') || doc.sheetsTitle)) return 'sheets';
+    if (doc.deckSlidesData && doc.deckSlidesData.length > 0 && (doc.title?.toLowerCase().includes('deck') || doc.deckTitle)) return 'deck';
+    return 'compose';
+  }, []);
+
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
 
@@ -18259,7 +18268,28 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         const saved = localStorage.getItem('regaarder_documents_v1');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Sanitize and migrate legacy documents to guarantee strict mode isolation
+            return parsed.map((doc) => {
+              let cleanMode = doc.mode;
+              if (!cleanMode) {
+                const titleLower = (doc.title || '').toLowerCase();
+                if (titleLower.includes('whiteboard')) {
+                  cleanMode = 'whiteboard';
+                } else if (titleLower.includes('sheet') || (doc.sheetsTitle && doc.sheetsTitle !== 'Untitled Sheet')) {
+                  cleanMode = 'sheets';
+                } else if (titleLower.includes('deck') || (doc.deckTitle && doc.deckTitle !== 'Untitled Deck')) {
+                  cleanMode = 'deck';
+                } else {
+                  cleanMode = 'compose';
+                }
+              }
+              return {
+                ...doc,
+                mode: cleanMode,
+              };
+            });
+          }
         }
       }
     } catch (e) {
@@ -18404,20 +18434,70 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     whiteboardShapes
   ]);
 
+  // Helper to load all durable and library documents from localStorage combined with open documents
+  const getAllKnownDocuments = useCallback(() => {
+    const map = new Map();
+    // 1. Open documents (highest priority for live state)
+    if (Array.isArray(documents)) {
+      documents.forEach(d => {
+        if (d && d.id != null) map.set(String(d.id), d);
+      });
+    }
+    // 2. Library documents
+    try {
+      if (typeof window !== 'undefined') {
+        const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+        if (rawLib) {
+          const parsedLib = JSON.parse(rawLib);
+          if (Array.isArray(parsedLib)) {
+            parsedLib.forEach(d => {
+              if (d && d.id != null && !map.has(String(d.id))) {
+                map.set(String(d.id), d);
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+    // 3. Saved docs in rc.savedDoc.*
+    try {
+      if (typeof window !== 'undefined') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('rc.savedDoc.')) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed && parsed.id != null && !map.has(String(parsed.id))) {
+                map.set(String(parsed.id), parsed);
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return Array.from(map.values());
+  }, [documents]);
+
   // List of all saved workbooks for quick switching
   const sheetsWorkbooksList = useMemo(() => {
-    return documents.filter((doc) => doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0) || (doc.sheetGrids && Object.keys(doc.sheetGrids).length > 0));
-  }, [documents]);
+    return getAllKnownDocuments().filter((doc) => getDocMode(doc) === 'sheets');
+  }, [getAllKnownDocuments, getDocMode]);
 
   // List of all saved slide decks for quick switching
   const deckPresentationsList = useMemo(() => {
-    return documents.filter((doc) => doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0));
-  }, [documents]);
+    return getAllKnownDocuments().filter((doc) => getDocMode(doc) === 'deck');
+  }, [getAllKnownDocuments, getDocMode]);
+
+  // List of all saved compose documents for quick switching
+  const composeDocsList = useMemo(() => {
+    return getAllKnownDocuments().filter((doc) => getDocMode(doc) === 'compose');
+  }, [getAllKnownDocuments, getDocMode]);
 
   // Ensure an active document exists in documents collection when entering Sheets or Deck mode
   useEffect(() => {
     if (productMode === 'sheets') {
-      const existingSheetsDoc = documents.find((doc) => doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0));
+      const existingSheetsDoc = documents.find((doc) => getDocMode(doc) === 'sheets');
       if (!existingSheetsDoc) {
         const initialDocId = Date.now();
         const newSheetsDoc = {
@@ -18432,11 +18512,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         };
         setDocuments(prev => [...prev, newSheetsDoc]);
         setActiveDocId(initialDocId);
-      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && (d.mode === 'sheets' || d.sheetsData))) {
+      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'sheets')) {
         switchDocument(existingSheetsDoc.id);
       }
     } else if (productMode === 'deck') {
-      const existingDeckDoc = documents.find((doc) => doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0));
+      const existingDeckDoc = documents.find((doc) => getDocMode(doc) === 'deck');
       if (!existingDeckDoc) {
         const initialDocId = Date.now();
         const newDeckDoc = {
@@ -18450,7 +18530,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         };
         setDocuments(prev => [...prev, newDeckDoc]);
         setActiveDocId(initialDocId);
-      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && (d.mode === 'deck' || d.deckSlidesData))) {
+      } else if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'deck')) {
         switchDocument(existingDeckDoc.id);
       }
     }
@@ -20870,6 +20950,22 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     try {
       localStorage.setItem(`rc.savedDoc.${currentId}`, JSON.stringify(docRecord));
       localStorage.setItem('rc.activeDocId', String(currentId));
+
+      // Also ensure all open background tabs in documents[] have durable rc.savedDoc snapshots
+      if (Array.isArray(documents)) {
+        documents.forEach((d) => {
+          if (d && d.id && String(d.id) !== String(currentId)) {
+            const key = `rc.savedDoc.${d.id}`;
+            if (!localStorage.getItem(key)) {
+              localStorage.setItem(key, JSON.stringify({
+                ...d,
+                isSaved: true,
+                savedAt: savedAt
+              }));
+            }
+          }
+        });
+      }
     } catch (_err) {}
 
     setLastSavedAt(savedAt);
@@ -21426,27 +21522,31 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     setDocuments((prev) =>
-      prev.map((doc) =>
-        doc.id === activeDocId
-          ? {
-              ...doc,
-              mode: doc.mode || (productMode === 'landing' ? 'compose' : productMode),
-              title: docTitle,
-              subtitle: docSubtitle,
-              initiatives,
-              appendedSections,
-              isBlank: isBlankDocument,
-              bodyHtml: docBodyHtml,
-              sheetsTitle,
-              sheetsData,
-              sheetGrids,
-              activeSheetId,
-              deckTitle,
-              deckSlidesData,
-              activeDeckSlideId,
-            }
-          : doc,
-      ),
+      prev.map((doc) => {
+        if (doc.id !== activeDocId) return doc;
+        const currentMode = doc.mode || (productMode === 'landing' ? 'compose' : productMode);
+        const updatedDoc = {
+          ...doc,
+          mode: currentMode,
+          title: currentMode === 'sheets' ? (sheetsTitle || doc.title || 'Untitled Sheet') : currentMode === 'deck' ? (deckTitle || doc.title || 'Untitled Deck') : docTitle,
+          subtitle: docSubtitle,
+          initiatives,
+          appendedSections,
+          isBlank: isBlankDocument,
+          bodyHtml: docBodyHtml,
+        };
+        if (currentMode === 'sheets') {
+          updatedDoc.sheetsTitle = sheetsTitle;
+          updatedDoc.sheetsData = sheetsData;
+          updatedDoc.sheetGrids = sheetGrids;
+          updatedDoc.activeSheetId = activeSheetId;
+        } else if (currentMode === 'deck') {
+          updatedDoc.deckTitle = deckTitle;
+          updatedDoc.deckSlidesData = deckSlidesData;
+          updatedDoc.activeDeckSlideId = activeDeckSlideId;
+        }
+        return updatedDoc;
+      }),
     );
   }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument, docBodyHtml, sheetsTitle, sheetsData, sheetGrids, activeSheetId, deckTitle, deckSlidesData, activeDeckSlideId, productMode]);
 
@@ -23101,7 +23201,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const documentOutlineDrawerRef = useRef(null);
 
   useEffect(() => {
-    const isOutlineActive = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard';
+    const isOutlineActive = productMode === 'compose' && (isFocusMode || activeDocView === 'document');
     if (!isOutlineActive || !leftSidebarOpen) return;
 
     const handleTapOutside = (event) => {
@@ -34033,7 +34133,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const remaining = whiteboards.filter((wb) => wb.id !== closeConfirmWbId);
     if (!remaining.length) {
       setCloseConfirmWbId(null);
-      createNewWhiteboard();
+      if (productMode === 'whiteboard') {
+        setProductMode('compose');
+        setIsWhiteboardImmersive(false);
+      }
       return;
     }
 
@@ -34044,13 +34147,93 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const switchDocument = (docId) => {
-    const targetDoc = documents.find((doc) => String(doc.id) === String(docId));
+    let targetDoc = documents.find((doc) => String(doc.id) === String(docId));
     if (!targetDoc) {
-      return;
+      try {
+        if (typeof window !== 'undefined') {
+          const rawSaved = localStorage.getItem(`rc.savedDoc.${docId}`);
+          if (rawSaved) targetDoc = JSON.parse(rawSaved);
+          if (!targetDoc) {
+            const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+            if (rawLib) {
+              const lib = JSON.parse(rawLib);
+              if (Array.isArray(lib)) {
+                targetDoc = lib.find(d => String(d.id) === String(docId));
+              }
+            }
+          }
+        }
+      } catch (_) {}
+      if (targetDoc) {
+        setDocuments(prev => [...prev, targetDoc]);
+      } else {
+        return;
+      }
     }
 
-    if (activeRightTab === 'whiteboard') {
-      setActiveRightTab('assistant');
+    // ─── Flush departing tab — durable rc.savedDoc write ─────────────────────────
+    // setDocuments is async (React batching). Before live state signals are replaced
+    // by the incoming tab, write the departing tab's full content synchronously to
+    // rc.savedDoc.{id} in localStorage. This is the canonical index source for
+    // Memory/Search — without this, inactive tabs are never durably written and only
+    // the active tab appears in search results.
+    if (activeDocId && String(activeDocId) !== String(docId)) {
+      try {
+        const departingSnapshot = {
+          id:               activeDocId,
+          mode:             productMode,
+          title:            docTitle,
+          subtitle:         docSubtitle,
+          bodyHtml:         blankBodyRef?.current?.innerHTML ?? docBodyHtml ?? '',
+          initiatives:      initiatives,
+          appendedSections: appendedSections,
+          isBlank:          isBlankDocument,
+          sheetsTitle:      sheetsTitle,
+          sheetsData:       sheetsData,
+          sheetGrids:       sheetGrids,
+          activeSheetId:    activeSheetId,
+          deckTitle:        deckTitle,
+          deckSlidesData:   deckSlidesData,
+          activeDeckSlideId: activeDeckSlideId,
+          whiteboardWidgets: whiteboardWidgets,
+          whiteboardStrokes: whiteboardStrokes,
+          whiteboardShapes:  whiteboardShapes,
+          isSaved:          true,
+          savedAt:          Date.now(),
+        };
+        localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify(departingSnapshot));
+      } catch (_) {}
+
+      // Also flush into documents[] so in-memory state stays consistent
+      setDocuments(prev => prev.map(d => {
+        if (String(d.id) !== String(activeDocId)) return d;
+        return {
+          ...d,
+          title:              docTitle              !== undefined ? docTitle              : d.title,
+          subtitle:           docSubtitle           !== undefined ? docSubtitle           : d.subtitle,
+          bodyHtml:           docBodyHtml           !== undefined ? docBodyHtml           : d.bodyHtml,
+          initiatives:        initiatives           !== undefined ? initiatives           : d.initiatives,
+          appendedSections:   appendedSections      !== undefined ? appendedSections      : d.appendedSections,
+          isBlank:            isBlankDocument       !== undefined ? isBlankDocument       : d.isBlank,
+          sheetsTitle:        sheetsTitle           !== undefined ? sheetsTitle           : d.sheetsTitle,
+          sheetsData:         sheetsData            !== undefined ? sheetsData            : d.sheetsData,
+          sheetGrids:         sheetGrids            !== undefined ? sheetGrids            : d.sheetGrids,
+          activeSheetId:      activeSheetId         !== undefined ? activeSheetId         : d.activeSheetId,
+          deckTitle:          deckTitle             !== undefined ? deckTitle             : d.deckTitle,
+          deckSlidesData:     deckSlidesData        !== undefined ? deckSlidesData        : d.deckSlidesData,
+          activeDeckSlideId:  activeDeckSlideId     !== undefined ? activeDeckSlideId     : d.activeDeckSlideId,
+          whiteboardWidgets:  whiteboardWidgets     !== undefined ? whiteboardWidgets     : d.whiteboardWidgets,
+          whiteboardStrokes:  whiteboardStrokes     !== undefined ? whiteboardStrokes     : d.whiteboardStrokes,
+          whiteboardShapes:   whiteboardShapes      !== undefined ? whiteboardShapes      : d.whiteboardShapes,
+        };
+      }));
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    const targetMode = getDocMode(targetDoc);
+
+    if (targetMode !== 'whiteboard') {
+      setIsWhiteboardImmersive(false);
     }
 
     setActiveDocId(docId);
@@ -34073,19 +34256,11 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (targetDoc.whiteboardStrokes !== undefined) setWhiteboardStrokes(targetDoc.whiteboardStrokes || []);
     if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
 
-    if (productMode === 'landing') {
-      if (targetDoc.mode) {
-        setProductMode(targetDoc.mode);
-      } else if (targetDoc.sheetsData) {
-        setProductMode('sheets');
-      } else if (targetDoc.deckSlidesData) {
-        setProductMode('deck');
-      } else {
-        setProductMode('compose');
-      }
+    if (productMode !== targetMode) {
+      setProductMode(targetMode);
     }
 
-    if (targetDoc.mode === 'sheets' || targetDoc.sheetsData || productMode === 'sheets') {
+    if (targetMode === 'sheets') {
       if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
         setSheetToolbarTab('View');
       }
@@ -34093,11 +34268,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
-    const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
-    const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
-    const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
-
-    const currentWorkspaceMode = (activeRightTab === 'whiteboard' || productMode === 'whiteboard') ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
+    const currentWorkspaceMode = productMode === 'whiteboard' ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
     const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : 'Untitled Document');
 
     const newDoc = {
@@ -34111,17 +34282,29 @@ Answer the user's question, provide an insightful summary, or explain the contex
       bodyHtml: initialHtml,
       isTitleCustom: Boolean(initialTitle),
       pinned: false,
-      sheetsTitle: productMode === 'sheets' ? (initialTitle || 'Untitled Sheet') : 'Untitled Sheet',
-      sheetsData: initialSheetsData,
-      sheetGrids: initialSheetGrids,
-      activeSheetId: 1,
-      deckTitle: productMode === 'deck' ? (initialTitle || 'Untitled Deck') : 'Untitled Deck',
-      deckSlidesData: initialDeckSlidesData,
-      activeDeckSlideId: 1,
     };
 
-    if (activeRightTab === 'whiteboard') {
-      setActiveRightTab('assistant');
+    if (currentWorkspaceMode === 'sheets') {
+      const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
+      const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
+      newDoc.sheetsTitle = initialTitle || 'Untitled Sheet';
+      newDoc.sheetsData = initialSheetsData;
+      newDoc.sheetGrids = initialSheetGrids;
+      newDoc.activeSheetId = 1;
+
+      setSheetsTitle(newDoc.sheetsTitle);
+      setSheetsData(initialSheetsData);
+      setSheetGrids(initialSheetGrids);
+      setActiveSheetId(1);
+      setSheetToolbarTab('View');
+    } else if (currentWorkspaceMode === 'deck') {
+      newDoc.deckTitle = initialTitle || 'Untitled Deck';
+      newDoc.deckSlidesData = initialDeckSlidesData;
+      newDoc.activeDeckSlideId = 1;
+
+      setDeckTitle(newDoc.deckTitle);
+      setDeckSlidesData(initialDeckSlidesData);
+      setActiveDeckSlideId(1);
     }
 
     setDocuments((prev) => [...prev, newDoc]);
@@ -34132,18 +34315,6 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setAppendedSections([]);
     setInitiatives([]);
     setDocBodyHtml(initialHtml);
-
-    if (productMode === 'sheets') {
-      setSheetsTitle(initialTitle || 'Untitled Sheet');
-      setSheetsData(initialSheetsData);
-      setSheetGrids(initialSheetGrids);
-      setActiveSheetId(1);
-      setSheetToolbarTab('View');
-    } else if (productMode === 'deck') {
-      setDeckTitle(initialTitle || 'Untitled Deck');
-      setDeckSlidesData(initialDeckSlidesData);
-      setActiveDeckSlideId(1);
-    }
 
     setLastComposeRun(null);
     setLeftSidebarOpen(false);
@@ -34249,21 +34420,30 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
+    setRightSidebarOpen(false);
+    setIsWhiteboardImmersive(false);
 
-    // If options.forceNew is not requested and documents exist, restore active or most recent document
+    // If options.forceNew is not requested and compose documents exist, restore active or most recent compose document
     if (!options.forceNew && documents && documents.length > 0) {
-      const targetDoc = documents.find(d => String(d.id) === String(activeDocId)) || documents[documents.length - 1];
-      if (targetDoc && (targetDoc.title || targetDoc.bodyHtml)) {
-        setActiveDocId(targetDoc.id);
-        setDocTitle(targetDoc.title || 'Untitled Document');
-        setDocBodyHtml(targetDoc.bodyHtml || '');
-        return;
+      const composeDocs = documents.filter((d) => getDocMode(d) === 'compose');
+      if (composeDocs.length > 0) {
+        const targetDoc = composeDocs.find((d) => String(d.id) === String(activeDocId)) || composeDocs[composeDocs.length - 1];
+        if (targetDoc) {
+          setActiveDocId(targetDoc.id);
+          setDocTitle(targetDoc.title || 'Untitled Document');
+          setDocSubtitle(targetDoc.subtitle || '');
+          setDocBodyHtml(targetDoc.bodyHtml || '');
+          setInitiatives(targetDoc.initiatives || []);
+          setAppendedSections(targetDoc.appendedSections || []);
+          setIsBlankDocument(targetDoc.isBlank || false);
+          return;
+        }
       }
     }
     createNewComposition(options);
   };
 
-  const createDeckExperience = () => {
+  const createDeckExperience = (options = {}) => {
     setCreationPickerOpen(false);
     setProductMode('deck');
     setFocusedModule('deck');
@@ -34272,8 +34452,43 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (isScreenSharing || window.__currentScreenShareStream) {
       setRoomState('active');
     }
-    setDeckTitle('Untitled deck');
-    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
+
+    // If options.forceNew is not requested and deck documents exist, restore active or most recent deck
+    if (!options.forceNew && documents && documents.length > 0) {
+      const deckDocs = documents.filter((d) => getDocMode(d) === 'deck');
+      if (deckDocs.length > 0) {
+        const targetDoc = deckDocs.find((d) => String(d.id) === String(activeDocId)) || deckDocs[deckDocs.length - 1];
+        if (targetDoc) {
+          switchDocument(targetDoc.id);
+          setDeckZoomLevel(100);
+          setDeckToolbarFont('Inter');
+          setDeckToolbarMenuOpen(false);
+          setDeckContextRailTab('Design');
+          setDeckPromptInput('');
+          setDeckPromptMinimized(false);
+          setDeckSlidesPanelOpen(true);
+          setRightSidebarOpen(false);
+          showToast(`Opened Presentation: ${targetDoc.deckTitle || targetDoc.title || 'Untitled Deck'}`);
+          return;
+        }
+      }
+    }
+
+    const newDeckId = Date.now();
+    const initialDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
+    const newDeckDoc = {
+      id: newDeckId,
+      mode: 'deck',
+      title: 'Untitled Deck',
+      deckTitle: 'Untitled Deck',
+      deckSlidesData: initialDeckSlides,
+      activeDeckSlideId: 1,
+      updatedAt: 'Just now'
+    };
+    setDocuments(prev => [...prev, newDeckDoc]);
+    setActiveDocId(newDeckId);
+    setDeckTitle('Untitled Deck');
+    setDeckSlidesData(initialDeckSlides);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -34284,11 +34499,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckPromptChips(['Turn this into investor tone', 'Generate competitor comparison slide', 'Make this more visual', 'Reduce to 8 slides', 'Simplify for students']);
     setDeckSlidesPanelOpen(true);
     setRightSidebarOpen(false);
-    setActiveRightTab('assistant');
     showToast('Deck workspace ready');
   };
 
-  const createSheetsExperience = () => {
+  const createSheetsExperience = (options = {}) => {
     setCreationPickerOpen(false);
     setProductMode('sheets');
     setFocusedModule('sheets');
@@ -34297,7 +34511,44 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (isScreenSharing || window.__currentScreenShareStream) {
       setRoomState('active');
     }
+
+    // If options.forceNew is not requested and sheet documents exist, restore active or most recent sheet
+    if (!options.forceNew && documents && documents.length > 0) {
+      const sheetsDocs = documents.filter((d) => getDocMode(d) === 'sheets');
+      if (sheetsDocs.length > 0) {
+        const targetDoc = sheetsDocs.find((d) => String(d.id) === String(activeDocId)) || sheetsDocs[sheetsDocs.length - 1];
+        if (targetDoc) {
+          switchDocument(targetDoc.id);
+          setLeftSidebarOpen(false);
+          setDeckPromptInput('');
+          setDeckPromptMinimized(false);
+          setDeckSlidesPanelOpen(false);
+          setRightSidebarOpen(false);
+          setSheetToolbarTab(options.fromHomePage ? 'Data' : 'View');
+          showToast(`Opened Spreadsheet: ${targetDoc.sheetsTitle || targetDoc.title || 'Untitled Sheet'}`);
+          return;
+        }
+      }
+    }
+
+    const newSheetId = Date.now();
+    const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
+    const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
+    const newSheetDoc = {
+      id: newSheetId,
+      mode: 'sheets',
+      title: 'Untitled Sheet',
+      sheetsTitle: 'Untitled Sheet',
+      sheetsData: initialSheetsData,
+      sheetGrids: initialSheetGrids,
+      activeSheetId: 1,
+      updatedAt: 'Just now'
+    };
+    setDocuments(prev => [...prev, newSheetDoc]);
+    setActiveDocId(newSheetId);
     setSheetsTitle('Untitled Sheet');
+    setSheetsData(initialSheetsData);
+    setSheetGrids(initialSheetGrids);
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
     setDeckPromptInput('');
@@ -34305,7 +34556,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
-    setSheetToolbarTab('Data');
+    setSheetToolbarTab(options.fromHomePage ? 'Data' : 'View');
     setHasImportedData(false);
     setSelectedDatasets([]);
     showToast('Sheets workspace ready');
@@ -34677,7 +34928,6 @@ Respond with valid JSON formatted like this:
     }
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
-    setActiveRightTab('whiteboard');
     
     const count = documents.filter(d => getDocMode(d) === 'whiteboard').length;
     const title = initialTitle || (count === 0 ? 'Untitled Whiteboard' : `Whiteboard ${count + 1}`);
@@ -34816,12 +35066,20 @@ Respond with valid JSON formatted like this:
 
   const createItemForCurrentContext = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
-    if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
+    if (productMode === 'whiteboard') {
       createWhiteboardExperience();
       return;
     }
-    if (productMode === 'compose' || productMode === 'sheets' || productMode === 'deck') {
-      createNewComposition();
+    if (productMode === 'sheets') {
+      createSheetsExperience({ forceNew: true });
+      return;
+    }
+    if (productMode === 'deck') {
+      createDeckExperience({ forceNew: true });
+      return;
+    }
+    if (productMode === 'compose') {
+      createComposeExperience({ forceNew: true });
       return;
     }
     if (productMode === 'dm') {
@@ -35162,32 +35420,63 @@ Respond with valid JSON formatted like this:
       setCloseConfirmDocId(null);
       return;
     }
+    const targetDocMode = getDocMode(targetDoc);
 
-    const updatedDocs = documents.map((d) => {
-      if (String(d.id) === String(targetId)) {
-        return {
-          ...d,
-          bodyHtml: String(targetId) === String(activeDocId) ? docBodyHtml : d.bodyHtml,
-          title: String(targetId) === String(activeDocId) ? docTitle : d.title,
-          subtitle: String(targetId) === String(activeDocId) ? docSubtitle : d.subtitle,
-          updatedAt: Date.now(),
-          isSaved: true
-        };
+    const savedSnapshot = {
+      ...targetDoc,
+      bodyHtml: String(targetId) === String(activeDocId) ? docBodyHtml : targetDoc.bodyHtml,
+      title: String(targetId) === String(activeDocId) ? (targetDocMode === 'sheets' ? sheetsTitle : targetDocMode === 'deck' ? deckTitle : docTitle) : targetDoc.title,
+      subtitle: String(targetId) === String(activeDocId) ? docSubtitle : targetDoc.subtitle,
+      sheetsTitle: targetDocMode === 'sheets' ? (sheetsTitle || targetDoc.sheetsTitle) : targetDoc.sheetsTitle,
+      sheetGrids: targetDocMode === 'sheets' ? sheetGrids : targetDoc.sheetGrids,
+      sheetsData: targetDocMode === 'sheets' ? sheetsData : targetDoc.sheetsData,
+      deckTitle: targetDocMode === 'deck' ? (deckTitle || targetDoc.deckTitle) : targetDoc.deckTitle,
+      deckSlidesData: targetDocMode === 'deck' ? deckSlidesData : targetDoc.deckSlidesData,
+      updatedAt: Date.now(),
+      isSaved: true
+    };
+
+    // Persist to Workspace Library storage so closed items are permanently searchable in Memory
+    try {
+      if (typeof window !== 'undefined') {
+        const rawLibrary = localStorage.getItem('regaarder_library_documents_v1');
+        const parsedLibrary = rawLibrary ? JSON.parse(rawLibrary) : [];
+        const filteredLib = Array.isArray(parsedLibrary) ? parsedLibrary.filter(d => String(d.id) !== String(targetId)) : [];
+        localStorage.setItem('regaarder_library_documents_v1', JSON.stringify([savedSnapshot, ...filteredLib]));
       }
-      return d;
-    });
+    } catch (e) {
+      console.warn('[Library] Failed to save document to persistent library:', e);
+    }
 
-    setDocuments(updatedDocs);
+    const remaining = documents.filter((d) => String(d.id) !== String(targetId));
+    setDocuments(remaining);
     setCloseConfirmDocId(null);
-    showToast(`"${targetDoc.title || 'Document'}" saved to Library`);
+    showToast(`"${savedSnapshot.title || 'Document'}" saved to Library`);
 
     // If closing active document, switch to remaining or create clean
     if (String(targetId) === String(activeDocId)) {
-      const remaining = updatedDocs.filter((d) => String(d.id) !== String(targetId));
-      if (remaining.length > 0) {
+      const remainingInMode = remaining.filter((d) => getDocMode(d) === targetDocMode);
+      if (remainingInMode.length > 0) {
+        switchDocument(remainingInMode[0].id);
+      } else if (targetDocMode === 'whiteboard' || productMode === 'whiteboard') {
+        setProductMode('compose');
+        setIsWhiteboardImmersive(false);
+        const composeDocs = remaining.filter((d) => getDocMode(d) === 'compose');
+        if (composeDocs.length > 0) {
+          switchDocument(composeDocs[composeDocs.length - 1].id);
+        } else {
+          createNewComposition({ silent: true });
+        }
+      } else if (remaining.length > 0) {
         switchDocument(remaining[0].id);
       } else {
         createNewComposition({ silent: true });
+      }
+    } else if (targetDocMode === 'whiteboard' || productMode === 'whiteboard') {
+      const remainingWb = remaining.filter((d) => getDocMode(d) === 'whiteboard');
+      if (remainingWb.length === 0 && productMode === 'whiteboard') {
+        setProductMode('compose');
+        setIsWhiteboardImmersive(false);
       }
     }
   };
@@ -35205,7 +35494,18 @@ Respond with valid JSON formatted like this:
     showToast('Document discarded');
 
     if (!remainingInMode.length) {
-      createNewComposition({ silent: true });
+      if (targetDocMode === 'whiteboard' || productMode === 'whiteboard') {
+        setProductMode('compose');
+        setIsWhiteboardImmersive(false);
+        const composeDocs = remaining.filter((d) => getDocMode(d) === 'compose');
+        if (composeDocs.length > 0) {
+          switchDocument(composeDocs[composeDocs.length - 1].id);
+        } else {
+          createNewComposition({ silent: true });
+        }
+      } else {
+        createNewComposition({ silent: true });
+      }
     } else {
       switchDocument(remainingInMode[0].id);
     }
@@ -36993,20 +37293,12 @@ Respond with a JSON array of slide objects matching the schema.`;
     </div>
   );
 
-  const getDocMode = useCallback((doc) => {
-    if (!doc) return 'compose';
-    if (doc.mode) return doc.mode;
-    if (doc.sheetsData && doc.sheetsData.length > 0 && (doc.title?.toLowerCase().includes('sheet') || doc.sheetsTitle)) return 'sheets';
-    if (doc.deckSlidesData && doc.deckSlidesData.length > 0 && (doc.title?.toLowerCase().includes('deck') || doc.deckTitle)) return 'deck';
-    return 'compose';
-  }, []);
-
   const activeWorkspaceMode = useMemo(() => {
-    if (activeRightTab === 'whiteboard' || productMode === 'whiteboard') return 'whiteboard';
+    if (productMode === 'whiteboard') return 'whiteboard';
     if (productMode === 'sheets') return 'sheets';
     if (productMode === 'deck') return 'deck';
     return 'compose';
-  }, [productMode, activeRightTab]);
+  }, [productMode]);
 
   const orderedDocuments = useMemo(() => {
     const modeDocs = documents.filter((doc) => getDocMode(doc) === activeWorkspaceMode);
@@ -37777,7 +38069,8 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [deckSlidesData, activeDocId]);
 
     const isSheetsMode = productMode === 'sheets';
-    const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
+    const isDeckMode = productMode === 'deck';
+    const isWhiteboardWorkspace = productMode === 'whiteboard';
     const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
@@ -40340,7 +40633,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
-  const showDocumentOutlineView = productMode === 'compose' && (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard' && docOutlineEnabled;
+  const showDocumentOutlineView = productMode === 'compose' && (isFocusMode || activeDocView === 'document') && docOutlineEnabled;
   const rightMiniRailWidth = 0;
   const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
@@ -41116,7 +41409,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, height: '100vh', minHeight: '100vh', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
-        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
+        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && (
         <div className="h-13 flex items-center border-b border-slate-100/60 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3.5 shrink-0">
           <div
             className="w-full min-w-0 py-1.5"
@@ -41740,7 +42033,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           )}
 
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
-          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
+          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && productMode !== 'whiteboard' && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
               {/* Persistent Multi-Tab Concurrent Header */}
               <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm z-10">
@@ -43097,12 +43390,12 @@ Respond with a JSON array of slide objects matching the schema.`;
 
 
           {/* C. ACTIVE TAB: WHITEBOARD ASSISTANT */}
-          {activeRightTab === 'whiteboard' && (
+          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && productMode === 'whiteboard' && (
             <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-4 bg-[#fcfcff]">
               <div className="rounded-2xl border border-[#ece8ff] bg-white shadow-[0_18px_34px_-28px_rgba(109,40,217,0.45)] overflow-hidden">
                 <div className="px-4 pt-4 pb-2 border-b border-gray-100">
                   <div className="text-[14px] font-semibold text-[#1f2537] inline-flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-violet-500" />
+                    <RegaarderAiIcon size={13} className="text-violet-500" />
                     AI Assistant
                   </div>
                 </div>
@@ -43147,7 +43440,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     type="button"
                     onClick={() => {
                       setWhiteboardAssistantTab('insights');
-                      setActiveRightTab('whiteboard');
+                      setActiveRightTab('assistant');
                       showToast('Insights refreshed');
                     }}
                     className="text-[10px] font-semibold text-violet-600 hover:text-violet-700"
@@ -43202,7 +43495,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onClick={() => handleWhiteboardConnectionAction('compose')}
                     className="w-full rounded-lg border border-gray-100 px-2.5 py-2 text-left text-[11px] text-slate-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-2"
                   >
-                    <Sparkles size={12} className="text-violet-500" />
+                    <RegaarderAiIcon size={12} className="text-violet-500" />
                     Go-to-Market Plan
                   </button>
                 </div>
@@ -48404,6 +48697,7 @@ const renderRoomTopHeader = () => (
     );
   };
 
+
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -48502,7 +48796,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 <button
                   type="button"
-                  onClick={createSheetsExperience}
+                  onClick={() => createSheetsExperience({ fromHomePage: true })}
                   className="group text-left rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
@@ -48617,37 +48911,45 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Home</span>
                 </button>
 
-                {(isSheetsMode || productMode === 'deck') && (
+                {(isSheetsMode || productMode === 'deck' || productMode === 'compose') && (
                   <>
                     <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
                     <div className="relative shrink-0 flex items-center">
                       <button
+                        ref={composeDropdownTriggerRef}
                         type="button"
                         onPointerDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          if (isSheetsMode && (sheetToolbarTab === 'Data' || !sheetToolbarTab)) {
-                            setSheetToolbarTab('View');
-                          }
                           setHeaderWorkbookSearchQuery('');
-                          setHeaderWorkbookDropdownOpen((prev) => !prev);
+                          setHeaderWorkbookDropdownOpen((prev) => {
+                            if (!prev && composeDropdownTriggerRef.current) {
+                              const rect = composeDropdownTriggerRef.current.getBoundingClientRect();
+                              setComposeDropdownPos({ top: rect.bottom + 6, left: rect.left });
+                            }
+                            return !prev;
+                          });
                         }}
                         className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                           headerWorkbookDropdownOpen
                             ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600'
                             : 'bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/60 shadow-sm'
                         }`}
-                        title={isSheetsMode ? 'Switch Workbook' : 'Switch Presentation'}
+                        title={isSheetsMode ? 'Switch Workbook' : productMode === 'deck' ? 'Switch Presentation' : 'Switch Document'}
                       >
                         {isSheetsMode ? (
                           <SheetIcon size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        ) : (
+                        ) : productMode === 'deck' ? (
                           <DeckIcon size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
+                        ) : (
+                          <ComposeIcon size={13} className="text-violet-500 dark:text-violet-400 shrink-0" />
                         )}
                         <span className="font-semibold max-w-[130px] truncate">
                           {isSheetsMode
                             ? (sheetsTitle || 'Untitled Sheet')
-                            : (deckTitle || 'Untitled Deck')}
+                            : productMode === 'deck'
+                              ? (deckTitle || 'Untitled Deck')
+                              : (docTitle || 'Untitled Document')}
                         </span>
                         <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
@@ -48663,8 +48965,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                           />
                           <div
-                            style={{ zIndex: 99999 }}
-                            className="absolute top-full left-0 mt-1.5 w-72 max-h-96 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/5 dark:ring-white/10 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                            style={{ position: 'fixed', top: composeDropdownPos.top, left: composeDropdownPos.left, zIndex: 99999 }}
+                            className="w-72 max-h-96 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/5 dark:ring-white/10 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
                           >
                             {/* Search Header */}
                             <div className="relative px-1 pt-1 pb-1.5">
@@ -48674,21 +48976,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 autoFocus
                                 value={headerWorkbookSearchQuery}
                                 onChange={(e) => setHeaderWorkbookSearchQuery(e.target.value)}
-                                placeholder={isSheetsMode ? 'Search workbooks...' : 'Search presentations...'}
+                                placeholder={
+                                  isSheetsMode ? 'Search workbooks...'
+                                  : productMode === 'deck' ? 'Search presentations...'
+                                  : 'Search documents...'
+                                }
                                 className="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-transparent focus:border-violet-500 focus:outline-none placeholder:text-slate-400"
                               />
                             </div>
 
                             <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                              <span>{isSheetsMode ? 'Saved Workbooks' : 'Saved Presentations'} ({
-                                (isSheetsMode ? sheetsWorkbooksList : deckPresentationsList).length
-                              })</span>
+                              <span>
+                                {isSheetsMode ? 'Saved Workbooks'
+                                  : productMode === 'deck' ? 'Saved Presentations'
+                                  : 'Saved Documents'} ({
+                                  isSheetsMode ? sheetsWorkbooksList.length
+                                  : productMode === 'deck' ? deckPresentationsList.length
+                                  : composeDocsList.length
+                                })
+                              </span>
                             </div>
 
                             {/* List */}
                             <div className="flex-1 overflow-y-auto max-h-56 flex flex-col gap-0.5 py-1">
                               {(() => {
-                                const list = isSheetsMode ? sheetsWorkbooksList : deckPresentationsList;
+                                const list = isSheetsMode
+                                  ? sheetsWorkbooksList
+                                  : productMode === 'deck'
+                                    ? deckPresentationsList
+                                    : composeDocsList;
                                 const filtered = list.filter((doc) => {
                                   if (!headerWorkbookSearchQuery.trim()) return true;
                                   const q = headerWorkbookSearchQuery.toLowerCase();
@@ -48699,22 +49015,56 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 if (filtered.length === 0) {
                                   return (
                                     <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                      {isSheetsMode ? 'No workbooks found' : 'No presentations found'}
+                                      {isSheetsMode ? 'No workbooks found'
+                                        : productMode === 'deck' ? 'No presentations found'
+                                        : 'No documents found'}
                                     </div>
                                   );
                                 }
 
                                 return filtered.map((doc) => {
                                   const isActive = String(doc.id) === String(activeDocId);
-                                  const title = isSheetsMode
-                                    ? (doc.sheetsTitle || doc.title || 'Untitled Sheet')
-                                    : (doc.deckTitle || doc.title || 'Untitled Deck');
+                                  const docMode = getDocMode(doc);
+
+                                  let title = '';
+                                  if (isSheetsMode || docMode === 'sheets') {
+                                    title = isActive ? (sheetsTitle?.trim() || doc.sheetsTitle || doc.title || '') : (doc.sheetsTitle || doc.title || '');
+                                    if (!title || /^untitled/i.test(title)) {
+                                      title = (doc.sheetsTitle && doc.sheetsTitle !== 'Untitled Sheet') ? doc.sheetsTitle : `Workbook #${String(doc.id).slice(-4)}`;
+                                    }
+                                  } else if (productMode === 'deck' || docMode === 'deck') {
+                                    title = isActive ? (deckTitle?.trim() || doc.deckTitle || doc.title || '') : (doc.deckTitle || doc.title || '');
+                                    if (!title || /^untitled/i.test(title)) {
+                                      const slides = isActive ? deckSlidesData : doc.deckSlidesData;
+                                      const firstSlide = Array.isArray(slides) ? slides.find(s => s.title && s.title.trim()) : null;
+                                      title = firstSlide?.title?.trim() || ((doc.deckTitle && doc.deckTitle !== 'Untitled Deck') ? doc.deckTitle : `Presentation #${String(doc.id).slice(-4)}`);
+                                    }
+                                  } else {
+                                    title = isActive ? (docTitle?.trim() || doc.title || '') : (doc.title || '');
+                                    const html = isActive ? (docBodyHtml || doc.bodyHtml) : doc.bodyHtml;
+                                    if ((!title || /^untitled/i.test(title)) && html) {
+                                      const plain = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                                      const firstLine = plain.split(/\n+/)[0]?.trim();
+                                      if (firstLine && firstLine.length > 2 && firstLine.length < 80) {
+                                        title = firstLine;
+                                      }
+                                    }
+                                    if (!title || /^untitled/i.test(title)) {
+                                      title = (doc.title && doc.title !== 'Untitled Document' && doc.title !== 'Untitled') ? doc.title : `Document #${String(doc.id).slice(-4)}`;
+                                    }
+                                  }
+
+                                  // Compose shows word count as the subtitle; sheets → sheet tabs; deck → slides
                                   const count = isSheetsMode
                                     ? (doc.sheetGrids ? Object.keys(doc.sheetGrids).length : (doc.sheetsData?.length || 1))
-                                    : (doc.deckSlidesData?.length || 1);
+                                    : productMode === 'deck'
+                                      ? (doc.deckSlidesData?.length || 1)
+                                      : null;
                                   const countLabel = isSheetsMode
                                     ? `${count} sheet${count === 1 ? '' : 's'}`
-                                    : `${count} slide${count === 1 ? '' : 's'}`;
+                                    : productMode === 'deck'
+                                      ? `${count} slide${count === 1 ? '' : 's'}`
+                                      : null;
 
                                   return (
                                     <button
@@ -48738,15 +49088,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       <div className="flex items-center gap-2 min-w-0 flex-1">
                                         {isSheetsMode ? (
                                           <SheetIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
-                                        ) : (
+                                        ) : productMode === 'deck' ? (
                                           <DeckIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
+                                        ) : (
+                                          <ComposeIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
                                         )}
                                         <span className="truncate">{title}</span>
                                       </div>
                                       <div className="flex items-center gap-1.5 shrink-0">
-                                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">
-                                          {countLabel}
-                                        </span>
+                                        {countLabel && (
+                                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">
+                                            {countLabel}
+                                          </span>
+                                        )}
                                         {isActive && <Check size={13} className="text-violet-600 dark:text-violet-400" />}
                                       </div>
                                     </button>
@@ -48768,7 +49122,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
                               >
                                 <Plus size={13} />
-                                <span>{isSheetsMode ? '+ New Workbook' : '+ New Presentation'}</span>
+                                <span>
+                                  {isSheetsMode ? 'New Workbook'
+                                    : productMode === 'deck' ? 'New Presentation'
+                                    : 'New Document'}
+                                </span>
                               </button>
                             </div>
                           </div>
@@ -48777,20 +49135,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </>
                 )}
+
               </div>
 
               {/* Center Section: Document Tab Strip */}
               <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
                 {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
                   const docIndex = windowedTabDocuments.startIndex + localIndex;
-                const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
-                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
-                const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
-                  ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
-                  : (isSheetsMode && activeDocId === doc.id && sheetsTitle?.trim() && sheetsTitle !== 'Untitled Sheet'
-                      ? sheetsTitle
-                      : (!isDefaultTitle ? doc.title : defaultName));
                 const isActive = activeDocId === doc.id;
+                let effectiveDocTitle = isActive && docTitle?.trim() && docTitle !== 'Untitled Document' ? docTitle.trim() : (doc.title?.trim() || '');
+                if ((!effectiveDocTitle || effectiveDocTitle === 'Untitled Document') && (isActive ? docBodyHtml : doc.bodyHtml)) {
+                  const bodyText = (isActive ? docBodyHtml : doc.bodyHtml).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                  const preview = bodyText.split(/\n+/)[0]?.trim();
+                  if (preview && preview.length > 2 && preview.length < 80) {
+                    effectiveDocTitle = preview;
+                  }
+                }
+                const docMode = getDocMode(doc);
+                let modeSpecificTitle = '';
+                if (docMode === 'sheets') {
+                  modeSpecificTitle = isActive ? (sheetsTitle?.trim() || doc.sheetsTitle || doc.title || '') : (doc.sheetsTitle || doc.title || '');
+                } else if (docMode === 'deck') {
+                  modeSpecificTitle = isActive ? (deckTitle?.trim() || doc.deckTitle || doc.title || '') : (doc.deckTitle || doc.title || '');
+                } else if (docMode === 'whiteboard') {
+                  modeSpecificTitle = doc.title?.trim() || '';
+                }
+
+                const defaultName = docMode === 'whiteboard' ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL) : docMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : docMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
+                
+                const label = modeSpecificTitle && !/^untitled/i.test(modeSpecificTitle)
+                  ? modeSpecificTitle
+                  : (effectiveDocTitle && !/^untitled/i.test(effectiveDocTitle)
+                      ? effectiveDocTitle
+                      : (modeSpecificTitle || effectiveDocTitle || defaultName));
 
                 return (
                   <div
@@ -72369,6 +72746,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         detectedModels={composeDetectedModels}
         liveWorkspaceContext={{
           documents,
+          productMode,
           activeDocId,
           docTitle,
           docBodyHtml,
@@ -72389,13 +72767,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
           const ws = (entity.workspace || '').toLowerCase();
           if (ws === 'compose') {
             if (productMode !== 'compose') setProductMode('compose');
-            if (entity.metadata?.docId) {
-              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+            const targetDocId = entity.metadata?.docId;
+            if (targetDocId) {
+              let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+              if (!targetDoc) {
+                // If document was closed/saved in library, restore from snapshot or library storage
+                let snapshot = entity.metadata?.docSnapshot;
+                if (!snapshot && typeof window !== 'undefined') {
+                  try {
+                    const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+                    if (rawLib) {
+                      const libList = JSON.parse(rawLib);
+                      snapshot = libList?.find(d => String(d.id) === String(targetDocId));
+                    }
+                  } catch (_) {}
+                }
+                if (snapshot) {
+                  targetDoc = { ...snapshot, id: targetDocId };
+                  setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
+                }
+              }
+
               if (targetDoc) {
                 setActiveDocId(targetDoc.id);
-                setDocTitle(targetDoc.title || '');
+                setDocTitle(targetDoc.title || entity.title || '');
                 setDocSubtitle(targetDoc.subtitle || '');
-                setDocBodyHtml(targetDoc.bodyHtml || '');
+                setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
               }
             }
             showToast(`Navigated to Document: ${entity.title}`);
@@ -73070,7 +73467,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               {/* Sheets */}
               <button
                 type="button"
-                onClick={createSheetsExperience}
+                onClick={() => createSheetsExperience({ fromHomePage: true })}
                 className="group text-left rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04] p-4.5 hover:border-emerald-400/60 hover:shadow-[0_0_24px_rgba(16,185,129,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
               >
                 <div>
@@ -73484,9 +73881,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     if (!isAlreadyOpen) {
                        setDocuments(prev => [...prev, { ...doc.data, id: doc.id }]);
                     }
-                    if (activeRightTab === 'whiteboard') {
-                      setActiveRightTab('assistant');
-                    }
                     setActiveDocId(doc.id);
                     setDocTitle(doc.data.title || '');
                     setDocSubtitle(doc.data.subtitle || '');
@@ -73557,7 +73951,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* 1. Left Navigation Sidebar — Full length Document Outline */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-screen min-h-screen h-full z-[380]"
-        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: productMode === 'whiteboard' ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {/* Panel Header */}
         <div className="h-14 px-4 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md flex items-center justify-between">
@@ -74141,16 +74535,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
+                if (productMode === 'whiteboard') {
                   setIsHoverNavVisible((prev) => !prev);
                 } else {
                   setLeftSidebarOpen((prev) => !prev);
                 }
               }}
               className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors"
-              title={(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
+              title={productMode === 'whiteboard' ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
             >
-              {(productMode === 'whiteboard' || activeRightTab === 'whiteboard')
+              {productMode === 'whiteboard'
                 ? (isHoverNavVisible ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
                 : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
               }
@@ -74248,12 +74642,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
 
               {/* Export Dropdown Button in Top Header */}
-            {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
+            {(productMode === 'compose' || productMode === 'whiteboard') && (
               <div className="relative export-menu-container">
                 <button
                   onClick={() => {
                     closeTransientMenus();
-                    if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
+                    if (productMode === 'whiteboard') {
                       setWhiteboardExportMenuOpen(!whiteboardExportMenuOpen);
                     } else {
                       setComposeExportMenuOpen(!composeExportMenuOpen);
@@ -74307,7 +74701,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </>
                 )}
-                {whiteboardExportMenuOpen && (productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
+                {whiteboardExportMenuOpen && productMode === 'whiteboard' && (
                   <>
                     <div
                       className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
@@ -75759,12 +76153,174 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
               <span>Home</span>
             </button>
+
+            {/* Compose document switcher — mirrors the Sheets/Deck workbook dropdown */}
+            {productMode === 'compose' && (
+              <>
+                <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
+                <div className="relative shrink-0 flex items-center">
+                  <button
+                    ref={composeDropdownTriggerRef}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHeaderWorkbookSearchQuery('');
+                      setHeaderWorkbookDropdownOpen((prev) => {
+                        if (!prev && composeDropdownTriggerRef.current) {
+                          const rect = composeDropdownTriggerRef.current.getBoundingClientRect();
+                          setComposeDropdownPos({ top: rect.bottom + 6, left: rect.left });
+                        }
+                        return !prev;
+                      });
+                    }}
+                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                      headerWorkbookDropdownOpen
+                        ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600'
+                        : 'bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/60 shadow-sm'
+                    }`}
+                    title="Switch Document"
+                  >
+                    <ComposeIcon size={13} className="text-violet-500 dark:text-violet-400 shrink-0" />
+                    <span className="font-semibold max-w-[130px] truncate">
+                      {docTitle || 'Untitled Document'}
+                    </span>
+                    <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {headerWorkbookDropdownOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[99990]"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setHeaderWorkbookDropdownOpen(false);
+                        }}
+                      />
+                      <div
+                        style={{ position: 'fixed', top: composeDropdownPos.top, left: composeDropdownPos.left, zIndex: 99999 }}
+                        className="w-72 max-h-96 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/5 dark:ring-white/10 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                      >
+                        {/* Search Header */}
+                        <div className="relative px-1 pt-1 pb-1.5">
+                          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            autoFocus
+                            value={headerWorkbookSearchQuery}
+                            onChange={(e) => setHeaderWorkbookSearchQuery(e.target.value)}
+                            placeholder="Search documents..."
+                            className="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-transparent focus:border-violet-500 focus:outline-none placeholder:text-slate-400"
+                          />
+                        </div>
+
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                          <span>Saved Documents ({composeDocsList.length})</span>
+                        </div>
+
+                        {/* Document List */}
+                        <div className="flex-1 overflow-y-auto max-h-56 flex flex-col gap-0.5 py-1">
+                          {(() => {
+                            const filtered = composeDocsList.filter((doc) => {
+                              if (!headerWorkbookSearchQuery.trim()) return true;
+                              const q = headerWorkbookSearchQuery.toLowerCase();
+                              return (doc.title || '').toLowerCase().includes(q);
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                  No documents found
+                                </div>
+                              );
+                            }
+
+                            return filtered.map((doc) => {
+                              const isActive = String(doc.id) === String(activeDocId);
+
+                              let title = isActive ? (docTitle?.trim() || doc.title || '') : (doc.title || '');
+                              const html = isActive ? (docBodyHtml || doc.bodyHtml) : doc.bodyHtml;
+                              if ((!title || /^untitled/i.test(title)) && html) {
+                                const plain = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                                const firstLine = plain.split(/\n+/)[0]?.trim();
+                                if (firstLine && firstLine.length > 2 && firstLine.length < 80) {
+                                  title = firstLine;
+                                }
+                              }
+                              if (!title || /^untitled/i.test(title)) {
+                                title = (doc.title && doc.title !== 'Untitled Document' && doc.title !== 'Untitled')
+                                  ? doc.title
+                                  : `Document #${String(doc.id).slice(-4)}`;
+                              }
+
+                              return (
+                                <button
+                                  key={doc.id}
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    switchDocument(doc.id);
+                                    setHeaderWorkbookDropdownOpen(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer ${
+                                    isActive
+                                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
+                                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <ComposeIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
+                                    <span className="truncate">{title}</span>
+                                  </div>
+                                  {isActive && <Check size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+
+                        {/* Footer: Create New */}
+                        <div className="border-t border-slate-100 dark:border-zinc-800 pt-1">
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              createItemForCurrentContext();
+                              setHeaderWorkbookDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
+                          >
+                            <Plus size={13} />
+                            <span>New Document</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+
             {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
+
               const docIndex = windowedTabDocuments.startIndex + localIndex;
-              const rawTitle = doc.title?.trim();
-              const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
-              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : rawTitle)) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
               const isActive = activeDocId === doc.id;
+              const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
+              
+              // Resolve real title: check active docTitle, doc.title, or content preview
+              let effectiveDocTitle = isActive && docTitle?.trim() && docTitle !== 'Untitled Document' ? docTitle.trim() : (doc.title?.trim() || '');
+              if ((!effectiveDocTitle || effectiveDocTitle === 'Untitled Document') && (isActive ? docBodyHtml : doc.bodyHtml)) {
+                const bodyText = (isActive ? docBodyHtml : doc.bodyHtml).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                const preview = bodyText.split(/\n+/)[0]?.trim();
+                if (preview && preview.length > 2 && preview.length < 80) {
+                  effectiveDocTitle = preview;
+                }
+              }
+
+              const label = effectiveDocTitle || (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
 
               return (
                 <div
@@ -75775,7 +76331,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                  className={`relative flex-1 min-w-[110px] max-w-[220px] px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center justify-between gap-1 cursor-pointer select-none ${
                     isActive 
                       ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                       : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -75798,35 +76354,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }
                       }}
                       onBlur={() => commitRenameDocument(doc.id)}
-                      className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                      className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                     />
                   ) : (
-                    <span className="max-w-[180px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                    <span className="flex-1 min-w-0 truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
                   )}
-                  <button
-                    data-doc-menu-root
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      closeTransientMenus();
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
-                      setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
-                    }}
-                    className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
-                    title="Document actions"
-                  >
-                    <MoreHorizontal size={12} />
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      requestCloseDocument(doc.id);
-                    }}
-                    className="p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
-                    title="Close document"
-                  >
-                    <X size={12} />
-                  </button>
+                  <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                    <button
+                      data-doc-menu-root
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeTransientMenus();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
+                        setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                      }}
+                      className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
+                      title="Document actions"
+                    >
+                      <MoreHorizontal size={12} />
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        requestCloseDocument(doc.id);
+                      }}
+                      className="p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
+                      title="Close document"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                   {openDocMenuId === doc.id && (
                     <>
                       <div
@@ -75976,14 +76534,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
               </div>
             )}
+          </div>
+          {/* Permanently visible New Tab button pinned outside scrolling overflow */}
+          <div className="shrink-0 flex items-center pl-1 border-l border-slate-200/60 dark:border-zinc-800 ml-1">
             <button
               type="button"
               onClick={createItemForCurrentContext}
-              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-              title="Create new item"
-              aria-label="Create new item"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-slate-500 hover:bg-slate-200/60 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+              title="Create new tab"
+              aria-label="Create new tab"
             >
-              <Plus size={14} strokeWidth={1.5} />
+              <Plus size={14} strokeWidth={1.75} />
             </button>
           </div>
           <button
@@ -75993,7 +76554,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 topDocTabsContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
               }
             }}
-            className="shrink-0 p-1 ml-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            className="shrink-0 p-1 ml-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
             title="Scroll tabs right"
           >
             <ChevronRight size={16} />
@@ -76010,7 +76571,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }
           }}
           className={`mx-4 mt-1 mb-1 w-[calc(100%-2rem)] p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-1.5 z-20 shrink-0 transition-all duration-200 ${
-            productMode === 'whiteboard' || (activeRightTab === 'whiteboard' && isWhiteboardImmersive) ? 'hidden' : ''
+            productMode === 'whiteboard' ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
@@ -77427,7 +77988,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onScroll={handleEditorScroll}
             className="flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
           >
-          {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
+          {productMode === 'whiteboard' && (
             <div className="absolute inset-0 z-30 bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col">
               <div className="h-full w-full bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col relative">
                 <div 
@@ -82319,7 +82880,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Persistent Floating AI Prompt Bar */}
         {/* Subtle dimming backdrop overlay: only active when floating AI prompt is explicitly expanded */}
-        {shouldShowPromptBackdrop && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {shouldShowPromptBackdrop && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && (
           <div
             aria-hidden
             onClick={() => {
@@ -82346,7 +82907,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
           </div>
         )}
-        {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && !shareModalOpen && (
         <div
           className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
@@ -82861,7 +83422,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
 
-        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             style={{
@@ -82936,7 +83497,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <AppleGestureOnboardingHotspots />
         )}
 
-        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -83124,7 +83685,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {/* Bottom Status Bar */}
-        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
+        {productMode !== 'whiteboard' && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} {t('common.words') || 'words'} - {documentStats.characters} {t('common.characters') || 'characters'}</span>
@@ -83167,7 +83728,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-gray-400">
-              <button onClick={() => { setActiveDocView('document'); if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') { setProductMode('compose'); setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' && productMode === 'compose' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
+              <button onClick={() => { setActiveDocView('document'); if (productMode === 'whiteboard') { setProductMode('compose'); setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' && productMode === 'compose' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
               <button onClick={() => setTextStyleMenuOpen((prev) => !prev)} className="p-1 rounded hover:text-gray-600" title="Text style options"><Type size={14} /></button>
               <button onClick={() => { setRightSidebarOpen((prev) => !prev); }} className="p-1 rounded hover:text-gray-600" title="Toggle right panel"><LayoutGrid size={14} /></button>
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
@@ -88321,6 +88882,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         detectedModels={composeDetectedModels}
         liveWorkspaceContext={{
           documents,
+          productMode,
           activeDocId,
           docTitle,
           docSubtitle,
@@ -88354,13 +88916,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }
           if (ws === 'compose') {
             if (productMode !== 'compose') setProductMode('compose');
-            if (entity.metadata?.docId) {
-              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
+            const targetDocId = entity.metadata?.docId;
+            if (targetDocId) {
+              let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+              if (!targetDoc) {
+                // If document was closed/saved in library, restore from snapshot or library storage
+                let snapshot = entity.metadata?.docSnapshot;
+                if (!snapshot && typeof window !== 'undefined') {
+                  try {
+                    const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+                    if (rawLib) {
+                      const libList = JSON.parse(rawLib);
+                      snapshot = libList?.find(d => String(d.id) === String(targetDocId));
+                    }
+                  } catch (_) {}
+                }
+                if (snapshot) {
+                  targetDoc = { ...snapshot, id: targetDocId };
+                  setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
+                }
+              }
+
               if (targetDoc) {
                 setActiveDocId(targetDoc.id);
-                setDocTitle(targetDoc.title || '');
+                setDocTitle(targetDoc.title || entity.title || '');
                 setDocSubtitle(targetDoc.subtitle || '');
-                setDocBodyHtml(targetDoc.bodyHtml || '');
+                setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
               }
             }
             showToast(`Navigated to Document: ${entity.title}`);

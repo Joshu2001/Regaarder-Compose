@@ -3,7 +3,7 @@ import {
   Search, Video, Plus, Check, CheckCheck, Send, Smile, Paperclip, 
   Sparkles, FileText, Table, Presentation, X, ArrowRight, MoreVertical,
   Compass, ShieldCheck, Download, ExternalLink, Calendar, CheckSquare,
-  Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown,
+  Mic, Pin, PinOff, LayoutGrid, Sparkle, Bot, MessageSquare, ChevronDown, ChevronUp,
   Lock, KeyRound, Shield, CheckCircle2, Copy, Info, Hash, ListTodo, CornerDownRight,
   ChevronDown as ScrollDownIcon, Play, Pause, Volume2, AudioLines,
   Reply, Edit3, Wand2, Trash2, Star, CornerUpRight, BellOff, Bell,
@@ -17,7 +17,8 @@ import {
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
-import { processRelayAgentMessage } from '../../services/relayAgentService';
+import { processRelayAgentMessage, extractClarificationFromText } from '../../services/relayAgentService';
+import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
 
 // Quick Translation Languages for Selection Writing Tools
 const TRANSLATE_LANGUAGES = [
@@ -129,8 +130,43 @@ const DocsSemanticFileBadge = ({ type, title = '', size = 'md' }) => {
   );
 };
 
-// Formats inline tokens (bold, italics, code)
-const renderFormattedInline = (text, keyPrefix = '') => {
+// Helper to highlight search query matches in plain text
+const highlightTextChunks = (str, query, prefix) => {
+  if (!query || !query.trim() || typeof str !== 'string') return str;
+  const cleanQ = query.trim();
+  const lowerQ = cleanQ.toLowerCase();
+  const lowerStr = str.toLowerCase();
+  const chunks = [];
+  let start = 0;
+  let idx = lowerStr.indexOf(lowerQ, start);
+  let chunkIdx = 0;
+
+  while (idx !== -1) {
+    if (idx > start) {
+      chunks.push(str.slice(start, idx));
+    }
+    const matchText = str.slice(idx, idx + cleanQ.length);
+    chunks.push(
+      <mark
+        key={`${prefix}-hl-${chunkIdx++}`}
+        className="bg-amber-200 dark:bg-amber-800/80 text-slate-900 dark:text-zinc-50 font-semibold px-0.5 rounded shadow-2xs"
+      >
+        {matchText}
+      </mark>
+    );
+    start = idx + cleanQ.length;
+    idx = lowerStr.indexOf(lowerQ, start);
+  }
+
+  if (start < str.length) {
+    chunks.push(str.slice(start));
+  }
+
+  return chunks.length > 0 ? chunks : str;
+};
+
+// Formats inline tokens (bold, italics, code) with optional keyword highlighting
+const renderFormattedInline = (text, keyPrefix = '', highlightQuery = '') => {
   if (!text) return null;
   const parts = [];
   const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
@@ -139,29 +175,31 @@ const renderFormattedInline = (text, keyPrefix = '') => {
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+      const plainSlice = text.slice(lastIndex, match.index);
+      parts.push(highlightTextChunks(plainSlice, highlightQuery, `${keyPrefix}-txt-${match.index}`));
     }
     const token = match[0];
     if (token.startsWith('**') && token.endsWith('**')) {
       const boldContent = token.slice(2, -2).replace(/^\*\*|\*\*$/g, '');
-      parts.push(<strong key={`${keyPrefix}-b-${match.index}`} className="font-bold text-slate-900 dark:text-zinc-50">{boldContent}</strong>);
+      parts.push(<strong key={`${keyPrefix}-b-${match.index}`} className="font-bold text-slate-900 dark:text-zinc-50">{highlightTextChunks(boldContent, highlightQuery, `${keyPrefix}-b-${match.index}`)}</strong>);
     } else if (token.startsWith('*') && token.endsWith('*')) {
-      parts.push(<em key={`${keyPrefix}-i-${match.index}`} className="italic text-slate-700 dark:text-zinc-200">{token.slice(1, -1)}</em>);
+      parts.push(<em key={`${keyPrefix}-i-${match.index}`} className="italic text-slate-700 dark:text-zinc-200">{highlightTextChunks(token.slice(1, -1), highlightQuery, `${keyPrefix}-i-${match.index}`)}</em>);
     } else if (token.startsWith('`') && token.endsWith('`')) {
-      parts.push(<code key={`${keyPrefix}-c-${match.index}`} className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.08] font-mono text-[11.5px]">{token.slice(1, -1)}</code>);
+      parts.push(<code key={`${keyPrefix}-c-${match.index}`} className="px-1.5 py-0.5 rounded bg-black/[0.06] dark:bg-white/[0.08] font-mono text-[11.5px]">{highlightTextChunks(token.slice(1, -1), highlightQuery, `${keyPrefix}-c-${match.index}`)}</code>);
     }
     lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
+    const remaining = text.slice(lastIndex);
+    parts.push(highlightTextChunks(remaining, highlightQuery, `${keyPrefix}-txt-end`));
   }
 
   return parts;
 };
 
-// Formats message blocks, converting raw markdown headers (##, ###) into executive typography
-const renderFormattedMessageText = (text) => {
+// Formats message blocks, converting raw markdown headers (##, ###) into executive typography with search highlighting
+const renderFormattedMessageText = (text, highlightQuery = '') => {
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -175,7 +213,7 @@ const renderFormattedMessageText = (text) => {
       const headingContent = trimmed.replace(/^#\s+/, '');
       elements.push(
         <h2 key={idx} className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100 mt-2.5 mb-1 tracking-tight">
-          {renderFormattedInline(headingContent, `h1-${idx}`)}
+          {renderFormattedInline(headingContent, `h1-${idx}`, highlightQuery)}
         </h2>
       );
       return;
@@ -187,7 +225,7 @@ const renderFormattedMessageText = (text) => {
       elements.push(
         <h3 key={idx} className="text-xs font-bold text-slate-800 dark:text-zinc-200 mt-2 mb-0.5 tracking-tight flex items-center gap-1.5">
           <span className="w-1 h-3 rounded-full bg-violet-600 dark:bg-violet-400 shrink-0" />
-          <span>{renderFormattedInline(headingContent, `h2-${idx}`)}</span>
+          <span>{renderFormattedInline(headingContent, `h2-${idx}`, highlightQuery)}</span>
         </h3>
       );
       return;
@@ -198,7 +236,7 @@ const renderFormattedMessageText = (text) => {
       const headingContent = trimmed.replace(/^###\s+/, '');
       elements.push(
         <h4 key={idx} className="text-[11.5px] font-semibold text-slate-700 dark:text-zinc-300 mt-1.5 mb-0.5">
-          {renderFormattedInline(headingContent, `h3-${idx}`)}
+          {renderFormattedInline(headingContent, `h3-${idx}`, highlightQuery)}
         </h4>
       );
       return;
@@ -210,7 +248,7 @@ const renderFormattedMessageText = (text) => {
       elements.push(
         <div key={idx} className="flex items-start gap-1.5 ml-1 my-0.5 text-xs text-slate-700 dark:text-zinc-200">
           <span className="text-slate-400 dark:text-zinc-500 shrink-0 select-none">•</span>
-          <span>{renderFormattedInline(bulletContent, `b-${idx}`)}</span>
+          <span>{renderFormattedInline(bulletContent, `b-${idx}`, highlightQuery)}</span>
         </div>
       );
       return;
@@ -222,7 +260,7 @@ const renderFormattedMessageText = (text) => {
       elements.push(
         <div key={idx} className="flex items-start gap-1.5 ml-1 my-0.5 text-xs text-slate-700 dark:text-zinc-200">
           <span className="font-mono text-[10px] font-bold text-violet-600 dark:text-violet-400 shrink-0 select-none">{numMatch[1]}.</span>
-          <span>{renderFormattedInline(numMatch[2], `n-${idx}`)}</span>
+          <span>{renderFormattedInline(numMatch[2], `n-${idx}`, highlightQuery)}</span>
         </div>
       );
       return;
@@ -237,7 +275,7 @@ const renderFormattedMessageText = (text) => {
     // Standard paragraph line
     elements.push(
       <p key={idx} className="leading-relaxed">
-        {renderFormattedInline(line, `p-${idx}`)}
+        {renderFormattedInline(line, `p-${idx}`, highlightQuery)}
       </p>
     );
   });
@@ -270,6 +308,17 @@ export default function ExecutiveDirectMessages({
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [isChatSearchOpen, setIsChatSearchOpen] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [chatSearchMatchIndex, setChatSearchMatchIndex] = useState(0);
+  const [chatSearchMode, setChatSearchMode] = useState('find'); // 'find' | 'ai'
+  const [chatAiAnswer, setChatAiAnswer] = useState(null);
+  const [chatAiLoading, setChatAiLoading] = useState(false);
+  const [chatAiCopied, setChatAiCopied] = useState(false);
+
+  const [aiHistorySearchQuery, setAiHistorySearchQuery] = useState('');
+  const [aiHistoryMode, setAiHistoryMode] = useState('filter'); // 'filter' | 'ai'
+  const [historyAiAnswer, setHistoryAiAnswer] = useState(null);
+  const [historyAiLoading, setHistoryAiLoading] = useState(false);
+  const [historyAiCopied, setHistoryAiCopied] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isDetailsMenuOpen, setIsDetailsMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -278,6 +327,13 @@ export default function ExecutiveDirectMessages({
   const [emojiSearch, setEmojiSearch] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // ── Agent Clarification & Multi-Choice Follow-up Card ──
+  const [activeClarification, setActiveClarification] = useState(null);
+
+  useEffect(() => {
+    setActiveClarification(null);
+  }, [activeContactId]);
 
   // ── Floating AI Writing Tools Toolbar (Triggered on text selection in input) ──
   const [selectionToolbarState, setSelectionToolbarState] = useState(null); // { start, end, text }
@@ -293,6 +349,17 @@ export default function ExecutiveDirectMessages({
   const [isScanningModels, setIsScanningModels] = useState(false);
   const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
+
+  // Listen for external navigation events (e.g. from Global Spotlight or Omni-Search)
+  useEffect(() => {
+    const handleSelectContactEvent = (e) => {
+      if (e.detail?.contactId) {
+        setActiveContactId(e.detail.contactId);
+      }
+    };
+    window.addEventListener('regaarder:select-dm-contact', handleSelectContactEvent);
+    return () => window.removeEventListener('regaarder:select-dm-contact', handleSelectContactEvent);
+  }, []);
 
   // Sync detected models from app if available
   useEffect(() => {
@@ -765,6 +832,40 @@ export default function ExecutiveDirectMessages({
 
   const messages = threadMessages[activeContactId] || [];
 
+  // Live in-chat search matching message IDs
+  const inChatMatchingMsgIds = useMemo(() => {
+    if (!isChatSearchOpen || !chatSearchQuery.trim()) return [];
+    const q = chatSearchQuery.trim().toLowerCase();
+    return (messages || [])
+      .filter(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q))
+      .map(m => m.id);
+  }, [messages, isChatSearchOpen, chatSearchQuery]);
+
+  // Reset search match index when query changes
+  useEffect(() => {
+    setChatSearchMatchIndex(0);
+    if (inChatMatchingMsgIds.length > 0) {
+      const targetEl = document.getElementById(`relay-msg-${inChatMatchingMsgIds[0]}`);
+      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [chatSearchQuery]);
+
+  const handleNextSearchMatch = () => {
+    if (inChatMatchingMsgIds.length === 0) return;
+    const nextIdx = (chatSearchMatchIndex + 1) % inChatMatchingMsgIds.length;
+    setChatSearchMatchIndex(nextIdx);
+    const targetEl = document.getElementById(`relay-msg-${inChatMatchingMsgIds[nextIdx]}`);
+    if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handlePrevSearchMatch = () => {
+    if (inChatMatchingMsgIds.length === 0) return;
+    const prevIdx = (chatSearchMatchIndex - 1 + inChatMatchingMsgIds.length) % inChatMatchingMsgIds.length;
+    setChatSearchMatchIndex(prevIdx);
+    const targetEl = document.getElementById(`relay-msg-${inChatMatchingMsgIds[prevIdx]}`);
+    if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const messagesEndRef = useRef(null);
   const chatScrollContainerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -1079,13 +1180,16 @@ export default function ExecutiveDirectMessages({
       if (activeTab === 'topics' || activeTab === 'broadcast' || activeTab === 'actions') return true;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        return c.name.toLowerCase().includes(q) || 
+        const matchesHeader = (c.name || '').toLowerCase().includes(q) || 
                (c.username && c.username.toLowerCase().includes(q)) ||
-               c.lastMsg.toLowerCase().includes(q);
+               (c.lastMsg && c.lastMsg.toLowerCase().includes(q));
+        if (matchesHeader) return true;
+        const contactMsgs = threadMessages[c.id] || [];
+        return contactMsgs.some(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
       }
       return true;
     });
-  }, [conversations, activeTab, searchQuery]);
+  }, [conversations, activeTab, searchQuery, threadMessages]);
 
   const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
   
@@ -1127,8 +1231,8 @@ export default function ExecutiveDirectMessages({
           label: 'Compact Local',
           sub: sizeStr || 'Ultra-Fast',
           icon: Zap,
-          iconColor: 'text-amber-500 dark:text-amber-400',
-          badgeBg: 'bg-amber-500/[0.07] dark:bg-amber-400/[0.08] border-amber-500/20 dark:border-amber-400/20 text-amber-800 dark:text-amber-300',
+          iconColor: 'text-slate-600 dark:text-zinc-400',
+          badgeBg: 'bg-slate-500/[0.08] dark:bg-zinc-400/[0.1] border-slate-300/40 dark:border-zinc-700/40 text-slate-700 dark:text-zinc-300',
           title: `Compact Local Model (${sizeStr || '≤3B'}) • Low latency, 100% on-device processing. Tuned for quick Q&A, translations, and focused single-turn tasks.`
         };
       }
@@ -1709,12 +1813,226 @@ export default function ExecutiveDirectMessages({
     }
   };
 
-  // Dispatch prompt to real model (Ollama / Local LM / Cloud)
-  const handleSendMessage = async (e) => {
-    e?.preventDefault();
-    if (!messageInput.trim()) return;
+  // ── Executive AI Query Execution Pipeline (Multi-Tier Resilience) ──────────
+  const executeExecutiveAiQuery = async (systemPrompt, userPrompt) => {
+    let resultText = '';
+    const aiFetchPromise = (async () => {
+      // 1. Direct Local Endpoint (e.g. Ollama or LM Studio)
+      const targetLocal = (detectedLocalModels || []).find(m => m.id === selectedAiModel) || detectedLocalModels?.[0];
+      if (targetLocal?.endpoint) {
+        try {
+          const res = await fetch(`${targetLocal.endpoint.replace(/\/+$/, '')}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: targetLocal.id || targetLocal.name,
+              prompt: userPrompt,
+              system: systemPrompt,
+              stream: false,
+              options: { temperature: 0.3 }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.response?.trim()) return data.response.trim();
+          }
+        } catch (e) {
+          console.warn('[ExecutiveAI] Direct local endpoint error:', e);
+        }
+      }
 
-    const trimmed = messageInput.trim();
+      // 2. Electron Native Local AI IPC
+      if (targetLocal && typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
+        try {
+          const ipcRes = await window.electronAPI.generateLocalAI({
+            endpoint: targetLocal.endpoint || 'http://127.0.0.1:11434',
+            model: targetLocal.id || targetLocal.name,
+            prompt: userPrompt,
+            systemPrompt
+          });
+          if (ipcRes?.success && ipcRes?.text?.trim()) {
+            return ipcRes.text.trim();
+          }
+        } catch (ipcErr) {
+          console.warn('[ExecutiveAI] Tier 2 Native Local AI error:', ipcErr);
+        }
+      }
+
+      // 3. Direct Provider via callAiProvider (Gemini / Claude / OpenAI / Configured)
+      try {
+        const savedConfig = getSavedAiConfig();
+        const messages = [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          { role: 'user', content: userPrompt }
+        ];
+        const providerRes = await callAiProvider(messages, savedConfig || {});
+        if (providerRes) {
+          const str = typeof providerRes === 'string'
+            ? providerRes
+            : (providerRes.content || providerRes.text || '');
+          if (str && str.trim()) return str.trim();
+        }
+      } catch (pErr) {
+        console.warn('[ExecutiveAI] Tier 3 callAiProvider error:', pErr);
+      }
+
+      return '';
+    })();
+
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(''), 30000));
+    resultText = await Promise.race([aiFetchPromise, timeoutPromise]);
+    return resultText;
+  };
+
+  // Run in-chat AI synthesis across current conversation
+  const handleRunInChatAiSearch = async (queryToRun) => {
+    const q = (queryToRun || chatSearchQuery || '').trim();
+    if (!q) return;
+
+    setChatAiLoading(true);
+    setChatAiAnswer(null);
+
+    const threadMsgs = threadMessages[activeContactId] || [];
+    const activeContact = conversations.find(c => c.id === activeContactId) || { name: 'Contact' };
+
+    const queryWords = q.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const matchedSources = threadMsgs.filter(m => {
+      const txt = (m.text || m.rawTranscript || '').toLowerCase();
+      return queryWords.some(w => txt.includes(w));
+    }).slice(-4);
+
+    const formattedTranscript = threadMsgs.slice(-30).map(m => {
+      const sender = m.sender === 'user' ? 'User' : (activeContact.name || 'Assistant');
+      const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return `[${time}] ${sender}: ${m.text || m.rawTranscript || ''}`;
+    }).join('\n');
+
+    const systemPrompt = `You are Regaarder Relay's Executive Intelligence Engine.
+You synthesize information across the user's active direct message conversation thread.
+Analyze the provided chat transcript and answer the user's inquiry accurately, concisely, and with executive clarity.
+Format your answer with bullet points or clean takeaways where appropriate.
+If the requested information is not mentioned in the conversation, state that clearly without guessing.`;
+
+    const userPrompt = `Conversation Participants: User and ${activeContact.name}
+Chat Transcript:
+${formattedTranscript || '(No messages in this chat yet)'}
+
+User Inquiry: "${q}"
+
+Provide a concise, direct natural language answer synthesizing what was discussed in this chat:`;
+
+    try {
+      let answer = await executeExecutiveAiQuery(systemPrompt, userPrompt);
+      if (!answer || !answer.trim()) {
+        if (threadMsgs.length === 0) {
+          answer = `No messages have been exchanged in this conversation with **${activeContact.name}** yet. Start chatting to ask questions about it.`;
+        } else if (matchedSources.length > 0) {
+          const sample = matchedSources.slice(-3).map(m => `• **${m.sender === 'user' ? 'You' : activeContact.name}**: "${m.text || m.rawTranscript}"`).join('\n');
+          answer = `Based on the conversation with **${activeContact.name}**, here are the relevant discussions found:\n\n${sample}`;
+        } else {
+          answer = `I analyzed the recent messages with **${activeContact.name}**, but could not find a direct mention of "${q}". The conversation currently covers: ${threadMsgs.slice(-3).map(m => `"${m.text?.slice(0, 40)}..."`).join(', ')}.`;
+        }
+      }
+
+      setChatAiAnswer({
+        query: q,
+        answer: answer.trim(),
+        sources: matchedSources.map(m => ({
+          id: m.id,
+          sender: m.sender === 'user' ? 'You' : activeContact.name,
+          time: m.timestamp,
+          snippet: (m.text || m.rawTranscript || '').slice(0, 80)
+        }))
+      });
+    } catch (err) {
+      console.error('Error running in-chat AI search:', err);
+      setChatAiAnswer({
+        query: q,
+        answer: 'Unable to synthesize chat knowledge at this time. Please try again.',
+        sources: []
+      });
+    } finally {
+      setChatAiLoading(false);
+    }
+  };
+
+  // Run AI synthesis across all archived AI history sessions
+  const handleRunHistoryAiSearch = async (queryToRun) => {
+    const q = (queryToRun || aiHistorySearchQuery || '').trim();
+    if (!q) return;
+
+    setHistoryAiLoading(true);
+    setHistoryAiAnswer(null);
+
+    const matchingSessions = [];
+    const queryWords = q.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+    const allSessionSummaries = aiChatSessions.map((sess, idx) => {
+      const msgs = (sess.messages || []).map(m => `${m.sender === 'user' ? 'User' : 'AI'}: ${m.text || m.rawTranscript || ''}`).join(' | ');
+      const isMatch = queryWords.some(w => (sess.title || '').toLowerCase().includes(w) || msgs.toLowerCase().includes(w));
+      if (isMatch) {
+        matchingSessions.push(sess);
+      }
+      return `Session #${idx + 1} (${sess.title || 'Untitled'}, ${sess.date || 'Past'}): ${msgs.slice(0, 400)}`;
+    }).join('\n\n');
+
+    const systemPrompt = `You are Regaarder Relay's AI Archive Intelligence Engine.
+You synthesize information across the user's past archived AI conversations, queries, and research sessions.
+Answer the user's question directly based on their past AI interactions.
+Use clear executive formatting and cite relevant past sessions if applicable.`;
+
+    const userPrompt = `Archived AI Chat Sessions (${aiChatSessions.length} total):
+${allSessionSummaries || '(No past AI chat sessions saved yet)'}
+
+User Inquiry: "${q}"
+
+Provide a concise natural language synthesis answering the user's question from their archived sessions:`;
+
+    try {
+      let answer = await executeExecutiveAiQuery(systemPrompt, userPrompt);
+      if (!answer || !answer.trim()) {
+        if (aiChatSessions.length === 0) {
+          answer = 'No archived AI chat sessions were found. Click "+ New Chat" while chatting with Assistant to archive sessions into history.';
+        } else if (matchingSessions.length > 0) {
+          const sample = matchingSessions.slice(0, 3).map(s => {
+            const firstMsg = (s.messages || [])[0]?.text || s.title || 'Session';
+            return `• **${s.title || 'Archived Session'}** (${s.date || 'Recent'}): "${firstMsg.slice(0, 100)}"`;
+          }).join('\n');
+          answer = `Found relevant historical sessions discussing this:\n\n${sample}`;
+        } else {
+          answer = `Searched through ${aiChatSessions.length} archived sessions, but found no matching records for "${q}".`;
+        }
+      }
+
+      setHistoryAiAnswer({
+        query: q,
+        answer: answer.trim(),
+        sources: (matchingSessions.length > 0 ? matchingSessions : aiChatSessions).slice(0, 3).map(s => ({
+          id: s.id,
+          title: s.title || 'Archived Session',
+          date: s.date || 'Past'
+        }))
+      });
+    } catch (err) {
+      console.error('Error running history AI search:', err);
+      setHistoryAiAnswer({
+        query: q,
+        answer: 'Unable to synthesize archive knowledge at this time.',
+        sources: []
+      });
+    } finally {
+      setHistoryAiLoading(false);
+    }
+  };
+
+  // Dispatch prompt to real model (Ollama / Local LM / Cloud)
+  const handleSendMessage = async (e, directText = null) => {
+    e?.preventDefault?.();
+    const rawText = typeof directText === 'string' ? directText : messageInput;
+    if (!rawText || !rawText.trim()) return;
+
+    const trimmed = rawText.trim();
+    setActiveClarification(null);
 
     if (editingMessageId) {
       setThreadMessages(prev => ({
@@ -1777,10 +2095,11 @@ export default function ExecutiveDirectMessages({
 
       let actionCard = null;
       let referenceSources = [];
+      let agentOutcome = null;
 
       try {
         // 1. Execute Relay Autonomous Agent Harness (Layer 2 intent routing & tool execution)
-        const agentOutcome = await processRelayAgentMessage({
+        agentOutcome = await processRelayAgentMessage({
           userPrompt: trimmed,
           onCallAi,
           customModel: activeEngineId,
@@ -1869,6 +2188,19 @@ ${systemPrompt}`
         } else {
           aiResponseText = `Connected to ${activeModelDisplay.name}. Ready to assist with your workspace tasks.`;
         }
+      }
+
+      // ── Process Agent Clarification Card (Interactive Follow-up) ──
+      let detectedClarification = agentOutcome?.clarification || null;
+      if (!detectedClarification && aiResponseText) {
+        const parsed = extractClarificationFromText(aiResponseText);
+        if (parsed && parsed.clarification) {
+          detectedClarification = parsed.clarification;
+          aiResponseText = parsed.cleanText;
+        }
+      }
+      if (detectedClarification) {
+        setActiveClarification(detectedClarification);
       }
 
       setIsTyping(false);
@@ -2320,14 +2652,24 @@ ${systemPrompt}`
 
             {/* Clean Search Bar */}
             <div className="relative flex items-center">
-              <Search size={14} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+              <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search chats, usernames or topics..."
-                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+                className="w-full pl-8 pr-7 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-300/60 dark:focus:ring-zinc-600 transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 p-0.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
 
             {/* Main Tabs (All, Unread, Groups, Topics) + Ellipsis (...) More Menu */}
@@ -2344,9 +2686,9 @@ ${systemPrompt}`
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-2.5 py-1 text-[11px] rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`px-2.5 py-1 text-[11.5px] rounded-md transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
-                        ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-black/[0.04] dark:border-white/[0.06]'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-black/[0.06] dark:border-white/[0.08]'
                         : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                     }`}
                   >
@@ -2364,9 +2706,9 @@ ${systemPrompt}`
                     e.stopPropagation();
                     setIsMoreTabsMenuOpen(prev => !prev);
                   }}
-                  className={`w-7 h-6 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                  className={`w-7 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                     ['ai', 'broadcast', 'actions'].includes(activeTab) || isMoreTabsMenuOpen
-                      ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-violet-600 dark:text-violet-400 font-bold border border-black/[0.04]'
+                      ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 font-bold border border-black/[0.06]'
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03]'
                   }`}
                   title="More views (AI Agents, News, Actions)"
@@ -2496,21 +2838,21 @@ ${systemPrompt}`
                       setActiveContactId(chat.id);
                       if (onSelectThread) onSelectThread(chat.id);
                     }}
-                    className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#E8EAEE] dark:bg-[#1D212C] text-slate-900 dark:text-zinc-100 shadow-2xs'
-                        : 'bg-transparent hover:bg-white/60 dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
+                        ? 'bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.06] text-slate-900 dark:text-zinc-100'
+                        : 'bg-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-transparent text-slate-700 dark:text-zinc-300'
                     }`}
                   >
                     <div className="relative shrink-0">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
                         chat.isAi
-                          ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs'
+                          ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/20'
                           : chat.isGroup
-                          ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200'
-                          : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
+                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-black/[0.05] dark:border-white/[0.06]'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-black/[0.05] dark:border-white/[0.06]'
                       }`}>
-                        {chat.avatar}
+                        {chat.isAi ? <RegaarderBrandIcon size={15} className="text-violet-600 dark:text-violet-400 shrink-0" /> : chat.avatar}
                       </div>
                       {chat.online && (
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0e1017]" />
@@ -2522,7 +2864,7 @@ ${systemPrompt}`
                         <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
                           {chat.name}
                           {chat.isAi && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-violet-100 dark:bg-violet-950 text-violet-600 font-bold uppercase">
+                            <span className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300 font-medium">
                               AI
                             </span>
                           )}
@@ -2532,7 +2874,17 @@ ${systemPrompt}`
                         </span>
                       </div>
                       <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 truncate">
-                        {chat.lastMsg}
+                        {(() => {
+                          if (searchQuery.trim()) {
+                            const q = searchQuery.toLowerCase();
+                            const threadMsgs = threadMessages[chat.id] || [];
+                            const matchMsg = threadMsgs.find(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                            if (matchMsg && !(chat.lastMsg || '').toLowerCase().includes(q)) {
+                              return <span className="text-violet-600 dark:text-violet-400 font-medium">Match: "{matchMsg.text || matchMsg.rawTranscript}"</span>;
+                            }
+                          }
+                          return chat.lastMsg;
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -2554,21 +2906,21 @@ ${systemPrompt}`
             onPointerDown={handleHeaderTap}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
+              <div className={`w-9 h-9 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 ${
                 currentChat.isAi 
-                  ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs' 
-                  : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200'
+                  ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/20' 
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-black/[0.05] dark:border-white/[0.06]'
               }`}>
-                {currentChat.avatar}
+                {currentChat.isAi ? <RegaarderBrandIcon size={16} className="text-violet-600 dark:text-violet-400 shrink-0" /> : currentChat.avatar}
               </div>
               
-              <div className="min-w-0 flex flex-col justify-center">
+              <div className="min-w-0 flex flex-col justify-center group/modelheader">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
                     {currentChat.name}
                   </h3>
 
-                  {/* Real Detected Model Selector */}
+                  {/* Real Detected Model Selector (clean, sleek, unobtrusive) */}
                   {currentChat.isAi && (
                     <div className="relative inline-flex items-center">
                       <button
@@ -2579,11 +2931,11 @@ ${systemPrompt}`
                           e.stopPropagation();
                           setIsAiModelSelectorOpen(prev => !prev);
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] text-slate-800 dark:text-zinc-200 text-[11px] font-medium transition-colors cursor-pointer shadow-2xs border border-black/[0.08] dark:border-white/[0.1] backdrop-blur-md select-none"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-xs font-normal transition-colors cursor-pointer select-none"
                         title="Switch AI Model Engine"
                       >
-                        <span className="font-semibold">{activeModelDisplay.name}</span>
-                        <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
+                        <span>{activeModelDisplay.name}</span>
+                        <ChevronDown size={11} className={`text-slate-400 transition-transform duration-150 ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
                       </button>
 
                       {/* Dropdown Menu */}
@@ -2639,14 +2991,14 @@ ${systemPrompt}`
                                   >
                                     <div className="flex items-center gap-2 min-w-0">
                                       <div className="w-5 h-5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                                        {isCompact ? <Zap size={11} className="text-amber-500 dark:text-amber-400" /> : <Cpu size={11} className="text-emerald-600 dark:text-emerald-400" />}
+                                        {isCompact ? <Zap size={11} className="text-slate-500 dark:text-zinc-400" /> : <Cpu size={11} className="text-emerald-600 dark:text-emerald-400" />}
                                       </div>
                                       <div className="min-w-0">
                                         <div className="text-xs font-semibold truncate leading-tight flex items-center gap-1.5">
                                           <span className="truncate">{localM.name}</span>
                                           <span className={`shrink-0 text-[9px] font-medium px-1.5 py-0.2 rounded-md border ${
                                             isCompact 
-                                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' 
+                                              ? 'bg-slate-500/10 text-slate-700 dark:text-zinc-300 border-slate-300/30 dark:border-zinc-700/40' 
                                               : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
                                           }`}>
                                             {isCompact ? 'Compact' : 'Standard'}
@@ -2698,7 +3050,7 @@ ${systemPrompt}`
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <div className="w-5 h-5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-                                    <Sparkles size={11} />
+                                    <RegaarderAiIcon size={12} strokeWidth={2.0} />
                                   </div>
                                   <div className="min-w-0">
                                     <div className="text-xs font-semibold truncate leading-tight flex items-center gap-1.5">
@@ -2719,10 +3071,10 @@ ${systemPrompt}`
                     </div>
                   )}
 
-                  {/* Apple-Style AI Model Tier & Capability Badge */}
+                  {/* Apple-Style AI Model Tier & Capability Badge (revealed on header hover, neutral glass aesthetic) */}
                   {currentChat.isAi && activeModelTier && (
                     <div 
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium border backdrop-blur-md select-none transition-all shadow-2xs ${activeModelTier.badgeBg}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium border backdrop-blur-md select-none transition-all duration-200 shadow-2xs opacity-0 group-hover/modelheader:opacity-100 pointer-events-none group-hover/modelheader:pointer-events-auto ${activeModelTier.badgeBg}`}
                       title={activeModelTier.title}
                     >
                       <activeModelTier.icon size={11} className={`${activeModelTier.iconColor} shrink-0`} />
@@ -2737,8 +3089,8 @@ ${systemPrompt}`
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-zinc-500">
+                  <span className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500 font-normal">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     Zero-Knowledge E2EE Session
                   </span>
@@ -2747,37 +3099,37 @@ ${systemPrompt}`
             </div>
 
             {/* Conversation Header Tools */}
-            <div className="flex items-center gap-1.5 relative">
+            <div className="flex items-center gap-2 relative">
               {/* AI Conversation Controls: + New Chat, History, Clear Chat */}
               {currentChat?.isAi && (
-                <div className="flex items-center gap-1 mr-1">
-                  {/* + New Chat */}
+                <div className="flex items-center gap-1.5">
+                  {/* + New Chat (Primary Action) */}
                   <button
                     type="button"
                     onClick={handleStartNewAiChat}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200/60 dark:border-violet-800/40 transition-colors cursor-pointer select-none"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black dark:hover:bg-zinc-100 shadow-xs transition-colors cursor-pointer select-none"
                     title="Start a fresh AI chat session and save current to history"
                   >
                     <Plus size={12} strokeWidth={2.5} />
                     <span>New Chat</span>
                   </button>
 
-                  {/* Chat History Dropdown */}
+                  {/* Chat History Dropdown (Secondary Action) */}
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setIsAiHistoryOpen(prev => !prev)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer select-none ${
                         isAiHistoryOpen 
-                          ? 'bg-violet-100 dark:bg-violet-900/60 text-violet-700 dark:text-violet-300' 
-                          : 'text-slate-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                          ? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-zinc-100' 
+                          : 'text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                       }`}
                       title="View past AI chat history"
                     >
                       <History size={13} />
                       <span>History</span>
                       {aiChatSessions.length > 0 && (
-                        <span className="text-[9.5px] px-1.5 py-0.2 rounded-full bg-violet-600 text-white font-bold leading-tight">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-black/[0.05] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-medium leading-tight">
                           {aiChatSessions.length}
                         </span>
                       )}
@@ -2787,56 +3139,297 @@ ${systemPrompt}`
                       <div
                         data-popover-root="true"
                         onPointerDown={(e) => e.stopPropagation()}
-                        className="absolute right-0 top-8 w-72 bg-white dark:bg-zinc-850 rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-2 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs select-none text-left"
+                        className="absolute right-0 top-8 w-96 sm:w-[420px] bg-white/95 dark:bg-zinc-850/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-black/[0.08] dark:border-white/[0.1] p-3 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs select-none text-left"
                       >
-                        <div className="flex items-center justify-between px-2 py-1 mb-1 border-b border-black/[0.05] dark:border-white/[0.05]">
-                          <span className="font-bold text-slate-800 dark:text-zinc-100 flex items-center gap-1.5">
-                            <History size={12} className="text-violet-600" />
-                            AI Chat History
+                        <div className="flex items-center justify-between px-1 pb-2 border-b border-black/[0.05] dark:border-white/[0.05]">
+                          <span className="font-bold text-slate-800 dark:text-zinc-100 flex items-center gap-1.5 text-xs">
+                            <History size={13} className="text-violet-600" />
+                            <span>AI Chat History</span>
+                            <span className="text-[10px] text-slate-400 font-normal">({aiChatSessions.length})</span>
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => setIsAiHistoryOpen(false)}
-                            className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
-                          >
-                            <X size={12} />
-                          </button>
+
+                          <div className="flex items-center gap-2">
+                            {/* Segmented Mode Switcher: Apple-style slightly rounded rectangle */}
+                            <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06] select-none">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setAiHistoryMode('filter');
+                                }}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                                  aiHistoryMode === 'filter'
+                                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold outline outline-1 outline-black/[0.08] dark:outline-white/[0.1]'
+                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                                }`}
+                              >
+                                <Search size={10} className={aiHistoryMode === 'filter' ? 'text-violet-600' : 'text-slate-400'} />
+                                <span>Filter</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setAiHistoryMode('ai');
+                                }}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                                  aiHistoryMode === 'ai'
+                                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-2xs font-bold outline outline-1 outline-violet-500/50'
+                                    : 'text-violet-600 dark:text-violet-400 hover:text-violet-700'
+                                }`}
+                              >
+                                <RegaarderAiIcon size={12} strokeWidth={2.0} className={aiHistoryMode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                                <span>Ask AI</span>
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => { setIsAiHistoryOpen(false); setAiHistorySearchQuery(''); setHistoryAiAnswer(null); }}
+                              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-black/[0.04] cursor-pointer"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="max-h-60 overflow-y-auto thin-scrollbar space-y-1 py-1">
-                          {aiChatSessions.length === 0 ? (
-                            <div className="py-6 text-center text-slate-400 dark:text-zinc-500">
-                              <MessageSquare size={18} className="mx-auto mb-1.5 opacity-40" />
-                              <p className="text-[11px] font-medium">No archived AI chats yet.</p>
-                              <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">Click "New Chat" during a chat to archive it to history.</p>
-                            </div>
+                        {/* Search / Prompt Bar in History Popover */}
+                        <div className="relative my-2">
+                          {aiHistoryMode === 'ai' ? (
+                            <RegaarderAiIcon size={13} strokeWidth={2.0} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
                           ) : (
-                            aiChatSessions.map((sess) => (
-                              <div
-                                key={sess.id}
-                                onClick={() => handleSelectPastAiSession(sess)}
-                                className="flex items-center justify-between p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.05] cursor-pointer group/sess transition-colors"
-                              >
-                                <div className="min-w-0 flex-1 pr-2">
-                                  <p className="font-medium text-slate-800 dark:text-zinc-100 truncate text-[11.5px]">
-                                    {sess.title}
-                                  </p>
-                                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">
-                                    {sess.date} • {sess.messages?.length || 0} messages
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleDeleteAiSession(e, sess.id)}
-                                  className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover/sess:opacity-100 transition-all cursor-pointer"
-                                  title="Delete session"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            ))
+                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                           )}
+                          <input
+                            type="text"
+                            value={aiHistorySearchQuery}
+                            onChange={(e) => {
+                              setAiHistorySearchQuery(e.target.value);
+                              if (aiHistoryMode === 'ai' && historyAiAnswer) {
+                                setHistoryAiAnswer(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (aiHistoryMode === 'ai') {
+                                  handleRunHistoryAiSearch(aiHistorySearchQuery);
+                                }
+                              } else if (e.key === 'Escape') {
+                                setIsAiHistoryOpen(false);
+                                setAiHistorySearchQuery('');
+                                setHistoryAiAnswer(null);
+                              }
+                            }}
+                            placeholder={
+                              aiHistoryMode === 'ai'
+                                ? "Ask questions across all archived AI chats (Press Enter)..."
+                                : "Search archived prompts, answers, or titles..."
+                            }
+                            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+                          />
                         </div>
+
+                        {/* Ask AI Mode Synthesize Button if query entered */}
+                        {aiHistoryMode === 'ai' && aiHistorySearchQuery.trim() && !historyAiLoading && (
+                          <div className="flex justify-end mb-2">
+                            <button
+                              type="button"
+                              onClick={() => handleRunHistoryAiSearch(aiHistorySearchQuery)}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            >
+                              <RegaarderAiIcon size={12} strokeWidth={2.0} />
+                              <span>Synthesize Answer</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* AI Mode Natural Language Synthesis View */}
+                        {aiHistoryMode === 'ai' ? (
+                          <div className="max-h-80 overflow-y-auto thin-scrollbar py-1">
+                            {historyAiLoading ? (
+                              <div className="py-8 text-center text-violet-600 dark:text-violet-300">
+                                <Loader2 size={18} className="animate-spin mx-auto mb-2 text-violet-600" />
+                                <p className="text-xs font-semibold">Synthesizing archive knowledge...</p>
+                                <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">Searching across {aiChatSessions.length} archived AI sessions</p>
+                              </div>
+                            ) : historyAiAnswer ? (
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5 text-xs">
+                                    <RegaarderAiIcon size={13} strokeWidth={2.0} className="text-violet-600" />
+                                    <span>Archive Synthesis</span>
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard?.writeText(historyAiAnswer.answer);
+                                        setHistoryAiCopied(true);
+                                        setTimeout(() => setHistoryAiCopied(false), 2000);
+                                      }}
+                                      className="px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] flex items-center gap-1 cursor-pointer"
+                                      title="Copy synthesized answer"
+                                    >
+                                      {historyAiCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                                      <span>{historyAiCopied ? 'Copied' : 'Copy'}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setHistoryAiAnswer(null)}
+                                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer"
+                                      title="Clear answer"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="text-slate-800 dark:text-zinc-200 leading-relaxed font-normal bg-violet-50/40 dark:bg-violet-950/20 p-3 rounded-xl border border-violet-200/50 dark:border-violet-900/30">
+                                  {renderFormattedMessageText(historyAiAnswer.answer, null)}
+                                </div>
+
+                                {historyAiAnswer.sources && historyAiAnswer.sources.length > 0 && (
+                                  <div className="pt-1 border-t border-black/[0.05] dark:border-white/[0.05]">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 tracking-wider block mb-1">
+                                      Referenced Archived Sessions:
+                                    </span>
+                                    <div className="space-y-1">
+                                      {historyAiAnswer.sources.map((src) => {
+                                        const actualSession = aiChatSessions.find(s => s.id === src.id);
+                                        return (
+                                          <div
+                                            key={src.id}
+                                            onClick={() => {
+                                              if (actualSession) {
+                                                handleSelectPastAiSession(actualSession);
+                                                setIsAiHistoryOpen(false);
+                                              }
+                                            }}
+                                            className="p-1.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.04] hover:bg-violet-50 dark:hover:bg-violet-950/40 border border-transparent hover:border-violet-200 dark:hover:border-violet-800/40 cursor-pointer transition-colors flex items-center justify-between"
+                                            title="Click to open this session in chat"
+                                          >
+                                            <span className="font-semibold text-[11px] text-slate-700 dark:text-zinc-300 truncate max-w-[240px]">
+                                              {src.title}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 dark:text-zinc-500">{src.date}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="py-6 text-center text-slate-400 dark:text-zinc-500 space-y-2">
+                                <RegaarderAiIcon size={22} strokeWidth={1.8} className="mx-auto text-violet-500 opacity-60" />
+                                <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Ask Memory across Past AI Sessions</p>
+                                <p className="text-[10.5px] max-w-xs mx-auto leading-normal">
+                                  Type any natural language question above to receive a synthesized answer from all {aiChatSessions.length} archived chats.
+                                </p>
+                                {aiChatSessions.length > 0 && (
+                                  <div className="pt-2 flex flex-wrap gap-1.5 justify-center max-w-xs mx-auto">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const prompt = "Summarize our previous research";
+                                        setAiHistorySearchQuery(prompt);
+                                        handleRunHistoryAiSearch(prompt);
+                                      }}
+                                      className="px-2 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-violet-50 dark:hover:bg-violet-950/40 text-[10.5px] text-violet-600 dark:text-violet-400 font-medium cursor-pointer transition-colors"
+                                    >
+                                      "Summarize our previous research"
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const prompt = "What decisions were made?";
+                                        setAiHistorySearchQuery(prompt);
+                                        handleRunHistoryAiSearch(prompt);
+                                      }}
+                                      className="px-2 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] hover:bg-violet-50 dark:hover:bg-violet-950/40 text-[10.5px] text-violet-600 dark:text-violet-400 font-medium cursor-pointer transition-colors"
+                                    >
+                                      "What decisions were made?"
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Filter Mode: Session List */
+                          <div className="max-h-72 overflow-y-auto thin-scrollbar space-y-1 py-1">
+                            {(() => {
+                              const filtered = aiChatSessions.filter(sess => {
+                                if (!aiHistorySearchQuery.trim()) return true;
+                                const q = aiHistorySearchQuery.toLowerCase();
+                                const matchTitle = (sess.title || '').toLowerCase().includes(q);
+                                const matchContent = (sess.messages || []).some(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                                return matchTitle || matchContent;
+                              });
+
+                              if (filtered.length === 0) {
+                                return (
+                                  <div className="py-8 text-center text-slate-400 dark:text-zinc-500">
+                                    <MessageSquare size={18} className="mx-auto mb-1.5 opacity-40" />
+                                    <p className="text-[11.5px] font-medium">
+                                      {aiHistorySearchQuery.trim() ? 'No matching archived sessions' : 'No archived AI chats yet.'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                                      {aiHistorySearchQuery.trim() ? 'Try different keywords' : 'Click "New Chat" during a chat to archive it to history.'}
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              return filtered.map((sess) => {
+                                let matchingSnippet = null;
+                                if (aiHistorySearchQuery.trim()) {
+                                  const q = aiHistorySearchQuery.toLowerCase();
+                                  const foundMsg = (sess.messages || []).find(m => (m.text || m.rawTranscript || '').toLowerCase().includes(q));
+                                  if (foundMsg) {
+                                    matchingSnippet = foundMsg.text || foundMsg.rawTranscript;
+                                  }
+                                }
+
+                                return (
+                                  <div
+                                    key={sess.id}
+                                    onClick={() => {
+                                      handleSelectPastAiSession(sess);
+                                      setAiHistorySearchQuery('');
+                                    }}
+                                    className="p-2.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.05] cursor-pointer group/sess transition-colors border border-transparent hover:border-black/[0.04] dark:hover:border-white/[0.04]"
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="font-semibold text-slate-800 dark:text-zinc-100 truncate text-[12px] flex-1 pr-2">
+                                        {sess.title}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleDeleteAiSession(e, sess.id)}
+                                        className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover/sess:opacity-100 transition-all cursor-pointer"
+                                        title="Delete session"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                    {matchingSnippet && (
+                                      <p className="text-[10.5px] text-violet-600 dark:text-violet-400 italic line-clamp-1 mb-1">
+                                        "{matchingSnippet}"
+                                      </p>
+                                    )}
+                                    <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-zinc-500">
+                                      <span>{sess.date}</span>
+                                      <span className="font-mono">{sess.messages?.length || 0} messages</span>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2845,37 +3438,35 @@ ${systemPrompt}`
                   <button
                     type="button"
                     onClick={handleClearCurrentChat}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-400/80 hover:text-rose-600 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                     title="Clear current AI conversation"
                   >
                     <RotateCcw size={13} />
                   </button>
-
-                  <div className="w-[1px] h-4 bg-black/[0.08] dark:bg-white/[0.1] mx-0.5" />
                 </div>
               )}
 
               <button
                 type="button"
                 onClick={() => setIsChatSearchOpen(prev => !prev)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400/80 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.03] transition-colors cursor-pointer"
                 title="Search within chat"
               >
-                <Search size={15} />
+                <Search size={14} />
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsDetailsMenuOpen(prev => !prev)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400/80 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.03] transition-colors cursor-pointer"
                 title="Conversation details"
               >
-                <MoreVertical size={15} />
+                <MoreVertical size={14} />
               </button>
 
               {isDetailsMenuOpen && (
                 <div 
-                  className="absolute right-0 top-11 w-64 bg-white dark:bg-zinc-850 rounded-2xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in duration-150"
+                  className="absolute right-0 top-11 w-64 bg-white dark:bg-zinc-850 rounded-xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in duration-150"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/[0.05]">
@@ -2884,7 +3475,7 @@ ${systemPrompt}`
                       <X size={13} />
                     </button>
                   </div>
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60 text-[11px] space-y-1">
+                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-zinc-800/60 text-[11px] space-y-1">
                     <span className="text-[9.5px] text-slate-400 uppercase font-semibold block">Key Fingerprint</span>
                     <span className="font-mono text-[10.5px] font-bold text-slate-800 dark:text-zinc-100 block truncate">
                       {currentChat.fingerprint || '0xAI • ZERO • KNOWLEDGE'}
@@ -2893,20 +3484,20 @@ ${systemPrompt}`
                 </div>
               )}
 
-              <div className="w-[1px] h-4 bg-black/[0.08] dark:bg-white/[0.1] mx-1" />
+              <div className="w-px h-3 bg-black/[0.06] dark:bg-white/[0.08] mx-0.5" />
 
               <button
                 type="button"
                 onClick={() => handleStartInChatCall('audio')}
-                className="p-2 rounded-xl text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white hover:bg-black/[0.04] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400/80 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.03] transition-colors cursor-pointer"
                 title="Direct Voice Call"
               >
-                <Phone size={15} />
+                <Phone size={14} />
               </button>
               <button
                 type="button"
                 onClick={() => handleStartInChatCall('video')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-normal text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
                 title="Direct Video Call"
               >
                 <Video size={13} />
@@ -2915,27 +3506,208 @@ ${systemPrompt}`
             </div>
           </header>
 
-          {/* Search Drawer */}
+          {/* Search Drawer with Dual-Mode (Find / Ask AI) */}
           {isChatSearchOpen && (
-            <div className="px-6 py-2.5 bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] flex items-center justify-between gap-3 shadow-2xs">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={chatSearchQuery}
-                  onChange={(e) => setChatSearchQuery(e.target.value)}
-                  placeholder="Search keywords in messages..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
-                  autoFocus
-                />
+            <div className="bg-white/95 dark:bg-zinc-900/95 border-b border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+              <div className="px-6 py-2 flex items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  {chatSearchMode === 'ai' ? (
+                    <RegaarderAiIcon size={14} strokeWidth={2.0} className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-500 pointer-events-none" />
+                  ) : (
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  )}
+                  <input
+                    type="text"
+                    value={chatSearchQuery}
+                    onChange={(e) => {
+                      setChatSearchQuery(e.target.value);
+                      if (chatSearchMode === 'ai' && chatAiAnswer) {
+                        setChatAiAnswer(null);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (chatSearchMode === 'ai') {
+                          handleRunInChatAiSearch(chatSearchQuery);
+                        } else {
+                          if (e.shiftKey) handlePrevSearchMatch();
+                          else handleNextSearchMatch();
+                        }
+                      } else if (e.key === 'Escape') {
+                        setIsChatSearchOpen(false);
+                        setChatSearchQuery('');
+                        setChatAiAnswer(null);
+                      }
+                    }}
+                    placeholder={
+                      chatSearchMode === 'ai'
+                        ? `Ask anything about this chat with ${currentChat?.name || 'contact'} in natural language (Press Enter)...`
+                        : "Search keywords in messages (Press Enter for next)..."
+                    }
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-500/40 transition-all"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Segmented Mode Switcher: Slightly rounded rectangle (Apple-style) */}
+                <div className="flex items-center p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06] select-none shrink-0">
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setChatSearchMode('find');
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                      chatSearchMode === 'find'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold outline outline-1 outline-black/[0.08] dark:outline-white/[0.1]'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    <Search size={11} className={chatSearchMode === 'find' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400'} />
+                    <span>Find</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setChatSearchMode('ai');
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                      chatSearchMode === 'ai'
+                        ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-2xs font-bold outline outline-1 outline-violet-500/50'
+                        : 'text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300'
+                    }`}
+                  >
+                    <RegaarderAiIcon size={12} strokeWidth={2.0} className={chatSearchMode === 'ai' ? 'text-white' : 'text-violet-500'} />
+                    <span>Ask AI</span>
+                  </button>
+                </div>
+
+                {/* Find Mode Controls (Counter & Chevrons) */}
+                {chatSearchMode === 'find' && (
+                  <div className="flex items-center gap-1.5 shrink-0 select-none">
+                    {chatSearchQuery.trim() && (
+                      <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-medium px-1">
+                        {inChatMatchingMsgIds.length > 0
+                          ? `${chatSearchMatchIndex + 1} of ${inChatMatchingMsgIds.length}`
+                          : '0 matches'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handlePrevSearchMatch}
+                      disabled={inChatMatchingMsgIds.length === 0}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      title="Previous match (Shift+Enter)"
+                    >
+                      <ChevronUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextSearchMatch}
+                      disabled={inChatMatchingMsgIds.length === 0}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      title="Next match (Enter)"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Ask AI Mode Synthesize Button */}
+                {chatSearchMode === 'ai' && (
+                  <button
+                    type="button"
+                    onClick={() => handleRunInChatAiSearch(chatSearchQuery)}
+                    disabled={!chatSearchQuery.trim() || chatAiLoading}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                  >
+                    {chatAiLoading ? <Loader2 size={12} className="animate-spin" /> : <RegaarderAiIcon size={12} strokeWidth={2.0} />}
+                    <span>Synthesize</span>
+                  </button>
+                )}
+
+                <div className="h-3.5 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+
+                {/* Close Drawer */}
+                <button
+                  type="button"
+                  onClick={() => { setIsChatSearchOpen(false); setChatSearchQuery(''); setChatAiAnswer(null); }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer shrink-0"
+                  title="Close search (Esc)"
+                >
+                  <X size={14} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => { setIsChatSearchOpen(false); setChatSearchQuery(''); }}
-                className="p-1.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X size={14} />
-              </button>
+
+              {/* In-Chat AI Synthesized Answer Card */}
+              {chatSearchMode === 'ai' && (chatAiLoading || chatAiAnswer) && (
+                <div className="px-6 py-3 bg-violet-50/50 dark:bg-violet-950/20 border-t border-violet-100 dark:border-violet-900/30 text-xs">
+                  {chatAiLoading ? (
+                    <div className="flex items-center gap-2.5 py-2 text-violet-700 dark:text-violet-300 font-medium">
+                      <Loader2 size={15} className="animate-spin text-violet-600" />
+                      <span>Analyzing chat transcript and synthesizing natural language response...</span>
+                    </div>
+                  ) : chatAiAnswer && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold">
+                          <RegaarderAiIcon size={13} strokeWidth={2.0} className="text-violet-600" />
+                          <span>AI Chat Synthesis</span>
+                          <span className="text-[10.5px] font-normal text-slate-400 dark:text-zinc-500">for "{chatAiAnswer.query}"</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard?.writeText(chatAiAnswer.answer);
+                              setChatAiCopied(true);
+                              setTimeout(() => setChatAiCopied(false), 2000);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] flex items-center gap-1 cursor-pointer"
+                            title="Copy answer"
+                          >
+                            {chatAiCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                            <span>{chatAiCopied ? 'Copied' : 'Copy'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChatAiAnswer(null)}
+                            className="p-1 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer"
+                            title="Dismiss answer"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Natural language synthesized answer with markdown */}
+                      <div className="text-slate-800 dark:text-zinc-200 leading-relaxed font-normal bg-white dark:bg-zinc-900 p-3 rounded-xl border border-violet-200/50 dark:border-violet-800/40 shadow-2xs">
+                        {renderFormattedMessageText(chatAiAnswer.answer, null)}
+                      </div>
+
+                      {/* Citations */}
+                      {chatAiAnswer.sources && chatAiAnswer.sources.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 tracking-wider">Relevant Citations:</span>
+                          {chatAiAnswer.sources.map((s, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-[10.5px] text-slate-600 dark:text-zinc-300"
+                              title={s.snippet}
+                            >
+                              <span className="font-semibold text-violet-600 dark:text-violet-400">{s.sender}:</span>
+                              <span className="truncate max-w-[140px]">{s.snippet}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -2945,12 +3717,15 @@ ${systemPrompt}`
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto px-6 py-5 space-y-4 thin-scrollbar relative"
           >
-            {/* E2EE Security Banner */}
-            <div className="w-fit mx-auto px-4 py-2 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2 max-w-lg text-center leading-normal shadow-2xs">
-              <Lock size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>
-                Messages and calls are end-to-end encrypted. No one outside of this chat, not even Regaarder, can read or listen to them.
-              </span>
+            {/* E2EE Security Notice Pill */}
+            <div className="flex justify-center mb-1 select-none">
+              <div 
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.05] text-[11px] text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-default"
+                title="Messages and calls are end-to-end encrypted. No one outside of this chat, not even Regaarder, can read or listen to them."
+              >
+                <Lock size={11} className="shrink-0" />
+                <span>End-to-end encrypted · Zero-knowledge</span>
+              </div>
             </div>
 
             {messages.length === 0 ? (
@@ -2971,11 +3746,19 @@ ${systemPrompt}`
                 return (
                   <div 
                     key={msg.id}
-                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative ${activeMoreMenuMsgId === msg.id ? 'z-40' : 'z-10'}`}
+                    id={`relay-msg-${msg.id}`}
+                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} ${isAssistant ? 'max-w-[590px]' : 'max-w-xl'} ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative transition-all duration-150 ${
+                      inChatMatchingMsgIds.length > 0 && inChatMatchingMsgIds[chatSearchMatchIndex] === msg.id
+                        ? 'ring-2 ring-violet-500/70 dark:ring-violet-400/70 rounded-2xl p-1 bg-violet-500/[0.04]'
+                        : ''
+                    } ${activeMoreMenuMsgId === msg.id ? 'z-40' : 'z-10'}`}
                   >
                     {!isOutgoing && (
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1">
-                        {msg.author}
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1 flex items-center gap-1.5">
+                        {isAssistant && (
+                          <RegaarderBrandIcon size={11} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                        )}
+                        <span>{msg.author}</span>
                       </span>
                     )}
 
@@ -3092,7 +3875,7 @@ ${systemPrompt}`
                         isOutgoing
                           ? 'bg-[#F0F2F6] dark:bg-[#1E232F] text-slate-900 dark:text-zinc-100 border border-[#E1E4EA] dark:border-[#2D3546] rounded-tr-xs shadow-2xs'
                           : isAssistant
-                          ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
+                          ? 'bg-slate-50/80 dark:bg-zinc-850/70 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-800/80 rounded-tl-xs shadow-2xs'
                           : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
                       }`}
                     >
@@ -3374,7 +4157,7 @@ ${systemPrompt}`
                       {msg.referenceSources && msg.referenceSources.length > 0 && (
                         <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-violet-200/80 dark:border-violet-900/60 shadow-xs space-y-2">
                           <div className="flex items-center gap-1.5 text-[11px] font-bold text-violet-700 dark:text-violet-400">
-                            <Sparkles size={12} className="text-violet-500 shrink-0" />
+                            <RegaarderAiIcon size={12} strokeWidth={2.0} className="text-violet-500 shrink-0" />
                             <span>Referenced Sources (Click to jump to line)</span>
                           </div>
 
@@ -3490,12 +4273,12 @@ ${systemPrompt}`
                           {/* Real Speech Transcription Subtitle (if available) */}
                           {msg.rawTranscript && (
                             <p className="text-[11.5px] italic text-slate-600 dark:text-zinc-300 bg-black/[0.02] dark:bg-white/[0.03] p-2 rounded-xl border border-black/[0.03] dark:border-white/[0.04] leading-relaxed">
-                              "{msg.rawTranscript}"
+                              "{highlightTextChunks(msg.rawTranscript, isChatSearchOpen ? chatSearchQuery : '', `trans-${msg.id}`)}"
                             </p>
                           )}
                         </div>
                       ) : (
-                        renderFormattedMessageText(msg.text)
+                        renderFormattedMessageText(msg.text, isChatSearchOpen ? chatSearchQuery : '')
                       )}
 
                       <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
@@ -3673,9 +4456,29 @@ ${systemPrompt}`
                   </div>
                 )}
 
+                {/* ── Docked Agent Clarification Card (Interactive Multi-Choice & Follow-up) ── */}
+                {activeClarification && (
+                  <div className="mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <InteractiveClarificationCard
+                      clarification={activeClarification}
+                      variant="docked"
+                      isDarkMode={isDarkMode}
+                      onSelectOption={(optionLabel) => {
+                        handleSendMessage(null, optionLabel);
+                      }}
+                      onCustomReply={() => {
+                        setActiveClarification(null);
+                        textInputRef.current?.focus();
+                      }}
+                      onSkip={() => setActiveClarification(null)}
+                      onDismiss={() => setActiveClarification(null)}
+                    />
+                  </div>
+                )}
+
                 <form 
                   onSubmit={handleSendMessage}
-                  className="relative z-40 flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
+                  className="relative z-40 flex items-center gap-1.5 p-1.5 rounded-xl bg-white dark:bg-zinc-850 border border-black/[0.08] dark:border-white/[0.08] shadow-2xs focus-within:border-black/20 dark:focus-within:border-white/20 transition-colors"
                 >
                   {/* ── FLOATING AI WRITING TOOLS TOOLBAR (Triggered when typing & highlighting text) ── */}
                   {selectionToolbarState && (
@@ -4056,21 +4859,21 @@ ${systemPrompt}`
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                   title="Attach Documents or Files"
                 >
-                  <Paperclip size={16} />
+                  <Paperclip size={15} />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsEmojiPickerOpen(prev => !prev)}
-                  className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
-                    isEmojiPickerOpen ? 'bg-violet-100 text-violet-700' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isEmojiPickerOpen ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
                   }`}
                   title="Choose Emoji"
                 >
-                  <Smile size={16} />
+                  <Smile size={15} />
                 </button>
 
                 <input
@@ -4090,7 +4893,7 @@ ${systemPrompt}`
                   onMouseUp={handleInputSelect}
                   onTouchEnd={handleInputSelect}
                   placeholder={`Message ${currentChat.name}...`}
-                  className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                  className="flex-1 px-2.5 py-1 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
                 />
 
                 <button
@@ -4100,19 +4903,19 @@ ${systemPrompt}`
                     setIsVoicePaused(false);
                     setVoiceElapsedSeconds(0);
                   }}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                   title="Record audio note"
                 >
-                  <Mic size={16} />
+                  <Mic size={15} />
                 </button>
 
                 <button
                   type="submit"
                   disabled={!messageInput.trim()}
-                  className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
+                  className="w-7 h-7 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black dark:hover:bg-slate-100 disabled:opacity-20 disabled:hover:bg-slate-900 dark:disabled:hover:bg-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs"
                   title="Send Message"
                 >
-                  <Send size={13} />
+                  <Send size={12} />
                 </button>
               </form>
             </div>

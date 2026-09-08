@@ -254,6 +254,36 @@ export const ScheduleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...
   </svg>
 );
 
+/**
+ * Proprietary Regaarder Omni-Portal / Import Glyph
+ * Metaphor: Universal entry portal vortex receiving external documents into the workspace core.
+ * Pure Apple SF Symbol-style monoline geometry (1.6px stroke), balanced negative space,
+ * crisp silhouette at 16–26px.
+ */
+export const ImportPortalIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Portal outer dynamic vortex frame */}
+    <path d="M4 14.5V6.5A2.5 2.5 0 0 1 6.5 4H17.5A2.5 2.5 0 0 1 20 6.5V17.5A2.5 2.5 0 0 1 17.5 20H14" />
+    {/* Downward absorption vector into portal core */}
+    <path d="M12 2v9" />
+    <polyline points="9 8 12 11 15 8" />
+    {/* Focal core receiving ring */}
+    <circle cx="8" cy="16" r="3.5" />
+    <circle cx="8" cy="16" r="0.75" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const MemoryIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
@@ -322,6 +352,37 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
     <path d="M12 4.5A7.5 7.5 0 0 0 4.5 12c0 1.8.6 3.4 1.7 4.6l-.7 2.9 2.9-.7A7.4 7.4 0 0 0 12 19.5a7.5 7.5 0 0 0 7.5-7.5A7.5 7.5 0 0 0 12 4.5Z" />
     {/* Regaarder conversation focal node */}
     <circle cx="12" cy="12" r="0.85" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/**
+ * Proprietary Regaarder Relay Glyph
+ * Metaphor: Bidirectional peer-to-peer transmission & exchange between two connection endpoints.
+ * Design language: Apple SF Symbol-style pure monoline geometry (1.6px stroke), balanced negative space,
+ * zero decorative clutter, crisp silhouette legible at 16–20px.
+ */
+export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Top transfer track: left endpoint to right forward arrow */}
+    <circle cx="5.5" cy="8.5" r="2" />
+    <path d="M7.5 8.5h11" />
+    <polyline points="15.5 5.5 18.5 8.5 15.5 11.5" />
+
+    {/* Bottom reciprocal track: right endpoint to left reverse arrow */}
+    <circle cx="18.5" cy="15.5" r="2" />
+    <path d="M16.5 15.5h-11" />
+    <polyline points="8.5 12.5 5.5 15.5 8.5 18.5" />
   </svg>
 );
 
@@ -466,6 +527,8 @@ export const RegaarderAiIcon = ({ size = 24, className = "", strokeWidth = 1.8, 
       strokeLinecap="round"
       strokeLinejoin="round"
     />
+    {/* Focal intelligence core */}
+    <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -637,6 +700,8 @@ export const RegaarderProductIconMap = {
   fitscreen: RegaarderFitScreenIcon,
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
+  relay: RelayIcon,
+  Relay: RelayIcon,
   browser: BrowserIcon,
   slide: DeckIcon,
   Slide: DeckIcon,
@@ -662,9 +727,54 @@ export const RegaarderProductIconMap = {
   'laser-pointer': LaserPointerIcon,
 };
 
+/**
+ * Regaarder Quick Action / Speed Kinetic Glyph
+ * Metaphor: Geometric sharp kinetic spark with dual 1.6px optical speed facets
+ */
+export const RegaarderQuickActionIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polygon points="13 2 4 13 11 13 10 22 20 10 13 10 14 2" />
+  </svg>
+);
+
+/**
+ * Regaarder Tactile Haptic / Micro-Interaction Icon
+ * Metaphor: Central haptic core with concentric acoustic feedback ripples
+ */
+export const RegaarderHapticIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+    <path d="M6 8a8 8 0 0 1 12 0" />
+    <path d="M6 16a8 8 0 0 0 12 0" />
+  </svg>
+);
+
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {
   const IconComponent = RegaarderProductIconMap[name] || ComposeIcon;
   return <IconComponent size={size} className={className} strokeWidth={strokeWidth} {...props} />;
 };
 
 export default RegaarderProductIcon;
+

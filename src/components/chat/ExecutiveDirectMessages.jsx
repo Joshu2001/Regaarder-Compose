@@ -2652,14 +2652,24 @@ ${systemPrompt}`
 
             {/* Clean Search Bar */}
             <div className="relative flex items-center">
-              <Search size={14} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+              <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search chats, usernames or topics..."
-                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-white/90 dark:bg-zinc-800/90 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
+                className="w-full pl-8 pr-7 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-300/60 dark:focus:ring-zinc-600 transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 p-0.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
 
             {/* Main Tabs (All, Unread, Groups, Topics) + Ellipsis (...) More Menu */}
@@ -2676,9 +2686,9 @@ ${systemPrompt}`
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-2.5 py-1 text-[11px] rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`px-2.5 py-1 text-[11.5px] rounded-md transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
-                        ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-black/[0.04] dark:border-white/[0.06]'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-black/[0.06] dark:border-white/[0.08]'
                         : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] font-medium'
                     }`}
                   >
@@ -2696,9 +2706,9 @@ ${systemPrompt}`
                     e.stopPropagation();
                     setIsMoreTabsMenuOpen(prev => !prev);
                   }}
-                  className={`w-7 h-6 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                  className={`w-7 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                     ['ai', 'broadcast', 'actions'].includes(activeTab) || isMoreTabsMenuOpen
-                      ? 'bg-[#EAECEF] dark:bg-[#1E222D] text-violet-600 dark:text-violet-400 font-bold border border-black/[0.04]'
+                      ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 font-bold border border-black/[0.06]'
                       : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03]'
                   }`}
                   title="More views (AI Agents, News, Actions)"
@@ -2828,21 +2838,21 @@ ${systemPrompt}`
                       setActiveContactId(chat.id);
                       if (onSelectThread) onSelectThread(chat.id);
                     }}
-                    className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#E8EAEE] dark:bg-[#1D212C] text-slate-900 dark:text-zinc-100 shadow-2xs'
-                        : 'bg-transparent hover:bg-white/60 dark:hover:bg-[#151822] text-slate-700 dark:text-zinc-300'
+                        ? 'bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.06] text-slate-900 dark:text-zinc-100'
+                        : 'bg-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-transparent text-slate-700 dark:text-zinc-300'
                     }`}
                   >
                     <div className="relative shrink-0">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
                         chat.isAi
-                          ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs'
+                          ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/20'
                           : chat.isGroup
-                          ? 'bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-violet-200'
-                          : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
+                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-black/[0.05] dark:border-white/[0.06]'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-black/[0.05] dark:border-white/[0.06]'
                       }`}>
-                        {chat.avatar}
+                        {chat.isAi ? <RegaarderBrandIcon size={15} className="text-violet-600 dark:text-violet-400 shrink-0" /> : chat.avatar}
                       </div>
                       {chat.online && (
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0e1017]" />
@@ -2854,7 +2864,7 @@ ${systemPrompt}`
                         <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
                           {chat.name}
                           {chat.isAi && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-violet-100 dark:bg-violet-950 text-violet-600 font-bold uppercase">
+                            <span className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300 font-medium">
                               AI
                             </span>
                           )}
@@ -2896,12 +2906,12 @@ ${systemPrompt}`
             onPointerDown={handleHeaderTap}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
+              <div className={`w-9 h-9 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 ${
                 currentChat.isAi 
-                  ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-xs' 
-                  : 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200'
+                  ? 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/20' 
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-black/[0.05] dark:border-white/[0.06]'
               }`}>
-                {currentChat.avatar}
+                {currentChat.isAi ? <RegaarderBrandIcon size={16} className="text-violet-600 dark:text-violet-400 shrink-0" /> : currentChat.avatar}
               </div>
               
               <div className="min-w-0 flex flex-col justify-center group/modelheader">
@@ -2910,7 +2920,7 @@ ${systemPrompt}`
                     {currentChat.name}
                   </h3>
 
-                  {/* Real Detected Model Selector */}
+                  {/* Real Detected Model Selector (clean, sleek, unobtrusive) */}
                   {currentChat.isAi && (
                     <div className="relative inline-flex items-center">
                       <button
@@ -2921,11 +2931,11 @@ ${systemPrompt}`
                           e.stopPropagation();
                           setIsAiModelSelectorOpen(prev => !prev);
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] text-slate-800 dark:text-zinc-200 text-[11px] font-medium transition-colors cursor-pointer shadow-2xs border border-black/[0.08] dark:border-white/[0.1] backdrop-blur-md select-none"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-xs font-normal transition-colors cursor-pointer select-none"
                         title="Switch AI Model Engine"
                       >
-                        <span className="font-semibold">{activeModelDisplay.name}</span>
-                        <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
+                        <span>{activeModelDisplay.name}</span>
+                        <ChevronDown size={11} className={`text-slate-400 transition-transform duration-150 ${isAiModelSelectorOpen ? 'rotate-180' : ''}`} />
                       </button>
 
                       {/* Dropdown Menu */}
@@ -3079,8 +3089,8 @@ ${systemPrompt}`
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-zinc-500">
+                  <span className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500 font-normal">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     Zero-Knowledge E2EE Session
                   </span>
@@ -3089,37 +3099,37 @@ ${systemPrompt}`
             </div>
 
             {/* Conversation Header Tools */}
-            <div className="flex items-center gap-1.5 relative">
+            <div className="flex items-center gap-2 relative">
               {/* AI Conversation Controls: + New Chat, History, Clear Chat */}
               {currentChat?.isAi && (
-                <div className="flex items-center gap-1 mr-1">
-                  {/* + New Chat */}
+                <div className="flex items-center gap-1.5">
+                  {/* + New Chat (Primary Action) */}
                   <button
                     type="button"
                     onClick={handleStartNewAiChat}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200/60 dark:border-violet-800/40 transition-colors cursor-pointer select-none"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black dark:hover:bg-zinc-100 shadow-xs transition-colors cursor-pointer select-none"
                     title="Start a fresh AI chat session and save current to history"
                   >
                     <Plus size={12} strokeWidth={2.5} />
                     <span>New Chat</span>
                   </button>
 
-                  {/* Chat History Dropdown */}
+                  {/* Chat History Dropdown (Secondary Action) */}
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setIsAiHistoryOpen(prev => !prev)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer select-none ${
                         isAiHistoryOpen 
-                          ? 'bg-violet-100 dark:bg-violet-900/60 text-violet-700 dark:text-violet-300' 
-                          : 'text-slate-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                          ? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-zinc-100' 
+                          : 'text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                       }`}
                       title="View past AI chat history"
                     >
                       <History size={13} />
                       <span>History</span>
                       {aiChatSessions.length > 0 && (
-                        <span className="text-[9.5px] px-1.5 py-0.2 rounded-full bg-violet-600 text-white font-bold leading-tight">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-black/[0.05] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-medium leading-tight">
                           {aiChatSessions.length}
                         </span>
                       )}
@@ -3428,37 +3438,35 @@ ${systemPrompt}`
                   <button
                     type="button"
                     onClick={handleClearCurrentChat}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-400/80 hover:text-rose-600 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                     title="Clear current AI conversation"
                   >
                     <RotateCcw size={13} />
                   </button>
-
-                  <div className="w-[1px] h-4 bg-black/[0.08] dark:bg-white/[0.1] mx-0.5" />
                 </div>
               )}
 
               <button
                 type="button"
                 onClick={() => setIsChatSearchOpen(prev => !prev)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400/80 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.03] transition-colors cursor-pointer"
                 title="Search within chat"
               >
-                <Search size={15} />
+                <Search size={14} />
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsDetailsMenuOpen(prev => !prev)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400/80 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.03] transition-colors cursor-pointer"
                 title="Conversation details"
               >
-                <MoreVertical size={15} />
+                <MoreVertical size={14} />
               </button>
 
               {isDetailsMenuOpen && (
                 <div 
-                  className="absolute right-0 top-11 w-64 bg-white dark:bg-zinc-850 rounded-2xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in duration-150"
+                  className="absolute right-0 top-11 w-64 bg-white dark:bg-zinc-850 rounded-xl shadow-xl border border-black/[0.06] dark:border-white/[0.08] p-3 z-50 animate-in fade-in duration-150"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/[0.05]">
@@ -3467,7 +3475,7 @@ ${systemPrompt}`
                       <X size={13} />
                     </button>
                   </div>
-                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60 text-[11px] space-y-1">
+                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-zinc-800/60 text-[11px] space-y-1">
                     <span className="text-[9.5px] text-slate-400 uppercase font-semibold block">Key Fingerprint</span>
                     <span className="font-mono text-[10.5px] font-bold text-slate-800 dark:text-zinc-100 block truncate">
                       {currentChat.fingerprint || '0xAI • ZERO • KNOWLEDGE'}
@@ -3476,20 +3484,20 @@ ${systemPrompt}`
                 </div>
               )}
 
-              <div className="w-[1px] h-4 bg-black/[0.08] dark:bg-white/[0.1] mx-1" />
+              <div className="w-px h-3 bg-black/[0.06] dark:bg-white/[0.08] mx-0.5" />
 
               <button
                 type="button"
                 onClick={() => handleStartInChatCall('audio')}
-                className="p-2 rounded-xl text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white hover:bg-black/[0.04] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400/80 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.03] transition-colors cursor-pointer"
                 title="Direct Voice Call"
               >
-                <Phone size={15} />
+                <Phone size={14} />
               </button>
               <button
                 type="button"
                 onClick={() => handleStartInChatCall('video')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-normal text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
                 title="Direct Video Call"
               >
                 <Video size={13} />
@@ -3709,12 +3717,15 @@ ${systemPrompt}`
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto px-6 py-5 space-y-4 thin-scrollbar relative"
           >
-            {/* E2EE Security Banner */}
-            <div className="w-fit mx-auto px-4 py-2 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-500/20 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2 max-w-lg text-center leading-normal shadow-2xs">
-              <Lock size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>
-                Messages and calls are end-to-end encrypted. No one outside of this chat, not even Regaarder, can read or listen to them.
-              </span>
+            {/* E2EE Security Notice Pill */}
+            <div className="flex justify-center mb-1 select-none">
+              <div 
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.05] text-[11px] text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-default"
+                title="Messages and calls are end-to-end encrypted. No one outside of this chat, not even Regaarder, can read or listen to them."
+              >
+                <Lock size={11} className="shrink-0" />
+                <span>End-to-end encrypted · Zero-knowledge</span>
+              </div>
             </div>
 
             {messages.length === 0 ? (
@@ -3736,15 +3747,18 @@ ${systemPrompt}`
                   <div 
                     key={msg.id}
                     id={`relay-msg-${msg.id}`}
-                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} max-w-2xl ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative transition-all duration-150 ${
+                    className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} ${isAssistant ? 'max-w-[590px]' : 'max-w-xl'} ${isOutgoing ? 'ml-auto' : 'mr-auto'} group/msg relative transition-all duration-150 ${
                       inChatMatchingMsgIds.length > 0 && inChatMatchingMsgIds[chatSearchMatchIndex] === msg.id
                         ? 'ring-2 ring-violet-500/70 dark:ring-violet-400/70 rounded-2xl p-1 bg-violet-500/[0.04]'
                         : ''
                     } ${activeMoreMenuMsgId === msg.id ? 'z-40' : 'z-10'}`}
                   >
                     {!isOutgoing && (
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1">
-                        {msg.author}
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1 ml-1 flex items-center gap-1.5">
+                        {isAssistant && (
+                          <RegaarderBrandIcon size={11} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                        )}
+                        <span>{msg.author}</span>
                       </span>
                     )}
 
@@ -3861,7 +3875,7 @@ ${systemPrompt}`
                         isOutgoing
                           ? 'bg-[#F0F2F6] dark:bg-[#1E232F] text-slate-900 dark:text-zinc-100 border border-[#E1E4EA] dark:border-[#2D3546] rounded-tr-xs shadow-2xs'
                           : isAssistant
-                          ? 'bg-violet-50/80 dark:bg-violet-950/40 text-slate-800 dark:text-zinc-100 border border-violet-200/70 dark:border-violet-800/40 rounded-tl-xs shadow-2xs'
+                          ? 'bg-slate-50/80 dark:bg-zinc-850/70 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-800/80 rounded-tl-xs shadow-2xs'
                           : 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700 rounded-tl-xs shadow-2xs'
                       }`}
                     >
@@ -4464,7 +4478,7 @@ ${systemPrompt}`
 
                 <form 
                   onSubmit={handleSendMessage}
-                  className="relative z-40 flex items-center gap-2 p-1.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
+                  className="relative z-40 flex items-center gap-1.5 p-1.5 rounded-xl bg-white dark:bg-zinc-850 border border-black/[0.08] dark:border-white/[0.08] shadow-2xs focus-within:border-black/20 dark:focus-within:border-white/20 transition-colors"
                 >
                   {/* ── FLOATING AI WRITING TOOLS TOOLBAR (Triggered when typing & highlighting text) ── */}
                   {selectionToolbarState && (
@@ -4845,21 +4859,21 @@ ${systemPrompt}`
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                   title="Attach Documents or Files"
                 >
-                  <Paperclip size={16} />
+                  <Paperclip size={15} />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsEmojiPickerOpen(prev => !prev)}
-                  className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
-                    isEmojiPickerOpen ? 'bg-violet-100 text-violet-700' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04]'
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isEmojiPickerOpen ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
                   }`}
                   title="Choose Emoji"
                 >
-                  <Smile size={16} />
+                  <Smile size={15} />
                 </button>
 
                 <input
@@ -4879,7 +4893,7 @@ ${systemPrompt}`
                   onMouseUp={handleInputSelect}
                   onTouchEnd={handleInputSelect}
                   placeholder={`Message ${currentChat.name}...`}
-                  className="flex-1 px-2 py-1.5 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                  className="flex-1 px-2.5 py-1 text-xs bg-transparent text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
                 />
 
                 <button
@@ -4889,19 +4903,19 @@ ${systemPrompt}`
                     setIsVoicePaused(false);
                     setVoiceElapsedSeconds(0);
                   }}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
                   title="Record audio note"
                 >
-                  <Mic size={16} />
+                  <Mic size={15} />
                 </button>
 
                 <button
                   type="submit"
                   disabled={!messageInput.trim()}
-                  className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
+                  className="w-7 h-7 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-black dark:hover:bg-slate-100 disabled:opacity-20 disabled:hover:bg-slate-900 dark:disabled:hover:bg-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs"
                   title="Send Message"
                 >
-                  <Send size={13} />
+                  <Send size={12} />
                 </button>
               </form>
             </div>
