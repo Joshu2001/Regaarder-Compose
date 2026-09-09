@@ -21,6 +21,7 @@ import {
   TasksIcon,
   MemoryIcon,
   BrowserIcon,
+  RelayIcon,
   PeopleIcon,
   OrbIcon,
   RegaarderAiIcon,
@@ -167,6 +168,7 @@ const FILTER_TABS = [
   { id: 'sheets', label: 'Sheets', icon: SheetIcon },
   { id: 'deck', label: 'Decks', icon: DeckIcon },
   { id: 'tasks', label: 'Tasks', icon: TasksIcon },
+  { id: 'relay', label: 'Relay', icon: RelayIcon },
   { id: 'room', label: 'Rooms', icon: RoomIcon },
   { id: 'browser', label: 'Notes', icon: BrowserIcon },
   { id: 'people', label: 'People', icon: PeopleIcon }

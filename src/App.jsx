@@ -35438,6 +35438,46 @@ Respond with valid JSON formatted like this:
   };
 
   const requestCloseDocument = (docId) => {
+    const targetDoc = documents.find((doc) => String(doc.id) === String(docId));
+    if (!targetDoc) return;
+
+    let savedDoc = null;
+    try {
+      const rawLibrary = localStorage.getItem('regaarder_library_documents_v1');
+      const library = rawLibrary ? JSON.parse(rawLibrary) : [];
+      savedDoc = Array.isArray(library)
+        ? library.find((doc) => String(doc.id) === String(docId))
+        : null;
+    } catch (_error) {}
+
+    const current = {
+      ...targetDoc,
+      ...(String(docId) === String(activeDocId)
+        ? {
+            title: getDocMode(targetDoc) === 'sheets' ? sheetsTitle : getDocMode(targetDoc) === 'deck' ? deckTitle : docTitle,
+            bodyHtml: docBodyHtml,
+            subtitle: docSubtitle,
+            sheetGrids,
+            sheetsData,
+            deckSlidesData,
+            whiteboardWidgets,
+            whiteboardShapes,
+            whiteboardStrokes,
+          }
+        : {}),
+    };
+    const normalize = (doc) => {
+      if (!doc) return null;
+      const { updatedAt, savedAt, isSaved, ...stable } = doc;
+      return stable;
+    };
+    const isDirty = isMeaningfulWork(current)
+      && (!savedDoc || JSON.stringify(normalize(current)) !== JSON.stringify(normalize(savedDoc)));
+    if (!isDirty) {
+      handleDiscardAndCloseDocument(docId);
+      return;
+    }
+
     setCloseConfirmDocId(docId);
     setOpenDocMenuId(null);
   };
@@ -37423,7 +37463,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               onClick={() => handleSaveAndCloseDocument(closeConfirmDocId)}
               className="px-4 py-1.5 rounded-xl text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-sm transition-colors cursor-pointer"
             >
-              Save to Library
+              Save & Close
             </button>
           </div>
         </div>
@@ -49207,7 +49247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setRenamingDocId(doc.id);
                       setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
                     }}
-                    className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    className={`relative min-w-0 flex-1 basis-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                       isActive 
                         ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                         : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -49233,7 +49273,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                       />
                     ) : (
-                      <span className="max-w-[160px] truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
+                      <span className="min-w-0 flex-1 truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
                     )}
                     <button
                       data-doc-menu-root
@@ -49254,7 +49294,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         event.stopPropagation();
                         requestCloseDocument(doc.id);
                       }}
-                      className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
+                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0 transition-opacity"
                       title="Close document"
                     >
                       <X size={12} />
@@ -76360,7 +76400,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`relative flex-1 min-w-[110px] max-w-[220px] px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center justify-between gap-1 cursor-pointer select-none ${
+                  className={`relative min-w-0 flex-1 basis-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center justify-between gap-1 cursor-pointer select-none ${
                     isActive 
                       ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                       : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -76408,7 +76448,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         event.stopPropagation();
                         requestCloseDocument(doc.id);
                       }}
-                      className="p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
+                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0 transition-opacity"
                       title="Close document"
                     >
                       <X size={12} />
