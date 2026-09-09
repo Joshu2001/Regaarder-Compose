@@ -5492,7 +5492,16 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
   const checkNotesContent = () => {
     if (notesCardRef?.current) {
       const text = notesCardRef.current.innerText || notesCardRef.current.textContent || '';
-      setHasContent(text.replace(/\u200B/g, '').trim().length > 0);
+      const cleanText = text.replace(/\u200B/g, '').trim();
+      setHasContent(cleanText.length > 0);
+      // Auto-persist Room notes for workspace indexing
+      try {
+        localStorage.setItem('regaarder_room_notes_v1', JSON.stringify({
+          content: notesCardRef.current.innerHTML || '',
+          plainText: cleanText,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (_) {}
     }
   };
 
@@ -42860,6 +42869,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="divide-y divide-slate-100/60 dark:divide-zinc-800/40">
                 {visibleTasks.map(task => (
                   <div 
+                    id={`task-item-${task.id}`}
                     key={task.id}
                     draggable
                     onDragStart={(e) => handleTaskDragStart(e, task.id)}
@@ -71642,12 +71652,150 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <GlobalWorkspaceSearchModal
         isOpen={isMemorySearchOpen}
         onClose={() => setIsMemorySearchOpen(false)}
-        onSelectEntity={(entity) => {
+        initialQuery={orbInitialQuery}
+        initialFilter={orbInitialFilter}
+        isDarkMode={isDarkMode}
+        productMode={productMode}
+        onCallAi={callGemini}
+        aiConfig={aiProviderConfig}
+        selectedModel={composeSelectedModel}
+        detectedModels={composeDetectedModels}
+        liveWorkspaceContext={{
+          documents,
+          productMode,
+          activeDocId,
+          docTitle,
+          docBodyHtml,
+          docSubtitle,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          rooms: [],
+          comments,
+          chatSessions,
+          chatMessages,
+          scheduleAgendaItems,
+          upcomingEvents,
+          whiteboards: [{ id: 'active-whiteboard', title: docTitle || 'Whiteboard', content: whiteboardWidgets.map(widget => widget.title || widget.text || widget.body || '').filter(Boolean).join('\n') }],
+          whiteboardWidgets,
+          whiteboardShapes,
+          whiteboardTitle: docTitle || 'Whiteboard',
+          roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
+          relayMessages: [],
+          people: whiteboardCollaborators || []
+        }}
+        onNavigateToEntity={(entity) => {
           if (!entity) return;
-          if (entity.type === 'doc') {
-            setProductMode('compose');
-            handleOpenSavedDocument(entity.id || entity.title);
-            showToast(`Opened: ${entity.title}`);
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            const targetDocId = entity.metadata?.docId;
+            if (targetDocId) {
+              let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+              if (!targetDoc) {
+                let snapshot = entity.metadata?.docSnapshot;
+                if (!snapshot && typeof window !== 'undefined') {
+                  try {
+                    const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+                    if (rawLib) {
+                      const libList = JSON.parse(rawLib);
+                      snapshot = libList?.find(d => String(d.id) === String(targetDocId));
+                    }
+                  } catch (_) {}
+                }
+                if (snapshot) {
+                  targetDoc = { ...snapshot, id: targetDocId };
+                  setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
+                }
+              }
+
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || entity.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
+              }
+            }
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.sheetId) {
+              setActiveSheetId(entity.metadata.sheetId);
+            }
+            showToast(`Navigated to Sheets: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Deck: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Meeting: ${entity.title}`);
+          } else if (ws === 'notes') {
+            // Room note: switch to Room, then open Notes floating modal
+            if (productMode !== 'room') setProductMode('room');
+            setIsNotesModalOpen(true);
+            showToast(`Opened Room Note: ${entity.title}`);
+          } else if (ws === 'browser-history') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Browser History: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            setRightSidebarOpen(true);
+            setActiveRightTab('tasks');
+            setTaskOwnerFilter('all');
+            const taskId = entity.metadata?.taskId || entity.id;
+            if (taskId && typeof window !== 'undefined') {
+              setTimeout(() => {
+                const el = document.getElementById(`task-item-${taskId}`);
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  el.classList.add('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
+                  setTimeout(() => {
+                    el.classList.remove('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
+                  }, 2500);
+                }
+              }, 150);
+            }
+            if (entity.metadata?.taskId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-task', { detail: { taskId: entity.metadata.taskId } }));
+            }
+            showToast(`Navigated to Task: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'whiteboard') {
+            if (productMode !== 'whiteboard') setProductMode('whiteboard');
+            setActiveRightTab('whiteboard');
+            setRightSidebarOpen(true);
+            showToast(`Navigated to Whiteboard: ${entity.title}`);
+          } else if (ws === 'comments') {
+            setActiveRightTab('comments');
+            setRightSidebarOpen(true);
+            showToast(`Opened comments: ${entity.title}`);
+          } else if (ws === 'chat') {
+            setActiveRightTab('assistant');
+            setRightSidebarOpen(true);
+            showToast(`Opened chat: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'relay' || ws === 'dm') {
+            if (productMode !== 'dm') setProductMode('dm');
+            if (entity.metadata?.contactId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
+            }
+            showToast(`Navigated to Relay: ${entity.title}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
@@ -87564,7 +87712,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
           whiteboardWidgets,
           whiteboardShapes,
           whiteboards: whiteboards || [],
-          collaborators: collaborators || []
+          collaborators: collaborators || [],
+          roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
+          relayMessages: [],
+          people: whiteboardCollaborators || []
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
@@ -87593,8 +87744,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
           } else if (ws === 'room') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Room: ${entity.title}`);
+          } else if (ws === 'notes') {
+            if (productMode !== 'room') setProductMode('room');
+            setIsNotesModalOpen(true);
+            showToast(`Opened Room Note: ${entity.title}`);
+          } else if (ws === 'browser-history') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Browser History: ${entity.title}`);
           } else if (ws === 'tasks') {
             handleMiniSidebarClick('tasks');
+            if (entity.metadata?.taskId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-task', { detail: { taskId: entity.metadata.taskId } }));
+            }
             showToast(`Navigated to Tasks: ${entity.title}`);
           } else if (ws === 'schedule') {
             handleMiniSidebarClick('calendar');
