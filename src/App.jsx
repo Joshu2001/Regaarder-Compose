@@ -34296,6 +34296,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
     const currentWorkspaceMode = productMode === 'whiteboard' ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
     const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : 'Untitled Document');
+    const blankDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
 
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
@@ -34325,11 +34326,11 @@ Answer the user's question, provide an insightful summary, or explain the contex
       setSheetToolbarTab('View');
     } else if (currentWorkspaceMode === 'deck') {
       newDoc.deckTitle = initialTitle || 'Untitled Deck';
-      newDoc.deckSlidesData = initialDeckSlidesData;
+      newDoc.deckSlidesData = blankDeckSlides;
       newDoc.activeDeckSlideId = 1;
 
       setDeckTitle(newDoc.deckTitle);
-      setDeckSlidesData(initialDeckSlidesData);
+      setDeckSlidesData(blankDeckSlides);
       setActiveDeckSlideId(1);
     }
 
