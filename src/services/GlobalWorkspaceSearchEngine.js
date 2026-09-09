@@ -1173,11 +1173,17 @@ export function buildWorkspaceIndex(context = {}) {
       const noteTitle = (entry.title || entry.name || entry.label || entry.sourceTitle || entry.url || `Research Note ${idx + 1}`).trim();
       const noteUrl = entry.url || entry.sourceUrl || entry.link || '';
       const noteText = [entry.summary, entry.text, entry.content, entry.snippet, entry.notes, entry.selectionText, entry.targetText, entry.anchorText, entry.caption].filter(Boolean).join('\n').trim();
+      const targetText = String(entry.selectionText || entry.targetText || entry.anchorText || entry.snippet || '').replace(/\s+/g, ' ').trim();
       const noteKey = String(entry.id || `${noteUrl || noteTitle}-${idx}`);
       if (seenResearch.has(noteKey)) return;
       seenResearch.add(noteKey);
 
       const temporal = formatTemporalMetadata(entry.updatedAt || entry.savedAt || entry.createdAt || entry.timestamp);
+      const exactTargetSegment = targetText ? encodeURIComponent(targetText.slice(0, 180)) : '';
+      const deepLink = noteUrl
+        ? `${noteUrl}${exactTargetSegment ? `${noteUrl.includes('?') ? '&' : '?'}highlight=${exactTargetSegment}` : ''}`
+        : `browser://research/${encodeURIComponent(noteKey)}`;
+
       items.push({
         id: `research-note-${noteKey}`,
         type: 'research_note',
@@ -1198,10 +1204,10 @@ export function buildWorkspaceIndex(context = {}) {
           sourceTitle: entry.sourceTitle || noteTitle,
           title: noteTitle,
           query: entry.query || entry.searchQuery || '',
-          targetText: entry.selectionText || entry.targetText || entry.anchorText || entry.snippet || '',
-          deepLink: noteUrl
-            ? `browser://${encodeURIComponent(noteUrl)}${entry.selectionText || entry.targetText || entry.anchorText ? `#${encodeURIComponent((entry.selectionText || entry.targetText || entry.anchorText || '').slice(0, 120))}` : ''}`
-            : `browser://research/${encodeURIComponent(noteKey)}`,
+          targetText,
+          selectionText: entry.selectionText || targetText,
+          anchorText: entry.anchorText || targetText,
+          deepLink,
           createdAt: temporal.iso,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
@@ -1294,64 +1300,95 @@ export function buildWorkspaceIndex(context = {}) {
 }
 
 /**
+ * Normalize filter aliases so every category tab behaves the same way.
+ */
+function normalizeFilterKey(filter = '') {
+  const key = String(filter || '').trim().toLowerCase();
+  const aliases = {
+    docs: 'compose',
+    document: 'compose',
+    documents: 'compose',
+    decks: 'deck',
+    slides: 'deck',
+    slide: 'deck',
+    rooms: 'room',
+    rooms: 'room',
+    meetings: 'room',
+    meeting: 'room',
+    notes: 'notes',
+    whiteboards: 'whiteboard',
+    whiteboard: 'whiteboard',
+    chats: 'chat',
+    chat: 'chat',
+    assistant: 'chat',
+    calendar: 'schedule',
+    schedule: 'schedule',
+    browserhistories: 'browser-history',
+    'browser-history': 'browser-history',
+    browserhistory: 'browser-history',
+    research: 'browser',
+    researches: 'browser',
+    people: 'people',
+    collaborator: 'people',
+    collaborators: 'people'
+  };
+
+  return aliases[key] || key;
+}
+
+function itemMatchesWorkspaceFilter(item, activeFilter) {
+  const filterKey = normalizeFilterKey(activeFilter);
+  if (!filterKey || filterKey === 'all') return true;
+
+  const ws = (item.workspace || '').toLowerCase();
+  const type = (item.type || '').toLowerCase();
+  const resourceType = (item.resourceType || '').toLowerCase();
+
+  switch (filterKey) {
+    case 'compose':
+      return ws === 'compose' || type === 'document' || resourceType === 'document';
+    case 'sheets':
+      return ws === 'sheets' || type === 'sheet' || resourceType === 'sheet';
+    case 'deck':
+      return ws === 'deck' || type === 'deck' || type === 'slide' || resourceType === 'deck' || resourceType === 'slide';
+    case 'tasks':
+      return ws === 'tasks' || type === 'task' || resourceType === 'task';
+    case 'room':
+      return ws === 'room' || type === 'meeting' || resourceType === 'meeting';
+    case 'notes':
+      return ws === 'notes' || type === 'room_note' || resourceType === 'room_note' || type === 'meeting_note' || resourceType === 'meeting_note' || (ws === 'browser' && (type === 'research_note' || resourceType === 'research_note'));
+    case 'relay':
+      return ws === 'relay' || type === 'message' || resourceType === 'message';
+    case 'whiteboard':
+      return ws === 'whiteboard' || type === 'whiteboard' || resourceType === 'whiteboard';
+    case 'comments':
+      return ws === 'comments' || type === 'comment' || resourceType === 'comment';
+    case 'chat':
+      return ws === 'chat' || type === 'chat' || resourceType === 'chat';
+    case 'schedule':
+      return ws === 'schedule' || type === 'schedule_event' || resourceType === 'schedule_event';
+    case 'browser':
+      return ws === 'browser' || type === 'research_note' || resourceType === 'research_note';
+    case 'browser-history':
+      return ws === 'browser-history' || type === 'browser_history' || resourceType === 'browser_history';
+    case 'people':
+      return ws === 'people' || type === 'person' || resourceType === 'person';
+    default:
+      return ws === filterKey || type === filterKey || resourceType === filterKey;
+  }
+}
+
+/**
  * Searches the workspace index with smart term ranking, category filtering,
  * temporal query token scoring, and contextual snippet extraction.
  */
 export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
   const cleanQuery = (query || '').trim().toLowerCase();
-  
+
   // Filter by workspace category if specified
   let filtered = allEntities;
   if (activeFilter !== 'all') {
-    filtered = allEntities.filter(item => {
-      const ws = (item.workspace || '').toLowerCase();
-      const type = (item.type || '').toLowerCase();
-      const resourceType = (item.resourceType || '').toLowerCase();
-
-      if (activeFilter === 'compose' || activeFilter === 'docs') {
-        return ws === 'compose' || type === 'document' || resourceType === 'document';
-      }
-      if (activeFilter === 'sheets') {
-        return ws === 'sheets' || type === 'sheet' || resourceType === 'sheet';
-      }
-      if (activeFilter === 'deck' || activeFilter === 'decks') {
-        return ws === 'deck' || type === 'deck' || resourceType === 'deck';
-      }
-      if (activeFilter === 'tasks') {
-        return ws === 'tasks' || type === 'task' || resourceType === 'task';
-      }
-      if (activeFilter === 'room' || activeFilter === 'rooms') {
-        return (ws === 'room' && type === 'meeting') || type === 'meeting';
-      }
-      if (activeFilter === 'notes') {
-        return ws === 'notes' || type === 'room_note' || resourceType === 'room_note' || type === 'meeting_note' || resourceType === 'meeting_note' || (ws === 'browser' && (type === 'research_note' || resourceType === 'research_note'));
-      }
-      if (activeFilter === 'relay') {
-        return ws === 'relay' || type === 'message' || resourceType === 'message';
-      }
-      if (activeFilter === 'whiteboard' || activeFilter === 'whiteboards') {
-        return ws === 'whiteboard' || type === 'whiteboard' || resourceType === 'whiteboard';
-      }
-      if (activeFilter === 'comments') {
-        return ws === 'comments' || type === 'comment' || resourceType === 'comment';
-      }
-      if (activeFilter === 'chat' || activeFilter === 'chats' || activeFilter === 'assistant') {
-        return ws === 'chat' || type === 'chat' || resourceType === 'chat';
-      }
-      if (activeFilter === 'schedule' || activeFilter === 'calendar') {
-        return ws === 'schedule' || type === 'schedule_event' || resourceType === 'schedule_event';
-      }
-      if (activeFilter === 'browser' || activeFilter === 'research') {
-        return ws === 'browser' || type === 'research_note' || resourceType === 'research_note';
-      }
-      if (activeFilter === 'browser-history') {
-        return ws === 'browser-history' || type === 'browser_history' || resourceType === 'browser_history';
-      }
-      if (activeFilter === 'people') {
-        return ws === 'people' || type === 'person' || resourceType === 'person';
-      }
-      return ws === activeFilter;
-    });
+    filtered = allEntities.filter(item => itemMatchesWorkspaceFilter(item, activeFilter));
   }
 
   // If no search query, return default recent/relevant ordered list
@@ -1468,37 +1505,38 @@ export function groupResultsByCategory(scoredResults) {
   };
 
   scoredResults.forEach(res => {
-    const ws = (res.entity.workspace || '').toLowerCase();
-    const type = (res.entity.type || '').toLowerCase();
-    const resourceType = (res.entity.resourceType || '').toLowerCase();
+    const entity = res.entity || {};
+    const ws = (entity.workspace || '').toLowerCase();
+    const type = (entity.type || '').toLowerCase();
+    const resourceType = (entity.resourceType || '').toLowerCase();
 
-    if (type === 'browser_history' || resourceType === 'browser_history' || ws === 'browser-history') {
+    if (itemMatchesWorkspaceFilter(entity, 'browser-history')) {
       groups.browserHistory.items.push(res);
-    } else if (ws === 'compose' || type === 'document') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'compose')) {
       groups.docs.items.push(res);
-    } else if (ws === 'sheets' || type === 'sheet') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'sheets')) {
       groups.sheets.items.push(res);
-    } else if (ws === 'deck' || type === 'slide') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'deck')) {
       groups.decks.items.push(res);
-    } else if (ws === 'tasks' || type === 'task') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'tasks')) {
       groups.tasks.items.push(res);
-    } else if (ws === 'relay' || type === 'message' || resourceType === 'message') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'relay')) {
       groups.relay.items.push(res);
-    } else if (ws === 'notes' || type === 'room_note' || resourceType === 'room_note' || type === 'meeting_note') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'notes')) {
       groups.notes.items.push(res);
-    } else if (ws === 'whiteboard' || type === 'whiteboard' || resourceType === 'whiteboard') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'whiteboard')) {
       groups.whiteboards.items.push(res);
-    } else if (ws === 'comments' || type === 'comment' || resourceType === 'comment') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'comments')) {
       groups.comments.items.push(res);
-    } else if (ws === 'chat' || type === 'chat' || resourceType === 'chat') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'chat')) {
       groups.chats.items.push(res);
-    } else if (ws === 'schedule' || type === 'schedule_event' || resourceType === 'schedule_event') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'schedule')) {
       groups.schedule.items.push(res);
-    } else if (ws === 'room' || type === 'meeting') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'room')) {
       groups.rooms.items.push(res);
-    } else if (ws === 'people' || type === 'person') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'people')) {
       groups.people.items.push(res);
-    } else if (ws === 'browser' || type === 'research_note' || resourceType === 'research_note') {
+    } else if (itemMatchesWorkspaceFilter(entity, 'browser')) {
       groups.research.items.push(res);
     } else {
       groups.research.items.push(res);
