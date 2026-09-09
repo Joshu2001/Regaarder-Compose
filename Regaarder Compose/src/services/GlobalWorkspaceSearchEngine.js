@@ -306,10 +306,20 @@ export function buildWorkspaceIndex(context = {}) {
     if (doc.id === activeDocId) return; // avoid duplicate with active document
     const plainText = stripHtml(doc.bodyHtml || doc.content || '').trim();
     const rawTitle = (doc.title || '').trim();
-    if (!plainText && (!rawTitle || !isRealTitle(rawTitle))) {
+    const docMode = String(doc.mode || '').toLowerCase();
+    const whiteboardText = [
+      ...(doc.whiteboardWidgets || []).map((widget) => widget.text || widget.title || widget.body || ''),
+      ...(doc.whiteboardStrokes || []).map((stroke) => stroke.text || ''),
+    ].join(' ').trim();
+    const hasStructuredContent = Boolean(
+      (docMode === 'whiteboard' && (whiteboardText || doc.whiteboardShapes?.length || doc.whiteboardWidgets?.length))
+      || (docMode === 'sheets' && (doc.sheetGrids || doc.sheetsData?.length))
+      || (docMode === 'deck' && doc.deckSlidesData?.length)
+    );
+    if (!plainText && !hasStructuredContent && (!rawTitle || !isRealTitle(rawTitle))) {
       return; // Skip empty / placeholder documents
     }
-    const docRes = resolveWorkspaceForEntity(rawTitle || '', doc.type || doc.format || '');
+    const docRes = resolveWorkspaceForEntity(rawTitle || '', doc.type || doc.format || docMode, docMode);
     items.push({
       id: `doc-${doc.id || idx}`,
       type: docRes.type,
@@ -317,7 +327,7 @@ export function buildWorkspaceIndex(context = {}) {
       title: rawTitle || `${docRes.prefix} ${idx + 1}`,
       subtitle: doc.subtitle || `${docRes.prefix} File`,
       location: `${docRes.prefix} > ${rawTitle || `${docRes.prefix} ${idx + 1}`}`,
-      content: plainText,
+      content: plainText || whiteboardText,
       rawHtml: doc.bodyHtml || '',
       author: doc.author || 'You (Author)',
       authorRole: 'Editor',
@@ -435,7 +445,39 @@ export function buildWorkspaceIndex(context = {}) {
     });
   }
 
-  // 6. Real Research Notes
+  // 6. Relay Chat threads, messages, files, and decisions
+  const relayThreads = context.relayThreads || [];
+  const relayMessages = context.relayMessages || [];
+  const relayFiles = context.relayFiles || [];
+  const relayDecisions = context.relayDecisions || [];
+  relayThreads.forEach((thread) => {
+    const threadMessages = relayMessages.filter((message) => message.threadId === thread.id);
+    const threadFiles = relayFiles.filter((file) => file.threadId === thread.id);
+    const threadDecisions = relayDecisions.filter((decision) => decision.threadId === thread.id);
+    const title = String(thread.title || 'Relay conversation').trim();
+    const content = [
+      thread.description,
+      ...threadMessages.map((message) => `${message.author || message.sender || ''}: ${message.text || message.content || ''}`),
+      ...threadFiles.map((file) => `File: ${file.name || ''}`),
+      ...threadDecisions.map((decision) => `Decision: ${decision.summary || decision.text || ''}`),
+    ].filter(Boolean).join('\n').trim();
+    if (!content && !isRealTitle(title)) return;
+    items.push({
+      id: `relay-${thread.id || title}`,
+      type: 'chat',
+      workspace: 'relay',
+      title,
+      subtitle: `${thread.members || 0} members${thread.pinned ? ' • Pinned' : ''}`,
+      location: `Relay > ${title}`,
+      content,
+      author: 'Workspace Team',
+      authorRole: 'Collaborator',
+      updatedAt: thread.lastMessageAt || 'Recently active',
+      metadata: { threadId: thread.id },
+    });
+  });
+
+  // 7. Real Research Notes and browser sessions
   const researchNotes = context.researchNotes || [];
   if (Array.isArray(researchNotes) && researchNotes.length > 0) {
     researchNotes.forEach((n) => {
@@ -458,6 +500,35 @@ export function buildWorkspaceIndex(context = {}) {
       });
     });
   }
+
+  const browserTabs = context.browserTabs || [];
+  const browserSessions = context.browserSessions || {};
+  const savedResearch = context.savedResearch || [];
+  browserTabs.forEach((tab) => {
+    const messages = browserSessions[tab.id] || browserSessions[tab.url] || [];
+    const saved = savedResearch.find((item) => item.url === tab.url);
+    const content = [
+      tab.title,
+      tab.url,
+      tab.extractedText,
+      saved?.content,
+      ...messages.map((message) => message.text || message.content || ''),
+    ].filter(Boolean).join('\n').trim();
+    if (!content) return;
+    items.push({
+      id: `browser-${tab.id || tab.url}`,
+      type: 'research_note',
+      workspace: 'browser',
+      title: tab.title || tab.url || 'Browser Research',
+      subtitle: tab.url || 'Browser session',
+      location: `Research > ${tab.title || tab.url}`,
+      content,
+      author: 'You',
+      authorRole: 'Researcher',
+      updatedAt: tab.updatedAt || 'Recently visited',
+      metadata: { url: tab.url, tabId: tab.id },
+    });
+  });
 
   // 7. Real Collaborators
   const people = context.collaborators || context.teamMembers || [];
@@ -500,6 +571,7 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
       if (activeFilter === 'deck' || activeFilter === 'decks') return item.workspace === 'deck' || item.type === 'slide';
       if (activeFilter === 'tasks') return item.workspace === 'tasks' || item.type === 'task';
       if (activeFilter === 'room' || activeFilter === 'rooms') return item.workspace === 'room' || item.type === 'meeting';
+      if (activeFilter === 'relay' || activeFilter === 'chat') return item.workspace === 'relay' || item.type === 'chat';
       if (activeFilter === 'notes' || activeFilter === 'browser') return item.workspace === 'browser' || item.type === 'research_note';
       if (activeFilter === 'people') return item.workspace === 'people' || item.type === 'person';
       return item.workspace === activeFilter;
