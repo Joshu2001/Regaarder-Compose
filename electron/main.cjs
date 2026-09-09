@@ -241,6 +241,9 @@ $ws.AppActivate('${targetName}')
 
   const portsToTry = [
     process.env.VITE_DEV_SERVER_URL,
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+    'http://[::1]:4173',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://[::1]:5173',

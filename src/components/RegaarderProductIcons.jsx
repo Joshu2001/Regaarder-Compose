@@ -703,6 +703,7 @@ export const RegaarderProductIconMap = {
   relay: RelayIcon,
   Relay: RelayIcon,
   browser: BrowserIcon,
+  'browser-history': BrowserIcon,
   slide: DeckIcon,
   Slide: DeckIcon,
   slides: DeckIcon,

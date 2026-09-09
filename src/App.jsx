@@ -5515,7 +5515,16 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
   const checkNotesContent = () => {
     if (notesCardRef?.current) {
       const text = notesCardRef.current.innerText || notesCardRef.current.textContent || '';
-      setHasContent(text.replace(/\u200B/g, '').trim().length > 0);
+      const cleanText = text.replace(/\u200B/g, '').trim();
+      setHasContent(cleanText.length > 0);
+      // Auto-persist Room notes for workspace indexing
+      try {
+        localStorage.setItem('regaarder_room_notes_v1', JSON.stringify({
+          content: notesCardRef.current.innerHTML || '',
+          plainText: cleanText,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (_) {}
     }
   };
 
@@ -6904,7 +6913,16 @@ function AppCore() {
 
   useEffect(() => {
     const unsub = subscribeToStaging((branches) => {
-      setStagedBranches(branches);
+      const nextBranches = Array.isArray(branches) ? branches : [];
+      setStagedBranches((prev) => {
+        if (prev.length === nextBranches.length && prev.every((branch, index) => {
+          const nextBranch = nextBranches[index];
+          return branch?.id === nextBranch?.id && JSON.stringify(branch) === JSON.stringify(nextBranch);
+        })) {
+          return prev;
+        }
+        return nextBranches;
+      });
     });
     return unsub;
   }, []);
@@ -6976,7 +6994,7 @@ function AppCore() {
       delete window.__REGAARDER_LLM_PROVIDER__;
       delete window.__REGAARDER_AUDIO_STREAM__;
     };
-  }, [stagedBranches]);
+  }, []);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [orbInitialFilter, setOrbInitialFilter] = useState('all');
@@ -34295,7 +34313,16 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
     const currentWorkspaceMode = productMode === 'whiteboard' ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
-    const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : 'Untitled Document');
+    const existingModeCount = documents.filter((doc) => getDocMode(doc) === currentWorkspaceMode).length;
+    const defaultTitleForMode = initialTitle || (
+      currentWorkspaceMode === 'sheets'
+        ? `Untitled Sheet${existingModeCount ? ` ${existingModeCount + 1}` : ''}`
+        : currentWorkspaceMode === 'deck'
+          ? `Untitled Deck${existingModeCount ? ` ${existingModeCount + 1}` : ''}`
+          : currentWorkspaceMode === 'whiteboard'
+            ? `Untitled Whiteboard${existingModeCount ? ` ${existingModeCount + 1}` : ''}`
+            : 'Untitled Document'
+    );
     const blankDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
 
     const newDoc = {
@@ -34314,7 +34341,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (currentWorkspaceMode === 'sheets') {
       const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
       const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
-      newDoc.sheetsTitle = initialTitle || 'Untitled Sheet';
+      newDoc.sheetsTitle = defaultTitleForMode;
       newDoc.sheetsData = initialSheetsData;
       newDoc.sheetGrids = initialSheetGrids;
       newDoc.activeSheetId = 1;
@@ -34325,7 +34352,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
       setActiveSheetId(1);
       setSheetToolbarTab('View');
     } else if (currentWorkspaceMode === 'deck') {
-      newDoc.deckTitle = initialTitle || 'Untitled Deck';
+      newDoc.deckTitle = defaultTitleForMode;
       newDoc.deckSlidesData = blankDeckSlides;
       newDoc.activeDeckSlideId = 1;
 
@@ -35648,15 +35675,27 @@ Respond with valid JSON formatted like this:
       setRenameDocValue('');
       return;
     }
-    setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(docId) ? { ...doc, title: nextTitle, isTitleCustom: true, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
+    const renamedDoc = documents.find((doc) => String(doc.id) === String(docId));
+    const renamedMode = renamedDoc ? getDocMode(renamedDoc) : productMode;
+    setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(docId) ? {
+      ...doc,
+      mode: renamedMode || doc.mode || 'compose',
+      title: nextTitle,
+      isTitleCustom: true,
+      sheetsTitle: renamedMode === 'sheets' ? nextTitle : doc.sheetsTitle,
+      deckTitle: renamedMode === 'deck' ? nextTitle : doc.deckTitle,
+    } : doc)));
     const isCurrentActive = String(activeDocId) === String(docId) || (!activeDocId && String(documents[0]?.id) === String(docId));
     if (isCurrentActive) {
       setDocTitle(nextTitle);
       if (!activeDocId) {
         setActiveDocId(docId);
       }
-      if (isSheetsMode) {
+      if (renamedMode === 'sheets') {
         setSheetsTitle(nextTitle);
+      }
+      if (renamedMode === 'deck') {
+        setDeckTitle(nextTitle);
       }
     }
     setRenamingDocId(null);
@@ -43757,6 +43796,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="divide-y divide-slate-100/60 dark:divide-zinc-800/40">
                 {visibleTasks.map(task => (
                   <div 
+                    id={`task-item-${task.id}`}
                     key={task.id}
                     draggable
                     onDragStart={(e) => handleTaskDragStart(e, task.id)}
@@ -72827,9 +72867,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
           deckSlidesData,
           activeDeckSlideId,
           tasks: initiatives,
+          rooms: [],
+          comments,
+          chatSessions,
+          chatMessages,
           scheduleAgendaItems,
+          upcomingEvents,
+          whiteboards: [{ id: 'active-whiteboard', title: docTitle || 'Whiteboard', content: whiteboardWidgets.map(widget => widget.title || widget.text || widget.body || '').filter(Boolean).join('\n') }],
           whiteboardWidgets,
-          whiteboardShapes
+          whiteboardShapes,
+          whiteboardTitle: docTitle || 'Whiteboard',
+          roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
+          relayMessages: [],
+          people: whiteboardCollaborators || []
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
@@ -72840,7 +72890,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             if (targetDocId) {
               let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
               if (!targetDoc) {
-                // If document was closed/saved in library, restore from snapshot or library storage
                 let snapshot = entity.metadata?.docSnapshot;
                 if (!snapshot && typeof window !== 'undefined') {
                   try {
@@ -72886,12 +72935,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
           } else if (ws === 'room') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Meeting: ${entity.title}`);
+          } else if (ws === 'notes') {
+            if (productMode !== 'room') setProductMode('room');
+            setIsNotesModalOpen(true);
+            showToast(`Opened Room Note: ${entity.title}`);
+          } else if (ws === 'browser-history') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Browser History: ${entity.title}`);
           } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-            showToast(`Navigated to Tasks: ${entity.title}`);
+            setRightSidebarOpen(true);
+            setActiveRightTab('tasks');
+            setTaskOwnerFilter('all');
+            const taskId = entity.metadata?.taskId || entity.id;
+            if (taskId && typeof window !== 'undefined') {
+              setTimeout(() => {
+                const el = document.getElementById(`task-item-${taskId}`);
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  el.classList.add('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
+                  setTimeout(() => {
+                    el.classList.remove('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
+                  }, 2500);
+                }
+              }, 150);
+            }
+            if (entity.metadata?.taskId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-task', { detail: { taskId: entity.metadata.taskId } }));
+            }
+            showToast(`Navigated to Task: ${entity.title}`);
           } else if (ws === 'schedule') {
             handleMiniSidebarClick('calendar');
             showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'whiteboard') {
+            if (productMode !== 'whiteboard') setProductMode('whiteboard');
+            setActiveRightTab('whiteboard');
+            setRightSidebarOpen(true);
+            showToast(`Navigated to Whiteboard: ${entity.title}`);
+          } else if (ws === 'comments') {
+            setActiveRightTab('comments');
+            setRightSidebarOpen(true);
+            showToast(`Opened comments: ${entity.title}`);
+          } else if (ws === 'chat') {
+            setActiveRightTab('assistant');
+            setRightSidebarOpen(true);
+            showToast(`Opened chat: ${entity.title}`);
           } else if (ws === 'browser') {
             if (productMode !== 'browser') setProductMode('browser');
             showToast(`Navigated to Research: ${entity.title}`);
@@ -88965,7 +89052,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
           tasks: initiatives,
           scheduleAgendaItems,
           whiteboardWidgets,
-          whiteboardShapes
+          whiteboardShapes,
+          roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
+          relayMessages: [],
+          people: whiteboardCollaborators || []
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
@@ -89035,8 +89125,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
           } else if (ws === 'room') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Room: ${entity.title}`);
+          } else if (ws === 'notes') {
+            if (productMode !== 'room') setProductMode('room');
+            setIsNotesModalOpen(true);
+            showToast(`Opened Room Note: ${entity.title}`);
+          } else if (ws === 'browser-history') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Browser History: ${entity.title}`);
           } else if (ws === 'tasks') {
             handleMiniSidebarClick('tasks');
+            if (entity.metadata?.taskId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-task', { detail: { taskId: entity.metadata.taskId } }));
+            }
             showToast(`Navigated to Tasks: ${entity.title}`);
           } else if (ws === 'schedule') {
             handleMiniSidebarClick('calendar');
