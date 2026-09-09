@@ -49696,7 +49696,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                   })()}
                                 </div>
-                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none">
+                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none shrink-0 whitespace-nowrap">
                                   <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.addRow') || '+ Row'}</button>
                                   <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.removeRow') || '- Row'}</button>
                                   <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-800 my-0.5" />
@@ -87556,9 +87556,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
           deckSlidesData,
           activeDeckSlideId,
           tasks: initiatives,
+          rooms: rooms || [],
+          researchNotes: researchNotes || [],
+          comments,
+          chatTabs,
           scheduleAgendaItems,
           whiteboardWidgets,
-          whiteboardShapes
+          whiteboardShapes,
+          whiteboards: whiteboards || [],
+          collaborators: collaborators || []
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;

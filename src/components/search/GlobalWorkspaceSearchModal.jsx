@@ -5,7 +5,8 @@ import {
   Clock, FileText, Database, ShieldCheck, Compass,
   Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
   Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown,
-  Edit3, RotateCcw, History
+  Edit3, RotateCcw, History, MessageSquareText, MessageSquare, CalendarDays,
+  Ellipsis
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -168,7 +169,12 @@ const FILTER_TABS = [
   { id: 'deck', label: 'Decks', icon: DeckIcon },
   { id: 'tasks', label: 'Tasks', icon: TasksIcon },
   { id: 'room', label: 'Rooms', icon: RoomIcon },
-  { id: 'browser', label: 'Notes', icon: BrowserIcon },
+  { id: 'browser', label: 'Research', icon: BrowserIcon },
+  { id: 'browser-history', label: 'Browser History', icon: History },
+  { id: 'whiteboard', label: 'Whiteboards', icon: Palette },
+  { id: 'comments', label: 'Comments', icon: MessageSquare },
+  { id: 'chat', label: 'Chats', icon: MessageSquareText },
+  { id: 'schedule', label: 'Schedule', icon: CalendarDays },
   { id: 'people', label: 'People', icon: PeopleIcon }
 ];
 
@@ -333,6 +339,7 @@ export default function GlobalWorkspaceSearchModal({
   const [query, setQuery] = useState(initialQuery || '');
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'all');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isFilterMoreOpen, setIsFilterMoreOpen] = useState(false);
 
   // AI Synthesis state
   const [aiLoading, setAiLoading] = useState(false);
@@ -550,6 +557,9 @@ export default function GlobalWorkspaceSearchModal({
     }
     return searchResults.map((r) => ({ type: 'entity', data: r.entity }));
   }, [query, searchResults, mode]);
+
+  const visibleFilterTabs = FILTER_TABS.slice(0, 7);
+  const overflowFilterTabs = FILTER_TABS.slice(7);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -992,7 +1002,7 @@ export default function GlobalWorkspaceSearchModal({
         <div className={`flex items-center justify-between px-5 py-2 shrink-0 gap-3 select-none ${categoryBarClasses}`}>
           {/* Scrollable category tabs */}
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto no-scrollbar">
-            {FILTER_TABS.map((tab) => {
+            {visibleFilterTabs.map((tab) => {
               const isActive = activeFilter === tab.id;
               return (
                 <button
@@ -1000,6 +1010,7 @@ export default function GlobalWorkspaceSearchModal({
                   type="button"
                   onClick={() => {
                     setActiveFilter(tab.id);
+                    setIsFilterMoreOpen(false);
                     if (mode === 'ai' && query.trim()) {
                       handleRunAiSynthesis(query);
                     }
@@ -1010,10 +1021,50 @@ export default function GlobalWorkspaceSearchModal({
                       : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] font-medium'
                   }`}
                 >
-                  <span>{tab.id === 'all' ? (t('common.all') || 'All') : (tab.id === 'compose' ? (t('nav.docs') || t('nav.compose') || 'Docs') : (tab.id === 'browser' ? (t('nav.notes') || t('nav.browser') || 'Notes') : (t('nav.' + tab.id) || tab.label)))}</span>
+                  <span>{tab.id === 'all' ? (t('common.all') || 'All') : (tab.id === 'compose' ? (t('nav.docs') || t('nav.compose') || 'Docs') : (tab.id === 'browser' ? (t('nav.notes') || t('nav.browser') || 'Research') : (t('nav.' + tab.id) || tab.label)))}</span>
                 </button>
               );
             })}
+
+            {overflowFilterTabs.length > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterMoreOpen((prev) => !prev)}
+                  className="flex items-center gap-1 px-2.5 py-1 text-[12px] rounded-md border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] font-medium"
+                  title="More filters"
+                >
+                  <Ellipsis size={13} />
+                  <span>More</span>
+                </button>
+
+                {isFilterMoreOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 w-44 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                    {overflowFilterTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveFilter(tab.id);
+                          setIsFilterMoreOpen(false);
+                          if (mode === 'ai' && query.trim()) {
+                            handleRunAiSynthesis(query);
+                          }
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors ${
+                          activeFilter === tab.id
+                            ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200'
+                            : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <tab.icon size={12} strokeWidth={1.8} />
+                        <span>{tab.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Persona Selector Badge - Strictly Anchored, Shrink-0, Never Clipped */}
