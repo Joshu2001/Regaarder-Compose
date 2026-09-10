@@ -68,7 +68,7 @@ function FormattedMarkdown({ content = '' }) {
   const paragraphs = content.split(/\n\n+/);
 
   return (
-    <div className="space-y-2.5 text-[13px] leading-relaxed text-slate-800 dark:text-zinc-200">
+    <div className="space-y-3 text-[13px] leading-[1.7] text-slate-800 dark:text-zinc-200">
       {paragraphs.map((p, pIdx) => {
         const trimmed = p.trim();
         if (!trimmed) return null;
@@ -565,6 +565,7 @@ export default function GlobalWorkspaceSearchModal({
 
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isMoreFilterMenuOpen, setIsMoreFilterMenuOpen] = useState(false);
+  const [isRecentHistoryOpen, setIsRecentHistoryOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   const [moreFilterMenuPosition, setMoreFilterMenuPosition] = useState({ top: 0, left: 0 });
   const [workspaceStorageRevision, setWorkspaceStorageRevision] = useState(0);
@@ -595,6 +596,7 @@ export default function GlobalWorkspaceSearchModal({
   const fileInputRef = useRef(null);
   const moreFilterMenuRef = useRef(null);
   const moreFilterButtonRef = useRef(null);
+  const recentHistoryRef = useRef(null);
 
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
@@ -726,6 +728,17 @@ export default function GlobalWorkspaceSearchModal({
       window.removeEventListener('resize', handleResize);
     };
   }, [isMoreFilterMenuOpen]);
+
+  useEffect(() => {
+    if (!isRecentHistoryOpen) return;
+    const handleClickOutside = (event) => {
+      if (!recentHistoryRef.current?.contains(event.target)) {
+        setIsRecentHistoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isRecentHistoryOpen]);
 
   // Auto-scroll selected result into view
   useEffect(() => {
@@ -1164,10 +1177,9 @@ export default function GlobalWorkspaceSearchModal({
                   type="button"
                   onClick={() => {
                     setActiveFilter(tab.id);
+                    setMode('search');
                     setIsMoreFilterMenuOpen(false);
-                    if (mode === 'ai' && query.trim()) {
-                      handleRunAiSynthesis(query);
-                    }
+                    setIsRecentHistoryOpen(false);
                   }}
                   className={`px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
@@ -1223,10 +1235,9 @@ export default function GlobalWorkspaceSearchModal({
                           onPointerDown={(e) => {
                             e.preventDefault();
                             setActiveFilter(tab.id);
+                            setMode('search');
                             setIsMoreFilterMenuOpen(false);
-                            if (mode === 'ai' && query.trim()) {
-                              handleRunAiSynthesis(query);
-                            }
+                            setIsRecentHistoryOpen(false);
                           }}
                           className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors cursor-pointer ${
                             isActive
@@ -1395,7 +1406,7 @@ export default function GlobalWorkspaceSearchModal({
                   <div
                     ref={synthesisCardRef}
                     onMouseUp={handleTextSelection}
-                    className="relative p-4.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/50 space-y-3 group"
+                    className="relative p-5 rounded-xl bg-violet-50/25 dark:bg-violet-950/10 border border-violet-100/60 dark:border-violet-800/25 space-y-3.5 group"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1995,13 +2006,13 @@ export default function GlobalWorkspaceSearchModal({
 
         {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory) ── */}
         {recentInquiries.length > 0 && (
-          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
+          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 select-none">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
               <History size={11} className="text-violet-600 dark:text-violet-400" />
               Recent:
             </span>
-            <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar flex-1">
-              {recentInquiries.slice(0, 5).map((inq) => (
+            <div className="relative flex items-center gap-1.5 min-w-0 flex-1" ref={recentHistoryRef}>
+              {recentInquiries.slice(0, 3).map((inq) => (
                 <button
                   key={inq.id}
                   type="button"
@@ -2012,6 +2023,36 @@ export default function GlobalWorkspaceSearchModal({
                   {inq.query.length > 28 ? `${inq.query.slice(0, 28)}…` : inq.query}
                 </button>
               ))}
+              {recentInquiries.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setIsRecentHistoryOpen((prev) => !prev)}
+                  className="px-2.5 py-0.5 rounded-lg text-[11px] bg-transparent hover:bg-violet-50 dark:hover:bg-violet-950/40 text-violet-600 dark:text-violet-300 border border-violet-200/70 dark:border-violet-800/50 transition-all shrink-0 cursor-pointer font-medium"
+                  aria-expanded={isRecentHistoryOpen}
+                  aria-haspopup="listbox"
+                >
+                  +{recentInquiries.length - 3} more
+                </button>
+              )}
+              {isRecentHistoryOpen && recentInquiries.length > 3 && (
+                <div className="absolute left-0 bottom-full mb-2 w-72 max-h-56 overflow-y-auto rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-[100010]">
+                  {recentInquiries.slice(3).map((inq) => (
+                    <button
+                      key={inq.id}
+                      type="button"
+                      onClick={() => {
+                        handleRestorePastInquiry(inq);
+                        setIsRecentHistoryOpen(false);
+                      }}
+                      className="w-full px-2.5 py-2 rounded-lg text-left text-[11px] text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 truncate cursor-pointer transition-colors"
+                      title={inq.query}
+                      role="option"
+                    >
+                      {inq.query}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <button
               type="button"
