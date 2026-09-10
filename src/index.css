@@ -39,6 +39,13 @@
   }
 }
 
+@keyframes synthesis-shimmer {
+  0% { transform: translateX(-160%); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.9; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+
 .animate-room-entrance {
   animation: roomEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

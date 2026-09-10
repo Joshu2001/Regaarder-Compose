@@ -70,92 +70,23 @@ export function formatTemporalMetadata(rawDate) {
       d = new Date(rawDate);
     } else if (typeof rawDate === 'string' && rawDate.trim()) {
       const parsed = new Date(rawDate);
-      if (!isNaN(parsed.getTime())) {
-        d = parsed;
-      }
+      if (!isNaN(parsed.getTime())) d = parsed;
     }
   }
   const iso = d.toISOString();
-  const formattedDate = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-  const formattedTime = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-  return {
-    iso,
-    formattedDate,
-    formattedTime,
-    fullText: `${formattedDate} at ${formattedTime}`
-  };
+  const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formattedTime = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return { iso, formattedDate, formattedTime, fullText: `${formattedDate} at ${formattedTime}` };
 }
 
 // Pre-populated Quick Action Launchers
 export const QUICK_ACTIONS = [
-  {
-    id: 'action-new-doc',
-    type: 'action',
-    workspace: 'compose',
-    title: 'New Document',
-    subtitle: 'Open a blank distraction-free Compose document',
-    targetWorkspace: 'compose',
-    shortcut: '⌘N',
-    actionType: 'new_doc'
-  },
-  {
-    id: 'action-new-sheet',
-    type: 'action',
-    workspace: 'sheets',
-    title: 'New Spreadsheet',
-    subtitle: 'Build a financial model or data calculation grid',
-    targetWorkspace: 'sheets',
-    shortcut: '⌘⇧S',
-    actionType: 'new_sheet'
-  },
-  {
-    id: 'action-new-deck',
-    type: 'action',
-    workspace: 'deck',
-    title: 'New Presentation',
-    subtitle: 'Design an executive slide deck with AI intelligence',
-    targetWorkspace: 'deck',
-    shortcut: '⌘⇧P',
-    actionType: 'new_deck'
-  },
-  {
-    id: 'action-new-room',
-    type: 'action',
-    workspace: 'room',
-    title: 'Add New Meeting',
-    subtitle: 'Host an ambient video call with live transcription',
-    targetWorkspace: 'room',
-    shortcut: '⌘M',
-    actionType: 'new_meeting'
-  },
-  {
-    id: 'action-new-message',
-    type: 'action',
-    workspace: 'relay',
-    title: 'New Message',
-    subtitle: 'Send a message or start a conversation in Relay',
-    targetWorkspace: 'dm',
-    shortcut: '⌘⇧M',
-    actionType: 'new_message'
-  },
-  {
-    id: 'action-new-task',
-    type: 'action',
-    workspace: 'tasks',
-    title: 'Create New Task',
-    subtitle: 'Add a project milestone or team action item',
-    targetWorkspace: 'tasks',
-    shortcut: '⌘T',
-    actionType: 'new_task'
-  }
+  { id: 'action-new-doc', type: 'action', workspace: 'compose', title: 'New Document', subtitle: 'Open a blank distraction-free Compose document', targetWorkspace: 'compose', shortcut: '⌘N', actionType: 'new_doc' },
+  { id: 'action-new-sheet', type: 'action', workspace: 'sheets', title: 'New Spreadsheet', subtitle: 'Build a financial model or data calculation grid', targetWorkspace: 'sheets', shortcut: '⌘⇧S', actionType: 'new_sheet' },
+  { id: 'action-new-deck', type: 'action', workspace: 'deck', title: 'New Presentation', subtitle: 'Design an executive slide deck with AI intelligence', targetWorkspace: 'deck', shortcut: '⌘⇧P', actionType: 'new_deck' },
+  { id: 'action-new-room', type: 'action', workspace: 'room', title: 'Add New Meeting', subtitle: 'Host an ambient video call with live transcription', targetWorkspace: 'room', shortcut: '⌘M', actionType: 'new_meeting' },
+  { id: 'action-new-message', type: 'action', workspace: 'relay', title: 'New Message', subtitle: 'Send a message or start a conversation in Relay', targetWorkspace: 'dm', shortcut: '⌘⇧M', actionType: 'new_message' },
+  { id: 'action-new-task', type: 'action', workspace: 'tasks', title: 'Create New Task', subtitle: 'Add a project milestone or team action item', targetWorkspace: 'tasks', shortcut: '⌘T', actionType: 'new_task' }
 ];
 
 /**
@@ -166,7 +97,7 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   const typeLower = (type || '').toLowerCase();
   const explicitLower = (explicitWorkspace || '').toLowerCase();
 
-  if (explicitLower === 'compose' || explicitLower === 'docs' || explicitLower === 'document') {
+  if (explicitLower === 'compose' || explicitLower === 'docs' || explicitLower === 'document' || explicitLower === 'documents' || explicitLower === 'doc' || explicitLower === 'docx' || explicitLower === 'pdf') {
     return {
       workspace: 'compose',
       type: 'document',
@@ -174,7 +105,7 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
     };
   }
 
-  if (explicitLower === 'deck') {
+  if (explicitLower === 'deck' || explicitLower === 'decks' || explicitLower === 'presentation' || explicitLower === 'presentations' || explicitLower === 'slide' || explicitLower === 'slides' || explicitLower === 'ppt' || explicitLower === 'pptx') {
     return {
       workspace: 'deck',
       type: 'deck',
@@ -182,7 +113,7 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
     };
   }
 
-  if (explicitLower === 'sheets' || explicitLower === 'sheet') {
+  if (explicitLower === 'sheets' || explicitLower === 'sheet' || explicitLower === 'spreadsheet' || explicitLower === 'spreadsheets' || explicitLower === 'workbook' || explicitLower === 'excel') {
     return {
       workspace: 'sheets',
       type: 'sheet',
@@ -395,14 +326,8 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
 export function buildWorkspaceIndex(context = {}) {
   const items = [];
 
-  // Known legacy / placeholder names and stale document patterns to strictly exclude
+  // Only known demo/stale records are excluded. Untitled artifacts are real files.
   const placeholderTitles = new Set([
-    'untitled document',
-    'untitled deck',
-    'untitled sheet',
-    'untitled',
-    'untitled whiteboard',
-    'untitled task',
     'beta launch',
     'creator outreach',
     'product hunt launch',
@@ -412,7 +337,7 @@ export function buildWorkspaceIndex(context = {}) {
   const isStaleOrDummyDoc = (title = '') => {
     const t = String(title).toLowerCase().trim();
     if (!t) return true;
-    if (placeholderTitles.has(t) || t.startsWith('untitled')) return true;
+    if (placeholderTitles.has(t)) return true;
     if (t.includes('woodgyna') || t.includes('lettre de motivation') || t.startsWith('cv de')) return true;
     return false;
   };
@@ -453,8 +378,6 @@ export function buildWorkspaceIndex(context = {}) {
       .join('. ');
   };
 
-  // 1. Real Documents & Active Files (strictly sourced from live React state)
-  const openDocs = Array.isArray(context.documents) ? context.documents.filter(d => d && !isStaleOrDummyDoc(d.title || d.docTitle)) : [];
   const activeDocId = context.activeDocId;
   const currentDocTitle = (context.docTitle || '').trim();
   const currentDocSubtitle = (context.docSubtitle || '').trim();
@@ -462,12 +385,47 @@ export function buildWorkspaceIndex(context = {}) {
   const currentProductMode = (context.productMode || '').toLowerCase();
   const currentPlainText = stripHtml(currentDocBodyHtml).trim();
 
+  // 1. All created documents, including blank and currently open artifacts.
+  const sourceDocs = Array.isArray(context.documents) ? context.documents.filter(Boolean) : [];
+  const openDocs = sourceDocs.map((doc) => {
+    if (String(doc.id) !== String(activeDocId)) return doc;
+    return {
+      ...doc,
+      title: currentProductMode === 'sheets' ? (context.sheetsTitle || doc.sheetsTitle || doc.title) : currentProductMode === 'deck' ? (context.deckTitle || doc.deckTitle || doc.title) : (currentDocTitle || doc.title),
+      subtitle: currentDocSubtitle || doc.subtitle,
+      bodyHtml: currentDocBodyHtml || doc.bodyHtml,
+      sheetsTitle: context.sheetsTitle || doc.sheetsTitle,
+      sheetsData: context.sheetsData || doc.sheetsData,
+      sheetGrids: context.sheetGrids || doc.sheetGrids,
+      activeSheetId: context.activeSheetId || doc.activeSheetId,
+      deckTitle: context.deckTitle || doc.deckTitle,
+      deckSlidesData: context.deckSlidesData || doc.deckSlidesData,
+      activeDeckSlideId: context.activeDeckSlideId || doc.activeDeckSlideId,
+      updatedAt: context.updatedAt || doc.updatedAt,
+      createdAt: doc.createdAt || context.createdAt
+    };
+  });
+
+  const untitledCounts = { document: 0, sheet: 0, deck: 0, whiteboard: 0 };
+  const nextUntitledTitle = (kind) => {
+    untitledCounts[kind] += 1;
+    const labels = {
+      document: 'Untitled Document',
+      sheet: 'Untitled Sheet',
+      deck: 'Untitled Deck',
+      whiteboard: 'Untitled Whiteboard'
+    };
+    return `${labels[kind]} ${untitledCounts[kind]}`;
+  };
+
   // 1a. Index Currently Open Document / Sheet / Deck
-  const hasActiveContent = currentPlainText.length > 0 || (currentDocTitle && isRealTitle(currentDocTitle));
-  if (activeDocId) {
-    const temporal = formatTemporalMetadata(context.updatedAt || new Date());
+  const activeSourceDoc = openDocs.find((doc) => String(doc.id) === String(activeDocId));
+  if (false && activeDocId) {
+    const temporal = formatTemporalMetadata(activeSourceDoc?.updatedAt || activeSourceDoc?.createdAt || context.updatedAt || context.createdAt);
+    const createdAt = activeSourceDoc?.createdAt || context.createdAt || temporal.iso;
     if (currentProductMode === 'sheets') {
-      const activeSheetTitle = (context.sheetsTitle || currentDocTitle || 'Untitled Sheet').trim();
+      const activeSheetRawTitle = (context.sheetsTitle || activeSourceDoc?.sheetsTitle || currentDocTitle || activeSourceDoc?.title || '').trim();
+      const activeSheetTitle = isRealTitle(activeSheetRawTitle) ? activeSheetRawTitle : nextUntitledTitle('sheet');
       const gridText = extractTextFromGrid(context.sheetGrids);
       items.push({
         id: `sheet-active-${activeDocId}`,
@@ -488,7 +446,7 @@ export function buildWorkspaceIndex(context = {}) {
           sheetId: context.activeSheetId,
           deepLink: `sheets://${activeDocId}`,
           isCurrent: true,
-          createdAt: temporal.iso,
+          createdAt,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
@@ -497,7 +455,8 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else if (currentProductMode === 'deck') {
-      const activeDeckTitle = (context.deckTitle || currentDocTitle || 'Untitled Deck').trim();
+      const activeDeckRawTitle = (context.deckTitle || activeSourceDoc?.deckTitle || currentDocTitle || activeSourceDoc?.title || '').trim();
+      const activeDeckTitle = isRealTitle(activeDeckRawTitle) ? activeDeckRawTitle : nextUntitledTitle('deck');
       const slides = context.deckSlidesData || [];
       const deckText = extractTextFromSlides(slides);
       items.push({
@@ -519,7 +478,7 @@ export function buildWorkspaceIndex(context = {}) {
           slideCount: slides.length,
           deepLink: `deck://${activeDocId}`,
           isCurrent: true,
-          createdAt: temporal.iso,
+          createdAt,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
@@ -528,14 +487,8 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else {
-      let titleToUse = currentDocTitle || '';
-      if ((!titleToUse || !isRealTitle(titleToUse)) && currentPlainText) {
-        const firstLine = currentPlainText.split(/\n+/)[0]?.trim();
-        if (firstLine && firstLine.length > 2 && firstLine.length < 90 && !isStaleOrDummyDoc(firstLine)) {
-          titleToUse = firstLine;
-        }
-      }
-      if (!titleToUse) titleToUse = 'Untitled Document';
+      let titleToUse = currentDocTitle || activeSourceDoc?.title || '';
+      if (!isRealTitle(titleToUse)) titleToUse = nextUntitledTitle('document');
 
       const activeRes = resolveWorkspaceForEntity(titleToUse, '', currentProductMode || 'compose');
       items.push({
@@ -556,7 +509,7 @@ export function buildWorkspaceIndex(context = {}) {
           docId: activeDocId,
           deepLink: `compose://${activeDocId}`,
           isCurrent: true,
-          createdAt: temporal.iso,
+          createdAt,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
@@ -569,27 +522,28 @@ export function buildWorkspaceIndex(context = {}) {
 
   // 1b. Index Other Real Saved Documents & Workbooks in context.documents
   openDocs.forEach((doc, idx) => {
-    if (String(doc.id) === String(activeDocId)) return; // skip active to prevent duplicate
-
-    const isSheets = doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0) || (doc.sheetGrids && Object.keys(doc.sheetGrids).length > 0);
-    const isDeck = doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0);
-    const isWhiteboard = doc.mode === 'whiteboard';
+    const isSheets = doc.mode === 'sheets';
+    const isDeck = doc.mode === 'deck';
+    const isWhiteboard = doc.mode === 'whiteboard'
+      || (doc.mode === 'compose' && (
+        /^untitled\s+whiteboard(?:\s+\d+)?$/i.test(String(doc.title || '').trim())
+        || Array.isArray(doc.whiteboardWidgets)
+        || Array.isArray(doc.whiteboardStrokes)
+        || Array.isArray(doc.whiteboardShapes)
+      ));
     const temporal = formatTemporalMetadata(doc.updatedAt || doc.savedAt || doc.createdAt);
 
     if (isSheets) {
       let rawTitle = (doc.sheetsTitle || doc.title || '').trim();
       const gridText = extractTextFromGrid(doc.sheetGrids);
       const sheetCount = doc.sheetsData?.length || 1;
-      const hasMeaningfulTitle = !!rawTitle && isRealTitle(rawTitle);
-
-      if (!gridText && !hasMeaningfulTitle) return;
 
       if (!rawTitle || isStaleOrDummyDoc(rawTitle)) {
         if (gridText && gridText.length > 3) {
           const firstWord = gridText.split(/\s+/).slice(0, 4).join(' ');
           rawTitle = `Sheet: ${firstWord}`;
         } else {
-          rawTitle = doc.sheetsTitle || doc.title || `Spreadsheet #${String(doc.id).slice(-4)}`;
+          rawTitle = nextUntitledTitle('sheet');
         }
       }
 
@@ -598,6 +552,7 @@ export function buildWorkspaceIndex(context = {}) {
         type: 'sheet',
         resourceType: 'sheet',
         workspace: 'sheets',
+        editorTarget: 'sheets',
         title: rawTitle,
         subtitle: `Spreadsheet (${sheetCount} Sheet${sheetCount > 1 ? 's' : ''})`,
         location: `Sheets > ${rawTitle}`,
@@ -624,16 +579,13 @@ export function buildWorkspaceIndex(context = {}) {
       const slides = doc.deckSlidesData || [];
       const deckText = extractTextFromSlides(slides);
       const slideCount = slides.length || 1;
-      const hasMeaningfulTitle = !!rawTitle && isRealTitle(rawTitle);
-
-      if (!deckText && !hasMeaningfulTitle) return;
 
       if (!rawTitle || isStaleOrDummyDoc(rawTitle)) {
         const firstSlideTitle = slides.find(s => s.title && s.title.trim())?.title?.trim();
         if (firstSlideTitle) {
           rawTitle = firstSlideTitle;
         } else {
-          rawTitle = doc.deckTitle || doc.title || `Presentation #${String(doc.id).slice(-4)}`;
+          rawTitle = nextUntitledTitle('deck');
         }
       }
 
@@ -642,6 +594,7 @@ export function buildWorkspaceIndex(context = {}) {
         type: 'deck',
         resourceType: 'deck',
         workspace: 'deck',
+        editorTarget: 'deck',
         title: rawTitle,
         subtitle: `Presentation (${slideCount} Slide${slideCount > 1 ? 's' : ''})`,
         location: `Deck > ${rawTitle}`,
@@ -663,12 +616,13 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else if (isWhiteboard) {
-      const rawTitle = (doc.title || '').trim();
+      const rawTitle = (doc.title || '').trim() || nextUntitledTitle('whiteboard');
       items.push({
         id: `whiteboard-${doc.id || idx}`,
         type: 'whiteboard',
         resourceType: 'whiteboard',
         workspace: 'whiteboard',
+        editorTarget: 'whiteboard',
         title: rawTitle || `Whiteboard ${idx + 1}`,
         subtitle: 'Visual Infinite Canvas',
         location: `Whiteboard > ${rawTitle || `Whiteboard ${idx + 1}`}`,
@@ -699,23 +653,20 @@ export function buildWorkspaceIndex(context = {}) {
         }
       }
 
-      if (!rawTitle || isStaleOrDummyDoc(rawTitle)) {
-        if (plainText && plainText.length > 3) {
-          const firstWords = plainText.split(/\s+/).slice(0, 4).join(' ');
-          rawTitle = `Doc: ${firstWords}`;
-        } else {
-          return; // skip untitled empty documents
-        }
-      }
+      if (!rawTitle || isStaleOrDummyDoc(rawTitle)) rawTitle = nextUntitledTitle('document');
 
       const effectiveTitle = rawTitle;
-      const explicitMode = doc.mode || (doc.type === 'sheet' ? 'sheets' : doc.type === 'deck' ? 'deck' : 'compose');
-      const docRes = resolveWorkspaceForEntity(effectiveTitle, doc.type || doc.format || '', explicitMode);
+      const docRes = {
+        workspace: 'compose',
+        type: 'document',
+        prefix: 'Compose'
+      };
       items.push({
         id: `doc-${doc.id || idx}`,
         type: docRes.type,
         resourceType: 'document',
         workspace: docRes.workspace,
+        editorTarget: 'compose',
         title: effectiveTitle,
         subtitle: doc.subtitle || `${docRes.prefix} File`,
         location: `${docRes.prefix} > ${effectiveTitle}`,
@@ -1230,7 +1181,8 @@ export function buildWorkspaceIndex(context = {}) {
           const messageText = messages.map((message) => `${message.role || message.sender || 'User'}: ${message.text || message.content || ''}`).join('\n');
           const content = [tab.title, tab.url, tab.query, tab.extractedText, messageText].filter(Boolean).join('\n').trim();
           if (!content) return;
-          const temporal = formatTemporalMetadata(tab.updatedAt || tab.createdAt);
+          const firstSearchMessage = messages.find((message) => message?.sender === 'user' || message?.role === 'user');
+          const temporal = formatTemporalMetadata(tab.firstSearchedAt || firstSearchMessage?.createdAt || tab.createdAt || tab.updatedAt);
           items.push({
             id: `browser-history-${tab.id || tab.url}`,
             type: 'browser_history',
@@ -1304,18 +1256,47 @@ export function buildWorkspaceIndex(context = {}) {
  */
 function normalizeFilterKey(filter = '') {
   const key = String(filter || '').trim().toLowerCase();
+  const compactKey = key.replace(/[\s_-]+/g, '');
   const aliases = {
     docs: 'compose',
+    doc: 'compose',
     document: 'compose',
     documents: 'compose',
+    docx: 'compose',
+    pdf: 'compose',
+    txt: 'compose',
+    text: 'compose',
+    markdown: 'compose',
+    deck: 'deck',
     decks: 'deck',
+    presentation: 'deck',
+    presentations: 'deck',
     slides: 'deck',
     slide: 'deck',
+    ppt: 'deck',
+    pptx: 'deck',
+    sheet: 'sheets',
+    sheets: 'sheets',
+    worksheet: 'sheets',
+    worksheets: 'sheets',
+    spreadsheet: 'sheets',
+    spreadsheets: 'sheets',
+    workbook: 'sheets',
+    workbooks: 'sheets',
+    excel: 'sheets',
+    xlsx: 'sheets',
+    xls: 'sheets',
+    csv: 'sheets',
+    room: 'room',
     rooms: 'room',
-    rooms: 'room',
-    meetings: 'room',
     meeting: 'room',
+    meetings: 'room',
     notes: 'notes',
+    note: 'notes',
+    roomnote: 'notes',
+    roomnotes: 'notes',
+    meetingnote: 'notes',
+    meetingnotes: 'notes',
     whiteboards: 'whiteboard',
     whiteboard: 'whiteboard',
     chats: 'chat',
@@ -1326,55 +1307,80 @@ function normalizeFilterKey(filter = '') {
     browserhistories: 'browser-history',
     'browser-history': 'browser-history',
     browserhistory: 'browser-history',
+    browser: 'browser',
     research: 'browser',
     researches: 'browser',
+    researchnote: 'browser',
+    researchnotes: 'browser',
     people: 'people',
     collaborator: 'people',
-    collaborators: 'people'
+    collaborators: 'people',
+    history: 'browser-history',
+    histories: 'browser-history'
   };
 
-  return aliases[key] || key;
+  return aliases[compactKey] || aliases[key] || key;
 }
 
 function itemMatchesWorkspaceFilter(item, activeFilter) {
   const filterKey = normalizeFilterKey(activeFilter);
   if (!filterKey || filterKey === 'all') return true;
 
-  const ws = (item.workspace || '').toLowerCase();
-  const type = (item.type || '').toLowerCase();
-  const resourceType = (item.resourceType || '').toLowerCase();
+  const primaryType = normalizeFilterKey(item.editorTarget || item.mode || item.resourceType || item.type || item.workspace);
+  const strictArtifactFilters = new Set(['compose', 'sheets', 'deck', 'whiteboard']);
+  if (strictArtifactFilters.has(filterKey)) {
+    return primaryType === filterKey;
+  }
+
+  const rawValues = [
+    item.workspace,
+    item.type,
+    item.resourceType,
+    item.targetWorkspace,
+    item.category,
+    item.workspaceType,
+    item.productMode,
+    item.mode
+  ];
+
+  const normalizedValues = rawValues
+    .filter(Boolean)
+    .map(value => normalizeFilterKey(String(value)))
+    .filter(Boolean);
+
+  const hasAnyValue = (values) => normalizedValues.some(v => values.includes(v));
 
   switch (filterKey) {
     case 'compose':
-      return ws === 'compose' || type === 'document' || resourceType === 'document';
+      return hasAnyValue(['compose', 'document', 'doc', 'docs', 'docx', 'pdf', 'markdown', 'text']);
     case 'sheets':
-      return ws === 'sheets' || type === 'sheet' || resourceType === 'sheet';
+      return hasAnyValue(['sheets', 'sheet', 'spreadsheet', 'workbook', 'excel', 'worksheet', 'xlsx', 'xls', 'csv']);
     case 'deck':
-      return ws === 'deck' || type === 'deck' || type === 'slide' || resourceType === 'deck' || resourceType === 'slide';
+      return hasAnyValue(['deck', 'slide', 'presentation', 'ppt', 'pptx']);
     case 'tasks':
-      return ws === 'tasks' || type === 'task' || resourceType === 'task';
+      return hasAnyValue(['tasks', 'task', 'initiative']);
     case 'room':
-      return ws === 'room' || type === 'meeting' || resourceType === 'meeting';
+      return hasAnyValue(['room', 'meeting']);
     case 'notes':
-      return ws === 'notes' || type === 'room_note' || resourceType === 'room_note' || type === 'meeting_note' || resourceType === 'meeting_note' || (ws === 'browser' && (type === 'research_note' || resourceType === 'research_note'));
+      return hasAnyValue(['notes', 'room_note', 'meeting_note']) || (normalizedValues.includes('browser') && hasAnyValue(['research_note']));
     case 'relay':
-      return ws === 'relay' || type === 'message' || resourceType === 'message';
+      return hasAnyValue(['relay', 'message']);
     case 'whiteboard':
-      return ws === 'whiteboard' || type === 'whiteboard' || resourceType === 'whiteboard';
+      return hasAnyValue(['whiteboard']);
     case 'comments':
-      return ws === 'comments' || type === 'comment' || resourceType === 'comment';
+      return hasAnyValue(['comments', 'comment']);
     case 'chat':
-      return ws === 'chat' || type === 'chat' || resourceType === 'chat';
+      return hasAnyValue(['chat']);
     case 'schedule':
-      return ws === 'schedule' || type === 'schedule_event' || resourceType === 'schedule_event';
+      return hasAnyValue(['schedule', 'schedule_event']);
     case 'browser':
-      return ws === 'browser' || type === 'research_note' || resourceType === 'research_note';
+      return hasAnyValue(['browser', 'research_note', 'researchnote']);
     case 'browser-history':
-      return ws === 'browser-history' || type === 'browser_history' || resourceType === 'browser_history';
+      return hasAnyValue(['browser-history', 'browser_history', 'history']);
     case 'people':
-      return ws === 'people' || type === 'person' || resourceType === 'person';
+      return hasAnyValue(['people', 'person']);
     default:
-      return ws === filterKey || type === filterKey || resourceType === filterKey;
+      return normalizedValues.includes(filterKey);
   }
 }
 
@@ -1506,9 +1512,6 @@ export function groupResultsByCategory(scoredResults) {
 
   scoredResults.forEach(res => {
     const entity = res.entity || {};
-    const ws = (entity.workspace || '').toLowerCase();
-    const type = (entity.type || '').toLowerCase();
-    const resourceType = (entity.resourceType || '').toLowerCase();
 
     if (itemMatchesWorkspaceFilter(entity, 'browser-history')) {
       groups.browserHistory.items.push(res);
@@ -1555,6 +1558,7 @@ export async function synthesizeWorkspaceKnowledge({
   query,
   activeFilter = 'all',
   workspaceIndex = [],
+  onProgress = null,
   onCallAi = null,
   aiConfig = null,
   customModel = null,
@@ -1562,6 +1566,7 @@ export async function synthesizeWorkspaceKnowledge({
   previousConversation = [],
   personaInstructions = ''
 }) {
+  onProgress?.({ step: 1, label: 'Scanning workspace metadata' });
   const matched = queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8);
 
   if (matched.length === 0) {
@@ -1572,6 +1577,7 @@ export async function synthesizeWorkspaceKnowledge({
   }
 
   // Build grounded context with full temporal metadata for LLM reasoning
+  onProgress?.({ step: 2, label: 'Extracting document context' });
   const contextBlocks = matched.map((m, idx) => {
     const e = m.entity;
     const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
@@ -1608,6 +1614,8 @@ WORKSPACE SOURCE MATERIALS (WITH TIMESTAMPS & DATES):
 ${contextData}
 
 Synthesize the answer directly based on the sources above. Explicitly account for timestamps and dates if the question refers to time, days, or recency:`;
+
+  onProgress?.({ step: 3, label: 'Generating answer' });
 
   // Helper to verify if returned string is a provider error or unconfigured message
   const isErrorOrEmpty = (str) => {

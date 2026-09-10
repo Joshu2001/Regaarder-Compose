@@ -6,6 +6,7 @@ import {
   DeckIcon,
   WhiteboardIcon
 } from "./RegaarderProductIcons";
+import { readWorkspaceDocuments } from '../services/workspaceDocumentStore';
 
 /**
  * Format relative time in a clean, Apple-style format (e.g. "Just now", "5m ago", "2h ago", "Yesterday").
@@ -185,6 +186,28 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
 
   const loadRecentDocs = useCallback(() => {
     try {
+      const canonicalDocuments = readWorkspaceDocuments();
+      if (canonicalDocuments.length === 0) {
+        setRecentItems([]);
+        onRecentCountChangeRef.current?.(0);
+        return;
+      }
+      setRecentItems(canonicalDocuments.map((data) => {
+        const detectedProduct = data.mode === 'sheets' ? 'sheet' : data.mode === 'deck' ? 'deck' : 'compose';
+        const info = PRODUCT_INFO[detectedProduct] || PRODUCT_INFO.compose;
+        return {
+          id: data.id,
+          title: data.title,
+          savedAt: data.updatedAt,
+          product: detectedProduct,
+          productName: info.name,
+          icon: info.icon,
+          data,
+        };
+      }));
+      onRecentCountChangeRef.current?.(canonicalDocuments.length);
+      return;
+
       const parsed = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -329,7 +352,11 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
 
     const handleStorage = () => loadRecentDocs();
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("workspace-storage-update", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("workspace-storage-update", handleStorage);
+    };
   }, [loadRecentDocs]);
 
   // Progressive disclosure: No recent work → completely remove the section from DOM

@@ -95,6 +95,12 @@ import { initMcpBrowserBridge, stopMcpBrowserBridge } from './services/mcpBrowse
 import * as llmProvider from './services/llmProviderService';
 import * as roomAudioStream from './services/roomAudioStreamService';
 import DesktopDownloadFloatingTrigger from './components/desktop/DesktopDownloadFloatingTrigger';
+import {
+  normalizeWorkspaceDocumentMode,
+  normalizeWorkspaceDocuments,
+  readWorkspaceDocuments,
+  writeWorkspaceDocuments,
+} from './services/workspaceDocumentStore';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -18267,11 +18273,26 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   };
 
   const getDocMode = useCallback((doc) => {
-    if (!doc) return 'compose';
-    if (doc.mode) return doc.mode;
-    if (doc.sheetsData && doc.sheetsData.length > 0 && (doc.title?.toLowerCase().includes('sheet') || doc.sheetsTitle)) return 'sheets';
-    if (doc.deckSlidesData && doc.deckSlidesData.length > 0 && (doc.title?.toLowerCase().includes('deck') || doc.deckTitle)) return 'deck';
-    return 'compose';
+    return normalizeWorkspaceDocumentMode(doc?.mode);
+  }, []);
+
+  const getNextUntitledName = useCallback((kind, sourceDocs = []) => {
+    const labels = {
+      compose: 'Untitled Document',
+      sheets: 'Untitled Sheet',
+      deck: 'Untitled Deck',
+      whiteboard: 'Untitled Whiteboard',
+    };
+    const label = labels[kind] || labels.compose;
+    let highest = 0;
+    let hasBareLabel = false;
+    sourceDocs.forEach((doc) => {
+      const title = String(kind === 'sheets' ? (doc.sheetsTitle || doc.title) : kind === 'deck' ? (doc.deckTitle || doc.title) : doc.title || '').trim();
+      const match = title.match(new RegExp(`^${label.replace(' ', '\\s+')}\\s+(\\d+)$`, 'i'));
+      if (match) highest = Math.max(highest, Number(match[1]));
+      if (title.toLowerCase() === label.toLowerCase()) hasBareLabel = true;
+    });
+    return `${label} ${Math.max(highest + 1, hasBareLabel ? 2 : 1)}`;
   }, []);
 
   const [docTitle, setDocTitle] = useState('');
@@ -18284,32 +18305,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [documents, setDocuments] = useState(() => {
     try {
       if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('regaarder_documents_v1');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Sanitize and migrate legacy documents to guarantee strict mode isolation
-            return parsed.map((doc) => {
-              let cleanMode = doc.mode;
-              if (!cleanMode) {
-                const titleLower = (doc.title || '').toLowerCase();
-                if (titleLower.includes('whiteboard')) {
-                  cleanMode = 'whiteboard';
-                } else if (titleLower.includes('sheet') || (doc.sheetsTitle && doc.sheetsTitle !== 'Untitled Sheet')) {
-                  cleanMode = 'sheets';
-                } else if (titleLower.includes('deck') || (doc.deckTitle && doc.deckTitle !== 'Untitled Deck')) {
-                  cleanMode = 'deck';
-                } else {
-                  cleanMode = 'compose';
-                }
-              }
-              return {
-                ...doc,
-                mode: cleanMode,
-              };
-            });
-          }
-        }
+        const savedDocuments = readWorkspaceDocuments();
+        if (savedDocuments.length > 0) return savedDocuments;
       }
     } catch (e) {
       console.warn('Failed to load documents from localStorage:', e);
@@ -18318,13 +18315,15 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       {
         id: Date.now(),
         mode: 'compose',
-        title: 'Untitled Document',
+        title: 'Untitled Document 1',
         subtitle: '',
         initiatives: defaultInitiatives,
         appendedSections: [],
         isBlank: true,
         bodyHtml: '',
         isTitleCustom: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     ];
   });
@@ -18387,55 +18386,87 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && documents) {
-        localStorage.setItem('regaarder_documents_v1', JSON.stringify(documents));
+        const normalized = normalizeWorkspaceDocuments(documents);
+        writeWorkspaceDocuments(normalized);
+        if (JSON.stringify(normalized) !== JSON.stringify(documents)) {
+          setDocuments(normalized);
+        }
       }
     } catch (e) {
       console.warn('Failed to save documents to localStorage:', e);
     }
   }, [documents]);
 
+  useEffect(() => {
+    const loadDocuments = () => {
+      const nextDocuments = readWorkspaceDocuments();
+      if (nextDocuments.length > 0) setDocuments(nextDocuments);
+    };
+    window.addEventListener('storage', loadDocuments);
+    window.addEventListener('workspace-storage-update', loadDocuments);
+    return () => {
+      window.removeEventListener('storage', loadDocuments);
+      window.removeEventListener('workspace-storage-update', loadDocuments);
+    };
+  }, []);
+
   // Keep active document in documents list updated with latest content across all modes
   useEffect(() => {
     if (!activeDocId) return;
 
-    if (productMode === 'sheets') {
-      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
-        ...d,
-        mode: 'sheets',
-        title: sheetsTitle || d.title || 'Untitled Sheet',
-        sheetsTitle: sheetsTitle,
-        sheetGrids: sheetGrids,
-        sheetsData: sheetsData,
-        activeSheetId: activeSheetId,
-        updatedAt: 'Just now'
-      } : d));
-    } else if (productMode === 'deck') {
-      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
-        ...d,
-        mode: 'deck',
-        title: deckTitle || d.title || 'Untitled Deck',
-        deckTitle: deckTitle,
-        deckSlidesData: deckSlidesData,
-        activeDeckSlideId: activeDeckSlideId,
-        updatedAt: 'Just now'
-      } : d));
-    } else if (productMode === 'whiteboard') {
-      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
-        ...d,
-        mode: 'whiteboard',
-        whiteboardWidgets: whiteboardWidgets,
-        whiteboardStrokes: whiteboardStrokes,
-        whiteboardShapes: whiteboardShapes,
-        updatedAt: 'Just now'
-      } : d));
-    } else {
-      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
-        ...d,
-        title: docTitle !== undefined ? docTitle : d.title,
-        bodyHtml: docBodyHtml !== undefined ? docBodyHtml : d.bodyHtml,
-        updatedAt: 'Just now'
-      } : d));
-    }
+    setDocuments((prev) => {
+      let changed = false;
+      const now = new Date().toISOString();
+      return prev.map((doc) => {
+        if (String(doc.id) !== String(activeDocId)) return doc;
+
+        const patch = productMode === 'sheets'
+          ? {
+              mode: 'sheets',
+              title: sheetsTitle || doc.title || 'Untitled Sheet',
+              sheetsTitle,
+              sheetGrids,
+              sheetsData,
+              activeSheetId,
+            }
+          : productMode === 'deck'
+            ? {
+                mode: 'deck',
+                title: deckTitle || doc.title || 'Untitled Deck',
+                deckTitle,
+                deckSlidesData,
+                activeDeckSlideId,
+              }
+            : productMode === 'whiteboard'
+              ? {
+                  mode: 'whiteboard',
+                  whiteboardWidgets,
+                  whiteboardStrokes,
+                  whiteboardShapes,
+                }
+              : {
+                  title: docTitle !== undefined ? docTitle : doc.title,
+                  bodyHtml: docBodyHtml !== undefined ? docBodyHtml : doc.bodyHtml,
+                };
+
+        const contentChanged = Object.keys(patch).some((key) => {
+          try {
+            return JSON.stringify(doc[key]) !== JSON.stringify(patch[key]);
+          } catch (_) {
+            return doc[key] !== patch[key];
+          }
+        });
+        if (!contentChanged && doc.createdAt && doc.updatedAt) return doc;
+
+        changed = true;
+        return {
+          ...doc,
+          ...patch,
+          createdAt: doc.createdAt || now,
+          updatedAt: contentChanged ? now : (doc.updatedAt || now),
+        };
+      });
+    });
   }, [
     activeDocId,
     productMode,
@@ -18455,62 +18486,49 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   // Helper to load all durable and library documents from localStorage combined with open documents
   const getAllKnownDocuments = useCallback(() => {
-    const map = new Map();
-    // 1. Open documents (highest priority for live state)
-    if (Array.isArray(documents)) {
-      documents.forEach(d => {
-        if (d && d.id != null) map.set(String(d.id), d);
-      });
-    }
-    // 2. Library documents
-    try {
-      if (typeof window !== 'undefined') {
-        const rawLib = localStorage.getItem('regaarder_library_documents_v1');
-        if (rawLib) {
-          const parsedLib = JSON.parse(rawLib);
-          if (Array.isArray(parsedLib)) {
-            parsedLib.forEach(d => {
-              if (d && d.id != null && !map.has(String(d.id))) {
-                map.set(String(d.id), d);
-              }
-            });
-          }
-        }
-      }
-    } catch (_) {}
-    // 3. Saved docs in rc.savedDoc.*
-    try {
-      if (typeof window !== 'undefined') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('rc.savedDoc.')) {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              if (parsed && parsed.id != null && !map.has(String(parsed.id))) {
-                map.set(String(parsed.id), parsed);
-              }
-            }
-          }
-        }
-      }
-    } catch (_) {}
-    return Array.from(map.values());
+    return normalizeWorkspaceDocuments(documents);
   }, [documents]);
 
   // List of all saved workbooks for quick switching
   const sheetsWorkbooksList = useMemo(() => {
-    return getAllKnownDocuments().filter((doc) => getDocMode(doc) === 'sheets');
+    let untitledNumber = 0;
+    return getAllKnownDocuments()
+      .filter((doc) => getDocMode(doc) === 'sheets')
+      .map((doc) => {
+        const rawTitle = (doc.sheetsTitle || doc.title || '').trim();
+        const displayTitle = rawTitle && !/^untitled/i.test(rawTitle)
+          ? rawTitle
+          : `Untitled Sheet ${++untitledNumber}`;
+        return { ...doc, displayTitle };
+      });
   }, [getAllKnownDocuments, getDocMode]);
 
   // List of all saved slide decks for quick switching
   const deckPresentationsList = useMemo(() => {
-    return getAllKnownDocuments().filter((doc) => getDocMode(doc) === 'deck');
+    let untitledNumber = 0;
+    return getAllKnownDocuments()
+      .filter((doc) => getDocMode(doc) === 'deck')
+      .map((doc) => {
+        const rawTitle = (doc.deckTitle || doc.title || '').trim();
+        const displayTitle = rawTitle && !/^untitled/i.test(rawTitle)
+          ? rawTitle
+          : `Untitled Deck ${++untitledNumber}`;
+        return { ...doc, displayTitle };
+      });
   }, [getAllKnownDocuments, getDocMode]);
 
   // List of all saved compose documents for quick switching
   const composeDocsList = useMemo(() => {
-    return getAllKnownDocuments().filter((doc) => getDocMode(doc) === 'compose');
+    let untitledNumber = 0;
+    return getAllKnownDocuments()
+      .filter((doc) => getDocMode(doc) === 'compose')
+      .map((doc) => {
+        const rawTitle = (doc.title || '').trim();
+        const displayTitle = rawTitle && !/^untitled/i.test(rawTitle)
+          ? rawTitle
+          : `Untitled Document ${++untitledNumber}`;
+        return { ...doc, displayTitle };
+      });
   }, [getAllKnownDocuments, getDocMode]);
 
   // Ensure an active document exists in documents collection when entering Sheets or Deck mode
@@ -18532,7 +18550,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           sheetsData: sheetsData,
           sheetGrids: sheetGrids,
           activeSheetId: activeSheetId || 1,
-          updatedAt: 'Just now',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         setDocuments(prev => [...prev, newSheetsDoc]);
         setActiveDocId(initialDocId);
@@ -18562,7 +18581,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           deckTitle: deckTitle || 'Untitled Deck',
           deckSlidesData: deckSlidesData,
           activeDeckSlideId: activeDeckSlideId || 1,
-          updatedAt: 'Just now',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         setDocuments(prev => [...prev, newDeckDoc]);
         setActiveDocId(initialDocId);
@@ -18691,7 +18711,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         console.warn('Auto-login failed:', err.message);
       });
     }
-  }, []);
+  }, [getNextUntitledName]);
 
   // Update local awareness dynamically
   useEffect(() => {
@@ -18945,6 +18965,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       pinned: false,
     }
   ]);
+  const workspaceCreationLockRef = useRef(0);
   const [activeWhiteboardId, setActiveWhiteboardId] = useState(null);
   const activeWhiteboard = whiteboards.find((wb) => wb.id === activeWhiteboardId);
   const [closeConfirmWbId, setCloseConfirmWbId] = useState(null);
@@ -20523,6 +20544,39 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   }, [activeWhiteboardId, whiteboardStrokes, whiteboardShapes, whiteboardWidgets, whiteboardComments]);
 
   useEffect(() => {
+    if (!Array.isArray(whiteboards) || whiteboards.length === 0) return;
+    setDocuments((previous) => {
+      let changed = false;
+      const now = new Date().toISOString();
+      const next = [...previous];
+      whiteboards.forEach((whiteboard) => {
+        const index = next.findIndex((document) => String(document.id) === String(whiteboard.id));
+        const record = {
+          id: whiteboard.id,
+          mode: 'whiteboard',
+          title: whiteboard.title || 'Untitled Whiteboard',
+          content: '',
+          whiteboardWidgets: whiteboard.widgets || [],
+          whiteboardStrokes: whiteboard.strokes || [],
+          whiteboardShapes: whiteboard.shapes || [],
+          whiteboardComments: whiteboard.comments || [],
+          createdAt: next[index]?.createdAt || now,
+          updatedAt: now,
+          isDraft: false,
+        };
+        if (index === -1) {
+          next.push(record);
+          changed = true;
+        } else if (JSON.stringify(next[index]) !== JSON.stringify({ ...next[index], ...record, updatedAt: next[index].updatedAt })) {
+          next[index] = { ...next[index], ...record };
+          changed = true;
+        }
+      });
+      return changed ? next : previous;
+    });
+  }, [whiteboards]);
+
+  useEffect(() => {
     activeDocIdRef.current = activeDocId;
   }, [activeDocId]);
 
@@ -20696,14 +20750,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     try {
-      const raw = localStorage.getItem(`rc.savedDoc.${activeDocId}`);
-      if (!raw) {
+      const savedDocument = readWorkspaceDocuments().find((document) => String(document.id) === String(activeDocId));
+      if (!savedDocument?.updatedAt) {
         setLastSavedAt(null);
         return;
       }
 
-      const parsed = JSON.parse(raw);
-      const savedAt = Number(parsed?.savedAt);
+      const savedAt = new Date(savedDocument.updatedAt).getTime();
       setLastSavedAt(Number.isFinite(savedAt) ? savedAt : null);
     } catch (_error) {
       setLastSavedAt(null);
@@ -20987,41 +21040,25 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const docRecord = {
       ...payload,
       id: currentId,
+      mode: getDocMode(payload),
       isSaved: true,
-      savedAt,
+      isDraft: false,
+      createdAt: payload.createdAt || new Date(savedAt).toISOString(),
+      updatedAt: new Date(savedAt).toISOString(),
     };
 
+    const nextDocuments = normalizeWorkspaceDocuments(
+      documents.some((document) => String(document.id) === String(currentId))
+        ? documents.map((document) => String(document.id) === String(currentId) ? { ...document, ...docRecord } : document)
+        : [...documents, docRecord]
+    );
+    writeWorkspaceDocuments(nextDocuments);
     try {
-      localStorage.setItem(`rc.savedDoc.${currentId}`, JSON.stringify(docRecord));
       localStorage.setItem('rc.activeDocId', String(currentId));
-
-      // Also ensure all open background tabs in documents[] have durable rc.savedDoc snapshots
-      if (Array.isArray(documents)) {
-        documents.forEach((d) => {
-          if (d && d.id && String(d.id) !== String(currentId)) {
-            const key = `rc.savedDoc.${d.id}`;
-            if (!localStorage.getItem(key)) {
-              localStorage.setItem(key, JSON.stringify({
-                ...d,
-                isSaved: true,
-                savedAt: savedAt
-              }));
-            }
-          }
-        });
-      }
     } catch (_err) {}
 
     setLastSavedAt(savedAt);
-    setDocuments((prev) => {
-      const idx = prev.findIndex((d) => String(d.id) === String(currentId));
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], ...docRecord };
-        return next;
-      }
-      return [...prev, docRecord];
-    });
+    setDocuments(nextDocuments);
 
     if (trackAction) {
       trackMemoryAction('document', 'Saved document locally', {
@@ -23891,21 +23928,28 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     window.__REGAARDER_WORKSPACE_DOCS__ = documents;
     window.__REGAARDER_CREATE_DOC__ = ({ title = 'Untitled Document', contentHtml = '', mode = 'compose' } = {}) => {
       const newDocId = Date.now() + Math.floor(Math.random() * 1000);
+      const normalizedMode = mode === 'sheets' ? 'sheets' : mode === 'deck' ? 'deck' : 'compose';
+      const createdAt = new Date().toISOString();
+      const resolvedTitle = title && !/^untitled(?:\s+(?:document|sheet|deck))?$/i.test(title)
+        ? title
+        : getNextUntitledName(normalizedMode, documents.filter((doc) => getDocMode(doc) === normalizedMode));
       const newDoc = {
         id: newDocId,
-        mode: mode || 'compose',
-        title: title || 'Untitled Document',
+        mode: normalizedMode,
+        title: resolvedTitle,
         subtitle: '',
         initiatives: [],
         appendedSections: [],
         isBlank: !contentHtml && !title,
         bodyHtml: contentHtml || '',
         pinned: false,
-        sheetsTitle: 'Untitled Sheet',
+        createdAt,
+        updatedAt: createdAt,
+        sheetsTitle: normalizedMode === 'sheets' ? resolvedTitle : 'Untitled Sheet',
         sheetsData: [{ id: 1, title: 'Sheet 1', subtitle: '' }],
         sheetGrids: { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } },
         activeSheetId: 1,
-        deckTitle: 'Untitled Deck',
+        deckTitle: normalizedMode === 'deck' ? resolvedTitle : 'Untitled Deck',
         deckSlidesData: JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)),
         activeDeckSlideId: 1,
       };
@@ -23920,7 +23964,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       delete window.__REGAARDER_WORKSPACE_DOCS__;
       delete window.__REGAARDER_CREATE_DOC__;
     };
-  }, [documents]);
+  }, [documents, getDocMode, getNextUntitledName]);
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [dueDatePickerTaskId, setDueDatePickerTaskId] = useState(null);
@@ -34115,6 +34159,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setWhiteboardComments([]);
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
+    setProductMode('whiteboard');
   };
 
   const startRenameWhiteboard = (wb) => {
@@ -34193,60 +34238,45 @@ Answer the user's question, provide an insightful summary, or explain the contex
   const switchDocument = (docId) => {
     let targetDoc = documents.find((doc) => String(doc.id) === String(docId));
     if (!targetDoc) {
-      try {
-        if (typeof window !== 'undefined') {
-          const rawSaved = localStorage.getItem(`rc.savedDoc.${docId}`);
-          if (rawSaved) targetDoc = JSON.parse(rawSaved);
-          if (!targetDoc) {
-            const rawLib = localStorage.getItem('regaarder_library_documents_v1');
-            if (rawLib) {
-              const lib = JSON.parse(rawLib);
-              if (Array.isArray(lib)) {
-                targetDoc = lib.find(d => String(d.id) === String(docId));
-              }
-            }
-          }
-        }
-      } catch (_) {}
+      targetDoc = readWorkspaceDocuments().find((document) => String(document.id) === String(docId));
       if (targetDoc) {
         setDocuments(prev => [...prev, targetDoc]);
       } else {
+        showToast('Document not found or removed');
+        setProductMode('compose');
         return;
       }
     }
 
-    // ─── Flush departing tab — durable rc.savedDoc write ─────────────────────────
-    // setDocuments is async (React batching). Before live state signals are replaced
-    // by the incoming tab, write the departing tab's full content synchronously to
-    // rc.savedDoc.{id} in localStorage. This is the canonical index source for
-    // Memory/Search — without this, inactive tabs are never durably written and only
-    // the active tab appears in search results.
+    // Flush the departing tab into the same normalized store before switching.
     if (activeDocId && String(activeDocId) !== String(docId)) {
-      try {
-        const departingSnapshot = {
-          id:               activeDocId,
-          mode:             productMode,
-          title:            docTitle,
-          subtitle:         docSubtitle,
-          bodyHtml:         blankBodyRef?.current?.innerHTML ?? docBodyHtml ?? '',
-          initiatives:      initiatives,
-          appendedSections: appendedSections,
-          isBlank:          isBlankDocument,
-          sheetsTitle:      sheetsTitle,
-          sheetsData:       sheetsData,
-          sheetGrids:       sheetGrids,
-          activeSheetId:    activeSheetId,
-          deckTitle:        deckTitle,
-          deckSlidesData:   deckSlidesData,
-          activeDeckSlideId: activeDeckSlideId,
-          whiteboardWidgets: whiteboardWidgets,
-          whiteboardStrokes: whiteboardStrokes,
-          whiteboardShapes:  whiteboardShapes,
-          isSaved:          true,
-          savedAt:          Date.now(),
-        };
-        localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify(departingSnapshot));
-      } catch (_) {}
+      const departingSnapshot = {
+        id: activeDocId,
+        mode: productMode,
+        title: docTitle,
+        subtitle: docSubtitle,
+        bodyHtml: blankBodyRef?.current?.innerHTML ?? docBodyHtml ?? '',
+        initiatives,
+        appendedSections,
+        isBlank: isBlankDocument,
+        sheetsTitle,
+        sheetsData,
+        sheetGrids,
+        activeSheetId,
+        deckTitle,
+        deckSlidesData,
+        activeDeckSlideId,
+        whiteboardWidgets,
+        whiteboardStrokes,
+        whiteboardShapes,
+        isSaved: true,
+        isDraft: false,
+        createdAt: documents.find((document) => String(document.id) === String(activeDocId))?.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      writeWorkspaceDocuments(documents.map((document) => (
+        String(document.id) === String(activeDocId) ? { ...document, ...departingSnapshot } : document
+      )));
 
       // Also flush into documents[] so in-memory state stays consistent
       setDocuments(prev => prev.map(d => {
@@ -34309,20 +34339,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
         setSheetToolbarTab('View');
       }
     }
+    return true;
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
     const currentWorkspaceMode = productMode === 'whiteboard' ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
-    const existingModeCount = documents.filter((doc) => getDocMode(doc) === currentWorkspaceMode).length;
-    const defaultTitleForMode = initialTitle || (
-      currentWorkspaceMode === 'sheets'
-        ? `Untitled Sheet${existingModeCount ? ` ${existingModeCount + 1}` : ''}`
-        : currentWorkspaceMode === 'deck'
-          ? `Untitled Deck${existingModeCount ? ` ${existingModeCount + 1}` : ''}`
-          : currentWorkspaceMode === 'whiteboard'
-            ? `Untitled Whiteboard${existingModeCount ? ` ${existingModeCount + 1}` : ''}`
-            : 'Untitled Document'
-    );
+    const defaultTitleForMode = initialTitle || getNextUntitledName(currentWorkspaceMode, documents.filter((doc) => getDocMode(doc) === currentWorkspaceMode));
     const blankDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
 
     const newDoc = {
@@ -34336,6 +34358,8 @@ Answer the user's question, provide an insightful summary, or explain the contex
       bodyHtml: initialHtml,
       isTitleCustom: Boolean(initialTitle),
       pinned: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (currentWorkspaceMode === 'sheets') {
@@ -34534,15 +34558,16 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const newDeckDoc = {
       id: newDeckId,
       mode: 'deck',
-      title: 'Untitled Deck',
-      deckTitle: 'Untitled Deck',
+      title: getNextUntitledName('deck', documents.filter((doc) => getDocMode(doc) === 'deck')),
+      deckTitle: getNextUntitledName('deck', documents.filter((doc) => getDocMode(doc) === 'deck')),
       deckSlidesData: initialDeckSlides,
       activeDeckSlideId: 1,
-      updatedAt: 'Just now'
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     setDocuments(prev => [...prev, newDeckDoc]);
     setActiveDocId(newDeckId);
-    setDeckTitle('Untitled Deck');
+    setDeckTitle(newDeckDoc.deckTitle);
     setDeckSlidesData(initialDeckSlides);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
@@ -34593,16 +34618,17 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const newSheetDoc = {
       id: newSheetId,
       mode: 'sheets',
-      title: 'Untitled Sheet',
-      sheetsTitle: 'Untitled Sheet',
+      title: getNextUntitledName('sheets', documents.filter((doc) => getDocMode(doc) === 'sheets')),
+      sheetsTitle: getNextUntitledName('sheets', documents.filter((doc) => getDocMode(doc) === 'sheets')),
       sheetsData: initialSheetsData,
       sheetGrids: initialSheetGrids,
       activeSheetId: 1,
-      updatedAt: 'Just now'
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     setDocuments(prev => [...prev, newSheetDoc]);
     setActiveDocId(newSheetId);
-    setSheetsTitle('Untitled Sheet');
+    setSheetsTitle(newSheetDoc.sheetsTitle);
     setSheetsData(initialSheetsData);
     setSheetGrids(initialSheetGrids);
     setLeftSidebarOpen(false);
@@ -35468,14 +35494,7 @@ Respond with valid JSON formatted like this:
     const targetDoc = documents.find((doc) => String(doc.id) === String(docId));
     if (!targetDoc) return;
 
-    let savedDoc = null;
-    try {
-      const rawLibrary = localStorage.getItem('regaarder_library_documents_v1');
-      const library = rawLibrary ? JSON.parse(rawLibrary) : [];
-      savedDoc = Array.isArray(library)
-        ? library.find((doc) => String(doc.id) === String(docId))
-        : null;
-    } catch (_error) {}
+    const savedDoc = readWorkspaceDocuments().find((doc) => String(doc.id) === String(docId)) || null;
 
     const current = {
       ...targetDoc,
@@ -35532,17 +35551,9 @@ Respond with valid JSON formatted like this:
       isSaved: true
     };
 
-    // Persist to Workspace Library storage so closed items are permanently searchable in Memory
-    try {
-      if (typeof window !== 'undefined') {
-        const rawLibrary = localStorage.getItem('regaarder_library_documents_v1');
-        const parsedLibrary = rawLibrary ? JSON.parse(rawLibrary) : [];
-        const filteredLib = Array.isArray(parsedLibrary) ? parsedLibrary.filter(d => String(d.id) !== String(targetId)) : [];
-        localStorage.setItem('regaarder_library_documents_v1', JSON.stringify([savedSnapshot, ...filteredLib]));
-      }
-    } catch (e) {
-      console.warn('[Library] Failed to save document to persistent library:', e);
-    }
+    writeWorkspaceDocuments(documents.map((document) => (
+      String(document.id) === String(targetId) ? savedSnapshot : document
+    )));
 
     const remaining = documents.filter((d) => String(d.id) !== String(targetId));
     setDocuments(remaining);
@@ -49117,7 +49128,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const filtered = list.filter((doc) => {
                                   if (!headerWorkbookSearchQuery.trim()) return true;
                                   const q = headerWorkbookSearchQuery.toLowerCase();
-                                  const title = (doc.title || doc.sheetsTitle || doc.deckTitle || '').toLowerCase();
+                                  const title = (doc.displayTitle || doc.title || doc.sheetsTitle || doc.deckTitle || '').toLowerCase();
                                   return title.includes(q);
                                 });
 
@@ -49135,34 +49146,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   const isActive = String(doc.id) === String(activeDocId);
                                   const docMode = getDocMode(doc);
 
-                                  let title = '';
-                                  if (isSheetsMode || docMode === 'sheets') {
-                                    title = isActive ? (sheetsTitle?.trim() || doc.sheetsTitle || doc.title || '') : (doc.sheetsTitle || doc.title || '');
-                                    if (!title || /^untitled/i.test(title)) {
-                                      title = (doc.sheetsTitle && doc.sheetsTitle !== 'Untitled Sheet') ? doc.sheetsTitle : `Workbook #${String(doc.id).slice(-4)}`;
-                                    }
-                                  } else if (productMode === 'deck' || docMode === 'deck') {
-                                    title = isActive ? (deckTitle?.trim() || doc.deckTitle || doc.title || '') : (doc.deckTitle || doc.title || '');
-                                    if (!title || /^untitled/i.test(title)) {
-                                      const slides = isActive ? deckSlidesData : doc.deckSlidesData;
-                                      const firstSlide = Array.isArray(slides) ? slides.find(s => s.title && s.title.trim()) : null;
-                                      title = firstSlide?.title?.trim() || ((doc.deckTitle && doc.deckTitle !== 'Untitled Deck') ? doc.deckTitle : `Presentation #${String(doc.id).slice(-4)}`);
-                                    }
-                                  } else {
-                                    title = isActive ? (docTitle?.trim() || doc.title || '') : (doc.title || '');
-                                    const html = isActive ? (docBodyHtml || doc.bodyHtml) : doc.bodyHtml;
-                                    if ((!title || /^untitled/i.test(title)) && html) {
-                                      const plain = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                                      const firstLine = plain.split(/\n+/)[0]?.trim();
-                                      if (firstLine && firstLine.length > 2 && firstLine.length < 80) {
-                                        title = firstLine;
-                                      }
-                                    }
-                                    if (!title || /^untitled/i.test(title)) {
-                                      title = (doc.title && doc.title !== 'Untitled Document' && doc.title !== 'Untitled') ? doc.title : `Document #${String(doc.id).slice(-4)}`;
-                                    }
-                                  }
-
+                                  const title = doc.displayTitle || doc.title || (isActive ? (isSheetsMode ? sheetsTitle : productMode === 'deck' ? deckTitle : docTitle) : '') || 'Untitled Document';
                                   // Compose shows word count as the subtitle; sheets → sheet tabs; deck → slides
                                   const count = isSheetsMode
                                     ? (doc.sheetGrids ? Object.keys(doc.sheetGrids).length : (doc.sheetsData?.length || 1))
@@ -49252,25 +49236,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
                   const docIndex = windowedTabDocuments.startIndex + localIndex;
                 const isActive = activeDocId === doc.id;
-                let effectiveDocTitle = isActive && docTitle?.trim() && docTitle !== 'Untitled Document' ? docTitle.trim() : (doc.title?.trim() || '');
-                if ((!effectiveDocTitle || effectiveDocTitle === 'Untitled Document') && (isActive ? docBodyHtml : doc.bodyHtml)) {
-                  const bodyText = (isActive ? docBodyHtml : doc.bodyHtml).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                  const preview = bodyText.split(/\n+/)[0]?.trim();
-                  if (preview && preview.length > 2 && preview.length < 80) {
-                    effectiveDocTitle = preview;
-                  }
-                }
+                const effectiveDocTitle = doc.displayTitle || doc.title?.trim() || (isActive ? docTitle?.trim() : '') || `Untitled Document ${docIndex + 1}`;
                 const docMode = getDocMode(doc);
                 let modeSpecificTitle = '';
                 if (docMode === 'sheets') {
-                  modeSpecificTitle = isActive ? (sheetsTitle?.trim() || doc.sheetsTitle || doc.title || '') : (doc.sheetsTitle || doc.title || '');
+                  modeSpecificTitle = isActive ? (doc.sheetsTitle || doc.title || sheetsTitle?.trim() || '') : (doc.sheetsTitle || doc.title || '');
                 } else if (docMode === 'deck') {
-                  modeSpecificTitle = isActive ? (deckTitle?.trim() || doc.deckTitle || doc.title || '') : (doc.deckTitle || doc.title || '');
+                  modeSpecificTitle = isActive ? (doc.deckTitle || doc.title || deckTitle?.trim() || '') : (doc.deckTitle || doc.title || '');
                 } else if (docMode === 'whiteboard') {
                   modeSpecificTitle = doc.title?.trim() || '';
                 }
 
-                const defaultName = docMode === 'whiteboard' ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL) : docMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : docMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
+                const defaultName = docMode === 'whiteboard' ? `${t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL} ${docIndex + 1}` : docMode === 'sheets' ? getNextUntitledName('sheets', windowedTabDocuments.visibleDocs) : docMode === 'deck' ? getNextUntitledName('deck', windowedTabDocuments.visibleDocs) : getNextUntitledName('compose', windowedTabDocuments.visibleDocs);
                 
                 const label = modeSpecificTitle && !/^untitled/i.test(modeSpecificTitle)
                   ? modeSpecificTitle
@@ -72883,10 +72860,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
-          const ws = (entity.workspace || '').toLowerCase();
+          const ws = (entity.editorTarget || entity.workspace || entity.type || '').toLowerCase();
           if (ws === 'compose') {
             if (productMode !== 'compose') setProductMode('compose');
             const targetDocId = entity.metadata?.docId;
+            let didNavigate = !targetDocId;
             if (targetDocId) {
               let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
               if (!targetDoc) {
@@ -72907,13 +72885,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }
 
               if (targetDoc) {
+                didNavigate = true;
                 setActiveDocId(targetDoc.id);
                 setDocTitle(targetDoc.title || entity.title || '');
                 setDocSubtitle(targetDoc.subtitle || '');
                 setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
               }
             }
-            showToast(`Navigated to Document: ${entity.title}`);
+            if (didNavigate) {
+              showToast(`Navigated to Document: ${entity.title}`);
+            }
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
             if (entity.metadata?.docId) {
@@ -76381,7 +76362,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             const filtered = composeDocsList.filter((doc) => {
                               if (!headerWorkbookSearchQuery.trim()) return true;
                               const q = headerWorkbookSearchQuery.toLowerCase();
-                              return (doc.title || '').toLowerCase().includes(q);
+                              return (doc.displayTitle || doc.title || '').toLowerCase().trim().includes(q.trim());
                             });
 
                             if (filtered.length === 0) {
@@ -76395,20 +76376,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             return filtered.map((doc) => {
                               const isActive = String(doc.id) === String(activeDocId);
 
-                              let title = isActive ? (docTitle?.trim() || doc.title || '') : (doc.title || '');
-                              const html = isActive ? (docBodyHtml || doc.bodyHtml) : doc.bodyHtml;
-                              if ((!title || /^untitled/i.test(title)) && html) {
-                                const plain = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                                const firstLine = plain.split(/\n+/)[0]?.trim();
-                                if (firstLine && firstLine.length > 2 && firstLine.length < 80) {
-                                  title = firstLine;
-                                }
-                              }
-                              if (!title || /^untitled/i.test(title)) {
-                                title = (doc.title && doc.title !== 'Untitled Document' && doc.title !== 'Untitled')
-                                  ? doc.title
-                                  : `Document #${String(doc.id).slice(-4)}`;
-                              }
+                              const title = doc.displayTitle || doc.title || (isActive ? docTitle?.trim() : '') || 'Untitled Document';
 
                               return (
                                 <button
@@ -76466,17 +76434,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const isActive = activeDocId === doc.id;
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
               
-              // Resolve real title: check active docTitle, doc.title, or content preview
-              let effectiveDocTitle = isActive && docTitle?.trim() && docTitle !== 'Untitled Document' ? docTitle.trim() : (doc.title?.trim() || '');
-              if ((!effectiveDocTitle || effectiveDocTitle === 'Untitled Document') && (isActive ? docBodyHtml : doc.bodyHtml)) {
-                const bodyText = (isActive ? docBodyHtml : doc.bodyHtml).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                const preview = bodyText.split(/\n+/)[0]?.trim();
-                if (preview && preview.length > 2 && preview.length < 80) {
-                  effectiveDocTitle = preview;
-                }
-              }
-
-              const label = effectiveDocTitle || (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
+              const effectiveDocTitle = doc.displayTitle || doc.title?.trim() || (isActive ? docTitle?.trim() : '') || (isWbDoc ? `Untitled Whiteboard ${docIndex + 1}` : `Untitled Document ${docIndex + 1}`);
+              const label = effectiveDocTitle;
 
               return (
                 <div
@@ -89061,6 +89020,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           if (!entity) return;
           const ws = (entity.workspace || '').toLowerCase();
           if (entity.actionType === 'create') {
+            if (Date.now() - workspaceCreationLockRef.current < 500) return;
+            workspaceCreationLockRef.current = Date.now();
             if (ws === 'compose' || ws === 'docs') {
               if (productMode !== 'compose') setProductMode('compose');
               handleCreateNewDocument();
@@ -89070,6 +89031,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
             } else if (ws === 'deck') {
               if (productMode !== 'deck') setProductMode('deck');
               showToast('Created new presentation');
+            } else if (ws === 'whiteboard') {
+              createNewWhiteboard();
+            } else if (ws === 'room') {
+              createRoomExperience();
+            } else if (ws === 'tasks') {
+              handleMiniSidebarClick('tasks');
+              showToast('Ready to create a task');
+            } else if (ws === 'relay') {
+              setProductMode('dm');
+              showToast('Ready to create a message');
+            } else if (ws === 'notes') {
+              setProductMode('room');
+              setIsNotesModalOpen(true);
+            } else if (ws === 'schedule') {
+              handleMiniSidebarClick('calendar');
+            } else if (ws === 'chat') {
+              setProductMode('dm');
+              setActiveRightTab('assistant');
+              setRightSidebarOpen(true);
             }
             return;
           }
@@ -89077,19 +89057,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             if (productMode !== 'compose') setProductMode('compose');
             const targetDocId = entity.metadata?.docId;
             if (targetDocId) {
-              let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+              let targetDoc = documents.find(d => String(d.id) === String(targetDocId))
+                || readWorkspaceDocuments().find(d => String(d.id) === String(targetDocId));
               if (!targetDoc) {
-                // If document was closed/saved in library, restore from snapshot or library storage
-                let snapshot = entity.metadata?.docSnapshot;
-                if (!snapshot && typeof window !== 'undefined') {
-                  try {
-                    const rawLib = localStorage.getItem('regaarder_library_documents_v1');
-                    if (rawLib) {
-                      const libList = JSON.parse(rawLib);
-                      snapshot = libList?.find(d => String(d.id) === String(targetDocId));
-                    }
-                  } catch (_) {}
-                }
+                const snapshot = entity.metadata?.docSnapshot;
                 if (snapshot) {
                   targetDoc = { ...snapshot, id: targetDocId };
                   setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
@@ -89101,6 +89072,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setDocTitle(targetDoc.title || entity.title || '');
                 setDocSubtitle(targetDoc.subtitle || '');
                 setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
+              } else {
+                showToast('Document not found or removed');
               }
             }
             showToast(`Navigated to Document: ${entity.title}`);
@@ -89122,6 +89095,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
               setActiveDeckSlideId(entity.metadata.slideNumber);
             }
             showToast(`Navigated to Presentation: ${entity.title}`);
+          } else if (ws === 'whiteboard') {
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            } else {
+              setProductMode('whiteboard');
+            }
+            showToast(`Navigated to Whiteboard: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'chat') {
+            setProductMode('dm');
+            setActiveRightTab('assistant');
+            setRightSidebarOpen(true);
+            showToast(`Navigated to Chat: ${entity.title}`);
           } else if (ws === 'room') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Room: ${entity.title}`);

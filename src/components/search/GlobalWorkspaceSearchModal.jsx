@@ -431,6 +431,7 @@ export default function GlobalWorkspaceSearchModal({
 
   // AI Synthesis state
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiProgress, setAiProgress] = useState({ step: 1, label: 'Scanning workspace metadata' });
   const [aiResponse, setAiResponse] = useState(null);
   const [copiedAi, setCopiedAi] = useState(false);
 
@@ -566,6 +567,7 @@ export default function GlobalWorkspaceSearchModal({
   const [isMoreFilterMenuOpen, setIsMoreFilterMenuOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   const [moreFilterMenuPosition, setMoreFilterMenuPosition] = useState({ top: 0, left: 0 });
+  const [workspaceStorageRevision, setWorkspaceStorageRevision] = useState(0);
 
   // Edit Persona Modal State
   const [isEditPersonaModalOpen, setIsEditPersonaModalOpen] = useState(false);
@@ -626,10 +628,16 @@ export default function GlobalWorkspaceSearchModal({
     }
   }, [personas]);
 
+  useEffect(() => {
+    const refreshWorkspaceIndex = () => setWorkspaceStorageRevision((revision) => revision + 1);
+    window.addEventListener('workspace-storage-update', refreshWorkspaceIndex);
+    return () => window.removeEventListener('workspace-storage-update', refreshWorkspaceIndex);
+  }, []);
+
   // Build the complete searchable workspace index strictly from real state
   const workspaceIndex = useMemo(() => {
     return buildWorkspaceIndex(liveWorkspaceContext);
-  }, [liveWorkspaceContext]);
+  }, [liveWorkspaceContext, workspaceStorageRevision]);
 
   // Execute dynamic query across the workspace index for Search Mode
   const searchResults = useMemo(() => {
@@ -660,6 +668,7 @@ export default function GlobalWorkspaceSearchModal({
       setSelectedIndex(0);
       setAiResponse(null);
       setAiLoading(false);
+      setAiProgress({ step: 1, label: 'Scanning workspace metadata' });
       setConversationThread([]);
       setQuotedSnippet('');
       setIsReplying(false);
@@ -821,6 +830,7 @@ export default function GlobalWorkspaceSearchModal({
     if (!targetQ || !targetQ.trim()) return;
 
     setAiLoading(true);
+    setAiProgress({ step: 1, label: 'Scanning workspace metadata' });
     setAiResponse(null);
     setConversationThread([]);
     setIsReplying(false);
@@ -838,6 +848,7 @@ export default function GlobalWorkspaceSearchModal({
         query: targetQ.trim(),
         activeFilter,
         workspaceIndex,
+        onProgress: setAiProgress,
         onCallAi,
         aiConfig,
         customModel: activeModelId,
@@ -1023,7 +1034,7 @@ export default function GlobalWorkspaceSearchModal({
 
   // Frosted Apple glass surface with 36px backdrop blur
   const backdropClasses = 'bg-slate-900/35 dark:bg-black/60 backdrop-blur-[24px]';
-  const surfaceClasses = 'bg-white/[0.88] dark:bg-[#14161f]/[0.88] backdrop-blur-[36px] rounded-2xl shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06]';
+  const surfaceClasses = 'bg-white/[0.72] dark:bg-[rgba(30,30,30,0.72)] backdrop-blur-[20px] saturate-[180%] rounded-2xl shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06]';
   const categoryBarClasses = 'bg-white/[0.45] dark:bg-black/[0.22] border-b border-black/[0.05] dark:border-white/[0.07]';
   const footerClasses = 'bg-white/[0.45] dark:bg-black/[0.25] border-t border-black/[0.05] dark:border-white/[0.07]';
 
@@ -1354,16 +1365,28 @@ export default function GlobalWorkspaceSearchModal({
               )}
 
               {aiLoading && (
-                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                    <RegaarderAiIcon size={20} strokeWidth={2.0} className="animate-spin" />
+                <div className="flex flex-col items-center justify-center py-12 text-center space-y-4" aria-live="polite" aria-busy="true">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20">
+                    <RegaarderAiIcon size={21} strokeWidth={2.0} className="animate-pulse" />
                   </div>
-                  <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
-                    Synthesizing Workspace Memory as {activePersona.name}…
+                  <div className="space-y-1.5">
+                    <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
+                      {aiProgress.step}. {aiProgress.label}
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
+                      Synthesizing Workspace Memory as {activePersona.name} for &ldquo;{query}&rdquo;
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
-                    Analyzing documents, spreadsheet formulas, slide decks, and active brand guidelines for &ldquo;{query}&rdquo;
-                  </p>
+                  <div className="w-full max-w-md space-y-2.5" aria-hidden="true">
+                    {[0, 1, 2].map((bar) => (
+                      <div key={bar} className="h-2.5 rounded-full bg-slate-200/70 dark:bg-white/[0.08] overflow-hidden">
+                        <div
+                          className="h-full w-2/3 rounded-full bg-gradient-to-r from-transparent via-violet-400/70 to-transparent animate-[synthesis-shimmer_1.8s_ease-in-out_infinite]"
+                          style={{ animationDelay: `${bar * 180}ms` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
