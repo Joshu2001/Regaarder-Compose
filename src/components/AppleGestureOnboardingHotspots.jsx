@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, Check, X } from 'lucide-react';
 
 const RegaarderVectorIcon = ({ size = 14, className = "" }) => (
@@ -28,14 +29,14 @@ const STEPS = [
   {
     id: 'workspace-switcher',
     title: 'Switch workspaces seamlessly',
-    description: 'Jump between Docs, Sheets, Decks, and Notes instantly without ever leaving your active workspace.',
+    description: 'Choose Docs, Sheets, Decks, or Notes from the workspace menu and move between tools without leaving your active work.',
     target: 'top-left-switcher',
     stepNumber: 3,
   },
   {
     id: 'assistant',
     title: 'Assistant & collaborative tasks',
-    description: 'Switch between Assistant, History, and Tasks on the top right whenever you need cross-document intelligence.',
+    description: 'Switch between Assistant, History, and Tasks in the side panel whenever you need cross-document intelligence.',
     target: 'top-assistant',
     stepNumber: 4,
   },
@@ -75,8 +76,8 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
   const currentStep = STEPS[currentStepIndex];
 
-  return (
-    <div className="pointer-events-none fixed inset-0 z-[260000] overflow-hidden select-none animate-in fade-in duration-300">
+  return createPortal((
+    <div className="pointer-events-none fixed inset-0 z-[999999] overflow-hidden select-none animate-in fade-in duration-300">
       {/* Mode-aware callouts stay clear of the top chrome and avoid the stray under-toolbar rectangle. */}
       {currentStep.id === 'outline' && (
         <div className="pointer-events-none fixed left-3 top-[88px] bottom-6 w-2 rounded-r-full bg-gradient-to-r from-violet-500/25 via-violet-500/10 to-transparent animate-pulse" />
@@ -84,10 +85,6 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
       {currentStep.id === 'workspace-switcher' && (
         <div className="pointer-events-none fixed top-[72px] left-10 w-10 h-10 rounded-xl ring-2 ring-violet-500/45 dark:ring-violet-400/45 shadow-[0_0_24px_rgba(139,92,246,0.35)] animate-pulse" />
-      )}
-
-      {currentStep.id === 'assistant' && (
-        <div className="pointer-events-none fixed top-[72px] right-4 w-72 h-11 rounded-xl ring-2 ring-violet-500/40 dark:ring-violet-400/40 shadow-[0_0_30px_rgba(139,92,246,0.25)] animate-pulse" />
       )}
 
       {/* Step 1: Prompt Bar */}
@@ -149,7 +146,7 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
       {/* Step 2: Outline */}
       {currentStep.id === 'outline' && (
-        <div className="pointer-events-auto absolute left-6 top-[calc(88px+18vh)] -translate-y-1/2 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="pointer-events-auto relative z-[260010] absolute left-6 top-[calc(88px+18vh)] -translate-y-1/2 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
               <div className="w-5 h-5 rounded-md bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center">
@@ -206,7 +203,7 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
       {/* Step 3: Top-Left Workspace Switcher */}
       {currentStep.id === 'workspace-switcher' && (
-        <div className="pointer-events-auto absolute top-[calc(88px+18vh)] left-8 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="pointer-events-auto relative z-[260010] absolute top-[72px] left-8 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
               <div className="w-5 h-5 rounded-md bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center">
@@ -257,7 +254,6 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
             </button>
           </div>
 
-          {/* Upward Anchor Arrow */}
           <div className="absolute -top-2 left-6 w-4 h-4 bg-white/90 dark:bg-[#1c1c1e]/90 border-t border-l border-slate-200/80 dark:border-white/15 rotate-45" />
         </div>
       )}
@@ -315,10 +311,9 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
             </button>
           </div>
 
-          {/* Upward Anchor Arrow */}
-          <div className="absolute -top-2 right-12 w-4 h-4 bg-white/90 dark:bg-[#1c1c1e]/90 border-t border-l border-slate-200/80 dark:border-white/15 rotate-45" />
+          <div className="absolute top-1/2 -right-2 -translate-y-1/2 w-4 h-4 bg-white/90 dark:bg-[#1c1c1e]/90 border-t border-r border-slate-200/80 dark:border-white/15 rotate-45" />
         </div>
       )}
     </div>
-  );
+  ), document.body);
 }

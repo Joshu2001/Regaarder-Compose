@@ -13,7 +13,7 @@
         "preview": "vite preview",
         "build": "vite build",
         "dev": "vite",
-        "dev:electron": "electron .",
+        "dev:electron": "node scripts/dev-electron.mjs",
         "dev:ai": "npx vercel dev --listen 5174",
         "package:all": "node scripts/package-electron.mjs --all",
         "package:win": "node scripts/package-electron.mjs --win",
