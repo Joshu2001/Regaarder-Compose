@@ -8351,7 +8351,26 @@ function AppCore() {
     ];
 
     let found = [];
+    if (window.electronAPI?.listLocalModels) {
+      try {
+        const nativeResult = await window.electronAPI.listLocalModels({
+          endpoints: endpointsToProbe.map((probe) => probe.url)
+        });
+        if (nativeResult?.models && Array.isArray(nativeResult.models)) {
+          found = nativeResult.models.map((model) => ({
+            ...model,
+            provider: model.provider || nativeResult.provider || 'Ollama',
+            endpoint: model.endpoint || nativeResult.activeEndpoint || 'http://127.0.0.1:11434',
+            isLocal: true
+          }));
+        }
+      } catch (error) {
+        console.warn('[Compose AI] Native local model scan failed; using browser probes:', error);
+      }
+    }
+
     for (const probe of endpointsToProbe) {
+      if (found.length > 0) break;
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 1200);
