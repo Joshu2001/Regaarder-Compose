@@ -1081,9 +1081,7 @@ export default function GlobalWorkspaceSearchModal({
               onChange={(e) => {
                 const val = e.target.value;
                 setQuery(val);
-                if (mode === 'ai' && aiResponse) {
-                  setAiResponse(null);
-                }
+                setAiResponse(null);
                 // Auto-adjust height up to 3 lines
                 e.target.style.height = 'auto';
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 88)}px`;
@@ -1145,6 +1143,7 @@ export default function GlobalWorkspaceSearchModal({
                 type="button"
                 onClick={() => {
                   setMode('ai');
+                  setAiResponse(null);
                   setTimeout(() => inputRef.current?.focus(), 20);
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold transition-all duration-150 cursor-pointer ${

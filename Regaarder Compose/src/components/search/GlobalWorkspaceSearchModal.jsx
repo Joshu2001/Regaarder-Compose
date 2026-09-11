@@ -335,6 +335,13 @@ export default function GlobalWorkspaceSearchModal({
   const [query, setQuery] = useState(initialQuery || '');
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'all');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const isQuestionQuery = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed || trimmed.length < 8) return false;
+    if (trimmed.endsWith('?')) return true;
+    const questionStarters = ['what', 'how', 'why', 'who', 'where', 'when', 'which', 'can you', 'could you', 'explain', 'summarize', 'tell me', 'find all', 'analyze', 'is there', 'are there', 'list all', 'give me'];
+    return questionStarters.some((starter) => trimmed.startsWith(`${starter} `) || trimmed.startsWith(starter));
+  }, [query]);
 
   // AI Synthesis state
   const [aiLoading, setAiLoading] = useState(false);
@@ -821,8 +828,16 @@ export default function GlobalWorkspaceSearchModal({
 
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (isQuestionQuery && selectedIndex === -1) {
+        setMode('ai');
+        handleRunAiSynthesis(query);
+        return;
+      }
       if (flatSelectableItems.length > 0 && flatSelectableItems[selectedIndex]) {
         handleActivateItem(flatSelectableItems[selectedIndex]);
+      } else if (isQuestionQuery || query.trim().length > 15) {
+        setMode('ai');
+        handleRunAiSynthesis(query);
       }
       return;
     }
@@ -887,9 +902,7 @@ export default function GlobalWorkspaceSearchModal({
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              if (mode === 'ai' && aiResponse) {
-                setAiResponse(null);
-              }
+              setAiResponse(null);
             }}
             placeholder={
               mode === 'ai' 
@@ -939,6 +952,7 @@ export default function GlobalWorkspaceSearchModal({
                 type="button"
                 onClick={() => {
                   setMode('ai');
+                  setAiResponse(null);
                   setTimeout(() => inputRef.current?.focus(), 20);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
@@ -971,9 +985,8 @@ export default function GlobalWorkspaceSearchModal({
                   type="button"
                   onClick={() => {
                     setActiveFilter(tab.id);
-                    if (mode === 'ai' && query.trim()) {
-                      handleRunAiSynthesis(query);
-                    }
+                    setMode('search');
+                    setAiResponse(null);
                   }}
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
