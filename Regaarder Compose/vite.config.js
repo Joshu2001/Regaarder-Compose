@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
 import fs from 'fs';
+import { pathToFileURL } from 'url';
 
 function apiDevMiddlewarePlugin() {
   return {
@@ -53,7 +54,7 @@ function apiDevMiddlewarePlugin() {
           };
 
           const targetFullPath = path.resolve(import.meta.dirname, targetRelPath);
-          const imported = await import(`${targetFullPath}?t=${Date.now()}`);
+          const imported = await import(`${pathToFileURL(targetFullPath).href}?t=${Date.now()}`);
           const handler = imported.default;
 
           if (typeof handler === 'function') {
