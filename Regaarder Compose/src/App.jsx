@@ -25313,7 +25313,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
-      const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
+      const localTimeout = setTimeout(() => localAbortController.abort(), 45000);
       if (aiAbortControllerRef.current?.signal) {
         aiAbortControllerRef.current.signal.addEventListener('abort', () => {
           try { localAbortController.abort(); } catch (e) {}
@@ -25367,14 +25367,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
         if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
           try {
-            const ipcRes = await window.electronAPI.generateLocalAI({
-              endpoint: activeEndpoint,
-              model: activeModelId,
-              prompt: userPrompt,
-              systemPrompt: fullSystemPrompt,
-              format: schema ? 'json' : undefined,
-              options: offloadOpts
-            });
+            const ipcRes = await Promise.race([
+              window.electronAPI.generateLocalAI({
+                endpoint: activeEndpoint,
+                model: activeModelId,
+                prompt: userPrompt,
+                systemPrompt: fullSystemPrompt,
+                format: schema ? 'json' : undefined,
+                options: offloadOpts
+              }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Local Electron AI request timed out')), 45000))
+            ]);
             if (ipcRes && ipcRes.success && ipcRes.text) {
               clearTimeout(localTimeout);
               const text = ipcRes.text.trim();

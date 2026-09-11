@@ -25806,7 +25806,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
-      const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
+      const localTimeout = setTimeout(() => localAbortController.abort(), 45000);
       if (aiAbortControllerRef.current?.signal) {
         aiAbortControllerRef.current.signal.addEventListener('abort', () => {
           try { localAbortController.abort(); } catch (e) {}
@@ -25860,14 +25860,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
         if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
           try {
-            const ipcRes = await window.electronAPI.generateLocalAI({
-              endpoint: activeEndpoint,
-              model: activeModelId,
-              prompt: userPrompt,
-              systemPrompt: fullSystemPrompt,
-              format: schema ? 'json' : undefined,
-              options: offloadOpts
-            });
+            const ipcRes = await Promise.race([
+              window.electronAPI.generateLocalAI({
+                endpoint: activeEndpoint,
+                model: activeModelId,
+                prompt: userPrompt,
+                systemPrompt: fullSystemPrompt,
+                format: schema ? 'json' : undefined,
+                options: offloadOpts
+              }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Local Electron AI request timed out')), 45000))
+            ]);
             if (ipcRes && ipcRes.success && ipcRes.text) {
               clearTimeout(localTimeout);
               const text = ipcRes.text.trim();
@@ -49264,7 +49267,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setRenamingDocId(doc.id);
                       setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
                     }}
-                    className={`relative min-w-0 flex-1 basis-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    className={`relative min-w-0 w-[clamp(220px,24vw,280px)] flex-none px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                       isActive 
                         ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                         : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -49287,10 +49290,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                         }}
                         onBlur={() => commitRenameDocument(doc.id)}
-                        className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                        className="min-w-0 flex-1 truncate bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                       />
                     ) : (
-                      <span className="min-w-0 flex-1 truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
+                      <span className="min-w-0 flex-1 truncate px-0.5">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
                     )}
                     <button
                       data-doc-menu-root
@@ -49301,7 +49304,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                         setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                       }}
-                      className="p-0.5 rounded hover:bg-gray-100 shrink-0"
+                      className="p-1 rounded hover:bg-gray-100 shrink-0"
                       title="Document actions"
                     >
                       <MoreHorizontal size={12} />
@@ -76446,7 +76449,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`relative min-w-0 flex-1 basis-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center justify-between gap-1 cursor-pointer select-none ${
+                  className={`relative min-w-0 w-[clamp(220px,24vw,280px)] flex-none px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center justify-between gap-1 cursor-pointer select-none ${
                     isActive 
                       ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                       : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -76469,10 +76472,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }
                       }}
                       onBlur={() => commitRenameDocument(doc.id)}
-                      className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                      className="min-w-0 flex-1 truncate bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                     />
                   ) : (
-                    <span className="flex-1 min-w-0 truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
+                    <span className="flex-1 min-w-0 truncate px-0.5">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
                   )}
                   <div className="flex items-center gap-0.5 shrink-0 ml-1">
                     <button
@@ -76484,7 +76487,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                         setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                       }}
-                      className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
+                      className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
                       title="Document actions"
                     >
                       <MoreHorizontal size={12} />
