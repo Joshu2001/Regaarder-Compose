@@ -18017,16 +18017,21 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [docSubtitle, setDocSubtitle] = useState('');
 
   useEffect(() => {
+    const persistedTitle = activeDoc?.title?.trim();
+    const hasPersistedExplicitTitle = !!persistedTitle && !/^untitled\b/i.test(persistedTitle);
+
     if (!docBodyHtml) {
-      setDocTitle('Untitled Document');
+      setDocTitle(hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
       return;
     }
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(docBodyHtml, 'text/html');
     const firstBlock = doc.body.firstElementChild;
     const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    setDocTitle(titleText || 'Untitled Document');
-  }, [docBodyHtml]);
+    const derivedTitle = titleText || (hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
+    setDocTitle(derivedTitle);
+  }, [docBodyHtml, activeDoc?.title]);
 
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);

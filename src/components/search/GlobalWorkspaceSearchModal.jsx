@@ -464,6 +464,35 @@ export default function GlobalWorkspaceSearchModal({
     return [];
   });
 
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [localSelectedModel, setLocalSelectedModel] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('regaarder_memory_selected_model_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && (parsed.id || parsed.name)) return parsed;
+        }
+      }
+    } catch (_) {}
+    return null;
+  });
+
+  const effectiveSelectedModel = useMemo(() => {
+    if (localSelectedModel && (localSelectedModel.id || localSelectedModel.name)) return localSelectedModel;
+    if (selectedModel && (selectedModel.id || selectedModel.name)) return selectedModel;
+    if (detectedModels && detectedModels.length > 0) return detectedModels[0];
+    return null;
+  }, [localSelectedModel, selectedModel, detectedModels]);
+
+  useEffect(() => {
+    try {
+      if (effectiveSelectedModel && (effectiveSelectedModel.id || effectiveSelectedModel.name)) {
+        localStorage.setItem('regaarder_memory_selected_model_v1', JSON.stringify(effectiveSelectedModel));
+      }
+    } catch (_) {}
+  }, [effectiveSelectedModel]);
+
   const saveInquiryToHistory = (q, answer, sources = []) => {
     if (!q || !q.trim() || !answer) return;
     const item = {
@@ -831,8 +860,8 @@ export default function GlobalWorkspaceSearchModal({
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
       const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
-      const activeModelId = selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
-      const activeProvider = (selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
+      const activeModelId = effectiveSelectedModel?.id || effectiveSelectedModel?.name || selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
+      const activeProvider = (effectiveSelectedModel?.isLocal || effectiveSelectedModel?.provider === 'Ollama' || selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
 
       const result = await synthesizeWorkspaceKnowledge({
         query: targetQ.trim(),
@@ -876,8 +905,8 @@ export default function GlobalWorkspaceSearchModal({
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
       const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
-      const activeModelId = selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
-      const activeProvider = (selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
+      const activeModelId = effectiveSelectedModel?.id || effectiveSelectedModel?.name || selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
+      const activeProvider = (effectiveSelectedModel?.isLocal || effectiveSelectedModel?.provider === 'Ollama' || selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
 
       const result = await synthesizeWorkspaceKnowledge({
         query: userMessage,
@@ -1096,6 +1125,46 @@ export default function GlobalWorkspaceSearchModal({
                 <X size={15} />
               </button>
             )}
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setModelMenuOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-violet-50/80 dark:bg-violet-950/30 border border-violet-200/80 dark:border-violet-800/60 text-[11px] font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors cursor-pointer"
+                title="Select AI model for Ask Memory"
+              >
+                <RegaarderAiIcon size={11} strokeWidth={1.8} />
+                <span>{effectiveSelectedModel?.name || effectiveSelectedModel?.id || 'Model'}</span>
+                <ChevronDown size={10} className={`transition-transform ${modelMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {modelMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-[100010] animate-in fade-in zoom-in-95 duration-100">
+                  {(detectedModels?.length ? detectedModels : [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini' }, { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'claude' }]).map((model) => {
+                    const isSelected = (effectiveSelectedModel?.id || effectiveSelectedModel?.name) === (model.id || model.name);
+                    return (
+                      <button
+                        key={model.id || model.name}
+                        type="button"
+                        onClick={() => {
+                          setLocalSelectedModel(model);
+                          setModelMenuOpen(false);
+                          if (mode === 'ai' && query.trim()) {
+                            handleRunAiSynthesis(query);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-[12px] transition-colors cursor-pointer ${
+                          isSelected ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-semibold' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span>{model.name || model.id}</span>
+                        {isSelected && <Check size={12} className="text-violet-600 dark:text-violet-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* ── Apple-Style Segmented Mode Switcher: Search vs Ask Memory with Regaarder Signature Orbit ── */}
             <div className="flex items-center p-0.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06]">

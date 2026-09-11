@@ -166,7 +166,7 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
   const typeLower = (type || '').toLowerCase();
   const explicitLower = (explicitWorkspace || '').toLowerCase();
 
-  if (explicitLower === 'compose' || explicitLower === 'docs' || explicitLower === 'document') {
+  if (explicitLower === 'compose' || explicitLower === 'docs' || explicitLower === 'document' || explicitLower === 'documents' || explicitLower === 'doc' || explicitLower === 'docx' || explicitLower === 'pdf') {
     return {
       workspace: 'compose',
       type: 'document',
@@ -174,7 +174,7 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
     };
   }
 
-  if (explicitLower === 'deck') {
+  if (explicitLower === 'deck' || explicitLower === 'decks' || explicitLower === 'presentation' || explicitLower === 'presentations' || explicitLower === 'slide' || explicitLower === 'slides' || explicitLower === 'ppt' || explicitLower === 'pptx') {
     return {
       workspace: 'deck',
       type: 'deck',
@@ -182,7 +182,7 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
     };
   }
 
-  if (explicitLower === 'sheets' || explicitLower === 'sheet') {
+  if (explicitLower === 'sheets' || explicitLower === 'sheet' || explicitLower === 'spreadsheet' || explicitLower === 'spreadsheets' || explicitLower === 'workbook' || explicitLower === 'excel') {
     return {
       workspace: 'sheets',
       type: 'sheet',
@@ -1298,17 +1298,47 @@ export function buildWorkspaceIndex(context = {}) {
  */
 function normalizeFilterKey(filter = '') {
   const key = String(filter || '').trim().toLowerCase();
+  const compactKey = key.replace(/[\s_-]+/g, '');
   const aliases = {
     docs: 'compose',
+    doc: 'compose',
     document: 'compose',
     documents: 'compose',
+    docx: 'compose',
+    pdf: 'compose',
+    txt: 'compose',
+    text: 'compose',
+    markdown: 'compose',
+    deck: 'deck',
     decks: 'deck',
+    presentation: 'deck',
+    presentations: 'deck',
     slides: 'deck',
     slide: 'deck',
+    ppt: 'deck',
+    pptx: 'deck',
+    sheet: 'sheets',
+    sheets: 'sheets',
+    worksheet: 'sheets',
+    worksheets: 'sheets',
+    spreadsheet: 'sheets',
+    spreadsheets: 'sheets',
+    workbook: 'sheets',
+    workbooks: 'sheets',
+    excel: 'sheets',
+    xlsx: 'sheets',
+    xls: 'sheets',
+    csv: 'sheets',
+    room: 'room',
     rooms: 'room',
-    meetings: 'room',
     meeting: 'room',
+    meetings: 'room',
     notes: 'notes',
+    note: 'notes',
+    roomnote: 'notes',
+    roomnotes: 'notes',
+    meetingnote: 'notes',
+    meetingnotes: 'notes',
     whiteboards: 'whiteboard',
     whiteboard: 'whiteboard',
     chats: 'chat',
@@ -1319,55 +1349,74 @@ function normalizeFilterKey(filter = '') {
     browserhistories: 'browser-history',
     'browser-history': 'browser-history',
     browserhistory: 'browser-history',
+    browser: 'browser',
     research: 'browser',
     researches: 'browser',
+    researchnote: 'browser',
+    researchnotes: 'browser',
     people: 'people',
     collaborator: 'people',
-    collaborators: 'people'
+    collaborators: 'people',
+    history: 'browser-history',
+    histories: 'browser-history'
   };
 
-  return aliases[key] || key;
+  return aliases[compactKey] || aliases[key] || key;
 }
 
 function itemMatchesWorkspaceFilter(item, activeFilter) {
   const filterKey = normalizeFilterKey(activeFilter);
   if (!filterKey || filterKey === 'all') return true;
 
-  const ws = (item.workspace || '').toLowerCase();
-  const type = (item.type || '').toLowerCase();
-  const resourceType = (item.resourceType || '').toLowerCase();
+  const rawValues = [
+    item.workspace,
+    item.type,
+    item.resourceType,
+    item.targetWorkspace,
+    item.category,
+    item.workspaceType,
+    item.productMode,
+    item.mode
+  ];
+
+  const normalizedValues = rawValues
+    .filter(Boolean)
+    .map(value => normalizeFilterKey(String(value)))
+    .filter(Boolean);
+
+  const hasAnyValue = (values) => normalizedValues.some(v => values.includes(v));
 
   switch (filterKey) {
     case 'compose':
-      return ws === 'compose' || type === 'document' || resourceType === 'document';
+      return hasAnyValue(['compose', 'document', 'doc', 'docs', 'docx', 'pdf', 'markdown', 'text']);
     case 'sheets':
-      return ws === 'sheets' || type === 'sheet' || resourceType === 'sheet';
+      return hasAnyValue(['sheets', 'sheet', 'spreadsheet', 'workbook', 'excel', 'worksheet', 'xlsx', 'xls', 'csv']);
     case 'deck':
-      return ws === 'deck' || type === 'deck' || type === 'slide' || resourceType === 'deck' || resourceType === 'slide';
+      return hasAnyValue(['deck', 'slide', 'presentation', 'ppt', 'pptx']);
     case 'tasks':
-      return ws === 'tasks' || type === 'task' || resourceType === 'task';
+      return hasAnyValue(['tasks', 'task', 'initiative']);
     case 'room':
-      return ws === 'room' || type === 'meeting' || resourceType === 'meeting';
+      return hasAnyValue(['room', 'meeting']);
     case 'notes':
-      return ws === 'notes' || type === 'room_note' || resourceType === 'room_note' || type === 'meeting_note' || resourceType === 'meeting_note' || (ws === 'browser' && (type === 'research_note' || resourceType === 'research_note'));
+      return hasAnyValue(['notes', 'room_note', 'meeting_note']) || (normalizedValues.includes('browser') && hasAnyValue(['research_note']));
     case 'relay':
-      return ws === 'relay' || type === 'message' || resourceType === 'message';
+      return hasAnyValue(['relay', 'message']);
     case 'whiteboard':
-      return ws === 'whiteboard' || type === 'whiteboard' || resourceType === 'whiteboard';
+      return hasAnyValue(['whiteboard']);
     case 'comments':
-      return ws === 'comments' || type === 'comment' || resourceType === 'comment';
+      return hasAnyValue(['comments', 'comment']);
     case 'chat':
-      return ws === 'chat' || type === 'chat' || resourceType === 'chat';
+      return hasAnyValue(['chat']);
     case 'schedule':
-      return ws === 'schedule' || type === 'schedule_event' || resourceType === 'schedule_event';
+      return hasAnyValue(['schedule', 'schedule_event']);
     case 'browser':
-      return ws === 'browser' || type === 'research_note' || resourceType === 'research_note';
+      return hasAnyValue(['browser', 'research_note', 'researchnote']);
     case 'browser-history':
-      return ws === 'browser-history' || type === 'browser_history' || resourceType === 'browser_history';
+      return hasAnyValue(['browser-history', 'browser_history', 'history']);
     case 'people':
-      return ws === 'people' || type === 'person' || resourceType === 'person';
+      return hasAnyValue(['people', 'person']);
     default:
-      return ws === filterKey || type === filterKey || resourceType === filterKey;
+      return normalizedValues.includes(filterKey);
   }
 }
 
@@ -1717,7 +1766,16 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     }
   }
 
+  const hasModelSelectionAvailable = Boolean(customModel || aiConfig || onCallAi);
+
   if (extractedExcerpts.length > 0) {
+    if (!hasModelSelectionAvailable) {
+      return {
+        answer: `I can’t synthesize a direct answer yet because no AI model is connected for Ask Memory. Select a model in the picker, start local Ollama/LM Studio, or add a Gemini/Claude API key in Settings to get an answer instead of raw workspace excerpts.`,
+        sources: matched.map(m => m.entity)
+      };
+    }
+
     const synthesisSections = extractedExcerpts.map((ex, i) => 
       `### ${i + 1}. **${ex.title}** *(${ex.location})*\n${ex.text}`
     ).join('\n\n');
@@ -1732,6 +1790,13 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
 
   const primarySource = matched[0]?.entity;
   const rawFallback = (primarySource?.content || matched[0]?.snippet || '').trim();
+
+  if (!hasModelSelectionAvailable) {
+    return {
+      answer: `I couldn’t generate a direct answer because Ask Memory has no active AI model selected. Choose a model in the Ask Memory header or enable a local/cloud model in Settings before asking again.`,
+      sources: matched.map(m => m.entity)
+    };
+  }
 
   return {
     answer: `Based on **${primarySource?.title || 'Workspace Resource'}** (${primarySource?.location || primarySource?.workspace || 'Workspace'}):\n\n${rawFallback.slice(0, 450)}${rawFallback.length > 450 ? '…' : ''}`,
