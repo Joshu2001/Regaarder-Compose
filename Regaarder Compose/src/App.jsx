@@ -25314,6 +25314,23 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     let localTargetModel = (customModel && composeDetectedModels?.find(m => m.id === customModel || m.name === customModel))
       || (composeSelectedModel?.isLocal ? composeSelectedModel : null);
 
+    if (!localTargetModel && !customApiKey && !aiProviderConfig?.geminiApiKey && !aiProviderConfig?.claudeApiKey && window.electronAPI?.listLocalModels) {
+      try {
+        const nativeResult = await window.electronAPI.listLocalModels();
+        const nativeModel = nativeResult?.models?.[0];
+        if (nativeModel) {
+          localTargetModel = {
+            ...nativeModel,
+            provider: nativeModel.provider || nativeResult.provider || 'Ollama',
+            endpoint: nativeModel.endpoint || nativeResult.activeEndpoint || 'http://127.0.0.1:11434',
+            isLocal: true
+          };
+        }
+      } catch (error) {
+        console.warn('[callGemini] Native local model resolution failed:', error);
+      }
+    }
+
     // Fallback: If customModel contains colon (like gemma3:1b, llama3:8b) or was found in probe, treat as Ollama
     if (!localTargetModel && customModel && (customModel.includes(':') || customModel.startsWith('local-') || customModel.includes('gguf'))) {
       localTargetModel = {
