@@ -1144,6 +1144,9 @@ export default function GlobalWorkspaceSearchModal({
                 onClick={() => {
                   setMode('ai');
                   setAiResponse(null);
+                  if (query.trim()) {
+                    handleRunAiSynthesis(query);
+                  }
                   setTimeout(() => inputRef.current?.focus(), 20);
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold transition-all duration-150 cursor-pointer ${
