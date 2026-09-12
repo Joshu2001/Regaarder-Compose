@@ -442,25 +442,6 @@ export default function GlobalWorkspaceSearchModal({
   const [copiedAi, setCopiedAi] = useState(false);
   const [isRecentExpanded, setIsRecentExpanded] = useState(false);
 
-  // Dynamic step transitions while AI is actively inferencing (Gemini/ChatGPT style)
-  useEffect(() => {
-    if (!aiLoading || aiProgress.step < 3) return;
-    const dynamicSteps = [
-      'Reasoning over retrieved excerpts & temporal metadata...',
-      `Formulating executive answer with ${activeModel.name?.replace(/ \(Local Ollama\)/i, '') || activeModel.id}...`,
-      'Structuring markdown brief, key takeaways & citations...'
-    ];
-    let idx = 0;
-    const interval = setInterval(() => {
-      idx = (idx + 1) % dynamicSteps.length;
-      setAiProgress(prev => {
-        if (prev.step < 3) return prev;
-        return { ...prev, detail: dynamicSteps[idx] };
-      });
-    }, 1800);
-    return () => clearInterval(interval);
-  }, [aiLoading, aiProgress.step, activeModel]);
-
   // Interactive Follow-up, Prompt Edit & Selection States
   const [isReplying, setIsReplying] = useState(false);
   const [replyQuery, setReplyQuery] = useState('');
@@ -568,6 +549,25 @@ export default function GlobalWorkspaceSearchModal({
       localStorage.setItem('regaarder_memory_selected_model', modelId);
     } catch (_) {}
   };
+
+  // Dynamic step transitions while AI is actively inferencing (Gemini/ChatGPT style)
+  useEffect(() => {
+    if (!aiLoading || aiProgress.step < 3) return;
+    const dynamicSteps = [
+      'Reasoning over retrieved excerpts & temporal metadata...',
+      `Formulating executive answer with ${activeModel?.name?.replace(/ \(Local Ollama\)/i, '') || activeModel?.id || 'model'}...`,
+      'Structuring markdown brief, key takeaways & citations...'
+    ];
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % dynamicSteps.length;
+      setAiProgress(prev => {
+        if (prev.step < 3) return prev;
+        return { ...prev, detail: dynamicSteps[idx] };
+      });
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [aiLoading, aiProgress.step, activeModel]);
 
   // Persistent Recent Inquiries History
   const [recentInquiries, setRecentInquiries] = useState(() => {
