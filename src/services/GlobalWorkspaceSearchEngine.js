@@ -22,6 +22,87 @@ export function stripHtml(html = '') {
     .trim();
 }
 
+// Common conversational English stop words to ignore when scoring partial substring queries
+export const SEARCH_STOP_WORDS = new Set([
+  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren\'t', 'as', 'at',
+  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by',
+  'can', 'can\'t', 'cannot', 'could', 'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during',
+  'each', 'few', 'for', 'from', 'further',
+  'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s',
+  'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'isn\'t', 'it', 'it\'s', 'its', 'itself',
+  'just', 'let\'s', 'me', 'more', 'most', 'mustn\'t', 'my', 'myself',
+  'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own',
+  'same', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should', 'shouldn\'t', 'so', 'some', 'such',
+  'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'through', 'to', 'too',
+  'under', 'until', 'up', 'very',
+  'was', 'wasn\'t', 'we', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'wha', 'when', 'when\'s', 'where', 'where\'s', 'which', 'while', 'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t',
+  'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'
+]);
+
+// Helper to check for whole-word boundaries so short words like "is" do not match inside "visual" or "this"
+export function containsWordBoundary(text = '', word = '') {
+  if (!text || !word) return false;
+  const t = text.toLowerCase();
+  const w = word.toLowerCase();
+  if (w.length <= 3) {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^a-z0-9_])${escaped}(?:$|[^a-z0-9_])`, 'i').test(t);
+  }
+  return t.includes(w);
+}
+
+// Extract real user-authored text from whiteboard objects (sticky notes, text nodes, shapes, cards)
+export function extractTextFromWhiteboard(docOrContext = {}) {
+  if (!docOrContext || typeof docOrContext !== 'object') return '';
+  const textParts = [];
+
+  // 1. Whiteboard Widgets (sticky notes, text blocks, markdown cards)
+  const widgets = Array.isArray(docOrContext.whiteboardWidgets)
+    ? docOrContext.whiteboardWidgets
+    : Array.isArray(docOrContext.widgets)
+      ? docOrContext.widgets
+      : [];
+  for (const w of widgets) {
+    if (!w) continue;
+    const t = (w.title || w.text || w.body || w.content || w.label || w.markdown || w.value || '').trim();
+    if (t) textParts.push(t);
+  }
+
+  // 2. Whiteboard Shapes (flowchart nodes, labeled shapes)
+  const shapes = Array.isArray(docOrContext.whiteboardShapes)
+    ? docOrContext.whiteboardShapes
+    : Array.isArray(docOrContext.shapes)
+      ? docOrContext.shapes
+      : [];
+  for (const s of shapes) {
+    if (!s) continue;
+    const t = (s.text || s.label || s.title || s.content || '').trim();
+    if (t) textParts.push(t);
+  }
+
+  // 3. Comments on canvas
+  const comments = Array.isArray(docOrContext.whiteboardComments)
+    ? docOrContext.whiteboardComments
+    : Array.isArray(docOrContext.comments)
+      ? docOrContext.comments
+      : [];
+  for (const c of comments) {
+    if (!c) continue;
+    const t = (c.text || c.body || c.comment || '').trim();
+    if (t) textParts.push(t);
+  }
+
+  // 4. Raw text content (exclude previous static placeholder if present)
+  if (docOrContext.content && typeof docOrContext.content === 'string') {
+    const clean = stripHtml(docOrContext.content).trim();
+    if (clean && !clean.toLowerCase().includes('whiteboard diagrams, sticky notes')) {
+      textParts.push(clean);
+    }
+  }
+
+  return textParts.filter(Boolean).join('\n');
+}
+
 // Generate contextual snippet around matched terms
 export function extractSnippet(text = '', query = '', snippetLength = 140) {
   if (!text) return '';
@@ -70,92 +151,23 @@ export function formatTemporalMetadata(rawDate) {
       d = new Date(rawDate);
     } else if (typeof rawDate === 'string' && rawDate.trim()) {
       const parsed = new Date(rawDate);
-      if (!isNaN(parsed.getTime())) {
-        d = parsed;
-      }
+      if (!isNaN(parsed.getTime())) d = parsed;
     }
   }
   const iso = d.toISOString();
-  const formattedDate = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-  const formattedTime = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-  return {
-    iso,
-    formattedDate,
-    formattedTime,
-    fullText: `${formattedDate} at ${formattedTime}`
-  };
+  const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formattedTime = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return { iso, formattedDate, formattedTime, fullText: `${formattedDate} at ${formattedTime}` };
 }
 
 // Pre-populated Quick Action Launchers
 export const QUICK_ACTIONS = [
-  {
-    id: 'action-new-doc',
-    type: 'action',
-    workspace: 'compose',
-    title: 'New Document',
-    subtitle: 'Open a blank distraction-free Compose document',
-    targetWorkspace: 'compose',
-    shortcut: '⌘N',
-    actionType: 'new_doc'
-  },
-  {
-    id: 'action-new-sheet',
-    type: 'action',
-    workspace: 'sheets',
-    title: 'New Spreadsheet',
-    subtitle: 'Build a financial model or data calculation grid',
-    targetWorkspace: 'sheets',
-    shortcut: '⌘⇧S',
-    actionType: 'new_sheet'
-  },
-  {
-    id: 'action-new-deck',
-    type: 'action',
-    workspace: 'deck',
-    title: 'New Presentation',
-    subtitle: 'Design an executive slide deck with AI intelligence',
-    targetWorkspace: 'deck',
-    shortcut: '⌘⇧P',
-    actionType: 'new_deck'
-  },
-  {
-    id: 'action-new-room',
-    type: 'action',
-    workspace: 'room',
-    title: 'Add New Meeting',
-    subtitle: 'Host an ambient video call with live transcription',
-    targetWorkspace: 'room',
-    shortcut: '⌘M',
-    actionType: 'new_meeting'
-  },
-  {
-    id: 'action-new-message',
-    type: 'action',
-    workspace: 'relay',
-    title: 'New Message',
-    subtitle: 'Send a message or start a conversation in Relay',
-    targetWorkspace: 'dm',
-    shortcut: '⌘⇧M',
-    actionType: 'new_message'
-  },
-  {
-    id: 'action-new-task',
-    type: 'action',
-    workspace: 'tasks',
-    title: 'Create New Task',
-    subtitle: 'Add a project milestone or team action item',
-    targetWorkspace: 'tasks',
-    shortcut: '⌘T',
-    actionType: 'new_task'
-  }
+  { id: 'action-new-doc', type: 'action', workspace: 'compose', title: 'New Document', subtitle: 'Open a blank distraction-free Compose document', targetWorkspace: 'compose', shortcut: '⌘N', actionType: 'new_doc' },
+  { id: 'action-new-sheet', type: 'action', workspace: 'sheets', title: 'New Spreadsheet', subtitle: 'Build a financial model or data calculation grid', targetWorkspace: 'sheets', shortcut: '⌘⇧S', actionType: 'new_sheet' },
+  { id: 'action-new-deck', type: 'action', workspace: 'deck', title: 'New Presentation', subtitle: 'Design an executive slide deck with AI intelligence', targetWorkspace: 'deck', shortcut: '⌘⇧P', actionType: 'new_deck' },
+  { id: 'action-new-room', type: 'action', workspace: 'room', title: 'Add New Meeting', subtitle: 'Host an ambient video call with live transcription', targetWorkspace: 'room', shortcut: '⌘M', actionType: 'new_meeting' },
+  { id: 'action-new-message', type: 'action', workspace: 'relay', title: 'New Message', subtitle: 'Send a message or start a conversation in Relay', targetWorkspace: 'dm', shortcut: '⌘⇧M', actionType: 'new_message' },
+  { id: 'action-new-task', type: 'action', workspace: 'tasks', title: 'Create New Task', subtitle: 'Add a project milestone or team action item', targetWorkspace: 'tasks', shortcut: '⌘T', actionType: 'new_task' }
 ];
 
 /**
@@ -395,14 +407,8 @@ export function resolveWorkspaceForEntity(title = '', type = '', explicitWorkspa
 export function buildWorkspaceIndex(context = {}) {
   const items = [];
 
-  // Known legacy / placeholder names and stale document patterns to strictly exclude
+  // Only known demo/stale records are excluded. Untitled artifacts are real files.
   const placeholderTitles = new Set([
-    'untitled document',
-    'untitled deck',
-    'untitled sheet',
-    'untitled',
-    'untitled whiteboard',
-    'untitled task',
     'beta launch',
     'creator outreach',
     'product hunt launch',
@@ -412,7 +418,7 @@ export function buildWorkspaceIndex(context = {}) {
   const isStaleOrDummyDoc = (title = '') => {
     const t = String(title).toLowerCase().trim();
     if (!t) return true;
-    if (placeholderTitles.has(t) || t.startsWith('untitled')) return true;
+    if (placeholderTitles.has(t)) return true;
     if (t.includes('woodgyna') || t.includes('lettre de motivation') || t.startsWith('cv de')) return true;
     return false;
   };
@@ -453,8 +459,6 @@ export function buildWorkspaceIndex(context = {}) {
       .join('. ');
   };
 
-  // 1. Real Documents & Active Files (strictly sourced from live React state)
-  const openDocs = Array.isArray(context.documents) ? context.documents.filter(d => d && !isStaleOrDummyDoc(d.title || d.docTitle)) : [];
   const activeDocId = context.activeDocId;
   const currentDocTitle = (context.docTitle || '').trim();
   const currentDocSubtitle = (context.docSubtitle || '').trim();
@@ -462,12 +466,47 @@ export function buildWorkspaceIndex(context = {}) {
   const currentProductMode = (context.productMode || '').toLowerCase();
   const currentPlainText = stripHtml(currentDocBodyHtml).trim();
 
+  // 1. All created documents, including blank and currently open artifacts.
+  const sourceDocs = Array.isArray(context.documents) ? context.documents.filter(Boolean) : [];
+  const openDocs = sourceDocs.map((doc) => {
+    if (String(doc.id) !== String(activeDocId)) return doc;
+    return {
+      ...doc,
+      title: currentProductMode === 'sheets' ? (context.sheetsTitle || doc.sheetsTitle || doc.title) : currentProductMode === 'deck' ? (context.deckTitle || doc.deckTitle || doc.title) : (currentDocTitle || doc.title),
+      subtitle: currentDocSubtitle || doc.subtitle,
+      bodyHtml: currentDocBodyHtml || doc.bodyHtml,
+      sheetsTitle: context.sheetsTitle || doc.sheetsTitle,
+      sheetsData: context.sheetsData || doc.sheetsData,
+      sheetGrids: context.sheetGrids || doc.sheetGrids,
+      activeSheetId: context.activeSheetId || doc.activeSheetId,
+      deckTitle: context.deckTitle || doc.deckTitle,
+      deckSlidesData: context.deckSlidesData || doc.deckSlidesData,
+      activeDeckSlideId: context.activeDeckSlideId || doc.activeDeckSlideId,
+      updatedAt: context.updatedAt || doc.updatedAt,
+      createdAt: doc.createdAt || context.createdAt
+    };
+  });
+
+  const untitledCounts = { document: 0, sheet: 0, deck: 0, whiteboard: 0 };
+  const nextUntitledTitle = (kind) => {
+    untitledCounts[kind] += 1;
+    const labels = {
+      document: 'Untitled Document',
+      sheet: 'Untitled Sheet',
+      deck: 'Untitled Deck',
+      whiteboard: 'Untitled Whiteboard'
+    };
+    return `${labels[kind]} ${untitledCounts[kind]}`;
+  };
+
   // 1a. Index Currently Open Document / Sheet / Deck
-  const hasActiveContent = currentPlainText.length > 0 || (currentDocTitle && isRealTitle(currentDocTitle));
-  if (activeDocId) {
-    const temporal = formatTemporalMetadata(context.updatedAt || new Date());
+  const activeSourceDoc = openDocs.find((doc) => String(doc.id) === String(activeDocId));
+  if (false && activeDocId) {
+    const temporal = formatTemporalMetadata(activeSourceDoc?.updatedAt || activeSourceDoc?.createdAt || context.updatedAt || context.createdAt);
+    const createdAt = activeSourceDoc?.createdAt || context.createdAt || temporal.iso;
     if (currentProductMode === 'sheets') {
-      const activeSheetTitle = (context.sheetsTitle || currentDocTitle || 'Untitled Sheet').trim();
+      const activeSheetRawTitle = (context.sheetsTitle || activeSourceDoc?.sheetsTitle || currentDocTitle || activeSourceDoc?.title || '').trim();
+      const activeSheetTitle = isRealTitle(activeSheetRawTitle) ? activeSheetRawTitle : nextUntitledTitle('sheet');
       const gridText = extractTextFromGrid(context.sheetGrids);
       items.push({
         id: `sheet-active-${activeDocId}`,
@@ -488,7 +527,7 @@ export function buildWorkspaceIndex(context = {}) {
           sheetId: context.activeSheetId,
           deepLink: `sheets://${activeDocId}`,
           isCurrent: true,
-          createdAt: temporal.iso,
+          createdAt,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
@@ -497,7 +536,8 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else if (currentProductMode === 'deck') {
-      const activeDeckTitle = (context.deckTitle || currentDocTitle || 'Untitled Deck').trim();
+      const activeDeckRawTitle = (context.deckTitle || activeSourceDoc?.deckTitle || currentDocTitle || activeSourceDoc?.title || '').trim();
+      const activeDeckTitle = isRealTitle(activeDeckRawTitle) ? activeDeckRawTitle : nextUntitledTitle('deck');
       const slides = context.deckSlidesData || [];
       const deckText = extractTextFromSlides(slides);
       items.push({
@@ -519,7 +559,7 @@ export function buildWorkspaceIndex(context = {}) {
           slideCount: slides.length,
           deepLink: `deck://${activeDocId}`,
           isCurrent: true,
-          createdAt: temporal.iso,
+          createdAt,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
@@ -528,14 +568,8 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else {
-      let titleToUse = currentDocTitle || '';
-      if ((!titleToUse || !isRealTitle(titleToUse)) && currentPlainText) {
-        const firstLine = currentPlainText.split(/\n+/)[0]?.trim();
-        if (firstLine && firstLine.length > 2 && firstLine.length < 90 && !isStaleOrDummyDoc(firstLine)) {
-          titleToUse = firstLine;
-        }
-      }
-      if (!titleToUse) titleToUse = 'Untitled Document';
+      let titleToUse = currentDocTitle || activeSourceDoc?.title || '';
+      if (!isRealTitle(titleToUse)) titleToUse = nextUntitledTitle('document');
 
       const activeRes = resolveWorkspaceForEntity(titleToUse, '', currentProductMode || 'compose');
       items.push({
@@ -556,7 +590,7 @@ export function buildWorkspaceIndex(context = {}) {
           docId: activeDocId,
           deepLink: `compose://${activeDocId}`,
           isCurrent: true,
-          createdAt: temporal.iso,
+          createdAt,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
@@ -569,27 +603,28 @@ export function buildWorkspaceIndex(context = {}) {
 
   // 1b. Index Other Real Saved Documents & Workbooks in context.documents
   openDocs.forEach((doc, idx) => {
-    if (String(doc.id) === String(activeDocId)) return; // skip active to prevent duplicate
-
-    const isSheets = doc.mode === 'sheets' || (doc.sheetsData && doc.sheetsData.length > 0) || (doc.sheetGrids && Object.keys(doc.sheetGrids).length > 0);
-    const isDeck = doc.mode === 'deck' || (doc.deckSlidesData && doc.deckSlidesData.length > 0);
-    const isWhiteboard = doc.mode === 'whiteboard';
+    const isSheets = doc.mode === 'sheets';
+    const isDeck = doc.mode === 'deck';
+    const isWhiteboard = doc.mode === 'whiteboard'
+      || (doc.mode === 'compose' && (
+        /^untitled\s+whiteboard(?:\s+\d+)?$/i.test(String(doc.title || '').trim())
+        || (Array.isArray(doc.whiteboardWidgets) && doc.whiteboardWidgets.length > 0)
+        || (Array.isArray(doc.whiteboardStrokes) && doc.whiteboardStrokes.length > 0)
+        || (Array.isArray(doc.whiteboardShapes) && doc.whiteboardShapes.length > 0)
+      ));
     const temporal = formatTemporalMetadata(doc.updatedAt || doc.savedAt || doc.createdAt);
 
     if (isSheets) {
       let rawTitle = (doc.sheetsTitle || doc.title || '').trim();
       const gridText = extractTextFromGrid(doc.sheetGrids);
       const sheetCount = doc.sheetsData?.length || 1;
-      const hasMeaningfulTitle = !!rawTitle && isRealTitle(rawTitle);
-
-      if (!gridText && !hasMeaningfulTitle) return;
 
       if (!rawTitle || isStaleOrDummyDoc(rawTitle)) {
         if (gridText && gridText.length > 3) {
           const firstWord = gridText.split(/\s+/).slice(0, 4).join(' ');
           rawTitle = `Sheet: ${firstWord}`;
         } else {
-          rawTitle = doc.sheetsTitle || doc.title || `Spreadsheet #${String(doc.id).slice(-4)}`;
+          rawTitle = nextUntitledTitle('sheet');
         }
       }
 
@@ -598,6 +633,7 @@ export function buildWorkspaceIndex(context = {}) {
         type: 'sheet',
         resourceType: 'sheet',
         workspace: 'sheets',
+        editorTarget: 'sheets',
         title: rawTitle,
         subtitle: `Spreadsheet (${sheetCount} Sheet${sheetCount > 1 ? 's' : ''})`,
         location: `Sheets > ${rawTitle}`,
@@ -624,16 +660,13 @@ export function buildWorkspaceIndex(context = {}) {
       const slides = doc.deckSlidesData || [];
       const deckText = extractTextFromSlides(slides);
       const slideCount = slides.length || 1;
-      const hasMeaningfulTitle = !!rawTitle && isRealTitle(rawTitle);
-
-      if (!deckText && !hasMeaningfulTitle) return;
 
       if (!rawTitle || isStaleOrDummyDoc(rawTitle)) {
         const firstSlideTitle = slides.find(s => s.title && s.title.trim())?.title?.trim();
         if (firstSlideTitle) {
           rawTitle = firstSlideTitle;
         } else {
-          rawTitle = doc.deckTitle || doc.title || `Presentation #${String(doc.id).slice(-4)}`;
+          rawTitle = nextUntitledTitle('deck');
         }
       }
 
@@ -642,6 +675,7 @@ export function buildWorkspaceIndex(context = {}) {
         type: 'deck',
         resourceType: 'deck',
         workspace: 'deck',
+        editorTarget: 'deck',
         title: rawTitle,
         subtitle: `Presentation (${slideCount} Slide${slideCount > 1 ? 's' : ''})`,
         location: `Deck > ${rawTitle}`,
@@ -663,16 +697,21 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else if (isWhiteboard) {
-      const rawTitle = (doc.title || '').trim();
+      const rawTitle = (doc.title || '').trim() || nextUntitledTitle('whiteboard');
+      const wbContent = extractTextFromWhiteboard(doc);
+      const widgetCount = (Array.isArray(doc.whiteboardWidgets) ? doc.whiteboardWidgets.length : 0)
+        + (Array.isArray(doc.whiteboardShapes) ? doc.whiteboardShapes.length : 0);
+
       items.push({
         id: `whiteboard-${doc.id || idx}`,
         type: 'whiteboard',
         resourceType: 'whiteboard',
         workspace: 'whiteboard',
+        editorTarget: 'whiteboard',
         title: rawTitle || `Whiteboard ${idx + 1}`,
-        subtitle: 'Visual Infinite Canvas',
+        subtitle: widgetCount > 0 ? `Whiteboard (${widgetCount} item${widgetCount > 1 ? 's' : ''})` : 'Whiteboard Canvas',
         location: `Whiteboard > ${rawTitle || `Whiteboard ${idx + 1}`}`,
-        content: 'Whiteboard diagrams, sticky notes, and visual mind maps.',
+        content: wbContent || '',
         rawHtml: '',
         author: doc.author || 'You (Author)',
         authorRole: 'Editor',
@@ -685,7 +724,8 @@ export function buildWorkspaceIndex(context = {}) {
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
           formattedTime: temporal.formattedTime,
-          activityType: 'whiteboard'
+          activityType: 'whiteboard',
+          itemCount: widgetCount
         }
       });
     } else {
@@ -699,23 +739,20 @@ export function buildWorkspaceIndex(context = {}) {
         }
       }
 
-      if (!rawTitle || isStaleOrDummyDoc(rawTitle)) {
-        if (plainText && plainText.length > 3) {
-          const firstWords = plainText.split(/\s+/).slice(0, 4).join(' ');
-          rawTitle = `Doc: ${firstWords}`;
-        } else {
-          return; // skip untitled empty documents
-        }
-      }
+      if (!rawTitle || isStaleOrDummyDoc(rawTitle)) rawTitle = nextUntitledTitle('document');
 
       const effectiveTitle = rawTitle;
-      const explicitMode = doc.mode || (doc.type === 'sheet' ? 'sheets' : doc.type === 'deck' ? 'deck' : 'compose');
-      const docRes = resolveWorkspaceForEntity(effectiveTitle, doc.type || doc.format || '', explicitMode);
+      const docRes = {
+        workspace: 'compose',
+        type: 'document',
+        prefix: 'Compose'
+      };
       items.push({
         id: `doc-${doc.id || idx}`,
         type: docRes.type,
         resourceType: 'document',
         workspace: docRes.workspace,
+        editorTarget: 'compose',
         title: effectiveTitle,
         subtitle: doc.subtitle || `${docRes.prefix} File`,
         location: `${docRes.prefix} > ${effectiveTitle}`,
@@ -943,10 +980,11 @@ export function buildWorkspaceIndex(context = {}) {
   const whiteboardRecords = [];
   if (Array.isArray(context.whiteboards)) whiteboardRecords.push(...context.whiteboards);
   if (Array.isArray(context.whiteboardWidgets) && context.whiteboardWidgets.length > 0) {
+    const liveWbText = extractTextFromWhiteboard(context);
     whiteboardRecords.push({
       id: 'whiteboard-live',
       title: context.whiteboardTitle || 'Whiteboard',
-      content: context.whiteboardWidgets.map(w => w.title || w.text || w.body || '').filter(Boolean).join('\n'),
+      content: liveWbText,
       updatedAt: 'Just now'
     });
   }
@@ -958,7 +996,8 @@ export function buildWorkspaceIndex(context = {}) {
       if (seenBoards.has(String(boardId))) return;
       seenBoards.add(String(boardId));
 
-      const boardContent = [board.content || '', board.summary || '', board.description || ''].filter(Boolean).join('\n');
+      const rawBoardContent = extractTextFromWhiteboard(board) || [board.content || '', board.summary || '', board.description || ''].filter(Boolean).join('\n');
+      const cleanBoardContent = (rawBoardContent || '').toLowerCase().includes('whiteboard diagrams, sticky notes') ? '' : rawBoardContent;
       const temporal = formatTemporalMetadata(board.updatedAt || board.createdAt);
       items.push({
         id: `whiteboard-${boardId}`,
@@ -966,9 +1005,9 @@ export function buildWorkspaceIndex(context = {}) {
         resourceType: 'whiteboard',
         workspace: 'whiteboard',
         title: boardTitle,
-        subtitle: board.subtitle || 'Visual collaboration canvas',
+        subtitle: board.subtitle || 'Whiteboard Canvas',
         location: `Whiteboard > ${boardTitle}`,
-        content: boardContent || 'Whiteboard diagrams, sticky notes, and ideas.',
+        content: cleanBoardContent || '',
         author: board.author || 'You',
         authorRole: 'Editor',
         updatedAt: temporal.fullText,
@@ -1173,11 +1212,17 @@ export function buildWorkspaceIndex(context = {}) {
       const noteTitle = (entry.title || entry.name || entry.label || entry.sourceTitle || entry.url || `Research Note ${idx + 1}`).trim();
       const noteUrl = entry.url || entry.sourceUrl || entry.link || '';
       const noteText = [entry.summary, entry.text, entry.content, entry.snippet, entry.notes, entry.selectionText, entry.targetText, entry.anchorText, entry.caption].filter(Boolean).join('\n').trim();
+      const targetText = String(entry.selectionText || entry.targetText || entry.anchorText || entry.snippet || '').replace(/\s+/g, ' ').trim();
       const noteKey = String(entry.id || `${noteUrl || noteTitle}-${idx}`);
       if (seenResearch.has(noteKey)) return;
       seenResearch.add(noteKey);
 
       const temporal = formatTemporalMetadata(entry.updatedAt || entry.savedAt || entry.createdAt || entry.timestamp);
+      const exactTargetSegment = targetText ? encodeURIComponent(targetText.slice(0, 180)) : '';
+      const deepLink = noteUrl
+        ? `${noteUrl}${exactTargetSegment ? `${noteUrl.includes('?') ? '&' : '?'}highlight=${exactTargetSegment}` : ''}`
+        : `browser://research/${encodeURIComponent(noteKey)}`;
+
       items.push({
         id: `research-note-${noteKey}`,
         type: 'research_note',
@@ -1198,10 +1243,10 @@ export function buildWorkspaceIndex(context = {}) {
           sourceTitle: entry.sourceTitle || noteTitle,
           title: noteTitle,
           query: entry.query || entry.searchQuery || '',
-          targetText: entry.selectionText || entry.targetText || entry.anchorText || entry.snippet || '',
-          deepLink: noteUrl
-            ? `browser://${encodeURIComponent(noteUrl)}${entry.selectionText || entry.targetText || entry.anchorText ? `#${encodeURIComponent((entry.selectionText || entry.targetText || entry.anchorText || '').slice(0, 120))}` : ''}`
-            : `browser://research/${encodeURIComponent(noteKey)}`,
+          targetText,
+          selectionText: entry.selectionText || targetText,
+          anchorText: entry.anchorText || targetText,
+          deepLink,
           createdAt: temporal.iso,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
@@ -1224,7 +1269,8 @@ export function buildWorkspaceIndex(context = {}) {
           const messageText = messages.map((message) => `${message.role || message.sender || 'User'}: ${message.text || message.content || ''}`).join('\n');
           const content = [tab.title, tab.url, tab.query, tab.extractedText, messageText].filter(Boolean).join('\n').trim();
           if (!content) return;
-          const temporal = formatTemporalMetadata(tab.updatedAt || tab.createdAt);
+          const firstSearchMessage = messages.find((message) => message?.sender === 'user' || message?.role === 'user');
+          const temporal = formatTemporalMetadata(tab.firstSearchedAt || firstSearchMessage?.createdAt || tab.createdAt || tab.updatedAt);
           items.push({
             id: `browser-history-${tab.id || tab.url}`,
             type: 'browser_history',
@@ -1365,8 +1411,15 @@ function normalizeFilterKey(filter = '') {
 }
 
 function itemMatchesWorkspaceFilter(item, activeFilter) {
+  if (!item) return false;
   const filterKey = normalizeFilterKey(activeFilter);
   if (!filterKey || filterKey === 'all') return true;
+
+  const primaryType = normalizeFilterKey(item.editorTarget || item.mode || item.resourceType || item.type || item.workspace);
+  const strictArtifactFilters = new Set(['compose', 'sheets', 'deck', 'whiteboard']);
+  if (strictArtifactFilters.has(filterKey)) {
+    return primaryType === filterKey;
+  }
 
   const rawValues = [
     item.workspace,
@@ -1443,8 +1496,14 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
     }));
   }
 
-  // Query tokens for multi-term matching
-  const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+  // Query tokens for multi-term matching (strip punctuation and quotes)
+  const rawTokens = cleanQuery
+    .split(/[\s,.;:!?"'()\[\]{}<>/\\|+=~`@#$%^&*]+/g)
+    .map(t => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  const meaningfulTokens = rawTokens.filter(t => t.length >= 2 && !SEARCH_STOP_WORDS.has(t));
+  const tokensToScore = meaningfulTokens.length > 0 ? meaningfulTokens : rawTokens;
   const scored = [];
 
   for (const item of filtered) {
@@ -1460,59 +1519,93 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
     const updatedLower = (item.updatedAt || '').toLowerCase();
 
     let score = 0;
+    let hasDirectMatch = false;
     let matchType = 'content';
 
     // 1. Exact Title Match
     if (titleLower === cleanQuery) {
       score += 150;
+      hasDirectMatch = true;
       matchType = 'exact_title';
     } else if (titleLower.startsWith(cleanQuery)) {
       score += 100;
+      hasDirectMatch = true;
       matchType = 'title_prefix';
-    } else if (titleLower.includes(cleanQuery)) {
+    } else if (cleanQuery.length >= 3 && titleLower.includes(cleanQuery)) {
       score += 80;
+      hasDirectMatch = true;
       matchType = 'title';
     }
 
-    // 2. Subtitle / Location / Author matches
-    if (subtitleLower.includes(cleanQuery)) score += 40;
-    if (authorLower.includes(cleanQuery)) score += 50;
-    if (locationLower.includes(cleanQuery)) score += 30;
+    // 2. Subtitle / Location / Author matches (whole phrase)
+    if (cleanQuery.length >= 4 && subtitleLower.includes(cleanQuery)) {
+      score += 40;
+      hasDirectMatch = true;
+    }
+    if (cleanQuery.length >= 3 && authorLower.includes(cleanQuery)) {
+      score += 50;
+      hasDirectMatch = true;
+    }
+    if (cleanQuery.length >= 4 && locationLower.includes(cleanQuery)) {
+      score += 30;
+      hasDirectMatch = true;
+    }
 
-    // 3. Multi-token scoring across title, content, and temporal fields
+    // 3. Multi-token scoring across title, content, author, location, and temporal fields
     let allTokensFound = true;
-    for (const t of tokens) {
-      const inTitle = titleLower.includes(t);
-      const inSubtitle = subtitleLower.includes(t);
-      const inContent = contentLower.includes(t);
-      const inAuthor = authorLower.includes(t);
-      const inLocation = locationLower.includes(t);
-      const inDate = dateLower.includes(t);
-      const inTime = timeLower.includes(t);
-      const inActType = actTypeLower.includes(t);
-      const inUpdated = updatedLower.includes(t);
+    let matchedTokenCount = 0;
 
-      if (inTitle) score += 30;
-      else if (inSubtitle) score += 15;
-      else if (inAuthor) score += 20;
-      else if (inContent) score += 10;
-      else if (inLocation) score += 10;
-      else if (inDate || inTime || inUpdated) score += 35; // boost temporal token matches
-      else if (inActType) score += 20;
-      else {
+    for (const t of tokensToScore) {
+      const inTitle = containsWordBoundary(titleLower, t);
+      const inContent = containsWordBoundary(contentLower, t);
+      const inSubtitle = containsWordBoundary(subtitleLower, t);
+      const inAuthor = containsWordBoundary(authorLower, t);
+      const inLocation = containsWordBoundary(locationLower, t);
+      const inDate = containsWordBoundary(dateLower, t);
+      const inTime = containsWordBoundary(timeLower, t);
+      const inActType = containsWordBoundary(actTypeLower, t);
+      const inUpdated = containsWordBoundary(updatedLower, t);
+
+      if (inTitle) {
+        score += 45;
+        matchedTokenCount += 1;
+        hasDirectMatch = true;
+      } else if (inContent) {
+        score += 30;
+        matchedTokenCount += 1;
+        hasDirectMatch = true;
+      } else if (inSubtitle) {
+        score += 15;
+        matchedTokenCount += 1;
+      } else if (inAuthor) {
+        score += 20;
+        matchedTokenCount += 1;
+        hasDirectMatch = true;
+      } else if (inLocation) {
+        score += 15;
+        matchedTokenCount += 1;
+      } else if (inDate || inTime || inUpdated) {
+        score += 35;
+        matchedTokenCount += 1;
+      } else if (inActType) {
+        score += 20;
+        matchedTokenCount += 1;
+      } else {
         allTokensFound = false;
       }
     }
 
-    if (contentLower.includes(cleanQuery)) {
-      score += 25;
+    if (cleanQuery.length >= 4 && contentLower.includes(cleanQuery)) {
+      score += 35;
+      hasDirectMatch = true;
     }
 
-    if (allTokensFound && tokens.length > 1) {
+    if (allTokensFound && tokensToScore.length > 1) {
       score += 40;
     }
 
-    if (score > 0) {
+    // An item is only valid if it has genuine content/title/author matches
+    if (score > 0 && hasDirectMatch && matchedTokenCount > 0) {
       scored.push({
         entity: item,
         relevanceScore: score,
@@ -1548,9 +1641,6 @@ export function groupResultsByCategory(scoredResults) {
 
   scoredResults.forEach(res => {
     const entity = res.entity || {};
-    const ws = (entity.workspace || '').toLowerCase();
-    const type = (entity.type || '').toLowerCase();
-    const resourceType = (entity.resourceType || '').toLowerCase();
 
     if (itemMatchesWorkspaceFilter(entity, 'browser-history')) {
       groups.browserHistory.items.push(res);
@@ -1597,6 +1687,7 @@ export async function synthesizeWorkspaceKnowledge({
   query,
   activeFilter = 'all',
   workspaceIndex = [],
+  onProgress = null,
   onCallAi = null,
   aiConfig = null,
   customModel = null,
@@ -1604,9 +1695,20 @@ export async function synthesizeWorkspaceKnowledge({
   previousConversation = [],
   personaInstructions = ''
 }) {
-  const matched = queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8);
+  onProgress?.({
+    step: 1,
+    phase: 'scan',
+    label: 'Scanning workspace index & entities',
+    detail: `Searching matching resources across active filter (${activeFilter})...`
+  });
+  const rawMatched = (workspaceIndex && workspaceIndex.length > 0)
+    ? queryWorkspace(workspaceIndex, query, activeFilter)
+    : [];
+  // Filter out low-confidence or spurious matches; only ground AI on genuinely relevant sources
+  const matched = rawMatched.filter(m => m.relevanceScore >= 30).slice(0, 8);
+  const hasBrandGuidelines = Boolean(personaInstructions && personaInstructions.includes('Brand Guidelines:') && personaInstructions.split('Brand Guidelines:')[1]?.trim()?.length > 5);
 
-  if (matched.length === 0) {
+  if (matched.length === 0 && !hasBrandGuidelines) {
     return {
       answer: `No records found in your workspace regarding "${query}". Create or import documents, sheets, tasks, or notes to ask questions about your workspace.`,
       sources: []
@@ -1614,7 +1716,13 @@ export async function synthesizeWorkspaceKnowledge({
   }
 
   // Build grounded context with full temporal metadata for LLM reasoning
-  const contextBlocks = matched.map((m, idx) => {
+  onProgress?.({
+    step: 2,
+    phase: 'extract',
+    label: 'Extracting citations & temporal metadata',
+    detail: `Grounded ${matched.length} workspace records with activity dates & guidelines...`
+  });
+  let contextBlocks = matched.map((m, idx) => {
     const e = m.entity;
     const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
     const meta = e.metadata || {};
@@ -1628,6 +1736,11 @@ export async function synthesizeWorkspaceKnowledge({
 ${temporalInfo ? `[TEMPORAL METADATA: ${temporalInfo}]` : ''}
 ${bodyExcerpt}`;
   });
+
+  if (contextBlocks.length === 0 && hasBrandGuidelines) {
+    const brandExcerpt = personaInstructions.split('Brand Guidelines:')[1]?.trim() || '';
+    contextBlocks = [`[RESOURCE 1: "Brand Guidelines & Workspace Memory" | Application: Memory | Type: Guidelines]\n${brandExcerpt}`];
+  }
 
   const contextData = contextBlocks.join('\n\n---\n\n');
 
@@ -1651,6 +1764,14 @@ ${contextData}
 
 Synthesize the answer directly based on the sources above. Explicitly account for timestamps and dates if the question refers to time, days, or recency:`;
 
+  const engineLabel = customModel ? customModel.replace(/ \(Local Ollama\)/i, '') : 'local engine';
+  onProgress?.({
+    step: 3,
+    phase: 'synthesize',
+    label: `Synthesizing executive intelligence with ${engineLabel}`,
+    detail: 'Reasoning over grounded context, guidelines, and chronological facts...'
+  });
+
   // Helper to verify if returned string is a provider error or unconfigured message
   const isErrorOrEmpty = (str) => {
     if (!str || typeof str !== 'string') return true;
@@ -1658,7 +1779,6 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     return lower.includes('empty response') ||
            lower.includes('check your api key') ||
            lower.includes('api key and model settings') ||
-           lower.includes('unable to synthesize') ||
            lower.includes('quota exceeded') ||
            lower.includes('invalid api key');
   };
@@ -1680,7 +1800,12 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
       const { callAiWithTools } = await import('./docsToolExecutor.js');
       const { getSavedAiConfig } = await import('./orbAiService.js');
 
-      const resolvedConfig = aiConfig || getSavedAiConfig();
+      const baseConfig = aiConfig || getSavedAiConfig();
+      const resolvedConfig = {
+        ...baseConfig,
+        ...(customModel ? { model: customModel } : {}),
+        ...(customProvider ? { provider: customProvider } : {})
+      };
       if (hasUsableConfig(resolvedConfig)) {
         const toolPrompt = `${systemPrompt}\n\n${userPrompt}`;
         const result = await callAiWithTools(toolPrompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
@@ -1728,6 +1853,58 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     }
   }
 
+  // ── Secondary-B Path: Direct Ollama Loopback at 127.0.0.1:11434 / /api/ollama ──
+  const localCandidates = ['http://127.0.0.1:11434', '/api/ollama', 'http://localhost:11434'];
+  const targetOllamaModel = (customModel && !customModel.includes('gemini') && !customModel.includes('claude')) ? customModel : 'gemma3:1b';
+  for (const ep of localCandidates) {
+    try {
+      // 1. Try /api/chat first (standard for conversational models like gemma3:1b)
+      const chatRes = await fetch(`${ep}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: targetOllamaModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          stream: false
+        })
+      });
+      if (chatRes.ok) {
+        const chatData = await chatRes.json();
+        const chatText = (chatData?.message?.content || '').trim();
+        if (chatText && !isErrorOrEmpty(chatText)) {
+          return {
+            answer: chatText,
+            sources: matched.map(m => m.entity)
+          };
+        }
+      }
+
+      // 2. Fallback to /api/generate
+      const directRes = await fetch(`${ep}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: targetOllamaModel,
+          prompt: `${systemPrompt}\n\n${userPrompt}`,
+          stream: false
+        })
+      });
+      if (directRes.ok) {
+        const directData = await directRes.json();
+        const genText = (directData?.response || '').trim();
+        if (genText && !isErrorOrEmpty(genText)) {
+          return {
+            answer: genText,
+            sources: matched.map(m => m.entity)
+          };
+        }
+      }
+    } catch (_) {}
+  }
+
   // ── Tertiary Path: Smart Semantic Keyword Extraction & Multi-Source Synthesis (no LLM required) ─────
   const terms = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !['what', 'this', 'that', 'with', 'from', 'your', 'about', 'connection', 'across', 'workspace', 'tell', 'show'].includes(t));
   const extractedExcerpts = [];
@@ -1766,12 +1943,15 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     }
   }
 
-  const hasModelSelectionAvailable = Boolean(customModel || aiConfig || onCallAi);
+  const hasUsableAiBackend = Boolean(
+    (customModel && String(customModel).trim()) ||
+    (aiConfig && hasUsableConfig(aiConfig))
+  );
 
   if (extractedExcerpts.length > 0) {
-    if (!hasModelSelectionAvailable) {
+    if (!hasUsableAiBackend) {
       return {
-        answer: `I can’t synthesize a direct answer yet because no AI model is connected for Ask Memory. Select a model in the picker, start local Ollama/LM Studio, or add a Gemini/Claude API key in Settings to get an answer instead of raw workspace excerpts.`,
+        answer: `Ask Memory is selected, but no usable AI model is connected right now. Pick a model in the header, start Ollama or LM Studio, or add a valid Gemini/Claude API key in Settings before asking again.`,
         sources: matched.map(m => m.entity)
       };
     }
@@ -1791,9 +1971,16 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
   const primarySource = matched[0]?.entity;
   const rawFallback = (primarySource?.content || matched[0]?.snippet || '').trim();
 
-  if (!hasModelSelectionAvailable) {
+  if (!hasUsableAiBackend) {
     return {
-      answer: `I couldn’t generate a direct answer because Ask Memory has no active AI model selected. Choose a model in the Ask Memory header or enable a local/cloud model in Settings before asking again.`,
+      answer: `I couldn’t generate a direct answer because Ask Memory has no active model connection. Choose a model in the Ask Memory header, connect local Ollama/LM Studio, or enable a valid Gemini/Claude key in Settings.`,
+      sources: matched.map(m => m.entity)
+    };
+  }
+
+  if (!rawFallback) {
+    return {
+      answer: `I found a likely match, but there isn’t enough source content to answer this question directly. Try a more specific prompt or add the relevant document to your workspace.`,
       sources: matched.map(m => m.entity)
     };
   }
