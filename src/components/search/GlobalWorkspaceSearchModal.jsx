@@ -1194,9 +1194,7 @@ export default function GlobalWorkspaceSearchModal({
         {/* ── Dominant Search / Header (Adaptive min-h-[62px] fluid height) ── */}
         <div className="min-h-[62px] py-2.5 flex items-center px-5 border-b border-black/[0.06] dark:border-white/[0.07] gap-3.5 shrink-0 bg-transparent transition-all duration-150">
           {mode === 'ai' ? (
-            <div className="w-7 h-7 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0 shadow-2xs self-center">
-              <RegaarderAiIcon size={15} strokeWidth={1.9} />
-            </div>
+            <RegaarderAiIcon size={18} strokeWidth={1.9} className="text-slate-700 dark:text-zinc-300 shrink-0 self-center transition-colors" />
           ) : (
             <Search size={18} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500 shrink-0 self-center" />
           )}
@@ -2357,32 +2355,45 @@ export default function GlobalWorkspaceSearchModal({
 
         {/* ── Footer Cheatsheet Bar ── */}
         <div className={`flex items-center justify-between px-5 py-2.5 text-[11px] text-slate-500 dark:text-zinc-400 shrink-0 ${footerClasses}`}>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
-              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↑↓</kbd>
-              <span>{t('search.navigate') || 'Navigate'}</span>
-            </span>
-            <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
-              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↵</kbd>
-              <span>{mode === 'ai' || isQuestionQuery ? 'Ask Memory' : (t('search.open') || 'Open')}</span>
-            </span>
-            <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
-              <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>
-              <span>{t('common.close') || 'Close'}</span>
-            </span>
+          {aiLoading ? (
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-slate-600 dark:text-zinc-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-zinc-100 animate-ping inline-block" />
+                <span className="font-medium text-[11px]">Synthesizing intelligence…</span>
+              </span>
+              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500 ml-2">
+                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>
+                <span>{t('common.cancel') || 'Cancel'}</span>
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
+                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↑↓</kbd>
+                <span>{t('search.navigate') || 'Navigate'}</span>
+              </span>
+              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
+                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↵</kbd>
+                <span>{mode === 'ai' || isQuestionQuery ? 'Ask Memory' : (t('search.open') || 'Open')}</span>
+              </span>
+              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
+                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>
+                <span>{t('common.close') || 'Close'}</span>
+              </span>
 
-            {(aiResponse || query || conversationThread.length > 0) && (
-              <button
-                type="button"
-                onClick={handleClearMemorySynthesis}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.03] hover:bg-rose-50 dark:bg-white/[0.04] dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 font-medium text-[10.5px] transition-colors cursor-pointer ml-1"
-                title="Reset search and clear current synthesis"
-              >
-                <RotateCcw size={10} />
-                <span>Reset Search</span>
-              </button>
-            )}
-          </div>
+              {(aiResponse || query || conversationThread.length > 0) && (
+                <button
+                  type="button"
+                  onClick={handleClearMemorySynthesis}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.03] hover:bg-rose-50 dark:bg-white/[0.04] dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 font-medium text-[10.5px] transition-colors cursor-pointer ml-1"
+                  title="Reset search and clear current synthesis"
+                >
+                  <RotateCcw size={10} />
+                  <span>Reset Search</span>
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 text-[10.5px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 inline-block" />

@@ -1701,6 +1701,8 @@ export async function synthesizeWorkspaceKnowledge({
     label: 'Scanning workspace index & entities',
     detail: `Searching matching resources across active filter (${activeFilter})...`
   });
+  await new Promise(r => setTimeout(r, 260));
+
   const rawMatched = (workspaceIndex && workspaceIndex.length > 0)
     ? queryWorkspace(workspaceIndex, query, activeFilter)
     : [];
@@ -1722,6 +1724,7 @@ export async function synthesizeWorkspaceKnowledge({
     label: 'Extracting citations & temporal metadata',
     detail: `Grounded ${matched.length} workspace records with activity dates & guidelines...`
   });
+  await new Promise(r => setTimeout(r, 280));
   let contextBlocks = matched.map((m, idx) => {
     const e = m.entity;
     const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
