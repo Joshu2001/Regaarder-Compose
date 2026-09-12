@@ -1181,14 +1181,14 @@ export default function GlobalWorkspaceSearchModal({
 
   return (
     <div
-      className={`fixed inset-0 z-[100000] flex items-start justify-center pt-[7vh] sm:pt-[9vh] px-4 pb-6 animate-in fade-in duration-150 select-none ${backdropClasses}`}
+      className={`fixed inset-0 z-[100000] flex items-start justify-center pt-[5vh] sm:pt-[7vh] px-4 pb-6 animate-in fade-in duration-150 select-none ${backdropClasses}`}
       onClick={onClose}
       onKeyDown={handleKeyDown}
       style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
     >
-      {/* ── Search Surface Shell (920px wide, 650px high, 16px radius) ── */}
+      {/* ── Search Surface Shell (1040px wide, 740px high, 16px radius - Apple Executive Proportions) ── */}
       <div
-        className={`w-[920px] max-w-[95vw] h-[650px] max-h-[88vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
+        className={`w-[1040px] max-w-[95vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Dominant Search / Header (Adaptive min-h-[62px] fluid height) ── */}

@@ -22,6 +22,87 @@ export function stripHtml(html = '') {
     .trim();
 }
 
+// Common conversational English stop words to ignore when scoring partial substring queries
+export const SEARCH_STOP_WORDS = new Set([
+  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren\'t', 'as', 'at',
+  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by',
+  'can', 'can\'t', 'cannot', 'could', 'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during',
+  'each', 'few', 'for', 'from', 'further',
+  'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s',
+  'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'isn\'t', 'it', 'it\'s', 'its', 'itself',
+  'just', 'let\'s', 'me', 'more', 'most', 'mustn\'t', 'my', 'myself',
+  'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own',
+  'same', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should', 'shouldn\'t', 'so', 'some', 'such',
+  'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'through', 'to', 'too',
+  'under', 'until', 'up', 'very',
+  'was', 'wasn\'t', 'we', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'wha', 'when', 'when\'s', 'where', 'where\'s', 'which', 'while', 'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t',
+  'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'
+]);
+
+// Helper to check for whole-word boundaries so short words like "is" do not match inside "visual" or "this"
+export function containsWordBoundary(text = '', word = '') {
+  if (!text || !word) return false;
+  const t = text.toLowerCase();
+  const w = word.toLowerCase();
+  if (w.length <= 3) {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^a-z0-9_])${escaped}(?:$|[^a-z0-9_])`, 'i').test(t);
+  }
+  return t.includes(w);
+}
+
+// Extract real user-authored text from whiteboard objects (sticky notes, text nodes, shapes, cards)
+export function extractTextFromWhiteboard(docOrContext = {}) {
+  if (!docOrContext || typeof docOrContext !== 'object') return '';
+  const textParts = [];
+
+  // 1. Whiteboard Widgets (sticky notes, text blocks, markdown cards)
+  const widgets = Array.isArray(docOrContext.whiteboardWidgets)
+    ? docOrContext.whiteboardWidgets
+    : Array.isArray(docOrContext.widgets)
+      ? docOrContext.widgets
+      : [];
+  for (const w of widgets) {
+    if (!w) continue;
+    const t = (w.title || w.text || w.body || w.content || w.label || w.markdown || w.value || '').trim();
+    if (t) textParts.push(t);
+  }
+
+  // 2. Whiteboard Shapes (flowchart nodes, labeled shapes)
+  const shapes = Array.isArray(docOrContext.whiteboardShapes)
+    ? docOrContext.whiteboardShapes
+    : Array.isArray(docOrContext.shapes)
+      ? docOrContext.shapes
+      : [];
+  for (const s of shapes) {
+    if (!s) continue;
+    const t = (s.text || s.label || s.title || s.content || '').trim();
+    if (t) textParts.push(t);
+  }
+
+  // 3. Comments on canvas
+  const comments = Array.isArray(docOrContext.whiteboardComments)
+    ? docOrContext.whiteboardComments
+    : Array.isArray(docOrContext.comments)
+      ? docOrContext.comments
+      : [];
+  for (const c of comments) {
+    if (!c) continue;
+    const t = (c.text || c.body || c.comment || '').trim();
+    if (t) textParts.push(t);
+  }
+
+  // 4. Raw text content (exclude previous static placeholder if present)
+  if (docOrContext.content && typeof docOrContext.content === 'string') {
+    const clean = stripHtml(docOrContext.content).trim();
+    if (clean && !clean.toLowerCase().includes('whiteboard diagrams, sticky notes')) {
+      textParts.push(clean);
+    }
+  }
+
+  return textParts.filter(Boolean).join('\n');
+}
+
 // Generate contextual snippet around matched terms
 export function extractSnippet(text = '', query = '', snippetLength = 140) {
   if (!text) return '';
@@ -617,6 +698,10 @@ export function buildWorkspaceIndex(context = {}) {
       });
     } else if (isWhiteboard) {
       const rawTitle = (doc.title || '').trim() || nextUntitledTitle('whiteboard');
+      const wbContent = extractTextFromWhiteboard(doc);
+      const widgetCount = (Array.isArray(doc.whiteboardWidgets) ? doc.whiteboardWidgets.length : 0)
+        + (Array.isArray(doc.whiteboardShapes) ? doc.whiteboardShapes.length : 0);
+
       items.push({
         id: `whiteboard-${doc.id || idx}`,
         type: 'whiteboard',
@@ -624,9 +709,9 @@ export function buildWorkspaceIndex(context = {}) {
         workspace: 'whiteboard',
         editorTarget: 'whiteboard',
         title: rawTitle || `Whiteboard ${idx + 1}`,
-        subtitle: 'Visual Infinite Canvas',
+        subtitle: widgetCount > 0 ? `Whiteboard (${widgetCount} item${widgetCount > 1 ? 's' : ''})` : 'Whiteboard Canvas',
         location: `Whiteboard > ${rawTitle || `Whiteboard ${idx + 1}`}`,
-        content: 'Whiteboard diagrams, sticky notes, and visual mind maps.',
+        content: wbContent || '',
         rawHtml: '',
         author: doc.author || 'You (Author)',
         authorRole: 'Editor',
@@ -639,7 +724,8 @@ export function buildWorkspaceIndex(context = {}) {
           activityAt: temporal.iso,
           formattedDate: temporal.formattedDate,
           formattedTime: temporal.formattedTime,
-          activityType: 'whiteboard'
+          activityType: 'whiteboard',
+          itemCount: widgetCount
         }
       });
     } else {
@@ -894,10 +980,11 @@ export function buildWorkspaceIndex(context = {}) {
   const whiteboardRecords = [];
   if (Array.isArray(context.whiteboards)) whiteboardRecords.push(...context.whiteboards);
   if (Array.isArray(context.whiteboardWidgets) && context.whiteboardWidgets.length > 0) {
+    const liveWbText = extractTextFromWhiteboard(context);
     whiteboardRecords.push({
       id: 'whiteboard-live',
       title: context.whiteboardTitle || 'Whiteboard',
-      content: context.whiteboardWidgets.map(w => w.title || w.text || w.body || '').filter(Boolean).join('\n'),
+      content: liveWbText,
       updatedAt: 'Just now'
     });
   }
@@ -909,7 +996,8 @@ export function buildWorkspaceIndex(context = {}) {
       if (seenBoards.has(String(boardId))) return;
       seenBoards.add(String(boardId));
 
-      const boardContent = [board.content || '', board.summary || '', board.description || ''].filter(Boolean).join('\n');
+      const rawBoardContent = extractTextFromWhiteboard(board) || [board.content || '', board.summary || '', board.description || ''].filter(Boolean).join('\n');
+      const cleanBoardContent = (rawBoardContent || '').toLowerCase().includes('whiteboard diagrams, sticky notes') ? '' : rawBoardContent;
       const temporal = formatTemporalMetadata(board.updatedAt || board.createdAt);
       items.push({
         id: `whiteboard-${boardId}`,
@@ -917,9 +1005,9 @@ export function buildWorkspaceIndex(context = {}) {
         resourceType: 'whiteboard',
         workspace: 'whiteboard',
         title: boardTitle,
-        subtitle: board.subtitle || 'Visual collaboration canvas',
+        subtitle: board.subtitle || 'Whiteboard Canvas',
         location: `Whiteboard > ${boardTitle}`,
-        content: boardContent || 'Whiteboard diagrams, sticky notes, and ideas.',
+        content: cleanBoardContent || '',
         author: board.author || 'You',
         authorRole: 'Editor',
         updatedAt: temporal.fullText,
@@ -1408,8 +1496,14 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
     }));
   }
 
-  // Query tokens for multi-term matching
-  const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+  // Query tokens for multi-term matching (strip punctuation and quotes)
+  const rawTokens = cleanQuery
+    .split(/[\s,.;:!?"'()\[\]{}<>/\\|+=~`@#$%^&*]+/g)
+    .map(t => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  const meaningfulTokens = rawTokens.filter(t => t.length >= 2 && !SEARCH_STOP_WORDS.has(t));
+  const tokensToScore = meaningfulTokens.length > 0 ? meaningfulTokens : rawTokens;
   const scored = [];
 
   for (const item of filtered) {
@@ -1425,59 +1519,93 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
     const updatedLower = (item.updatedAt || '').toLowerCase();
 
     let score = 0;
+    let hasDirectMatch = false;
     let matchType = 'content';
 
     // 1. Exact Title Match
     if (titleLower === cleanQuery) {
       score += 150;
+      hasDirectMatch = true;
       matchType = 'exact_title';
     } else if (titleLower.startsWith(cleanQuery)) {
       score += 100;
+      hasDirectMatch = true;
       matchType = 'title_prefix';
-    } else if (titleLower.includes(cleanQuery)) {
+    } else if (cleanQuery.length >= 3 && titleLower.includes(cleanQuery)) {
       score += 80;
+      hasDirectMatch = true;
       matchType = 'title';
     }
 
-    // 2. Subtitle / Location / Author matches
-    if (subtitleLower.includes(cleanQuery)) score += 40;
-    if (authorLower.includes(cleanQuery)) score += 50;
-    if (locationLower.includes(cleanQuery)) score += 30;
+    // 2. Subtitle / Location / Author matches (whole phrase)
+    if (cleanQuery.length >= 4 && subtitleLower.includes(cleanQuery)) {
+      score += 40;
+      hasDirectMatch = true;
+    }
+    if (cleanQuery.length >= 3 && authorLower.includes(cleanQuery)) {
+      score += 50;
+      hasDirectMatch = true;
+    }
+    if (cleanQuery.length >= 4 && locationLower.includes(cleanQuery)) {
+      score += 30;
+      hasDirectMatch = true;
+    }
 
-    // 3. Multi-token scoring across title, content, and temporal fields
+    // 3. Multi-token scoring across title, content, author, location, and temporal fields
     let allTokensFound = true;
-    for (const t of tokens) {
-      const inTitle = titleLower.includes(t);
-      const inSubtitle = subtitleLower.includes(t);
-      const inContent = contentLower.includes(t);
-      const inAuthor = authorLower.includes(t);
-      const inLocation = locationLower.includes(t);
-      const inDate = dateLower.includes(t);
-      const inTime = timeLower.includes(t);
-      const inActType = actTypeLower.includes(t);
-      const inUpdated = updatedLower.includes(t);
+    let matchedTokenCount = 0;
 
-      if (inTitle) score += 30;
-      else if (inSubtitle) score += 15;
-      else if (inAuthor) score += 20;
-      else if (inContent) score += 10;
-      else if (inLocation) score += 10;
-      else if (inDate || inTime || inUpdated) score += 35; // boost temporal token matches
-      else if (inActType) score += 20;
-      else {
+    for (const t of tokensToScore) {
+      const inTitle = containsWordBoundary(titleLower, t);
+      const inContent = containsWordBoundary(contentLower, t);
+      const inSubtitle = containsWordBoundary(subtitleLower, t);
+      const inAuthor = containsWordBoundary(authorLower, t);
+      const inLocation = containsWordBoundary(locationLower, t);
+      const inDate = containsWordBoundary(dateLower, t);
+      const inTime = containsWordBoundary(timeLower, t);
+      const inActType = containsWordBoundary(actTypeLower, t);
+      const inUpdated = containsWordBoundary(updatedLower, t);
+
+      if (inTitle) {
+        score += 45;
+        matchedTokenCount += 1;
+        hasDirectMatch = true;
+      } else if (inContent) {
+        score += 30;
+        matchedTokenCount += 1;
+        hasDirectMatch = true;
+      } else if (inSubtitle) {
+        score += 15;
+        matchedTokenCount += 1;
+      } else if (inAuthor) {
+        score += 20;
+        matchedTokenCount += 1;
+        hasDirectMatch = true;
+      } else if (inLocation) {
+        score += 15;
+        matchedTokenCount += 1;
+      } else if (inDate || inTime || inUpdated) {
+        score += 35;
+        matchedTokenCount += 1;
+      } else if (inActType) {
+        score += 20;
+        matchedTokenCount += 1;
+      } else {
         allTokensFound = false;
       }
     }
 
-    if (contentLower.includes(cleanQuery)) {
-      score += 25;
+    if (cleanQuery.length >= 4 && contentLower.includes(cleanQuery)) {
+      score += 35;
+      hasDirectMatch = true;
     }
 
-    if (allTokensFound && tokens.length > 1) {
+    if (allTokensFound && tokensToScore.length > 1) {
       score += 40;
     }
 
-    if (score > 0) {
+    // An item is only valid if it has genuine content/title/author matches
+    if (score > 0 && hasDirectMatch && matchedTokenCount > 0) {
       scored.push({
         entity: item,
         relevanceScore: score,
@@ -1573,9 +1701,11 @@ export async function synthesizeWorkspaceKnowledge({
     label: 'Scanning workspace index & entities',
     detail: `Searching matching resources across active filter (${activeFilter})...`
   });
-  const matched = (workspaceIndex && workspaceIndex.length > 0)
-    ? queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8)
+  const rawMatched = (workspaceIndex && workspaceIndex.length > 0)
+    ? queryWorkspace(workspaceIndex, query, activeFilter)
     : [];
+  // Filter out low-confidence or spurious matches; only ground AI on genuinely relevant sources
+  const matched = rawMatched.filter(m => m.relevanceScore >= 30).slice(0, 8);
   const hasBrandGuidelines = Boolean(personaInstructions && personaInstructions.includes('Brand Guidelines:') && personaInstructions.split('Brand Guidelines:')[1]?.trim()?.length > 5);
 
   if (matched.length === 0 && !hasBrandGuidelines) {

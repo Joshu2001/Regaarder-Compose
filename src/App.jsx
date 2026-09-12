@@ -18347,6 +18347,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       },
     ];
   });
+  const documentsRef = useRef(documents);
+  useEffect(() => {
+    documentsRef.current = documents;
+  }, [documents]);
   const [activeDocId, setActiveDocId] = useState(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -18365,7 +18369,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   }, [activeDocId, documents]);
 
   useEffect(() => {
-    const currentDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
+    const currentDoc = (documentsRef.current || documents).find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
     // Strictly preserve user-given custom title: if user gave a title, never autotitle
     if (currentDoc?.isTitleCustom) {
       return;
@@ -18373,13 +18377,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     // Auto-title ONLY if no title has been given
     const currentTitle = (currentDoc?.title || docTitle || '').trim();
-    const hasExplicitTitle = currentTitle && currentTitle !== 'Untitled Document' && currentTitle !== 'Untitled Whiteboard' && currentTitle !== 'Compose Draft' && currentTitle !== 'Untitled';
-    if (hasExplicitTitle) {
+    const isDefaultTitle = !currentTitle || /^(untitled(\s+(document|sheet|deck|whiteboard))?(\s+\d+)?|compose draft)$/i.test(currentTitle);
+    if (!isDefaultTitle) {
       return;
     }
 
     if (!docBodyHtml) {
-      if (!docTitle || docTitle === 'Untitled Document') {
+      if (!docTitle || /^(untitled(\s+(document|sheet|deck|whiteboard))?(\s+\d+)?|compose draft)$/i.test(docTitle)) {
         if (docTitle !== 'Untitled Document') {
           setDocTitle('Untitled Document');
         }
@@ -18420,7 +18424,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   useEffect(() => {
     const loadDocuments = () => {
       const nextDocuments = readWorkspaceDocuments();
-      if (nextDocuments.length > 0) setDocuments(nextDocuments);
+      if (nextDocuments.length > 0) {
+        documentsRef.current = nextDocuments;
+        setDocuments(nextDocuments);
+      }
     };
     window.addEventListener('storage', loadDocuments);
     window.addEventListener('workspace-storage-update', loadDocuments);
@@ -18544,9 +18551,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       .filter((doc) => getDocMode(doc) === 'compose')
       .map((doc) => {
         const rawTitle = (doc.title || '').trim();
-        const displayTitle = rawTitle && !/^untitled/i.test(rawTitle)
-          ? rawTitle
-          : `Untitled Document ${++untitledNumber}`;
+        const isGenericUntitled = !rawTitle || /^untitled(\s+document)?$/i.test(rawTitle);
+        const displayTitle = isGenericUntitled
+          ? `Untitled Document ${++untitledNumber}`
+          : rawTitle;
         return { ...doc, displayTitle };
       });
   }, [getAllKnownDocuments, getDocMode]);
@@ -21043,6 +21051,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     };
   }, [isReplayPlaying, replayIndex, replayTimeline, replayDirection, replaySpeed]);
 
+  const saveDocumentLocallyRef = useRef();
+
   const saveDocumentLocally = ({ silent = false, trackAction = true } = {}) => {
     let currentId = activeDocId;
     if (!currentId) {
@@ -21056,6 +21066,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       return;
     }
 
+    const currentDocs = documentsRef.current || documents;
     const savedAt = Date.now();
     const docRecord = {
       ...payload,
@@ -21068,10 +21079,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     };
 
     const nextDocuments = normalizeWorkspaceDocuments(
-      documents.some((document) => String(document.id) === String(currentId))
-        ? documents.map((document) => String(document.id) === String(currentId) ? { ...document, ...docRecord } : document)
-        : [...documents, docRecord]
+      currentDocs.some((document) => String(document.id) === String(currentId))
+        ? currentDocs.map((document) => String(document.id) === String(currentId) ? { ...document, ...docRecord } : document)
+        : [...currentDocs, docRecord]
     );
+    documentsRef.current = nextDocuments;
     writeWorkspaceDocuments(nextDocuments);
     try {
       localStorage.setItem('rc.activeDocId', String(currentId));
@@ -21090,13 +21102,15 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   };
 
+  saveDocumentLocallyRef.current = saveDocumentLocally;
+
   useEffect(() => {
     if (!activeDocId) {
       return undefined;
     }
 
     const timer = window.setInterval(() => {
-      saveDocumentLocally({ silent: true, trackAction: false });
+      saveDocumentLocallyRef.current?.({ silent: true, trackAction: false });
     }, 3000);
 
     return () => window.clearInterval(timer);
@@ -34316,10 +34330,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const switchDocument = (docId) => {
-    let targetDoc = documents.find((doc) => String(doc.id) === String(docId));
+    const currentDocs = documentsRef.current || documents;
+    let targetDoc = currentDocs.find((doc) => String(doc.id) === String(docId));
     if (!targetDoc) {
       targetDoc = readWorkspaceDocuments().find((document) => String(document.id) === String(docId));
       if (targetDoc) {
+        documentsRef.current = [...currentDocs, targetDoc];
         setDocuments(prev => [...prev, targetDoc]);
       } else {
         showToast('Document not found or removed');
@@ -34351,36 +34367,21 @@ Answer the user's question, provide an insightful summary, or explain the contex
         whiteboardShapes,
         isSaved: true,
         isDraft: false,
-        createdAt: documents.find((document) => String(document.id) === String(activeDocId))?.createdAt,
+        createdAt: currentDocs.find((document) => String(document.id) === String(activeDocId))?.createdAt,
         updatedAt: new Date().toISOString(),
       };
-      writeWorkspaceDocuments(documents.map((document) => (
+      const flushedDocs = currentDocs.map((document) => (
         String(document.id) === String(activeDocId) ? { ...document, ...departingSnapshot } : document
-      )));
+      ));
+      documentsRef.current = flushedDocs;
+      writeWorkspaceDocuments(flushedDocs);
 
       // Also flush into documents[] so in-memory state stays consistent
-      setDocuments(prev => prev.map(d => {
-        if (String(d.id) !== String(activeDocId)) return d;
-        return {
-          ...d,
-          title:              docTitle              !== undefined ? docTitle              : d.title,
-          subtitle:           docSubtitle           !== undefined ? docSubtitle           : d.subtitle,
-          bodyHtml:           docBodyHtml           !== undefined ? docBodyHtml           : d.bodyHtml,
-          initiatives:        initiatives           !== undefined ? initiatives           : d.initiatives,
-          appendedSections:   appendedSections      !== undefined ? appendedSections      : d.appendedSections,
-          isBlank:            isBlankDocument       !== undefined ? isBlankDocument       : d.isBlank,
-          sheetsTitle:        sheetsTitle           !== undefined ? sheetsTitle           : d.sheetsTitle,
-          sheetsData:         sheetsData            !== undefined ? sheetsData            : d.sheetsData,
-          sheetGrids:         sheetGrids            !== undefined ? sheetGrids            : d.sheetGrids,
-          activeSheetId:      activeSheetId         !== undefined ? activeSheetId         : d.activeSheetId,
-          deckTitle:          deckTitle             !== undefined ? deckTitle             : d.deckTitle,
-          deckSlidesData:     deckSlidesData        !== undefined ? deckSlidesData        : d.deckSlidesData,
-          activeDeckSlideId:  activeDeckSlideId     !== undefined ? activeDeckSlideId     : d.activeDeckSlideId,
-          whiteboardWidgets:  whiteboardWidgets     !== undefined ? whiteboardWidgets     : d.whiteboardWidgets,
-          whiteboardStrokes:  whiteboardStrokes     !== undefined ? whiteboardStrokes     : d.whiteboardStrokes,
-          whiteboardShapes:   whiteboardShapes      !== undefined ? whiteboardShapes      : d.whiteboardShapes,
-        };
-      }));
+      setDocuments(flushedDocs);
+      const reFound = flushedDocs.find((doc) => String(doc.id) === String(docId));
+      if (reFound) {
+        targetDoc = reFound;
+      }
     }
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -35759,24 +35760,33 @@ Respond with valid JSON formatted like this:
     setOpenDocMenuId(null);
   };
 
-  const commitRenameDocument = (docId) => {
-    const nextTitle = renameDocValue.trim();
+  const commitRenameDocument = (docId, explicitNextTitle) => {
+    const rawTitle = typeof explicitNextTitle === 'string' ? explicitNextTitle : renameDocValue;
+    const nextTitle = String(rawTitle || '').trim();
     if (!nextTitle) {
       setRenamingDocId(null);
       setRenameDocValue('');
       return;
     }
-    const renamedDoc = documents.find((doc) => String(doc.id) === String(docId));
+    const currentDocs = documentsRef.current || documents;
+    const renamedDoc = currentDocs.find((doc) => String(doc.id) === String(docId));
     const renamedMode = renamedDoc ? getDocMode(renamedDoc) : productMode;
-    setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(docId) ? {
+    const updatedDocuments = currentDocs.map((doc) => (String(doc.id) === String(docId) ? {
       ...doc,
       mode: renamedMode || doc.mode || 'compose',
       title: nextTitle,
+      displayTitle: nextTitle,
       isTitleCustom: true,
       sheetsTitle: renamedMode === 'sheets' ? nextTitle : doc.sheetsTitle,
       deckTitle: renamedMode === 'deck' ? nextTitle : doc.deckTitle,
-    } : doc)));
-    const isCurrentActive = String(activeDocId) === String(docId) || (!activeDocId && String(documents[0]?.id) === String(docId));
+      updatedAt: new Date().toISOString(),
+    } : doc));
+
+    documentsRef.current = updatedDocuments;
+    writeWorkspaceDocuments(updatedDocuments);
+    setDocuments(updatedDocuments);
+
+    const isCurrentActive = String(activeDocId) === String(docId) || (!activeDocId && String(currentDocs[0]?.id) === String(docId));
     if (isCurrentActive) {
       setDocTitle(nextTitle);
       if (!activeDocId) {
@@ -35792,29 +35802,38 @@ Respond with valid JSON formatted like this:
     setRenamingDocId(null);
     setRenameDocValue('');
     showToast('Document renamed');
-    setTimeout(() => {
-      saveDocumentLocally({ silent: true, trackAction: false });
-    }, 50);
   };
 
   const beginUnsavedDraftRename = () => {
-    const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
+    const currentDocs = documentsRef.current || documents;
+    const activeDoc = currentDocs.find((doc) => String(doc.id) === String(activeDocId)) || currentDocs[0];
     const currentName = (activeDoc?.title || docTitle || 'Untitled Document').trim() || 'Untitled Document';
     setUnsavedDraftNameInput(currentName === 'Unsaved draft' ? 'Untitled Document' : currentName);
     setIsEditingUnsavedDraftName(true);
   };
 
-  const commitUnsavedDraftRename = () => {
-    const nextTitle = unsavedDraftNameInput.trim();
+  const commitUnsavedDraftRename = (explicitNextTitle) => {
+    const rawTitle = typeof explicitNextTitle === 'string' ? explicitNextTitle : unsavedDraftNameInput;
+    const nextTitle = String(rawTitle || '').trim();
     if (!nextTitle) {
       setIsEditingUnsavedDraftName(false);
       setUnsavedDraftNameInput('');
       return;
     }
 
-    const targetDocId = activeDocId || documents[0]?.id;
+    const currentDocs = documentsRef.current || documents;
+    const targetDocId = activeDocId || currentDocs[0]?.id;
     if (targetDocId) {
-      setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(targetDocId) ? { ...doc, title: nextTitle, isTitleCustom: true } : doc)));
+      const updatedDocuments = currentDocs.map((doc) => (String(doc.id) === String(targetDocId) ? {
+        ...doc,
+        title: nextTitle,
+        displayTitle: nextTitle,
+        isTitleCustom: true,
+        updatedAt: new Date().toISOString(),
+      } : doc));
+      documentsRef.current = updatedDocuments;
+      writeWorkspaceDocuments(updatedDocuments);
+      setDocuments(updatedDocuments);
       if (!activeDocId) {
         setActiveDocId(targetDocId);
       }
@@ -35823,9 +35842,6 @@ Respond with valid JSON formatted like this:
     setIsEditingUnsavedDraftName(false);
     setUnsavedDraftNameInput('');
     showToast('Document renamed');
-    setTimeout(() => {
-      saveDocumentLocally({ silent: true, trackAction: false });
-    }, 50);
   };
 
   const getDocumentPayload = (docId = activeDocId) => {
@@ -35843,7 +35859,7 @@ Respond with valid JSON formatted like this:
       return fallback;
     }
 
-    const target = documents.find((doc) => String(doc.id) === String(docId));
+    const target = (documentsRef.current || documents).find((doc) => String(doc.id) === String(docId));
     if (target) {
       const isCurrent = String(activeDocId) === String(docId);
       return {
@@ -49121,6 +49137,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onPointerDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          if (renamingDocId) {
+                            commitRenameDocument(renamingDocId);
+                          }
                           setHeaderWorkbookSearchQuery('');
                           setHeaderWorkbookDropdownOpen((prev) => {
                             if (!prev && composeDropdownTriggerRef.current) {
@@ -49149,7 +49168,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             ? (sheetsTitle || 'Untitled Sheet')
                             : productMode === 'deck'
                               ? (deckTitle || 'Untitled Deck')
-                              : (docTitle || 'Untitled Document')}
+                              : (() => {
+                                  const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId));
+                                  return activeDoc?.title?.trim() || docTitle?.trim() || 'Untitled Document';
+                                })()}
                         </span>
                         <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
@@ -49208,7 +49230,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const filtered = list.filter((doc) => {
                                   if (!headerWorkbookSearchQuery.trim()) return true;
                                   const q = headerWorkbookSearchQuery.toLowerCase();
-                                  const title = (doc.displayTitle || doc.title || doc.sheetsTitle || doc.deckTitle || '').toLowerCase();
+                                  const title = (doc.title || doc.sheetsTitle || doc.deckTitle || doc.displayTitle || '').toLowerCase();
                                   return title.includes(q);
                                 });
 
@@ -49226,7 +49248,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   const isActive = String(doc.id) === String(activeDocId);
                                   const docMode = getDocMode(doc);
 
-                                  const title = doc.displayTitle || doc.title || (isActive ? (isSheetsMode ? sheetsTitle : productMode === 'deck' ? deckTitle : docTitle) : '') || 'Untitled Document';
+                                  const title = doc.title?.trim() || doc.displayTitle || (isActive ? (isSheetsMode ? sheetsTitle : productMode === 'deck' ? deckTitle : docTitle) : '') || 'Untitled Document';
                                   // Compose shows word count as the subtitle; sheets → sheet tabs; deck → slides
                                   const count = isSheetsMode
                                     ? (doc.sheetGrids ? Object.keys(doc.sheetGrids).length : (doc.sheetsData?.length || 1))
@@ -49316,7 +49338,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
                   const docIndex = windowedTabDocuments.startIndex + localIndex;
                 const isActive = activeDocId === doc.id;
-                const effectiveDocTitle = doc.displayTitle || doc.title?.trim() || (isActive ? docTitle?.trim() : '') || `Untitled Document ${docIndex + 1}`;
+                const effectiveDocTitle = doc.title?.trim() || doc.displayTitle || (isActive ? docTitle?.trim() : '') || `Untitled Document ${docIndex + 1}`;
                 const docMode = getDocMode(doc);
                 let modeSpecificTitle = '';
                 if (docMode === 'sheets') {
@@ -49338,7 +49360,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 return (
                   <div
                     key={doc.id}
-                    onClick={() => switchDocument(doc.id)}
+                    onClick={() => {
+                      if (renamingDocId !== doc.id) {
+                        switchDocument(doc.id);
+                      }
+                    }}
                     onDoubleClick={(event) => {
                       event.stopPropagation();
                       setRenamingDocId(doc.id);
@@ -49359,14 +49385,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault();
-                            commitRenameDocument(doc.id);
+                            commitRenameDocument(doc.id, event.target.value);
                           }
                           if (event.key === 'Escape') {
                             setRenamingDocId(null);
                             setRenameDocValue('');
                           }
                         }}
-                        onBlur={() => commitRenameDocument(doc.id)}
+                        onBlur={(e) => commitRenameDocument(doc.id, e.target.value)}
                         className="min-w-0 flex-1 truncate bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                       />
                     ) : (
@@ -74798,11 +74824,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="text"
                     value={unsavedDraftNameInput}
                     onChange={(e) => setUnsavedDraftNameInput(e.target.value)}
-                    onBlur={commitUnsavedDraftRename}
+                    onBlur={(e) => commitUnsavedDraftRename(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        commitUnsavedDraftRename();
+                        commitUnsavedDraftRename(e.target.value);
                       }
                       if (e.key === 'Escape') {
                         setIsEditingUnsavedDraftName(false);
@@ -76382,6 +76408,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     onPointerDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (renamingDocId) {
+                        commitRenameDocument(renamingDocId);
+                      }
                       setHeaderWorkbookSearchQuery('');
                       setHeaderWorkbookDropdownOpen((prev) => {
                         if (!prev && composeDropdownTriggerRef.current) {
@@ -76400,7 +76429,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   >
                     <ComposeIcon size={13} className="text-violet-500 dark:text-violet-400 shrink-0" />
                     <span className="font-semibold max-w-[130px] truncate">
-                      {docTitle || 'Untitled Document'}
+                      {(() => {
+                        const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId));
+                        return activeDoc?.title?.trim() || docTitle?.trim() || 'Untitled Document';
+                      })()}
                     </span>
                     <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
@@ -76442,7 +76474,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             const filtered = composeDocsList.filter((doc) => {
                               if (!headerWorkbookSearchQuery.trim()) return true;
                               const q = headerWorkbookSearchQuery.toLowerCase();
-                              return (doc.displayTitle || doc.title || '').toLowerCase().trim().includes(q.trim());
+                              return (doc.title || doc.displayTitle || '').toLowerCase().trim().includes(q.trim());
                             });
 
                             if (filtered.length === 0) {
@@ -76456,7 +76488,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             return filtered.map((doc) => {
                               const isActive = String(doc.id) === String(activeDocId);
 
-                              const title = doc.displayTitle || doc.title || (isActive ? docTitle?.trim() : '') || 'Untitled Document';
+                              const title = doc.title?.trim() || doc.displayTitle || (isActive ? docTitle?.trim() : '') || 'Untitled Document';
 
                               return (
                                 <button
@@ -76514,13 +76546,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const isActive = activeDocId === doc.id;
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
               
-              const effectiveDocTitle = doc.displayTitle || doc.title?.trim() || (isActive ? docTitle?.trim() : '') || (isWbDoc ? `Untitled Whiteboard ${docIndex + 1}` : `Untitled Document ${docIndex + 1}`);
+              const effectiveDocTitle = doc.title?.trim() || doc.displayTitle || (isActive ? docTitle?.trim() : '') || (isWbDoc ? `Untitled Whiteboard ${docIndex + 1}` : `Untitled Document ${docIndex + 1}`);
               const label = effectiveDocTitle;
 
               return (
                 <div
                   key={doc.id}
-                  onClick={() => switchDocument(doc.id)}
+                  onClick={() => {
+                    if (renamingDocId !== doc.id) {
+                      switchDocument(doc.id);
+                    }
+                  }}
                   onDoubleClick={(event) => {
                     event.stopPropagation();
                     setRenamingDocId(doc.id);
@@ -76541,14 +76577,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault();
-                          commitRenameDocument(doc.id);
+                          commitRenameDocument(doc.id, event.target.value);
                         }
                         if (event.key === 'Escape') {
                           setRenamingDocId(null);
                           setRenameDocValue('');
                         }
                       }}
-                      onBlur={() => commitRenameDocument(doc.id)}
+                      onBlur={(e) => commitRenameDocument(doc.id, e.target.value)}
                       className="min-w-0 flex-1 truncate bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                     />
                   ) : (
