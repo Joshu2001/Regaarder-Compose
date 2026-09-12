@@ -6884,6 +6884,7 @@ function AppCore() {
   const [isOmniPortalOpen, setIsOmniPortalOpen] = useState(false);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
+  const [orbInitialFilter, setOrbInitialFilter] = useState('all');
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -18013,6 +18014,21 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     setter(target.innerHTML || '');
   };
 
+  const [docTitle, setDocTitle] = useState('');
+  const [docSubtitle, setDocSubtitle] = useState('');
+
+  useEffect(() => {
+    if (!docBodyHtml) {
+      setDocTitle('Untitled Document');
+      return;
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(docBodyHtml, 'text/html');
+    const firstBlock = doc.body.firstElementChild;
+    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
+    setDocTitle(titleText || 'Untitled Document');
+  }, [docBodyHtml]);
+
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
@@ -18042,27 +18058,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     ];
   });
   const [activeDocId, setActiveDocId] = useState(null);
-  const activeDoc = documents.find((doc) => doc.id === activeDocId);
-
-  const [docTitle, setDocTitle] = useState('');
-  const [docSubtitle, setDocSubtitle] = useState('');
-
-  useEffect(() => {
-    const persistedTitle = activeDoc?.title?.trim();
-    const hasPersistedExplicitTitle = !!persistedTitle && !/^untitled\b/i.test(persistedTitle);
-
-    if (!docBodyHtml) {
-      setDocTitle(hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
-      return;
-    }
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(docBodyHtml, 'text/html');
-    const firstBlock = doc.body.firstElementChild;
-    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    const derivedTitle = titleText || (hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
-    setDocTitle(derivedTitle);
-  }, [docBodyHtml, activeDoc?.title]);
 
   // Auto-persist documents to localStorage
   useEffect(() => {
@@ -18085,6 +18080,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       } : d));
     }
   }, [docBodyHtml, docTitle, activeDocId]);
+
+  const activeDoc = documents.find((doc) => doc.id === activeDocId);
   const [pdfRotation, setPdfRotation] = useState(0);
   const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
 
