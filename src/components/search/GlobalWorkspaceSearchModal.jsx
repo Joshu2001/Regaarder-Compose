@@ -1,5 +1,5 @@
 import { useTranslation } from '../../i18n';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw,
@@ -14,6 +14,7 @@ import {
   groupResultsByCategory,
   synthesizeWorkspaceKnowledge
 } from '../../services/GlobalWorkspaceSearchEngine';
+import { detectLocalLLMServers } from '../../services/orbAiService';
 import {
   ComposeIcon,
   DeckIcon,
@@ -449,6 +450,100 @@ export default function GlobalWorkspaceSearchModal({
   const promptEditInputRef = useRef(null);
   const synthesisCardRef = useRef(null);
 
+  // ── AI Model Engine State & Auto-Discovery ──
+  const [probedLocalModels, setProbedLocalModels] = useState([]);
+  const [isScanningModels, setIsScanningModels] = useState(false);
+  const [activeMemoryModelId, setActiveMemoryModelId] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('regaarder_memory_selected_model');
+        if (saved) return saved;
+      }
+    } catch (_) {}
+    return selectedModel?.id || 'gemma3:1b';
+  });
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+
+  const scanModels = useCallback(async () => {
+    setIsScanningModels(true);
+    try {
+      const servers = await detectLocalLLMServers({ timeoutMs: 2500 });
+      const locals = [];
+      (servers || []).forEach(s => {
+        if (s.isOnline && Array.isArray(s.models)) {
+          s.models.forEach(m => {
+            locals.push({
+              id: m.id,
+              name: m.id,
+              provider: 'Ollama',
+              serverName: s.name,
+              isLocal: true,
+              size: m.size || null,
+              endpoint: s.endpoint
+            });
+          });
+        }
+      });
+      if (locals.length > 0) {
+        setProbedLocalModels(locals);
+      }
+    } catch (e) {
+      console.warn('[Memory] Failed to scan local LLM servers:', e);
+    } finally {
+      setIsScanningModels(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    scanModels();
+  }, [scanModels]);
+
+  const availableModels = useMemo(() => {
+    const map = new Map();
+    // 1. Probed local models
+    probedLocalModels.forEach(m => map.set(m.id, m));
+    // 2. Detected models from parent App
+    (detectedModels || []).forEach(m => {
+      if (!map.has(m.id)) map.set(m.id, m);
+    });
+    // 3. Cloud models if API keys configured
+    if (aiConfig?.geminiApiKey) {
+      if (!map.has('gemini-2.0-flash')) {
+        map.set('gemini-2.0-flash', { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Gemini', isLocal: false });
+      }
+    }
+    if (aiConfig?.openaiApiKey) {
+      if (!map.has('gpt-4o-mini')) {
+        map.set('gpt-4o-mini', { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', isLocal: false });
+      }
+    }
+    if (aiConfig?.claudeApiKey) {
+      if (!map.has('claude-3-5-haiku-20241022')) {
+        map.set('claude-3-5-haiku-20241022', { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'Anthropic', isLocal: false });
+      }
+    }
+    // Fallback if empty
+    if (map.size === 0) {
+      map.set('gemma3:1b', { id: 'gemma3:1b', name: 'gemma3:1b', provider: 'Ollama', isLocal: true });
+    }
+    return Array.from(map.values());
+  }, [probedLocalModels, detectedModels, aiConfig]);
+
+  const activeModel = useMemo(() => {
+    const found = availableModels.find(m => m.id === activeMemoryModelId);
+    if (found) return found;
+    const gemma = availableModels.find(m => m.id?.includes('gemma'));
+    if (gemma) return gemma;
+    return availableModels[0] || { id: 'gemma3:1b', name: 'gemma3:1b', provider: 'Ollama', isLocal: true };
+  }, [availableModels, activeMemoryModelId]);
+
+  const handleSelectModel = (modelId) => {
+    setActiveMemoryModelId(modelId);
+    try {
+      localStorage.setItem('regaarder_memory_selected_model', modelId);
+    } catch (_) {}
+  };
+
   // Persistent Recent Inquiries History
   const [recentInquiries, setRecentInquiries] = useState(() => {
     try {
@@ -565,7 +660,6 @@ export default function GlobalWorkspaceSearchModal({
 
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isMoreFilterMenuOpen, setIsMoreFilterMenuOpen] = useState(false);
-  const [isRecentHistoryOpen, setIsRecentHistoryOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   const [moreFilterMenuPosition, setMoreFilterMenuPosition] = useState({ top: 0, left: 0 });
   const [workspaceStorageRevision, setWorkspaceStorageRevision] = useState(0);
@@ -596,7 +690,6 @@ export default function GlobalWorkspaceSearchModal({
   const fileInputRef = useRef(null);
   const moreFilterMenuRef = useRef(null);
   const moreFilterButtonRef = useRef(null);
-  const recentHistoryRef = useRef(null);
 
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
@@ -636,10 +729,23 @@ export default function GlobalWorkspaceSearchModal({
     return () => window.removeEventListener('workspace-storage-update', refreshWorkspaceIndex);
   }, []);
 
-  // Build the complete searchable workspace index strictly from real state
+  // Build the complete searchable workspace index strictly from real state and active memory
   const workspaceIndex = useMemo(() => {
-    return buildWorkspaceIndex(liveWorkspaceContext);
-  }, [liveWorkspaceContext, workspaceStorageRevision]);
+    const baseIndex = buildWorkspaceIndex(liveWorkspaceContext);
+    const brandEntities = (brandRules || []).map((r, i) => ({
+      id: `brand-rule-${r.id || i}`,
+      title: r.label || 'Brand Guideline',
+      subtitle: 'Workspace Memory & Guidelines',
+      content: `${r.label}: ${r.value}`,
+      workspace: 'Memory',
+      type: 'rule',
+      location: 'Workspace Settings > Brand Guidelines',
+      author: 'Workspace Memory',
+      updatedAt: 'Active Memory',
+      metadata: { activityType: 'Brand Memory' }
+    }));
+    return [...baseIndex, ...brandEntities];
+  }, [liveWorkspaceContext, workspaceStorageRevision, brandRules]);
 
   // Execute dynamic query across the workspace index for Search Mode
   const searchResults = useMemo(() => {
@@ -728,17 +834,6 @@ export default function GlobalWorkspaceSearchModal({
       window.removeEventListener('resize', handleResize);
     };
   }, [isMoreFilterMenuOpen]);
-
-  useEffect(() => {
-    if (!isRecentHistoryOpen) return;
-    const handleClickOutside = (event) => {
-      if (!recentHistoryRef.current?.contains(event.target)) {
-        setIsRecentHistoryOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isRecentHistoryOpen]);
 
   // Auto-scroll selected result into view
   useEffect(() => {
@@ -853,9 +948,11 @@ export default function GlobalWorkspaceSearchModal({
 
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
-      const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
-      const activeModelId = selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
-      const activeProvider = (selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
+      const activeModelId = activeModel?.id || 'gemma3:1b';
+      const activeProvider = activeModel?.provider || (activeModel?.isLocal ? 'Ollama' : 'Cloud');
+      const personaContext = activePersona 
+        ? `${activePersona.name} (${activePersona.badge || 'Executive'}) - ${activePersona.instructions || ''}. Brand Guidelines: ${brandContextSnippet}`
+        : `Executive Intelligence. Brand Guidelines: ${brandContextSnippet}`;
 
       const result = await synthesizeWorkspaceKnowledge({
         query: targetQ.trim(),
@@ -900,8 +997,8 @@ export default function GlobalWorkspaceSearchModal({
     try {
       const brandContextSnippet = brandRules.map(r => `${r.label}: ${r.value}`).join('; ');
       const personaContext = `${activePersona.name} (${activePersona.badge}) - ${activePersona.instructions}. Brand Guidelines: ${brandContextSnippet}`;
-      const activeModelId = selectedModel?.id || selectedModel?.name || (detectedModels?.[0]?.id || detectedModels?.[0]?.name);
-      const activeProvider = (selectedModel?.isLocal || selectedModel?.provider === 'Ollama') ? 'Ollama' : undefined;
+      const activeModelId = activeModel?.id || 'gemma3:1b';
+      const activeProvider = activeModel?.provider || (activeModel?.isLocal ? 'Ollama' : 'Cloud');
 
       const result = await synthesizeWorkspaceKnowledge({
         query: userMessage,
@@ -1081,7 +1178,9 @@ export default function GlobalWorkspaceSearchModal({
               onChange={(e) => {
                 const val = e.target.value;
                 setQuery(val);
-                setAiResponse(null);
+                if (mode === 'ai' && aiResponse) {
+                  setAiResponse(null);
+                }
                 // Auto-adjust height up to 3 lines
                 e.target.style.height = 'auto';
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 88)}px`;
@@ -1143,10 +1242,6 @@ export default function GlobalWorkspaceSearchModal({
                 type="button"
                 onClick={() => {
                   setMode('ai');
-                  setAiResponse(null);
-                  if (query.trim()) {
-                    handleRunAiSynthesis(query);
-                  }
                   setTimeout(() => inputRef.current?.focus(), 20);
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold transition-all duration-150 cursor-pointer ${
@@ -1179,9 +1274,10 @@ export default function GlobalWorkspaceSearchModal({
                   type="button"
                   onClick={() => {
                     setActiveFilter(tab.id);
-                    setMode('search');
                     setIsMoreFilterMenuOpen(false);
-                    setIsRecentHistoryOpen(false);
+                    if (mode === 'ai' && query.trim()) {
+                      handleRunAiSynthesis(query);
+                    }
                   }}
                   className={`px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
@@ -1237,9 +1333,10 @@ export default function GlobalWorkspaceSearchModal({
                           onPointerDown={(e) => {
                             e.preventDefault();
                             setActiveFilter(tab.id);
-                            setMode('search');
                             setIsMoreFilterMenuOpen(false);
-                            setIsRecentHistoryOpen(false);
+                            if (mode === 'ai' && query.trim()) {
+                              handleRunAiSynthesis(query);
+                            }
                           }}
                           className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors cursor-pointer ${
                             isActive
@@ -1260,59 +1357,146 @@ export default function GlobalWorkspaceSearchModal({
             )}
           </div>
 
-          {/* Persona Selector Badge - Strictly Anchored, Shrink-0, Never Clipped */}
-          <div className="relative shrink-0 pr-0.5">
-            <button
-              type="button"
-              onClick={() => setIsPersonaMenuOpen(prev => !prev)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-violet-500/[0.07] hover:bg-violet-500/[0.12] border border-violet-500/20 text-violet-700 dark:text-violet-300 text-[11.5px] font-medium transition-all duration-150 cursor-pointer whitespace-nowrap shadow-2xs"
-              title={`Active Lens: ${activePersona.name}`}
-            >
-              <Compass size={12} strokeWidth={1.8} className="text-violet-600/80 dark:text-violet-400/80" />
-              <span className="font-semibold text-slate-800 dark:text-zinc-200">{activePersona.name}</span>
-              <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
+          {/* Control Badges: Persona Selector & AI Model Selector - Anchored, Shrink-0, Never Clipped */}
+          <div className="flex items-center gap-2 shrink-0 pr-0.5">
+            {/* Persona Selector Badge */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPersonaMenuOpen(prev => !prev);
+                  setIsModelMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-violet-500/[0.07] hover:bg-violet-500/[0.12] border border-violet-500/20 text-violet-700 dark:text-violet-300 text-[11.5px] font-medium transition-all duration-150 cursor-pointer whitespace-nowrap shadow-2xs"
+                title={`Active Lens: ${activePersona.name}`}
+              >
+                <Compass size={12} strokeWidth={1.8} className="text-violet-600/80 dark:text-violet-400/80" />
+                <span className="font-semibold text-slate-800 dark:text-zinc-200">{activePersona.name}</span>
+                <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {isPersonaMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
-                <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                  <span>Select Cognitive Lens</span>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEditPersona(activePersona)}
-                    className="text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit3 size={10} />
-                    <span>Edit Prompt</span>
-                  </button>
-                </div>
-                {personas.map((p) => {
-                  const isSel = activePersona.id === p.id;
-                  return (
+              {isPersonaMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
+                  <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                    <span>Select Cognitive Lens</span>
                     <button
-                      key={p.id}
+                      type="button"
+                      onClick={() => handleOpenEditPersona(activePersona)}
+                      className="text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit3 size={10} />
+                      <span>Edit Prompt</span>
+                    </button>
+                  </div>
+                  {personas.map((p) => {
+                    const isSel = activePersona.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setActivePersona(p);
+                          setIsPersonaMenuOpen(false);
+                        }}
+                        className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-colors cursor-pointer ${
+                          isSel ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                        }`}
+                      >
+                        <div className="w-5 h-5 rounded flex items-center justify-center bg-violet-500/15 text-violet-700 dark:text-violet-300 font-bold text-[9.5px] shrink-0 mt-0.5 font-mono">
+                          {p.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold">{p.name}</div>
+                          <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{p.badge}</div>
+                        </div>
+                        {isSel && <Check size={12} className="text-violet-600 mt-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* AI Model Engine Selector Badge */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModelMenuOpen(prev => !prev);
+                  setIsPersonaMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-violet-500/[0.07] hover:bg-violet-500/[0.12] border border-violet-500/20 text-violet-700 dark:text-violet-300 text-[11.5px] font-medium transition-all duration-150 cursor-pointer whitespace-nowrap shadow-2xs"
+                title={`Active AI Model: ${activeModel.name?.replace(/ \(Local Ollama\)/i, '') || activeModel.id} (${activeModel.provider || 'Local'})`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${activeModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                <span className="font-semibold text-slate-800 dark:text-zinc-200 max-w-[120px] truncate">
+                  {activeModel.name?.replace(/ \(Local Ollama\)/i, '') || activeModel.id}
+                </span>
+                <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${isModelMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isModelMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-68 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-left">
+                  <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                    <span>AI Engine</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scanModels();
+                      }}
+                      className="text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer lowercase font-medium"
+                      title="Rescan local models"
+                    >
+                      <RefreshCw size={9} className={isScanningModels ? 'animate-spin' : ''} />
+                      <span>rescan</span>
+                    </button>
+                  </div>
+                  <div className="space-y-1 mt-1 max-h-56 overflow-y-auto thin-scrollbar">
+                    {availableModels.map((m) => {
+                      const isSel = activeModel.id === m.id;
+                      const cleanName = m.name?.replace(/ \(Local Ollama\)/i, '') || m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            handleSelectModel(m.id);
+                            setIsModelMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer ${
+                            isSel ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                          }`}
+                        >
+                          <div className="min-w-0 flex items-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.isLocal ? 'bg-emerald-500' : 'bg-violet-500'}`} />
+                            <div className="truncate text-xs font-medium">{cleanName}</div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono">
+                              {m.provider || (m.isLocal ? 'Local' : 'Cloud')}
+                            </span>
+                            {isSel && <Check size={12} className="text-violet-600 dark:text-violet-400" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-zinc-800 mt-2 pt-1.5 px-1">
+                    <button
                       type="button"
                       onClick={() => {
-                        setActivePersona(p);
-                        setIsPersonaMenuOpen(false);
+                        setIsModelMenuOpen(false);
+                        setIsWorkspaceSettingsOpen(true);
                       }}
-                      className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-colors cursor-pointer ${
-                        isSel ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
-                      }`}
+                      className="w-full text-center text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 py-1 transition-colors cursor-pointer"
                     >
-                      <div className="w-5 h-5 rounded flex items-center justify-center bg-violet-500/15 text-violet-700 dark:text-violet-300 font-bold text-[9.5px] shrink-0 mt-0.5 font-mono">
-                        {p.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold">{p.name}</div>
-                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">{p.badge}</div>
-                      </div>
-                      {isSel && <Check size={12} className="text-violet-600 mt-1" />}
+                      Manage in Workspace Settings →
                     </button>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2008,13 +2192,13 @@ export default function GlobalWorkspaceSearchModal({
 
         {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory) ── */}
         {recentInquiries.length > 0 && (
-          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 select-none">
+          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
               <History size={11} className="text-violet-600 dark:text-violet-400" />
               Recent:
             </span>
-            <div className="relative flex items-center gap-1.5 min-w-0 flex-1" ref={recentHistoryRef}>
-              {recentInquiries.slice(0, 3).map((inq) => (
+            <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar flex-1">
+              {recentInquiries.slice(0, 5).map((inq) => (
                 <button
                   key={inq.id}
                   type="button"
@@ -2025,36 +2209,6 @@ export default function GlobalWorkspaceSearchModal({
                   {inq.query.length > 28 ? `${inq.query.slice(0, 28)}…` : inq.query}
                 </button>
               ))}
-              {recentInquiries.length > 3 && (
-                <button
-                  type="button"
-                  onClick={() => setIsRecentHistoryOpen((prev) => !prev)}
-                  className="px-2.5 py-0.5 rounded-lg text-[11px] bg-transparent hover:bg-violet-50 dark:hover:bg-violet-950/40 text-violet-600 dark:text-violet-300 border border-violet-200/70 dark:border-violet-800/50 transition-all shrink-0 cursor-pointer font-medium"
-                  aria-expanded={isRecentHistoryOpen}
-                  aria-haspopup="listbox"
-                >
-                  +{recentInquiries.length - 3} more
-                </button>
-              )}
-              {isRecentHistoryOpen && recentInquiries.length > 3 && (
-                <div className="absolute left-0 bottom-full mb-2 w-72 max-h-56 overflow-y-auto rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-[100010]">
-                  {recentInquiries.slice(3).map((inq) => (
-                    <button
-                      key={inq.id}
-                      type="button"
-                      onClick={() => {
-                        handleRestorePastInquiry(inq);
-                        setIsRecentHistoryOpen(false);
-                      }}
-                      className="w-full px-2.5 py-2 rounded-lg text-left text-[11px] text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 truncate cursor-pointer transition-colors"
-                      title={inq.query}
-                      role="option"
-                    >
-                      {inq.query}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
             <button
               type="button"
@@ -2118,7 +2272,7 @@ export default function GlobalWorkspaceSearchModal({
           onClick={() => setIsWorkspaceSettingsOpen(false)}
         >
           <div
-            className="w-full max-w-4xl rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl p-5 animate-in zoom-in-95 duration-150"
+            className="w-full max-w-5xl rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl p-5 animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -2135,7 +2289,7 @@ export default function GlobalWorkspaceSearchModal({
               </button>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-3.5">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
               <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-800/60 p-3.5">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100">Brand Rules</span>
@@ -2194,6 +2348,83 @@ export default function GlobalWorkspaceSearchModal({
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Directive</div>
                     <p className="mt-1 text-[10.5px] leading-relaxed text-slate-600 dark:text-zinc-300 italic">“{activePersona.instructions}”</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Card 4: AI Model Engine */}
+              <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-800/60 p-3.5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100">AI Model Engine</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {activeModel.isLocal ? 'Local Offline' : 'Online'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="rounded-lg bg-violet-50 dark:bg-violet-950/40 p-2.5">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-300 font-mono flex items-center justify-between">
+                        <span>Active Engine</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-200/60 dark:bg-violet-800/50 text-violet-800 dark:text-violet-200">
+                          {activeModel.provider || (activeModel.isLocal ? 'Ollama' : 'Cloud')}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-[12px] font-bold text-slate-900 dark:text-zinc-100 truncate">
+                        {activeModel.name?.replace(/ \(Local Ollama\)/i, '') || activeModel.id}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        <span>{activeModel.isLocal ? 'Zero Cloud Egress • 100% Private' : 'Managed Cloud Model'}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono px-0.5">
+                        <span>Available Engines</span>
+                        <button
+                          type="button"
+                          onClick={scanModels}
+                          className="text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer lowercase"
+                        >
+                          <RefreshCw size={9} className={isScanningModels ? 'animate-spin' : ''} />
+                          <span>rescan</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-1 max-h-36 overflow-y-auto thin-scrollbar">
+                        {availableModels.map((m) => {
+                          const isSel = activeModel.id === m.id;
+                          const cleanName = m.name?.replace(/ \(Local Ollama\)/i, '') || m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => handleSelectModel(m.id)}
+                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[11px] transition-colors cursor-pointer ${
+                                isSel
+                                  ? 'bg-white dark:bg-zinc-900 border border-violet-500/40 text-violet-900 dark:text-violet-200 font-semibold shadow-2xs'
+                                  : 'hover:bg-white/60 dark:hover:bg-zinc-900/40 text-slate-700 dark:text-zinc-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.isLocal ? 'bg-emerald-500' : 'bg-violet-500'}`} />
+                                <span className="truncate">{cleanName}</span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 ml-1.5">
+                                {m.size && <span className="text-[9px] text-slate-400 font-mono">{m.size}</span>}
+                                {isSel && <Check size={11} className="text-violet-600 dark:text-violet-400" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-[9.5px] text-slate-400 dark:text-zinc-500 leading-tight">
+                  Selection auto-syncs across Workspace Memory and AI Search.
                 </div>
               </div>
             </div>

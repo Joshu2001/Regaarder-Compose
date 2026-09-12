@@ -8287,11 +8287,11 @@ function AppCore() {
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return {
-      id: 'gemini-2.5-flash',
-      name: 'Gemini 2.5 Flash',
-      provider: 'Cloud',
-      isLocal: false,
-      endpoint: null
+      id: 'gemma3:1b',
+      name: 'Gemma 3 (1B)',
+      provider: 'Ollama',
+      isLocal: true,
+      endpoint: 'http://127.0.0.1:11434'
     };
   });
 
@@ -8344,6 +8344,7 @@ function AppCore() {
     setComposeIsScanning(true);
     const endpointsToProbe = [
       { url: 'http://127.0.0.1:11434/api/tags', provider: 'Ollama', base: 'http://127.0.0.1:11434' },
+      { url: '/api/ollama/api/tags', provider: 'Ollama', base: 'http://127.0.0.1:11434' },
       { url: 'http://localhost:11434/api/tags', provider: 'Ollama', base: 'http://localhost:11434' },
       { url: 'http://127.0.0.1:1234/v1/models', provider: 'LM Studio', base: 'http://127.0.0.1:1234/v1' },
       { url: 'http://localhost:1234/v1/models', provider: 'LM Studio', base: 'http://localhost:1234/v1' },
@@ -8373,7 +8374,7 @@ function AppCore() {
       if (found.length > 0) break;
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 1200);
+        const timeout = setTimeout(() => controller.abort(), 3500);
         const res = await fetch(probe.url, { signal: controller.signal });
         clearTimeout(timeout);
         if (res.ok) {
@@ -8409,7 +8410,7 @@ function AppCore() {
     setComposeDetectedModels(found);
     setComposeIsScanning(false);
     if (found.length > 0) {
-      if (!composeSelectedModel?.isLocal) {
+      if (!composeSelectedModel?.isLocal || composeSelectedModel?.id === 'gemini-2.5-flash') {
         updateSelectedModelGlobally(found[0]);
       }
       setAiBackendStatus({ state: 'ok', message: `Connected to local model (${found[0].name})` });
@@ -25784,6 +25785,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   async function callGemini(arg) {
     const { userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider } =
       typeof arg === 'string' ? { userPrompt: arg } : (arg || {});
+    const hasCloudCredentials = Boolean(customApiKey || aiProviderConfig?.geminiApiKey || aiProviderConfig?.claudeApiKey);
+    const defaultCloudModelNames = new Set([
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'claude-3-5-haiku-20241022',
+      'claude-3-7-sonnet-20250219'
+    ]);
+    const modelOverrideIsDefaultCloudOnly = Boolean(customModel && !hasCloudCredentials && defaultCloudModelNames.has(customModel));
+    const effectiveCustomModel = modelOverrideIsDefaultCloudOnly ? null : customModel;
     const todayDateString = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const isOrbRequested = hasOrbMention(userPrompt) || hasOrbMention(systemPrompt);
     const orbContext = isOrbRequested ? buildOrbWorkspacePromptContext({
@@ -25804,7 +25816,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const fullSystemPrompt = (systemPrompt ? `${systemPrompt}\n\n` : '') + (orbContext ? `${orbContext}\n\n` : '') + `CURRENT DATE CONTEXT: Today is ${todayDateString}. All current-event research, dates, and sports transfer updates must reflect the current year 2026.`;
 
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
-    let localTargetModel = (customModel && composeDetectedModels?.find(m => m.id === customModel || m.name === customModel))
+    let localTargetModel = (effectiveCustomModel && composeDetectedModels?.find(m => m.id === effectiveCustomModel || m.name === effectiveCustomModel))
       || (composeSelectedModel?.isLocal ? composeSelectedModel : null);
 
     if (!localTargetModel && !customApiKey && !aiProviderConfig?.geminiApiKey && !aiProviderConfig?.claudeApiKey && window.electronAPI?.listLocalModels) {
@@ -25825,10 +25837,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     // Fallback: If customModel contains colon (like gemma3:1b, llama3:8b) or was found in probe, treat as Ollama
-    if (!localTargetModel && customModel && (customModel.includes(':') || customModel.startsWith('local-') || customModel.includes('gguf'))) {
+    if (!localTargetModel && effectiveCustomModel && (effectiveCustomModel.includes(':') || effectiveCustomModel.startsWith('local-') || effectiveCustomModel.includes('gguf'))) {
       localTargetModel = {
-        id: customModel,
-        name: customModel,
+        id: effectiveCustomModel,
+        name: effectiveCustomModel,
         provider: 'Ollama',
         endpoint: 'http://127.0.0.1:11434',
         isLocal: true
@@ -25885,10 +25897,12 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               response_format: schema ? { type: 'json_object' } : undefined
             };
 
-        // Resilient probe across 127.0.0.1 and localhost loopbacks with auto-retry
+        // Resilient probe across 127.0.0.1, Vite proxy, and localhost loopbacks with auto-retry
         const candidateHosts = [
           baseEndpoint,
-          baseEndpoint.includes('127.0.0.1') ? baseEndpoint.replace('127.0.0.1', 'localhost') : baseEndpoint.replace('localhost', '127.0.0.1')
+          'http://127.0.0.1:11434',
+          '/api/ollama',
+          'http://localhost:11434'
         ];
 
         let localRes = null;
@@ -25956,7 +25970,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  model: composeSelectedModel?.id,
+                  model: activeModelId,
                   messages: [
                     { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
                   ],
@@ -25967,6 +25981,33 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               if (localRes && localRes.ok) break;
             } catch (e) {}
           }
+        }
+
+        // Fallback to Vite server backend bridge (/api/gemini with Ollama support)
+        if ((!localRes || !localRes.ok) && isOllama) {
+          try {
+            const backendRes = await fetch('/api/gemini', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userPrompt,
+                systemPrompt: fullSystemPrompt,
+                model: activeModelId
+              }),
+              signal: localAbortController.signal
+            });
+            if (backendRes && backendRes.ok) {
+              const backendData = await backendRes.json();
+              if (backendData?.ok && backendData?.text) {
+                clearTimeout(localTimeout);
+                return {
+                  text: backendData.text.trim(),
+                  parsed: backendData.parsed || null,
+                  modelName: localTargetModel.name || activeModelId
+                };
+              }
+            }
+          } catch (_) {}
         }
 
         clearTimeout(localTimeout);
@@ -25999,10 +26040,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               modelName: localTargetModel.name
             };
           }
-} else {
+        } else {
           const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
           return {
-            error: `Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
+            error: `Unable to reach local inference model (${activeModelId}) at http://127.0.0.1:11434 (${statusText}). Please verify that Ollama is running ("ollama serve").`,
             isError: true,
             modelName: localTargetModel.name
           };
@@ -26031,7 +26072,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       const isClaude = provider === 'claude' || provider === 'anthropic';
       const endpoint = isClaude ? '/api/claude' : '/api/gemini';
       const apiKey = customApiKey || (isClaude ? aiProviderConfig?.claudeApiKey : aiProviderConfig?.geminiApiKey) || '';
-      const model = customModel || (isClaude ? aiProviderConfig?.claudeModel : aiProviderConfig?.geminiModel) || '';
+      const model = effectiveCustomModel || (isClaude ? aiProviderConfig?.claudeModel : aiProviderConfig?.geminiModel) || '';
 
       const headers = { 'Content-Type': 'application/json' };
       if (apiKey) {

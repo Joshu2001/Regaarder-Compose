@@ -347,7 +347,7 @@ export default function ExecutiveDirectMessages({
   // ── Real Live Probed Model Registry (Matching Room Standard) ──
   const [detectedLocalModels, setDetectedLocalModels] = useState([]);
   const [isScanningModels, setIsScanningModels] = useState(false);
-  const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
+  const [selectedAiModel, setSelectedAiModel] = useState('gemma3:1b');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
 
   // Listen for external navigation events (e.g. from Global Spotlight or Omni-Search)
@@ -365,9 +365,9 @@ export default function ExecutiveDirectMessages({
   useEffect(() => {
     if (detectedModelsFromApp && detectedModelsFromApp.length > 0) {
       setDetectedLocalModels(detectedModelsFromApp);
-      if (selectedAiModel === 'gemini-2.0-flash') {
-        setSelectedAiModel(detectedModelsFromApp[0].id);
-      }
+      const preferred = detectedModelsFromApp.find(m => m.id?.includes('gemma')) || detectedModelsFromApp[0];
+      setSelectedAiModel(preferred.id);
+      setConversations(prev => prev.map(c => c.id === 'chat-assistant' ? { ...c, modelId: preferred.id, modelName: preferred.name } : c));
     }
   }, [detectedModelsFromApp]);
 
@@ -375,7 +375,7 @@ export default function ExecutiveDirectMessages({
   const scanRealLocalModels = async () => {
     setIsScanningModels(true);
     try {
-      const servers = await detectLocalLLMServers({ timeoutMs: 1200 });
+      const servers = await detectLocalLLMServers({ timeoutMs: 3500 });
       const locals = [];
       (servers || []).forEach(s => {
         if (s.isOnline && Array.isArray(s.models)) {
@@ -392,8 +392,10 @@ export default function ExecutiveDirectMessages({
         }
       });
       setDetectedLocalModels(locals);
-      if (locals.length > 0 && selectedAiModel === 'gemini-2.0-flash') {
-        setSelectedAiModel(locals[0].id);
+      if (locals.length > 0) {
+        const preferred = locals.find(m => m.id?.includes('gemma')) || locals[0];
+        setSelectedAiModel(preferred.id);
+        setConversations(prev => prev.map(c => c.id === 'chat-assistant' ? { ...c, modelId: preferred.id, modelName: preferred.name } : c));
       }
     } catch (e) {
       console.warn('Local LLM detection error:', e);
@@ -508,8 +510,10 @@ export default function ExecutiveDirectMessages({
       avatar: 'AI',
       isGroup: false,
       isAi: true,
-      modelId: 'gemini-2.0-flash',
-      modelName: 'Gemini 2.0 Flash',
+      modelId: 'gemma3:1b',
+      modelName: 'gemma3:1b',
+      provider: 'Ollama',
+      endpoint: 'http://127.0.0.1:11434',
       lastMsg: 'Ready for strategy briefings, real-time voice, or file synthesis.',
       time: 'Just now',
       unread: 0,
@@ -548,6 +552,17 @@ export default function ExecutiveDirectMessages({
       console.warn('[Relay] Failed to persist conversations to localStorage:', e);
     }
   }, [conversations]);
+
+  const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
+
+  // Find current active model info from detected locals or cloud models
+  const activeModelDisplay = useMemo(() => {
+    const fromLocal = detectedLocalModels.find(m => m.id === selectedAiModel);
+    if (fromLocal) return { name: fromLocal.name, provider: fromLocal.provider, isLocal: true };
+    const fromCloud = DEFAULT_CLOUD_MODELS.find(m => m.id === selectedAiModel);
+    if (fromCloud) return { name: fromCloud.name, provider: fromCloud.provider, isLocal: false };
+    return { name: selectedAiModel, provider: 'AI Engine', isLocal: false };
+  }, [selectedAiModel, detectedLocalModels]);
 
   // Isolated Message Threads Store with localStorage Persistence
   const RELAY_MESSAGES_STORAGE_KEY = 'regaarder_relay_messages_v1';
@@ -701,14 +716,17 @@ export default function ExecutiveDirectMessages({
     setForwardSearchQuery('');
   };
 
-  const getCleanAiWelcomeMessage = (modelName = 'Gemini 2.0 Flash') => ({
-    id: `m-welcome-${Date.now()}`,
-    author: 'Assistant',
-    role: 'assistant',
-    text: `Welcome to a new chat session with ${modelName}. All communications are end-to-end encrypted with zero-knowledge keys.\n\nReady for strategy briefings, document synthesis, or workspace questions.`,
-    createdAt: Date.now(),
-    status: 'read'
-  });
+  const getCleanAiWelcomeMessage = (modelName) => {
+    const resolvedName = modelName || activeModelDisplay.name || (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'gemma3:1b';
+    return {
+      id: `m-welcome-${Date.now()}`,
+      author: 'Assistant',
+      role: 'assistant',
+      text: `Welcome to a new chat session with ${resolvedName}. All communications are end-to-end encrypted with zero-knowledge keys.\n\nReady for strategy briefings, document synthesis, or workspace questions.`,
+      createdAt: Date.now(),
+      status: 'read'
+    };
+  };
 
   // ── Session Lifecycle: Auto-Archive Previous AI Chats on Fresh App Launch ──
   useEffect(() => {
@@ -730,7 +748,7 @@ export default function ExecutiveDirectMessages({
               const firstUserMsg = userMsgs[0].text || 'Previous Chat';
               const sessionTitle = firstUserMsg.length > 40 ? `${firstUserMsg.slice(0, 40)}...` : firstUserMsg;
               const contactObj = conversations.find(c => c.id === contactId);
-              const mName = contactObj?.modelName || contactObj?.name || 'AI Assistant';
+              const mName = contactObj?.modelName || activeModelDisplay.name || contactObj?.name || 'AI Assistant';
 
               sessionsToArchive.push({
                 id: `session-auto-${Date.now()}-${contactId}`,
@@ -764,9 +782,43 @@ export default function ExecutiveDirectMessages({
     }
   }, []);
 
+  const updateAiWelcomeGreeting = (oldText, newModelName) => {
+    if (!oldText || typeof oldText !== 'string') return oldText;
+    const cleanModel = (newModelName || 'gemma3:1b')
+      .replace(/\.0\s*Flash/gi, '')
+      .trim() || 'gemma3:1b';
+
+    if (oldText.includes('All communications are end-to-end encrypted') || oldText.includes('Welcome to a new chat session with') || oldText.includes('.0 Flash')) {
+      return `Welcome to a new chat session with ${cleanModel}. All communications are end-to-end encrypted with zero-knowledge keys.\n\nReady for strategy briefings, document synthesis, or workspace questions.`;
+    }
+    return oldText;
+  };
+
+  // Dynamically synchronize the welcome greeting in the chat to the active model name
+  useEffect(() => {
+    if (!activeModelDisplay?.name) return;
+    setThreadMessages(prev => {
+      const thread = prev[activeContactId] || [];
+      if (thread.length > 0 && (thread[0].text?.includes('Welcome to a new chat session with') || thread[0].text?.includes('.0 Flash') || thread[0].text?.includes('Gemini 2.0 Flash'))) {
+        const updatedFirst = updateAiWelcomeGreeting(thread[0].text, activeModelDisplay.name);
+        if (updatedFirst !== thread[0].text) {
+          return {
+            ...prev,
+            [activeContactId]: [{
+              ...thread[0],
+              text: updatedFirst
+            }, ...thread.slice(1)]
+          };
+        }
+      }
+      return prev;
+    });
+  }, [activeModelDisplay?.name, activeContactId]);
+
   const handleStartNewAiChat = () => {
     const currentMessages = threadMessages[activeContactId] || [];
     const userMessages = currentMessages.filter(m => m.role === 'you');
+    const activeMName = activeModelDisplay.name || (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'gemma3:1b';
     
     if (userMessages.length > 0) {
       const firstUserMsg = userMessages[0].text || 'Untitled Chat';
@@ -776,13 +828,12 @@ export default function ExecutiveDirectMessages({
         contactId: activeContactId,
         title: sessionTitle,
         date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        modelName: (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'Gemini 2.0 Flash',
+        modelName: activeMName,
         messages: [...currentMessages]
       };
       setAiChatSessions(prev => [newSession, ...prev.filter(s => s.id !== newSession.id)]);
     }
 
-    const activeMName = (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName;
     setThreadMessages(prev => ({
       ...prev,
       [activeContactId]: [getCleanAiWelcomeMessage(activeMName)]
@@ -791,7 +842,7 @@ export default function ExecutiveDirectMessages({
   };
 
   const handleClearCurrentChat = () => {
-    const activeMName = (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName;
+    const activeMName = activeModelDisplay.name || (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'gemma3:1b';
     setThreadMessages(prev => ({
       ...prev,
       [activeContactId]: [getCleanAiWelcomeMessage(activeMName)]
@@ -1190,17 +1241,6 @@ export default function ExecutiveDirectMessages({
       return true;
     });
   }, [conversations, activeTab, searchQuery, threadMessages]);
-
-  const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
-  
-  // Find current active model info from detected locals or cloud models
-  const activeModelDisplay = useMemo(() => {
-    const fromLocal = detectedLocalModels.find(m => m.id === selectedAiModel);
-    if (fromLocal) return { name: fromLocal.name, provider: fromLocal.provider, isLocal: true };
-    const fromCloud = DEFAULT_CLOUD_MODELS.find(m => m.id === selectedAiModel);
-    if (fromCloud) return { name: fromCloud.name, provider: fromCloud.provider, isLocal: false };
-    return { name: selectedAiModel, provider: 'AI Engine', isLocal: false };
-  }, [selectedAiModel, detectedLocalModels]);
 
   // Identify if current active model is a compact / lightweight model (≤3B parameters)
   const isSmallModel = useMemo(() => {
@@ -2073,7 +2113,7 @@ Provide a concise natural language synthesis answering the user's question from 
         setAiStatusPhase('typing');
       }, 1200);
 
-      const activeEngineId = currentChat?.modelId || selectedAiModel;
+      const activeEngineId = selectedAiModel || currentChat?.modelId || 'gemma3:1b';
       const targetLocal = detectedLocalModels.find(m => m.id === activeEngineId || m.name === activeEngineId);
       const aiAuthor = currentChat?.name || 'Assistant';
 
@@ -2115,9 +2155,12 @@ Provide a concise natural language synthesis answering the user's question from 
           referenceSources = agentOutcome.referenceSources || [];
         }
 
-        // 2. Direct Electron Native IPC / Loopback fallback if onCallAi did not return text
-        if (!aiResponseText && targetLocal) {
-          const modelTag = targetLocal.id || targetLocal.name;
+        // 2. Direct Electron Native IPC / Loopback fallback if onCallAi did not return substantive text
+        const isCannedFallback = !aiResponseText || aiResponseText.startsWith(`I am ${currentChat?.name || 'Assistant'}. How can I assist`);
+        const isLocalModelActive = Boolean(targetLocal || activeEngineId?.includes('gemma') || activeEngineId?.includes('1b') || activeEngineId?.includes(':') || activeEngineId?.includes('lfm'));
+
+        if ((!aiResponseText || isCannedFallback) && isLocalModelActive) {
+          const modelTag = targetLocal?.id || targetLocal?.name || activeEngineId || 'gemma3:1b';
           const personaIdentity = currentChat?.name || 'Assistant';
           const roleAnchoredPrompt = currentChat?.name
             ? `[STRICT IDENTITY & ROLE ANCHORING]
@@ -2131,7 +2174,7 @@ ${systemPrompt}`
           if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
             try {
               const ipcRes = await window.electronAPI.generateLocalAI({
-                endpoint: targetLocal.endpoint || 'http://127.0.0.1:11434',
+                endpoint: targetLocal?.endpoint || 'http://127.0.0.1:11434',
                 model: modelTag,
                 prompt: trimmed,
                 systemPrompt: roleAnchoredPrompt
@@ -2144,17 +2187,39 @@ ${systemPrompt}`
             }
           }
 
-          if (!aiResponseText) {
-            const rawEndpoint = (targetLocal.endpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+          if (!aiResponseText || isCannedFallback) {
+            const rawEndpoint = (targetLocal?.endpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
             const candidateBases = [
               rawEndpoint,
-              rawEndpoint.includes('127.0.0.1') ? rawEndpoint.replace('127.0.0.1', 'localhost') : rawEndpoint.replace('localhost', '127.0.0.1'),
               'http://127.0.0.1:11434',
+              '/api/ollama',
               'http://localhost:11434'
             ];
 
             for (const base of candidateBases) {
               try {
+                // Try /api/chat first
+                const chatRes = await fetch(`${base}/api/chat`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model: modelTag,
+                    messages: [
+                      { role: 'system', content: roleAnchoredPrompt },
+                      { role: 'user', content: trimmed }
+                    ],
+                    stream: false
+                  })
+                });
+                if (chatRes.ok) {
+                  const chatData = await chatRes.json();
+                  if (chatData?.message?.content) {
+                    aiResponseText = chatData.message.content.trim();
+                    break;
+                  }
+                }
+
+                // Fallback to /api/generate
                 const genRes = await fetch(`${base}/api/generate`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -2166,7 +2231,7 @@ ${systemPrompt}`
                 });
                 if (genRes.ok) {
                   const genData = await genRes.json();
-                  if (genData.response) {
+                  if (genData?.response) {
                     aiResponseText = genData.response.trim();
                     break;
                   }
@@ -2981,6 +3046,22 @@ ${systemPrompt}`
                                     onClick={() => {
                                       setSelectedAiModel(localM.id);
                                       setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, modelId: localM.id, modelName: localM.name } : c));
+                                      setThreadMessages(prev => {
+                                        const thread = prev[activeContactId] || [];
+                                        if (thread.length > 0) {
+                                          const updatedFirst = updateAiWelcomeGreeting(thread[0].text, localM.name);
+                                          if (updatedFirst !== thread[0].text) {
+                                            return {
+                                              ...prev,
+                                              [activeContactId]: [{
+                                                ...thread[0],
+                                                text: updatedFirst
+                                              }, ...thread.slice(1)]
+                                            };
+                                          }
+                                        }
+                                        return prev;
+                                      });
                                       setIsAiModelSelectorOpen(false);
                                     }}
                                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
@@ -3040,6 +3121,22 @@ ${systemPrompt}`
                                 onClick={() => {
                                   setSelectedAiModel(m.id);
                                   setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, modelId: m.id, modelName: m.name } : c));
+                                  setThreadMessages(prev => {
+                                    const thread = prev[activeContactId] || [];
+                                    if (thread.length > 0) {
+                                      const updatedFirst = updateAiWelcomeGreeting(thread[0].text, m.name);
+                                      if (updatedFirst !== thread[0].text) {
+                                        return {
+                                          ...prev,
+                                          [activeContactId]: [{
+                                            ...thread[0],
+                                            text: updatedFirst
+                                          }, ...thread.slice(1)]
+                                        };
+                                      }
+                                    }
+                                    return prev;
+                                  });
                                   setIsAiModelSelectorOpen(false);
                                 }}
                                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${

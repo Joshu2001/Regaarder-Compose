@@ -527,9 +527,9 @@ export function buildWorkspaceIndex(context = {}) {
     const isWhiteboard = doc.mode === 'whiteboard'
       || (doc.mode === 'compose' && (
         /^untitled\s+whiteboard(?:\s+\d+)?$/i.test(String(doc.title || '').trim())
-        || Array.isArray(doc.whiteboardWidgets)
-        || Array.isArray(doc.whiteboardStrokes)
-        || Array.isArray(doc.whiteboardShapes)
+        || (Array.isArray(doc.whiteboardWidgets) && doc.whiteboardWidgets.length > 0)
+        || (Array.isArray(doc.whiteboardStrokes) && doc.whiteboardStrokes.length > 0)
+        || (Array.isArray(doc.whiteboardShapes) && doc.whiteboardShapes.length > 0)
       ));
     const temporal = formatTemporalMetadata(doc.updatedAt || doc.savedAt || doc.createdAt);
 
@@ -1323,6 +1323,7 @@ function normalizeFilterKey(filter = '') {
 }
 
 function itemMatchesWorkspaceFilter(item, activeFilter) {
+  if (!item) return false;
   const filterKey = normalizeFilterKey(activeFilter);
   if (!filterKey || filterKey === 'all') return true;
 
@@ -1567,9 +1568,12 @@ export async function synthesizeWorkspaceKnowledge({
   personaInstructions = ''
 }) {
   onProgress?.({ step: 1, label: 'Scanning workspace metadata' });
-  const matched = queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8);
+  const matched = (workspaceIndex && workspaceIndex.length > 0)
+    ? queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8)
+    : [];
+  const hasBrandGuidelines = Boolean(personaInstructions && personaInstructions.includes('Brand Guidelines:') && personaInstructions.split('Brand Guidelines:')[1]?.trim()?.length > 5);
 
-  if (matched.length === 0) {
+  if (matched.length === 0 && !hasBrandGuidelines) {
     return {
       answer: `No records found in your workspace regarding "${query}". Create or import documents, sheets, tasks, or notes to ask questions about your workspace.`,
       sources: []
@@ -1578,7 +1582,7 @@ export async function synthesizeWorkspaceKnowledge({
 
   // Build grounded context with full temporal metadata for LLM reasoning
   onProgress?.({ step: 2, label: 'Extracting document context' });
-  const contextBlocks = matched.map((m, idx) => {
+  let contextBlocks = matched.map((m, idx) => {
     const e = m.entity;
     const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
     const meta = e.metadata || {};
@@ -1592,6 +1596,11 @@ export async function synthesizeWorkspaceKnowledge({
 ${temporalInfo ? `[TEMPORAL METADATA: ${temporalInfo}]` : ''}
 ${bodyExcerpt}`;
   });
+
+  if (contextBlocks.length === 0 && hasBrandGuidelines) {
+    const brandExcerpt = personaInstructions.split('Brand Guidelines:')[1]?.trim() || '';
+    contextBlocks = [`[RESOURCE 1: "Brand Guidelines & Workspace Memory" | Application: Memory | Type: Guidelines]\n${brandExcerpt}`];
+  }
 
   const contextData = contextBlocks.join('\n\n---\n\n');
 
@@ -1624,7 +1633,6 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     return lower.includes('empty response') ||
            lower.includes('check your api key') ||
            lower.includes('api key and model settings') ||
-           lower.includes('unable to synthesize') ||
            lower.includes('quota exceeded') ||
            lower.includes('invalid api key');
   };
@@ -1646,7 +1654,12 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
       const { callAiWithTools } = await import('./docsToolExecutor.js');
       const { getSavedAiConfig } = await import('./orbAiService.js');
 
-      const resolvedConfig = aiConfig || getSavedAiConfig();
+      const baseConfig = aiConfig || getSavedAiConfig();
+      const resolvedConfig = {
+        ...baseConfig,
+        ...(customModel ? { model: customModel } : {}),
+        ...(customProvider ? { provider: customProvider } : {})
+      };
       if (hasUsableConfig(resolvedConfig)) {
         const toolPrompt = `${systemPrompt}\n\n${userPrompt}`;
         const result = await callAiWithTools(toolPrompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
@@ -1694,6 +1707,58 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     }
   }
 
+  // ── Secondary-B Path: Direct Ollama Loopback at 127.0.0.1:11434 / /api/ollama ──
+  const localCandidates = ['http://127.0.0.1:11434', '/api/ollama', 'http://localhost:11434'];
+  const targetOllamaModel = (customModel && !customModel.includes('gemini') && !customModel.includes('claude')) ? customModel : 'gemma3:1b';
+  for (const ep of localCandidates) {
+    try {
+      // 1. Try /api/chat first (standard for conversational models like gemma3:1b)
+      const chatRes = await fetch(`${ep}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: targetOllamaModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          stream: false
+        })
+      });
+      if (chatRes.ok) {
+        const chatData = await chatRes.json();
+        const chatText = (chatData?.message?.content || '').trim();
+        if (chatText && !isErrorOrEmpty(chatText)) {
+          return {
+            answer: chatText,
+            sources: matched.map(m => m.entity)
+          };
+        }
+      }
+
+      // 2. Fallback to /api/generate
+      const directRes = await fetch(`${ep}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: targetOllamaModel,
+          prompt: `${systemPrompt}\n\n${userPrompt}`,
+          stream: false
+        })
+      });
+      if (directRes.ok) {
+        const directData = await directRes.json();
+        const genText = (directData?.response || '').trim();
+        if (genText && !isErrorOrEmpty(genText)) {
+          return {
+            answer: genText,
+            sources: matched.map(m => m.entity)
+          };
+        }
+      }
+    } catch (_) {}
+  }
+
   // ── Tertiary Path: Smart Semantic Keyword Extraction & Multi-Source Synthesis (no LLM required) ─────
   const terms = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !['what', 'this', 'that', 'with', 'from', 'your', 'about', 'connection', 'across', 'workspace', 'tell', 'show'].includes(t));
   const extractedExcerpts = [];
@@ -1732,7 +1797,19 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     }
   }
 
+  const hasUsableAiBackend = Boolean(
+    (customModel && String(customModel).trim()) ||
+    (aiConfig && hasUsableConfig(aiConfig))
+  );
+
   if (extractedExcerpts.length > 0) {
+    if (!hasUsableAiBackend) {
+      return {
+        answer: `Ask Memory is selected, but no usable AI model is connected right now. Pick a model in the header, start Ollama or LM Studio, or add a valid Gemini/Claude API key in Settings before asking again.`,
+        sources: matched.map(m => m.entity)
+      };
+    }
+
     const synthesisSections = extractedExcerpts.map((ex, i) => 
       `### ${i + 1}. **${ex.title}** *(${ex.location})*\n${ex.text}`
     ).join('\n\n');
@@ -1747,6 +1824,20 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
 
   const primarySource = matched[0]?.entity;
   const rawFallback = (primarySource?.content || matched[0]?.snippet || '').trim();
+
+  if (!hasUsableAiBackend) {
+    return {
+      answer: `I couldn’t generate a direct answer because Ask Memory has no active model connection. Choose a model in the Ask Memory header, connect local Ollama/LM Studio, or enable a valid Gemini/Claude key in Settings.`,
+      sources: matched.map(m => m.entity)
+    };
+  }
+
+  if (!rawFallback) {
+    return {
+      answer: `I found a likely match, but there isn’t enough source content to answer this question directly. Try a more specific prompt or add the relevant document to your workspace.`,
+      sources: matched.map(m => m.entity)
+    };
+  }
 
   return {
     answer: `Based on **${primarySource?.title || 'Workspace Resource'}** (${primarySource?.location || primarySource?.workspace || 'Workspace'}):\n\n${rawFallback.slice(0, 450)}${rawFallback.length > 450 ? '…' : ''}`,

@@ -21,8 +21,8 @@ export const DEFAULT_AI_CONFIG = {
   claudeModel: 'claude-3-5-sonnet-20241022',
   openaiModel: 'gpt-4o',
   deepseekModel: 'deepseek-chat',
-  ollamaEndpoint: 'http://localhost:11434',
-  ollamaModel: 'llama3:latest',
+  ollamaEndpoint: 'http://127.0.0.1:11434',
+  ollamaModel: 'gemma3:1b',
   lmstudioEndpoint: 'http://localhost:1234/v1',
   lmstudioModel: 'local-model',
   customEndpoint: 'http://localhost:8000/v1',
@@ -75,7 +75,7 @@ export function saveAiConfig(newConfig) {
 /**
  * Autonomous background probe to detect running local LLM servers (Ollama, LM Studio, LocalAI)
  */
-export async function detectLocalLLMServers({ timeoutMs = 1500 } = {}) {
+export async function detectLocalLLMServers({ timeoutMs = 3500 } = {}) {
   const discovered = [];
   const probeFetch = async (url, options = {}) => {
     const controller = new AbortController();
@@ -90,18 +90,39 @@ export async function detectLocalLLMServers({ timeoutMs = 1500 } = {}) {
     }
   };
 
-  // 1. Probe Ollama at default localhost:11434
+  // 1. Probe Ollama at default 127.0.0.1:11434 with Vite proxy and localhost fallbacks
   try {
     const config = getSavedAiConfig();
-    const ollamaUrl = (config.ollamaEndpoint || 'http://localhost:11434').replace(/\/+$/, '');
-    const res = await probeFetch(`${ollamaUrl}/api/tags`);
-    if (res && res.ok) {
-      const data = await res.json();
-      const models = Array.isArray(data.models) ? data.models : [];
+    const configuredUrl = (config.ollamaEndpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+    const candidateUrls = [
+      configuredUrl,
+      'http://127.0.0.1:11434',
+      '/api/ollama',
+      'http://localhost:11434'
+    ];
+    let activeUrl = null;
+    let ollamaData = null;
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await probeFetch(`${url}/api/tags`);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.models)) {
+            activeUrl = url;
+            ollamaData = data;
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (activeUrl && ollamaData) {
+      const models = Array.isArray(ollamaData.models) ? ollamaData.models : [];
       discovered.push({
         provider: 'ollama',
         name: 'Ollama (Local)',
-        endpoint: ollamaUrl,
+        endpoint: activeUrl,
         isOnline: true,
         models: models.map(m => ({
           id: m.name,
@@ -114,7 +135,7 @@ export async function detectLocalLLMServers({ timeoutMs = 1500 } = {}) {
       discovered.push({
         provider: 'ollama',
         name: 'Ollama (Local)',
-        endpoint: ollamaUrl,
+        endpoint: configuredUrl,
         isOnline: false,
         models: []
       });
@@ -802,38 +823,86 @@ export async function callAiProvider(messages = [], aiConfig = {}, availableTool
   // ── 4. OLLAMA LOCAL ───────────────────────────────────────────────────────
   if (provider === 'ollama') {
     try {
-      const endpoint = (aiConfig.ollamaEndpoint || 'http://localhost:11434').replace(/\/+$/, '');
-      const model = aiConfig.ollamaModel || 'llama3:latest';
+      const configuredEndpoint = (aiConfig.ollamaEndpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+      const model = aiConfig.ollamaModel || aiConfig.activeModel || 'gemma3:1b';
+      const candidateEndpoints = [
+        configuredEndpoint,
+        'http://127.0.0.1:11434',
+        '/api/ollama',
+        'http://localhost:11434'
+      ];
 
-      const body = {
-        model,
-        messages,
-        stream: false,
-        ...(availableTools.length > 0 && { tools: toOpenAIFormat(availableTools) })
-      };
+      // Detect if model supports tools (gemma3:1b does not support tools in Ollama)
+      const isToolCapable = !model.toLowerCase().includes('gemma3') && !model.toLowerCase().includes('1b');
+      const hasTools = isToolCapable && availableTools.length > 0;
 
-      const res = await fetch(`${endpoint}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const msg = data.message;
-        if (msg?.tool_calls?.length > 0) {
-          return {
-            type: 'tool_call',
-            toolCalls: msg.tool_calls.map((tc, i) => ({
-              id: `ollama_call_${i}`,
-              name: tc.function?.name,
-              arguments: tc.function?.arguments || {}
-            })),
-            rawAssistantMessage: msg.tool_calls
+      for (const endpoint of candidateEndpoints) {
+        try {
+          // Attempt 1: /api/chat
+          const chatBody = {
+            model,
+            messages,
+            stream: false,
+            ...(hasTools ? { tools: toOpenAIFormat(availableTools) } : {})
           };
+
+          let res = await fetch(`${endpoint}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(chatBody),
+            signal
+          });
+
+          // If rejected because model does not support tools, immediately retry without tools
+          if (!res.ok && hasTools) {
+            const errClone = await res.clone().text().catch(() => '');
+            if (errClone.includes('does not support tools')) {
+              res = await fetch(`${endpoint}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model, messages, stream: false }),
+                signal
+              });
+            }
+          }
+
+          if (res.ok) {
+            const data = await res.json();
+            const msg = data.message;
+            if (msg?.tool_calls?.length > 0) {
+              return {
+                type: 'tool_call',
+                toolCalls: msg.tool_calls.map((tc, i) => ({
+                  id: `ollama_call_${i}`,
+                  name: tc.function?.name,
+                  arguments: tc.function?.arguments || {}
+                })),
+                rawAssistantMessage: msg.tool_calls
+              };
+            }
+            if (msg?.content) {
+              return { type: 'text', content: msg.content.trim() };
+            }
+          }
+
+          // Attempt 2: Fallback to /api/generate if /api/chat was not ok
+          const promptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n') + '\n\nASSISTANT:';
+          const genRes = await fetch(`${endpoint}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, prompt: promptText, stream: false }),
+            signal
+          });
+
+          if (genRes.ok) {
+            const genData = await genRes.json();
+            if (genData?.response) {
+              return { type: 'text', content: genData.response.trim() };
+            }
+          }
+        } catch (subErr) {
+          // Try next candidate endpoint
         }
-        return { type: 'text', content: msg?.content || '' };
       }
     } catch (err) {
       console.warn('[callAiProvider] Ollama local API failed:', err);

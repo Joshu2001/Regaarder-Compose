@@ -500,13 +500,18 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
     ? `${rolePrefix}${customSystemPrompt}`
     : `${rolePrefix}You are an executive intelligent assistant in Regaarder Relay. Answer user queries directly, concisely, and naturally. Never create a document or output outlines unless explicitly asked.`;
 
+  const isLightweight = customProvider === 'Ollama' || /(1b|2b|3b|0\.5b|gemma|llama|lfm|nano|mini)/i.test(customModel || '');
+
   if (intent.isTranslation) {
     activeSystemPrompt = `${activeSystemPrompt}\n\n[TASK]: Provide an accurate, direct translation of the requested sentence or text into the target language. Do not invent outlines or add commentary.`;
   } else if (intent.isDocCreation) {
-    const memoryContext = getAgentContext({ maxEntities: 6, maxRules: 4, maxDecisions: 2 });
+    const memoryContext = getAgentContext({ maxEntities: isLightweight ? 2 : 6, maxRules: isLightweight ? 1 : 4, maxDecisions: isLightweight ? 1 : 2 });
     activeSystemPrompt = `${activeSystemPrompt}\n\n${RELAY_AGENT_SYSTEM_PROMPT}\n\n${memoryContext}`;
-  } else {
-    const memoryContext = getAgentContext({ maxEntities: 4, maxRules: 3, maxDecisions: 2 });
+  } else if (intent.isAction || intent.isCitationQuery) {
+    const memoryContext = getAgentContext({ maxEntities: isLightweight ? 2 : 4, maxRules: isLightweight ? 1 : 3, maxDecisions: 1 });
+    activeSystemPrompt = `${activeSystemPrompt}\n\n${memoryContext}`;
+  } else if (!isLightweight) {
+    const memoryContext = getAgentContext({ maxEntities: 3, maxRules: 2, maxDecisions: 1 });
     activeSystemPrompt = `${activeSystemPrompt}\n\n${memoryContext}`;
   }
 
@@ -570,6 +575,51 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
       }
     } catch (loopErr) {
       console.warn('[RelayAgent] runAgentExecutionLoop fallback error:', loopErr);
+    }
+  }
+
+  // Attempt direct local Ollama loopback at 127.0.0.1:11434 / /api/ollama if still empty
+  if (!replyText && !modelJson && (customProvider === 'Ollama' || (customModel && (customModel.includes(':') || customModel.includes('gemma') || customModel.includes('llama'))))) {
+    const localModelTag = customModel || 'gemma3:1b';
+    const candidateEps = ['http://127.0.0.1:11434', '/api/ollama', 'http://localhost:11434'];
+    for (const ep of candidateEps) {
+      try {
+        const resp = await fetch(`${ep}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: localModelTag,
+            messages: [
+              { role: 'system', content: activeSystemPrompt },
+              { role: 'user', content: trimmed }
+            ],
+            stream: false
+          })
+        });
+        if (resp.ok) {
+          const respData = await resp.json();
+          if (respData?.message?.content) {
+            replyText = respData.message.content.trim();
+            break;
+          }
+        }
+        const genResp = await fetch(`${ep}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: localModelTag,
+            prompt: `${activeSystemPrompt}\n\nUser: ${trimmed}\n${personaName || 'Assistant'}:`,
+            stream: false
+          })
+        });
+        if (genResp.ok) {
+          const genData = await genResp.json();
+          if (genData?.response) {
+            replyText = genData.response.trim();
+            break;
+          }
+        }
+      } catch (_) {}
     }
   }
 
@@ -843,6 +893,38 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
 export function extractClarificationFromText(text) {
   if (!text || typeof text !== 'string') return { cleanText: text || '', clarification: null };
 
+  // Helper to normalize and strip raw markdown artifacts from option labels & hints
+  const normalizeExtractedOption = (raw) => {
+    if (!raw || typeof raw !== 'string') return raw;
+    const trimmed = raw.trim();
+
+    // Check for **Title:** Description or **Title**: Description or *Title:* Description
+    const boldSplitMatch = trimmed.match(/^(?:\*\*|\*)(.+?)(?:\*\*|\*)\s*:?\s*[-—]?\s*(.+)$/s);
+    if (boldSplitMatch) {
+      const cleanLabel = boldSplitMatch[1].replace(/[:*]+$/, '').replace(/\*\*/g, '').trim();
+      const cleanHint = boldSplitMatch[2].replace(/^[-—:\s]+/, '').replace(/\*\*/g, '').trim();
+      return {
+        label: cleanLabel,
+        hint: cleanHint,
+        value: cleanLabel
+      };
+    }
+
+    // Check for Title: Description
+    const colonSplitMatch = trimmed.match(/^([^:\n]{2,45}):\s+(.+)$/s);
+    if (colonSplitMatch && !colonSplitMatch[1].startsWith('http')) {
+      const cleanLabel = colonSplitMatch[1].replace(/[*_#`]/g, '').trim();
+      const cleanHint = colonSplitMatch[2].replace(/\*\*/g, '').trim();
+      return {
+        label: cleanLabel,
+        hint: cleanHint,
+        value: cleanLabel
+      };
+    }
+
+    return trimmed.replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
+  };
+
   // 1. Explicit fenced clarification block: ```clarification ... ```
   const blockMatch = text.match(/```(?:clarification|json:clarification)\s*([\s\S]*?)```/i);
   if (blockMatch) {
@@ -853,8 +935,8 @@ export function extractClarificationFromText(text) {
         return {
           cleanText,
           clarification: {
-            question: parsed.question,
-            options: parsed.options,
+            question: String(parsed.question).replace(/\*\*/g, '').trim(),
+            options: parsed.options.map(opt => (typeof opt === 'string' ? normalizeExtractedOption(opt) : opt)),
             allowCustom: parsed.allowCustom !== false,
             allowSkip: parsed.allowSkip !== false
           }
@@ -873,8 +955,8 @@ export function extractClarificationFromText(text) {
         return {
           cleanText,
           clarification: {
-            question: parsed.clarification.question,
-            options: parsed.clarification.options,
+            question: String(parsed.clarification.question).replace(/\*\*/g, '').trim(),
+            options: parsed.clarification.options.map(opt => (typeof opt === 'string' ? normalizeExtractedOption(opt) : opt)),
             allowCustom: parsed.clarification.allowCustom !== false,
             allowSkip: parsed.clarification.allowSkip !== false
           }
@@ -890,17 +972,17 @@ export function extractClarificationFromText(text) {
   if (matches.length >= 2 && matches.length <= 6) {
     const firstMatchIdx = matches[0].index;
     const preText = text.slice(0, firstMatchIdx).trim();
-    const hasPromptSignal = preText.includes('?') || preText.endsWith(':') || /(options|which|choose|select|prefer|target)/i.test(preText);
+    const hasPromptSignal = preText.includes('?') || preText.endsWith(':') || /(options|which|choose|select|prefer|target|assist you by)/i.test(preText);
 
     if (hasPromptSignal) {
       const sentences = preText.split(/(?<=[.?!:])\s+/);
       const questionTitle = sentences[sentences.length - 1] || 'Please select an option:';
-      const extractedOptions = matches.map(m => m[2].trim());
+      const extractedOptions = matches.map(m => normalizeExtractedOption(m[2]));
 
       return {
         cleanText: preText,
         clarification: {
-          question: questionTitle.replace(/^[-*•#\s]+/, '').trim(),
+          question: questionTitle.replace(/^[-*•#\s]+/, '').replace(/\*\*/g, '').trim(),
           options: extractedOptions,
           allowCustom: true,
           allowSkip: true

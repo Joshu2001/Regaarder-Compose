@@ -1,6 +1,106 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X, Edit3, CornerDownLeft } from 'lucide-react';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
+
+// Renders inline markdown tokens (bold, italics, code) cleanly without raw syntax leaks
+const renderInlineTokens = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  const parts = [];
+  const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**') && token.endsWith('**')) {
+      parts.push(
+        <strong key={match.index} className="font-semibold text-slate-900 dark:text-zinc-100">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith('*') && token.endsWith('*')) {
+      parts.push(
+        <em key={match.index} className="italic text-slate-700 dark:text-zinc-300">
+          {token.slice(1, -1)}
+        </em>
+      );
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      parts.push(
+        <code key={match.index} className="px-1 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] font-mono text-[11px]">
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+};
+
+// Normalize and parse option items into clean { id, label, value, hint }
+const parseOptionItem = (opt, idx) => {
+  let rawLabel = '';
+  let rawHint = null;
+  let rawValue = '';
+
+  if (typeof opt === 'string') {
+    rawLabel = opt.trim();
+  } else if (opt && typeof opt === 'object') {
+    rawLabel = (opt.label || opt.value || `Option ${idx + 1}`).trim();
+    rawHint = opt.hint ? String(opt.hint).trim() : null;
+    rawValue = opt.value ? String(opt.value).trim() : '';
+  }
+
+  // Detect and split title vs description if embedded in a single string:
+  // Examples:
+  // - "**Translating language:** I can translate languages if you give me text..."
+  // - "**Generating Creative content:** I can write..."
+  // - "**Provide summaries:** I can quickly..."
+  // - "**Answering your questions as a resourceful assistant**: I will respond..."
+  // - "Translating language: I can translate..."
+  if (!rawHint && rawLabel) {
+    const boldSplitMatch = rawLabel.match(/^(?:\*\*|\*)(.+?)(?:\*\*|\*)\s*:?\s*[-—]?\s*(.+)$/s);
+    if (boldSplitMatch) {
+      rawLabel = boldSplitMatch[1].replace(/[:*]+$/, '').trim();
+      rawHint = boldSplitMatch[2].replace(/^[-—:\s]+/, '').trim();
+    } else {
+      const colonSplitMatch = rawLabel.match(/^([^:\n]{2,45}):\s+(.+)$/s);
+      if (colonSplitMatch && !colonSplitMatch[1].startsWith('http')) {
+        rawLabel = colonSplitMatch[1].replace(/[*_#`]/g, '').trim();
+        rawHint = colonSplitMatch[2].trim();
+      }
+    }
+  }
+
+  // Strip dangling asterisks or markdown syntax from label and hint
+  const cleanLabel = rawLabel
+    .replace(/\*\*/g, '')
+    .replace(/^\*|\*$/g, '')
+    .replace(/[:\s]+$/, '')
+    .trim();
+
+  const cleanHint = rawHint
+    ? rawHint
+        .replace(/\*\*/g, '')
+        .replace(/^\*|\*$/g, '')
+        .trim()
+    : null;
+
+  const cleanValue = rawValue
+    ? rawValue.replace(/\*\*/g, '').trim()
+    : cleanLabel;
+
+  return {
+    id: (opt && opt.id) || `opt-${idx}`,
+    label: cleanLabel || `Option ${idx + 1}`,
+    value: cleanValue || cleanLabel || `Option ${idx + 1}`,
+    hint: cleanHint
+  };
+};
 
 /**
  * InteractiveClarificationCard
@@ -39,18 +139,8 @@ export default function InteractiveClarificationCard({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const cardRef = useRef(null);
 
-  // Normalize options array into { id, label, value, hint } objects
-  const normalizedOptions = (options || []).map((opt, idx) => {
-    if (typeof opt === 'string') {
-      return { id: `opt-${idx}`, label: opt, value: opt, hint: null };
-    }
-    return {
-      id: opt.id || `opt-${idx}`,
-      label: opt.label || opt.value || `Option ${idx + 1}`,
-      value: opt.value || opt.label || '',
-      hint: opt.hint || null
-    };
-  });
+  // Normalize options array into clean { id, label, value, hint } objects
+  const normalizedOptions = (options || []).map((opt, idx) => parseOptionItem(opt, idx));
 
   // Global Keyboard Navigation (Single key 1-9, ArrowUp/Down, Enter, Esc)
   useEffect(() => {
@@ -72,7 +162,7 @@ export default function InteractiveClarificationCard({
         e.preventDefault();
         const selected = normalizedOptions[num - 1];
         if (selected && onSelectOption) {
-          onSelectOption(selected.label, num - 1);
+          onSelectOption(selected.value || selected.label, num - 1);
         }
         return;
       }
@@ -91,7 +181,7 @@ export default function InteractiveClarificationCard({
       if (e.key === 'Enter' && !activeEl?.closest('form') && !isTyping) {
         if (normalizedOptions[highlightedIndex] && onSelectOption) {
           e.preventDefault();
-          onSelectOption(normalizedOptions[highlightedIndex].label, highlightedIndex);
+          onSelectOption(normalizedOptions[highlightedIndex].value || normalizedOptions[highlightedIndex].label, highlightedIndex);
         }
       }
     };
@@ -102,6 +192,7 @@ export default function InteractiveClarificationCard({
 
   const isCompact = variant === 'compact';
   const isInline = variant === 'inline';
+  const cleanQuestion = (question || '').replace(/^[-*•#\s]+/, '').replace(/\*\*/g, '').trim();
 
   return (
     <div
@@ -123,7 +214,7 @@ export default function InteractiveClarificationCard({
             <RegaarderAiIcon size={12} strokeWidth={2.0} />
           </div>
           <span className={`font-semibold text-slate-900 dark:text-zinc-100 truncate ${isCompact ? 'text-[11.5px]' : 'text-[13px]'}`}>
-            {question}
+            {renderInlineTokens(cleanQuestion)}
           </span>
         </div>
 
@@ -178,7 +269,7 @@ export default function InteractiveClarificationCard({
               onPointerDown={(e) => {
                 e.preventDefault();
                 setHighlightedIndex(idx);
-                if (onSelectOption) onSelectOption(opt.label, idx);
+                if (onSelectOption) onSelectOption(opt.value || opt.label, idx);
               }}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-all duration-150 cursor-pointer border ${
                 isHighlighted
@@ -198,14 +289,17 @@ export default function InteractiveClarificationCard({
 
                 {/* Option Label & Optional Subtitle */}
                 <div className="min-w-0 flex-1">
-                  <p className={`font-medium truncate ${isCompact ? 'text-[11.5px]' : 'text-xs'} ${
-                    isHighlighted ? 'text-violet-900 dark:text-violet-200 font-semibold' : 'text-slate-800 dark:text-zinc-200'
+                  <p className={`font-semibold tracking-tight ${isCompact ? 'text-[11.5px]' : 'text-xs'} ${
+                    isHighlighted ? 'text-violet-900 dark:text-violet-200' : 'text-slate-900 dark:text-zinc-100'
                   }`}>
-                    {opt.label}
+                    {renderInlineTokens(opt.label)}
                   </p>
                   {opt.hint && (
-                    <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate leading-tight">
-                      {opt.hint}
+                    <p 
+                      className="text-[10.5px] text-slate-500 dark:text-zinc-400 truncate leading-snug mt-0.5"
+                      title={opt.hint}
+                    >
+                      {renderInlineTokens(opt.hint)}
                     </p>
                   )}
                 </div>

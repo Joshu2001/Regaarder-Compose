@@ -19,6 +19,15 @@ class ErrorBoundary extends React.Component {
     console.error("Uncaught error:", error, errorInfo);
     this.setState({ errorInfo });
   }
+  componentDidMount() {
+    if (typeof import.meta !== 'undefined' && import.meta.hot) {
+      import.meta.hot.on('vite:beforeUpdate', () => {
+        if (this.state.hasError) {
+          window.location.reload();
+        }
+      });
+    }
+  }
   render() {
     if (this.state.hasError) {
       return (

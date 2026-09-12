@@ -202,7 +202,9 @@ export default async function handler(req, res) {
         const ollamaData = await ollamaProbe.json();
         const availableModels = (ollamaData.models || []).map((m) => m.name);
         if (availableModels.length > 0) {
-          const selectedModel = availableModels.find((m) => m.includes('gemma') || m.includes('llama') || m.includes('lfm')) || availableModels[0];
+          const selectedModel = (body?.model && availableModels.includes(body.model))
+            ? body.model
+            : (availableModels.find((m) => m.includes('gemma') || m.includes('llama') || m.includes('lfm')) || availableModels[0]);
           const legacyPrompt = buildLegacyComposePrompt(body);
           const isLegacyComposeMode = Boolean(legacyPrompt);
           const userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';

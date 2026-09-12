@@ -62,8 +62,8 @@ export function getActiveAiConfig(explicitOverrides = {}) {
     openaiApiKey: explicitOverrides.apiKey || saved.openaiApiKey || env.OPENAI_API_KEY || '',
     claudeApiKey: explicitOverrides.apiKey || saved.claudeApiKey || env.ANTHROPIC_API_KEY || '',
     deepseekApiKey: explicitOverrides.apiKey || saved.deepseekApiKey || env.DEEPSEEK_API_KEY || '',
-    ollamaEndpoint: explicitOverrides.endpoint || saved.ollamaEndpoint || env.OLLAMA_ENDPOINT || 'http://localhost:11434',
-    ollamaModel: explicitOverrides.model || saved.ollamaModel || 'llama3:latest',
+    ollamaEndpoint: explicitOverrides.endpoint || saved.ollamaEndpoint || env.OLLAMA_ENDPOINT || 'http://127.0.0.1:11434',
+    ollamaModel: explicitOverrides.model || saved.ollamaModel || 'gemma3:1b',
     lmstudioEndpoint: explicitOverrides.endpoint || saved.lmstudioEndpoint || 'http://localhost:1234/v1',
     customEndpoint: explicitOverrides.endpoint || saved.customEndpoint || 'http://localhost:8000/v1',
     customApiKey: explicitOverrides.apiKey || saved.customApiKey || '',
@@ -193,9 +193,9 @@ async function callOpenAiCompatible(messages, tools, config, options = {}) {
     apiKey = config.deepseekApiKey;
     model = config.deepseekModel || 'deepseek-chat';
   } else if (isOllama) {
-    endpoint = `${(config.ollamaEndpoint || 'http://localhost:11434').replace(/\/+$/, '')}/v1/chat/completions`;
+    endpoint = `${(config.ollamaEndpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '')}/v1/chat/completions`;
     apiKey = 'ollama';
-    model = config.ollamaModel || 'llama3:latest';
+    model = config.ollamaModel || config.activeModel || 'gemma3:1b';
   } else if (isLMStudio) {
     endpoint = `${(config.lmstudioEndpoint || 'http://localhost:1234/v1').replace(/\/+$/, '')}/chat/completions`;
     apiKey = 'lmstudio';

@@ -3,11 +3,10 @@ import { spawn } from 'node:child_process';
 const port = process.env.REGAARDER_VITE_PORT || '5176';
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const electronCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const useWindowsShell = process.platform === 'win32';
 
 const vite = spawn(npmCommand, ['run', 'dev', '--', '--host', '127.0.0.1', '--port', port], {
   stdio: 'inherit',
-  shell: useWindowsShell,
+  shell: false,
   env: { ...process.env, BROWSER: 'none' },
 });
 
@@ -45,7 +44,7 @@ try {
   const viteUrl = await waitForVite();
   const electron = spawn(electronCommand, ['electron', '.'], {
     stdio: 'inherit',
-    shell: useWindowsShell,
+    shell: false,
     env: { ...process.env, NODE_ENV: 'development', VITE_DEV_SERVER_URL: viteUrl },
   });
 
