@@ -71725,6 +71725,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
               }
             }
+
+            // Evidence Traceability: Scroll to and pulse exact passage or snippet
+            const snippetToHighlight = entity.metadata?.highlightSnippet || entity.metadata?.passageText;
+            if (snippetToHighlight && typeof window !== 'undefined') {
+              setTimeout(() => {
+                try {
+                  const contentContainer = document.querySelector('.regaarder-editor, [contenteditable="true"], .document-editor-container') || document.body;
+                  const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT, null, false);
+                  let node;
+                  const searchPhrase = snippetToHighlight.slice(0, 60).toLowerCase().trim();
+                  while ((node = walker.nextNode())) {
+                    if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchPhrase)) {
+                      const parentEl = node.parentElement;
+                      if (parentEl) {
+                        parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        parentEl.classList.add('regaarder-evidence-highlight');
+                        setTimeout(() => {
+                          parentEl.classList.remove('regaarder-evidence-highlight');
+                        }, 3200);
+                        break;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Evidence scroll highlight error:', e);
+                }
+              }, 300);
+            }
+
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
@@ -87736,6 +87765,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setDocBodyHtml(targetDoc.bodyHtml || '');
               }
             }
+
+            // Evidence Traceability: Scroll to and pulse exact passage or snippet
+            const snippetToHighlight = entity.metadata?.highlightSnippet || entity.metadata?.passageText;
+            if (snippetToHighlight && typeof window !== 'undefined') {
+              setTimeout(() => {
+                try {
+                  const contentContainer = document.querySelector('.regaarder-editor, [contenteditable="true"], .document-editor-container') || document.body;
+                  const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT, null, false);
+                  let node;
+                  const searchPhrase = snippetToHighlight.slice(0, 60).toLowerCase().trim();
+                  while ((node = walker.nextNode())) {
+                    if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchPhrase)) {
+                      const parentEl = node.parentElement;
+                      if (parentEl) {
+                        parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        parentEl.classList.add('regaarder-evidence-highlight');
+                        setTimeout(() => {
+                          parentEl.classList.remove('regaarder-evidence-highlight');
+                        }, 3200);
+                        break;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Evidence scroll highlight error:', e);
+                }
+              }, 300);
+            }
+
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
