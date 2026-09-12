@@ -103,6 +103,278 @@ export function extractTextFromWhiteboard(docOrContext = {}) {
   return textParts.filter(Boolean).join('\n');
 }
 
+/**
+ * Segments an entity's content into identifiable passages with discrete IDs,
+ * location breadcrumbs, and character/paragraph boundaries for evidence traceability.
+ */
+export function segmentEntityPassages(entity, maxPassageLen = 600) {
+  if (!entity) return [];
+  const rawText = (entity.content || entity.snippet || '').trim();
+  if (!rawText) return [];
+
+  const rawParagraphs = rawText
+    .split(/\n{2,}|\r\n\r\n/)
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  const passages = [];
+  let pIdx = 1;
+
+  for (const para of rawParagraphs) {
+    if (para.length <= maxPassageLen) {
+      passages.push({
+        id: `${entity.id || 'res'}-P${pIdx++}`,
+        sourceId: entity.id,
+        documentTitle: entity.title,
+        workspace: entity.workspace || entity.type,
+        location: entity.location || `${entity.workspace || 'Workspace'} > ${entity.title}`,
+        text: para
+      });
+    } else {
+      const sentences = para.match(/[^.!?]+[.!?]+|\S+/g) || [para];
+      let currentChunk = '';
+      for (const sent of sentences) {
+        if ((currentChunk + ' ' + sent).length > maxPassageLen && currentChunk.trim()) {
+          passages.push({
+            id: `${entity.id || 'res'}-P${pIdx++}`,
+            sourceId: entity.id,
+            documentTitle: entity.title,
+            workspace: entity.workspace || entity.type,
+            location: entity.location || `${entity.workspace || 'Workspace'} > ${entity.title}`,
+            text: currentChunk.trim()
+          });
+          currentChunk = sent;
+        } else {
+          currentChunk = currentChunk ? `${currentChunk} ${sent}` : sent;
+        }
+      }
+      if (currentChunk.trim()) {
+        passages.push({
+          id: `${entity.id || 'res'}-P${pIdx++}`,
+          sourceId: entity.id,
+          documentTitle: entity.title,
+          workspace: entity.workspace || entity.type,
+          location: entity.location || `${entity.workspace || 'Workspace'} > ${entity.title}`,
+          text: currentChunk.trim()
+        });
+      }
+    }
+  }
+
+  return passages;
+}
+
+/**
+ * Extracts structured claim-to-evidence mappings from an AI response.
+ * Handles both model-generated ```evidence_json blocks and deterministic n-gram alignment.
+ */
+export function extractStructuredEvidence({ rawText = '', allPassages = [], matchedSources = [] }) {
+  if (!rawText || typeof rawText !== 'string') {
+    return { cleanAnswer: '', claims: [] };
+  }
+
+  let cleanAnswer = rawText.trim();
+  let rawClaimsJson = null;
+
+  // 1. Check for ```evidence_json ... ``` or ```json ... ``` blocks containing claims
+  const jsonBlockRegex = /```(?:evidence_json|json)?\s*([\s\S]*?)\s*```/i;
+  const match = cleanAnswer.match(jsonBlockRegex);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed && Array.isArray(parsed.claims)) {
+        rawClaimsJson = parsed.claims;
+        // Strip out the JSON block from cleanAnswer so user views pristine executive markdown
+        cleanAnswer = cleanAnswer.replace(match[0], '').trim();
+      }
+    } catch (_) {}
+  }
+
+  // Also check if cleanAnswer starts or ends with raw JSON
+  if (!rawClaimsJson && cleanAnswer.startsWith('{') && cleanAnswer.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(cleanAnswer);
+      if (parsed?.answer && Array.isArray(parsed?.claims)) {
+        cleanAnswer = parsed.answer.trim();
+        rawClaimsJson = parsed.claims;
+      }
+    } catch (_) {}
+  }
+
+  const passageMap = new Map();
+  for (const p of allPassages) {
+    passageMap.set(p.id, p);
+  }
+
+  const claims = [];
+
+  // If structured claims were returned in the model payload:
+  if (rawClaimsJson && rawClaimsJson.length > 0) {
+    rawClaimsJson.forEach((c, cIdx) => {
+      const claimText = (c.claim || c.claimText || c.text || '').trim();
+      if (!claimText) return;
+
+      let evidenceType = (c.type || c.evidenceType || 'direct').toLowerCase();
+      if (evidenceType !== 'direct' && evidenceType !== 'inferred' && evidenceType !== 'uncertain') {
+        evidenceType = 'direct';
+      }
+
+      const pIds = Array.isArray(c.passageIds) ? c.passageIds : [c.passageId].filter(Boolean);
+      const sources = [];
+
+      for (const pId of pIds) {
+        const foundPassage = passageMap.get(pId) || allPassages.find(p => p.id === pId || p.sourceId === pId);
+        if (foundPassage) {
+          sources.push({
+            sourceId: foundPassage.sourceId,
+            documentTitle: foundPassage.documentTitle,
+            workspace: foundPassage.workspace,
+            location: foundPassage.location,
+            passageId: foundPassage.id,
+            passageText: foundPassage.text,
+            highlightSnippet: (c.quotes && c.quotes[0]) || foundPassage.text.slice(0, 140)
+          });
+        }
+      }
+
+      // If passage IDs were not mapped, fallback to first source passage
+      if (sources.length === 0 && matchedSources.length > 0) {
+        const defaultSource = matchedSources[0];
+        const defaultPassage = allPassages.find(p => p.sourceId === defaultSource.id) || {
+          id: `${defaultSource.id}-P1`,
+          sourceId: defaultSource.id,
+          documentTitle: defaultSource.title,
+          workspace: defaultSource.workspace,
+          location: defaultSource.location,
+          text: defaultSource.content?.slice(0, 300) || defaultSource.title
+        };
+        sources.push({
+          sourceId: defaultSource.id,
+          documentTitle: defaultSource.title,
+          workspace: defaultSource.workspace,
+          location: defaultSource.location,
+          passageId: defaultPassage.id,
+          passageText: defaultPassage.text,
+          highlightSnippet: defaultPassage.text.slice(0, 140)
+        });
+      }
+
+      let indicatorLabel = 'Supports this answer · Direct evidence';
+      if (evidenceType === 'inferred') {
+        indicatorLabel = `Used to infer this answer · ${sources.length} sources`;
+      } else if (evidenceType === 'uncertain') {
+        indicatorLabel = 'Possible inference';
+      }
+
+      const claimId = `claim-${cIdx + 1}`;
+      claims.push({
+        id: claimId,
+        claimId,
+        statement: claimText,
+        claimText,
+        evidenceType,
+        indicatorLabel,
+        sources,
+        passages: sources,
+        sourceIds: Array.from(new Set(sources.map(s => s.sourceId)))
+      });
+    });
+  }
+
+  // 2. Deterministic Claim Alignment Fallback (guarantees provenance if model omits block)
+  if (claims.length === 0 && cleanAnswer && allPassages.length > 0) {
+    // Split answer into substantive sentences (length > 20 chars)
+    const sentences = cleanAnswer
+      .split(/(?<=[.?!])\s+(?=[A-Z0-9“"'])/)
+      .map(s => s.trim())
+      .filter(s => s.length > 20 && !s.startsWith('#') && !s.startsWith('-') && !s.startsWith('*'));
+
+    const uncertaintyWords = ['possibly', 'suggests', 'might', 'may', 'perhaps', 'unclear', 'likely', 'hypothesized', 'could indicate'];
+
+    sentences.forEach((sentence, sIdx) => {
+      const sentTokens = sentence
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(t => t.length > 3 && !SEARCH_STOP_WORDS.has(t));
+
+      if (sentTokens.length === 0) return;
+
+      const scoredPassages = [];
+      for (const p of allPassages) {
+        const textToSearch = (p.text || p.passageText || '').toLowerCase();
+        if (!textToSearch) continue;
+        let matches = 0;
+        for (const t of sentTokens) {
+          if (textToSearch.includes(t)) matches++;
+        }
+        const score = matches / sentTokens.length;
+        if (score > 0.20 || matches >= 2) {
+          scoredPassages.push({ passage: p, score, matches });
+        }
+      }
+
+      scoredPassages.sort((a, b) => b.score - a.score);
+
+      if (scoredPassages.length > 0) {
+        const topMatches = scoredPassages.slice(0, 3);
+        const hasUncertainty = uncertaintyWords.some(uw => sentence.toLowerCase().includes(uw));
+
+        let evidenceType = 'direct';
+        let indicatorLabel = 'Supports this answer · Direct evidence';
+
+        if (hasUncertainty) {
+          evidenceType = 'uncertain';
+          indicatorLabel = 'Possible inference';
+        } else if (topMatches.length > 1 && topMatches[0].score < 0.70) {
+          evidenceType = 'inferred';
+          indicatorLabel = `Used to infer this answer · ${topMatches.length} sources`;
+        }
+
+        const sources = topMatches.map(m => {
+          const p = m.passage;
+          const pText = p.text || p.passageText || '';
+          let bestSnippet = pText.slice(0, 160);
+          for (const t of sentTokens) {
+            const idx = pText.toLowerCase().indexOf(t);
+            if (idx !== -1) {
+              const start = Math.max(0, idx - 40);
+              const end = Math.min(pText.length, idx + 100);
+              bestSnippet = (start > 0 ? '…' : '') + pText.slice(start, end).trim() + (end < pText.length ? '…' : '');
+              break;
+            }
+          }
+
+          return {
+            sourceId: p.sourceId,
+            documentTitle: p.documentTitle || p.title,
+            workspace: p.workspace,
+            location: p.location,
+            passageId: p.id || p.passageId,
+            passageText: pText,
+            highlightSnippet: bestSnippet
+          };
+        });
+
+        const claimId = `claim-${sIdx + 1}`;
+        claims.push({
+          id: claimId,
+          claimId,
+          statement: sentence,
+          claimText: sentence,
+          evidenceType,
+          indicatorLabel,
+          sources,
+          passages: sources,
+          sourceIds: Array.from(new Set(sources.map(s => s.sourceId)))
+        });
+      }
+    });
+  }
+
+  return { cleanAnswer, claims };
+}
+
 // Generate contextual snippet around matched terms
 export function extractSnippet(text = '', query = '', snippetLength = 140) {
   if (!text) return '';
@@ -1717,7 +1989,7 @@ export async function synthesizeWorkspaceKnowledge({
     };
   }
 
-  // Build grounded context with full temporal metadata for LLM reasoning
+  // Build grounded context with segmented passages & temporal metadata for LLM reasoning
   onProgress?.({
     step: 2,
     phase: 'extract',
@@ -1725,9 +1997,28 @@ export async function synthesizeWorkspaceKnowledge({
     detail: `Grounded ${matched.length} workspace records with activity dates & guidelines...`
   });
   await new Promise(r => setTimeout(r, 280));
+
+  // Segment each matched resource into discrete, traceable passages
+  const allPassages = [];
+  matched.forEach((m) => {
+    const e = m.entity;
+    const passages = segmentEntityPassages(e, 550);
+    if (passages.length > 0) {
+      allPassages.push(...passages);
+    } else if (e.content || m.snippet) {
+      allPassages.push({
+        id: `${e.id || 'res'}-P1`,
+        sourceId: e.id,
+        documentTitle: e.title,
+        workspace: e.workspace || e.type,
+        location: e.location || `${e.workspace || 'Workspace'} > ${e.title}`,
+        text: (e.content || m.snippet).trim()
+      });
+    }
+  });
+
   let contextBlocks = matched.map((m, idx) => {
     const e = m.entity;
-    const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
     const meta = e.metadata || {};
     const createdStr = meta.createdAt ? `Created: ${meta.createdAt} (${meta.formattedDate || ''} ${meta.formattedTime || ''})` : '';
     const modifiedStr = meta.modifiedAt ? `Last Modified: ${meta.modifiedAt}` : '';
@@ -1735,14 +2026,27 @@ export async function synthesizeWorkspaceKnowledge({
     const actTypeStr = meta.activityType ? `Activity Type: ${meta.activityType}` : '';
     const temporalInfo = [createdStr, modifiedStr, activityStr, actTypeStr].filter(Boolean).join(' | ');
 
-    return `[RESOURCE ${idx + 1}: "${e.title}" | Application: ${e.workspace || e.type} | Type: ${e.resourceType || e.type} | Location: ${e.location || ''}]
-${temporalInfo ? `[TEMPORAL METADATA: ${temporalInfo}]` : ''}
-${bodyExcerpt}`;
+    const entityPassages = allPassages.filter(p => p.sourceId === e.id);
+    const passagesBody = entityPassages.length > 0
+      ? entityPassages.map(p => `[PASSAGE ${p.id}]:\n${p.text}`).join('\n\n')
+      : (e.content || m.snippet || '').slice(0, 3000);
+
+    return `[RESOURCE ${idx + 1}: "${e.title}" | ID: "${e.id}" | Application: ${e.workspace || e.type} | Type: ${e.resourceType || e.type} | Location: ${e.location || ''}]
+${temporalInfo ? `[TEMPORAL METADATA: ${temporalInfo}]\n` : ''}${passagesBody}`;
   });
 
   if (contextBlocks.length === 0 && hasBrandGuidelines) {
     const brandExcerpt = personaInstructions.split('Brand Guidelines:')[1]?.trim() || '';
-    contextBlocks = [`[RESOURCE 1: "Brand Guidelines & Workspace Memory" | Application: Memory | Type: Guidelines]\n${brandExcerpt}`];
+    const brandPassageId = 'brand-memory-P1';
+    allPassages.push({
+      id: brandPassageId,
+      sourceId: 'brand-memory',
+      documentTitle: 'Brand Guidelines & Workspace Memory',
+      workspace: 'Memory',
+      location: 'Workspace Settings > Brand Guidelines',
+      text: brandExcerpt
+    });
+    contextBlocks = [`[RESOURCE 1: "Brand Guidelines & Workspace Memory" | ID: "brand-memory" | Application: Memory | Type: Guidelines]\n[PASSAGE ${brandPassageId}]:\n${brandExcerpt}`];
   }
 
   const contextData = contextBlocks.join('\n\n---\n\n');
@@ -1752,20 +2056,42 @@ ${bodyExcerpt}`;
     ? '\n\nPREVIOUS CONVERSATION TURNS:\n' + previousConversation.map(c => `${c.role === 'user' ? 'User' : 'Assistant'}: ${c.text}`).join('\n')
     : '';
 
+  const provenancePromptInstructions = `
+EVIDENCE TRACEABILITY REQUIREMENTS:
+1. Formulate your executive answer directly based on the passages above.
+2. At the end of your response, output a structured evidence mapping block:
+\`\`\`evidence_json
+{
+  "claims": [
+    {
+      "claim": "<exact substantive sentence or claim from your answer>",
+      "type": "direct" | "inferred" | "uncertain",
+      "passageIds": ["<id>"],
+      "quotes": ["<exact supporting snippet from the passage>"]
+    }
+  ]
+}
+\`\`\`
+- "direct": Explicitly stated in a single passage.
+- "inferred": Derived by combining or reasoning across multiple passages.
+- "uncertain": Weak or speculative evidence ("Possible inference").`;
+
   const systemPrompt = personaInstructions
     ? `${personaInstructions}
 
-You are answering questions based on the user's workspace knowledge base. You have full access to temporal metadata (exact creation date, modification date, activity timestamp, and event types). When the user asks temporal questions (such as "What did I work on yesterday at 3 PM?", "Show me the document I edited on September 7", "What did the AI do around 10:30 this morning?"), accurately reason over and cite these timestamps and dates in your response. Format your response using clean executive markdown with bold highlights and bullet points where helpful.`
+You are answering questions based on the user's workspace knowledge base. You have full access to temporal metadata (exact creation date, modification date, activity timestamp, and event types) and indexed source passages ([PASSAGE <id>]). When the user asks temporal questions, accurately cite timestamps and dates. Format your response using clean executive markdown with bold highlights.
+${provenancePromptInstructions}`
     : `You are the Regaarder Executive Workspace Intelligence. Analyze the user's workspace documents to answer their question directly, thoroughly, and with executive precision.
-You have full access to temporal metadata (exact creation date, modification date, activity timestamp, and event types). Accurately reason over and cite these timestamps and dates when answering questions about past activities, edits, meetings, or schedules. Format your response with clean executive markdown.`;
+You have full access to temporal metadata and indexed source passages ([PASSAGE <id>]).
+${provenancePromptInstructions}`;
 
   const userPrompt = `USER QUESTION:
 ${query}${convContext}
 
-WORKSPACE SOURCE MATERIALS (WITH TIMESTAMPS & DATES):
+WORKSPACE SOURCE MATERIALS (WITH INDEXED PASSAGES & TIMESTAMPS):
 ${contextData}
 
-Synthesize the answer directly based on the sources above. Explicitly account for timestamps and dates if the question refers to time, days, or recency:`;
+Synthesize the answer directly based on the sources above. Then output the structured \`\`\`evidence_json mapping block:`;
 
   const engineLabel = customModel ? customModel.replace(/ \(Local Ollama\)/i, '') : 'local engine';
   onProgress?.({
@@ -1774,6 +2100,22 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
     label: `Synthesizing executive intelligence with ${engineLabel}`,
     detail: 'Reasoning over grounded context, guidelines, and chronological facts...'
   });
+
+  // Helper to format final payload with clean text and structured claims
+  const formatFinalSynthesisResult = (rawOutput, fallbackTools = []) => {
+    const { cleanAnswer, claims } = extractStructuredEvidence({
+      rawText: rawOutput,
+      allPassages,
+      matchedSources: matched.map(m => m.entity)
+    });
+
+    return {
+      answer: cleanAnswer,
+      sources: matched.map(m => m.entity),
+      claims: claims || [],
+      toolsExecuted: fallbackTools || []
+    };
+  };
 
   // Helper to verify if returned string is a provider error or unconfigured message
   const isErrorOrEmpty = (str) => {
@@ -1814,11 +2156,7 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
         const result = await callAiWithTools(toolPrompt, resolvedConfig, 'all', {}, { maxTurns: 3 });
 
         if (result?.answer && !isErrorOrEmpty(result.answer)) {
-          return {
-            answer: result.answer,
-            sources: matched.map(m => m.entity),
-            toolsExecuted: result.toolsExecuted || []
-          };
+          return formatFinalSynthesisResult(result.answer, result.toolsExecuted || []);
         }
       }
     } catch (err) {
@@ -1846,10 +2184,7 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
       }
 
       if (response && response.trim() && !isErrorOrEmpty(response)) {
-        return {
-          answer: response.trim(),
-          sources: matched.map(m => m.entity)
-        };
+        return formatFinalSynthesisResult(response.trim());
       }
     } catch (err) {
       console.warn('[synthesizeWorkspaceKnowledge] onCallAi failed, falling back to local extraction:', err);
@@ -1878,10 +2213,7 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
         const chatData = await chatRes.json();
         const chatText = (chatData?.message?.content || '').trim();
         if (chatText && !isErrorOrEmpty(chatText)) {
-          return {
-            answer: chatText,
-            sources: matched.map(m => m.entity)
-          };
+          return formatFinalSynthesisResult(chatText);
         }
       }
 
@@ -1899,10 +2231,7 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
         const directData = await directRes.json();
         const genText = (directData?.response || '').trim();
         if (genText && !isErrorOrEmpty(genText)) {
-          return {
-            answer: genText,
-            sources: matched.map(m => m.entity)
-          };
+          return formatFinalSynthesisResult(genText);
         }
       }
     } catch (_) {}
@@ -1953,10 +2282,9 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
 
   if (extractedExcerpts.length > 0) {
     if (!hasUsableAiBackend) {
-      return {
-        answer: `Ask Memory is selected, but no usable AI model is connected right now. Pick a model in the header, start Ollama or LM Studio, or add a valid Gemini/Claude API key in Settings before asking again.`,
-        sources: matched.map(m => m.entity)
-      };
+      return formatFinalSynthesisResult(
+        `Ask Memory is selected, but no usable AI model is connected right now. Pick a model in the header, start Ollama or LM Studio, or add a valid Gemini/Claude API key in Settings before asking again.`
+      );
     }
 
     const synthesisSections = extractedExcerpts.map((ex, i) => 
@@ -1965,31 +2293,25 @@ Synthesize the answer directly based on the sources above. Explicitly account fo
 
     const synthesisSummary = `Found **${extractedExcerpts.length} relevant workspace ${extractedExcerpts.length === 1 ? 'source' : 'sources'}** regarding "${query}":\n\n${synthesisSections}`;
 
-    return {
-      answer: synthesisSummary,
-      sources: matched.map(m => m.entity)
-    };
+    return formatFinalSynthesisResult(synthesisSummary);
   }
 
   const primarySource = matched[0]?.entity;
   const rawFallback = (primarySource?.content || matched[0]?.snippet || '').trim();
 
   if (!hasUsableAiBackend) {
-    return {
-      answer: `I couldn’t generate a direct answer because Ask Memory has no active model connection. Choose a model in the Ask Memory header, connect local Ollama/LM Studio, or enable a valid Gemini/Claude key in Settings.`,
-      sources: matched.map(m => m.entity)
-    };
+    return formatFinalSynthesisResult(
+      `I couldn’t generate a direct answer because Ask Memory has no active model connection. Choose a model in the Ask Memory header, connect local Ollama/LM Studio, or enable a valid Gemini/Claude key in Settings.`
+    );
   }
 
   if (!rawFallback) {
-    return {
-      answer: `I found a likely match, but there isn’t enough source content to answer this question directly. Try a more specific prompt or add the relevant document to your workspace.`,
-      sources: matched.map(m => m.entity)
-    };
+    return formatFinalSynthesisResult(
+      `I found a likely match, but there isn’t enough source content to answer this question directly. Try a more specific prompt or add the relevant document to your workspace.`
+    );
   }
 
-  return {
-    answer: `Based on **${primarySource?.title || 'Workspace Resource'}** (${primarySource?.location || primarySource?.workspace || 'Workspace'}):\n\n${rawFallback.slice(0, 450)}${rawFallback.length > 450 ? '…' : ''}`,
-    sources: matched.map(m => m.entity)
-  };
+  return formatFinalSynthesisResult(
+    `Based on **${primarySource?.title || 'Workspace Resource'}** (${primarySource?.location || primarySource?.workspace || 'Workspace'}):\n\n${rawFallback.slice(0, 450)}${rawFallback.length > 450 ? '…' : ''}`
+  );
 }

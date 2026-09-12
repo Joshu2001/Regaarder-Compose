@@ -30,22 +30,13 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive, GitPullRequest } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
 import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
 import RegaarderBrandIcon from './components/RegaarderBrandIcon';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
-import {
-  isFirebaseConfigured,
-  registerWithEmail,
-  loginWithEmail,
-  loginWithGoogle,
-  loginWithApple,
-  logoutFirebase
-} from './services/firebaseAuthService';
-import AuthPopoverDropdown from './components/auth/AuthPopoverDropdown';
 import {
   ComposeIcon,
   DeckIcon,
@@ -81,26 +72,6 @@ import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWor
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
-import { subscribeToStaging, getBranchById } from './services/workspaceStagingEngine';
-import WorkspaceStagingReviewModal from './components/staging/WorkspaceStagingReviewModal';
-import * as matrixEngine from './services/matrixSchemaEngine';
-import * as intentScheduler from './services/intentSchedulerEngine';
-import * as omniPortal from './services/omniPortalEngine';
-import * as directiveQueue from './services/directiveQueueEngine';
-import PromptAutonomyBar from './components/autonomy/PromptAutonomyBar';
-import * as spatialTopology from './services/spatialTopologyEngine';
-import * as roomObserver from './services/roomObserverEngine';
-import * as workspaceBus from './services/workspaceStateBus';
-import { initMcpBrowserBridge, stopMcpBrowserBridge } from './services/mcpBrowserClient';
-import * as llmProvider from './services/llmProviderService';
-import * as roomAudioStream from './services/roomAudioStreamService';
-import DesktopDownloadFloatingTrigger from './components/desktop/DesktopDownloadFloatingTrigger';
-import {
-  normalizeWorkspaceDocumentMode,
-  normalizeWorkspaceDocuments,
-  readWorkspaceDocuments,
-  writeWorkspaceDocuments,
-} from './services/workspaceDocumentStore';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -6909,116 +6880,11 @@ function AppCore() {
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
-  const [memoryTab, setMemoryTab] = useState('timeline');
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
   const [isOmniPortalOpen, setIsOmniPortalOpen] = useState(false);
-
-  // ── Pillar 3: Human-in-the-Loop Staging & Approval Engine State ─────────
-  const [stagedBranches, setStagedBranches] = useState([]);
-  const [activeReviewBranch, setActiveReviewBranch] = useState(null);
-
-  useEffect(() => {
-    const unsub = subscribeToStaging((branches) => {
-      const nextBranches = Array.isArray(branches) ? branches : [];
-      setStagedBranches((prev) => {
-        if (prev.length === nextBranches.length && prev.every((branch, index) => {
-          const nextBranch = nextBranches[index];
-          return branch?.id === nextBranch?.id && JSON.stringify(branch) === JSON.stringify(nextBranch);
-        })) {
-          return prev;
-        }
-        return nextBranches;
-      });
-    });
-    return unsub;
-  }, []);
-
-  useEffect(() => {
-    window.__REGAARDER_OPEN_STAGING_MODAL__ = (branchIdOrObj) => {
-      if (typeof branchIdOrObj === 'object' && branchIdOrObj) {
-        setActiveReviewBranch(branchIdOrObj);
-      } else {
-        const found = getBranchById(branchIdOrObj) || stagedBranches[0];
-        if (found) setActiveReviewBranch(found);
-      }
-    };
-    window.__REGAARDER_OPEN_MATRIX_ENGINE__ = () => {
-      setMemoryTab('matrix_engine');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_OPEN_CANVAS_INSPECTOR__ = () => {
-      setMemoryTab('canvas_blocks');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__ = () => {
-      setMemoryTab('meetings');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_OMNI_PORTAL__ = omniPortal;
-    window.__REGAARDER_OPEN_PORTAL_INSPECTOR__ = () => {
-      setMemoryTab('omni_portal');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_DIRECTIVE_QUEUE__ = directiveQueue;
-    window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__ = () => {
-      setMemoryTab('directives');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_SPATIAL_TOPOLOGY__ = spatialTopology;
-    window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__ = () => {
-      setMemoryTab('topology');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_ROOM_HARVESTER__ = roomObserver;
-    window.__REGAARDER_OPEN_ROOM_HARVESTER__ = () => {
-      setMemoryTab('room');
-      setIsMemoryOpen(true);
-    };
-    window.__REGAARDER_WORKSPACE_BUS__ = workspaceBus;
-    window.__REGAARDER_INTENT_SCHEDULER__ = intentScheduler;
-    window.__REGAARDER_COMMIT_EVENT__ = (event) => {
-      return intentScheduler.commitCalendarEvent(event);
-    };
-    window.__REGAARDER_LLM_PROVIDER__ = llmProvider;
-    window.__REGAARDER_AUDIO_STREAM__ = roomAudioStream;
-    return () => {
-      delete window.__REGAARDER_OPEN_STAGING_MODAL__;
-      delete window.__REGAARDER_OPEN_MATRIX_ENGINE__;
-      delete window.__REGAARDER_OPEN_CANVAS_INSPECTOR__;
-      delete window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__;
-      delete window.__REGAARDER_OMNI_PORTAL__;
-      delete window.__REGAARDER_OPEN_PORTAL_INSPECTOR__;
-      delete window.__REGAARDER_DIRECTIVE_QUEUE__;
-      delete window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__;
-      delete window.__REGAARDER_SPATIAL_TOPOLOGY__;
-      delete window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__;
-      delete window.__REGAARDER_ROOM_HARVESTER__;
-      delete window.__REGAARDER_OPEN_ROOM_HARVESTER__;
-      delete window.__REGAARDER_WORKSPACE_BUS__;
-      delete window.__REGAARDER_INTENT_SCHEDULER__;
-      delete window.__REGAARDER_COMMIT_EVENT__;
-      delete window.__REGAARDER_LLM_PROVIDER__;
-      delete window.__REGAARDER_AUDIO_STREAM__;
-    };
-  }, []);
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
-  const [orbInitialFilter, setOrbInitialFilter] = useState('all');
-  const SHEETS_GRIDS_STORAGE_KEY = 'regaarder_sheets_grids_v1';
   const [sheetGrids, setSheetGrids] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(SHEETS_GRIDS_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-            return parsed;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[Sheets] Failed to load sheet grids from localStorage:', e);
-    }
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
     [
@@ -7028,16 +6894,6 @@ function AppCore() {
     });
     return result;
   });
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && sheetGrids) {
-        localStorage.setItem(SHEETS_GRIDS_STORAGE_KEY, JSON.stringify(sheetGrids));
-      }
-    } catch (e) {
-      console.warn('[Sheets] Failed to persist sheet grids to localStorage:', e);
-    }
-  }, [sheetGrids]);
 
   const [notifications, setNotifications] = useState([]);
 
@@ -8287,11 +8143,11 @@ function AppCore() {
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return {
-      id: 'gemma3:1b',
-      name: 'Gemma 3 (1B)',
-      provider: 'Ollama',
-      isLocal: true,
-      endpoint: 'http://127.0.0.1:11434'
+      id: 'gemini-2.5-flash',
+      name: 'Gemini 2.5 Flash',
+      provider: 'Cloud',
+      isLocal: false,
+      endpoint: null
     };
   });
 
@@ -8344,7 +8200,6 @@ function AppCore() {
     setComposeIsScanning(true);
     const endpointsToProbe = [
       { url: 'http://127.0.0.1:11434/api/tags', provider: 'Ollama', base: 'http://127.0.0.1:11434' },
-      { url: '/api/ollama/api/tags', provider: 'Ollama', base: 'http://127.0.0.1:11434' },
       { url: 'http://localhost:11434/api/tags', provider: 'Ollama', base: 'http://localhost:11434' },
       { url: 'http://127.0.0.1:1234/v1/models', provider: 'LM Studio', base: 'http://127.0.0.1:1234/v1' },
       { url: 'http://localhost:1234/v1/models', provider: 'LM Studio', base: 'http://localhost:1234/v1' },
@@ -8352,29 +8207,10 @@ function AppCore() {
     ];
 
     let found = [];
-    if (window.electronAPI?.listLocalModels) {
-      try {
-        const nativeResult = await window.electronAPI.listLocalModels({
-          endpoints: endpointsToProbe.map((probe) => probe.url)
-        });
-        if (nativeResult?.models && Array.isArray(nativeResult.models)) {
-          found = nativeResult.models.map((model) => ({
-            ...model,
-            provider: model.provider || nativeResult.provider || 'Ollama',
-            endpoint: model.endpoint || nativeResult.activeEndpoint || 'http://127.0.0.1:11434',
-            isLocal: true
-          }));
-        }
-      } catch (error) {
-        console.warn('[Compose AI] Native local model scan failed; using browser probes:', error);
-      }
-    }
-
     for (const probe of endpointsToProbe) {
-      if (found.length > 0) break;
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3500);
+        const timeout = setTimeout(() => controller.abort(), 1200);
         const res = await fetch(probe.url, { signal: controller.signal });
         clearTimeout(timeout);
         if (res.ok) {
@@ -8410,7 +8246,7 @@ function AppCore() {
     setComposeDetectedModels(found);
     setComposeIsScanning(false);
     if (found.length > 0) {
-      if (!composeSelectedModel?.isLocal || composeSelectedModel?.id === 'gemini-2.5-flash') {
+      if (!composeSelectedModel?.isLocal) {
         updateSelectedModelGlobally(found[0]);
       }
       setAiBackendStatus({ state: 'ok', message: `Connected to local model (${found[0].name})` });
@@ -8440,12 +8276,6 @@ function AppCore() {
       timeout: 3000,
       autoConnect: true
     });
-
-    try {
-      initMcpBrowserBridge(socketRef.current, { activeProduct: 'compose' });
-    } catch (err) {
-      console.warn('[MCP Bridge] Failed to initialize browser bridge:', err);
-    }
     
     socketRef.current.on('connect', () => {
       setSocketId(socketRef.current.id);
@@ -8475,9 +8305,6 @@ function AppCore() {
     });
     
     return () => {
-      try {
-        stopMcpBrowserBridge();
-      } catch (e) {}
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
@@ -8722,10 +8549,6 @@ function AppCore() {
   const [deckTitle, setDeckTitle] = useState('Untitled Deck');
   const [sheetsTitle, setSheetsTitle] = useState('Untitled Sheet');
   const [activeSheetId, setActiveSheetId] = useState(1);
-  const [headerWorkbookDropdownOpen, setHeaderWorkbookDropdownOpen] = useState(false);
-  const [headerWorkbookSearchQuery, setHeaderWorkbookSearchQuery] = useState('');
-  const composeDropdownTriggerRef = useRef(null);
-  const [composeDropdownPos, setComposeDropdownPos] = useState({ top: 0, left: 0 });
   const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
   const [addressTemp, setAddressTemp] = useState(null);
@@ -8840,11 +8663,10 @@ function AppCore() {
         if (key && key.startsWith('rc.savedDoc.')) {
           try {
             const data = JSON.parse(localStorage.getItem(key));
-            if (!data) continue;
-            if (!data.isSaved && !isMeaningfulWork(data)) continue;
+            if (!isMeaningfulWork(data)) continue;
             docs.push({
               id: Number(key.replace('rc.savedDoc.', '')),
-              title: data.docTitle || data.title || data.sheetsTitle || data.deckTitle || 'Untitled Document',
+              title: data.docTitle || data.title || 'Untitled Document',
               savedAt: data.savedAt || 0,
               data: data
             });
@@ -10612,34 +10434,8 @@ const DEFAULT_DECK_SLIDES = [
     footer: 'novaris Company'
   }
 ];
-  const DECK_SLIDES_STORAGE_KEY = 'regaarder_deck_slides_v1';
-  const [deckSlidesData, setDeckSlidesData] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(DECK_SLIDES_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[Deck] Failed to load deck slides from localStorage:', e);
-    }
-    return DEFAULT_BLANK_DECK_SLIDES;
-  });
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && Array.isArray(deckSlidesData) && deckSlidesData.length > 0) {
-        localStorage.setItem(DECK_SLIDES_STORAGE_KEY, JSON.stringify(deckSlidesData));
-      }
-    } catch (e) {
-      console.warn('[Deck] Failed to persist deck slides to localStorage:', e);
-    }
-  }, [deckSlidesData]);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_BLANK_DECK_SLIDES);
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
   const [whiteboardPenVariant, setWhiteboardPenVariant] = useState('felt-pen');
@@ -10652,95 +10448,19 @@ const DEFAULT_DECK_SLIDES = [
   const [whiteboardEmojiUsage, setWhiteboardEmojiUsage] = useState([]);
   const [whiteboardAlignmentGuides, setWhiteboardAlignmentGuides] = useState([]);
   const [whiteboardHoveredAnchor, setWhiteboardHoveredAnchor] = useState(null);
-  const WHITEBOARD_STROKES_STORAGE_KEY = 'regaarder_whiteboard_strokes_v1';
-  const [whiteboardStrokes, setWhiteboardStrokes] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(WHITEBOARD_STROKES_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('[Whiteboard] Failed to load strokes from localStorage:', e);
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(WHITEBOARD_STROKES_STORAGE_KEY, JSON.stringify(whiteboardStrokes));
-      }
-    } catch (e) {
-      console.warn('[Whiteboard] Failed to persist strokes to localStorage:', e);
-    }
-  }, [whiteboardStrokes]);
-
+  const [whiteboardStrokes, setWhiteboardStrokes] = useState([]);
   const [whiteboardRedoStrokes, setWhiteboardRedoStrokes] = useState([]);
   const [whiteboardCurrentStroke, setWhiteboardCurrentStroke] = useState('');
   const [whiteboardLineAnchor, setWhiteboardLineAnchor] = useState(null);
   const [whiteboardCurrentShape, setWhiteboardCurrentShape] = useState(null);
-
-  const WHITEBOARD_SHAPES_STORAGE_KEY = 'regaarder_whiteboard_shapes_v1';
-  const [whiteboardShapes, setWhiteboardShapes] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(WHITEBOARD_SHAPES_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('[Whiteboard] Failed to load shapes from localStorage:', e);
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(WHITEBOARD_SHAPES_STORAGE_KEY, JSON.stringify(whiteboardShapes));
-      }
-    } catch (e) {
-      console.warn('[Whiteboard] Failed to persist shapes to localStorage:', e);
-    }
-  }, [whiteboardShapes]);
-
+  const [whiteboardShapes, setWhiteboardShapes] = useState([]);
   const [selectedShapeIndex, setSelectedShapeIndex] = useState(null);
   const [whiteboardShapeVariant, setWhiteboardShapeVariant] = useState('line');
   const [whiteboardShapeMenuOpen, setWhiteboardShapeMenuOpen] = useState(false);
   const [whiteboardShapeFillMenuFor, setWhiteboardShapeFillMenuFor] = useState(null);
   const [whiteboardShapeStrokeMenuFor, setWhiteboardShapeStrokeMenuFor] = useState(null);
   const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
-
-  const WHITEBOARD_WIDGETS_STORAGE_KEY = 'regaarder_whiteboard_widgets_v1';
-  const [whiteboardWidgets, setWhiteboardWidgets] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(WHITEBOARD_WIDGETS_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('[Whiteboard] Failed to load widgets from localStorage:', e);
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(WHITEBOARD_WIDGETS_STORAGE_KEY, JSON.stringify(whiteboardWidgets));
-      }
-    } catch (e) {
-      console.warn('[Whiteboard] Failed to persist widgets to localStorage:', e);
-    }
-  }, [whiteboardWidgets]);
+  const [whiteboardWidgets, setWhiteboardWidgets] = useState([]);
   const [whiteboardMoreMenuOpen, setWhiteboardMoreMenuOpen] = useState(false);
   const [whiteboardStickyPaletteOpen, setWhiteboardStickyPaletteOpen] = useState(false);
   const [whiteboardStickyColor, setWhiteboardStickyColor] = useState('#fef08a');
@@ -10804,7 +10524,7 @@ const DEFAULT_DECK_SLIDES = [
   }, []);
 
   useEffect(() => {
-    const isWb = productMode === 'whiteboard';
+    const isWb = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
     if (isWb && !prevWhiteboardModeRef.current) {
       setIsWhiteboardTopNavHovered(false);
       setIsWhiteboardInitialPeek(false);
@@ -11308,7 +11028,8 @@ const DEFAULT_DECK_SLIDES = [
   };
 
   useEffect(() => {
-    if (productMode !== 'whiteboard') {
+    if (activeRightTab !== 'whiteboard') {
+      setIsWhiteboardImmersive(false);
       return undefined;
     }
     const timer = window.setInterval(() => {
@@ -12546,7 +12267,7 @@ const DEFAULT_DECK_SLIDES = [
 
   useEffect(() => {
     const handleWhiteboardEscape = (event) => {
-      if (event.key !== 'Escape' || productMode !== 'whiteboard') {
+      if (event.key !== 'Escape' || activeRightTab !== 'whiteboard') {
         return;
       }
       setWhiteboardTool('select');
@@ -16822,7 +16543,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                         return;
                       }
                       if (item.mode === 'sheets') {
-                        createSheetsExperience({ fromHomePage: true });
+                        createSheetsExperience();
                         return;
                       }
                       if (item.mode === 'compose') {
@@ -18292,32 +18013,25 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     setter(target.innerHTML || '');
   };
 
-  const getDocMode = useCallback((doc) => {
-    return normalizeWorkspaceDocumentMode(doc?.mode);
-  }, []);
-
-  const getNextUntitledName = useCallback((kind, sourceDocs = []) => {
-    const labels = {
-      compose: 'Untitled Document',
-      sheets: 'Untitled Sheet',
-      deck: 'Untitled Deck',
-      whiteboard: 'Untitled Whiteboard',
-    };
-    const label = labels[kind] || labels.compose;
-    let highest = 0;
-    let hasBareLabel = false;
-    sourceDocs.forEach((doc) => {
-      const title = String(kind === 'sheets' ? (doc.sheetsTitle || doc.title) : kind === 'deck' ? (doc.deckTitle || doc.title) : doc.title || '').trim();
-      const match = title.match(new RegExp(`^${label.replace(' ', '\\s+')}\\s+(\\d+)$`, 'i'));
-      if (match) highest = Math.max(highest, Number(match[1]));
-      if (title.toLowerCase() === label.toLowerCase()) hasBareLabel = true;
-    });
-    return `${label} ${Math.max(highest + 1, hasBareLabel ? 2 : 1)}`;
-  }, []);
-
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
-  const productModeCreateGuardRef = useRef({ sheets: false, deck: false });
+
+  useEffect(() => {
+    const persistedTitle = activeDoc?.title?.trim();
+    const hasPersistedExplicitTitle = !!persistedTitle && !/^untitled\b/i.test(persistedTitle);
+
+    if (!docBodyHtml) {
+      setDocTitle(hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
+      return;
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(docBodyHtml, 'text/html');
+    const firstBlock = doc.body.firstElementChild;
+    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
+    const derivedTitle = titleText || (hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
+    setDocTitle(derivedTitle);
+  }, [docBodyHtml, activeDoc?.title]);
 
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
@@ -18325,8 +18039,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [documents, setDocuments] = useState(() => {
     try {
       if (typeof window !== 'undefined') {
-        const savedDocuments = readWorkspaceDocuments();
-        if (savedDocuments.length > 0) return savedDocuments;
+        const saved = localStorage.getItem('regaarder_documents_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
       }
     } catch (e) {
       console.warn('Failed to load documents from localStorage:', e);
@@ -18335,300 +18052,40 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       {
         id: Date.now(),
         mode: 'compose',
-        title: 'Untitled Document 1',
+        title: '',
         subtitle: '',
         initiatives: defaultInitiatives,
         appendedSections: [],
         isBlank: true,
         bodyHtml: '',
-        isTitleCustom: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       },
     ];
   });
-  const documentsRef = useRef(documents);
-  useEffect(() => {
-    documentsRef.current = documents;
-  }, [documents]);
-  const [activeDocId, setActiveDocId] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const savedActiveId = localStorage.getItem('rc.activeDocId');
-        if (savedActiveId) return savedActiveId;
-      }
-    } catch (_) {}
-    return null;
-  });
-
-  // Ensure activeDocId always falls back to the active document if null
-  useEffect(() => {
-    if (!activeDocId && documents.length > 0) {
-      setActiveDocId(documents[0].id);
-    }
-  }, [activeDocId, documents]);
-
-  useEffect(() => {
-    const currentDoc = (documentsRef.current || documents).find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
-    // Strictly preserve user-given custom title: if user gave a title, never autotitle
-    if (currentDoc?.isTitleCustom) {
-      return;
-    }
-
-    // Auto-title ONLY if no title has been given
-    const currentTitle = (currentDoc?.title || docTitle || '').trim();
-    const isDefaultTitle = !currentTitle || /^(untitled(\s+(document|sheet|deck|whiteboard))?(\s+\d+)?|compose draft)$/i.test(currentTitle);
-    if (!isDefaultTitle) {
-      return;
-    }
-
-    if (!docBodyHtml) {
-      if (!docTitle || /^(untitled(\s+(document|sheet|deck|whiteboard))?(\s+\d+)?|compose draft)$/i.test(docTitle)) {
-        if (docTitle !== 'Untitled Document') {
-          setDocTitle('Untitled Document');
-        }
-      }
-      return;
-    }
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(docBodyHtml, 'text/html');
-    const firstBlock = doc.body.firstElementChild;
-    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    if (titleText) {
-      if (docTitle !== titleText) {
-        setDocTitle(titleText);
-      }
-      if (currentDoc?.id && currentDoc.title !== titleText) {
-        setDocuments((prev) => prev.map((d) => String(d.id) === String(currentDoc.id) ? { ...d, title: titleText, isTitleCustom: false } : d));
-      }
-    } else if (!docTitle) {
-      setDocTitle('Untitled Document');
-    }
-  }, [docBodyHtml, activeDocId, docTitle, documents]);
+  const [activeDocId, setActiveDocId] = useState(null);
 
   // Auto-persist documents to localStorage
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && documents) {
-        const normalized = normalizeWorkspaceDocuments(documents);
-        writeWorkspaceDocuments(normalized);
-        if (JSON.stringify(normalized) !== JSON.stringify(documents)) {
-          setDocuments(normalized);
-        }
+        localStorage.setItem('regaarder_documents_v1', JSON.stringify(documents));
       }
     } catch (e) {
       console.warn('Failed to save documents to localStorage:', e);
     }
   }, [documents]);
 
+  // Keep active document in documents list updated with latest title and bodyHtml
   useEffect(() => {
-    const loadDocuments = () => {
-      const nextDocuments = readWorkspaceDocuments();
-      if (nextDocuments.length > 0) {
-        documentsRef.current = nextDocuments;
-        setDocuments(nextDocuments);
-      }
-    };
-    window.addEventListener('storage', loadDocuments);
-    window.addEventListener('workspace-storage-update', loadDocuments);
-    return () => {
-      window.removeEventListener('storage', loadDocuments);
-      window.removeEventListener('workspace-storage-update', loadDocuments);
-    };
-  }, []);
-
-  // Keep active document in documents list updated with latest content across all modes
-  useEffect(() => {
-    if (!activeDocId) return;
-
-    setDocuments((prev) => {
-      let changed = false;
-      const now = new Date().toISOString();
-      return prev.map((doc) => {
-        if (String(doc.id) !== String(activeDocId)) return doc;
-
-        const patch = productMode === 'sheets'
-          ? {
-              mode: 'sheets',
-              title: sheetsTitle || doc.title || 'Untitled Sheet',
-              sheetsTitle,
-              sheetGrids,
-              sheetsData,
-              activeSheetId,
-            }
-          : productMode === 'deck'
-            ? {
-                mode: 'deck',
-                title: deckTitle || doc.title || 'Untitled Deck',
-                deckTitle,
-                deckSlidesData,
-                activeDeckSlideId,
-              }
-            : productMode === 'whiteboard'
-              ? {
-                  mode: 'whiteboard',
-                  whiteboardWidgets,
-                  whiteboardStrokes,
-                  whiteboardShapes,
-                }
-              : {
-                  title: docTitle !== undefined ? docTitle : doc.title,
-                  bodyHtml: docBodyHtml !== undefined ? docBodyHtml : doc.bodyHtml,
-                };
-
-        const contentChanged = Object.keys(patch).some((key) => {
-          try {
-            return JSON.stringify(doc[key]) !== JSON.stringify(patch[key]);
-          } catch (_) {
-            return doc[key] !== patch[key];
-          }
-        });
-        if (!contentChanged && doc.createdAt && doc.updatedAt) return doc;
-
-        changed = true;
-        return {
-          ...doc,
-          ...patch,
-          createdAt: doc.createdAt || now,
-          updatedAt: contentChanged ? now : (doc.updatedAt || now),
-        };
-      });
-    });
-  }, [
-    activeDocId,
-    productMode,
-    docTitle,
-    docBodyHtml,
-    sheetsTitle,
-    sheetGrids,
-    sheetsData,
-    activeSheetId,
-    deckTitle,
-    deckSlidesData,
-    activeDeckSlideId,
-    whiteboardWidgets,
-    whiteboardStrokes,
-    whiteboardShapes
-  ]);
-
-  // Helper to load all durable and library documents from localStorage combined with open documents
-  const getAllKnownDocuments = useCallback(() => {
-    return normalizeWorkspaceDocuments(documents);
-  }, [documents]);
-
-  // List of all saved workbooks for quick switching
-  const sheetsWorkbooksList = useMemo(() => {
-    let untitledNumber = 0;
-    return getAllKnownDocuments()
-      .filter((doc) => getDocMode(doc) === 'sheets')
-      .map((doc) => {
-        const rawTitle = (doc.sheetsTitle || doc.title || '').trim();
-        const displayTitle = rawTitle && !/^untitled/i.test(rawTitle)
-          ? rawTitle
-          : `Untitled Sheet ${++untitledNumber}`;
-        return { ...doc, displayTitle };
-      });
-  }, [getAllKnownDocuments, getDocMode]);
-
-  // List of all saved slide decks for quick switching
-  const deckPresentationsList = useMemo(() => {
-    let untitledNumber = 0;
-    return getAllKnownDocuments()
-      .filter((doc) => getDocMode(doc) === 'deck')
-      .map((doc) => {
-        const rawTitle = (doc.deckTitle || doc.title || '').trim();
-        const displayTitle = rawTitle && !/^untitled/i.test(rawTitle)
-          ? rawTitle
-          : `Untitled Deck ${++untitledNumber}`;
-        return { ...doc, displayTitle };
-      });
-  }, [getAllKnownDocuments, getDocMode]);
-
-  // List of all saved compose documents for quick switching
-  const composeDocsList = useMemo(() => {
-    let untitledNumber = 0;
-    return getAllKnownDocuments()
-      .filter((doc) => getDocMode(doc) === 'compose')
-      .map((doc) => {
-        const rawTitle = (doc.title || '').trim();
-        const isGenericUntitled = !rawTitle || /^untitled(\s+document)?$/i.test(rawTitle);
-        const displayTitle = isGenericUntitled
-          ? `Untitled Document ${++untitledNumber}`
-          : rawTitle;
-        return { ...doc, displayTitle };
-      });
-  }, [getAllKnownDocuments, getDocMode]);
-
-  // Ensure an active document exists in documents collection when entering Sheets or Deck mode
-  useEffect(() => {
-    if (productMode === 'sheets') {
-      if (productModeCreateGuardRef.current.sheets) {
-        return;
-      }
-
-      const existingSheetsDoc = documents.find((doc) => getDocMode(doc) === 'sheets');
-      if (!existingSheetsDoc) {
-        productModeCreateGuardRef.current.sheets = true;
-        const initialDocId = Date.now();
-        const newSheetsDoc = {
-          id: initialDocId,
-          mode: 'sheets',
-          title: sheetsTitle || 'Untitled Sheet',
-          sheetsTitle: sheetsTitle || 'Untitled Sheet',
-          sheetsData: sheetsData,
-          sheetGrids: sheetGrids,
-          activeSheetId: activeSheetId || 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setDocuments(prev => [...prev, newSheetsDoc]);
-        setActiveDocId(initialDocId);
-        return;
-      }
-
-      if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'sheets')) {
-        switchDocument(existingSheetsDoc.id);
-      }
-      productModeCreateGuardRef.current.sheets = false;
-      return;
+    if (activeDocId) {
+      setDocuments(prev => prev.map(d => String(d.id) === String(activeDocId) ? {
+        ...d,
+        title: docTitle !== undefined ? docTitle : d.title,
+        bodyHtml: docBodyHtml !== undefined ? docBodyHtml : d.bodyHtml
+      } : d));
     }
+  }, [docBodyHtml, docTitle, activeDocId]);
 
-    if (productMode === 'deck') {
-      if (productModeCreateGuardRef.current.deck) {
-        return;
-      }
-
-      const existingDeckDoc = documents.find((doc) => getDocMode(doc) === 'deck');
-      if (!existingDeckDoc) {
-        productModeCreateGuardRef.current.deck = true;
-        const initialDocId = Date.now();
-        const newDeckDoc = {
-          id: initialDocId,
-          mode: 'deck',
-          title: deckTitle || 'Untitled Deck',
-          deckTitle: deckTitle || 'Untitled Deck',
-          deckSlidesData: deckSlidesData,
-          activeDeckSlideId: activeDeckSlideId || 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setDocuments(prev => [...prev, newDeckDoc]);
-        setActiveDocId(initialDocId);
-        return;
-      }
-
-      if (!activeDocId || !documents.some(d => String(d.id) === String(activeDocId) && getDocMode(d) === 'deck')) {
-        switchDocument(existingDeckDoc.id);
-      }
-      productModeCreateGuardRef.current.deck = false;
-      return;
-    }
-
-    productModeCreateGuardRef.current.sheets = false;
-    productModeCreateGuardRef.current.deck = false;
-  }, [productMode, documents, activeDocId, getDocMode, sheetsTitle, sheetsData, sheetGrids, activeSheetId, deckTitle, deckSlidesData, activeDeckSlideId]);
-
-  const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0] || null;
+  const activeDoc = documents.find((doc) => doc.id === activeDocId);
   const [pdfRotation, setPdfRotation] = useState(0);
   const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
 
@@ -18739,7 +18196,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         console.warn('Auto-login failed:', err.message);
       });
     }
-  }, [getNextUntitledName]);
+  }, []);
 
   // Update local awareness dynamically
   useEffect(() => {
@@ -18993,7 +18450,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       pinned: false,
     }
   ]);
-  const workspaceCreationLockRef = useRef(0);
   const [activeWhiteboardId, setActiveWhiteboardId] = useState(null);
   const activeWhiteboard = whiteboards.find((wb) => wb.id === activeWhiteboardId);
   const [closeConfirmWbId, setCloseConfirmWbId] = useState(null);
@@ -20572,39 +20028,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   }, [activeWhiteboardId, whiteboardStrokes, whiteboardShapes, whiteboardWidgets, whiteboardComments]);
 
   useEffect(() => {
-    if (!Array.isArray(whiteboards) || whiteboards.length === 0) return;
-    setDocuments((previous) => {
-      let changed = false;
-      const now = new Date().toISOString();
-      const next = [...previous];
-      whiteboards.forEach((whiteboard) => {
-        const index = next.findIndex((document) => String(document.id) === String(whiteboard.id));
-        const record = {
-          id: whiteboard.id,
-          mode: 'whiteboard',
-          title: whiteboard.title || 'Untitled Whiteboard',
-          content: '',
-          whiteboardWidgets: whiteboard.widgets || [],
-          whiteboardStrokes: whiteboard.strokes || [],
-          whiteboardShapes: whiteboard.shapes || [],
-          whiteboardComments: whiteboard.comments || [],
-          createdAt: next[index]?.createdAt || now,
-          updatedAt: now,
-          isDraft: false,
-        };
-        if (index === -1) {
-          next.push(record);
-          changed = true;
-        } else if (JSON.stringify(next[index]) !== JSON.stringify({ ...next[index], ...record, updatedAt: next[index].updatedAt })) {
-          next[index] = { ...next[index], ...record };
-          changed = true;
-        }
-      });
-      return changed ? next : previous;
-    });
-  }, [whiteboards]);
-
-  useEffect(() => {
     activeDocIdRef.current = activeDocId;
   }, [activeDocId]);
 
@@ -20778,13 +20201,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     try {
-      const savedDocument = readWorkspaceDocuments().find((document) => String(document.id) === String(activeDocId));
-      if (!savedDocument?.updatedAt) {
+      const raw = localStorage.getItem(`rc.savedDoc.${activeDocId}`);
+      if (!raw) {
         setLastSavedAt(null);
         return;
       }
 
-      const savedAt = new Date(savedDocument.updatedAt).getTime();
+      const parsed = JSON.parse(raw);
+      const savedAt = Number(parsed?.savedAt);
       setLastSavedAt(Number.isFinite(savedAt) ? savedAt : null);
     } catch (_error) {
       setLastSavedAt(null);
@@ -21051,50 +20475,24 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     };
   }, [isReplayPlaying, replayIndex, replayTimeline, replayDirection, replaySpeed]);
 
-  const saveDocumentLocallyRef = useRef();
-
   const saveDocumentLocally = ({ silent = false, trackAction = true } = {}) => {
-    let currentId = activeDocId;
-    if (!currentId) {
-      currentId = Date.now();
-      setActiveDocId(currentId);
-    }
-
-    const payload = getDocumentPayload(currentId);
-    // For auto-save (silent), skip only if completely blank without any title or body or slides
-    if (silent && !payload?.bodyHtml && !payload?.title && !payload?.sheetsData && !payload?.deckSlidesData) {
+    if (!activeDocId) {
       return;
     }
 
-    const currentDocs = documentsRef.current || documents;
+    const payload = getDocumentPayload(activeDocId);
+    if (!isMeaningfulWork(payload)) {
+      return;
+    }
     const savedAt = Date.now();
-    const docRecord = {
+    localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify({
       ...payload,
-      id: currentId,
-      mode: getDocMode(payload),
-      isSaved: true,
-      isDraft: false,
-      createdAt: payload.createdAt || new Date(savedAt).toISOString(),
-      updatedAt: new Date(savedAt).toISOString(),
-    };
-
-    const nextDocuments = normalizeWorkspaceDocuments(
-      currentDocs.some((document) => String(document.id) === String(currentId))
-        ? currentDocs.map((document) => String(document.id) === String(currentId) ? { ...document, ...docRecord } : document)
-        : [...currentDocs, docRecord]
-    );
-    documentsRef.current = nextDocuments;
-    writeWorkspaceDocuments(nextDocuments);
-    try {
-      localStorage.setItem('rc.activeDocId', String(currentId));
-    } catch (_err) {}
-
+      savedAt,
+    }));
     setLastSavedAt(savedAt);
-    setDocuments(nextDocuments);
-
     if (trackAction) {
       trackMemoryAction('document', 'Saved document locally', {
-        documentId: String(currentId),
+        documentId: String(activeDocId),
       });
     }
     if (!silent) {
@@ -21102,15 +20500,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   };
 
-  saveDocumentLocallyRef.current = saveDocumentLocally;
-
   useEffect(() => {
     if (!activeDocId) {
       return undefined;
     }
 
     const timer = window.setInterval(() => {
-      saveDocumentLocallyRef.current?.({ silent: true, trackAction: false });
+      saveDocumentLocally({ silent: true, trackAction: false });
     }, 3000);
 
     return () => window.clearInterval(timer);
@@ -21637,31 +21033,27 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     setDocuments((prev) =>
-      prev.map((doc) => {
-        if (doc.id !== activeDocId) return doc;
-        const currentMode = doc.mode || (productMode === 'landing' ? 'compose' : productMode);
-        const updatedDoc = {
-          ...doc,
-          mode: currentMode,
-          title: currentMode === 'sheets' ? (sheetsTitle || doc.title || 'Untitled Sheet') : currentMode === 'deck' ? (deckTitle || doc.title || 'Untitled Deck') : docTitle,
-          subtitle: docSubtitle,
-          initiatives,
-          appendedSections,
-          isBlank: isBlankDocument,
-          bodyHtml: docBodyHtml,
-        };
-        if (currentMode === 'sheets') {
-          updatedDoc.sheetsTitle = sheetsTitle;
-          updatedDoc.sheetsData = sheetsData;
-          updatedDoc.sheetGrids = sheetGrids;
-          updatedDoc.activeSheetId = activeSheetId;
-        } else if (currentMode === 'deck') {
-          updatedDoc.deckTitle = deckTitle;
-          updatedDoc.deckSlidesData = deckSlidesData;
-          updatedDoc.activeDeckSlideId = activeDeckSlideId;
-        }
-        return updatedDoc;
-      }),
+      prev.map((doc) =>
+        doc.id === activeDocId
+          ? {
+              ...doc,
+              mode: doc.mode || (productMode === 'landing' ? 'compose' : productMode),
+              title: docTitle,
+              subtitle: docSubtitle,
+              initiatives,
+              appendedSections,
+              isBlank: isBlankDocument,
+              bodyHtml: docBodyHtml,
+              sheetsTitle,
+              sheetsData,
+              sheetGrids,
+              activeSheetId,
+              deckTitle,
+              deckSlidesData,
+              activeDeckSlideId,
+            }
+          : doc,
+      ),
     );
   }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument, docBodyHtml, sheetsTitle, sheetsData, sheetGrids, activeSheetId, deckTitle, deckSlidesData, activeDeckSlideId, productMode]);
 
@@ -23316,7 +22708,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const documentOutlineDrawerRef = useRef(null);
 
   useEffect(() => {
-    const isOutlineActive = productMode === 'compose' && (isFocusMode || activeDocView === 'document');
+    const isOutlineActive = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard';
     if (!isOutlineActive || !leftSidebarOpen) return;
 
     const handleTapOutside = (event) => {
@@ -23832,8 +23224,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   // ── Sheets & Research Notes bridge sync ─────────────────────────────────
   useEffect(() => {
-    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids, activeSheetId };
-    window.__REGAARDER_MATRIX_ENGINE__ = matrixEngine;
+    window.__REGAARDER_SHEET_DATA__ = { sheetsData, sheetGrids };
     window.__REGAARDER_UPDATE_SHEET_CELLS__ = (updates) => {
       // updates: Array<{ sheetId, row, col, value }>
       if (!Array.isArray(updates)) return { success: false, error: { code: 'INVALID_PARAMS', details: 'updates must be an array.' } };
@@ -23844,13 +23235,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           if (!next[sid]) next[sid] = {};
           const key = `${row},${col}`;
           next[sid][key] = { ...(next[sid][key] || {}), value };
-          if (Array.isArray(next[sid].cells)) {
-            const nextCells = next[sid].cells.map(r => (Array.isArray(r) ? [...r] : []));
-            if (nextCells[row]) {
-              nextCells[row][col] = value;
-              next[sid] = { ...next[sid], cells: nextCells };
-            }
-          }
         }
         return next;
       });
@@ -23917,7 +23301,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     return () => {
       delete window.__REGAARDER_SHEET_DATA__;
-      delete window.__REGAARDER_MATRIX_ENGINE__;
       delete window.__REGAARDER_UPDATE_SHEET_CELLS__;
       delete window.__REGAARDER_FORMAT_SHEET_RANGE__;
       delete window.__REGAARDER_RESEARCH_NOTES__;
@@ -23962,28 +23345,21 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     window.__REGAARDER_WORKSPACE_DOCS__ = documents;
     window.__REGAARDER_CREATE_DOC__ = ({ title = 'Untitled Document', contentHtml = '', mode = 'compose' } = {}) => {
       const newDocId = Date.now() + Math.floor(Math.random() * 1000);
-      const normalizedMode = mode === 'sheets' ? 'sheets' : mode === 'deck' ? 'deck' : 'compose';
-      const createdAt = new Date().toISOString();
-      const resolvedTitle = title && !/^untitled(?:\s+(?:document|sheet|deck))?$/i.test(title)
-        ? title
-        : getNextUntitledName(normalizedMode, documents.filter((doc) => getDocMode(doc) === normalizedMode));
       const newDoc = {
         id: newDocId,
-        mode: normalizedMode,
-        title: resolvedTitle,
+        mode: mode || 'compose',
+        title: title || 'Untitled Document',
         subtitle: '',
         initiatives: [],
         appendedSections: [],
         isBlank: !contentHtml && !title,
         bodyHtml: contentHtml || '',
         pinned: false,
-        createdAt,
-        updatedAt: createdAt,
-        sheetsTitle: normalizedMode === 'sheets' ? resolvedTitle : 'Untitled Sheet',
+        sheetsTitle: 'Untitled Sheet',
         sheetsData: [{ id: 1, title: 'Sheet 1', subtitle: '' }],
         sheetGrids: { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } },
         activeSheetId: 1,
-        deckTitle: normalizedMode === 'deck' ? resolvedTitle : 'Untitled Deck',
+        deckTitle: 'Untitled Deck',
         deckSlidesData: JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)),
         activeDeckSlideId: 1,
       };
@@ -23998,7 +23374,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       delete window.__REGAARDER_WORKSPACE_DOCS__;
       delete window.__REGAARDER_CREATE_DOC__;
     };
-  }, [documents, getDocMode, getNextUntitledName]);
+  }, [documents]);
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [dueDatePickerTaskId, setDueDatePickerTaskId] = useState(null);
@@ -24667,7 +24043,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const closeTransientMenus = () => {
     setIsHeaderMoreMenuOpen(false);
     setOpenDropdown(null);
-    setHeaderWorkbookDropdownOpen(false);
     setTextStyleMenuOpen(false);
     setComposeExportMenuOpen(false);
     setSheetsExportMenuOpen(false);
@@ -25796,20 +25171,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     return `Source materials to ground the response in:\n${blocks.join('\n\n')}`;
   };
 
-  async function callGemini(arg) {
-    const { userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider } =
-      typeof arg === 'string' ? { userPrompt: arg } : (arg || {});
-    const hasCloudCredentials = Boolean(customApiKey || aiProviderConfig?.geminiApiKey || aiProviderConfig?.claudeApiKey);
-    const defaultCloudModelNames = new Set([
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'claude-3-5-haiku-20241022',
-      'claude-3-7-sonnet-20250219'
-    ]);
-    const modelOverrideIsDefaultCloudOnly = Boolean(customModel && !hasCloudCredentials && defaultCloudModelNames.has(customModel));
-    const effectiveCustomModel = modelOverrideIsDefaultCloudOnly ? null : customModel;
+  async function callGemini({ userPrompt, systemPrompt, schema, attachments = [], customModel, customApiKey, customProvider }) {
     const todayDateString = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const isOrbRequested = hasOrbMention(userPrompt) || hasOrbMention(systemPrompt);
     const orbContext = isOrbRequested ? buildOrbWorkspacePromptContext({
@@ -25830,31 +25192,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const fullSystemPrompt = (systemPrompt ? `${systemPrompt}\n\n` : '') + (orbContext ? `${orbContext}\n\n` : '') + `CURRENT DATE CONTEXT: Today is ${todayDateString}. All current-event research, dates, and sports transfer updates must reflect the current year 2026.`;
 
     // ⚡ Local LLM Execution Path (Ollama / LM Studio / llama.cpp)
-    let localTargetModel = (effectiveCustomModel && composeDetectedModels?.find(m => m.id === effectiveCustomModel || m.name === effectiveCustomModel))
+    let localTargetModel = (customModel && composeDetectedModels?.find(m => m.id === customModel || m.name === customModel))
       || (composeSelectedModel?.isLocal ? composeSelectedModel : null);
 
-    if (!localTargetModel && !customApiKey && !aiProviderConfig?.geminiApiKey && !aiProviderConfig?.claudeApiKey && window.electronAPI?.listLocalModels) {
-      try {
-        const nativeResult = await window.electronAPI.listLocalModels();
-        const nativeModel = nativeResult?.models?.[0];
-        if (nativeModel) {
-          localTargetModel = {
-            ...nativeModel,
-            provider: nativeModel.provider || nativeResult.provider || 'Ollama',
-            endpoint: nativeModel.endpoint || nativeResult.activeEndpoint || 'http://127.0.0.1:11434',
-            isLocal: true
-          };
-        }
-      } catch (error) {
-        console.warn('[callGemini] Native local model resolution failed:', error);
-      }
-    }
-
     // Fallback: If customModel contains colon (like gemma3:1b, llama3:8b) or was found in probe, treat as Ollama
-    if (!localTargetModel && effectiveCustomModel && (effectiveCustomModel.includes(':') || effectiveCustomModel.startsWith('local-') || effectiveCustomModel.includes('gguf'))) {
+    if (!localTargetModel && customModel && (customModel.includes(':') || customModel.startsWith('local-') || customModel.includes('gguf'))) {
       localTargetModel = {
-        id: effectiveCustomModel,
-        name: effectiveCustomModel,
+        id: customModel,
+        name: customModel,
         provider: 'Ollama',
         endpoint: 'http://127.0.0.1:11434',
         isLocal: true
@@ -25868,7 +25213,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
-      const localTimeout = setTimeout(() => localAbortController.abort(), 45000);
+      const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
       if (aiAbortControllerRef.current?.signal) {
         aiAbortControllerRef.current.signal.addEventListener('abort', () => {
           try { localAbortController.abort(); } catch (e) {}
@@ -25911,12 +25256,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               response_format: schema ? { type: 'json_object' } : undefined
             };
 
-        // Resilient probe across 127.0.0.1, Vite proxy, and localhost loopbacks with auto-retry
+        // Resilient probe across 127.0.0.1 and localhost loopbacks with auto-retry
         const candidateHosts = [
           baseEndpoint,
-          'http://127.0.0.1:11434',
-          '/api/ollama',
-          'http://localhost:11434'
+          baseEndpoint.includes('127.0.0.1') ? baseEndpoint.replace('127.0.0.1', 'localhost') : baseEndpoint.replace('localhost', '127.0.0.1')
         ];
 
         let localRes = null;
@@ -25924,17 +25267,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         // 1. In Electron, leverage native IPC bridge to bypass browser CORS / PNA restrictions
         if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
           try {
-            const ipcRes = await Promise.race([
-              window.electronAPI.generateLocalAI({
-                endpoint: activeEndpoint,
-                model: activeModelId,
-                prompt: userPrompt,
-                systemPrompt: fullSystemPrompt,
-                format: schema ? 'json' : undefined,
-                options: offloadOpts
-              }),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Local Electron AI request timed out')), 45000))
-            ]);
+            const ipcRes = await window.electronAPI.generateLocalAI({
+              endpoint: activeEndpoint,
+              model: activeModelId,
+              prompt: userPrompt,
+              systemPrompt: fullSystemPrompt,
+              format: schema ? 'json' : undefined,
+              options: offloadOpts
+            });
             if (ipcRes && ipcRes.success && ipcRes.text) {
               clearTimeout(localTimeout);
               const text = ipcRes.text.trim();
@@ -25984,7 +25324,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  model: activeModelId,
+                  model: composeSelectedModel?.id,
                   messages: [
                     { role: 'user', content: fullSystemPrompt ? `${fullSystemPrompt}\n\n${userPrompt}` : userPrompt }
                   ],
@@ -25995,33 +25335,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               if (localRes && localRes.ok) break;
             } catch (e) {}
           }
-        }
-
-        // Fallback to Vite server backend bridge (/api/gemini with Ollama support)
-        if ((!localRes || !localRes.ok) && isOllama) {
-          try {
-            const backendRes = await fetch('/api/gemini', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userPrompt,
-                systemPrompt: fullSystemPrompt,
-                model: activeModelId
-              }),
-              signal: localAbortController.signal
-            });
-            if (backendRes && backendRes.ok) {
-              const backendData = await backendRes.json();
-              if (backendData?.ok && backendData?.text) {
-                clearTimeout(localTimeout);
-                return {
-                  text: backendData.text.trim(),
-                  parsed: backendData.parsed || null,
-                  modelName: localTargetModel.name || activeModelId
-                };
-              }
-            }
-          } catch (_) {}
         }
 
         clearTimeout(localTimeout);
@@ -26054,10 +25367,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               modelName: localTargetModel.name
             };
           }
-        } else {
+} else {
           const statusText = localRes ? `HTTP ${localRes.status}` : 'Connection Refused';
           return {
-            error: `Unable to reach local inference model (${activeModelId}) at http://127.0.0.1:11434 (${statusText}). Please verify that Ollama is running ("ollama serve").`,
+            error: `Unable to reach local inference model (${composeSelectedModel?.name || "Model"}) at ${composeSelectedModel?.endpoint} (${statusText}). Please verify that Ollama or LM Studio is running ("ollama serve") or select a cloud AI model from the picker.`,
             isError: true,
             modelName: localTargetModel.name
           };
@@ -26086,7 +25399,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       const isClaude = provider === 'claude' || provider === 'anthropic';
       const endpoint = isClaude ? '/api/claude' : '/api/gemini';
       const apiKey = customApiKey || (isClaude ? aiProviderConfig?.claudeApiKey : aiProviderConfig?.geminiApiKey) || '';
-      const model = effectiveCustomModel || (isClaude ? aiProviderConfig?.claudeModel : aiProviderConfig?.geminiModel) || '';
+      const model = customModel || (isClaude ? aiProviderConfig?.claudeModel : aiProviderConfig?.geminiModel) || '';
 
       const headers = { 'Content-Type': 'application/json' };
       if (apiKey) {
@@ -34253,7 +33566,6 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setWhiteboardComments([]);
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
-    setProductMode('whiteboard');
   };
 
   const startRenameWhiteboard = (wb) => {
@@ -34316,10 +33628,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const remaining = whiteboards.filter((wb) => wb.id !== closeConfirmWbId);
     if (!remaining.length) {
       setCloseConfirmWbId(null);
-      if (productMode === 'whiteboard') {
-        setProductMode('compose');
-        setIsWhiteboardImmersive(false);
-      }
+      createNewWhiteboard();
       return;
     }
 
@@ -34330,65 +33639,13 @@ Answer the user's question, provide an insightful summary, or explain the contex
   };
 
   const switchDocument = (docId) => {
-    const currentDocs = documentsRef.current || documents;
-    let targetDoc = currentDocs.find((doc) => String(doc.id) === String(docId));
+    const targetDoc = documents.find((doc) => doc.id === docId);
     if (!targetDoc) {
-      targetDoc = readWorkspaceDocuments().find((document) => String(document.id) === String(docId));
-      if (targetDoc) {
-        documentsRef.current = [...currentDocs, targetDoc];
-        setDocuments(prev => [...prev, targetDoc]);
-      } else {
-        showToast('Document not found or removed');
-        setProductMode('compose');
-        return;
-      }
+      return;
     }
 
-    // Flush the departing tab into the same normalized store before switching.
-    if (activeDocId && String(activeDocId) !== String(docId)) {
-      const departingSnapshot = {
-        id: activeDocId,
-        mode: productMode,
-        title: docTitle,
-        subtitle: docSubtitle,
-        bodyHtml: blankBodyRef?.current?.innerHTML ?? docBodyHtml ?? '',
-        initiatives,
-        appendedSections,
-        isBlank: isBlankDocument,
-        sheetsTitle,
-        sheetsData,
-        sheetGrids,
-        activeSheetId,
-        deckTitle,
-        deckSlidesData,
-        activeDeckSlideId,
-        whiteboardWidgets,
-        whiteboardStrokes,
-        whiteboardShapes,
-        isSaved: true,
-        isDraft: false,
-        createdAt: currentDocs.find((document) => String(document.id) === String(activeDocId))?.createdAt,
-        updatedAt: new Date().toISOString(),
-      };
-      const flushedDocs = currentDocs.map((document) => (
-        String(document.id) === String(activeDocId) ? { ...document, ...departingSnapshot } : document
-      ));
-      documentsRef.current = flushedDocs;
-      writeWorkspaceDocuments(flushedDocs);
-
-      // Also flush into documents[] so in-memory state stays consistent
-      setDocuments(flushedDocs);
-      const reFound = flushedDocs.find((doc) => String(doc.id) === String(docId));
-      if (reFound) {
-        targetDoc = reFound;
-      }
-    }
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    const targetMode = getDocMode(targetDoc);
-
-    if (targetMode !== 'whiteboard') {
-      setIsWhiteboardImmersive(false);
+    if (activeRightTab === 'whiteboard') {
+      setActiveRightTab('assistant');
     }
 
     setActiveDocId(docId);
@@ -34411,22 +33668,26 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (targetDoc.whiteboardStrokes !== undefined) setWhiteboardStrokes(targetDoc.whiteboardStrokes || []);
     if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
 
-    if (productMode !== targetMode) {
-      setProductMode(targetMode);
-    }
-
-    if (targetMode === 'sheets') {
-      if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
-        setSheetToolbarTab('View');
+    if (productMode === 'landing') {
+      if (targetDoc.mode) {
+        setProductMode(targetDoc.mode);
+      } else if (targetDoc.sheetsData) {
+        setProductMode('sheets');
+      } else if (targetDoc.deckSlidesData) {
+        setProductMode('deck');
+      } else {
+        setProductMode('compose');
       }
     }
-    return true;
   };
 
   const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
-    const currentWorkspaceMode = productMode === 'whiteboard' ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
-    const defaultTitleForMode = initialTitle || getNextUntitledName(currentWorkspaceMode, documents.filter((doc) => getDocMode(doc) === currentWorkspaceMode));
-    const blankDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
+    const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
+    const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
+    const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
+
+    const currentWorkspaceMode = (activeRightTab === 'whiteboard' || productMode === 'whiteboard') ? 'whiteboard' : (productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose');
+    const defaultTitleForMode = initialTitle || (currentWorkspaceMode === 'sheets' ? 'Untitled Sheet' : currentWorkspaceMode === 'deck' ? 'Untitled Deck' : currentWorkspaceMode === 'whiteboard' ? 'Untitled Whiteboard' : '');
 
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
@@ -34437,33 +33698,18 @@ Answer the user's question, provide an insightful summary, or explain the contex
       appendedSections: [],
       isBlank: !initialHtml && !initialTitle,
       bodyHtml: initialHtml,
-      isTitleCustom: Boolean(initialTitle),
       pinned: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      sheetsTitle: productMode === 'sheets' ? (initialTitle || 'Untitled Sheet') : 'Untitled Sheet',
+      sheetsData: initialSheetsData,
+      sheetGrids: initialSheetGrids,
+      activeSheetId: 1,
+      deckTitle: productMode === 'deck' ? (initialTitle || 'Untitled Deck') : 'Untitled Deck',
+      deckSlidesData: initialDeckSlidesData,
+      activeDeckSlideId: 1,
     };
 
-    if (currentWorkspaceMode === 'sheets') {
-      const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
-      const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
-      newDoc.sheetsTitle = defaultTitleForMode;
-      newDoc.sheetsData = initialSheetsData;
-      newDoc.sheetGrids = initialSheetGrids;
-      newDoc.activeSheetId = 1;
-
-      setSheetsTitle(newDoc.sheetsTitle);
-      setSheetsData(initialSheetsData);
-      setSheetGrids(initialSheetGrids);
-      setActiveSheetId(1);
-      setSheetToolbarTab('View');
-    } else if (currentWorkspaceMode === 'deck') {
-      newDoc.deckTitle = defaultTitleForMode;
-      newDoc.deckSlidesData = blankDeckSlides;
-      newDoc.activeDeckSlideId = 1;
-
-      setDeckTitle(newDoc.deckTitle);
-      setDeckSlidesData(blankDeckSlides);
-      setActiveDeckSlideId(1);
+    if (activeRightTab === 'whiteboard') {
+      setActiveRightTab('assistant');
     }
 
     setDocuments((prev) => [...prev, newDoc]);
@@ -34474,6 +33720,17 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setAppendedSections([]);
     setInitiatives([]);
     setDocBodyHtml(initialHtml);
+
+    if (productMode === 'sheets') {
+      setSheetsTitle(initialTitle || 'Untitled Sheet');
+      setSheetsData(initialSheetsData);
+      setSheetGrids(initialSheetGrids);
+      setActiveSheetId(1);
+    } else if (productMode === 'deck') {
+      setDeckTitle(initialTitle || 'Untitled Deck');
+      setDeckSlidesData(initialDeckSlidesData);
+      setActiveDeckSlideId(1);
+    }
 
     setLastComposeRun(null);
     setLeftSidebarOpen(false);
@@ -34579,31 +33836,21 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
-    setRightSidebarOpen(false);
-    setIsWhiteboardImmersive(false);
 
-    // If options.forceNew is not requested and compose documents exist, restore active or most recent compose document
+    // If options.forceNew is not requested and documents exist, restore active or most recent document
     if (!options.forceNew && documents && documents.length > 0) {
-      const composeDocs = documents.filter((d) => getDocMode(d) === 'compose');
-      if (composeDocs.length > 0) {
-        const targetDoc = composeDocs.find((d) => String(d.id) === String(activeDocId)) || composeDocs[composeDocs.length - 1];
-        if (targetDoc) {
-          setActiveDocId(targetDoc.id);
-          setDocTitle(targetDoc.title || 'Untitled Document');
-          setDocSubtitle(targetDoc.subtitle || '');
-          setDocBodyHtml(targetDoc.bodyHtml || '');
-          setInitiatives(targetDoc.initiatives || []);
-          setAppendedSections(targetDoc.appendedSections || []);
-          setIsBlankDocument(targetDoc.isBlank || false);
-          return;
-        }
+      const targetDoc = documents.find(d => String(d.id) === String(activeDocId)) || documents[documents.length - 1];
+      if (targetDoc && (targetDoc.title || targetDoc.bodyHtml)) {
+        setActiveDocId(targetDoc.id);
+        setDocTitle(targetDoc.title || 'Untitled Document');
+        setDocBodyHtml(targetDoc.bodyHtml || '');
+        return;
       }
     }
     createNewComposition(options);
   };
 
-  const createDeckExperience = (options = {}) => {
-    productModeCreateGuardRef.current.deck = true;
+  const createDeckExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('deck');
     setFocusedModule('deck');
@@ -34612,44 +33859,8 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (isScreenSharing || window.__currentScreenShareStream) {
       setRoomState('active');
     }
-
-    // If options.forceNew is not requested and deck documents exist, restore active or most recent deck
-    if (!options.forceNew && documents && documents.length > 0) {
-      const deckDocs = documents.filter((d) => getDocMode(d) === 'deck');
-      if (deckDocs.length > 0) {
-        const targetDoc = deckDocs.find((d) => String(d.id) === String(activeDocId)) || deckDocs[deckDocs.length - 1];
-        if (targetDoc) {
-          switchDocument(targetDoc.id);
-          setDeckZoomLevel(100);
-          setDeckToolbarFont('Inter');
-          setDeckToolbarMenuOpen(false);
-          setDeckContextRailTab('Design');
-          setDeckPromptInput('');
-          setDeckPromptMinimized(false);
-          setDeckSlidesPanelOpen(true);
-          setRightSidebarOpen(false);
-          showToast(`Opened Presentation: ${targetDoc.deckTitle || targetDoc.title || 'Untitled Deck'}`);
-          return;
-        }
-      }
-    }
-
-    const newDeckId = Date.now();
-    const initialDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
-    const newDeckDoc = {
-      id: newDeckId,
-      mode: 'deck',
-      title: getNextUntitledName('deck', documents.filter((doc) => getDocMode(doc) === 'deck')),
-      deckTitle: getNextUntitledName('deck', documents.filter((doc) => getDocMode(doc) === 'deck')),
-      deckSlidesData: initialDeckSlides,
-      activeDeckSlideId: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setDocuments(prev => [...prev, newDeckDoc]);
-    setActiveDocId(newDeckId);
-    setDeckTitle(newDeckDoc.deckTitle);
-    setDeckSlidesData(initialDeckSlides);
+    setDeckTitle('Untitled deck');
+    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -34660,11 +33871,11 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckPromptChips(['Turn this into investor tone', 'Generate competitor comparison slide', 'Make this more visual', 'Reduce to 8 slides', 'Simplify for students']);
     setDeckSlidesPanelOpen(true);
     setRightSidebarOpen(false);
+    setActiveRightTab('assistant');
     showToast('Deck workspace ready');
   };
 
-  const createSheetsExperience = (options = {}) => {
-    productModeCreateGuardRef.current.sheets = true;
+  const createSheetsExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('sheets');
     setFocusedModule('sheets');
@@ -34673,45 +33884,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (isScreenSharing || window.__currentScreenShareStream) {
       setRoomState('active');
     }
-
-    // If options.forceNew is not requested and sheet documents exist, restore active or most recent sheet
-    if (!options.forceNew && documents && documents.length > 0) {
-      const sheetsDocs = documents.filter((d) => getDocMode(d) === 'sheets');
-      if (sheetsDocs.length > 0) {
-        const targetDoc = sheetsDocs.find((d) => String(d.id) === String(activeDocId)) || sheetsDocs[sheetsDocs.length - 1];
-        if (targetDoc) {
-          switchDocument(targetDoc.id);
-          setLeftSidebarOpen(false);
-          setDeckPromptInput('');
-          setDeckPromptMinimized(false);
-          setDeckSlidesPanelOpen(false);
-          setRightSidebarOpen(false);
-          setSheetToolbarTab(options.fromHomePage ? 'Data' : 'View');
-          showToast(`Opened Spreadsheet: ${targetDoc.sheetsTitle || targetDoc.title || 'Untitled Sheet'}`);
-          return;
-        }
-      }
-    }
-
-    const newSheetId = Date.now();
-    const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
-    const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
-    const newSheetDoc = {
-      id: newSheetId,
-      mode: 'sheets',
-      title: getNextUntitledName('sheets', documents.filter((doc) => getDocMode(doc) === 'sheets')),
-      sheetsTitle: getNextUntitledName('sheets', documents.filter((doc) => getDocMode(doc) === 'sheets')),
-      sheetsData: initialSheetsData,
-      sheetGrids: initialSheetGrids,
-      activeSheetId: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setDocuments(prev => [...prev, newSheetDoc]);
-    setActiveDocId(newSheetId);
-    setSheetsTitle(newSheetDoc.sheetsTitle);
-    setSheetsData(initialSheetsData);
-    setSheetGrids(initialSheetGrids);
+    setSheetsTitle('Untitled Sheet');
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
     setDeckPromptInput('');
@@ -34719,7 +33892,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
-    setSheetToolbarTab(options.fromHomePage ? 'Data' : 'View');
+    setSheetToolbarTab('Data');
     setHasImportedData(false);
     setSelectedDatasets([]);
     showToast('Sheets workspace ready');
@@ -35091,6 +34264,7 @@ Respond with valid JSON formatted like this:
     }
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
+    setActiveRightTab('whiteboard');
     
     const count = documents.filter(d => getDocMode(d) === 'whiteboard').length;
     const title = initialTitle || (count === 0 ? 'Untitled Whiteboard' : `Whiteboard ${count + 1}`);
@@ -35229,20 +34403,12 @@ Respond with valid JSON formatted like this:
 
   const createItemForCurrentContext = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
-    if (productMode === 'whiteboard') {
+    if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
       createWhiteboardExperience();
       return;
     }
-    if (productMode === 'sheets') {
-      createSheetsExperience({ forceNew: true });
-      return;
-    }
-    if (productMode === 'deck') {
-      createDeckExperience({ forceNew: true });
-      return;
-    }
-    if (productMode === 'compose') {
-      createComposeExperience({ forceNew: true });
+    if (productMode === 'compose' || productMode === 'sheets' || productMode === 'deck') {
+      createNewComposition();
       return;
     }
     if (productMode === 'dm') {
@@ -35396,7 +34562,6 @@ Respond with valid JSON formatted like this:
           setSheetGrids(first.sheetGrids);
         }
         setActiveSheetId(first.activeSheetId || 1);
-        setSheetToolbarTab('View');
       } else if (first.mode === 'deck') {
         setProductMode('deck');
         setActiveDocId(first.id);
@@ -35456,18 +34621,6 @@ Respond with valid JSON formatted like this:
 
     let target = destination;
     if (typeof destination === 'object' && destination !== null) {
-      if (destination.doc) {
-        const docItem = destination.doc;
-        const targetDocId = docItem.id;
-        const docData = docItem.data || docItem;
-        const isAlreadyInList = documents.find((d) => String(d.id) === String(targetDocId));
-        if (!isAlreadyInList) {
-          setDocuments((prev) => [...prev, { ...docData, id: targetDocId }]);
-        }
-        switchDocument(targetDocId);
-        setActivePrimaryNav(destination.name === 'deck' ? 'library' : 'drafts');
-        return;
-      }
       if (destination.type === 'action' || destination.type === 'product') {
         target = destination.name.toLowerCase();
       } else {
@@ -35572,135 +34725,29 @@ Respond with valid JSON formatted like this:
   };
 
   const requestCloseDocument = (docId) => {
-    const targetDoc = documents.find((doc) => String(doc.id) === String(docId));
-    if (!targetDoc) return;
-
-    const savedDoc = readWorkspaceDocuments().find((doc) => String(doc.id) === String(docId)) || null;
-
-    const current = {
-      ...targetDoc,
-      ...(String(docId) === String(activeDocId)
-        ? {
-            title: getDocMode(targetDoc) === 'sheets' ? sheetsTitle : getDocMode(targetDoc) === 'deck' ? deckTitle : docTitle,
-            bodyHtml: docBodyHtml,
-            subtitle: docSubtitle,
-            sheetGrids,
-            sheetsData,
-            deckSlidesData,
-            whiteboardWidgets,
-            whiteboardShapes,
-            whiteboardStrokes,
-          }
-        : {}),
-    };
-    const normalize = (doc) => {
-      if (!doc) return null;
-      const { updatedAt, savedAt, isSaved, ...stable } = doc;
-      return stable;
-    };
-    const isDirty = isMeaningfulWork(current)
-      && (!savedDoc || JSON.stringify(normalize(current)) !== JSON.stringify(normalize(savedDoc)));
-    if (!isDirty) {
-      handleDiscardAndCloseDocument(docId);
-      return;
-    }
-
     setCloseConfirmDocId(docId);
     setOpenDocMenuId(null);
   };
 
-  const handleSaveAndCloseDocument = (docId) => {
-    const targetId = docId || closeConfirmDocId;
-    const targetDoc = documents.find((d) => String(d.id) === String(targetId));
-    if (!targetDoc) {
-      setCloseConfirmDocId(null);
+  const confirmCloseDocument = () => {
+    if (!closeConfirmDocId) {
       return;
     }
-    const targetDocMode = getDocMode(targetDoc);
 
-    const savedSnapshot = {
-      ...targetDoc,
-      bodyHtml: String(targetId) === String(activeDocId) ? docBodyHtml : targetDoc.bodyHtml,
-      title: String(targetId) === String(activeDocId) ? (targetDocMode === 'sheets' ? sheetsTitle : targetDocMode === 'deck' ? deckTitle : docTitle) : targetDoc.title,
-      subtitle: String(targetId) === String(activeDocId) ? docSubtitle : targetDoc.subtitle,
-      sheetsTitle: targetDocMode === 'sheets' ? (sheetsTitle || targetDoc.sheetsTitle) : targetDoc.sheetsTitle,
-      sheetGrids: targetDocMode === 'sheets' ? sheetGrids : targetDoc.sheetGrids,
-      sheetsData: targetDocMode === 'sheets' ? sheetsData : targetDoc.sheetsData,
-      deckTitle: targetDocMode === 'deck' ? (deckTitle || targetDoc.deckTitle) : targetDoc.deckTitle,
-      deckSlidesData: targetDocMode === 'deck' ? deckSlidesData : targetDoc.deckSlidesData,
-      updatedAt: Date.now(),
-      isSaved: true
-    };
-
-    writeWorkspaceDocuments(documents.map((document) => (
-      String(document.id) === String(targetId) ? savedSnapshot : document
-    )));
-
-    const remaining = documents.filter((d) => String(d.id) !== String(targetId));
-    setDocuments(remaining);
-    setCloseConfirmDocId(null);
-    showToast(`"${savedSnapshot.title || 'Document'}" saved to Library`);
-
-    // If closing active document, switch to remaining or create clean
-    if (String(targetId) === String(activeDocId)) {
-      const remainingInMode = remaining.filter((d) => getDocMode(d) === targetDocMode);
-      if (remainingInMode.length > 0) {
-        switchDocument(remainingInMode[0].id);
-      } else if (targetDocMode === 'whiteboard' || productMode === 'whiteboard') {
-        setProductMode('compose');
-        setIsWhiteboardImmersive(false);
-        const composeDocs = remaining.filter((d) => getDocMode(d) === 'compose');
-        if (composeDocs.length > 0) {
-          switchDocument(composeDocs[composeDocs.length - 1].id);
-        } else {
-          createNewComposition({ silent: true });
-        }
-      } else if (remaining.length > 0) {
-        switchDocument(remaining[0].id);
-      } else {
-        createNewComposition({ silent: true });
-      }
-    } else if (targetDocMode === 'whiteboard' || productMode === 'whiteboard') {
-      const remainingWb = remaining.filter((d) => getDocMode(d) === 'whiteboard');
-      if (remainingWb.length === 0 && productMode === 'whiteboard') {
-        setProductMode('compose');
-        setIsWhiteboardImmersive(false);
-      }
-    }
-  };
-
-  const handleDiscardAndCloseDocument = (docId) => {
-    const targetId = docId || closeConfirmDocId;
-    const targetDoc = documents.find((d) => String(d.id) === String(targetId));
+    const targetDoc = documents.find((d) => d.id === closeConfirmDocId);
     const targetDocMode = targetDoc ? getDocMode(targetDoc) : activeWorkspaceMode;
 
-    const remaining = documents.filter((doc) => String(doc.id) !== String(targetId));
+    const remaining = documents.filter((doc) => doc.id !== closeConfirmDocId);
     const remainingInMode = remaining.filter((doc) => getDocMode(doc) === targetDocMode);
 
     setDocuments(remaining);
     setCloseConfirmDocId(null);
-    showToast('Document discarded');
 
     if (!remainingInMode.length) {
-      if (targetDocMode === 'whiteboard' || productMode === 'whiteboard') {
-        setProductMode('compose');
-        setIsWhiteboardImmersive(false);
-        const composeDocs = remaining.filter((d) => getDocMode(d) === 'compose');
-        if (composeDocs.length > 0) {
-          switchDocument(composeDocs[composeDocs.length - 1].id);
-        } else {
-          createNewComposition({ silent: true });
-        }
-      } else {
-        createNewComposition({ silent: true });
-      }
+      createNewComposition({ silent: true });
     } else {
       switchDocument(remainingInMode[0].id);
     }
-  };
-
-  const confirmCloseDocument = () => {
-    handleSaveAndCloseDocument(closeConfirmDocId);
   };
 
   const openCreateWorkspaceModal = () => {
@@ -35760,43 +34807,13 @@ Respond with valid JSON formatted like this:
     setOpenDocMenuId(null);
   };
 
-  const commitRenameDocument = (docId, explicitNextTitle) => {
-    const rawTitle = typeof explicitNextTitle === 'string' ? explicitNextTitle : renameDocValue;
-    const nextTitle = String(rawTitle || '').trim();
-    if (!nextTitle) {
-      setRenamingDocId(null);
-      setRenameDocValue('');
-      return;
-    }
-    const currentDocs = documentsRef.current || documents;
-    const renamedDoc = currentDocs.find((doc) => String(doc.id) === String(docId));
-    const renamedMode = renamedDoc ? getDocMode(renamedDoc) : productMode;
-    const updatedDocuments = currentDocs.map((doc) => (String(doc.id) === String(docId) ? {
-      ...doc,
-      mode: renamedMode || doc.mode || 'compose',
-      title: nextTitle,
-      displayTitle: nextTitle,
-      isTitleCustom: true,
-      sheetsTitle: renamedMode === 'sheets' ? nextTitle : doc.sheetsTitle,
-      deckTitle: renamedMode === 'deck' ? nextTitle : doc.deckTitle,
-      updatedAt: new Date().toISOString(),
-    } : doc));
-
-    documentsRef.current = updatedDocuments;
-    writeWorkspaceDocuments(updatedDocuments);
-    setDocuments(updatedDocuments);
-
-    const isCurrentActive = String(activeDocId) === String(docId) || (!activeDocId && String(currentDocs[0]?.id) === String(docId));
-    if (isCurrentActive) {
+  const commitRenameDocument = (docId) => {
+    const nextTitle = renameDocValue.trim();
+    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
+    if (activeDocId === docId) {
       setDocTitle(nextTitle);
-      if (!activeDocId) {
-        setActiveDocId(docId);
-      }
-      if (renamedMode === 'sheets') {
+      if (isSheetsMode) {
         setSheetsTitle(nextTitle);
-      }
-      if (renamedMode === 'deck') {
-        setDeckTitle(nextTitle);
       }
     }
     setRenamingDocId(null);
@@ -35805,38 +34822,22 @@ Respond with valid JSON formatted like this:
   };
 
   const beginUnsavedDraftRename = () => {
-    const currentDocs = documentsRef.current || documents;
-    const activeDoc = currentDocs.find((doc) => String(doc.id) === String(activeDocId)) || currentDocs[0];
-    const currentName = (activeDoc?.title || docTitle || 'Untitled Document').trim() || 'Untitled Document';
-    setUnsavedDraftNameInput(currentName === 'Unsaved draft' ? 'Untitled Document' : currentName);
+    const activeDoc = documents.find((doc) => doc.id === activeDocId);
+    const currentName = (activeDoc?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
+    setUnsavedDraftNameInput(currentName);
     setIsEditingUnsavedDraftName(true);
   };
 
-  const commitUnsavedDraftRename = (explicitNextTitle) => {
-    const rawTitle = typeof explicitNextTitle === 'string' ? explicitNextTitle : unsavedDraftNameInput;
-    const nextTitle = String(rawTitle || '').trim();
+  const commitUnsavedDraftRename = () => {
+    const nextTitle = unsavedDraftNameInput.trim();
     if (!nextTitle) {
       setIsEditingUnsavedDraftName(false);
       setUnsavedDraftNameInput('');
       return;
     }
 
-    const currentDocs = documentsRef.current || documents;
-    const targetDocId = activeDocId || currentDocs[0]?.id;
-    if (targetDocId) {
-      const updatedDocuments = currentDocs.map((doc) => (String(doc.id) === String(targetDocId) ? {
-        ...doc,
-        title: nextTitle,
-        displayTitle: nextTitle,
-        isTitleCustom: true,
-        updatedAt: new Date().toISOString(),
-      } : doc));
-      documentsRef.current = updatedDocuments;
-      writeWorkspaceDocuments(updatedDocuments);
-      setDocuments(updatedDocuments);
-      if (!activeDocId) {
-        setActiveDocId(targetDocId);
-      }
+    if (activeDocId) {
+      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
     }
     setDocTitle(nextTitle);
     setIsEditingUnsavedDraftName(false);
@@ -35859,12 +34860,12 @@ Respond with valid JSON formatted like this:
       return fallback;
     }
 
-    const target = (documentsRef.current || documents).find((doc) => String(doc.id) === String(docId));
+    const target = documents.find((doc) => doc.id === docId);
     if (target) {
-      const isCurrent = String(activeDocId) === String(docId);
+      const isCurrent = activeDocId === docId;
       return {
         ...target,
-        title: isCurrent ? (docTitle || target.title) : target.title,
+        title: isCurrent ? docTitle : target.title,
         subtitle: isCurrent ? docSubtitle : target.subtitle,
         bodyHtml: isCurrent ? sanitizeHtmlForExport(blankBodyRef.current?.innerHTML || target.bodyHtml) : sanitizeHtmlForExport(target.bodyHtml),
         sheetsTitle: isCurrent ? sheetsTitle : target.sheetsTitle,
@@ -37508,12 +36509,20 @@ Respond with a JSON array of slide objects matching the schema.`;
     </div>
   );
 
+  const getDocMode = useCallback((doc) => {
+    if (!doc) return 'compose';
+    if (doc.mode) return doc.mode;
+    if (doc.sheetsData && doc.sheetsData.length > 0 && (doc.title?.toLowerCase().includes('sheet') || doc.sheetsTitle)) return 'sheets';
+    if (doc.deckSlidesData && doc.deckSlidesData.length > 0 && (doc.title?.toLowerCase().includes('deck') || doc.deckTitle)) return 'deck';
+    return 'compose';
+  }, []);
+
   const activeWorkspaceMode = useMemo(() => {
-    if (productMode === 'whiteboard') return 'whiteboard';
+    if (activeRightTab === 'whiteboard' || productMode === 'whiteboard') return 'whiteboard';
     if (productMode === 'sheets') return 'sheets';
     if (productMode === 'deck') return 'deck';
     return 'compose';
-  }, [productMode]);
+  }, [productMode, activeRightTab]);
 
   const orderedDocuments = useMemo(() => {
     const modeDocs = documents.filter((doc) => getDocMode(doc) === activeWorkspaceMode);
@@ -37577,19 +36586,12 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const renderCloseConfirmModal = () => {
     if (!closeConfirmDocId) return null;
-    const targetDoc = documents.find((d) => d.id === closeConfirmDocId);
-    const targetTitle = targetDoc?.title || closeConfirmTerm.noun;
-
     return createPortal(
       <div className="fixed inset-0 z-[100000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 select-none">
-        <div className="w-[440px] max-w-[90vw] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150 font-sans">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">
-            Close "{targetTitle}"?
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">
-            Would you like to save this {closeConfirmTerm.noun} to your Workspace Library, or discard it? Saved items remain securely stored and can be reopened anytime from your library or search.
-          </p>
-          <div className="flex items-center justify-end gap-2 pt-1">
+        <div className="w-[420px] max-w-[90vw] rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-150 font-sans">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-1.5">{closeConfirmTerm.title}</h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4 leading-relaxed">You can still create a new one after closing. This action will remove the selected tab.</p>
+          <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setCloseConfirmDocId(null)}
@@ -37599,17 +36601,10 @@ Respond with a JSON array of slide objects matching the schema.`;
             </button>
             <button
               type="button"
-              onClick={() => handleDiscardAndCloseDocument(closeConfirmDocId)}
-              className="px-3.5 py-1.5 rounded-xl text-xs border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold transition-colors cursor-pointer"
-            >
-              Discard & Delete
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSaveAndCloseDocument(closeConfirmDocId)}
+              onClick={confirmCloseDocument}
               className="px-4 py-1.5 rounded-xl text-xs bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-sm transition-colors cursor-pointer"
             >
-              Save & Close
+              {closeConfirmTerm.button}
             </button>
           </div>
         </div>
@@ -38284,8 +37279,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [deckSlidesData, activeDocId]);
 
     const isSheetsMode = productMode === 'sheets';
-    const isDeckMode = productMode === 'deck';
-    const isWhiteboardWorkspace = productMode === 'whiteboard';
+    const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
     const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
@@ -39134,9 +38128,6 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
     setActiveSheetId(nextId);
     setSheetsTitle(worksheet.title);
-    if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
-      setSheetToolbarTab('View');
-    }
     showToast(`${worksheet.title} created`);
   };
 
@@ -40497,9 +39488,6 @@ Respond with a JSON array of slide objects matching the schema.`;
           }));
           setActiveSheetId(nextId);
           setSheetsTitle(clone.title);
-          if (sheetToolbarTab === 'Data' || !sheetToolbarTab) {
-            setSheetToolbarTab('View');
-          }
           showToast('Worksheet duplicated');
         }
       } else {
@@ -40848,7 +39836,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
-  const showDocumentOutlineView = productMode === 'compose' && (isFocusMode || activeDocView === 'document') && docOutlineEnabled;
+  const showDocumentOutlineView = productMode === 'compose' && (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard' && docOutlineEnabled;
   const rightMiniRailWidth = 0;
   const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
@@ -40896,10 +39884,9 @@ Respond with a JSON array of slide objects matching the schema.`;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
   const activeDraftDisplayTitle = (() => {
-    const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId)) || documents[0];
-    const rawTitle = (activeDoc?.title || docTitle || '').trim();
+    const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
     if (rawTitle === 'Untitled Whiteboard') return t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard';
-    return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.untitledDoc') || 'Untitled Document'));
+    return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.unsavedDraft') || 'Unsaved draft'));
   })();
   const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
     && !String(docSubtitle || '').trim()
@@ -41624,7 +40611,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, height: '100vh', minHeight: '100vh', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
-        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && (
+        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
         <div className="h-13 flex items-center border-b border-slate-100/60 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3.5 shrink-0">
           <div
             className="w-full min-w-0 py-1.5"
@@ -42248,7 +41235,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           )}
 
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
-          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && productMode !== 'whiteboard' && (
+          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
               {/* Persistent Multi-Tab Concurrent Header */}
               <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm z-10">
@@ -42674,14 +41661,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                               <Send size={13} strokeWidth={1.75} />
                             </button>
                           )}
-                        </div>
-
-                        {/* Autonomy & Permissions Micro-Bar (Antigravity/VS Code Style) */}
-                        <div className="border-t border-slate-100/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/60 opacity-80 hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          <PromptAutonomyBar 
-                            isLocal={composeSelectedModel?.isLocal} 
-                            engineLabel={composeSelectedModel?.isLocal ? 'Local' : (composeSelectedModel?.provider || 'Cloud')} 
-                          />
                         </div>
                       </div>
                     </form>
@@ -43585,14 +42564,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </button>
                       )}
                     </div>
-
-                    {/* Autonomy & Permissions Micro-Bar (Antigravity/VS Code Style) */}
-                    <div className="border-t border-slate-100/80 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/60 opacity-80 hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                      <PromptAutonomyBar 
-                        isLocal={composeSelectedModel?.isLocal} 
-                        engineLabel={composeSelectedModel?.isLocal ? 'Local' : (composeSelectedModel?.provider || 'Cloud')} 
-                      />
-                    </div>
                   </div>
                   <div className="text-center mt-2 pb-1">
                     <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">AI can make mistakes. Check important info.</span>
@@ -43605,12 +42576,12 @@ Respond with a JSON array of slide objects matching the schema.`;
 
 
           {/* C. ACTIVE TAB: WHITEBOARD ASSISTANT */}
-          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && productMode === 'whiteboard' && (
+          {activeRightTab === 'whiteboard' && (
             <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-4 bg-[#fcfcff]">
               <div className="rounded-2xl border border-[#ece8ff] bg-white shadow-[0_18px_34px_-28px_rgba(109,40,217,0.45)] overflow-hidden">
                 <div className="px-4 pt-4 pb-2 border-b border-gray-100">
                   <div className="text-[14px] font-semibold text-[#1f2537] inline-flex items-center gap-1.5">
-                    <RegaarderAiIcon size={13} className="text-violet-500" />
+                    <Sparkles size={13} className="text-violet-500" />
                     AI Assistant
                   </div>
                 </div>
@@ -43655,7 +42626,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     type="button"
                     onClick={() => {
                       setWhiteboardAssistantTab('insights');
-                      setActiveRightTab('assistant');
+                      setActiveRightTab('whiteboard');
                       showToast('Insights refreshed');
                     }}
                     className="text-[10px] font-semibold text-violet-600 hover:text-violet-700"
@@ -43710,7 +42681,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onClick={() => handleWhiteboardConnectionAction('compose')}
                     className="w-full rounded-lg border border-gray-100 px-2.5 py-2 text-left text-[11px] text-slate-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-2"
                   >
-                    <RegaarderAiIcon size={12} className="text-violet-500" />
+                    <Sparkles size={12} className="text-violet-500" />
                     Go-to-Market Plan
                   </button>
                 </div>
@@ -46139,14 +45110,6 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'memory' && (
             <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-transparent overflow-hidden">
               <MemoryDashboard 
-                initialTab={memoryTab}
-                currentUser={currentUser}
-                documents={documents}
-                sheetGrids={sheetGrids}
-                activeSheetId={activeSheetId}
-                sheetsTitle={sheetsTitle}
-                initiatives={initiatives}
-                awarenessUsers={awarenessUsers}
                 onClose={() => setRightSidebarOpen(false)}
                 onNavigateToEntity={(entity) => {
                   setRightSidebarOpen(false);
@@ -46441,7 +45404,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           <>
 
             {/* ── Sleek Sidebar Icon Rail (Scoped between top header and bottom status bar, never blocks top/bottom icons) ──────────── */}
-            {productMode !== 'landing' && productMode !== 'browser' && productMode !== 'dm' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
+            {productMode !== 'landing' && productMode !== 'browser' && !rightSidebarOpen && !notificationsOpen && !shareModalOpen && (
               <div
                 onMouseEnter={handleRightSidebarMouseEnter}
                 onMouseLeave={handleRightSidebarMouseLeave}
@@ -46851,6 +45814,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         </main>
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}
+        {sharedRightPanels}
       </div>
     );
   }
@@ -48577,55 +47541,27 @@ const renderRoomTopHeader = () => (
     setAuthLoading(true);
 
     try {
-      let token = null;
-      let user = null;
+      const endpoint = authTab === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const body = authTab === 'login' 
+        ? { email: authEmail, password: authPassword }
+        : { email: authEmail, password: authPassword, name: authName };
 
-      if (isFirebaseConfigured()) {
-        const result = authTab === 'login'
-          ? await loginWithEmail(authEmail, authPassword)
-          : await registerWithEmail(authEmail, authPassword, authName);
-        token = result.token;
-        user = result.user;
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
 
-        // Sync with backend SQLite/Postgres database
-        try {
-          await fetch(`${API_BASE_URL}/api/auth/firebase-sync`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ token, user })
-          });
-        } catch (syncErr) {
-          console.warn('[Auth] Firebase backend sync warning:', syncErr);
-        }
-      } else {
-        const endpoint = authTab === 'login' ? '/api/auth/login' : '/api/auth/register';
-        const body = authTab === 'login' 
-          ? { email: authEmail, password: authPassword }
-          : { email: authEmail, password: authPassword, name: authName };
-
-        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || 'Authentication failed.');
-        }
-
-        token = data.token;
-        user = data.user;
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Authentication failed.');
       }
 
-      localStorage.setItem('rc.token', token);
-      localStorage.setItem('rc.user', JSON.stringify(user));
-      setCurrentUser(user);
+      localStorage.setItem('rc.token', data.token);
+      localStorage.setItem('rc.user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
       setAuthModalOpen(false);
-      showToast(authTab === 'login' ? `Welcome back, ${user.name}! ✓` : `Account created! Welcome, ${user.name}! ✓`);
+      showToast(authTab === 'login' ? `Welcome back, ${data.user.name}! ✓` : `Account created! Welcome, ${data.user.name}! ✓`);
       
       setAuthEmail('');
       setAuthPassword('');
@@ -48641,72 +47577,44 @@ const renderRoomTopHeader = () => (
     setAuthError('');
     setAuthLoading(true);
 
-    try {
-      let token = null;
-      let user = null;
-
-      if (isFirebaseConfigured()) {
-        const result = provider === 'google' 
-          ? await loginWithGoogle()
-          : await loginWithApple();
-        token = result.token;
-        user = result.user;
-
-        // Sync with backend SQLite/Postgres database
-        try {
-          await fetch(`${API_BASE_URL}/api/auth/firebase-sync`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ token, user })
-          });
-        } catch (syncErr) {
-          console.warn('[Auth] Firebase backend sync warning:', syncErr);
-        }
+    // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
+    let deviceId = localStorage.getItem('rc.device_id');
+    if (!deviceId) {
+      const arr = new Uint8Array(8);
+      if (typeof window !== 'undefined' && window.crypto) {
+        window.crypto.getRandomValues(arr);
       } else {
-        // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
-        let deviceId = localStorage.getItem('rc.device_id');
-        if (!deviceId) {
-          const arr = new Uint8Array(8);
-          if (typeof window !== 'undefined' && window.crypto) {
-            window.crypto.getRandomValues(arr);
-          } else {
-            for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
-          }
-          deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-          localStorage.setItem('rc.device_id', deviceId);
-        }
+        for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
+      }
+      deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem('rc.device_id', deviceId);
+    }
 
-        const targetEmail = authEmail && authEmail.includes('@')
-          ? authEmail.trim().toLowerCase()
-          : `social_${provider}_${deviceId}@regaarder.local`;
+    const targetEmail = authEmail && authEmail.includes('@')
+      ? authEmail.trim().toLowerCase()
+      : `social_${provider}_${deviceId}@regaarder.local`;
 
-        const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
+    const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
 
-        const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider,
-            email: targetEmail,
-            name: targetName
-          })
-        });
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          email: targetEmail,
+          name: targetName
+        })
+      });
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || 'Social sign-in failed.');
-        }
-
-        token = data.token;
-        user = data.user;
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Social sign-in failed.');
       }
 
-      localStorage.setItem('rc.token', token);
-      localStorage.setItem('rc.user', JSON.stringify(user));
-      setCurrentUser(user);
+      localStorage.setItem('rc.token', data.token);
+      localStorage.setItem('rc.user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
       setAuthModalOpen(false);
       showToast(`Connected with ${provider === 'google' ? 'Google' : 'Apple'} ✓`);
       
@@ -48723,17 +47631,180 @@ const renderRoomTopHeader = () => (
   const renderAuthModal = () => {
     if (!authModalOpen) return null;
     return (
-      <AuthPopoverDropdown
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={(user) => {
-          setCurrentUser(user);
-          setAuthModalOpen(false);
-          showToast(`Welcome back, ${user.name}! ✓`);
-        }}
-        apiBaseUrl={API_BASE_URL}
-        className="fixed top-12 right-6"
-      />
+      <div 
+        className="fixed inset-0 bg-slate-950/40 backdrop-blur-md z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
+        onMouseDown={() => setAuthModalOpen(false)}
+      >
+        <div 
+          className="bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-[400px] p-8 relative flex flex-col gap-6 animate-in zoom-in-95 duration-200"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button 
+            type="button"
+            onClick={() => setAuthModalOpen(false)}
+            aria-label="Close authentication modal"
+            className="absolute top-5 right-5 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
+            title="Close"
+          >
+            <X size={14} />
+          </button>
+
+          {/* Integrated Brand Header */}
+          <div className="flex flex-col items-center text-center gap-2">
+            <div className="relative group cursor-pointer mb-1">
+              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-[#27272a] border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-center group-hover:border-violet-300 dark:group-hover:border-violet-500/40 transition-all duration-200">
+                <RegaarderBrandIcon size={22} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
+              </div>
+            </div>
+            <h2 className="text-[20px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
+            <p className="text-[12px] text-slate-400 dark:text-zinc-500 font-normal -mt-0.5">One workspace for all your office needs.</p>
+          </div>
+
+          {/* Primary Social Authentication Methods */}
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => handleSocialAuth('google')}
+              disabled={authLoading}
+              className="w-full h-[44px] flex items-center justify-center gap-3 bg-white hover:bg-slate-50 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/90 dark:border-zinc-750 rounded-xl text-[13px] font-medium text-slate-800 dark:text-zinc-100 transition-all duration-150 active:scale-[0.985] shadow-xs"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSocialAuth('apple')}
+              disabled={authLoading}
+              className="w-full h-[44px] flex items-center justify-center gap-3 bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-[13px] font-medium transition-all duration-150 active:scale-[0.985] shadow-xs"
+            >
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.5-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.59 2.94-1.4"/>
+              </svg>
+              Continue with Apple
+            </button>
+          </div>
+
+          {/* Hairline Divider with Spaced Badge */}
+          <div className="relative flex items-center justify-center my-0.5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200/80 dark:border-zinc-800" />
+            </div>
+            <span className="relative px-3.5 bg-white dark:bg-[#1c1c1e] text-[11px] font-normal text-slate-400 dark:text-zinc-500">
+              or continue with email
+            </span>
+          </div>
+
+          {/* Compact Sliding Segmented Control */}
+          <div className="relative p-0.5 bg-slate-100/90 dark:bg-zinc-900/90 rounded-xl border border-slate-200/50 dark:border-zinc-800/60 flex h-8">
+            <div 
+              className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-white dark:bg-zinc-800 rounded-lg shadow-xs border border-slate-200/60 dark:border-zinc-700/50 transition-all duration-200 ease-out"
+              style={{
+                left: authTab === 'login' ? '2px' : 'calc(50%)'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => { setAuthTab('login'); setAuthError(''); }}
+              className={`relative flex-1 z-10 text-[11.5px] font-medium transition-colors duration-150 flex items-center justify-center ${
+                authTab === 'login' 
+                  ? 'text-slate-900 dark:text-white' 
+                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthTab('register'); setAuthError(''); }}
+              className={`relative flex-1 z-10 text-[11.5px] font-medium transition-colors duration-150 flex items-center justify-center ${
+                authTab === 'register' 
+                  ? 'text-slate-900 dark:text-white' 
+                  : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+
+          {/* Email Form */}
+          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3.5">
+            {authError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200/60 dark:bg-rose-950/30 dark:border-rose-900/40 rounded-xl text-rose-600 dark:text-rose-400 text-[11px] font-medium leading-relaxed">
+                {authError}
+              </div>
+            )}
+
+            {authTab === 'register' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="Sarah Johnson"
+                  value={authName}
+                  onChange={(e) => setAuthName(e.target.value)}
+                  disabled={authLoading}
+                  className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Email address</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                disabled={authLoading}
+                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                disabled={authLoading}
+                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full h-10 mt-1 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 dark:bg-white dark:hover:bg-slate-100 dark:disabled:bg-zinc-600 text-white dark:text-slate-900 rounded-xl text-[12.5px] font-medium shadow-xs flex items-center justify-center gap-2 active:scale-[0.985] transition-all duration-150"
+            >
+              {authLoading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Please wait...
+                </>
+              ) : authTab === 'login' ? 'Sign In with Email' : 'Create Account'}
+            </button>
+          </form>
+
+          {/* Trust Microcopy */}
+          <p className="text-[10.5px] text-slate-400 dark:text-zinc-500 text-center leading-relaxed -mt-2">
+            By continuing, you agree to Regaarder's{' '}
+            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Terms of Service</span>
+            {' '}and{' '}
+            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Privacy Policy</span>.
+          </p>
+        </div>
+      </div>
     );
   };
 
@@ -48913,7 +47984,6 @@ const renderRoomTopHeader = () => (
     );
   };
 
-
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex flex-col h-screen ${isDarkMode ? 'app-dark dark bg-[#000000] text-[#FFFFFF]' : 'bg-[#f3f5fb] text-gray-800'} overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -49012,7 +48082,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 <button
                   type="button"
-                  onClick={() => createSheetsExperience({ fromHomePage: true })}
+                  onClick={createSheetsExperience}
                   className="group text-left rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
@@ -49126,251 +48196,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                   <span>Home</span>
                 </button>
-
-                {(isSheetsMode || productMode === 'deck' || productMode === 'compose') && (
-                  <>
-                    <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
-                    <div className="relative shrink-0 flex items-center">
-                      <button
-                        ref={composeDropdownTriggerRef}
-                        type="button"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (renamingDocId) {
-                            commitRenameDocument(renamingDocId);
-                          }
-                          setHeaderWorkbookSearchQuery('');
-                          setHeaderWorkbookDropdownOpen((prev) => {
-                            if (!prev && composeDropdownTriggerRef.current) {
-                              const rect = composeDropdownTriggerRef.current.getBoundingClientRect();
-                              setComposeDropdownPos({ top: rect.bottom + 6, left: rect.left });
-                            }
-                            return !prev;
-                          });
-                        }}
-                        className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                          headerWorkbookDropdownOpen
-                            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600'
-                            : 'bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/60 shadow-sm'
-                        }`}
-                        title={isSheetsMode ? 'Switch Workbook' : productMode === 'deck' ? 'Switch Presentation' : 'Switch Document'}
-                      >
-                        {isSheetsMode ? (
-                          <SheetIcon size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        ) : productMode === 'deck' ? (
-                          <DeckIcon size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
-                        ) : (
-                          <ComposeIcon size={13} className="text-violet-500 dark:text-violet-400 shrink-0" />
-                        )}
-                        <span className="font-semibold max-w-[130px] truncate">
-                          {isSheetsMode
-                            ? (sheetsTitle || 'Untitled Sheet')
-                            : productMode === 'deck'
-                              ? (deckTitle || 'Untitled Deck')
-                              : (() => {
-                                  const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId));
-                                  return activeDoc?.title?.trim() || docTitle?.trim() || 'Untitled Document';
-                                })()}
-                        </span>
-                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {headerWorkbookDropdownOpen && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-[99990]"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setHeaderWorkbookDropdownOpen(false);
-                            }}
-                          />
-                          <div
-                            style={{ position: 'fixed', top: composeDropdownPos.top, left: composeDropdownPos.left, zIndex: 99999 }}
-                            className="w-72 max-h-96 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/5 dark:ring-white/10 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
-                          >
-                            {/* Search Header */}
-                            <div className="relative px-1 pt-1 pb-1.5">
-                              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                              <input
-                                type="text"
-                                autoFocus
-                                value={headerWorkbookSearchQuery}
-                                onChange={(e) => setHeaderWorkbookSearchQuery(e.target.value)}
-                                placeholder={
-                                  isSheetsMode ? 'Search workbooks...'
-                                  : productMode === 'deck' ? 'Search presentations...'
-                                  : 'Search documents...'
-                                }
-                                className="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-transparent focus:border-violet-500 focus:outline-none placeholder:text-slate-400"
-                              />
-                            </div>
-
-                            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                              <span>
-                                {isSheetsMode ? 'Saved Workbooks'
-                                  : productMode === 'deck' ? 'Saved Presentations'
-                                  : 'Saved Documents'} ({
-                                  isSheetsMode ? sheetsWorkbooksList.length
-                                  : productMode === 'deck' ? deckPresentationsList.length
-                                  : composeDocsList.length
-                                })
-                              </span>
-                            </div>
-
-                            {/* List */}
-                            <div className="flex-1 overflow-y-auto max-h-56 flex flex-col gap-0.5 py-1">
-                              {(() => {
-                                const list = isSheetsMode
-                                  ? sheetsWorkbooksList
-                                  : productMode === 'deck'
-                                    ? deckPresentationsList
-                                    : composeDocsList;
-                                const filtered = list.filter((doc) => {
-                                  if (!headerWorkbookSearchQuery.trim()) return true;
-                                  const q = headerWorkbookSearchQuery.toLowerCase();
-                                  const title = (doc.title || doc.sheetsTitle || doc.deckTitle || doc.displayTitle || '').toLowerCase();
-                                  return title.includes(q);
-                                });
-
-                                if (filtered.length === 0) {
-                                  return (
-                                    <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                      {isSheetsMode ? 'No workbooks found'
-                                        : productMode === 'deck' ? 'No presentations found'
-                                        : 'No documents found'}
-                                    </div>
-                                  );
-                                }
-
-                                return filtered.map((doc) => {
-                                  const isActive = String(doc.id) === String(activeDocId);
-                                  const docMode = getDocMode(doc);
-
-                                  const title = doc.title?.trim() || doc.displayTitle || (isActive ? (isSheetsMode ? sheetsTitle : productMode === 'deck' ? deckTitle : docTitle) : '') || 'Untitled Document';
-                                  // Compose shows word count as the subtitle; sheets → sheet tabs; deck → slides
-                                  const count = isSheetsMode
-                                    ? (doc.sheetGrids ? Object.keys(doc.sheetGrids).length : (doc.sheetsData?.length || 1))
-                                    : productMode === 'deck'
-                                      ? (doc.deckSlidesData?.length || 1)
-                                      : null;
-                                  const countLabel = isSheetsMode
-                                    ? `${count} sheet${count === 1 ? '' : 's'}`
-                                    : productMode === 'deck'
-                                      ? `${count} slide${count === 1 ? '' : 's'}`
-                                      : null;
-
-                                  return (
-                                    <button
-                                      key={doc.id}
-                                      type="button"
-                                      onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        switchDocument(doc.id);
-                                        if (isSheetsMode || doc.mode === 'sheets') {
-                                          setSheetToolbarTab('View');
-                                        }
-                                        setHeaderWorkbookDropdownOpen(false);
-                                      }}
-                                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer ${
-                                        isActive
-                                          ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
-                                          : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        {isSheetsMode ? (
-                                          <SheetIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
-                                        ) : productMode === 'deck' ? (
-                                          <DeckIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
-                                        ) : (
-                                          <ComposeIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
-                                        )}
-                                        <span className="truncate">{title}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        {countLabel && (
-                                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">
-                                            {countLabel}
-                                          </span>
-                                        )}
-                                        {isActive && <Check size={13} className="text-violet-600 dark:text-violet-400" />}
-                                      </div>
-                                    </button>
-                                  );
-                                });
-                              })()}
-                            </div>
-
-                            {/* Footer: Create New */}
-                            <div className="border-t border-slate-100 dark:border-zinc-800 pt-1">
-                              <button
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  createItemForCurrentContext();
-                                  setHeaderWorkbookDropdownOpen(false);
-                                }}
-                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
-                              >
-                                <Plus size={13} />
-                                <span>
-                                  {isSheetsMode ? 'New Workbook'
-                                    : productMode === 'deck' ? 'New Presentation'
-                                    : 'New Document'}
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </>
-                )}
-
               </div>
 
               {/* Center Section: Document Tab Strip */}
               <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
                 {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
                   const docIndex = windowedTabDocuments.startIndex + localIndex;
+                const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
+                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
+                const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
+                  ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
+                  : (isSheetsMode && activeDocId === doc.id && sheetsTitle?.trim() && sheetsTitle !== 'Untitled Sheet'
+                      ? sheetsTitle
+                      : (!isDefaultTitle ? doc.title : defaultName));
                 const isActive = activeDocId === doc.id;
-                const effectiveDocTitle = doc.title?.trim() || doc.displayTitle || (isActive ? docTitle?.trim() : '') || `Untitled Document ${docIndex + 1}`;
-                const docMode = getDocMode(doc);
-                let modeSpecificTitle = '';
-                if (docMode === 'sheets') {
-                  modeSpecificTitle = isActive ? (doc.sheetsTitle || doc.title || sheetsTitle?.trim() || '') : (doc.sheetsTitle || doc.title || '');
-                } else if (docMode === 'deck') {
-                  modeSpecificTitle = isActive ? (doc.deckTitle || doc.title || deckTitle?.trim() || '') : (doc.deckTitle || doc.title || '');
-                } else if (docMode === 'whiteboard') {
-                  modeSpecificTitle = doc.title?.trim() || '';
-                }
-
-                const defaultName = docMode === 'whiteboard' ? `${t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL} ${docIndex + 1}` : docMode === 'sheets' ? getNextUntitledName('sheets', windowedTabDocuments.visibleDocs) : docMode === 'deck' ? getNextUntitledName('deck', windowedTabDocuments.visibleDocs) : getNextUntitledName('compose', windowedTabDocuments.visibleDocs);
-                
-                const label = modeSpecificTitle && !/^untitled/i.test(modeSpecificTitle)
-                  ? modeSpecificTitle
-                  : (effectiveDocTitle && !/^untitled/i.test(effectiveDocTitle)
-                      ? effectiveDocTitle
-                      : (modeSpecificTitle || effectiveDocTitle || defaultName));
 
                 return (
                   <div
                     key={doc.id}
-                    onClick={() => {
-                      if (renamingDocId !== doc.id) {
-                        switchDocument(doc.id);
-                      }
-                    }}
+                    onClick={() => switchDocument(doc.id)}
                     onDoubleClick={(event) => {
                       event.stopPropagation();
                       setRenamingDocId(doc.id);
                       setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
                     }}
-                    className={`relative min-w-0 w-[clamp(220px,24vw,280px)] flex-none px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                       isActive 
                         ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                         : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -49385,18 +48235,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault();
-                            commitRenameDocument(doc.id, event.target.value);
+                            commitRenameDocument(doc.id);
                           }
                           if (event.key === 'Escape') {
                             setRenamingDocId(null);
                             setRenameDocValue('');
                           }
                         }}
-                        onBlur={(e) => commitRenameDocument(doc.id, e.target.value)}
-                        className="min-w-0 flex-1 truncate bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                        onBlur={() => commitRenameDocument(doc.id)}
+                        className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                       />
                     ) : (
-                      <span className="min-w-0 flex-1 truncate px-0.5">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
+                      <span className="max-w-[160px] truncate">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
                     )}
                     <button
                       data-doc-menu-root
@@ -49407,7 +48257,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                         setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                       }}
-                      className="p-1 rounded hover:bg-gray-100 shrink-0"
+                      className="p-0.5 rounded hover:bg-gray-100 shrink-0"
                       title="Document actions"
                     >
                       <MoreHorizontal size={12} />
@@ -49417,7 +48267,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         event.stopPropagation();
                         requestCloseDocument(doc.id);
                       }}
-                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0 transition-opacity"
+                      className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
                       title="Close document"
                     >
                       <X size={12} />
@@ -49433,11 +48283,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                         <div
                           style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
-                          className="w-48 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] bg-white dark:bg-[#1c1c1e] rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
-                          data-popover
+                          className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
                           data-doc-menu-root
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex flex-col gap-0.5">
                             <button
@@ -49594,22 +48441,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ? 'opacity-100 pointer-events-auto' 
                     : 'opacity-0 pointer-events-none'
                 }`}>
-                  {/* Workspace Library / Files Browser Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const targetFilter = isSheetsMode ? 'sheets' : isDeckMode ? 'deck' : 'compose';
-                      setOrbInitialFilter(targetFilter);
-                      setOrbInitialQuery('');
-                      setIsMemorySearchOpen(true);
-                    }}
-                    className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
-                    title={`Browse ${isSheetsMode ? 'Sheets' : isDeckMode ? 'Decks' : 'Documents'} Library`}
-                  >
-                    <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
-                    <span>Library</span>
-                  </button>
-
                   {/* Export Dropdown Button */}
               <div className="relative export-menu-container">
                 <button
@@ -50331,9 +49162,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   onClick={() => {
                                     if (isSheetsMode) {
                                       setActiveSheetId(item.id);
-                                      if (sheetToolbarTab === 'Data') {
-                                        setSheetToolbarTab('View');
-                                      }
                                     } else {
                                       setActiveDeckSlideId(item.id);
                                     }
@@ -50549,28 +49377,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Right Section: Inline View Controls (when on View) + Collapse Toggle */}
                         <div className="flex items-center gap-2">
-                          {/* Matrix Engine / Inspector Direct Launcher (Pillar 5) - Temporarily hidden for refinement (see MATRIX_ENGINE_VISIBILITY_AND_REFINEMENT_ROADMAP.md) */}
-                          {false && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (window.__REGAARDER_OPEN_MATRIX_ENGINE__) {
-                                  window.__REGAARDER_OPEN_MATRIX_ENGINE__();
-                                } else {
-                                  setMemoryTab('matrix_engine');
-                                  setIsMemoryOpen(true);
-                                }
-                                showToast('Matrix Engine & Schema Inspector active');
-                              }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-lg text-violet-700 dark:text-violet-300 bg-violet-50/80 dark:bg-violet-950/40 hover:bg-violet-100/90 dark:hover:bg-violet-900/50 border border-violet-200/80 dark:border-violet-800/60 shadow-2xs transition-all active:scale-[0.97] cursor-pointer"
-                              title="Open In-Browser Matrix Engine, Relational SQL & Formula Schema Inspector (Pillar 5)"
-                            >
-                              <Calculator size={13} className="text-violet-600 dark:text-violet-400" />
-                              <span>Matrix Engine</span>
-                              <span className="text-[9.5px] px-1.5 py-0.2 bg-violet-200/70 dark:bg-violet-800/60 text-violet-800 dark:text-violet-200 rounded font-mono font-semibold">SQL</span>
-                            </button>
-                          )}
-
                           {sheetToolbarTab === 'View' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-150">
                               {/* Gridlines Dropdown */}
@@ -50905,7 +49711,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                   })()}
                                 </div>
-                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none">
+                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none shrink-0 whitespace-nowrap">
                                   <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.addRow') || '+ Row'}</button>
                                   <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.removeRow') || '- Row'}</button>
                                   <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-800 my-0.5" />
@@ -54136,9 +52942,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               onClick={() => {
                                 setActiveSheetId(sheet.id);
                                 setSheetsTitle(sheet.title);
-                                if (sheetToolbarTab === 'Data') {
-                                  setSheetToolbarTab('View');
-                                }
                               }}
                               className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-full transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.97] ${
                                 isActive
@@ -72850,81 +71653,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-
-
-      {/* ── Deck Slash Menu Overlay in Sheets/Deck view ── */}
-      {productMode === 'deck' && deckSlashMenu.open && typeof document !== 'undefined' && createPortal(
-        <SlashMenuPopover
-          options={DECK_SLASH_OPTIONS
-            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
-            .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))}
-          selectedIndex={deckSlashMenu.activeIndex}
-          onSelectOption={(opt) => executeDeckSlashCommand(opt.key)}
-          onClose={() => setDeckSlashMenu(prev => ({ ...prev, open: false }))}
-          style={{ 
-            left: `${deckSlashMenu.left}px`, 
-            top: deckSlashMenu.top,
-            bottom: deckSlashMenu.bottom
-          }}
-          className="fixed"
-        />,
-        document.fullscreenElement ?? document.body
-      )}
-
-      {/* ── Sheet Slash Menu Overlay in Sheets/Deck view ── */}
-      {productMode === 'sheets' && sheetSlashMenu.open && typeof document !== 'undefined' && createPortal(
-        <SlashMenuPopover
-          ref={sheetSlashMenuContainerRef}
-          options={getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle)}
-          selectedIndex={sheetSlashMenu.activeIndex}
-          onSelectOption={(opt) => {
-            executeSheetSlashCommand(opt.key);
-            setSheetSlashMenu(prev => ({ ...prev, open: false }));
-          }}
-          onClose={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
-          style={{
-            left: `${sheetSlashMenu.left}px`,
-            top: sheetSlashMenu.top,
-            bottom: sheetSlashMenu.bottom,
-          }}
-          className="fixed"
-        />,
-        document.fullscreenElement ?? document.body
-      )}
-
-      {/* ── Layer 6.7: Contextual Memory Intelligence Layer Modal (Deck / Sheets) ─────────────── */}
-      {isMemoryOpen && (
-        <div 
-          className="fixed inset-0 z-[999998] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-150"
-          style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
-        >
-          {/* Translucent Backdrop Overlay (28px blur) */}
-          <div 
-            className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-[14px] transition-opacity"
-            onClick={() => setIsMemoryOpen(false)}
-          />
-
-          {/* Main Memory Intelligence Container */}
-          <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
-            <MemoryDashboard 
-              initialTab={memoryTab}
-              currentUser={currentUser}
-              documents={documents}
-              sheetGrids={sheetGrids}
-              activeSheetId={activeSheetId}
-              sheetsTitle={sheetsTitle}
-              initiatives={initiatives}
-              awarenessUsers={awarenessUsers}
-              onClose={() => setIsMemoryOpen(false)}
-              onNavigateToEntity={(entity) => {
-                setIsMemoryOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ── Layer 6.6: Global Workspace Search Modal (Memory Spotlight - Deck / Sheets) ─────────────── */}
+      {/* Global Workspace Search Modal */}
       <GlobalWorkspaceSearchModal
         isOpen={isMemorySearchOpen}
         onClose={() => setIsMemorySearchOpen(false)}
@@ -72966,11 +71695,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
         onNavigateToEntity={(entity) => {
           if (!entity) return;
-          const ws = (entity.editorTarget || entity.workspace || entity.type || '').toLowerCase();
+          const ws = (entity.workspace || '').toLowerCase();
           if (ws === 'compose') {
             if (productMode !== 'compose') setProductMode('compose');
             const targetDocId = entity.metadata?.docId;
-            let didNavigate = !targetDocId;
             if (targetDocId) {
               let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
               if (!targetDoc) {
@@ -72991,16 +71719,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }
 
               if (targetDoc) {
-                didNavigate = true;
                 setActiveDocId(targetDoc.id);
                 setDocTitle(targetDoc.title || entity.title || '');
                 setDocSubtitle(targetDoc.subtitle || '');
                 setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
               }
             }
-            if (didNavigate) {
-              showToast(`Navigated to Document: ${entity.title}`);
+
+            // Evidence Traceability: Scroll to and pulse exact passage or snippet
+            const snippetToHighlight = entity.metadata?.highlightSnippet || entity.metadata?.passageText;
+            if (snippetToHighlight && typeof window !== 'undefined') {
+              setTimeout(() => {
+                try {
+                  const contentContainer = document.querySelector('.regaarder-editor, [contenteditable="true"], .document-editor-container') || document.body;
+                  const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT, null, false);
+                  let node;
+                  const searchPhrase = snippetToHighlight.slice(0, 60).toLowerCase().trim();
+                  while ((node = walker.nextNode())) {
+                    if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchPhrase)) {
+                      const parentEl = node.parentElement;
+                      if (parentEl) {
+                        parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        parentEl.classList.add('regaarder-evidence-highlight');
+                        setTimeout(() => {
+                          parentEl.classList.remove('regaarder-evidence-highlight');
+                        }, 3200);
+                        break;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Evidence scroll highlight error:', e);
+                }
+              }, 300);
             }
+
+            showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
             if (entity.metadata?.docId) {
@@ -73023,6 +71777,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Meeting: ${entity.title}`);
           } else if (ws === 'notes') {
+            // Room note: switch to Room, then open Notes floating modal
             if (productMode !== 'room') setProductMode('room');
             setIsNotesModalOpen(true);
             showToast(`Opened Room Note: ${entity.title}`);
@@ -73079,10 +71834,70 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Opened: ${entity.title}`);
           }
         }}
-        onAddTask={(act) => {
-          showToast(`Added action to Tasks: ${act.title}`);
+        onQuickAction={(action) => {
+          if (!action) return;
+          const ws = action.targetWorkspace;
+          if (ws === 'compose') {
+            setProductMode('compose');
+            if (action.actionType === 'new_doc') {
+              handleCreateNewDocument();
+            }
+          } else if (ws === 'sheets') {
+            setProductMode('sheets');
+            showToast('Created new spreadsheet');
+          } else if (ws === 'deck') {
+            setProductMode('deck');
+            showToast('Created new presentation');
+          } else if (ws === 'room') {
+            createRoomExperience();
+          } else if (ws === 'browser') {
+            setProductMode('browser');
+            showToast('Opened Web Research');
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+          }
         }}
       />
+
+      {/* ── Deck Slash Menu Overlay in Sheets/Deck view ── */}
+      {productMode === 'deck' && deckSlashMenu.open && typeof document !== 'undefined' && createPortal(
+        <SlashMenuPopover
+          options={DECK_SLASH_OPTIONS
+            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+            .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))}
+          selectedIndex={deckSlashMenu.activeIndex}
+          onSelectOption={(opt) => executeDeckSlashCommand(opt.key)}
+          onClose={() => setDeckSlashMenu(prev => ({ ...prev, open: false }))}
+          style={{ 
+            left: `${deckSlashMenu.left}px`, 
+            top: deckSlashMenu.top,
+            bottom: deckSlashMenu.bottom
+          }}
+          className="fixed"
+        />,
+        document.fullscreenElement ?? document.body
+      )}
+
+      {/* ── Sheet Slash Menu Overlay in Sheets/Deck view ── */}
+      {productMode === 'sheets' && sheetSlashMenu.open && typeof document !== 'undefined' && createPortal(
+        <SlashMenuPopover
+          ref={sheetSlashMenuContainerRef}
+          options={getFilteredSheetSlashOptions(sheetSlashMenu.filterText || '', copiedCellStyle)}
+          selectedIndex={sheetSlashMenu.activeIndex}
+          onSelectOption={(opt) => {
+            executeSheetSlashCommand(opt.key);
+            setSheetSlashMenu(prev => ({ ...prev, open: false }));
+          }}
+          onClose={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
+          style={{
+            left: `${sheetSlashMenu.left}px`,
+            top: sheetSlashMenu.top,
+            bottom: sheetSlashMenu.bottom,
+          }}
+          className="fixed"
+        />,
+        document.fullscreenElement ?? document.body
+      )}
 
       </div>
     );
@@ -73710,7 +72525,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               {/* Sheets */}
               <button
                 type="button"
-                onClick={() => createSheetsExperience({ fromHomePage: true })}
+                onClick={createSheetsExperience}
                 className="group text-left rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04] p-4.5 hover:border-emerald-400/60 hover:shadow-[0_0_24px_rgba(16,185,129,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
               >
                 <div>
@@ -74124,6 +72939,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     if (!isAlreadyOpen) {
                        setDocuments(prev => [...prev, { ...doc.data, id: doc.id }]);
                     }
+                    if (activeRightTab === 'whiteboard') {
+                      setActiveRightTab('assistant');
+                    }
                     setActiveDocId(doc.id);
                     setDocTitle(doc.data.title || '');
                     setDocSubtitle(doc.data.subtitle || '');
@@ -74194,7 +73012,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* 1. Left Navigation Sidebar — Full length Document Outline */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-screen min-h-screen h-full z-[380]"
-        style={{ width: productMode === 'whiteboard' ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {/* Panel Header */}
         <div className="h-14 px-4 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md flex items-center justify-between">
@@ -74245,18 +73063,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onNotificationsClick={() => setNotificationsOpen(true)}
             notifications={notifications}
             currentUser={currentUser}
-            onAuthSuccess={(user) => {
-              setCurrentUser(user);
-              showToast(`Welcome, ${user.name || 'user'}!`);
-            }}
-            onSignOut={() => {
-              setCurrentUser(null);
-              showToast('Signed out successfully');
-            }}
-            apiBaseUrl={API_BASE_URL}
-            onOpenStagingPr={(branchId) => {
-              if (window.__REGAARDER_OPEN_STAGING_MODAL__) {
-                window.__REGAARDER_OPEN_STAGING_MODAL__(branchId);
+            onProfileClick={() => {
+              if (currentUser) {
+                setComposeProfileMenuOpen(true);
+              } else {
+                setAuthModalOpen(true);
               }
             }}
           />
@@ -74778,16 +73589,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                if (productMode === 'whiteboard') {
+                if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
                   setIsHoverNavVisible((prev) => !prev);
                 } else {
                   setLeftSidebarOpen((prev) => !prev);
                 }
               }}
               className="text-gray-400 hover:text-gray-600 dark:text-zinc-400 dark:hover:text-zinc-200 shrink-0 transition-colors"
-              title={productMode === 'whiteboard' ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
+              title={(productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
             >
-              {productMode === 'whiteboard'
+              {(productMode === 'whiteboard' || activeRightTab === 'whiteboard')
                 ? (isHoverNavVisible ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
                 : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
               }
@@ -74824,11 +73635,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="text"
                     value={unsavedDraftNameInput}
                     onChange={(e) => setUnsavedDraftNameInput(e.target.value)}
-                    onBlur={(e) => commitUnsavedDraftRename(e.target.value)}
+                    onBlur={commitUnsavedDraftRename}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        commitUnsavedDraftRename(e.target.value);
+                        commitUnsavedDraftRename();
                       }
                       if (e.key === 'Escape') {
                         setIsEditingUnsavedDraftName(false);
@@ -74869,28 +73680,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
             }`}>
-              {/* Workspace Library / Files Browser Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setOrbInitialFilter('compose');
-                  setOrbInitialQuery('');
-                  setIsMemorySearchOpen(true);
-                }}
-                className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
-                title="Browse Documents Library"
-              >
-                <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
-                <span>Library</span>
-              </button>
-
               {/* Export Dropdown Button in Top Header */}
-            {(productMode === 'compose' || productMode === 'whiteboard') && (
+            {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
               <div className="relative export-menu-container">
                 <button
                   onClick={() => {
                     closeTransientMenus();
-                    if (productMode === 'whiteboard') {
+                    if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
                       setWhiteboardExportMenuOpen(!whiteboardExportMenuOpen);
                     } else {
                       setComposeExportMenuOpen(!composeExportMenuOpen);
@@ -74944,7 +73740,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </>
                 )}
-                {whiteboardExportMenuOpen && productMode === 'whiteboard' && (
+                {whiteboardExportMenuOpen && (productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
                   <>
                     <div
                       className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
@@ -76396,173 +75192,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
               <span>Home</span>
             </button>
-
-            {/* Compose document switcher — mirrors the Sheets/Deck workbook dropdown */}
-            {productMode === 'compose' && (
-              <>
-                <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
-                <div className="relative shrink-0 flex items-center">
-                  <button
-                    ref={composeDropdownTriggerRef}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (renamingDocId) {
-                        commitRenameDocument(renamingDocId);
-                      }
-                      setHeaderWorkbookSearchQuery('');
-                      setHeaderWorkbookDropdownOpen((prev) => {
-                        if (!prev && composeDropdownTriggerRef.current) {
-                          const rect = composeDropdownTriggerRef.current.getBoundingClientRect();
-                          setComposeDropdownPos({ top: rect.bottom + 6, left: rect.left });
-                        }
-                        return !prev;
-                      });
-                    }}
-                    className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                      headerWorkbookDropdownOpen
-                        ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border-slate-300 dark:border-zinc-600'
-                        : 'bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800/60 shadow-sm'
-                    }`}
-                    title="Switch Document"
-                  >
-                    <ComposeIcon size={13} className="text-violet-500 dark:text-violet-400 shrink-0" />
-                    <span className="font-semibold max-w-[130px] truncate">
-                      {(() => {
-                        const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId));
-                        return activeDoc?.title?.trim() || docTitle?.trim() || 'Untitled Document';
-                      })()}
-                    </span>
-                    <ChevronDown size={12} className={`text-slate-400 transition-transform duration-150 ${headerWorkbookDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {headerWorkbookDropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-[99990]"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setHeaderWorkbookDropdownOpen(false);
-                        }}
-                      />
-                      <div
-                        style={{ position: 'fixed', top: composeDropdownPos.top, left: composeDropdownPos.left, zIndex: 99999 }}
-                        className="w-72 max-h-96 border border-slate-200/80 dark:border-zinc-800 ring-1 ring-black/5 dark:ring-white/10 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl rounded-xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
-                      >
-                        {/* Search Header */}
-                        <div className="relative px-1 pt-1 pb-1.5">
-                          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                          <input
-                            type="text"
-                            autoFocus
-                            value={headerWorkbookSearchQuery}
-                            onChange={(e) => setHeaderWorkbookSearchQuery(e.target.value)}
-                            placeholder="Search documents..."
-                            className="w-full pl-7 pr-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-transparent focus:border-violet-500 focus:outline-none placeholder:text-slate-400"
-                          />
-                        </div>
-
-                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                          <span>Saved Documents ({composeDocsList.length})</span>
-                        </div>
-
-                        {/* Document List */}
-                        <div className="flex-1 overflow-y-auto max-h-56 flex flex-col gap-0.5 py-1">
-                          {(() => {
-                            const filtered = composeDocsList.filter((doc) => {
-                              if (!headerWorkbookSearchQuery.trim()) return true;
-                              const q = headerWorkbookSearchQuery.toLowerCase();
-                              return (doc.title || doc.displayTitle || '').toLowerCase().trim().includes(q.trim());
-                            });
-
-                            if (filtered.length === 0) {
-                              return (
-                                <div className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                  No documents found
-                                </div>
-                              );
-                            }
-
-                            return filtered.map((doc) => {
-                              const isActive = String(doc.id) === String(activeDocId);
-
-                              const title = doc.title?.trim() || doc.displayTitle || (isActive ? docTitle?.trim() : '') || 'Untitled Document';
-
-                              return (
-                                <button
-                                  key={doc.id}
-                                  type="button"
-                                  onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    switchDocument(doc.id);
-                                    setHeaderWorkbookDropdownOpen(false);
-                                  }}
-                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer ${
-                                    isActive
-                                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold'
-                                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <ComposeIcon size={13} className={isActive ? 'text-violet-600 dark:text-violet-400 shrink-0' : 'text-slate-400 dark:text-zinc-500 shrink-0'} />
-                                    <span className="truncate">{title}</span>
-                                  </div>
-                                  {isActive && <Check size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />}
-                                </button>
-                              );
-                            });
-                          })()}
-                        </div>
-
-                        {/* Footer: Create New */}
-                        <div className="border-t border-slate-100 dark:border-zinc-800 pt-1">
-                          <button
-                            type="button"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              createItemForCurrentContext();
-                              setHeaderWorkbookDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
-                          >
-                            <Plus size={13} />
-                            <span>New Document</span>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-
             {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
-
               const docIndex = windowedTabDocuments.startIndex + localIndex;
-              const isActive = activeDocId === doc.id;
+              const rawTitle = doc.title?.trim();
               const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
-              
-              const effectiveDocTitle = doc.title?.trim() || doc.displayTitle || (isActive ? docTitle?.trim() : '') || (isWbDoc ? `Untitled Whiteboard ${docIndex + 1}` : `Untitled Document ${docIndex + 1}`);
-              const label = effectiveDocTitle;
+              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : rawTitle)) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
+              const isActive = activeDocId === doc.id;
 
               return (
                 <div
                   key={doc.id}
-                  onClick={() => {
-                    if (renamingDocId !== doc.id) {
-                      switchDocument(doc.id);
-                    }
-                  }}
+                  onClick={() => switchDocument(doc.id)}
                   onDoubleClick={(event) => {
                     event.stopPropagation();
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`relative min-w-0 w-[clamp(220px,24vw,280px)] flex-none px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center justify-between gap-1 cursor-pointer select-none ${
+                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                     isActive 
                       ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                       : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -76577,45 +75223,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault();
-                          commitRenameDocument(doc.id, event.target.value);
+                          commitRenameDocument(doc.id);
                         }
                         if (event.key === 'Escape') {
                           setRenamingDocId(null);
                           setRenameDocValue('');
                         }
                       }}
-                      onBlur={(e) => commitRenameDocument(doc.id, e.target.value)}
-                      className="min-w-0 flex-1 truncate bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                      onBlur={() => commitRenameDocument(doc.id)}
+                      className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                     />
                   ) : (
-                    <span className="flex-1 min-w-0 truncate px-0.5">{doc.pinned ? `${t('common.pinned') || 'Pinned'}: ` : ''}{label}</span>
+                    <span className="max-w-[180px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
                   )}
-                  <div className="flex items-center gap-0.5 shrink-0 ml-1">
-                    <button
-                      data-doc-menu-root
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        closeTransientMenus();
-                        const rect = event.currentTarget.getBoundingClientRect();
-                        setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
-                        setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
-                      }}
-                      className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
-                      title="Document actions"
-                    >
-                      <MoreHorizontal size={12} />
-                    </button>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        requestCloseDocument(doc.id);
-                      }}
-                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0 transition-opacity"
-                      title="Close document"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
+                  <button
+                    data-doc-menu-root
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeTransientMenus();
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
+                      setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                    }}
+                    className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
+                    title="Document actions"
+                  >
+                    <MoreHorizontal size={12} />
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      requestCloseDocument(doc.id);
+                    }}
+                    className="p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
+                    title="Close document"
+                  >
+                    <X size={12} />
+                  </button>
                   {openDocMenuId === doc.id && (
                     <>
                       <div
@@ -76765,17 +75409,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
               </div>
             )}
-          </div>
-          {/* Permanently visible New Tab button pinned outside scrolling overflow */}
-          <div className="shrink-0 flex items-center pl-1 border-l border-slate-200/60 dark:border-zinc-800 ml-1">
             <button
               type="button"
               onClick={createItemForCurrentContext}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-slate-500 hover:bg-slate-200/60 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
-              title="Create new tab"
-              aria-label="Create new tab"
+              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              title="Create new item"
+              aria-label="Create new item"
             >
-              <Plus size={14} strokeWidth={1.75} />
+              <Plus size={14} strokeWidth={1.5} />
             </button>
           </div>
           <button
@@ -76785,7 +75426,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 topDocTabsContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
               }
             }}
-            className="shrink-0 p-1 ml-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            className="shrink-0 p-1 ml-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
             title="Scroll tabs right"
           >
             <ChevronRight size={16} />
@@ -76802,7 +75443,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }
           }}
           className={`mx-4 mt-1 mb-1 w-[calc(100%-2rem)] p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-1.5 z-20 shrink-0 transition-all duration-200 ${
-            productMode === 'whiteboard' ? 'hidden' : ''
+            productMode === 'whiteboard' || (activeRightTab === 'whiteboard' && isWhiteboardImmersive) ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
@@ -78219,7 +76860,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onScroll={handleEditorScroll}
             className="flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
           >
-          {productMode === 'whiteboard' && (
+          {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
             <div className="absolute inset-0 z-30 bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col">
               <div className="h-full w-full bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col relative">
                 <div 
@@ -83111,7 +81752,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Persistent Floating AI Prompt Bar */}
         {/* Subtle dimming backdrop overlay: only active when floating AI prompt is explicitly expanded */}
-        {shouldShowPromptBackdrop && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && (
+        {shouldShowPromptBackdrop && productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div
             aria-hidden
             onClick={() => {
@@ -83138,7 +81779,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
           </div>
         )}
-        {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && !shareModalOpen && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
           className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
@@ -83653,7 +82294,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
 
-        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             style={{
@@ -83728,7 +82369,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <AppleGestureOnboardingHotspots />
         )}
 
-        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -83916,7 +82557,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {/* Bottom Status Bar */}
-        {productMode !== 'whiteboard' && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} {t('common.words') || 'words'} - {documentStats.characters} {t('common.characters') || 'characters'}</span>
@@ -83959,7 +82600,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-gray-400">
-              <button onClick={() => { setActiveDocView('document'); if (productMode === 'whiteboard') { setProductMode('compose'); setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' && productMode === 'compose' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
+              <button onClick={() => { setActiveDocView('document'); if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') { setProductMode('compose'); setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' && productMode === 'compose' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
               <button onClick={() => setTextStyleMenuOpen((prev) => !prev)} className="p-1 rounded hover:text-gray-600" title="Text style options"><Type size={14} /></button>
               <button onClick={() => { setRightSidebarOpen((prev) => !prev); }} className="p-1 rounded hover:text-gray-600" title="Toggle right panel"><LayoutGrid size={14} /></button>
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
@@ -89024,18 +87665,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            }
-            if (entity.metadata?.sheetId) {
-              setActiveSheetId(entity.metadata.sheetId);
-            }
-            showToast(`Navigated to Sheets: ${entity.title}`);
+            showToast(`Navigated to Sheets Model: ${entity.title}`);
           } else if (ws === 'deck') {
             if (productMode !== 'deck') setProductMode('deck');
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            }
             if (entity.metadata?.slideNumber) {
               setActiveDeckSlideId(entity.metadata.slideNumber);
             }
@@ -89052,12 +87684,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           } else if (ws === 'browser') {
             if (productMode !== 'browser') setProductMode('browser');
             showToast(`Navigated to Research: ${entity.title}`);
-          } else if (ws === 'relay' || ws === 'dm') {
-            if (productMode !== 'dm') setProductMode('dm');
-            if (entity.metadata?.contactId && typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
-            }
-            showToast(`Navigated to Relay: ${entity.title}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
@@ -89082,14 +87708,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {/* Main Memory Intelligence Container */}
           <div className="relative w-[96vw] max-w-7xl h-[90vh] max-h-[880px] z-10 flex flex-col">
             <MemoryDashboard 
-              initialTab={memoryTab}
-              currentUser={currentUser}
-              documents={documents}
-              sheetGrids={sheetGrids}
-              activeSheetId={activeSheetId}
-              sheetsTitle={sheetsTitle}
-              initiatives={initiatives}
-              awarenessUsers={awarenessUsers}
               onClose={() => setIsMemoryOpen(false)}
               onNavigateToEntity={(entity) => {
                 setIsMemoryOpen(false);
@@ -89104,16 +87722,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isOpen={isMemorySearchOpen}
         onClose={() => setIsMemorySearchOpen(false)}
         initialQuery={orbInitialQuery}
-        initialFilter={orbInitialFilter}
         isDarkMode={isDarkMode}
         productMode={productMode}
         onCallAi={callGemini}
-        aiConfig={aiProviderConfig}
-        selectedModel={composeSelectedModel}
-        detectedModels={composeDetectedModels}
         liveWorkspaceContext={{
           documents,
-          productMode,
           activeDocId,
           docTitle,
           docSubtitle,
@@ -89125,9 +87738,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
           deckSlidesData,
           activeDeckSlideId,
           tasks: initiatives,
+          rooms: rooms || [],
+          researchNotes: researchNotes || [],
+          comments,
+          chatTabs,
           scheduleAgendaItems,
           whiteboardWidgets,
           whiteboardShapes,
+          whiteboards: whiteboards || [],
+          collaborators: collaborators || [],
           roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
           relayMessages: [],
           people: whiteboardCollaborators || []
@@ -89135,97 +87754,56 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onNavigateToEntity={(entity) => {
           if (!entity) return;
           const ws = (entity.workspace || '').toLowerCase();
-          if (entity.actionType === 'create') {
-            if (Date.now() - workspaceCreationLockRef.current < 500) return;
-            workspaceCreationLockRef.current = Date.now();
-            if (ws === 'compose' || ws === 'docs') {
-              if (productMode !== 'compose') setProductMode('compose');
-              handleCreateNewDocument();
-            } else if (ws === 'sheets') {
-              if (productMode !== 'sheets') setProductMode('sheets');
-              showToast('Created new spreadsheet');
-            } else if (ws === 'deck') {
-              if (productMode !== 'deck') setProductMode('deck');
-              showToast('Created new presentation');
-            } else if (ws === 'whiteboard') {
-              createNewWhiteboard();
-            } else if (ws === 'room') {
-              createRoomExperience();
-            } else if (ws === 'tasks') {
-              handleMiniSidebarClick('tasks');
-              showToast('Ready to create a task');
-            } else if (ws === 'relay') {
-              setProductMode('dm');
-              showToast('Ready to create a message');
-            } else if (ws === 'notes') {
-              setProductMode('room');
-              setIsNotesModalOpen(true);
-            } else if (ws === 'schedule') {
-              handleMiniSidebarClick('calendar');
-            } else if (ws === 'chat') {
-              setProductMode('dm');
-              setActiveRightTab('assistant');
-              setRightSidebarOpen(true);
-            }
-            return;
-          }
           if (ws === 'compose') {
             if (productMode !== 'compose') setProductMode('compose');
-            const targetDocId = entity.metadata?.docId;
-            if (targetDocId) {
-              let targetDoc = documents.find(d => String(d.id) === String(targetDocId))
-                || readWorkspaceDocuments().find(d => String(d.id) === String(targetDocId));
-              if (!targetDoc) {
-                const snapshot = entity.metadata?.docSnapshot;
-                if (snapshot) {
-                  targetDoc = { ...snapshot, id: targetDocId };
-                  setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
-                }
-              }
-
+            if (entity.metadata?.docId) {
+              const targetDoc = documents.find(d => d.id === entity.metadata.docId);
               if (targetDoc) {
                 setActiveDocId(targetDoc.id);
-                setDocTitle(targetDoc.title || entity.title || '');
+                setDocTitle(targetDoc.title || '');
                 setDocSubtitle(targetDoc.subtitle || '');
-                setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
-              } else {
-                showToast('Document not found or removed');
+                setDocBodyHtml(targetDoc.bodyHtml || '');
               }
             }
+
+            // Evidence Traceability: Scroll to and pulse exact passage or snippet
+            const snippetToHighlight = entity.metadata?.highlightSnippet || entity.metadata?.passageText;
+            if (snippetToHighlight && typeof window !== 'undefined') {
+              setTimeout(() => {
+                try {
+                  const contentContainer = document.querySelector('.regaarder-editor, [contenteditable="true"], .document-editor-container') || document.body;
+                  const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT, null, false);
+                  let node;
+                  const searchPhrase = snippetToHighlight.slice(0, 60).toLowerCase().trim();
+                  while ((node = walker.nextNode())) {
+                    if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchPhrase)) {
+                      const parentEl = node.parentElement;
+                      if (parentEl) {
+                        parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        parentEl.classList.add('regaarder-evidence-highlight');
+                        setTimeout(() => {
+                          parentEl.classList.remove('regaarder-evidence-highlight');
+                        }, 3200);
+                        break;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Evidence scroll highlight error:', e);
+                }
+              }, 300);
+            }
+
             showToast(`Navigated to Document: ${entity.title}`);
           } else if (ws === 'sheets') {
             if (productMode !== 'sheets') setProductMode('sheets');
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            }
-            if (entity.metadata?.sheetId) {
-              setActiveSheetId(entity.metadata.sheetId);
-            }
             showToast(`Navigated to Sheets: ${entity.title}`);
           } else if (ws === 'deck') {
             if (productMode !== 'deck') setProductMode('deck');
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            }
             if (entity.metadata?.slideNumber) {
               setActiveDeckSlideId(entity.metadata.slideNumber);
             }
             showToast(`Navigated to Presentation: ${entity.title}`);
-          } else if (ws === 'whiteboard') {
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            } else {
-              setProductMode('whiteboard');
-            }
-            showToast(`Navigated to Whiteboard: ${entity.title}`);
-          } else if (ws === 'schedule') {
-            handleMiniSidebarClick('calendar');
-            showToast(`Navigated to Schedule: ${entity.title}`);
-          } else if (ws === 'chat') {
-            setProductMode('dm');
-            setActiveRightTab('assistant');
-            setRightSidebarOpen(true);
-            showToast(`Navigated to Chat: ${entity.title}`);
           } else if (ws === 'room') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Room: ${entity.title}`);
@@ -89250,12 +87828,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast(`Navigated to Research: ${entity.title}`);
           } else if (ws === 'people') {
             showToast(`Team Member: ${entity.title} (${entity.role || entity.department})`);
-          } else if (ws === 'relay' || ws === 'dm') {
-            if (productMode !== 'dm') setProductMode('dm');
-            if (entity.metadata?.contactId && typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
-            }
-            showToast(`Navigated to Relay: ${entity.title}`);
           } else {
             showToast(`Opened: ${entity.title}`);
           }
@@ -89285,45 +87857,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }}
       />
 
-      {/* ── Layer 6.8: Human-in-the-Loop Workspace Staging & Review Engine Modal ── */}
-      {activeReviewBranch && (
-        <WorkspaceStagingReviewModal
-          branch={activeReviewBranch}
-          onClose={() => setActiveReviewBranch(null)}
-          onCommitted={(commitResult) => {
-            setActiveReviewBranch(null);
-            if (commitResult && commitResult.branch) {
-              showToast(`Committed PR #${commitResult.branch.branchNumber || ''}: ${commitResult.committedCount} mutation(s) merged`);
-            }
-          }}
-          onRejected={(branchId) => {
-            setActiveReviewBranch(null);
-            showToast(`Closed Staged PR #${activeReviewBranch.branchNumber || ''}`);
-          }}
-        />
-      )}
 
-      {/* ── Staging PR Floating Quick-Review Indicator Badge ── */}
-      {stagedBranches && stagedBranches.length > 0 && !activeReviewBranch && (
-        <div className="fixed bottom-6 right-6 z-[999990] animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <button
-            onClick={() => setActiveReviewBranch(stagedBranches[0])}
-            className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 dark:bg-zinc-900/95 text-white rounded-xl shadow-2xl backdrop-blur-md border border-slate-700/80 hover:border-violet-500/80 transition-all hover:scale-[1.02] cursor-pointer group"
-          >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
-            </span>
-            <GitPullRequest size={15} className="text-violet-400 group-hover:rotate-12 transition-transform" />
-            <span className="text-xs font-semibold tracking-wide">
-              {stagedBranches.length} Staged PR{stagedBranches.length > 1 ? 's' : ''} Pending Review
-            </span>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">
-              Review Diff
-            </span>
-          </button>
-        </div>
-      )}
 
       {/* Close Document / Whiteboard Confirmation Modal */}
       {renderCloseConfirmModal()}
@@ -89445,11 +87979,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsOmniPortalOpen(false)}
         onBatchAbsorbed={handleBatchAbsorbed}
       />
-
-      {/* ── Native Desktop Download Floating Action Button (Only on Home / Landing page) ── */}
-      {productMode === 'landing' && (
-        <DesktopDownloadFloatingTrigger />
-      )}
     </div>
   );
 }

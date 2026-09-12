@@ -2812,3 +2812,25 @@ button.bg-violet-600,
   animation: regaarder-outline-pulse 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
+/* Regaarder Memory Evidence Traceability Highlight Pulse */
+@keyframes regaarder-evidence-pulse {
+  0% {
+    background-color: rgba(139, 92, 246, 0.28);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25);
+  }
+  50% {
+    background-color: rgba(139, 92, 246, 0.16);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+  }
+  100% {
+    background-color: rgba(139, 92, 246, 0.05);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.regaarder-evidence-highlight {
+  border-radius: 4px;
+  animation: regaarder-evidence-pulse 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  scroll-margin-top: 120px;
+}
+

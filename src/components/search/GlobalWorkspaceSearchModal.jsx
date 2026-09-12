@@ -63,9 +63,104 @@ function HighlightedText({ text = '', query = '', className = '' }) {
   );
 }
 
-// Helper component to render rich executive markdown safely
-function FormattedMarkdown({ content = '' }) {
+// Evidence Indicator Pill & Configuration
+function getEvidenceBadgeConfig(type = 'direct', sourceCount = 1) {
+  switch (type) {
+    case 'inferred':
+      return {
+        label: sourceCount > 1 ? `Used to infer this answer · ${sourceCount} sources` : 'Inferred from these sources',
+        shortLabel: 'Inferred',
+        classes: 'text-violet-700 dark:text-violet-300 bg-violet-500/[0.12] border-violet-500/25 dark:border-violet-400/30',
+        activeClasses: 'border-violet-500 ring-2 ring-violet-500/30 bg-violet-500/[0.18]'
+      };
+    case 'uncertain':
+      return {
+        label: 'Possible inference',
+        shortLabel: 'Possible inference',
+        classes: 'text-amber-700 dark:text-amber-300 bg-amber-500/[0.12] border-amber-500/25 dark:border-amber-400/30',
+        activeClasses: 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/[0.18]'
+      };
+    case 'direct':
+    default:
+      return {
+        label: 'Supports this answer · Direct evidence',
+        shortLabel: 'Direct evidence',
+        classes: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/[0.12] border-emerald-500/25 dark:border-emerald-400/30',
+        activeClasses: 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-500/[0.18]'
+      };
+  }
+}
+
+// Helper component to render rich executive markdown safely with interactive evidence claims
+function FormattedMarkdown({
+  content = '',
+  claims = [],
+  activeClaimId = null,
+  onSelectClaim = null
+}) {
   if (!content) return null;
+
+  // If there are structured evidence claims, match sentences/paragraphs to claims
+  const renderClaimSegment = (text, pIdx, lIdx) => {
+    if (!claims || claims.length === 0) {
+      return renderInlineMarkdown(text);
+    }
+
+    // Attempt to identify matching claims within this line/sentence
+    // Sort claims by statement length descending so longer phrases match first
+    const matchedClaims = claims.filter(c => c.statement && text.toLowerCase().includes(c.statement.toLowerCase().trim()));
+
+    if (matchedClaims.length === 0) {
+      return renderInlineMarkdown(text);
+    }
+
+    // Build segments matching the first identified claim
+    const targetClaim = matchedClaims[0];
+    const targetStatement = targetClaim.statement.trim();
+    const matchPos = text.toLowerCase().indexOf(targetStatement.toLowerCase());
+
+    if (matchPos === -1) {
+      return renderInlineMarkdown(text);
+    }
+
+    const before = text.substring(0, matchPos);
+    const matched = text.substring(matchPos, matchPos + targetStatement.length);
+    const after = text.substring(matchPos + targetStatement.length);
+
+    const isSelected = activeClaimId === targetClaim.claimId;
+    const badge = getEvidenceBadgeConfig(targetClaim.evidenceType, targetClaim.passages?.length || 1);
+
+    return (
+      <React.Fragment key={`${pIdx}-${lIdx}`}>
+        {before && renderInlineMarkdown(before)}
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onSelectClaim) {
+              onSelectClaim(isSelected ? null : targetClaim.claimId);
+            }
+          }}
+          className={`group/claim inline rounded px-1 -mx-0.5 transition-all duration-150 cursor-pointer border-b select-text ${
+            isSelected
+              ? 'bg-violet-500/[0.18] dark:bg-violet-400/[0.22] border-violet-500 dark:border-violet-400 shadow-2xs font-medium text-slate-900 dark:text-white'
+              : 'border-dashed border-violet-400/50 dark:border-violet-400/40 hover:bg-violet-500/[0.08] dark:hover:bg-violet-400/[0.12] hover:border-violet-500'
+          }`}
+          title={`Click to inspect evidence (${badge.shortLabel})`}
+        >
+          {renderInlineMarkdown(matched)}
+          <span
+            className={`inline-flex items-center ml-1 px-1.5 py-0.2 align-middle text-[9.5px] font-medium font-mono rounded border transition-colors ${
+              isSelected ? badge.activeClasses : badge.classes
+            }`}
+          >
+            {badge.shortLabel}
+          </span>
+        </span>
+        {after && renderClaimSegment(after, pIdx, `${lIdx}-after`)}
+      </React.Fragment>
+    );
+  };
+
   const paragraphs = content.split(/\n\n+/);
 
   return (
@@ -78,7 +173,7 @@ function FormattedMarkdown({ content = '' }) {
         if (trimmed.startsWith('>')) {
           return (
             <blockquote key={pIdx} className="pl-3 border-l-2 border-slate-400/60 dark:border-zinc-500/60 italic text-slate-700 dark:text-zinc-300 my-1 bg-black/[0.02] dark:bg-white/[0.03] py-1 rounded-r-md">
-              {renderInlineMarkdown(trimmed.replace(/^>\s*/, ''))}
+              {renderClaimSegment(trimmed.replace(/^>\s*/, ''), pIdx, 'bq')}
             </blockquote>
           );
         }
@@ -91,7 +186,7 @@ function FormattedMarkdown({ content = '' }) {
               <ul key={pIdx} className="list-disc list-inside space-y-1 my-1 pl-1">
                 {items.map((item, iIdx) => (
                   <li key={iIdx} className="text-slate-800 dark:text-zinc-200">
-                    {renderInlineMarkdown(item.trim().replace(/^[-*•]\s+/, ''))}
+                    {renderClaimSegment(item.trim().replace(/^[-*•]\s+/, ''), pIdx, iIdx)}
                   </li>
                 ))}
               </ul>
@@ -107,7 +202,7 @@ function FormattedMarkdown({ content = '' }) {
               <ol key={pIdx} className="list-decimal list-inside space-y-1 my-1 pl-1">
                 {items.map((item, iIdx) => (
                   <li key={iIdx} className="text-slate-800 dark:text-zinc-200">
-                    {renderInlineMarkdown(item.trim().replace(/^\d+\.\s+/, ''))}
+                    {renderClaimSegment(item.trim().replace(/^\d+\.\s+/, ''), pIdx, iIdx)}
                   </li>
                 ))}
               </ol>
@@ -121,7 +216,7 @@ function FormattedMarkdown({ content = '' }) {
           <p key={pIdx}>
             {lines.map((line, lIdx) => (
               <React.Fragment key={lIdx}>
-                {renderInlineMarkdown(line)}
+                {renderClaimSegment(line, pIdx, lIdx)}
                 {lIdx < lines.length - 1 && <br />}
               </React.Fragment>
             ))}
@@ -162,6 +257,122 @@ function renderInlineMarkdown(text) {
     parts.push(text.substring(lastIdx));
   }
   return parts.length > 0 ? parts : text;
+}
+
+// ── Evidence Traceability Shelf Component ──
+// Renders the exact supporting passage with subtle purple highlight and jump button
+function EvidenceTraceabilityShelf({
+  claim,
+  workspaceIndex = [],
+  onNavigateToEntity,
+  onClose
+}) {
+  if (!claim) return null;
+  const badge = getEvidenceBadgeConfig(claim.evidenceType, claim.passages?.length || 1);
+  const passages = claim.passages || [];
+
+  return (
+    <div className="rounded-xl bg-violet-500/[0.03] dark:bg-violet-400/[0.04] border border-violet-500/20 dark:border-violet-400/20 p-3.5 space-y-3 animate-in fade-in zoom-in-[0.99] duration-150 shadow-2xs">
+      <div className="flex items-center justify-between gap-2 border-b border-violet-500/10 dark:border-violet-400/10 pb-2.5">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-mono border ${badge.classes}`}>
+            <ShieldCheck size={11} strokeWidth={2.2} />
+            <span>{badge.label}</span>
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate max-w-[400px]">
+            Claim: &ldquo;{claim.statement}&rdquo;
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
+          title="Dismiss evidence preview"
+        >
+          <X size={13} />
+        </button>
+      </div>
+
+      <div className="space-y-2.5">
+        {passages.map((psg, pIdx) => {
+          const entity = workspaceIndex.find(e => e.id === psg.sourceId);
+          const fullText = psg.passageText || psg.snippet || '';
+          const snippetToHighlight = psg.highlightSnippet || psg.snippet || '';
+
+          // Highlight exact snippet within passageText
+          let renderedPassage = fullText;
+          if (snippetToHighlight && fullText.includes(snippetToHighlight)) {
+            const idx = fullText.indexOf(snippetToHighlight);
+            const before = fullText.substring(0, idx);
+            const mid = fullText.substring(idx, idx + snippetToHighlight.length);
+            const after = fullText.substring(idx + snippetToHighlight.length);
+            renderedPassage = (
+              <>
+                {before}
+                <mark className="bg-violet-500/20 dark:bg-violet-400/25 text-violet-950 dark:text-violet-100 px-1 py-0.5 rounded font-medium border-b border-violet-500/40">
+                  {mid}
+                </mark>
+                {after}
+              </>
+            );
+          } else if (fullText) {
+            renderedPassage = (
+              <mark className="bg-violet-500/15 dark:bg-violet-400/20 text-violet-950 dark:text-violet-100 px-1 py-0.5 rounded font-medium">
+                {fullText}
+              </mark>
+            );
+          }
+
+          return (
+            <div
+              key={psg.passageId || pIdx}
+              className="p-3 rounded-lg bg-white/80 dark:bg-zinc-850/80 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs space-y-2"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-5 h-5 rounded-md bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0">
+                    <RegaarderProductIcon name={entity?.workspace || psg.workspace || 'compose'} size={11} />
+                  </div>
+                  <span className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                    {entity?.title || psg.title || 'Source Document'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
+                    [{psg.passageId || `P${pIdx + 1}`}]
+                  </span>
+                </div>
+
+                {entity && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onNavigateToEntity) {
+                        onNavigateToEntity({
+                          ...entity,
+                          metadata: {
+                            ...(entity.metadata || {}),
+                            passageText: psg.passageText,
+                            highlightSnippet: snippetToHighlight
+                          }
+                        });
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white text-[10.5px] font-medium transition-colors shadow-2xs cursor-pointer shrink-0"
+                  >
+                    <span>Jump to text in Document</span>
+                    <ExternalLink size={10} />
+                  </button>
+                )}
+              </div>
+
+              <div className="text-[12px] leading-relaxed text-slate-700 dark:text-zinc-300 font-normal italic bg-black/[0.02] dark:bg-white/[0.02] p-2.5 rounded-md border-l-2 border-violet-500/60 dark:border-violet-400/60">
+                &ldquo;{renderedPassage}&rdquo;
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // Primary visible tabs in top navigation bar
@@ -451,7 +662,7 @@ export default function GlobalWorkspaceSearchModal({
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [editingQueryText, setEditingQueryText] = useState('');
   const [selectionTooltip, setSelectionTooltip] = useState(null);
-
+  const [activeClaimId, setActiveClaimId] = useState(null);
   const followUpInputRef = useRef(null);
   const promptEditInputRef = useRef(null);
   const synthesisCardRef = useRef(null);
@@ -1822,10 +2033,25 @@ export default function GlobalWorkspaceSearchModal({
                         </div>
                       </div>
                     ) : (
-                      /* Rich Formatted Markdown Output */
-                      <FormattedMarkdown content={aiResponse.answer} />
+                      /* Rich Formatted Markdown Output with Evidence Traceability */
+                      <FormattedMarkdown
+                        content={aiResponse.answer}
+                        claims={aiResponse.claims || []}
+                        activeClaimId={activeClaimId}
+                        onSelectClaim={setActiveClaimId}
+                      />
                     )}
                   </div>
+
+                  {/* Evidence Traceability Shelf for Inspected Claim */}
+                  {activeClaimId && (
+                    <EvidenceTraceabilityShelf
+                      claim={aiResponse.claims?.find(c => c.claimId === activeClaimId)}
+                      workspaceIndex={workspaceIndex}
+                      onNavigateToEntity={handleActivateItem}
+                      onClose={() => setActiveClaimId(null)}
+                    />
+                  )}
 
                   {/* Multi-Turn Follow-Up Conversation Thread */}
                   {conversationThread.length > 0 && (
@@ -1916,32 +2142,58 @@ export default function GlobalWorkspaceSearchModal({
 
                   {aiResponse.sources?.length > 0 && (
                     <div className="space-y-2">
-                      <div className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 font-mono">
-                        Referenced Sources ({aiResponse.sources.length})
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
+                          Referenced Sources ({aiResponse.sources.length})
+                        </span>
+                        {aiResponse.claims?.length > 0 && (
+                          <span className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">
+                            Click claim or source to trace evidence
+                          </span>
+                        )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {aiResponse.sources.map((src, i) => (
-                          <div
-                            key={i}
-                            onClick={() => {
-                              const entity = workspaceIndex.find(e => e.id === src.id);
-                              if (entity) handleActivateItem({ type: 'entity', data: entity });
-                            }}
-                            className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] cursor-pointer transition-colors shadow-2xs"
-                          >
-                            <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
-                              <RegaarderProductIcon name={src.workspace} size={12} />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                                {src.title}
+                        {aiResponse.sources.map((src, i) => {
+                          const matchingClaim = aiResponse.claims?.find(c => c.sourceIds?.includes(src.id) || c.passages?.some(p => p.sourceId === src.id));
+                          const isHighlightedSource = activeClaimId && matchingClaim?.claimId === activeClaimId;
+
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                if (matchingClaim) {
+                                  setActiveClaimId(matchingClaim.claimId === activeClaimId ? null : matchingClaim.claimId);
+                                } else {
+                                  const entity = workspaceIndex.find(e => e.id === src.id);
+                                  if (entity) handleActivateItem({ type: 'entity', data: entity });
+                                }
+                              }}
+                              className={`flex items-start gap-2.5 p-2.5 rounded-xl transition-all duration-150 cursor-pointer shadow-2xs ${
+                                isHighlightedSource
+                                  ? 'bg-violet-500/[0.12] dark:bg-violet-400/[0.15] border-violet-500/50 dark:border-violet-400/50 ring-1 ring-violet-500/30'
+                                  : 'bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08]'
+                              }`}
+                              title={matchingClaim ? "Click to view supporting passages in synthesis" : "Click to open source document"}
+                            >
+                              <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
+                                <RegaarderProductIcon name={src.workspace} size={12} />
                               </div>
-                              <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
-                                {src.location}
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                  {src.title}
+                                </div>
+                                <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate flex items-center gap-1.5">
+                                  <span>{src.location}</span>
+                                  {matchingClaim && (
+                                    <span className="text-[9.5px] text-violet-600 dark:text-violet-400 font-mono">
+                                      · {matchingClaim.evidenceType}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
