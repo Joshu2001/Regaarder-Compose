@@ -24,9 +24,9 @@ const isLegacyWhiteboardRecord = (document) => {
     && (
       /^untitled\s+whiteboard(?:\s+\d+)?$/i.test(title)
       || /^whiteboard\s+\d+$/i.test(title)
-      || Array.isArray(document?.whiteboardWidgets)
-      || Array.isArray(document?.whiteboardStrokes)
-      || Array.isArray(document?.whiteboardShapes)
+      || (Array.isArray(document?.whiteboardWidgets) && document.whiteboardWidgets.length > 0)
+      || (Array.isArray(document?.whiteboardStrokes) && document.whiteboardStrokes.length > 0)
+      || (Array.isArray(document?.whiteboardShapes) && document.whiteboardShapes.length > 0)
     );
 };
 
@@ -50,9 +50,23 @@ export const normalizeWorkspaceDocuments = (documents = []) => {
   const normalized = [];
 
   source.forEach((document, index) => {
-    const mode = isLegacyWhiteboardRecord(document)
-      ? 'whiteboard'
-      : normalizeWorkspaceDocumentMode(document.mode);
+    let mode = normalizeWorkspaceDocumentMode(document.mode);
+    if (isLegacyWhiteboardRecord(document)) {
+      mode = 'whiteboard';
+    } else if (
+      mode === 'whiteboard'
+      && (!Array.isArray(document.whiteboardWidgets) || document.whiteboardWidgets.length === 0)
+      && (!Array.isArray(document.whiteboardStrokes) || document.whiteboardStrokes.length === 0)
+      && (!Array.isArray(document.whiteboardShapes) || document.whiteboardShapes.length === 0)
+      && (
+        !document.title
+        || /^untitled\s+document/i.test(String(document.title).trim())
+        || document.bodyHtml
+      )
+    ) {
+      // Auto-heal documents that were falsely flipped to whiteboard by legacy empty array checks
+      mode = 'compose';
+    }
     const createdAt = isValidIsoDate(document.createdAt)
       ? document.createdAt
       : isValidIsoDate(document.updatedAt) ? document.updatedAt : new Date().toISOString();

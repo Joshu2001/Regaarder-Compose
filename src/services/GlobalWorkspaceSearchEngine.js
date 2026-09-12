@@ -1567,7 +1567,12 @@ export async function synthesizeWorkspaceKnowledge({
   previousConversation = [],
   personaInstructions = ''
 }) {
-  onProgress?.({ step: 1, label: 'Scanning workspace metadata' });
+  onProgress?.({
+    step: 1,
+    phase: 'scan',
+    label: 'Scanning workspace index & entities',
+    detail: `Searching matching resources across active filter (${activeFilter})...`
+  });
   const matched = (workspaceIndex && workspaceIndex.length > 0)
     ? queryWorkspace(workspaceIndex, query, activeFilter).slice(0, 8)
     : [];
@@ -1581,7 +1586,12 @@ export async function synthesizeWorkspaceKnowledge({
   }
 
   // Build grounded context with full temporal metadata for LLM reasoning
-  onProgress?.({ step: 2, label: 'Extracting document context' });
+  onProgress?.({
+    step: 2,
+    phase: 'extract',
+    label: 'Extracting citations & temporal metadata',
+    detail: `Grounded ${matched.length} workspace records with activity dates & guidelines...`
+  });
   let contextBlocks = matched.map((m, idx) => {
     const e = m.entity;
     const bodyExcerpt = (e.content || m.snippet || '').slice(0, 3000);
@@ -1624,7 +1634,13 @@ ${contextData}
 
 Synthesize the answer directly based on the sources above. Explicitly account for timestamps and dates if the question refers to time, days, or recency:`;
 
-  onProgress?.({ step: 3, label: 'Generating answer' });
+  const engineLabel = customModel ? customModel.replace(/ \(Local Ollama\)/i, '') : 'local engine';
+  onProgress?.({
+    step: 3,
+    phase: 'synthesize',
+    label: `Synthesizing executive intelligence with ${engineLabel}`,
+    detail: 'Reasoning over grounded context, guidelines, and chronological facts...'
+  });
 
   // Helper to verify if returned string is a provider error or unconfigured message
   const isErrorOrEmpty = (str) => {
