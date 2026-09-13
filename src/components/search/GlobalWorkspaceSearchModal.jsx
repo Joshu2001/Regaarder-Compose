@@ -31,11 +31,13 @@ import {
   RegaarderHistoryIcon,
   RegaarderProductIcon,
   RegaarderQuickActionIcon,
-  RegaarderHapticIcon
+  RegaarderHapticIcon,
+  FileTypeIcon,
+  isFileTypeEntity
 } from '../RegaarderProductIcons';
 
-// Helper component to highlight matched text
-function HighlightedText({ text = '', query = '', className = '' }) {
+// Helper component to highlight matched text with signature subtle light-purple wash and dark readable text
+function HighlightedText({ text = '', query = '', className = '', isSelected = false }) {
   if (!text) return null;
   if (!query || !query.trim()) {
     return <span className={className}>{text}</span>;
@@ -51,7 +53,11 @@ function HighlightedText({ text = '', query = '', className = '' }) {
         part.toLowerCase() === cleanQuery.toLowerCase() ? (
           <mark
             key={i}
-            className="bg-black/[0.07] dark:bg-white/[0.12] text-slate-900 dark:text-zinc-100 font-semibold px-0.5 rounded"
+            className={`transition-colors duration-150 text-slate-900 dark:text-zinc-100 font-semibold px-0.5 rounded-[3px] ${
+              isSelected
+                ? 'bg-violet-500/[0.24] dark:bg-violet-400/[0.28] ring-1 ring-violet-500/25'
+                : 'bg-violet-500/[0.14] dark:bg-violet-400/[0.18] group-hover:bg-violet-500/[0.22] dark:group-hover:bg-violet-400/[0.26]'
+            }`}
           >
             {part}
           </mark>
@@ -142,8 +148,8 @@ function FormattedMarkdown({
           }}
           className={`group/claim inline rounded px-1 -mx-0.5 transition-all duration-150 cursor-pointer border-b select-text ${
             isSelected
-              ? 'bg-violet-500/[0.18] dark:bg-violet-400/[0.22] border-violet-500 dark:border-violet-400 shadow-2xs font-medium text-slate-900 dark:text-white'
-              : 'border-dashed border-violet-400/50 dark:border-violet-400/40 hover:bg-violet-500/[0.08] dark:hover:bg-violet-400/[0.12] hover:border-violet-500'
+              ? 'bg-violet-500/[0.22] dark:bg-violet-400/[0.26] border-violet-500 dark:border-violet-400 shadow-2xs font-medium text-slate-900 dark:text-zinc-100 ring-1 ring-violet-500/25'
+              : 'border-dashed border-violet-400/50 dark:border-violet-400/40 hover:bg-violet-500/[0.14] dark:hover:bg-violet-400/[0.18] hover:border-violet-500 text-slate-900 dark:text-zinc-100 bg-violet-500/[0.08] dark:bg-violet-400/[0.10]'
           }`}
           title={`Click to inspect evidence (${badge.shortLabel})`}
         >
@@ -309,7 +315,7 @@ function EvidenceTraceabilityShelf({
             renderedPassage = (
               <>
                 {before}
-                <mark className="bg-violet-500/20 dark:bg-violet-400/25 text-violet-950 dark:text-violet-100 px-1 py-0.5 rounded font-medium border-b border-violet-500/40">
+                <mark className="bg-violet-500/[0.18] dark:bg-violet-400/[0.22] text-slate-900 dark:text-zinc-100 px-1 py-0.5 rounded-[3px] font-medium border-b border-violet-500/30">
                   {mid}
                 </mark>
                 {after}
@@ -317,7 +323,7 @@ function EvidenceTraceabilityShelf({
             );
           } else if (fullText) {
             renderedPassage = (
-              <mark className="bg-violet-500/15 dark:bg-violet-400/20 text-violet-950 dark:text-violet-100 px-1 py-0.5 rounded font-medium">
+              <mark className="bg-violet-500/[0.12] dark:bg-violet-400/[0.16] text-slate-900 dark:text-zinc-100 px-1 py-0.5 rounded-[3px] font-medium">
                 {fullText}
               </mark>
             );
@@ -330,8 +336,14 @@ function EvidenceTraceabilityShelf({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-5 h-5 rounded-md bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0">
-                    <RegaarderProductIcon name={entity?.workspace || psg.workspace || 'compose'} size={11} />
+                  <div className="shrink-0">
+                    {isFileTypeEntity(entity || psg) ? (
+                      <FileTypeIcon file={entity || psg} size="xs" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-md bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0">
+                        <RegaarderProductIcon name={entity?.workspace || psg.workspace || 'compose'} size={11} />
+                      </div>
+                    )}
                   </div>
                   <span className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
                     {entity?.title || psg.title || 'Source Document'}
@@ -2175,8 +2187,14 @@ export default function GlobalWorkspaceSearchModal({
                               }`}
                               title={matchingClaim ? "Click to view supporting passages in synthesis" : "Click to open source document"}
                             >
-                              <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
-                                <RegaarderProductIcon name={src.workspace} size={12} />
+                              <div className="shrink-0">
+                                {isFileTypeEntity(src) ? (
+                                  <FileTypeIcon file={src} size="sm" className="mt-0.5 shrink-0" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
+                                    <RegaarderProductIcon name={src.workspace} size={12} />
+                                  </div>
+                                )}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
@@ -2493,6 +2511,8 @@ export default function GlobalWorkspaceSearchModal({
                                 alt={entity.title}
                                 className="w-6 h-6 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1] shrink-0 mt-0.5"
                               />
+                            ) : isFileTypeEntity(entity) ? (
+                              <FileTypeIcon file={entity} size="sm" className="mt-0.5 shrink-0" />
                             ) : (
                               <div className="w-6 h-6 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
                                 <RegaarderProductIcon name={entity.workspace} size={12} strokeWidth={1.6} />
@@ -2502,7 +2522,7 @@ export default function GlobalWorkspaceSearchModal({
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                                  <HighlightedText text={entity.title} query={query} />
+                                  <HighlightedText text={entity.title} query={query} isSelected={isSelected} />
                                 </h4>
                                 {entity.type === 'person' && entity.role && (
                                   <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 dark:text-zinc-400 shrink-0">
@@ -2511,7 +2531,7 @@ export default function GlobalWorkspaceSearchModal({
                                 )}
                               </div>
                               <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
-                                <HighlightedText text={entity.location} query={query} />
+                                <HighlightedText text={entity.location} query={query} isSelected={isSelected} />
                                 {entity.author && ` • ${entity.author}`}
                               </div>
                             </div>
@@ -2521,7 +2541,7 @@ export default function GlobalWorkspaceSearchModal({
                           <div className="flex items-center gap-1.5 shrink-0">
                             {entity.metadata?.cellValue && (
                               <span className="px-2 py-0.5 text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 rounded">
-                                <HighlightedText text={entity.metadata.cellValue} query={query} />
+                                <HighlightedText text={entity.metadata.cellValue} query={query} isSelected={isSelected} />
                               </span>
                             )}
                             {entity.metadata?.priority && (
@@ -2544,7 +2564,7 @@ export default function GlobalWorkspaceSearchModal({
                         {/* Snippet preview with keyword highlighting */}
                         {res.snippet && (
                           <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed pl-8 mt-0.5">
-                            <HighlightedText text={res.snippet} query={query} />
+                            <HighlightedText text={res.snippet} query={query} isSelected={isSelected} />
                           </p>
                         )}
 
@@ -2552,7 +2572,7 @@ export default function GlobalWorkspaceSearchModal({
                         {entity.metadata?.formula && (
                           <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-600 dark:text-zinc-400 pl-8 mt-1">
                             <span className="text-[9px] font-sans font-medium text-slate-400">Formula:</span>
-                            <HighlightedText text={entity.metadata.formula} query={query} />
+                            <HighlightedText text={entity.metadata.formula} query={query} isSelected={isSelected} />
                           </div>
                         )}
                       </div>
