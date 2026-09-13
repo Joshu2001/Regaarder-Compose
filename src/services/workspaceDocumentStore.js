@@ -41,8 +41,13 @@ const nextUntitledTitle = (mode, documents) => {
 };
 
 const hasGeneratedTitle = (title, mode) => {
+  const trimmed = String(title || '').trim();
+  if (!trimmed) return true;
   const label = MODE_LABELS[mode] || MODE_LABELS.compose;
-  return !String(title || '').trim() || new RegExp(`^${label}$`, 'i').test(String(title).trim());
+  if (new RegExp(`^${label}(?:\\s+\\d+)?$`, 'i').test(trimmed)) return true;
+  // If a document in whiteboard, sheet, or deck mode has another mode's generic title (e.g. Untitled Document on whiteboard)
+  if (/^untitled\s+(?:document|sheet|deck|whiteboard)(?:\s+\d+)?$/i.test(trimmed)) return true;
+  return false;
 };
 
 export const normalizeWorkspaceDocuments = (documents = []) => {
