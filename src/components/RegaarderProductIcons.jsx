@@ -777,5 +777,6 @@ export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWi
   return <IconComponent size={size} className={className} strokeWidth={strokeWidth} {...props} />;
 };
 
+export { FileTypeIcon, getFileTypeDetails, isFileTypeEntity } from './FileTypeIcon';
 export default RegaarderProductIcon;
 

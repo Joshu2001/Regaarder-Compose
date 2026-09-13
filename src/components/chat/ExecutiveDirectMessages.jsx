@@ -149,7 +149,7 @@ const highlightTextChunks = (str, query, prefix) => {
     chunks.push(
       <mark
         key={`${prefix}-hl-${chunkIdx++}`}
-        className="bg-amber-200 dark:bg-amber-800/80 text-slate-900 dark:text-zinc-50 font-semibold px-0.5 rounded shadow-2xs"
+        className="bg-violet-500/[0.16] dark:bg-violet-400/[0.22] text-slate-900 dark:text-zinc-100 font-semibold px-0.5 rounded-[3px]"
       >
         {matchText}
       </mark>

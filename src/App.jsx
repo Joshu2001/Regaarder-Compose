@@ -57,7 +57,8 @@ import {
   RegaarderHistoryIcon,
   RegaarderSaveCloudIcon,
   RegaarderNotificationIcon,
-  LaserPointerIcon
+  LaserPointerIcon,
+  FileTypeIcon
 } from './components/RegaarderProductIcons';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
@@ -19108,9 +19109,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       if (!mark) {
         return;
       }
-      mark.style.background = markIndex === safeIndex ? '#fde68a' : '#fef3c7';
-      mark.style.outline = markIndex === safeIndex ? '2px solid #f59e0b' : 'none';
-      mark.style.borderRadius = '4px';
+      mark.style.background = markIndex === safeIndex ? 'rgba(124, 58, 237, 0.24)' : 'rgba(124, 58, 237, 0.12)';
+      mark.style.outline = markIndex === safeIndex ? '1.5px solid rgba(124, 58, 237, 0.5)' : 'none';
+      mark.style.color = 'inherit';
+      mark.style.borderRadius = '3px';
     });
 
     const target = marks[safeIndex];
@@ -19176,9 +19178,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         }
         const mark = document.createElement('mark');
         mark.setAttribute('data-doc-search-hit', 'true');
-        mark.style.background = '#fef3c7';
+        mark.style.background = 'rgba(124, 58, 237, 0.12)';
+        mark.style.color = 'inherit';
         mark.style.padding = '0 1px';
-        mark.style.borderRadius = '4px';
+        mark.style.borderRadius = '3px';
         mark.textContent = source.slice(start, end);
         fragment.appendChild(mark);
         marks.push(mark);
@@ -50160,38 +50163,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {/* Document Cards List with Scrolling */}
                                 <div className={`w-full space-y-2.5 ${hasMoreThan3Docs && isDataFilesDropdownOpen ? 'max-h-[220px] overflow-y-auto thin-scrollbar pr-1.5' : ''}`}>
                                   {filesToRender.map((fileItem) => {
-                                    const ext = fileItem?.name ? fileItem.name.substring(fileItem.name.lastIndexOf('.') + 1).toUpperCase() : 'XLSX';
-                                    const isSpreadsheet = ['XLSX', 'XLS', 'CSV', 'ODS'].includes(ext);
-                                    const isPdf = ext === 'PDF';
-                                    const isPresentation = ['PPTX', 'PPT', 'KEY'].includes(ext);
-                                    const badgeBgColor = isSpreadsheet ? '#059669' : isPdf ? '#DC2626' : isPresentation ? '#D97706' : '#7C3AED';
-
                                     return (
                                       <div key={fileItem.id || fileItem.name} className="w-full bg-slate-50/80 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-700/60 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all hover:border-slate-300 dark:hover:border-zinc-600">
                                         <div className="flex items-center gap-3.5 min-w-0">
-                                          <div
-                                            className="w-10 h-11 rounded-xl flex flex-col items-center justify-center text-white shrink-0 shadow-xs relative overflow-hidden"
-                                            style={{ backgroundColor: badgeBgColor }}
-                                          >
-                                            <div className="text-[9.5px] font-black tracking-tighter uppercase mb-0.5">
-                                              {ext}
-                                            </div>
-                                            {isSpreadsheet ? (
-                                              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-                                                <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                                                <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                                                <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
-                                              </svg>
-                                            ) : isPdf ? (
-                                              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
-                                                <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-                                              </svg>
-                                            ) : (
-                                              <Table size={14} />
-                                            )}
-                                          </div>
+                                          <FileTypeIcon file={fileItem} size="lg" />
                                           <div className="min-w-0">
                                             <h4 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">
                                               {fileItem?.name || 'Untitled Document'}
@@ -76682,13 +76657,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200/90 dark:hover:bg-zinc-700/90 text-slate-700 dark:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 select-none cursor-pointer transition-colors"
                         title={`Inspect ${mat.name} context source`}
                       >
-                        <span
-                          className="w-[18px] h-[20px] rounded-[4px] flex flex-col items-center justify-center shrink-0 leading-none select-none text-white shadow-2xs"
-                          style={{ backgroundColor: badge.bgHex }}
-                        >
-                          <span className="text-[6px] font-black tracking-tighter uppercase mb-[1px] text-white leading-none">{badge.label}</span>
-                          {badge.svg}
-                        </span>
+                        <FileTypeIcon file={mat} size="xs" />
                         <span className="max-w-[130px] truncate">{mat.name}</span>
                         <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">({mat.size})</span>
                         <button
@@ -76781,7 +76750,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
                                   >
                                     <div className="flex items-center gap-2 min-w-0">
-                                      <FileText size={13} className={`${badge.iconColor} shrink-0`} />
+                                      <FileTypeIcon file={mat} size="xs" className="shrink-0" />
                                       <span className="truncate text-slate-700 dark:text-zinc-200 font-medium">{mat.name}</span>
                                       <span className="text-[10px] text-slate-400 shrink-0">({mat.size})</span>
                                     </div>
@@ -87833,7 +87802,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <FileText size={13} className={isAdded ? 'text-slate-400' : badge.iconColor} />
+                        <FileTypeIcon file={rwFile} size="xs" className={`shrink-0 ${isAdded ? 'opacity-50' : ''}`} />
                         <span className="truncate">{rwFile.name}</span>
                       </div>
                       {isAdded ? (

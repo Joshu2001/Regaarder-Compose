@@ -20,6 +20,7 @@ import {
   Tag,
   ShieldCheck
 } from 'lucide-react';
+import { FileTypeIcon } from './FileTypeIcon';
 
 /**
  * Architectural Rule:
@@ -53,6 +54,33 @@ export const getSourceFileTypeInfo = (file) => {
 
   return { category: 'generic', label: ext.toUpperCase() || 'FILE', bgHex: '#64748B', iconColor: 'text-slate-500', openAppLabel: 'Open File' };
 };
+
+// Exact-phrase highlighting using signature subtle light-purple background and dark readable text
+function ExactHighlight({ text = '', query = '' }) {
+  if (!text) return null;
+  if (!query || !query.trim()) return <>{text}</>;
+
+  const cleanQuery = query.trim();
+  const escaped = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === cleanQuery.toLowerCase() ? (
+          <mark
+            key={i}
+            className="bg-violet-500/[0.16] dark:bg-violet-400/[0.22] text-slate-900 dark:text-zinc-100 font-semibold px-0.5 rounded-[2px]"
+          >
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
 
 // Content generator/retriever based on authentic file properties
 const getSourceFileContentData = (file) => {
@@ -255,8 +283,8 @@ function PDFRenderer({ data, searchQuery }) {
               </div>
               <div className="space-y-3 text-xs text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
                 {page.paragraphs.map((p, i) => (
-                  <p key={i} className={searchQuery && p.toLowerCase().includes(searchQuery.toLowerCase()) ? 'bg-amber-100 dark:bg-amber-950/80 dark:text-amber-200 p-1.5 rounded' : ''}>
-                    {p}
+                  <p key={i} className="leading-relaxed">
+                    <ExactHighlight text={p} query={searchQuery} />
                   </p>
                 ))}
               </div>
@@ -274,7 +302,9 @@ function PDFRenderer({ data, searchQuery }) {
                       {page.table.rows.map((row, rIdx) => (
                         <tr key={rIdx} className="border-b last:border-b-0 border-slate-100 dark:border-zinc-800/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/30">
                           {row.map((cell, cIdx) => (
-                            <td key={cIdx} className="p-2 border-r last:border-r-0 border-slate-100 dark:border-zinc-800/50 text-slate-600 dark:text-zinc-300">{cell}</td>
+                            <td key={cIdx} className="p-2 border-r last:border-r-0 border-slate-100 dark:border-zinc-800/50 text-slate-600 dark:text-zinc-300">
+                              <ExactHighlight text={cell} query={searchQuery} />
+                            </td>
                           ))}
                         </tr>
                       ))}
@@ -311,12 +341,8 @@ function ComposeRenderer({ data, searchQuery }) {
             {data.sections.map((sec, idx) => (
               <div key={idx} className="space-y-2">
                 <h2 className="text-base font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">{sec.heading}</h2>
-                <p className={`text-slate-600 dark:text-zinc-300 text-xs sm:text-sm leading-relaxed p-1 rounded transition-colors ${
-                  searchQuery && sec.content.toLowerCase().includes(searchQuery.toLowerCase())
-                    ? 'bg-amber-100 dark:bg-amber-950/80 dark:text-amber-200'
-                    : ''
-                }`}>
-                  {sec.content}
+                <p className="text-slate-600 dark:text-zinc-300 text-xs sm:text-sm leading-relaxed">
+                  <ExactHighlight text={sec.content} query={searchQuery} />
                 </p>
               </div>
             ))}
@@ -360,19 +386,14 @@ function SheetsRenderer({ data, searchQuery }) {
             <tbody>
               {data.rows.map((row, rIdx) => (
                 <tr key={rIdx} className={`border-b last:border-b-0 border-slate-200 dark:border-zinc-800 ${rIdx === 0 ? 'bg-slate-50 dark:bg-zinc-800/40 font-semibold text-slate-800 dark:text-zinc-200' : 'hover:bg-slate-50/70 dark:hover:bg-zinc-800/40'}`}>
-                  {row.map((cell, cIdx) => {
-                    const isMatched = searchQuery && cell.toLowerCase().includes(searchQuery.toLowerCase());
-                    return (
-                      <td
-                        key={cIdx}
-                        className={`p-2 border-r last:border-r-0 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 text-xs ${
-                          isMatched ? 'bg-amber-100 dark:bg-amber-950/80 font-medium text-amber-900 dark:text-amber-200' : ''
-                        }`}
-                      >
-                        {cell}
-                      </td>
-                    );
-                  })}
+                  {row.map((cell, cIdx) => (
+                    <td
+                      key={cIdx}
+                      className="p-2 border-r last:border-r-0 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 text-xs"
+                    >
+                      <ExactHighlight text={cell} query={searchQuery} />
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -460,18 +481,16 @@ function DeckRenderer({ data, searchQuery }) {
           <div className="w-full max-w-2xl aspect-video bg-slate-950 border border-slate-800 rounded-2xl p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden select-text">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-semibold">REGAARDER DECK</span>
-              <h2 className={`text-xl font-bold text-white tracking-tight mt-1 mb-2 ${
-                searchQuery && currentSlide?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ? 'bg-amber-950 text-amber-200 p-1 rounded' : ''
-              }`}>
-                {currentSlide?.title}
+              <h2 className="text-xl font-bold text-white tracking-tight mt-1 mb-2">
+                <ExactHighlight text={currentSlide?.title} query={searchQuery} />
               </h2>
               <p className="text-xs text-slate-400 mb-6">{currentSlide?.subtitle}</p>
 
               <ul className="space-y-3 text-xs text-slate-300">
                 {currentSlide?.bullets?.map((b, bIdx) => (
-                  <li key={bIdx} className={`flex items-start gap-2 ${searchQuery && b.toLowerCase().includes(searchQuery.toLowerCase()) ? 'bg-amber-950/80 text-amber-200 p-1 rounded' : ''}`}>
+                  <li key={bIdx} className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <span>{b}</span>
+                    <span><ExactHighlight text={b} query={searchQuery} /></span>
                   </li>
                 ))}
               </ul>
@@ -577,11 +596,7 @@ function GenericRenderer({ data, file, searchQuery }) {
           <div className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-3 mb-4 border-b border-slate-100 dark:border-zinc-800 font-sans font-semibold">
             Raw File Text & Metadata Stream
           </div>
-          {searchQuery && data?.text?.toLowerCase().includes(searchQuery.toLowerCase()) ? (
-            <mark className="bg-amber-200 dark:bg-amber-950/90 dark:text-amber-200 p-0.5 rounded">{data.text}</mark>
-          ) : (
-            data?.text
-          )}
+          <ExactHighlight text={data?.text || ''} query={searchQuery} />
         </div>
       </div>
     </div>
@@ -634,12 +649,7 @@ export default function ContextSourcePreviewModal({
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/80 backdrop-blur-lg shrink-0 gap-3">
           {/* File Information */}
           <div className="flex items-center gap-3 min-w-0">
-            <span
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-[10px] shrink-0 shadow-2xs"
-              style={{ backgroundColor: info.bgHex }}
-            >
-              {info.label}
-            </span>
+            <FileTypeIcon file={file} size="md" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-zinc-100 truncate max-w-[220px] sm:max-w-md tracking-tight">
