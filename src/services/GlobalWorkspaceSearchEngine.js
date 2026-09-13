@@ -1775,8 +1775,15 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
     .filter(Boolean);
 
   const meaningfulTokens = rawTokens.filter(t => t.length >= 2 && !SEARCH_STOP_WORDS.has(t));
-  const tokensToScore = meaningfulTokens.length > 0 ? meaningfulTokens : rawTokens;
-  const scored = [];
+  // Precompile word-boundary regexes or token matchers once per query rather than re-creating them inside the nested item loop
+  const tokenCheckers = tokensToScore.map(t => {
+    if (t.length <= 3) {
+      const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(?:^|[^a-z0-9_])${escaped}(?:$|[^a-z0-9_])`, 'i');
+      return (text) => regex.test(text);
+    }
+    return (text) => text.includes(t);
+  });
 
   for (const item of filtered) {
     const titleLower = (item.title || '').toLowerCase();
@@ -1827,16 +1834,17 @@ export function queryWorkspace(allEntities, query = '', activeFilter = 'all') {
     let allTokensFound = true;
     let matchedTokenCount = 0;
 
-    for (const t of tokensToScore) {
-      const inTitle = containsWordBoundary(titleLower, t);
-      const inContent = containsWordBoundary(contentLower, t);
-      const inSubtitle = containsWordBoundary(subtitleLower, t);
-      const inAuthor = containsWordBoundary(authorLower, t);
-      const inLocation = containsWordBoundary(locationLower, t);
-      const inDate = containsWordBoundary(dateLower, t);
-      const inTime = containsWordBoundary(timeLower, t);
-      const inActType = containsWordBoundary(actTypeLower, t);
-      const inUpdated = containsWordBoundary(updatedLower, t);
+    for (let i = 0; i < tokensToScore.length; i++) {
+      const checker = tokenCheckers[i];
+      const inTitle = checker(titleLower);
+      const inContent = checker(contentLower);
+      const inSubtitle = checker(subtitleLower);
+      const inAuthor = checker(authorLower);
+      const inLocation = checker(locationLower);
+      const inDate = checker(dateLower);
+      const inTime = checker(timeLower);
+      const inActType = checker(actTypeLower);
+      const inUpdated = checker(updatedLower);
 
       if (inTitle) {
         score += 45;
