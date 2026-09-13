@@ -802,6 +802,7 @@ export default function GlobalWorkspaceSearchModal({
     }
     return [];
   });
+  const [isRecentExpanded, setIsRecentExpanded] = useState(false);
 
   const saveInquiryToHistory = (q, answer, sources = []) => {
     if (!q || !q.trim() || !answer) return;
@@ -903,6 +904,7 @@ export default function GlobalWorkspaceSearchModal({
 
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isMoreFilterMenuOpen, setIsMoreFilterMenuOpen] = useState(false);
+  const [isRecentHistoryOpen, setIsRecentHistoryOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   const [moreFilterMenuPosition, setMoreFilterMenuPosition] = useState({ top: 0, left: 0 });
   const [workspaceStorageRevision, setWorkspaceStorageRevision] = useState(0);
@@ -933,6 +935,7 @@ export default function GlobalWorkspaceSearchModal({
   const fileInputRef = useRef(null);
   const moreFilterMenuRef = useRef(null);
   const moreFilterButtonRef = useRef(null);
+  const recentHistoryRef = useRef(null);
 
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
@@ -1080,6 +1083,7 @@ export default function GlobalWorkspaceSearchModal({
     };
   }, [isMoreFilterMenuOpen]);
 
+<<<<<<< HEAD
   // Check scroll position and content overflow to toggle Apple-style top/bottom affordance shadows
   const checkScrollAffordance = useCallback(() => {
     const el = resultsContainerRef.current;
@@ -1110,6 +1114,18 @@ export default function GlobalWorkspaceSearchModal({
       if (observer) observer.disconnect();
     };
   }, [checkScrollAffordance, searchResults, groupedResults, mode, aiResponse, aiLoading, isRecentExpanded]);
+=======
+  useEffect(() => {
+    if (!isRecentHistoryOpen) return;
+    const handleClickOutside = (event) => {
+      if (!recentHistoryRef.current?.contains(event.target)) {
+        setIsRecentHistoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isRecentHistoryOpen]);
+>>>>>>> origin/master
 
   // Auto-scroll selected result into view
   useEffect(() => {
@@ -1561,10 +1577,9 @@ export default function GlobalWorkspaceSearchModal({
                   type="button"
                   onClick={() => {
                     setActiveFilter(tab.id);
+                    setMode('search');
                     setIsMoreFilterMenuOpen(false);
-                    if (mode === 'ai' && query.trim()) {
-                      handleRunAiSynthesis(query);
-                    }
+                    setIsRecentHistoryOpen(false);
                   }}
                   className={`px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
@@ -1620,10 +1635,9 @@ export default function GlobalWorkspaceSearchModal({
                           onPointerDown={(e) => {
                             e.preventDefault();
                             setActiveFilter(tab.id);
+                            setMode('search');
                             setIsMoreFilterMenuOpen(false);
-                            if (mode === 'ai' && query.trim()) {
-                              handleRunAiSynthesis(query);
-                            }
+                            setIsRecentHistoryOpen(false);
                           }}
                           className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors cursor-pointer ${
                             isActive
@@ -1811,6 +1825,7 @@ export default function GlobalWorkspaceSearchModal({
                         <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-xs">
                           <RegaarderAiIcon size={18} strokeWidth={2.0} />
                         </div>
+<<<<<<< HEAD
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100">
@@ -1823,6 +1838,133 @@ export default function GlobalWorkspaceSearchModal({
                           <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
                             Synthesizes documents, calculation formulas, slide decks, and active brand rules.
                           </p>
+=======
+                        <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Synthesizes documents, calculation formulas, slide decks, and active brand rules.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
+                      <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
+                      <span>Suggested Knowledge Queries</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setQuery(promptText);
+                            handleRunAiSynthesis(promptText);
+                          }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-violet-500/30"
+                        >
+                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
+                            {promptText}
+                          </span>
+                          <ArrowRight size={12} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {aiLoading && (
+                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <RegaarderAiIcon size={20} strokeWidth={2.0} className="animate-spin" />
+                  </div>
+                  <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
+                    Synthesizing Workspace Memory as {activePersona.name}…
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
+                    Analyzing documents, spreadsheet formulas, slide decks, and active brand guidelines for &ldquo;{query}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {aiResponse && !aiLoading && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div
+                    ref={synthesisCardRef}
+                    onMouseUp={handleTextSelection}
+                    className="relative p-5 rounded-xl bg-violet-50/25 dark:bg-violet-950/10 border border-violet-100/60 dark:border-violet-800/25 space-y-3.5 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
+                        <span className="text-[10.5px] font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wider font-mono">
+                          Executive Synthesis ({activePersona.name})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReplying(true);
+                            setTimeout(() => followUpInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                          title="Reply or continue chatting"
+                        >
+                          <CornerDownLeft size={11} className="text-violet-600 dark:text-violet-400" />
+                          <span>Reply</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingPrompt(true);
+                            setEditingQueryText(query);
+                            setTimeout(() => promptEditInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                          title="Edit prompt in-place"
+                        >
+                          <Edit3 size={11} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyAiResponse}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
+                        >
+                          {copiedAi ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                          <span>{copiedAi ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Floating Selection Tooltip for Quick Quote & Reply */}
+                    {selectionTooltip && (
+                      <div className="absolute top-2 right-44 z-20 animate-in fade-in zoom-in-95 duration-150">
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setQuotedSnippet(selectionTooltip.text);
+                            setIsReplying(true);
+                            setSelectionTooltip(null);
+                            setTimeout(() => followUpInputRef.current?.focus(), 50);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold shadow-md transition-colors cursor-pointer"
+                        >
+                          <CornerDownLeft size={11} />
+                          <span>Quote & Reply</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* In-Place Prompt Editor Mode */}
+                    {isEditingPrompt ? (
+                      <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-700 shadow-xs space-y-2">
+                        <div className="text-[11px] font-semibold text-violet-900 dark:text-violet-300 flex items-center gap-1.5">
+                          <Edit3 size={12} />
+                          <span>Edit Prompt:</span>
+>>>>>>> origin/master
                         </div>
                       </div>
                     </div>
@@ -2410,7 +2552,7 @@ export default function GlobalWorkspaceSearchModal({
 
         {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory with 3-Item Cap + Progressive Disclosure) ── */}
         {recentInquiries.length > 0 && (
-          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
+          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 select-none">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
               <History size={11} className="text-slate-400 dark:text-zinc-500" />
               Recent:
