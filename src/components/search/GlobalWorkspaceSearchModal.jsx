@@ -1,5 +1,5 @@
 import { useTranslation } from '../../i18n';
-import React, { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Search, X, ArrowRight, CornerDownLeft, Copy, Check, RefreshCw,
@@ -34,27 +34,21 @@ import {
   RegaarderHapticIcon
 } from '../RegaarderProductIcons';
 
-// Helper component to highlight matched text with performance memoization
-const HighlightedText = React.memo(function HighlightedText({ text = '', query = '', className = '' }) {
+// Helper component to highlight matched text
+function HighlightedText({ text = '', query = '', className = '' }) {
   if (!text) return null;
-  const cleanQuery = (query || '').trim();
-  if (!cleanQuery) {
+  if (!query || !query.trim()) {
     return <span className={className}>{text}</span>;
   }
 
+  const cleanQuery = query.trim();
   const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  let parts;
-  try {
-    parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
-  } catch (_) {
-    return <span className={className}>{text}</span>;
-  }
+  const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
 
-  const cleanLower = cleanQuery.toLowerCase();
   return (
     <span className={className}>
       {parts.map((part, i) =>
-        part.toLowerCase() === cleanLower ? (
+        part.toLowerCase() === cleanQuery.toLowerCase() ? (
           <mark
             key={i}
             className="bg-black/[0.07] dark:bg-white/[0.12] text-slate-900 dark:text-zinc-100 font-semibold px-0.5 rounded"
@@ -67,7 +61,7 @@ const HighlightedText = React.memo(function HighlightedText({ text = '', query =
       )}
     </span>
   );
-});
+}
 
 // Evidence Indicator Pill & Configuration
 function getEvidenceBadgeConfig(type = 'direct', sourceCount = 1) {
@@ -635,7 +629,6 @@ export default function GlobalWorkspaceSearchModal({
   const [mode, setMode] = useState(isDeck ? (initialMode || 'search') : 'search');
   const { t } = useTranslation();
   const [query, setQuery] = useState(initialQuery || '');
-  const deferredQuery = useDeferredValue(query);
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'all');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -802,7 +795,6 @@ export default function GlobalWorkspaceSearchModal({
     }
     return [];
   });
-  const [isRecentExpanded, setIsRecentExpanded] = useState(false);
 
   const saveInquiryToHistory = (q, answer, sources = []) => {
     if (!q || !q.trim() || !answer) return;
@@ -904,7 +896,6 @@ export default function GlobalWorkspaceSearchModal({
 
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isMoreFilterMenuOpen, setIsMoreFilterMenuOpen] = useState(false);
-  const [isRecentHistoryOpen, setIsRecentHistoryOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   const [moreFilterMenuPosition, setMoreFilterMenuPosition] = useState({ top: 0, left: 0 });
   const [workspaceStorageRevision, setWorkspaceStorageRevision] = useState(0);
@@ -935,12 +926,9 @@ export default function GlobalWorkspaceSearchModal({
   const fileInputRef = useRef(null);
   const moreFilterMenuRef = useRef(null);
   const moreFilterButtonRef = useRef(null);
-  const recentHistoryRef = useRef(null);
 
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
-  const [canScrollUp, setCanScrollUp] = useState(false);
-  const [canScrollDown, setCanScrollDown] = useState(false);
 
   // Persist brand rules to localStorage on update
   useEffect(() => {
@@ -995,25 +983,25 @@ export default function GlobalWorkspaceSearchModal({
     return [...baseIndex, ...brandEntities];
   }, [liveWorkspaceContext, workspaceStorageRevision, brandRules]);
 
-  // Execute dynamic query across the workspace index for Search Mode using deferredQuery to keep typing 100% fluid
+  // Execute dynamic query across the workspace index for Search Mode
   const searchResults = useMemo(() => {
-    return queryWorkspace(workspaceIndex, deferredQuery, activeFilter);
-  }, [workspaceIndex, deferredQuery, activeFilter]);
+    return queryWorkspace(workspaceIndex, query, activeFilter);
+  }, [workspaceIndex, query, activeFilter]);
 
   // Grouped results for categorized display when query is present in Search Mode
   const groupedResults = useMemo(() => {
-    if (!deferredQuery.trim() || mode === 'ai') return [];
+    if (!query.trim() || mode === 'ai') return [];
     return groupResultsByCategory(searchResults);
-  }, [searchResults, deferredQuery, mode]);
+  }, [searchResults, query, mode]);
 
   // Flat list of selectable items for keyboard navigation in Search Mode
   const flatSelectableItems = useMemo(() => {
     if (mode === 'ai') return [];
-    if (!deferredQuery.trim()) {
+    if (!query.trim()) {
       return searchResults.slice(0, 10).map((r) => ({ type: 'entity', data: r.entity }));
     }
     return searchResults.map((r) => ({ type: 'entity', data: r.entity }));
-  }, [deferredQuery, searchResults, mode]);
+  }, [query, searchResults, mode]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -1051,7 +1039,7 @@ export default function GlobalWorkspaceSearchModal({
   // Reset selected index when query or filter changes (when question query is detected, don't auto-highlight result 0)
   useEffect(() => {
     setSelectedIndex(isQuestionQuery ? -1 : 0);
-  }, [deferredQuery, activeFilter, mode, isQuestionQuery]);
+  }, [query, activeFilter, mode, isQuestionQuery]);
 
   useEffect(() => {
     if (!isMoreFilterMenuOpen) return;
@@ -1082,50 +1070,6 @@ export default function GlobalWorkspaceSearchModal({
       window.removeEventListener('resize', handleResize);
     };
   }, [isMoreFilterMenuOpen]);
-
-<<<<<<< HEAD
-  // Check scroll position and content overflow to toggle Apple-style top/bottom affordance shadows
-  const checkScrollAffordance = useCallback(() => {
-    const el = resultsContainerRef.current;
-    if (!el) {
-      setCanScrollUp(false);
-      setCanScrollDown(false);
-      return;
-    }
-    const hasOverflow = el.scrollHeight > el.clientHeight + 4;
-    setCanScrollUp(hasOverflow && el.scrollTop > 6);
-    setCanScrollDown(hasOverflow && el.scrollTop + el.clientHeight < el.scrollHeight - 6);
-  }, []);
-
-  useEffect(() => {
-    const el = resultsContainerRef.current;
-    if (!el) return;
-    checkScrollAffordance();
-    el.addEventListener('scroll', checkScrollAffordance, { passive: true });
-    window.addEventListener('resize', checkScrollAffordance);
-
-    // Also observe DOM changes inside the results container (e.g. results rendering)
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => checkScrollAffordance()) : null;
-    if (observer) observer.observe(el);
-
-    return () => {
-      el.removeEventListener('scroll', checkScrollAffordance);
-      window.removeEventListener('resize', checkScrollAffordance);
-      if (observer) observer.disconnect();
-    };
-  }, [checkScrollAffordance, searchResults, groupedResults, mode, aiResponse, aiLoading, isRecentExpanded]);
-=======
-  useEffect(() => {
-    if (!isRecentHistoryOpen) return;
-    const handleClickOutside = (event) => {
-      if (!recentHistoryRef.current?.contains(event.target)) {
-        setIsRecentHistoryOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isRecentHistoryOpen]);
->>>>>>> origin/master
 
   // Auto-scroll selected result into view
   useEffect(() => {
@@ -1577,9 +1521,10 @@ export default function GlobalWorkspaceSearchModal({
                   type="button"
                   onClick={() => {
                     setActiveFilter(tab.id);
-                    setMode('search');
                     setIsMoreFilterMenuOpen(false);
-                    setIsRecentHistoryOpen(false);
+                    if (mode === 'ai' && query.trim()) {
+                      handleRunAiSynthesis(query);
+                    }
                   }}
                   className={`px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
@@ -1635,9 +1580,10 @@ export default function GlobalWorkspaceSearchModal({
                           onPointerDown={(e) => {
                             e.preventDefault();
                             setActiveFilter(tab.id);
-                            setMode('search');
                             setIsMoreFilterMenuOpen(false);
-                            setIsRecentHistoryOpen(false);
+                            if (mode === 'ai' && query.trim()) {
+                              handleRunAiSynthesis(query);
+                            }
                           }}
                           className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors cursor-pointer ${
                             isActive
@@ -1803,42 +1749,33 @@ export default function GlobalWorkspaceSearchModal({
           </div>
         </div>
 
-        {/* ── Surface Body (Search Mode vs Ask Memory Mode) with Adaptive Overflow Affordance ── */}
-        <div className="flex-1 relative min-h-0 flex flex-col overflow-hidden">
-          {/* Top Overflow Affordance Indicator */}
-          <div className={`scroll-affordance-top ${canScrollUp ? 'is-visible' : ''}`} aria-hidden="true" />
-
-          <div
-            ref={resultsContainerRef}
-            className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
-          >
-            {/* ══════════════════════════════════════════════════════════
-                MODE A: ASK MEMORY WORKSPACE SYNTHESIS
-               ══════════════════════════════════════════════════════════ */}
-            {mode === 'ai' && (
-              <div className="space-y-4">
-                {!aiResponse && !aiLoading && (
-                  <div className="space-y-4 py-1">
-                    {/* Executive AI Intro Banner */}
-                    <div className="p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.025] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-xs">
-                          <RegaarderAiIcon size={18} strokeWidth={2.0} />
+        {/* ── Surface Body (Search Mode vs Ask Memory Mode) ── */}
+        <div
+          ref={resultsContainerRef}
+          className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
+        >
+          {/* ══════════════════════════════════════════════════════════
+              MODE A: ASK MEMORY WORKSPACE SYNTHESIS
+             ══════════════════════════════════════════════════════════ */}
+          {mode === 'ai' && (
+            <div className="space-y-4">
+              {!aiResponse && !aiLoading && (
+                <div className="space-y-4 py-1">
+                  {/* Executive AI Intro Banner */}
+                  <div className="p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.025] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-xs">
+                        <RegaarderAiIcon size={18} strokeWidth={2.0} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100">
+                            Workspace Intelligence & Persona Layer
+                          </h4>
+                          <span className="text-[9.5px] font-bold uppercase px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-zinc-300 font-mono">
+                            {activePersona.name} Active
+                          </span>
                         </div>
-<<<<<<< HEAD
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100">
-                              Workspace Intelligence & Persona Layer
-                            </h4>
-                            <span className="text-[9.5px] font-bold uppercase px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-zinc-300 font-mono">
-                              {activePersona.name} Active
-                            </span>
-                          </div>
-                          <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
-                            Synthesizes documents, calculation formulas, slide decks, and active brand rules.
-                          </p>
-=======
                         <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5">
                           Synthesizes documents, calculation formulas, slide decks, and active brand rules.
                         </p>
@@ -1848,7 +1785,7 @@ export default function GlobalWorkspaceSearchModal({
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
-                      <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
+                      <RegaarderAiIcon size={12} className="text-slate-700 dark:text-zinc-300" />
                       <span>Suggested Knowledge Queries</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1860,12 +1797,12 @@ export default function GlobalWorkspaceSearchModal({
                             setQuery(promptText);
                             handleRunAiSynthesis(promptText);
                           }}
-                          className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-800/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-violet-500/30"
+                          className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-850/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-black/20 dark:hover:border-white/20"
                         >
-                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
+                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white">
                             {promptText}
                           </span>
-                          <ArrowRight size={12} className="text-slate-400 group-hover:text-violet-600 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
+                          <ArrowRight size={12} className="text-slate-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
                         </button>
                       ))}
                     </div>
@@ -1874,16 +1811,112 @@ export default function GlobalWorkspaceSearchModal({
               )}
 
               {aiLoading && (
-                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                    <RegaarderAiIcon size={20} strokeWidth={2.0} className="animate-spin" />
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-5" aria-live="polite" aria-busy="true">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-lg border border-black/5 dark:border-white/10 shrink-0">
+                    <RegaarderAiIcon size={22} strokeWidth={2.0} className="animate-spin duration-3000" />
                   </div>
-                  <div className="text-[14.5px] font-bold text-slate-800 dark:text-zinc-100">
-                    Synthesizing Workspace Memory as {activePersona.name}…
+                  <div className="space-y-1">
+                    <div className="text-[15px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+                      {aiProgress.step === 3
+                        ? `Synthesizing with ${activeModel?.name?.replace(/ \(Local Ollama\)/i, '') || activeModel?.id}`
+                        : aiProgress.label}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                      Synthesizing Workspace Memory as <span className="font-semibold text-slate-700 dark:text-zinc-300">{activePersona.name}</span> for &ldquo;{query}&rdquo;
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
-                    Analyzing documents, spreadsheet formulas, slide decks, and active brand guidelines for &ldquo;{query}&rdquo;
-                  </p>
+
+                  {/* Multi-Phase Step Progress Card */}
+                  <div className="w-full max-w-md rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] p-3.5 space-y-2.5 text-left font-sans shadow-2xs">
+                    {/* Step 1: Workspace Index Scan */}
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-medium ${
+                        aiProgress.step > 1
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                      }`}>
+                        {aiProgress.step > 1 ? <Check size={11} strokeWidth={2.5} /> : <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-[12px] font-medium ${
+                          aiProgress.step > 1 ? 'text-slate-500 dark:text-zinc-400' : 'text-slate-900 dark:text-zinc-100 font-semibold'
+                        }`}>
+                          Scanning workspace index & entities
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Extracting Citations & Metadata */}
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-medium ${
+                        aiProgress.step > 2
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : aiProgress.step === 2
+                            ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                            : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-400 dark:text-zinc-600'
+                      }`}>
+                        {aiProgress.step > 2 ? (
+                          <Check size={11} strokeWidth={2.5} />
+                        ) : aiProgress.step === 2 ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-[12px] font-medium ${
+                          aiProgress.step > 2
+                            ? 'text-slate-500 dark:text-zinc-400'
+                            : aiProgress.step === 2
+                              ? 'text-slate-900 dark:text-zinc-100 font-semibold'
+                              : 'text-slate-400 dark:text-zinc-500'
+                        }`}>
+                          Extracting citations, guidelines & temporal metadata
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 3: Executive Brief Synthesis */}
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-medium ${
+                        aiProgress.step === 3
+                          ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                          : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-400 dark:text-zinc-600'
+                      }`}>
+                        {aiProgress.step === 3 ? (
+                          <RegaarderAiIcon size={11} strokeWidth={2.0} className="animate-spin" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-[12px] font-medium ${
+                          aiProgress.step === 3
+                            ? 'text-slate-900 dark:text-zinc-100 font-semibold'
+                            : 'text-slate-400 dark:text-zinc-500'
+                        }`}>
+                          Synthesizing brief with {activeModel?.name?.replace(/ \(Local Ollama\)/i, '') || activeModel?.id}
+                        </div>
+                        {aiProgress.step === 3 && aiProgress.detail && (
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 animate-pulse truncate">
+                            {aiProgress.detail}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Neutral Apple Skeleton Shimmer Bars */}
+                  <div className="w-full max-w-md space-y-2 pt-1" aria-hidden="true">
+                    {[0, 1, 2].map((bar) => (
+                      <div key={bar} className="h-2 rounded-full bg-slate-200/60 dark:bg-white/[0.06] overflow-hidden">
+                        <div
+                          className="h-full w-2/3 rounded-full bg-gradient-to-r from-transparent via-slate-400/30 dark:via-zinc-500/30 to-transparent animate-[synthesis-shimmer_1.8s_ease-in-out_infinite]"
+                          style={{ animationDelay: `${bar * 180}ms` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -1892,12 +1925,12 @@ export default function GlobalWorkspaceSearchModal({
                   <div
                     ref={synthesisCardRef}
                     onMouseUp={handleTextSelection}
-                    className="relative p-5 rounded-xl bg-violet-50/25 dark:bg-violet-950/10 border border-violet-100/60 dark:border-violet-800/25 space-y-3.5 group"
+                    className="relative p-5 rounded-xl bg-black/[0.015] dark:bg-white/[0.02] border border-black/[0.07] dark:border-white/[0.08] space-y-3.5 group shadow-2xs"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
-                        <span className="text-[10.5px] font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wider font-mono">
+                        <RegaarderAiIcon size={14} className="text-slate-800 dark:text-zinc-200" />
+                        <span className="text-[10.5px] font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
                           Executive Synthesis ({activePersona.name})
                         </span>
                       </div>
@@ -1911,7 +1944,7 @@ export default function GlobalWorkspaceSearchModal({
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-black/[0.08] dark:border-white/[0.1] shadow-2xs transition-colors cursor-pointer"
                           title="Reply or continue chatting"
                         >
-                          <CornerDownLeft size={11} className="text-violet-600 dark:text-violet-400" />
+                          <CornerDownLeft size={11} className="text-slate-600 dark:text-zinc-400" />
                           <span>Reply</span>
                         </button>
                         <button
@@ -1950,7 +1983,7 @@ export default function GlobalWorkspaceSearchModal({
                             setSelectionTooltip(null);
                             setTimeout(() => followUpInputRef.current?.focus(), 50);
                           }}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold shadow-md transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-[11px] font-semibold shadow-md transition-colors cursor-pointer"
                         >
                           <CornerDownLeft size={11} />
                           <span>Quote & Reply</span>
@@ -1960,407 +1993,112 @@ export default function GlobalWorkspaceSearchModal({
 
                     {/* In-Place Prompt Editor Mode */}
                     {isEditingPrompt ? (
-                      <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-700 shadow-xs space-y-2">
-                        <div className="text-[11px] font-semibold text-violet-900 dark:text-violet-300 flex items-center gap-1.5">
+                      <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 shadow-xs space-y-2">
+                        <div className="text-[11px] font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
                           <Edit3 size={12} />
                           <span>Edit Prompt:</span>
->>>>>>> origin/master
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 font-mono">
-                        <RegaarderAiIcon size={12} className="text-slate-700 dark:text-zinc-300" />
-                        <span>Suggested Knowledge Queries</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {SUGGESTED_AI_PROMPTS.map((promptText, idx) => (
+                        <input
+                          ref={promptEditInputRef}
+                          type="text"
+                          value={editingQueryText}
+                          onChange={(e) => setEditingQueryText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSaveEditedPrompt();
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setIsEditingPrompt(false);
+                            }
+                          }}
+                          className="w-full px-2.5 py-1.5 text-[12.5px] rounded-md bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-slate-400"
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
-                            key={idx}
                             type="button"
-                            onClick={() => {
-                              setQuery(promptText);
-                              handleRunAiSynthesis(promptText);
-                            }}
-                            className="flex items-center justify-between p-3 rounded-xl bg-white/80 dark:bg-zinc-850/60 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] text-left transition-all group cursor-pointer shadow-2xs hover:border-black/20 dark:hover:border-white/20"
+                            onClick={() => setIsEditingPrompt(false)}
+                            className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
                           >
-                            <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white">
-                              {promptText}
-                            </span>
-                            <ArrowRight size={12} className="text-slate-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200 transition-transform group-hover:translate-x-0.5 shrink-0 ml-2" />
+                            Cancel
                           </button>
-                        ))}
+                          <button
+                            type="button"
+                            onClick={handleSaveEditedPrompt}
+                            className="px-2.5 py-1 text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-md transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                          >
+                            <Check size={11} />
+                            <span>Re-synthesize</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      /* Rich Formatted Markdown Output with Evidence Traceability */
+                      <FormattedMarkdown
+                        content={aiResponse.answer}
+                        claims={aiResponse.claims || []}
+                        activeClaimId={activeClaimId}
+                        onSelectClaim={setActiveClaimId}
+                      />
+                    )}
                   </div>
-                )}
 
-                {aiLoading && (
-                  <div className="flex flex-col items-center justify-center py-10 text-center space-y-5" aria-live="polite" aria-busy="true">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-lg border border-black/5 dark:border-white/10 shrink-0">
-                      <RegaarderAiIcon size={22} strokeWidth={2.0} className="animate-spin duration-3000" />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-[15px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-                        {aiProgress.step === 3
-                          ? `Synthesizing with ${activeModel?.name?.replace(/ \(Local Ollama\)/i, '') || activeModel?.id}`
-                          : aiProgress.label}
+                  {/* Evidence Traceability Shelf for Inspected Claim */}
+                  {activeClaimId && (
+                    <EvidenceTraceabilityShelf
+                      claim={aiResponse.claims?.find(c => c.claimId === activeClaimId)}
+                      workspaceIndex={workspaceIndex}
+                      onNavigateToEntity={handleActivateItem}
+                      onClose={() => setActiveClaimId(null)}
+                    />
+                  )}
+
+                  {/* Multi-Turn Follow-Up Conversation Thread */}
+                  {conversationThread.length > 0 && (
+                    <div className="space-y-3 pt-1">
+                      <div className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-1 font-mono">
+                        Follow-Up Conversation ({conversationThread.length} turns)
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                        Synthesizing Workspace Memory as <span className="font-semibold text-slate-700 dark:text-zinc-300">{activePersona.name}</span> for &ldquo;{query}&rdquo;
-                      </p>
-                    </div>
-
-                    {/* Multi-Phase Step Progress Card */}
-                    <div className="w-full max-w-md rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] p-3.5 space-y-2.5 text-left font-sans shadow-2xs">
-                      {/* Step 1: Workspace Index Scan */}
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-medium ${
-                          aiProgress.step > 1
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                            : 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                        }`}>
-                          {aiProgress.step > 1 ? <Check size={11} strokeWidth={2.5} /> : <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={`text-[12px] font-medium ${
-                            aiProgress.step > 1 ? 'text-slate-500 dark:text-zinc-400' : 'text-slate-900 dark:text-zinc-100 font-semibold'
-                          }`}>
-                            Scanning workspace index & entities
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Step 2: Extracting Citations & Metadata */}
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-medium ${
-                          aiProgress.step > 2
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                            : aiProgress.step === 2
-                              ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                              : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-400 dark:text-zinc-600'
-                        }`}>
-                          {aiProgress.step > 2 ? (
-                            <Check size={11} strokeWidth={2.5} />
-                          ) : aiProgress.step === 2 ? (
-                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
+                      {conversationThread.map((turn, tIdx) => (
+                        <div key={tIdx} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {turn.role === 'user' ? (
+                            <div className="max-w-[85%] p-2.5 px-3.5 rounded-2xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[12px] leading-relaxed shadow-xs">
+                              {turn.text}
+                            </div>
                           ) : (
-                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={`text-[12px] font-medium ${
-                            aiProgress.step > 2
-                              ? 'text-slate-500 dark:text-zinc-400'
-                              : aiProgress.step === 2
-                                ? 'text-slate-900 dark:text-zinc-100 font-semibold'
-                                : 'text-slate-400 dark:text-zinc-500'
-                          }`}>
-                            Extracting citations, guidelines & temporal metadata
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Step 3: Executive Brief Synthesis */}
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-medium ${
-                          aiProgress.step === 3
-                            ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                            : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-400 dark:text-zinc-600'
-                        }`}>
-                          {aiProgress.step === 3 ? (
-                            <RegaarderAiIcon size={11} strokeWidth={2.0} className="animate-spin" />
-                          ) : (
-                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={`text-[12px] font-medium ${
-                            aiProgress.step === 3
-                              ? 'text-slate-900 dark:text-zinc-100 font-semibold'
-                              : 'text-slate-400 dark:text-zinc-500'
-                          }`}>
-                            Synthesizing brief with {activeModel?.name?.replace(/ \(Local Ollama\)/i, '') || activeModel?.id}
-                          </div>
-                          {aiProgress.step === 3 && aiProgress.detail && (
-                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 animate-pulse truncate">
-                              {aiProgress.detail}
+                            <div className="max-w-[90%] p-3.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+                              <FormattedMarkdown content={turn.text} />
                             </div>
                           )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Neutral Apple Skeleton Shimmer Bars */}
-                    <div className="w-full max-w-md space-y-2 pt-1" aria-hidden="true">
-                      {[0, 1, 2].map((bar) => (
-                        <div key={bar} className="h-2 rounded-full bg-slate-200/60 dark:bg-white/[0.06] overflow-hidden">
-                          <div
-                            className="h-full w-2/3 rounded-full bg-gradient-to-r from-transparent via-slate-400/30 dark:via-zinc-500/30 to-transparent animate-[synthesis-shimmer_1.8s_ease-in-out_infinite]"
-                            style={{ animationDelay: `${bar * 180}ms` }}
-                          />
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {aiResponse && !aiLoading && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    <div
-                      ref={synthesisCardRef}
-                      onMouseUp={handleTextSelection}
-                      className="relative p-5 rounded-xl bg-black/[0.015] dark:bg-white/[0.02] border border-black/[0.07] dark:border-white/[0.08] space-y-3.5 group shadow-2xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <RegaarderAiIcon size={14} className="text-slate-800 dark:text-zinc-200" />
-                          <span className="text-[10.5px] font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
-                            Executive Synthesis ({activePersona.name})
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsEditingPrompt(!isEditingPrompt);
-                              setEditingQueryText(query);
-                              setTimeout(() => promptEditInputRef.current?.focus(), 50);
-                            }}
-                            className="flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 px-2 py-1 rounded-md hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors"
-                            title="Edit prompt inquiry in-place"
-                          >
-                            <Edit3 size={12} />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCopyAiResponse}
-                            className="flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 px-2 py-1 rounded-md hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors"
-                            title="Copy answer markdown"
-                          >
-                            {copiedAi ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                            <span>{copiedAi ? 'Copied' : 'Copy'}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* In-place Prompt Editor */}
-                      {isEditingPrompt ? (
-                        <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 space-y-2">
-                          <textarea
-                            ref={promptEditInputRef}
-                            value={editingQueryText}
-                            onChange={(e) => setEditingQueryText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                e.preventDefault();
-                                handleSaveEditedPrompt();
-                              }
-                            }}
-                            className="w-full bg-transparent border-none outline-none text-xs text-slate-900 dark:text-zinc-100 resize-none font-medium"
-                            rows={2}
-                          />
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setIsEditingPrompt(false)}
-                              className="px-2 py-1 rounded text-[11px] text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleSaveEditedPrompt}
-                              className="px-2.5 py-1 rounded text-[11px] font-medium bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90"
-                            >
-                              Save & Re-synthesize
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {/* Synthesized Markdown Body */}
-                      <div className="text-[13px] leading-relaxed text-slate-800 dark:text-zinc-200 font-sans space-y-2.5">
-                        <FormattedMarkdown
-                          content={aiResponse.answer}
-                          claims={aiResponse.claims || []}
-                          activeClaimId={activeClaimId}
-                          onSelectClaim={(id) => setActiveClaimId(id)}
-                        />
-                      </div>
-
-                      {/* Interactive Selection Quoting Tooltip */}
-                      {selectionTooltip && (
-                        <div className="absolute right-4 bottom-3 z-30 animate-in fade-in zoom-in-95 duration-150">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuotedSnippet(selectionTooltip.text);
-                              setIsReplying(true);
-                              setSelectionTooltip(null);
-                              setTimeout(() => followUpInputRef.current?.focus(), 60);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                          >
-                            <CornerDownLeft size={11} />
-                            <span>Quote & Reply</span>
-                          </button>
-                        </div>
-                      )}
+                  {/* Loading Indicator for Follow-Up */}
+                  {isSendingFollowUp && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] text-slate-700 dark:text-zinc-300 text-xs">
+                      <RegaarderAiIcon size={14} className="animate-spin text-slate-900 dark:text-zinc-100" />
+                      <span>Synthesizing follow-up as {activePersona.name}…</span>
                     </div>
+                  )}
 
-                    {/* Evidence Claims & Source Drawer */}
-                    {aiResponse.claims && aiResponse.claims.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-mono px-1">
-                          Evidence Mapping & Source Audit
-                        </div>
-                        <div className="space-y-2">
-                          {aiResponse.claims.map((claim) => {
-                            const config = getEvidenceBadgeConfig(claim.evidenceType, claim.sources?.length || 1);
-                            const isSelected = activeClaimId === claim.id;
-
-                            return (
-                              <div
-                                key={claim.id}
-                                onClick={() => setActiveClaimId(isSelected ? null : claim.id)}
-                                className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-white dark:bg-zinc-850 border-slate-300 dark:border-zinc-600 shadow-sm'
-                                    : 'bg-black/[0.01] dark:bg-white/[0.015] border-black/[0.05] dark:border-white/[0.07] hover:border-black/15 dark:hover:border-white/15'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-semibold border ${config.classes} ${isSelected ? config.activeClasses : ''}`}>
-                                      {config.label}
-                                    </span>
-                                    <span className="text-xs text-slate-700 dark:text-zinc-300 truncate font-medium">
-                                      Claim: &ldquo;{claim.statement}&rdquo;
-                                    </span>
-                                  </div>
-                                  {isSelected && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveClaimId(null);
-                                      }}
-                                      className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
-                                    >
-                                      <X size={13} />
-                                    </button>
-                                  )}
-                                </div>
-
-                                {isSelected && claim.passages && claim.passages.length > 0 && (
-                                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-zinc-800 space-y-2 animate-in fade-in duration-150">
-                                    {claim.passages.map((p, pIdx) => (
-                                      <div key={pIdx} className="p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/60 text-xs">
-                                        <div className="flex items-center justify-between mb-1.5">
-                                          <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-                                            [{p.passageId || `doc-${pIdx + 1}`}]
-                                          </span>
-                                          {p.sourceEntity && (
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleActivateItem({ type: 'entity', data: p.sourceEntity });
-                                              }}
-                                              className="flex items-center gap-1 text-[10.5px] font-semibold text-slate-700 dark:text-zinc-200 hover:underline"
-                                            >
-                                              <span>Jump to text in {p.sourceEntity.title || 'Document'}</span>
-                                              <ExternalLink size={10} />
-                                            </button>
-                                          )}
-                                        </div>
-                                        <p className="text-slate-700 dark:text-zinc-300 italic">
-                                          &ldquo;{p.text}&rdquo;
-                                        </p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Referenced Citations Pill Carousel */}
-                    {aiResponse.sources && aiResponse.sources.length > 0 && (
-                      <div className="space-y-1.5">
-                        <div className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-mono px-1">
-                          Referenced Sources ({aiResponse.sources.length})
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {aiResponse.sources.map((src, i) => (
-                            <div
-                              key={i}
-                              onClick={() => handleActivateItem({ type: 'entity', data: src })}
-                              className="p-2.5 rounded-lg bg-white dark:bg-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/80 flex items-start gap-2.5 transition-all group cursor-pointer shadow-2xs"
-                            >
-                              <div className="w-5 h-5 rounded bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
-                                <RegaarderProductIcon name={src.workspace} size={11} strokeWidth={1.7} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h5 className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-slate-950 dark:group-hover:text-white">
-                                  {src.title}
-                                </h5>
-                                <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
-                                  {src.workspace ? src.workspace.charAt(0).toUpperCase() + src.workspace.slice(1) : 'Workspace'} &gt; {src.location || 'General'}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Multi-turn Thread Render */}
-                    {conversationThread.length > 0 && (
-                      <div className="space-y-3 pt-2">
-                        {conversationThread.map((turn, tIdx) => (
-                          <div
-                            key={tIdx}
-                            className={`p-3.5 rounded-xl text-xs leading-relaxed space-y-1 ${
-                              turn.role === 'user'
-                                ? 'bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06] ml-6'
-                                : 'bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 shadow-2xs'
-                            }`}
-                          >
-                            <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono">
-                              {turn.role === 'user' ? 'Follow-Up Inquiry' : `${activePersona.name} Response`}
-                            </div>
-                            <div className="text-slate-800 dark:text-zinc-200">
-                              {turn.text}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Follow-up / Reply Input Box */}
-                    <div className="pt-2">
+                  {/* Inline Follow-Up Prompt Box */}
+                  {isReplying && (
+                    <div className="p-3 rounded-xl bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 shadow-xs space-y-2 animate-in fade-in duration-150">
                       {quotedSnippet && (
-                        <div className="mb-2 p-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] flex items-center justify-between text-xs">
-                          <span className="text-slate-600 dark:text-zinc-300 truncate italic">
-                            Quoting: &ldquo;{quotedSnippet}&rdquo;
-                          </span>
+                        <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-[11px] text-slate-700 dark:text-zinc-300">
+                          <span className="truncate max-w-[90%] italic">Quoting: &ldquo;{quotedSnippet}&rdquo;</span>
                           <button
                             type="button"
                             onClick={() => setQuotedSnippet('')}
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 ml-2"
+                            className="hover:text-slate-900 dark:hover:text-white cursor-pointer ml-1"
                           >
                             <X size={12} />
                           </button>
                         </div>
                       )}
-                      <div className="relative flex items-center rounded-xl bg-white dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 p-1.5 shadow-xs focus-within:ring-2 focus-within:ring-slate-400 dark:focus-within:ring-zinc-600 transition-all">
+                      <div className="flex items-center gap-2">
                         <input
                           ref={followUpInputRef}
                           type="text"
@@ -2371,188 +2109,464 @@ export default function GlobalWorkspaceSearchModal({
                               e.preventDefault();
                               handleSendFollowUp();
                             }
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setIsReplying(false);
+                            }
                           }}
-                          placeholder={`Ask a follow-up question to ${activePersona.name}…`}
-                          className="flex-1 bg-transparent border-none outline-none text-xs text-slate-900 dark:text-zinc-100 px-2.5 py-1.5 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                          placeholder="Continue chatting or ask a follow-up about this synthesis…"
+                          className="flex-1 bg-transparent text-[12.5px] text-slate-800 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none"
                         />
                         <button
                           type="button"
                           onClick={handleSendFollowUp}
                           disabled={!replyQuery.trim() || isSendingFollowUp}
-                          className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 disabled:opacity-50 text-white dark:text-zinc-900 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
                         >
-                          {isSendingFollowUp ? (
-                            <RefreshCw size={11} className="animate-spin" />
-                          ) : (
-                            <ArrowRight size={11} />
-                          )}
                           <span>Send</span>
+                          <CornerDownLeft size={11} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsReplying(false);
+                            setQuotedSnippet('');
+                          }}
+                          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                        >
+                          <X size={13} />
                         </button>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
 
-            {/* ══════════════════════════════════════════════════════════
-                MODE B: SEARCH MODE RESULTS (INSTANT DISCOVERY)
-               ══════════════════════════════════════════════════════════ */}
-            {mode === 'search' && (
-              <div className="space-y-4">
-                {/* AI Ask Memory Prompt Suggestion Card */}
-                {isQuestionQuery && (
-                  <div
-                    onClick={() => {
-                      setMode('ai');
-                      handleRunAiSynthesis(query);
-                    }}
-                    className="p-3.5 rounded-xl bg-gradient-to-r from-slate-50 to-white dark:from-zinc-850 dark:to-zinc-800 border border-black/[0.08] dark:border-white/[0.09] flex items-center justify-between group cursor-pointer shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0">
-                        <RegaarderAiIcon size={16} strokeWidth={2.0} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-[12.5px] font-bold text-slate-900 dark:text-zinc-100">
-                            Ask Memory with AI Intelligence
-                          </h4>
-                          <span className="text-[9.5px] font-semibold uppercase px-1.5 py-0.2 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-zinc-300 font-mono">
-                            Recommended
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
-                          Synthesize an executive answer for &ldquo;{query}&rdquo; using {activePersona.name}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-3">
-                      <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 text-[10px] font-mono font-semibold border border-black/[0.05] dark:border-white/[0.08]">
-                        ↵ Enter
-                      </kbd>
-                      <ArrowRight size={14} className="text-slate-400 group-hover:text-slate-800 dark:text-zinc-500 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all" />
-                    </div>
-                  </div>
-                )}
-                {groupedResults.map((group) => (
-                  <div key={group.label} className="space-y-1">
-                    {/* Category Section Header with Native Regaarder SVG Icon */}
-                    <div className="flex items-center justify-between px-1 mb-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
-                        <RegaarderProductIcon name={group.workspace} size={12} strokeWidth={1.7} />
-                        <span>{group.label}</span>
-                        <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">
-                          · {group.items.length}
+                  {aiResponse.sources?.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
+                          Referenced Sources ({aiResponse.sources.length})
                         </span>
+                        {aiResponse.claims?.length > 0 && (
+                          <span className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">
+                            Click claim or source to trace evidence
+                          </span>
+                        )}
                       </div>
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {aiResponse.sources.map((src, i) => {
+                          const matchingClaim = aiResponse.claims?.find(c => c.sourceIds?.includes(src.id) || c.passages?.some(p => p.sourceId === src.id));
+                          const isHighlightedSource = activeClaimId && matchingClaim?.claimId === activeClaimId;
 
-                    {/* Results List */}
-                    {group.items.map((res) => {
-                      const entity = res.entity;
-                      const itemGlobalIdx = searchResults.findIndex((r) => r.entity.id === entity.id);
-                      const isSelected = selectedIndex === itemGlobalIdx;
-
-                      return (
-                        <div
-                          key={entity.id}
-                          data-selected={isSelected}
-                          onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                          onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
-                          className={`group relative flex flex-col p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
-                            isSelected
-                              ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
-                              : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]'
-                          }`}
-                        >
-                          {/* Header: Icon + Title + Location + Metadata */}
-                          <div className="flex items-start justify-between gap-3 mb-1">
-                            <div className="flex items-start gap-2.5 min-w-0">
-                              {entity.avatar ? (
-                                <img
-                                  src={entity.avatar}
-                                  alt={entity.title}
-                                  className="w-6 h-6 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1] shrink-0 mt-0.5"
-                                />
-                              ) : (
-                                <div className="w-6 h-6 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
-                                  <RegaarderProductIcon name={entity.workspace} size={12} strokeWidth={1.6} />
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                if (matchingClaim) {
+                                  setActiveClaimId(matchingClaim.claimId === activeClaimId ? null : matchingClaim.claimId);
+                                } else {
+                                  const entity = workspaceIndex.find(e => e.id === src.id);
+                                  if (entity) handleActivateItem({ type: 'entity', data: entity });
+                                }
+                              }}
+                              className={`flex items-start gap-2.5 p-2.5 rounded-xl transition-all duration-150 cursor-pointer shadow-2xs ${
+                                isHighlightedSource
+                                  ? 'bg-violet-500/[0.12] dark:bg-violet-400/[0.15] border-violet-500/50 dark:border-violet-400/50 ring-1 ring-violet-500/30'
+                                  : 'bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08]'
+                              }`}
+                              title={matchingClaim ? "Click to view supporting passages in synthesis" : "Click to open source document"}
+                            >
+                              <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
+                                <RegaarderProductIcon name={src.workspace} size={12} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                  {src.title}
                                 </div>
-                              )}
-
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                                    <HighlightedText text={entity.title} query={deferredQuery} />
-                                  </h4>
-                                  {entity.type === 'person' && entity.role && (
-                                    <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 dark:text-zinc-400 shrink-0">
-                                      {entity.role}
+                                <div className="text-[10px] text-slate-400 dark:text-zinc-500 truncate flex items-center gap-1.5">
+                                  <span>{src.location}</span>
+                                  {matchingClaim && (
+                                    <span className="text-[9.5px] text-violet-600 dark:text-violet-400 font-mono">
+                                      · {matchingClaim.evidenceType}
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
-                                  <HighlightedText text={entity.location} query={deferredQuery} />
-                                  {entity.author && ` • ${entity.author}`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              MODE B: SEARCH MODE - EMPTY QUERY (Category Browser or 3-Pillar Executive Architecture)
+             ══════════════════════════════════════════════════════════ */}
+          {mode === 'search' && !query.trim() && (
+            activeFilter === 'all' ? (
+              <div className="space-y-4">
+                {searchResults.length > 0 ? (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600 dark:text-zinc-400 mb-2 px-1">
+                      <RegaarderHistoryIcon size={12} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
+                      <span>Recent Workspace Files & Context</span>
+                    </div>
+                    <div className="space-y-1">
+                      {searchResults.slice(0, 5).map((res, itemIdx) => {
+                        const isSelected = selectedIndex === itemIdx;
+                        const entity = res.entity;
+
+                        return (
+                          <div
+                            key={entity.id}
+                            data-selected={isSelected}
+                            onClick={() => handleActivateItem({ type: 'entity', data: entity })}
+                            onMouseEnter={() => setSelectedIndex(itemIdx)}
+                            className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                              isSelected
+                                ? 'bg-black/[0.03] dark:bg-white/[0.05]'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
+                                <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
+                                    {entity.title}
+                                  </span>
+                                  {entity.isCurrent && (
+                                    <span className="text-[9px] font-medium uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
+                                  {entity.location} • {entity.author}
                                 </div>
                               </div>
                             </div>
 
-                            {/* Metric / Formula / Status Pill */}
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {entity.metadata?.cellValue && (
-                                <span className="px-2 py-0.5 text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 rounded">
-                                  <HighlightedText text={entity.metadata.cellValue} query={deferredQuery} />
-                                </span>
-                              )}
-                              {entity.metadata?.priority && (
-                                <span className={`px-1.5 py-0.2 text-[9px] font-medium rounded uppercase tracking-wider font-mono ${
-                                  entity.metadata.priority === 'High'
-                                    ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                                }`}>
-                                  {entity.metadata.priority}
-                                </span>
-                              )}
-                              {entity.metadata?.status && (
-                                <span className="px-1.5 py-0.2 text-[9.5px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 rounded">
-                                  {entity.metadata.status}
-                                </span>
-                              )}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
+                                {entity.updatedAt}
+                              </span>
+                              <ArrowRight
+                                size={12}
+                                className={`transition-transform duration-150 ${
+                                  isSelected ? 'translate-x-0.5 text-slate-800 dark:text-zinc-200' : 'text-slate-300 dark:text-zinc-600'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-14 text-center max-w-sm mx-auto space-y-3">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.07] flex items-center justify-center text-slate-400 dark:text-zinc-500 shadow-2xs">
+                      <History size={20} strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h4 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200">
+                        No recent workspace activity
+                      </h4>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 leading-relaxed">
+                        Recent docs, sheets, tasks, and rooms will appear here as soon as you start working.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Category-Specific Workspace File Browser ── */
+              <div className="space-y-3">
+                {searchResults.length > 0 ? (
+                  <div>
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600 dark:text-zinc-400">
+                        <RegaarderProductIcon name={activeFilter} size={13} strokeWidth={1.7} className="text-slate-700 dark:text-zinc-300" />
+                        <span>{getWorkspaceFilterTitle(activeFilter)}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">
+                          · {searchResults.length}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          if (onNavigateToEntity) {
+                            onNavigateToEntity({ workspace: activeFilter, actionType: 'create' });
+                          }
+                        }}
+                        className="flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+                      >
+                        <Plus size={12} strokeWidth={2.0} />
+                        <span>{getWorkspaceCtaLabel(activeFilter)}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      {searchResults.map((res, itemIdx) => {
+                        const isSelected = selectedIndex === itemIdx;
+                        const entity = res.entity;
+
+                        return (
+                          <div
+                            key={entity.id}
+                            data-selected={isSelected}
+                            onClick={() => handleActivateItem({ type: 'entity', data: entity })}
+                            onMouseEnter={() => setSelectedIndex(itemIdx)}
+                            className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                              isSelected
+                                ? 'bg-black/[0.03] dark:bg-white/[0.05]'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
+                                <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
+                                    {entity.title}
+                                  </span>
+                                  {entity.isCurrent && (
+                                    <span className="text-[9px] font-medium uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
+                                  {entity.location} • {entity.author}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
+                                {entity.updatedAt}
+                              </span>
+                              <ArrowRight
+                                size={12}
+                                className={`transition-transform duration-150 ${
+                                  isSelected ? 'translate-x-0.5 text-slate-800 dark:text-zinc-200' : 'text-slate-300 dark:text-zinc-600'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  /* Empty State for Selected Category */
+                  <div className="py-14 text-center max-w-sm mx-auto space-y-3">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.07] flex items-center justify-center text-slate-400 dark:text-zinc-500 shadow-2xs">
+                      <RegaarderProductIcon name={activeFilter} size={22} strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h4 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200">
+                        No {getWorkspaceFilterTitle(activeFilter)} Found
+                      </h4>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 leading-relaxed">
+                        There are no {getWorkspaceFilterTitle(activeFilter).toLowerCase()} created in your workspace yet.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        if (onNavigateToEntity) {
+                          onNavigateToEntity({ workspace: activeFilter, actionType: 'create' });
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 shadow-2xs transition-all cursor-pointer"
+                    >
+                      <Plus size={12} strokeWidth={2.0} />
+                      <span>{getWorkspaceCtaLabel(activeFilter)}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              MODE B: SEARCH MODE - ACTIVE QUERY RESULTS
+             ══════════════════════════════════════════════════════════ */}
+          {mode === 'search' && query.trim() && searchResults.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 mb-3 border border-black/[0.05] dark:border-white/[0.07] shadow-2xs">
+                <Search size={18} strokeWidth={1.6} />
+              </div>
+              <h4 className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 mb-1">
+                No results for &ldquo;{query}&rdquo;
+              </h4>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm leading-relaxed">
+                Check your spelling or switch category tabs to search across all Documents, Sheets, Decks, Tasks, Rooms, and Notes.
+              </p>
+            </div>
+          )}
+
+          {mode === 'search' && query.trim() && searchResults.length > 0 && (
+            <div className="space-y-4">
+              {/* Natural Language Prompt Suggestion Card */}
+              {isQuestionQuery && (
+                <div 
+                  onClick={() => {
+                    setMode('ai');
+                    handleRunAiSynthesis(query);
+                  }}
+                  className="p-3.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <RegaarderAiIcon size={16} strokeWidth={2.0} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100">
+                          Ask Memory with AI Intelligence
+                        </span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-zinc-300 font-mono">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                        Synthesize an executive answer for &ldquo;{query}&rdquo; using {activePersona.name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 text-[10px] font-mono font-semibold border border-black/[0.05] dark:border-white/[0.08]">
+                      ↵ Enter
+                    </kbd>
+                    <ArrowRight size={14} className="text-slate-400 group-hover:text-slate-800 dark:text-zinc-500 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                </div>
+              )}
+              {groupedResults.map((group) => (
+                <div key={group.label} className="space-y-1">
+                  {/* Category Section Header with Native Regaarder SVG Icon */}
+                  <div className="flex items-center justify-between px-1 mb-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-zinc-400">
+                      <RegaarderProductIcon name={group.workspace} size={12} strokeWidth={1.7} />
+                      <span>{group.label}</span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">
+                        · {group.items.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Results List */}
+                  {group.items.map((res) => {
+                    const entity = res.entity;
+                    const itemGlobalIdx = searchResults.findIndex((r) => r.entity.id === entity.id);
+                    const isSelected = selectedIndex === itemGlobalIdx;
+
+                    return (
+                      <div
+                        key={entity.id}
+                        data-selected={isSelected}
+                        onClick={() => handleActivateItem({ type: 'entity', data: entity })}
+                        onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
+                        className={`group relative flex flex-col p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                          isSelected
+                            ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
+                            : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]'
+                        }`}
+                      >
+                        {/* Header: Icon + Title + Location + Metadata */}
+                        <div className="flex items-start justify-between gap-3 mb-1">
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            {entity.avatar ? (
+                              <img
+                                src={entity.avatar}
+                                alt={entity.title}
+                                className="w-6 h-6 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1] shrink-0 mt-0.5"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
+                                <RegaarderProductIcon name={entity.workspace} size={12} strokeWidth={1.6} />
+                              </div>
+                            )}
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                  <HighlightedText text={entity.title} query={query} />
+                                </h4>
+                                {entity.type === 'person' && entity.role && (
+                                  <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 dark:text-zinc-400 shrink-0">
+                                    {entity.role}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                <HighlightedText text={entity.location} query={query} />
+                                {entity.author && ` • ${entity.author}`}
+                              </div>
                             </div>
                           </div>
 
-                          {/* Snippet preview with keyword highlighting */}
-                          {res.snippet && (
-                            <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed pl-8 mt-0.5">
-                              <HighlightedText text={res.snippet} query={deferredQuery} />
-                            </p>
-                          )}
-
-                          {/* Formula row if available */}
-                          {entity.metadata?.formula && (
-                            <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-600 dark:text-zinc-400 pl-8 mt-1">
-                              <span className="text-[9px] font-sans font-medium text-slate-400">Formula:</span>
-                              <HighlightedText text={entity.metadata.formula} query={deferredQuery} />
-                            </div>
-                          )}
+                          {/* Metric / Formula / Status Pill */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {entity.metadata?.cellValue && (
+                              <span className="px-2 py-0.5 text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 rounded">
+                                <HighlightedText text={entity.metadata.cellValue} query={query} />
+                              </span>
+                            )}
+                            {entity.metadata?.priority && (
+                              <span className={`px-1.5 py-0.2 text-[9px] font-medium rounded uppercase tracking-wider font-mono ${
+                                entity.metadata.priority === 'High'
+                                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                              }`}>
+                                {entity.metadata.priority}
+                              </span>
+                            )}
+                            {entity.metadata?.status && (
+                              <span className="px-1.5 py-0.2 text-[9.5px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 rounded">
+                                {entity.metadata.status}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Bottom Overflow Affordance Indicator */}
-          <div className={`scroll-affordance-bottom ${canScrollDown ? 'is-visible' : ''}`} aria-hidden="true" />
+                        {/* Snippet preview with keyword highlighting */}
+                        {res.snippet && (
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed pl-8 mt-0.5">
+                            <HighlightedText text={res.snippet} query={query} />
+                          </p>
+                        )}
+
+                        {/* Formula row if available */}
+                        {entity.metadata?.formula && (
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-600 dark:text-zinc-400 pl-8 mt-1">
+                            <span className="text-[9px] font-sans font-medium text-slate-400">Formula:</span>
+                            <HighlightedText text={entity.metadata.formula} query={query} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory with 3-Item Cap + Progressive Disclosure) ── */}
         {recentInquiries.length > 0 && (
-          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 select-none">
+          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
               <History size={11} className="text-slate-400 dark:text-zinc-500" />
               Recent:
