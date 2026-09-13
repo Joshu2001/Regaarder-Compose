@@ -6889,6 +6889,8 @@ function AppCore() {
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState('all');
   const [libraryDropdownOpen, setLibraryDropdownOpen] = useState(false);
   const [libraryDropdownAnchorRect, setLibraryDropdownAnchorRect] = useState(null);
+  const [librarySearchQuery, setLibrarySearchQuery] = useState('');
+  const [libraryModalSearchQuery, setLibraryModalSearchQuery] = useState('');
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -16478,7 +16480,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="w-[216px] rounded-xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-2xl p-1.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
+          <div className="w-[236px] rounded-xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-2xl p-1.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
             <div className="flex flex-col gap-0.5">
               {[
                 { mode: 'orb', label: t('nav.orb') || 'Orb', desc: t('workspaceDesc.orb') || 'Unified Intelligence Layer', icon: RegaarderAiIcon },
@@ -16548,18 +16550,18 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                       setProductMode(item.mode);
                       showToast(`Switched to ${item.label}`);
                     }}
-                    className={`group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer ${
+                    className={`group flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer ${
                       isCurrent
                         ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16] shadow-xs'
                         : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
                     }`}
                   >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    <div className={`w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                       isCurrent 
                         ? 'bg-[#7C5ACF]/[0.14] dark:bg-[#7C5ACF]/[0.22] text-[#7C5ACF] dark:text-[#8B6FD1]' 
                         : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 group-hover:text-slate-800 dark:group-hover:text-zinc-200'
                     }`}>
-                      <IconComponent size={15} strokeWidth={isCurrent ? 2 : 1.75} />
+                      <IconComponent size={21} strokeWidth={isCurrent ? 1.85 : 1.65} />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className={`text-[13px] leading-tight whitespace-nowrap ${
@@ -16589,11 +16591,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   setWorkspaceSwitcherAnchorRect(null);
                   setIsMemorySearchOpen(true);
                 }}
-                className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-violet-50/80 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-900 dark:hover:text-violet-200"
+                className="group flex items-center justify-between px-2 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-violet-50/80 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-900 dark:hover:text-violet-200"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-violet-50 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100 dark:border-violet-900/40">
-                    <MemoryIcon size={14} />
+                  <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-violet-50 dark:bg-violet-950/50 text-[#7C5ACF] dark:text-[#a78bfa] border border-violet-100 dark:border-violet-900/40">
+                    <MemoryIcon size={20} strokeWidth={1.7} />
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-[12.5px] font-semibold leading-tight truncate">
@@ -16616,11 +16618,31 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     );
   };
 
+  const handleCreateNewCategoryItem = (catId) => {
+    setLibraryDropdownOpen(false);
+    setLibrarySearchQuery('');
+    if (catId === 'sheets') {
+      setProductMode('sheets');
+      createNewComposition({ initialTitle: 'Untitled Sheet' });
+    } else if (catId === 'deck') {
+      setProductMode('deck');
+      createNewComposition({ initialTitle: 'Untitled Deck' });
+    } else if (catId === 'whiteboard') {
+      setProductMode('whiteboard');
+      setActiveRightTab('whiteboard');
+      setRightSidebarOpen(true);
+      createNewWhiteboard();
+    } else {
+      setProductMode('compose');
+      createNewComposition({ initialTitle: 'Untitled Document' });
+    }
+  };
+
   const renderLibraryDropdownContent = () => {
     if (typeof document === 'undefined') return null;
-    const isRightAnchored = libraryDropdownAnchorRect && typeof window !== 'undefined' && (window.innerWidth - libraryDropdownAnchorRect.right < 340);
+    const isRightAnchored = libraryDropdownAnchorRect && typeof window !== 'undefined' && (window.innerWidth - libraryDropdownAnchorRect.right < 380);
     const topPos = libraryDropdownAnchorRect
-      ? Math.min(window.innerHeight - 380, (libraryDropdownAnchorRect.bottom || 44) + 6)
+      ? Math.min(window.innerHeight - 440, (libraryDropdownAnchorRect.bottom || 44) + 6)
       : 52;
     const rightPos = isRightAnchored && libraryDropdownAnchorRect
       ? Math.max(16, window.innerWidth - libraryDropdownAnchorRect.right)
@@ -16635,53 +16657,39 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     const deckCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length;
     const whiteboardCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length;
 
-    const libraryCategories = [
-      {
-        id: 'compose',
-        label: 'Saved Documents',
-        desc: 'Text documents & executive briefs',
-        count: composeCount,
-        icon: ComposeIcon,
-        color: 'text-violet-600 dark:text-violet-400',
-        bg: 'bg-violet-50 dark:bg-violet-950/40'
-      },
-      {
-        id: 'sheets',
-        label: 'Saved Workbooks',
-        desc: 'Spreadsheets & financial models',
-        count: sheetsCount,
-        icon: SheetIcon,
-        color: 'text-emerald-600 dark:text-emerald-400',
-        bg: 'bg-emerald-50 dark:bg-emerald-950/40'
-      },
-      {
-        id: 'deck',
-        label: 'Saved Presentations',
-        desc: 'Slide decks & visual presentations',
-        count: deckCount,
-        icon: DeckIcon,
-        color: 'text-amber-600 dark:text-amber-400',
-        bg: 'bg-amber-50 dark:bg-amber-950/40'
-      },
-      {
-        id: 'whiteboard',
-        label: 'Saved Whiteboards',
-        desc: 'Diagrams & free-form canvases',
-        count: whiteboardCount,
-        icon: WhiteboardIcon,
-        color: 'text-indigo-600 dark:text-indigo-400',
-        bg: 'bg-indigo-50 dark:bg-indigo-950/40'
-      }
+    const filterTabs = [
+      { id: 'all', label: 'All', count: recentDocumentsList.length },
+      { id: 'compose', label: 'Docs', count: composeCount },
+      { id: 'sheets', label: 'Sheets', count: sheetsCount },
+      { id: 'deck', label: 'Decks', count: deckCount },
+      { id: 'whiteboard', label: 'Canvas', count: whiteboardCount }
     ];
+
+    const filteredDocs = recentDocumentsList.filter(d => {
+      const dMode = d.mode || d.data?.mode || (d.data?.sheetsData ? 'sheets' : d.data?.deckSlidesData ? 'deck' : 'compose');
+      if (libraryCategoryFilter !== 'all' && dMode !== libraryCategoryFilter) return false;
+      if (!librarySearchQuery.trim()) return true;
+      const q = librarySearchQuery.toLowerCase();
+      return (d.title || '').toLowerCase().includes(q);
+    });
+
+    const activeCatLabel = libraryCategoryFilter === 'sheets'
+      ? 'Workbook'
+      : libraryCategoryFilter === 'deck'
+      ? 'Presentation'
+      : libraryCategoryFilter === 'whiteboard'
+      ? 'Canvas'
+      : 'Document';
 
     return createPortal(
       <>
-        {/* Page dimming backdrop overlay */}
+        {/* Page dimming backdrop overlay for clean on-tap dismissal */}
         <div
           className="fixed inset-0 z-[10000000] bg-slate-950/35 dark:bg-black/60 backdrop-blur-xs transition-all duration-150 animate-in fade-in cursor-default"
           onPointerDown={(e) => {
             e.preventDefault();
             setLibraryDropdownOpen(false);
+            setLibrarySearchQuery('');
           }}
         />
         <div 
@@ -16694,8 +16702,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="w-[280px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
-            <div className="px-2.5 py-2 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 mb-1">
+          <div className="w-[360px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl p-2.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out flex flex-col">
+            {/* Header: Library Title and Item Count Badge */}
+            <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-100 dark:border-zinc-800/80">
               <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
                 <BookOpen size={13} className="text-violet-600 dark:text-violet-400" />
                 <span>Library</span>
@@ -16705,69 +16714,147 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               </span>
             </div>
 
-            <div className="flex flex-col gap-0.5">
-              {libraryCategories.map((item) => {
-                const IconComponent = item.icon;
+            {/* Quick Search Input */}
+            <div className="relative mb-2">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+              <input
+                type="text"
+                value={librarySearchQuery}
+                onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                placeholder="Search saved files..."
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl text-xs bg-slate-100/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border border-slate-200/60 dark:border-zinc-700/60 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+              />
+              {librarySearchQuery && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLibrarySearchQuery('');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter Tabs (Slightly rounded rectangles per architectural directive) */}
+            <div className="flex items-center gap-1 mb-2 pb-1 overflow-x-auto no-scrollbar">
+              {filterTabs.map(tab => {
+                const isActive = libraryCategoryFilter === tab.id;
                 return (
                   <button
-                    key={item.id}
+                    key={tab.id}
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setLibraryDropdownOpen(false);
-                      setLibraryCategoryFilter(item.id);
-                      setRecentDocumentsModalOpen(true);
+                      setLibraryCategoryFilter(tab.id);
                     }}
-                    className="group flex items-center justify-between px-2.5 py-2 rounded-xl text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-slate-100/80 dark:hover:bg-zinc-800/80"
+                    className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all flex items-center gap-1 shrink-0 cursor-pointer select-none ${
+                      isActive
+                        ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+                        : 'bg-slate-100/80 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/70 dark:hover:bg-zinc-700/60'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
-                        <IconComponent size={15} strokeWidth={1.8} />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white leading-tight">
-                          {item.label}
-                        </span>
-                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
-                          {item.desc}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 shrink-0">
-                      {item.count}
+                    <span>{tab.label}</span>
+                    <span className={`text-[9px] px-1 py-0.2 rounded-sm ${
+                      isActive ? 'bg-white/20 text-white dark:bg-black/15 dark:text-zinc-900 font-semibold' : 'text-slate-400 dark:text-zinc-500'
+                    }`}>
+                      {tab.count}
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-zinc-800/80">
+            {/* Scrollable list of items with Native Colored SVG Badges */}
+            <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto thin-scrollbar pr-1 py-0.5">
+              {filteredDocs.length === 0 ? (
+                <div className="text-center py-6 px-3">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">
+                    {librarySearchQuery ? 'No matching items' : 'No saved files found'}
+                  </p>
+                </div>
+              ) : (
+                filteredDocs.map((doc) => {
+                  const isActive = String(doc.id) === String(activeDocId);
+                  const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+                  const sheetCount = doc.data?.sheetGrids ? Object.keys(doc.data.sheetGrids).length : (doc.data?.sheetsData?.length || 1);
+                  const metaText = dMode === 'sheets'
+                    ? `Sheets • ${sheetCount} sheet${sheetCount > 1 ? 's' : ''}`
+                    : dMode === 'deck'
+                    ? `Deck • ${doc.data?.deckSlidesData?.length || 1} slides`
+                    : dMode === 'whiteboard'
+                    ? 'Whiteboard • Canvas'
+                    : doc.savedAt ? `Document • Edited ${new Date(doc.savedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : 'Document';
+
+                  return (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setLibraryDropdownOpen(false);
+                        setLibrarySearchQuery('');
+                        openSavedLibraryItem(doc);
+                      }}
+                      className={`group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left select-none transition-colors duration-100 w-full cursor-pointer ${
+                        isActive
+                          ? 'bg-violet-50/80 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200'
+                          : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-800 dark:text-zinc-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileTypeIcon file={doc} size="sm" className="shrink-0" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[12px] font-semibold truncate leading-tight">
+                            {doc.title || 'Untitled'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
+                            {metaText}
+                          </span>
+                        </div>
+                      </div>
+                      {isActive ? (
+                        <Check size={13} className="text-violet-600 dark:text-violet-400 shrink-0 ml-1.5" />
+                      ) : null}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Bottom Actions: New Item & Browse All in Library */}
+            <div className="pt-2 mt-1 border-t border-slate-100 dark:border-zinc-800/80 flex flex-col gap-0.5">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCreateNewCategoryItem(libraryCategoryFilter === 'all' ? 'compose' : libraryCategoryFilter);
+                }}
+                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl text-left text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
+              >
+                <Plus size={14} className="shrink-0" />
+                <span>New {activeCatLabel}</span>
+              </button>
               <button
                 type="button"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setLibraryDropdownOpen(false);
-                  setLibraryCategoryFilter('all');
+                  setLibrarySearchQuery('');
                   setRecentDocumentsModalOpen(true);
                 }}
-                className="group flex items-center justify-between px-2.5 py-2 rounded-xl text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-violet-50/80 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-900 dark:hover:text-violet-200"
+                className="flex items-center justify-between w-full px-2.5 py-1 text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-violet-100/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400">
-                    <FolderOpen size={14} />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[12.5px] font-semibold leading-tight">
-                      Browse All in Library
-                    </span>
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500">
-                      Search and filter all items
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight size={14} className="text-slate-400 group-hover:text-violet-600 shrink-0" />
+                <span>Browse all in Library</span>
+                <ArrowRight size={11} />
               </button>
             </div>
           </div>
@@ -73257,22 +73344,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Recent Documents Modal */}
       {recentDocumentsModalOpen && (() => {
         const filteredDocs = recentDocumentsList.filter(doc => {
-          if (libraryCategoryFilter === 'all') return true;
-          const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
-          return dMode === libraryCategoryFilter;
+          if (libraryCategoryFilter !== 'all') {
+            const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+            if (dMode !== libraryCategoryFilter) return false;
+          }
+          if (libraryModalSearchQuery.trim()) {
+            const q = libraryModalSearchQuery.toLowerCase();
+            return (doc.title || '').toLowerCase().includes(q);
+          }
+          return true;
         });
 
+        const composeCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'compose' || (!d.mode && !d.data?.sheetsData && !d.data?.deckSlidesData)).length;
+        const sheetsCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'sheets' || Boolean(d.data?.sheetsData)).length;
+        const deckCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length;
+        const whiteboardCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length;
+
         const filterTabs = [
-          { id: 'all', label: 'All Items', count: recentDocumentsList.length },
-          { id: 'compose', label: 'Saved Documents', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'compose' || (!d.mode && !d.data?.sheetsData && !d.data?.deckSlidesData)).length },
-          { id: 'sheets', label: 'Saved Workbooks', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'sheets' || Boolean(d.data?.sheetsData)).length },
-          { id: 'deck', label: 'Saved Presentations', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length },
-          { id: 'whiteboard', label: 'Saved Whiteboards', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length }
+          { id: 'all', label: 'All', count: recentDocumentsList.length },
+          { id: 'compose', label: 'Docs', count: composeCount },
+          { id: 'sheets', label: 'Sheets', count: sheetsCount },
+          { id: 'deck', label: 'Decks', count: deckCount },
+          { id: 'whiteboard', label: 'Canvas', count: whiteboardCount }
         ];
 
         return (
-          <div className="fixed inset-0 z-[10000000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-2xl w-full max-w-[640px] max-h-[85vh] overflow-hidden border border-slate-200/80 dark:border-white/10 flex flex-col font-sans animate-in fade-in zoom-in-[0.98] duration-150">
+          <div
+            className="fixed inset-0 z-[10000000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setRecentDocumentsModalOpen(false);
+                setLibraryModalSearchQuery('');
+              }
+            }}
+          >
+            <div
+              className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-2xl w-full max-w-[740px] max-h-[85vh] overflow-hidden border border-slate-200/80 dark:border-white/10 flex flex-col font-sans animate-in fade-in zoom-in-[0.98] duration-150 cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Modal Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -73281,21 +73390,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 leading-tight">Library & Saved Files</h2>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">Access saved documents, workbooks, presentations, and canvases</p>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">Access and organize saved documents, workbooks, presentations, and canvases</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setRecentDocumentsModalOpen(false)}
-                  className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center cursor-pointer"
-                  title="Close"
-                >
-                  <X size={16} />
-                </button>
               </div>
 
-              {/* Category Filter Pills */}
-              <div className="px-5 py-2.5 bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+              {/* Search Bar & Quick Stats */}
+              <div className="px-6 py-2.5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/30 flex items-center justify-between gap-3 shrink-0">
+                <div className="relative flex-1">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={libraryModalSearchQuery}
+                    onChange={(e) => setLibraryModalSearchQuery(e.target.value)}
+                    placeholder="Search saved files..."
+                    className="w-full pl-8 pr-7 py-1.5 rounded-xl text-xs bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border border-slate-200/80 dark:border-zinc-700/80 shadow-xs focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+                  />
+                  {libraryModalSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setLibraryModalSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <div className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 shrink-0">
+                  {filteredDocs.length} {filteredDocs.length === 1 ? 'item' : 'items'}
+                </div>
+              </div>
+
+              {/* Category Filter Tabs (Slightly rounded rectangles per architectural directive) */}
+              <div className="px-6 py-2 bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
                 {filterTabs.map(tab => {
                   const isActive = libraryCategoryFilter === tab.id;
                   return (
@@ -73320,63 +73447,80 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 })}
               </div>
 
+              {/* Column Header (WPS-style Information Hierarchy) */}
+              <div className="grid grid-cols-12 gap-3 px-6 py-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider border-b border-slate-100 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-900/20 shrink-0">
+                <div className="col-span-7">Name</div>
+                <div className="col-span-2">Type</div>
+                <div className="col-span-3 text-right pr-2">Last Modified</div>
+              </div>
+
               {/* Documents List */}
-              <div className="overflow-y-auto p-3 flex-1 min-h-[220px] max-h-[58vh] space-y-1">
+              <div className="overflow-y-auto thin-scrollbar px-4 py-2 flex-1 min-h-[220px] max-h-[55vh] divide-y divide-slate-100/60 dark:divide-zinc-800/40">
                 {filteredDocs.length === 0 ? (
                   <div className="text-center py-12 px-4 flex flex-col items-center justify-center gap-2">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800/60 text-slate-400 dark:text-zinc-500 flex items-center justify-center">
                       <FolderOpen size={20} />
                     </div>
-                    <div className="text-sm font-semibold text-slate-700 dark:text-zinc-300">No saved items found in this view</div>
+                    <div className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                      {libraryModalSearchQuery ? 'No matching saved items' : 'No saved items found in this view'}
+                    </div>
                     <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-xs leading-relaxed">
-                      Files are auto-saved in your local workspace as you work on documents, workbooks, and presentations.
+                      {libraryModalSearchQuery ? 'Try adjusting your search terms or category filter.' : 'Files are auto-saved in your local workspace as you work on documents, workbooks, and presentations.'}
                     </p>
                   </div>
                 ) : (
                   filteredDocs.map(doc => {
                     const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
-                    let iconBg = 'bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400';
-                    let IconComp = FileText;
                     let typeLabel = 'Document';
+                    let typeBadgeClass = 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300 border border-violet-200/50 dark:border-violet-800/50';
 
                     if (dMode === 'sheets') {
-                      iconBg = 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400';
-                      IconComp = SheetIcon;
                       typeLabel = 'Workbook';
+                      typeBadgeClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50';
                     } else if (dMode === 'deck') {
-                      iconBg = 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400';
-                      IconComp = DeckIcon;
                       typeLabel = 'Presentation';
+                      typeBadgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/50';
                     } else if (dMode === 'whiteboard') {
-                      iconBg = 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400';
-                      IconComp = WhiteboardIcon;
-                      typeLabel = 'Whiteboard';
+                      typeLabel = 'Canvas';
+                      typeBadgeClass = 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50';
                     }
+
+                    const lastEditedDate = doc.savedAt
+                      ? new Date(doc.savedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'Recent';
 
                     return (
                       <div
                         key={doc.id}
-                        className="group flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/70 cursor-pointer transition-colors"
-                        onClick={() => openSavedLibraryItem(doc)}
+                        className="group grid grid-cols-12 gap-3 items-center px-2 sm:px-3 py-2.5 rounded-xl hover:bg-slate-100/80 dark:hover:bg-zinc-800/70 cursor-pointer transition-colors"
+                        onClick={() => {
+                          setLibraryModalSearchQuery('');
+                          openSavedLibraryItem(doc);
+                        }}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
-                            <IconComp size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                              {doc.title}
-                            </div>
-                            <div className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-2 mt-0.5">
-                              <span className="font-medium text-slate-500 dark:text-zinc-400">{typeLabel}</span>
-                              <span>•</span>
-                              <span>Last edited {new Date(doc.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        {/* Name & Icon */}
+                        <div className="col-span-7 flex items-center gap-3 min-w-0">
+                          <FileTypeIcon file={doc} size="sm" className="shrink-0" />
+                          <div className="min-w-0 pr-2">
+                            <div className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                              {doc.title || 'Untitled'}
                             </div>
                           </div>
                         </div>
 
-                        <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                          <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 px-2 py-1 rounded-md bg-violet-50 dark:bg-violet-950/50">
+                        {/* Type Badge */}
+                        <div className="col-span-2 flex items-center">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-[4px] leading-tight ${typeBadgeClass}`}>
+                            {typeLabel}
+                          </span>
+                        </div>
+
+                        {/* Last Modified & Open Action */}
+                        <div className="col-span-3 flex items-center justify-end gap-2 pr-2">
+                          <span className="text-[11px] text-slate-400 dark:text-zinc-500 truncate group-hover:hidden sm:group-hover:inline">
+                            {lastEditedDate}
+                          </span>
+                          <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-[5px] bg-violet-50 dark:bg-violet-950/50 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                             Open
                           </span>
                         </div>

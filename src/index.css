@@ -141,10 +141,23 @@ html.popover-root, body.popover-root, #popover-root {
   height: 6px !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-button,
-.thin-scrollbar::-webkit-scrollbar-button {
+.thin-scrollbar::-webkit-scrollbar-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:single-button,
+.thin-scrollbar::-webkit-scrollbar-button:single-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:double-button,
+.thin-scrollbar::-webkit-scrollbar-button:double-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.thin-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.regaarder-scrollbar::-webkit-scrollbar-button:vertical:increment,
+.thin-scrollbar::-webkit-scrollbar-button:vertical:increment,
+.regaarder-scrollbar::-webkit-scrollbar-button:horizontal:decrement,
+.thin-scrollbar::-webkit-scrollbar-button:horizontal:decrement,
+.regaarder-scrollbar::-webkit-scrollbar-button:horizontal:increment,
+.thin-scrollbar::-webkit-scrollbar-button:horizontal:increment {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+  background: transparent !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-track,
 .thin-scrollbar::-webkit-scrollbar-track {
