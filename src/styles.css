@@ -787,21 +787,42 @@ input[type="range"] {
 }
 
 /* ── Scrollbars ──────────────────────────────────────────────── */
+.app-dark .thin-scrollbar::-webkit-scrollbar,
+.dark .thin-scrollbar::-webkit-scrollbar {
+	width: 10px !important;
+	height: 10px !important;
+	transition: width 0.2s ease, height 0.2s ease;
+}
+
+.app-dark .thin-scrollbar:hover::-webkit-scrollbar,
+.app-dark .thin-scrollbar:focus-within::-webkit-scrollbar,
+.dark .thin-scrollbar:hover::-webkit-scrollbar,
+.dark .thin-scrollbar:focus-within::-webkit-scrollbar {
+	width: 13px !important;
+	height: 13px !important;
+}
+
 .app-dark .thin-scrollbar::-webkit-scrollbar-thumb,
 .dark .thin-scrollbar::-webkit-scrollbar-thumb {
-	background-color: transparent !important;
+	background-color: rgba(255, 255, 255, 0.22) !important;
+	border-radius: 9999px !important;
+	border: 2px solid transparent !important;
+	background-clip: padding-box !important;
+	transition: background-color 0.2s ease, border 0.2s ease;
 }
 
 .app-dark .thin-scrollbar:hover::-webkit-scrollbar-thumb,
 .app-dark .thin-scrollbar:focus-within::-webkit-scrollbar-thumb,
 .dark .thin-scrollbar:hover::-webkit-scrollbar-thumb,
 .dark .thin-scrollbar:focus-within::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 255, 255, 0.25) !important;
+	background-color: rgba(255, 255, 255, 0.42) !important;
+	border-width: 1.5px !important;
 }
 
 .app-dark .thin-scrollbar::-webkit-scrollbar-thumb:hover,
 .dark .thin-scrollbar::-webkit-scrollbar-thumb:hover {
-	background-color: rgba(255, 255, 255, 0.45) !important;
+	background-color: rgba(255, 255, 255, 0.7) !important;
+	border-width: 1px !important;
 }
 
 .app-dark .thin-scrollbar::-webkit-scrollbar-track,

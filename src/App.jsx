@@ -4,7 +4,7 @@ import { useTranslation } from './i18n';
 import { DECK_LLM_TOOL_DEFINITIONS, dispatchDeckToolCall } from './utils/deckEngineHarness';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-// Trigger HMR & Live Reload: 2026-09-01T12:05:41.838Z
+// Trigger HMR & Live Reload: 2026-09-13T03:39:20.000Z
 import { io } from 'socket.io-client';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -6885,6 +6885,9 @@ function AppCore() {
   const [orbInitialQuery, setOrbInitialQuery] = useState('');
   const [orbInitialMode, setOrbInitialMode] = useState('search');
   const [orbInitialFilter, setOrbInitialFilter] = useState('all');
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState('all');
+  const [libraryDropdownOpen, setLibraryDropdownOpen] = useState(false);
+  const [libraryDropdownAnchorRect, setLibraryDropdownAnchorRect] = useState(null);
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -8655,31 +8658,7 @@ function AppCore() {
   }, [activeOutlineMenuId]);
   const [recentDocumentsModalOpen, setRecentDocumentsModalOpen] = useState(false);
   const [recentDocumentsList, setRecentDocumentsList] = useState([]);
-  
-  useEffect(() => {
-    if (recentDocumentsModalOpen) {
-      const docs = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('rc.savedDoc.')) {
-          try {
-            const data = JSON.parse(localStorage.getItem(key));
-            if (!isMeaningfulWork(data)) continue;
-            docs.push({
-              id: Number(key.replace('rc.savedDoc.', '')),
-              title: data.docTitle || data.title || 'Untitled Document',
-              savedAt: data.savedAt || 0,
-              data: data
-            });
-          } catch (e) {
-            console.error('Error parsing document', e);
-          }
-        }
-      }
-      docs.sort((a, b) => b.savedAt - a.savedAt);
-      setRecentDocumentsList(docs);
-    }
-  }, [recentDocumentsModalOpen]);
+
   const [outlineMenuCoords, setOutlineMenuCoords] = useState({ top: 0, left: 0 });
   const [editingOutlineId, setEditingOutlineId] = useState(null);
   const [editingOutlineText, setEditingOutlineText] = useState('');
@@ -16636,6 +16615,167 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     );
   };
 
+  const renderLibraryDropdownContent = () => {
+    if (typeof document === 'undefined') return null;
+    const isRightAnchored = libraryDropdownAnchorRect && typeof window !== 'undefined' && (window.innerWidth - libraryDropdownAnchorRect.right < 340);
+    const topPos = libraryDropdownAnchorRect
+      ? Math.min(window.innerHeight - 380, (libraryDropdownAnchorRect.bottom || 44) + 6)
+      : 52;
+    const rightPos = isRightAnchored && libraryDropdownAnchorRect
+      ? Math.max(16, window.innerWidth - libraryDropdownAnchorRect.right)
+      : undefined;
+    const leftPos = !isRightAnchored
+      ? (libraryDropdownAnchorRect?.left ? Math.max(16, libraryDropdownAnchorRect.left) : 48)
+      : undefined;
+
+    // Calculate counts for each workspace mode
+    const composeCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'compose' || (!d.mode && !d.data?.sheetsData && !d.data?.deckSlidesData)).length;
+    const sheetsCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'sheets' || Boolean(d.data?.sheetsData)).length;
+    const deckCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length;
+    const whiteboardCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length;
+
+    const libraryCategories = [
+      {
+        id: 'compose',
+        label: 'Saved Documents',
+        desc: 'Text documents & executive briefs',
+        count: composeCount,
+        icon: ComposeIcon,
+        color: 'text-violet-600 dark:text-violet-400',
+        bg: 'bg-violet-50 dark:bg-violet-950/40'
+      },
+      {
+        id: 'sheets',
+        label: 'Saved Workbooks',
+        desc: 'Spreadsheets & financial models',
+        count: sheetsCount,
+        icon: SheetIcon,
+        color: 'text-emerald-600 dark:text-emerald-400',
+        bg: 'bg-emerald-50 dark:bg-emerald-950/40'
+      },
+      {
+        id: 'deck',
+        label: 'Saved Presentations',
+        desc: 'Slide decks & visual presentations',
+        count: deckCount,
+        icon: DeckIcon,
+        color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-50 dark:bg-amber-950/40'
+      },
+      {
+        id: 'whiteboard',
+        label: 'Saved Whiteboards',
+        desc: 'Diagrams & free-form canvases',
+        count: whiteboardCount,
+        icon: WhiteboardIcon,
+        color: 'text-indigo-600 dark:text-indigo-400',
+        bg: 'bg-indigo-50 dark:bg-indigo-950/40'
+      }
+    ];
+
+    return createPortal(
+      <>
+        {/* Page dimming backdrop overlay */}
+        <div
+          className="fixed inset-0 z-[10000000] bg-slate-950/35 dark:bg-black/60 backdrop-blur-xs transition-all duration-150 animate-in fade-in cursor-default"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            setLibraryDropdownOpen(false);
+          }}
+        />
+        <div 
+          data-library-dropdown-content="true"
+          className={`fixed z-[10000001] cursor-default ${isRightAnchored ? 'origin-top-right' : 'origin-top-left'}`}
+          style={{
+            top: `${topPos}px`,
+            ...(rightPos !== undefined ? { right: `${rightPos}px` } : {}),
+            ...(leftPos !== undefined ? { left: `${leftPos}px` } : {})
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="w-[280px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
+            <div className="px-2.5 py-2 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 mb-1">
+              <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
+                <BookOpen size={13} className="text-violet-600 dark:text-violet-400" />
+                <span>Library</span>
+              </span>
+              <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full">
+                {recentDocumentsList.length} saved
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              {libraryCategories.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setLibraryDropdownOpen(false);
+                      setLibraryCategoryFilter(item.id);
+                      setRecentDocumentsModalOpen(true);
+                    }}
+                    className="group flex items-center justify-between px-2.5 py-2 rounded-xl text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-slate-100/80 dark:hover:bg-zinc-800/80"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
+                        <IconComponent size={15} strokeWidth={1.8} />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white leading-tight">
+                          {item.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
+                          {item.desc}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/50 dark:border-zinc-700/50 shrink-0">
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-zinc-800/80">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setLibraryDropdownOpen(false);
+                  setLibraryCategoryFilter('all');
+                  setRecentDocumentsModalOpen(true);
+                }}
+                className="group flex items-center justify-between px-2.5 py-2 rounded-xl text-left select-none transition-colors duration-100 w-full cursor-pointer hover:bg-violet-50/80 dark:hover:bg-violet-950/40 text-slate-700 dark:text-zinc-300 hover:text-violet-900 dark:hover:text-violet-200"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-violet-100/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400">
+                    <FolderOpen size={14} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[12.5px] font-semibold leading-tight">
+                      Browse All in Library
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                      Search and filter all items
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight size={14} className="text-slate-400 group-hover:text-violet-600 shrink-0" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </>,
+      typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null
+    );
+  };
+
   const renderDocSearchPanel = () => {
     if (!docSearchPanelOpen) return null;
     const top = docSearchAnchorRect ? docSearchAnchorRect.bottom + 8 : 120;
@@ -18017,18 +18157,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
 
-  useEffect(() => {
-    if (!docBodyHtml) {
-      setDocTitle('Untitled Document');
-      return;
-    }
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(docBodyHtml, 'text/html');
-    const firstBlock = doc.body.firstElementChild;
-    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    setDocTitle(titleText || 'Untitled Document');
-  }, [docBodyHtml]);
-
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
@@ -18082,6 +18210,23 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   }, [docBodyHtml, docTitle, activeDocId]);
 
   const activeDoc = documents.find((doc) => doc.id === activeDocId);
+
+  useEffect(() => {
+    const persistedTitle = activeDoc?.title?.trim();
+    const hasPersistedExplicitTitle = !!persistedTitle && !/^untitled\b/i.test(persistedTitle);
+
+    if (!docBodyHtml) {
+      setDocTitle(hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
+      return;
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(docBodyHtml, 'text/html');
+    const firstBlock = doc.body.firstElementChild;
+    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
+    const derivedTitle = titleText || (hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
+    setDocTitle(derivedTitle);
+  }, [docBodyHtml, activeDoc?.title]);
+
   const [pdfRotation, setPdfRotation] = useState(0);
   const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
 
@@ -33795,6 +33940,170 @@ Answer the user's question, provide an insightful summary, or explain the contex
     return true;
   };
 
+  const openSavedLibraryItem = useCallback((doc) => {
+    if (!doc) return;
+    setRecentDocumentsModalOpen(false);
+    showToast(`Opening ${doc.title}...`);
+
+    const docMode = doc.mode || (doc.data?.mode) || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+
+    if (docMode === 'sheets') {
+      if (productMode !== 'sheets') setProductMode('sheets');
+      const isAlreadyOpen = documents.find(d => String(d.id) === String(doc.id));
+      if (!isAlreadyOpen) {
+        setDocuments(prev => [...prev, { ...(doc.data || {}), id: doc.id, mode: 'sheets', title: doc.title }]);
+      }
+      switchDocument(doc.id);
+      if (doc.data?.sheetGrids) setSheetGrids(doc.data.sheetGrids);
+      if (doc.data?.sheetsData) setSheetsData(doc.data.sheetsData);
+      if (doc.data?.sheetsTitle || doc.title) setSheetsTitle(doc.data?.sheetsTitle || doc.title);
+      if (doc.data?.activeSheetId !== undefined) setActiveSheetId(doc.data.activeSheetId);
+    } else if (docMode === 'deck') {
+      if (productMode !== 'deck') setProductMode('deck');
+      const isAlreadyOpen = documents.find(d => String(d.id) === String(doc.id));
+      if (!isAlreadyOpen) {
+        setDocuments(prev => [...prev, { ...(doc.data || {}), id: doc.id, mode: 'deck', title: doc.title }]);
+      }
+      switchDocument(doc.id);
+      if (doc.data?.deckSlidesData) setDeckSlidesData(doc.data.deckSlidesData);
+      if (doc.data?.deckTitle || doc.title) setDeckTitle(doc.data?.deckTitle || doc.title);
+      if (doc.data?.activeDeckSlideId !== undefined) setActiveDeckSlideId(doc.data.activeDeckSlideId);
+    } else if (docMode === 'whiteboard') {
+      if (productMode !== 'whiteboard') setProductMode('whiteboard');
+      setActiveRightTab('whiteboard');
+      setRightSidebarOpen(true);
+      const isAlreadyOpen = documents.find(d => String(d.id) === String(doc.id));
+      if (!isAlreadyOpen) {
+        setDocuments(prev => [...prev, { ...(doc.data || {}), id: doc.id, mode: 'whiteboard', title: doc.title }]);
+      }
+      switchDocument(doc.id);
+      if (doc.data?.whiteboardWidgets) setWhiteboardWidgets(doc.data.whiteboardWidgets);
+      if (doc.data?.whiteboardStrokes) setWhiteboardStrokes(doc.data.whiteboardStrokes);
+      if (doc.data?.whiteboardShapes) setWhiteboardShapes(doc.data.whiteboardShapes);
+    } else {
+      // Compose / Document
+      if (productMode !== 'compose') setProductMode('compose');
+      const isAlreadyOpen = documents.find(d => String(d.id) === String(doc.id));
+      if (!isAlreadyOpen) {
+        setDocuments(prev => [...prev, { ...(doc.data || {}), id: doc.id, mode: 'compose', title: doc.title }]);
+      }
+      if (activeRightTab === 'whiteboard') {
+        setActiveRightTab('assistant');
+      }
+      setActiveDocId(doc.id);
+      setDocTitle(doc.data?.title || doc.title || '');
+      setDocSubtitle(doc.data?.subtitle || '');
+      setInitiatives(doc.data?.initiatives || defaultInitiatives);
+      setAppendedSections(doc.data?.appendedSections || []);
+      setIsBlankDocument(doc.data?.isBlank || false);
+      setDocBodyHtml(doc.data?.bodyHtml || '');
+    }
+  }, [documents, productMode, activeRightTab, defaultInitiatives]);
+
+  useEffect(() => {
+    if (recentDocumentsModalOpen || libraryDropdownOpen) {
+      const docsMap = new Map();
+
+      // 1. Scan rc.savedDoc.* from localStorage (Compose documents)
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('rc.savedDoc.')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            if (!isMeaningfulWork(data)) continue;
+            const docId = Number(key.replace('rc.savedDoc.', ''));
+            const mode = data.mode || (data.sheetsData ? 'sheets' : data.deckSlidesData ? 'deck' : 'compose');
+            docsMap.set(String(docId), {
+              id: docId,
+              title: data.docTitle || data.title || (mode === 'sheets' ? 'Untitled Sheet' : mode === 'deck' ? 'Untitled Deck' : 'Untitled Document'),
+              savedAt: data.savedAt || data.updatedAt || 0,
+              mode: mode,
+              data: data
+            });
+          } catch (e) {
+            console.error('Error parsing document', e);
+          }
+        }
+      }
+
+      // 2. Scan canonical workspace document store (regaarder_documents_v1)
+      try {
+        const rawStore = localStorage.getItem('regaarder_documents_v1');
+        if (rawStore) {
+          const storeList = JSON.parse(rawStore);
+          if (Array.isArray(storeList)) {
+            storeList.forEach(doc => {
+              if (!doc || !doc.id) return;
+              const sId = String(doc.id);
+              const mode = doc.mode || (doc.sheetsData ? 'sheets' : doc.deckSlidesData ? 'deck' : 'compose');
+              const docSavedAt = doc.updatedAt ? new Date(doc.updatedAt).getTime() : (doc.savedAt || 0);
+              const title = doc.sheetsTitle || doc.deckTitle || doc.title || (mode === 'sheets' ? 'Untitled Sheet' : mode === 'deck' ? 'Untitled Deck' : 'Untitled Document');
+              if (!docsMap.has(sId) || (docsMap.get(sId).savedAt < docSavedAt)) {
+                docsMap.set(sId, {
+                  id: doc.id,
+                  title: title,
+                  savedAt: docSavedAt || Date.now(),
+                  mode: mode,
+                  data: doc
+                });
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading canonical documents store', e);
+      }
+
+      // 3. Scan regaarder_library_documents_v1 if present
+      try {
+        const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+        if (rawLib) {
+          const libList = JSON.parse(rawLib);
+          if (Array.isArray(libList)) {
+            libList.forEach(doc => {
+              if (!doc || !doc.id) return;
+              const sId = String(doc.id);
+              const mode = doc.mode || (doc.sheetsData ? 'sheets' : doc.deckSlidesData ? 'deck' : 'compose');
+              const docSavedAt = doc.updatedAt ? new Date(doc.updatedAt).getTime() : (doc.savedAt || 0);
+              if (!docsMap.has(sId)) {
+                docsMap.set(sId, {
+                  id: doc.id,
+                  title: doc.sheetsTitle || doc.deckTitle || doc.title || (mode === 'sheets' ? 'Untitled Sheet' : mode === 'deck' ? 'Untitled Deck' : 'Untitled Document'),
+                  savedAt: docSavedAt || Date.now(),
+                  mode: mode,
+                  data: doc
+                });
+              }
+            });
+          }
+        }
+      } catch (_) {}
+
+      // 4. Also index currently opened active documents in documents state with real content
+      if (Array.isArray(documents)) {
+        documents.forEach(doc => {
+          if (!doc || !doc.id) return;
+          const sId = String(doc.id);
+          const mode = doc.mode || (doc.sheetsData ? 'sheets' : doc.deckSlidesData ? 'deck' : 'compose');
+          if (!docsMap.has(sId)) {
+            const title = (mode === 'sheets' ? (doc.sheetsTitle || doc.title || sheetsTitle) : mode === 'deck' ? (doc.deckTitle || doc.title || deckTitle) : doc.title) || (mode === 'sheets' ? 'Untitled Sheet' : mode === 'deck' ? 'Untitled Deck' : 'Untitled Document');
+            docsMap.set(sId, {
+              id: doc.id,
+              title: title,
+              savedAt: doc.updatedAt ? new Date(doc.updatedAt).getTime() : (doc.savedAt || Date.now()),
+              mode: mode,
+              data: doc
+            });
+          }
+        });
+      }
+
+      const docs = Array.from(docsMap.values());
+      docs.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+      setRecentDocumentsList(docs);
+    }
+  }, [recentDocumentsModalOpen, libraryDropdownOpen, documents, sheetsTitle, deckTitle]);
+
   const openCreationPicker = () => {
     setCreationPickerOpen(true);
   };
@@ -34616,16 +34925,32 @@ Respond with valid JSON formatted like this:
     setIsDocumentImmersive(true);
 
     let target = destination;
+    let targetDocPayload = null;
     if (typeof destination === 'object' && destination !== null) {
+      if (destination.doc) {
+        targetDocPayload = destination.doc;
+      }
       if (destination.type === 'action' || destination.type === 'product') {
-        target = destination.name.toLowerCase();
+        target = (destination.name || destination.product || 'compose').toLowerCase();
       } else {
-        target = 'compose';
+        target = (destination.product || 'compose').toLowerCase();
       }
     } else if (typeof destination === 'string') {
       target = destination.toLowerCase();
     } else {
       target = 'compose';
+    }
+
+    // If opening a specific saved document from Landing Recent Work Strip:
+    if (targetDocPayload) {
+      const docId = targetDocPayload.id;
+      const rawData = targetDocPayload.data || targetDocPayload;
+      const isAlreadyInWorkspace = documents.find(d => String(d.id) === String(docId));
+      if (!isAlreadyInWorkspace) {
+        setDocuments(prev => [...prev, { ...rawData, id: docId, title: targetDocPayload.title || rawData.title || 'Untitled Document' }]);
+      }
+      switchDocument(docId);
+      return;
     }
 
     if (target === 'omni-portal' || target === 'import') {
@@ -48031,6 +48356,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Global Workspace Switcher Popover in Sheets & Decks */}
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
 
+        {/* Global Library Dropdown Menu in Sheets & Decks */}
+        {libraryDropdownOpen && renderLibraryDropdownContent()}
+
         {renderCloseConfirmModal()}
 
         {creationPickerOpen && (
@@ -48191,6 +48519,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
                   <span>Home</span>
+                </button>
+
+                {/* Library / Saved Docs Affordance */}
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setLibraryDropdownAnchorRect(rect);
+                    setLibraryDropdownOpen(prev => !prev);
+                  }}
+                  className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer select-none ${
+                    libraryDropdownOpen
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                      : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+                  }`}
+                  title="Open Library & Saved Documents"
+                >
+                  <BookOpen size={13} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                  <span>Library</span>
+                  <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
               </div>
 
@@ -48437,6 +48787,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ? 'opacity-100 pointer-events-auto' 
                     : 'opacity-0 pointer-events-none'
                 }`}>
+                  {/* Workspace Library / Files Browser Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetFilter = isSheetsMode ? 'sheets' : isDeckMode ? 'deck' : 'compose';
+                      setOrbInitialFilter(targetFilter);
+                      setOrbInitialQuery('');
+                      setIsMemorySearchOpen(true);
+                    }}
+                    className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
+                    title={`Browse ${isSheetsMode ? 'Sheets' : isDeckMode ? 'Decks' : 'Documents'} Library`}
+                  >
+                    <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
+                    <span>Library</span>
+                  </button>
+
                   {/* Export Dropdown Button */}
               <div className="relative export-menu-container">
                 <button
@@ -72914,52 +73280,143 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* Recent Documents Modal */}
-      {recentDocumentsModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-hidden border border-gray-200 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">Recent Documents</h2>
-              <button onClick={() => setRecentDocumentsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="overflow-y-auto p-2">
-              {recentDocumentsList.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 text-sm">No recent documents found. Start typing to auto-save!</div>
-              ) : (
-                recentDocumentsList.map(doc => (
-                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { 
-                    setRecentDocumentsModalOpen(false); 
-                    showToast(`Opening ${doc.title}...`); 
-                    const isAlreadyOpen = documents.find(d => d.id === doc.id);
-                    if (!isAlreadyOpen) {
-                       setDocuments(prev => [...prev, { ...doc.data, id: doc.id }]);
-                    }
-                    if (activeRightTab === 'whiteboard') {
-                      setActiveRightTab('assistant');
-                    }
-                    setActiveDocId(doc.id);
-                    setDocTitle(doc.data.title || '');
-                    setDocSubtitle(doc.data.subtitle || '');
-                    setInitiatives(doc.data.initiatives || defaultInitiatives);
-                    setAppendedSections(doc.data.appendedSections || []);
-                    setIsBlankDocument(doc.data.isBlank || false);
-                    setDocBodyHtml(doc.data.bodyHtml || '');
-                  }}>
-                    <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600">
-                      <FileText size={20} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900">{doc.title}</div>
-                      <div className="text-xs text-gray-500">Last edited {new Date(doc.savedAt).toLocaleString()}</div>
-                    </div>
+      {recentDocumentsModalOpen && (() => {
+        const filteredDocs = recentDocumentsList.filter(doc => {
+          if (libraryCategoryFilter === 'all') return true;
+          const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+          return dMode === libraryCategoryFilter;
+        });
+
+        const filterTabs = [
+          { id: 'all', label: 'All Items', count: recentDocumentsList.length },
+          { id: 'compose', label: 'Saved Documents', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'compose' || (!d.mode && !d.data?.sheetsData && !d.data?.deckSlidesData)).length },
+          { id: 'sheets', label: 'Saved Workbooks', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'sheets' || Boolean(d.data?.sheetsData)).length },
+          { id: 'deck', label: 'Saved Presentations', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length },
+          { id: 'whiteboard', label: 'Saved Whiteboards', count: recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length }
+        ];
+
+        return (
+          <div className="fixed inset-0 z-[10000000] bg-slate-950/45 dark:bg-black/65 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-2xl w-full max-w-[640px] max-h-[85vh] overflow-hidden border border-slate-200/80 dark:border-white/10 flex flex-col font-sans animate-in fade-in zoom-in-[0.98] duration-150">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                    <BookOpen size={16} strokeWidth={2} />
                   </div>
-                ))
-              )}
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 leading-tight">Library & Saved Files</h2>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">Access saved documents, workbooks, presentations, and canvases</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRecentDocumentsModalOpen(false)}
+                  className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center cursor-pointer"
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="px-5 py-2.5 bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+                {filterTabs.map(tab => {
+                  const isActive = libraryCategoryFilter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setLibraryCategoryFilter(tab.id)}
+                      className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                        isActive
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-slate-200/80 dark:border-zinc-700/80'
+                          : 'bg-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40 border border-transparent'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isActive ? 'bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold' : 'text-slate-400 dark:text-zinc-500'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Documents List */}
+              <div className="overflow-y-auto p-3 flex-1 min-h-[220px] max-h-[58vh] space-y-1">
+                {filteredDocs.length === 0 ? (
+                  <div className="text-center py-12 px-4 flex flex-col items-center justify-center gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-800/60 text-slate-400 dark:text-zinc-500 flex items-center justify-center">
+                      <FolderOpen size={20} />
+                    </div>
+                    <div className="text-sm font-semibold text-slate-700 dark:text-zinc-300">No saved items found in this view</div>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-xs leading-relaxed">
+                      Files are auto-saved in your local workspace as you work on documents, workbooks, and presentations.
+                    </p>
+                  </div>
+                ) : (
+                  filteredDocs.map(doc => {
+                    const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+                    let iconBg = 'bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400';
+                    let IconComp = FileText;
+                    let typeLabel = 'Document';
+
+                    if (dMode === 'sheets') {
+                      iconBg = 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400';
+                      IconComp = SheetIcon;
+                      typeLabel = 'Workbook';
+                    } else if (dMode === 'deck') {
+                      iconBg = 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400';
+                      IconComp = DeckIcon;
+                      typeLabel = 'Presentation';
+                    } else if (dMode === 'whiteboard') {
+                      iconBg = 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400';
+                      IconComp = WhiteboardIcon;
+                      typeLabel = 'Whiteboard';
+                    }
+
+                    return (
+                      <div
+                        key={doc.id}
+                        className="group flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/70 cursor-pointer transition-colors"
+                        onClick={() => openSavedLibraryItem(doc)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+                            <IconComp size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                              {doc.title}
+                            </div>
+                            <div className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-2 mt-0.5">
+                              <span className="font-medium text-slate-500 dark:text-zinc-400">{typeLabel}</span>
+                              <span>•</span>
+                              <span>Last edited {new Date(doc.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 px-2 py-1 rounded-md bg-violet-50 dark:bg-violet-950/50">
+                            Open
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* Global Library Dropdown Menu in Compose / Main Workspace */}
+      {libraryDropdownOpen && renderLibraryDropdownContent()}
 
       {/* Brand Kit Modal */}
       {brandKitModalOpen && (
@@ -73676,6 +74133,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
             }`}>
+              {/* Workspace Library / Files Browser Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOrbInitialFilter('compose');
+                  setOrbInitialQuery('');
+                  setIsMemorySearchOpen(true);
+                }}
+                className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
+                title="Browse Documents Library"
+              >
+                <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
+                <span>Library</span>
+              </button>
+
               {/* Export Dropdown Button in Top Header */}
             {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
               <div className="relative export-menu-container">
@@ -75187,6 +75659,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
               <span>Home</span>
+            </button>
+
+            {/* Library / Saved Docs Affordance */}
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setLibraryDropdownAnchorRect(rect);
+                setLibraryDropdownOpen(prev => !prev);
+              }}
+              className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer select-none ${
+                libraryDropdownOpen
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                  : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+              }`}
+              title="Open Library & Saved Documents"
+            >
+              <BookOpen size={13} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+              <span>Library</span>
+              <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
               const docIndex = windowedTabDocuments.startIndex + localIndex;
@@ -88004,4 +88498,4 @@ export default function App() {
 
 
 
-// Triggering HMR refresh: 2026-08-03T01:21:00+08:00
+// Triggering HMR refresh: 2026-09-13T11:18:30+08:00
