@@ -389,7 +389,7 @@ function EvidenceTraceabilityShelf({
 
 // Primary visible tabs in top navigation bar
 const FILTER_TABS = [
-  { id: 'all', label: 'All', icon: MemoryIcon },
+  { id: 'all', label: 'All', icon: Search },
   { id: 'compose', label: 'Docs', icon: ComposeIcon },
   { id: 'sheets', label: 'Sheets', icon: SheetIcon },
   { id: 'deck', label: 'Deck', icon: DeckIcon },
@@ -403,6 +403,7 @@ const FILTER_TABS = [
 
 // Additional workspace resources accessible via the ellipsis (...) menu immediately after People
 const MORE_FILTER_TABS = [
+  { id: 'memory', label: 'Memory', icon: MemoryIcon },
   { id: 'whiteboard', label: 'Whiteboards', icon: Palette },
   { id: 'comments', label: 'Comments', icon: Tag },
   { id: 'chat', label: 'Chats', icon: ChatIcon },
