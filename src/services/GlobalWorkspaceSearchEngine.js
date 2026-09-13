@@ -969,7 +969,10 @@ export function buildWorkspaceIndex(context = {}) {
         }
       });
     } else if (isWhiteboard) {
-      const rawTitle = (doc.title || '').trim() || nextUntitledTitle('whiteboard');
+      let rawTitle = (doc.title || '').trim();
+      if (!rawTitle || isStaleOrDummyDoc(rawTitle) || /^untitled\s+document(?:\s+\d+)?$/i.test(rawTitle)) {
+        rawTitle = nextUntitledTitle('whiteboard');
+      }
       const wbContent = extractTextFromWhiteboard(doc);
       const widgetCount = (Array.isArray(doc.whiteboardWidgets) ? doc.whiteboardWidgets.length : 0)
         + (Array.isArray(doc.whiteboardShapes) ? doc.whiteboardShapes.length : 0);
@@ -1263,7 +1266,10 @@ export function buildWorkspaceIndex(context = {}) {
   if (whiteboardRecords.length > 0) {
     const seenBoards = new Set();
     whiteboardRecords.forEach((board, idx) => {
-      const boardTitle = (board.title || board.name || '').trim() || `Whiteboard ${idx + 1}`;
+      let boardTitle = (board.title || board.name || '').trim();
+      if (!boardTitle || isStaleOrDummyDoc(boardTitle) || /^untitled\s+document(?:\s+\d+)?$/i.test(boardTitle)) {
+        boardTitle = nextUntitledTitle('whiteboard');
+      }
       const boardId = board.id || boardTitle || `wb-${idx}`;
       if (seenBoards.has(String(boardId))) return;
       seenBoards.add(String(boardId));
