@@ -122,37 +122,42 @@ html.popover-root, body.popover-root, #popover-root {
   background-color: rgba(100, 116, 139, 0.7) !important;
 }
 
-/* Regaarder Compose Sleek Overlay Scrollbars (Fitts's Law Adaptive Hit Target) */
+/* Regaarder Compose Sleek Overlay Scrollbars */
 .regaarder-scrollbar,
 .thin-scrollbar {
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent !important;
-  transition: scrollbar-color 0.2s ease, width 0.2s ease;
+  scrollbar-color: transparent transparent !important;
+  transition: scrollbar-color 0.25s ease;
 }
 .regaarder-scrollbar:hover,
 .thin-scrollbar:hover,
 .regaarder-scrollbar:focus-within,
 .thin-scrollbar:focus-within {
-  scrollbar-color: rgba(148, 163, 184, 0.65) transparent !important;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar,
 .thin-scrollbar::-webkit-scrollbar {
-  width: 10px !important;
-  height: 10px !important;
-  transition: width 0.2s ease, height 0.2s ease;
-}
-.regaarder-scrollbar:hover::-webkit-scrollbar,
-.thin-scrollbar:hover::-webkit-scrollbar,
-.regaarder-scrollbar:focus-within::-webkit-scrollbar,
-.thin-scrollbar:focus-within::-webkit-scrollbar {
-  width: 13px !important;
-  height: 13px !important;
+  width: 6px !important;
+  height: 6px !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-button,
-.thin-scrollbar::-webkit-scrollbar-button {
+.thin-scrollbar::-webkit-scrollbar-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:single-button,
+.thin-scrollbar::-webkit-scrollbar-button:single-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:double-button,
+.thin-scrollbar::-webkit-scrollbar-button:double-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.thin-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.regaarder-scrollbar::-webkit-scrollbar-button:vertical:increment,
+.thin-scrollbar::-webkit-scrollbar-button:vertical:increment,
+.regaarder-scrollbar::-webkit-scrollbar-button:horizontal:decrement,
+.thin-scrollbar::-webkit-scrollbar-button:horizontal:decrement,
+.regaarder-scrollbar::-webkit-scrollbar-button:horizontal:increment,
+.thin-scrollbar::-webkit-scrollbar-button:horizontal:increment {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+  background: transparent !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-track,
 .thin-scrollbar::-webkit-scrollbar-track {
@@ -160,18 +165,21 @@ html.popover-root, body.popover-root, #popover-root {
 }
 .regaarder-scrollbar::-webkit-scrollbar-thumb,
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.38) !important;
+  background-color: transparent !important;
   border-radius: 9999px !important;
-  border: 2px solid transparent !important;
+  border: 1px solid transparent !important;
   background-clip: padding-box !important;
-  transition: background-color 0.2s ease, border 0.2s ease;
+  transition: background-color 0.25s ease;
 }
 .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
 .thin-scrollbar:hover::-webkit-scrollbar-thumb,
 .regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb,
 .thin-scrollbar:focus-within::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.65) !important;
-  border-width: 1.5px !important;
+  background-color: rgba(148, 163, 184, 0.45) !important;
+}
+.regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.75) !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {

@@ -1015,9 +1015,13 @@ export default function GlobalWorkspaceSearchModal({
     return searchResults.map((r) => ({ type: 'entity', data: r.entity }));
   }, [query, searchResults, mode]);
 
+  const [isMountingGrace, setIsMountingGrace] = useState(true);
+
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
+      setIsMountingGrace(true);
+      const graceTimer = setTimeout(() => setIsMountingGrace(false), 90);
       setMode(isDeck ? (initialMode || 'search') : 'search');
       setQuery(initialQuery || '');
       setActiveFilter(initialFilter || 'all');
@@ -1033,6 +1037,7 @@ export default function GlobalWorkspaceSearchModal({
       setIsPersonaMenuOpen(false);
       setIsEditPersonaModalOpen(false);
       setTimeout(() => inputRef.current?.focus(), 40);
+      return () => clearTimeout(graceTimer);
     }
   }, [isOpen, initialQuery, initialMode, initialFilter, isDeck]);
 
@@ -1411,7 +1416,7 @@ export default function GlobalWorkspaceSearchModal({
     >
       {/* ── Search Surface Shell (1040px wide, 740px high, 16px radius - Apple Executive Proportions) ── */}
       <div
-        className={`w-[1040px] max-w-[95vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-150 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
+        className={`w-[1040px] max-w-[95vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col animate-in fade-in duration-100 text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Dominant Search / Header (Adaptive min-h-[62px] fluid height) ── */}
@@ -1766,10 +1771,33 @@ export default function GlobalWorkspaceSearchModal({
           ref={resultsContainerRef}
           className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
         >
-          {/* ══════════════════════════════════════════════════════════
-              MODE A: ASK MEMORY WORKSPACE SYNTHESIS
-             ══════════════════════════════════════════════════════════ */}
-          {mode === 'ai' && (
+          {isMountingGrace ? (
+            <div className="space-y-4 py-1 animate-pulse select-none">
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-3.5 h-3.5 rounded bg-slate-200/80 dark:bg-zinc-800" />
+                <div className="w-48 h-3 rounded bg-slate-200/80 dark:bg-zinc-800" />
+              </div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-7 h-8 rounded-[6px] bg-slate-200/80 dark:bg-zinc-800 shrink-0" />
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="w-52 h-3.5 rounded bg-slate-200/80 dark:bg-zinc-800" />
+                        <div className="w-36 h-2.5 rounded bg-slate-100 dark:bg-zinc-850" />
+                      </div>
+                    </div>
+                    <div className="w-28 h-2.5 rounded bg-slate-100 dark:bg-zinc-850 hidden sm:block" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* ══════════════════════════════════════════════════════════
+                  MODE A: ASK MEMORY WORKSPACE SYNTHESIS
+                 ══════════════════════════════════════════════════════════ */}
+              {mode === 'ai' && (
             <div className="space-y-4">
               {!aiResponse && !aiLoading && (
                 <div className="space-y-4 py-1">
@@ -2250,9 +2278,13 @@ export default function GlobalWorkspaceSearchModal({
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
-                                <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
-                              </div>
+                              {isFileTypeEntity(entity) ? (
+                                <FileTypeIcon file={entity} size="sm" className="shrink-0" />
+                              ) : (
+                                <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
+                                  <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
+                                </div>
+                              )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
@@ -2348,9 +2380,13 @@ export default function GlobalWorkspaceSearchModal({
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
-                                <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
-                              </div>
+                              {isFileTypeEntity(entity) ? (
+                                <FileTypeIcon file={entity} size="sm" className="shrink-0" />
+                              ) : (
+                                <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
+                                  <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
+                                </div>
+                              )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
@@ -2446,7 +2482,7 @@ export default function GlobalWorkspaceSearchModal({
                   className="p-3.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between cursor-pointer hover:border-black/20 dark:hover:border-white/20 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group shadow-2xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/10 dark:bg-violet-400/10 text-violet-600 dark:text-violet-400 border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                       <RegaarderAiIcon size={16} strokeWidth={2.0} />
                     </div>
                     <div className="min-w-0">
@@ -2581,6 +2617,8 @@ export default function GlobalWorkspaceSearchModal({
                 </div>
               ))}
             </div>
+          )}
+            </>
           )}
         </div>
 

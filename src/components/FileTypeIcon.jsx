@@ -142,6 +142,27 @@ export function getFileTypeDetails(fileOrEntity) {
     };
   }
 
+  // 4b. Whiteboards / Canvases: Whiteboard
+  if (type === 'whiteboard' || editorTarget === 'whiteboard' || ext === 'whiteboard' || type === 'canvas') {
+    return {
+      category: 'whiteboard',
+      label: 'CANVAS',
+      bgHex: '#4F46E5', // Indigo
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      isSpreadsheet: false,
+      isPdf: false,
+      isWord: false,
+      isPresentation: false,
+      isImage: false,
+      isAudio: false,
+      isVideo: false,
+      isCode: false,
+      isText: false,
+      isRegaarderDoc: false,
+      isWhiteboard: true
+    };
+  }
+
   // 5. Images: PNG, JPG, JPEG, SVG, WEBP, GIF, BMP, TIFF
   if (['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif', 'bmp', 'tiff'].includes(ext) || type.includes('image')) {
     const label = ['png', 'jpg', 'svg', 'gif'].includes(ext) ? ext.toUpperCase() : 'IMG';
@@ -296,8 +317,9 @@ export function getFileTypeDetails(fileOrEntity) {
  */
 export function isFileTypeEntity(entity) {
   if (!entity) return false;
-  const type = (entity.type || entity.resourceType || entity.workspace || '').toLowerCase();
+  const type = (entity.type || entity.resourceType || '').toLowerCase();
   const editorTarget = (entity.editorTarget || entity.mode || '').toLowerCase();
+  const workspace = (entity.workspace || '').toLowerCase();
   const title = (entity.title || entity.name || '').toLowerCase();
 
   // If title has a known file extension, it's definitely a file
@@ -305,11 +327,11 @@ export function isFileTypeEntity(entity) {
     return true;
   }
 
-  // Explicit document / sheet / deck / whiteboard editors
-  if (['compose', 'sheets', 'deck', 'whiteboard', 'document', 'sheet'].includes(editorTarget)) {
+  // Explicit document / sheet / deck / whiteboard editors or workspaces
+  if (['compose', 'sheets', 'deck', 'whiteboard', 'document', 'sheet'].includes(editorTarget) || ['compose', 'sheets', 'deck', 'whiteboard'].includes(workspace)) {
     return true;
   }
-  if (['document', 'sheet', 'deck', 'whiteboard', 'pdf', 'word', 'file', 'attachment'].includes(type)) {
+  if (['document', 'sheet', 'deck', 'whiteboard', 'pdf', 'word', 'file', 'attachment', 'compose'].includes(type)) {
     return true;
   }
   if (entity.isRegaarderDoc || entity.isRegaarderSheet || entity.isRegaarderDeck || entity.isUploadedFile) {
@@ -339,10 +361,10 @@ function FileBadgeSvg({ details, sizeVariant }) {
   if (details.isSpreadsheet) {
     return (
       <svg className={iconClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M2.5 6.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-        <path d="M2.5 10.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-        <path d="M6.5 6.5V13.5" stroke="currentColor" strokeWidth="1.2" />
+        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M2 6H14" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M2 10H14" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M6 6V14" stroke="currentColor" strokeWidth="1.2" />
       </svg>
     );
   }
@@ -350,8 +372,9 @@ function FileBadgeSvg({ details, sizeVariant }) {
   if (details.isPdf) {
     return (
       <svg className={iconClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M3.5 2H10L13.5 5.5V13.5C13.5 14.05 13.05 14.5 12.5 14.5H3.5C2.95 14.5 2.5 14.05 2.5 13.5V3C2.5 2.45 2.95 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
         <path d="M9.5 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M5 10H11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
     );
   }
@@ -359,8 +382,19 @@ function FileBadgeSvg({ details, sizeVariant }) {
   if (details.isPresentation) {
     return (
       <svg className={iconClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2.5" width="12" height="8.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="2" y="2.5" width="12" height="8.5" rx="1.8" stroke="currentColor" strokeWidth="1.5" />
         <path d="M5.5 14L8 11L10.5 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 6.5H11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (details.isWhiteboard) {
+    return (
+      <svg className={iconClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2.5" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M5 14L4.2 11.5M11 14L11.8 11.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M4.5 8.5L7 6L9.5 8.5L11.5 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }
@@ -368,7 +402,7 @@ function FileBadgeSvg({ details, sizeVariant }) {
   if (details.isImage) {
     return (
       <svg className={iconClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2.5" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="2" y="2.5" width="12" height="11" rx="1.8" stroke="currentColor" strokeWidth="1.5" />
         <circle cx="5.5" cy="6" r="1.2" fill="currentColor" />
         <path d="M2.5 12L6.5 8L10 11.5L11.5 10L13.5 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -407,10 +441,10 @@ function FileBadgeSvg({ details, sizeVariant }) {
   // Document (Word, Native Doc, or generic file)
   return (
     <svg className={iconClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.0523 13.0523 14.5 12.5 14.5H3.5C2.94772 14.5 2.5 14.0523 2.5 13.5V3C2.5 2.44772 2.94772 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3.5 2H10.5L13.5 5V13.5C13.5 14.05 13.05 14.5 12.5 14.5H3.5C2.95 14.5 2.5 14.05 2.5 13.5V3C2.5 2.45 2.95 2 3.5 2Z" stroke="currentColor" strokeWidth="1.5" />
       <path d="M10 2V5.5H13.5" stroke="currentColor" strokeWidth="1.2" />
-      <line x1="5" y1="8.5" x2="11" y2="8.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-      <line x1="5" y1="11" x2="9.5" y2="11" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      <line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="11" x2="9" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -420,7 +454,7 @@ function FileBadgeSvg({ details, sizeVariant }) {
  *
  * Props:
  * - `file`: file object, entity, or filename string
- * - `size`: 'xs' (18x20), 'sm' (24x26), 'md' (30x34), 'lg' (40x44, matches Image 2)
+ * - `size`: 'xs' (24x28), 'sm' (28x34), 'md' (32x38), 'lg' (40x48)
  * - `className`: additional CSS classes
  */
 export function FileTypeIcon({
@@ -432,31 +466,32 @@ export function FileTypeIcon({
 }) {
   const details = getFileTypeDetails(file);
   const bgColor = overrideBgHex || details.bgHex;
+  const displayLabel = details.label || 'FILE';
+  const isLongLabel = displayLabel.length > 4;
 
-  // Size configurations
-  let containerStyles = 'w-[24px] h-[26px] rounded-[6px]';
-  let labelStyles = 'text-[7px] font-black tracking-tighter uppercase mb-[1px] leading-none';
+  // Size configurations: calibrated proportions with slightly elevated height for breathing room
+  let containerStyles = 'w-[28px] h-[34px] rounded-[6px] shadow-2xs';
+  let labelStyles = `${isLongLabel ? 'text-[5.5px] tracking-tighter' : 'text-[6.5px] tracking-tight'} font-bold uppercase mb-[1px] leading-none`;
 
   if (size === 'lg') {
-    // Exact dimensions from Image 2: w-10 h-11 rounded-xl
-    containerStyles = 'w-10 h-11 rounded-xl shadow-xs';
-    labelStyles = 'text-[9.5px] font-black tracking-tighter uppercase mb-0.5 leading-none';
+    containerStyles = 'w-10 h-12 rounded-xl shadow-xs';
+    labelStyles = `${isLongLabel ? 'text-[8.5px] tracking-tight' : 'text-[9.5px] tracking-tight'} font-black uppercase mb-1 leading-none`;
   } else if (size === 'md') {
-    containerStyles = 'w-[30px] h-[34px] rounded-lg shadow-2xs';
-    labelStyles = 'text-[8px] font-black tracking-tighter uppercase mb-[1.5px] leading-none';
+    containerStyles = 'w-[32px] h-[38px] rounded-lg shadow-2xs';
+    labelStyles = `${isLongLabel ? 'text-[7px] tracking-tighter' : 'text-[8px] tracking-tight'} font-bold uppercase mb-[1.5px] leading-none`;
   } else if (size === 'xs') {
-    containerStyles = 'w-[18px] h-[20px] rounded-[4.5px] shadow-2xs';
-    labelStyles = 'text-[6px] font-black tracking-tighter uppercase mb-[0.5px] leading-none';
+    containerStyles = 'w-[24px] h-[28px] rounded-[5px] shadow-2xs';
+    labelStyles = `${isLongLabel ? 'text-[4.5px] tracking-tighter' : 'text-[5.5px] tracking-tight'} font-bold uppercase mb-[0.5px] leading-none`;
   }
 
   return (
     <div
-      className={`flex flex-col items-center justify-center text-white shrink-0 relative overflow-hidden select-none ${containerStyles} ${className}`}
+      className={`flex flex-col items-center justify-center text-white shrink-0 relative overflow-hidden select-none transition-transform ${containerStyles} ${className}`}
       style={{ backgroundColor: bgColor }}
-      title={title || `${details.label} Document`}
+      title={title || `${displayLabel} Document`}
     >
-      <span className={`text-white ${labelStyles}`}>
-        {details.label}
+      <span className={`text-white select-none pointer-events-none ${labelStyles}`}>
+        {displayLabel}
       </span>
       <FileBadgeSvg details={details} sizeVariant={size} />
     </div>
