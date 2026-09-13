@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   RotateCcw,
   ChevronDown,
@@ -6,7 +6,12 @@ import {
   LayoutGrid,
   MoreHorizontal,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Star,
+  Share2,
+  Edit2,
+  FolderInput,
+  Check
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
@@ -95,6 +100,40 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [activeItemMenuId, setActiveItemMenuId] = useState(null);
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  // Starred state persisted in localStorage
+  const [starredIds, setStarredIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem("rc.starredDocs");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Rename inline state
+  const [renamingDocId, setRenamingDocId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  // Share feedback notification
+  const [feedbackToast, setFeedbackToast] = useState(null);
+
+  const containerRef = useRef(null);
+
+  // Unified click-outside dismissal
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setActiveItemMenuId(null);
+        setShowTypeMenu(false);
+        setShowSortMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const loadRecentDocs = useCallback(() => {
     try {
@@ -188,13 +227,87 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
     return () => window.removeEventListener("storage", handleStorage);
   }, [loadRecentDocs]);
 
+  const toggleStar = (e, itemId) => {
+    e.stopPropagation();
+    setStarredIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      try {
+        localStorage.setItem("rc.starredDocs", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleShare = (e, item) => {
+    e.stopPropagation();
+    const link = `${window.location.origin}/#/${item.product}/${item.id}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(link).then(() => {
+        setFeedbackToast(`Link copied: ${item.title}`);
+        setTimeout(() => setFeedbackToast(null), 2500);
+      });
+    } else {
+      setFeedbackToast(`Share: ${item.title}`);
+      setTimeout(() => setFeedbackToast(null), 2500);
+    }
+  };
+
+  const startRename = (e, item) => {
+    e.stopPropagation();
+    setActiveItemMenuId(null);
+    setRenamingDocId(item.id);
+    setRenameValue(item.title);
+  };
+
+  const submitRename = (item) => {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== item.title) {
+      if (item.key) {
+        try {
+          const raw = localStorage.getItem(item.key);
+          if (raw) {
+            const data = JSON.parse(raw);
+            data.docTitle = trimmed;
+            data.title = trimmed;
+            localStorage.setItem(item.key, JSON.stringify(data));
+          }
+        } catch {}
+      }
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, title: trimmed } : i))
+      );
+    }
+    setRenamingDocId(null);
+  };
+
   const handleDeleteItem = (e, item) => {
     e.stopPropagation();
     try {
       if (item.key) localStorage.removeItem(item.key);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
       setActiveItemMenuId(null);
     } catch {}
+  };
+
+  const handleRemoveFromRecents = (e, item) => {
+    e.stopPropagation();
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(item.id);
+      return next;
+    });
+    setActiveItemMenuId(null);
   };
 
   const filteredItems = useMemo(() => {
@@ -205,6 +318,55 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
     return list;
   }, [items, filterType]);
 
+  const isMultiSelectActive = selectedIds.size > 0;
+  const allFilteredSelected =
+    filteredItems.length > 0 &&
+    filteredItems.every((item) => selectedIds.has(item.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredItems.map((i) => i.id)));
+    }
+  };
+
+  const toggleItemSelection = (e, itemId) => {
+    e?.stopPropagation?.();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkRemoveRecords = () => {
+    setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    try {
+      items.forEach((item) => {
+        if (selectedIds.has(item.id) && item.key) {
+          localStorage.removeItem(item.key);
+        }
+      });
+      setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+      setSelectedIds(new Set());
+    } catch {}
+  };
+
+  const handleBulkShare = () => {
+    const selectedCount = selectedIds.size;
+    setFeedbackToast(`Shared link for ${selectedCount} file${selectedCount > 1 ? "s" : ""}`);
+    setTimeout(() => setFeedbackToast(null), 2500);
+  };
+
   const filterLabels = {
     all: "All Types",
     compose: "Docs",
@@ -214,9 +376,17 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   };
 
   return (
-    <section className="space-y-3.5 select-none pt-2">
-      {/* Header bar matching Image 1 */}
-      <div className="flex items-center justify-between">
+    <section ref={containerRef} className="space-y-3.5 select-none pt-2 relative">
+      {/* Toast alert */}
+      {feedbackToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 text-xs px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <Check size={13} className="text-emerald-400 dark:text-emerald-600" />
+          <span>{feedbackToast}</span>
+        </div>
+      )}
+
+      {/* Header bar */}
+      <div className="flex items-center justify-between min-h-[36px]">
         <div className="flex items-center gap-2.5">
           <h2 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100">
             Recent
@@ -351,90 +521,385 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
         </div>
       </div>
 
-      {/* Table Headers: Exactly matching columns to rows */}
-      <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
-        <div className="col-span-5">Name</div>
-        <div className="col-span-3">Location</div>
-        <div className="col-span-3">Last Modified</div>
-        <div className="col-span-1 text-right pr-1">Size</div>
-      </div>
+      {/* Dynamic Table Header vs Bulk Action Bar */}
+      {isMultiSelectActive ? (
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 text-xs text-slate-700 dark:text-zinc-200 animate-in fade-in duration-150">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${
+                allFilteredSelected
+                  ? "bg-violet-600 border-violet-600 text-white"
+                  : "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500"
+              }`}
+              title={allFilteredSelected ? "Deselect all" : "Select all"}
+            >
+              {allFilteredSelected && <Check size={11} strokeWidth={3} />}
+            </button>
+            <span className="font-semibold text-violet-950 dark:text-violet-200">
+              ${selectedIds.size} item${selectedIds.size > 1 ? "s" : ""} selected
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-violet-600 dark:text-violet-400 hover:underline font-medium cursor-pointer bg-transparent border-none p-0 text-xs"
+            >
+              Deselect
+            </button>
+          </div>
 
-      {/* Items Rows: Exactly right-aligned Size column matching header */}
-      <div className="divide-y divide-slate-100/70 dark:divide-white/[0.02]">
-        {filteredItems.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => onLaunch && onLaunch(item.product, item.id)}
-            className="grid grid-cols-12 px-2 py-2.5 items-center hover:bg-slate-100/50 dark:hover:bg-zinc-800/30 rounded-xl transition-colors cursor-pointer group relative"
-          >
-            {/* Name + Subtitle Type */}
-            <div className="col-span-5 flex items-center gap-3 pr-2 min-w-0">
-              <AppNativeSvgIcon type={item.product} size={26} />
-              <div className="truncate">
-                <div className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                  {item.title}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleBulkShare}
+              className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+            >
+              <Share2 size={12} />
+              <span>Share</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkRemoveRecords}
+              className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs"
+            >
+              Remove records
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              className="px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/40 text-xs font-medium text-red-600 dark:text-red-300 transition-colors cursor-pointer shadow-2xs"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
+          <div className="col-span-5 pl-7">Name</div>
+          <div className="col-span-3">Location</div>
+          <div className="col-span-3">Last Modified</div>
+          <div className="col-span-1 text-right pr-1">Size</div>
+        </div>
+      )}
+
+      {/* LIST VIEW */}
+      {viewMode === "list" && (
+        <div className="divide-y divide-slate-100/70 dark:divide-white/[0.02]">
+          {filteredItems.map((item) => {
+            const isSelected = selectedIds.has(item.id);
+            const isStarred = starredIds.has(item.id);
+            const isRenaming = renamingDocId === item.id;
+            const isMenuOpen = activeItemMenuId === item.id;
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => {
+                  if (isMultiSelectActive) {
+                    toggleItemSelection(null, item.id);
+                  } else if (onLaunch) {
+                    onLaunch(item.product, item.id);
+                  }
+                }}
+                className={`grid grid-cols-12 px-2 py-2.5 items-center rounded-xl transition-all cursor-pointer group relative ${
+                  isSelected
+                    ? "bg-violet-50/70 dark:bg-violet-950/25 ring-1 ring-violet-200 dark:ring-violet-800/40"
+                    : "hover:bg-slate-100/50 dark:hover:bg-zinc-800/30"
+                }`}
+              >
+                {/* Name Column with Checkbox slot & App icon */}
+                <div className="col-span-5 flex items-center gap-2.5 pr-2 min-w-0">
+                  {/* WPS / Apple style Checkbox slot on the far left */}
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => toggleItemSelection(e, item.id)}
+                      className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-violet-600 border-violet-600 text-white opacity-100"
+                          : isMultiSelectActive
+                          ? "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-100"
+                          : "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-0 group-hover:opacity-100"
+                      }`}
+                      title={isSelected ? "Deselect file" : "Select file"}
+                    >
+                      {isSelected && <Check size={11} strokeWidth={3} />}
+                    </button>
+                  </div>
+
+                  <AppNativeSvgIcon type={item.product} size={26} />
+
+                  <div className="truncate flex-1">
+                    {isRenaming ? (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          submitRename(item);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1"
+                      >
+                        <input
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => submitRename(item)}
+                          autoFocus
+                          className="text-[13px] font-medium text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 border border-violet-400 dark:border-violet-500 rounded px-1.5 py-0.5 outline-none w-full"
+                        />
+                      </form>
+                    ) : (
+                      <>
+                        <div
+                          className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"
+                          title={item.title}
+                        >
+                          {item.title}
+                        </div>
+                        <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+                          {item.typeLabel}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-400 dark:text-zinc-500">
-                  {item.typeLabel}
+
+                {/* Location */}
+                <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400 truncate pr-2">
+                  {item.location}
+                </div>
+
+                {/* Last Modified */}
+                <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400">
+                  {formatTimestamp(item.savedAt)}
+                </div>
+
+                {/* Size Column + Hover Contextual Actions (Star, Share, More) */}
+                <div className="col-span-1 flex items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
+                  {/* Size text (hidden when hovering so actions fit cleanly) */}
+                  <span className={`${isMenuOpen ? "opacity-0" : "group-hover:opacity-0"} transition-opacity`}>
+                    {item.size}
+                  </span>
+
+                  {/* Contextual Action Group: Revealed on row hover */}
+                  <div
+                    className={`absolute right-0 flex items-center gap-1 transition-opacity ${
+                      isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Star Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => toggleStar(e, item.id)}
+                      className={`p-1 rounded-md transition-colors cursor-pointer border-none bg-transparent ${
+                        isStarred
+                          ? "text-amber-400 hover:text-amber-500"
+                          : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
+                      }`}
+                      title={isStarred ? "Starred" : "Star file"}
+                    >
+                      <Star
+                        size={13}
+                        className={isStarred ? "fill-amber-400 text-amber-400" : ""}
+                      />
+                    </button>
+
+                    {/* Share Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleShare(e, item)}
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
+                      title="Share link"
+                    >
+                      <Share2 size={13} />
+                    </button>
+
+                    {/* More Horizontal Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveItemMenuId(isMenuOpen ? null : item.id);
+                      }}
+                      className={`p-1 rounded-md transition-colors cursor-pointer border-none ${
+                        isMenuOpen
+                          ? "bg-slate-200 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100"
+                          : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 bg-transparent"
+                      }`}
+                      title="More actions"
+                    >
+                      <MoreHorizontal size={14} />
+                    </button>
+                  </div>
+
+                  {/* Contextual Dropdown Menu */}
+                  {isMenuOpen && (
+                    <div
+                      className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 w-44"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveItemMenuId(null);
+                          if (onLaunch) onLaunch(item.product, item.id);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                      >
+                        <ExternalLink size={13} className="text-slate-400" />
+                        <span>Open</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => startRename(e, item)}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                      >
+                        <Edit2 size={13} className="text-slate-400" />
+                        <span>Rename</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          toggleStar(e, item.id);
+                          setActiveItemMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                      >
+                        <Star
+                          size={13}
+                          className={isStarred ? "fill-amber-400 text-amber-400" : "text-slate-400"}
+                        />
+                        <span>{isStarred ? "Unstar" : "Star"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          handleShare(e, item);
+                          setActiveItemMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                      >
+                        <Share2 size={13} className="text-slate-400" />
+                        <span>Share</span>
+                      </button>
+
+                      <div className="my-1 border-t border-slate-100 dark:border-white/[0.06]" />
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemoveFromRecents(e, item)}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                      >
+                        <FolderInput size={13} className="text-slate-400" />
+                        <span>Remove from Recents</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteItem(e, item)}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent"
+                      >
+                        <Trash2 size={13} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
+      )}
 
-            {/* Location */}
-            <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400 truncate pr-2">
-              {item.location}
-            </div>
+      {/* GRID VIEW */}
+      {viewMode === "grid" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
+          {filteredItems.map((item) => {
+            const isSelected = selectedIds.has(item.id);
+            const isStarred = starredIds.has(item.id);
 
-            {/* Last Modified */}
-            <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400">
-              {formatTimestamp(item.savedAt)}
-            </div>
-
-            {/* Size: Flawlessly vertically and right-aligned with the "Size" header */}
-            <div className="col-span-1 flex items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
-              <span>{item.size}</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveItemMenuId(activeItemMenuId === item.id ? null : item.id);
+            return (
+              <div
+                key={item.id}
+                onClick={() => {
+                  if (isMultiSelectActive) {
+                    toggleItemSelection(null, item.id);
+                  } else if (onLaunch) {
+                    onLaunch(item.product, item.id);
+                  }
                 }}
-                className="absolute -right-5 p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer bg-transparent border-none"
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between h-36 ${
+                  isSelected
+                    ? "bg-violet-50/70 dark:bg-violet-950/25 border-violet-300 dark:border-violet-700 shadow-sm"
+                    : "bg-white dark:bg-zinc-850 border-slate-200/70 dark:border-white/[0.06] hover:shadow-md hover:border-slate-300 dark:hover:border-zinc-700"
+                }`}
               >
-                <MoreHorizontal size={14} />
-              </button>
+                {/* Top row: Checkbox slot & Star button */}
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={(e) => toggleItemSelection(e, item.id)}
+                    className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-violet-600 border-violet-600 text-white opacity-100"
+                        : isMultiSelectActive
+                        ? "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-100"
+                        : "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    {isSelected && <Check size={11} strokeWidth={3} />}
+                  </button>
 
-              {/* Inline Action Menu */}
-              {activeItemMenuId === item.id && (
-                <div
-                  className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-lg py-1 z-50 animate-in fade-in zoom-in-95 w-32"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveItemMenuId(null);
-                      if (onLaunch) onLaunch(item.product, item.id);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700/50 cursor-pointer border-none bg-transparent"
-                  >
-                    <ExternalLink size={12} />
-                    <span>Open</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteItem(e, item)}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent"
-                  >
-                    <Trash2 size={12} />
-                    <span>Delete</span>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => toggleStar(e, item.id)}
+                      className={`p-1 rounded-md transition-colors cursor-pointer border-none bg-transparent ${
+                        isStarred
+                          ? "text-amber-400 opacity-100"
+                          : "text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700"
+                      }`}
+                    >
+                      <Star size={12} className={isStarred ? "fill-amber-400" : ""} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleShare(e, item)}
+                      className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 transition-colors cursor-pointer border-none bg-transparent"
+                    >
+                      <Share2 size={12} />
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+
+                {/* Center product icon */}
+                <div className="my-auto flex items-center justify-center">
+                  <AppNativeSvgIcon type={item.product} size={32} />
+                </div>
+
+                {/* Bottom title & metadata */}
+                <div>
+                  <div
+                    className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400"
+                    title={item.title}
+                  >
+                    {item.title}
+                  </div>
+                  <div className="flex items-center justify-between text-[10.5px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                    <span>{item.typeLabel}</span>
+                    <span>{item.size}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
