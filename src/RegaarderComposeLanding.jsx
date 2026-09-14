@@ -20,7 +20,9 @@ export default function RegaarderComposeLanding({
   onOpenHelp,
   onOpenFeedback,
   onOpenShortcuts,
-  onOpenSettings
+  onOpenSettings,
+  isDocumentImmersive,
+  onToggleImmersive
 }) {
   const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'library' | 'recent'
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
@@ -80,8 +82,12 @@ export default function RegaarderComposeLanding({
                   <span>
                     Good morning{userGreetingName ? `, ${userGreetingName}` : ""}
                   </span>
-                  <span className="inline-block" role="img" aria-label="waving hand">
-                    &#x1F44B;
+                  <span
+                    className="inline-block animate-wave-hand cursor-default select-none"
+                    role="img"
+                    aria-label="waving hand"
+                  >
+                    👋
                   </span>
                 </h1>
                 <p className="text-[13px] text-slate-400 dark:text-zinc-400 mt-1">

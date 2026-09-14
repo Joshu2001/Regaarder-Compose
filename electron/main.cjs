@@ -198,7 +198,13 @@ $ws.AppActivate('${targetName}')
 
   // Layout resize listener to sync browser view bounds when window resizes
   mainWindow.on('resize', () => {
-    mainWindow.webContents.send('browser:window-resized');
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      try {
+        mainWindow.webContents.send('browser:window-resized');
+      } catch (_err) {
+        // Frame might have been navigating or disposing
+      }
+    }
     if (browserViewManager) {
       browserViewManager.syncPopoverPosition();
     }
@@ -248,7 +254,9 @@ $ws.AppActivate('${targetName}')
     'http://127.0.0.1:5173',
     'http://[::1]:5173',
     'http://localhost:5174',
-    'http://localhost:5175'
+    'http://localhost:5175',
+    'http://127.0.0.1:5176',
+    'http://localhost:5176'
   ].filter(Boolean);
 
   const loadApp = (portIndex = 0, attemptsLeft = 25) => {

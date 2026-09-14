@@ -33115,7 +33115,6 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (e.target.closest('button, input, textarea, a, select, [contenteditable="true"], [role="button"], [data-prevent-doubletap], table, td, th, [data-deck-element], canvas, .rdp, .tippy-box')) {
       return;
     }
-    if (productMode === 'landing') return;
 
     const now = Date.now();
     const prev = lastUniversalTapRef.current;
@@ -33136,7 +33135,6 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (e.target.closest('button, input, textarea, a, select, [contenteditable="true"], [role="button"], [data-prevent-doubletap], table, td, th, [data-deck-element], canvas, .rdp, .tippy-box')) {
       return;
     }
-    if (productMode === 'landing') return;
     toggleDocumentImmersiveMode();
   };
 
@@ -73633,8 +73631,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {roomState === 'active' && roomPanelMode === 'expanded' && (productMode === 'room-landing' || productMode === 'room') ? (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
       ) : productMode === 'landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+        <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : ''}`}>
           <RegaarderComposeLanding
+            isDocumentImmersive={isDocumentImmersive}
+            onToggleImmersive={toggleDocumentImmersiveMode}
             onLaunch={openLandingWorkspace}
             onOpenRecentModal={() => setRecentDocumentsModalOpen(true)}
             onSearchClick={() => setIsMemorySearchOpen(true)}

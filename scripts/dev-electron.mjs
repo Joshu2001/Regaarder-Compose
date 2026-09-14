@@ -6,7 +6,7 @@ const electronCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const vite = spawn(npmCommand, ['run', 'dev', '--', '--host', '127.0.0.1', '--port', port], {
   stdio: 'inherit',
-  shell: false,
+  shell: process.platform === 'win32',
   env: { ...process.env, BROWSER: 'none' },
 });
 
@@ -44,7 +44,7 @@ try {
   const viteUrl = await waitForVite();
   const electron = spawn(electronCommand, ['electron', '.'], {
     stdio: 'inherit',
-    shell: false,
+    shell: process.platform === 'win32',
     env: { ...process.env, NODE_ENV: 'development', VITE_DEV_SERVER_URL: viteUrl },
   });
 
