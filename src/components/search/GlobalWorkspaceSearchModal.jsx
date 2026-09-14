@@ -1596,12 +1596,14 @@ export default function GlobalWorkspaceSearchModal({
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => {
-                    React.startTransition ? React.startTransition(() => setActiveFilter(tab.id)) : setActiveFilter(tab.id);
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setActiveFilter(tab.id);
                     setIsMoreFilterMenuOpen(false);
-                    if (mode === 'ai' && query.trim()) {
-                      handleRunAiSynthesis(query);
-                    }
+                  }}
+                  onClick={() => {
+                    setActiveFilter(tab.id);
+                    setIsMoreFilterMenuOpen(false);
                   }}
                   className={`px-2.5 py-1 text-[12px] rounded-md transition-none cursor-pointer shrink-0 ${
                     isActive
@@ -1629,6 +1631,10 @@ export default function GlobalWorkspaceSearchModal({
                 <button
                   ref={moreFilterButtonRef}
                   type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setIsMoreFilterMenuOpen((prev) => !prev);
+                  }}
                   onClick={() => setIsMoreFilterMenuOpen((prev) => !prev)}
                   className={`flex items-center gap-1 px-2.5 py-1 text-[12px] rounded-md transition-none cursor-pointer shrink-0 ${
                     MORE_FILTER_TABS.some((t) => t.id === activeFilter)
@@ -1656,13 +1662,14 @@ export default function GlobalWorkspaceSearchModal({
                           type="button"
                           onPointerDown={(e) => {
                             e.preventDefault();
-                            React.startTransition ? React.startTransition(() => setActiveFilter(tab.id)) : setActiveFilter(tab.id);
+                            setActiveFilter(tab.id);
                             setIsMoreFilterMenuOpen(false);
-                            if (mode === 'ai' && query.trim()) {
-                              handleRunAiSynthesis(query);
-                            }
                           }}
-                          className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors cursor-pointer ${
+                          onClick={() => {
+                            setActiveFilter(tab.id);
+                            setIsMoreFilterMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-none cursor-pointer ${
                             isActive
                               ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs'
                               : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
