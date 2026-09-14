@@ -605,39 +605,43 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          {/* Apple-style Segmented Control Container for Bulk Actions */}
+          <div className="flex items-center rounded-lg bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 border border-slate-200/60 dark:border-white/[0.06] shadow-2xs">
             <button
               type="button"
               onClick={handleBulkShare}
-              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              title="Share link for selected files"
             >
-              <Share2 size={12} />
+              <Share2 size={13} className="text-slate-500 dark:text-zinc-400" />
               <span>Share</span>
             </button>
             <button
               type="button"
               onClick={handleBulkPin}
-              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
               title="Pin or unpin selected files"
             >
-              <Pin size={12} />
+              <Pin size={13} className="text-slate-500 dark:text-zinc-400" />
               <span>Pin</span>
             </button>
             <button
               type="button"
               onClick={handleBulkRemoveRecords}
-              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
               title="Move or reorganize"
             >
-              <FolderInput size={12} />
+              <FolderInput size={13} className="text-slate-500 dark:text-zinc-400" />
               <span>Move</span>
             </button>
+            <div className="w-[1px] h-3.5 bg-slate-300/60 dark:bg-white/10 mx-0.5" />
             <button
               type="button"
               onClick={handleBulkDelete}
-              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/30 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-red-600 dark:text-red-400 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300 transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              title="Delete selected files"
             >
-              <Trash2 size={12} />
+              <Trash2 size={13} />
               <span>Delete</span>
             </button>
           </div>
@@ -817,7 +821,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                       {/* Contextual Dropdown Menu */}
                       {isMenuOpen && (
                         <div
-                          className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 w-44"
+                          className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 w-48"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -826,18 +830,18 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                               setActiveItemMenuId(null);
                               if (onLaunch) onLaunch(item.product, item.id);
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
-                            <ExternalLink size={13} className="text-slate-400" />
+                            <ExternalLink size={14} className="text-slate-400" />
                             <span>Open</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={(e) => startRename(e, item)}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
-                            <Edit2 size={13} className="text-slate-400" />
+                            <Edit2 size={14} className="text-slate-400" />
                             <span>Rename</span>
                           </button>
 
@@ -847,12 +851,12 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                               togglePin(e, item.id);
                               setActiveItemMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
                             {isPinned ? (
-                              <PinOff size={13} className="text-slate-400" />
+                              <PinOff size={14} className="text-slate-400" />
                             ) : (
-                              <Pin size={13} className="text-slate-400" />
+                              <Pin size={14} className="text-slate-400" />
                             )}
                             <span>{isPinned ? "Unpin" : "Pin"}</span>
                           </button>
@@ -863,10 +867,10 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                               toggleStar(e, item.id);
                               setActiveItemMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
                             <Star
-                              size={13}
+                              size={14}
                               className={isStarred ? "fill-amber-400 text-amber-400" : "text-slate-400"}
                             />
                             <span>{isStarred ? "Unstar" : "Star"}</span>
@@ -878,18 +882,18 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                               handleShare(e, item);
                               setActiveItemMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
-                            <Share2 size={13} className="text-slate-400" />
+                            <Share2 size={14} className="text-slate-400" />
                             <span>Share</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={(e) => handleRemoveFromRecents(e, item)}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
-                            <FolderInput size={13} className="text-slate-400" />
+                            <FolderInput size={14} className="text-slate-400" />
                             <span>Move</span>
                           </button>
 
@@ -898,9 +902,9 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                           <button
                             type="button"
                             onClick={(e) => handleDeleteItem(e, item)}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent"
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent transition-colors"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
                             <span>Delete</span>
                           </button>
                         </div>
