@@ -50,6 +50,18 @@
   animation: roomEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes discoveryNudge {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(3.5px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(2.5px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-discovery-nudge {
+  animation: discoveryNudge 0.9s cubic-bezier(0.25, 1, 0.5, 1) 1.2s 1 forwards;
+}
+
 @media print {
   .print-hide {
     display: none !important;

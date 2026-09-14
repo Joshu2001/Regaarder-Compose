@@ -59,6 +59,27 @@ const SECONDARY_WORKSPACE_TOOLS = [
 
 export default function WorkspaceQuickCreate({ onLaunch }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasDiscovered, setHasDiscovered] = useState(() => {
+    try {
+      return localStorage.getItem("rc.discoveredMoreTools") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const markDiscovered = () => {
+    if (!hasDiscovered) {
+      setHasDiscovered(true);
+      try {
+        localStorage.setItem("rc.discoveredMoreTools", "true");
+      } catch {}
+    }
+  };
+
+  const handleToggle = () => {
+    markDiscovered();
+    setIsExpanded(!isExpanded);
+  };
 
   return (
     <section className="p-5 rounded-2xl bg-[#F8FAFC] dark:bg-zinc-850/60 border border-slate-200/60 dark:border-white/[0.06] shadow-2xs select-none transition-all duration-200">
@@ -73,19 +94,28 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
           </p>
         </div>
 
-        {/* Subtle Chevron toggle for progressive disclosure */}
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className={`flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-1 rounded-md`}
-          title={isExpanded ? "Show fewer tools" : "Show more tools"}
-        >
-          <span className="hidden sm:inline">{isExpanded ? "Fewer tools" : "More tools"}</span>
-          <ChevronRight
-            size={15}
-            className={`transition-transform duration-200 ${isExpanded ? "rotate-90 text-slate-600 dark:text-zinc-300" : ""}`}
-          />
-        </button>
+        {/* Subtle Chevron toggle for progressive disclosure with one-time onboarding cue */}
+        <div className="relative flex items-center">
+          <button
+            type="button"
+            onClick={handleToggle}
+            onMouseEnter={markDiscovered}
+            className={`flex items-center gap-1 text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-1 rounded-md group`}
+            title={isExpanded ? "Show fewer tools" : "Show more tools"}
+          >
+            <span className="hidden sm:inline text-[11px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors">
+              {isExpanded ? "Fewer tools" : "More tools"}
+            </span>
+            <div className={!hasDiscovered ? "animate-discovery-nudge" : ""}>
+              <ChevronRight
+                size={15}
+                className={`transition-transform duration-200 ${
+                  isExpanded ? "rotate-90 text-slate-600 dark:text-zinc-300" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300"
+                }`}
+              />
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Primary Create New Items */}
