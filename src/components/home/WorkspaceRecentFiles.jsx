@@ -11,7 +11,9 @@ import {
   Share2,
   Edit2,
   FolderInput,
-  Check
+  Check,
+  Pin,
+  PinOff
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
@@ -107,6 +109,16 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   const [starredIds, setStarredIds] = useState(() => {
     try {
       const stored = localStorage.getItem("rc.starredDocs");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Pinned state persisted in localStorage
+  const [pinnedIds, setPinnedIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem("rc.pinnedDocs");
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch {
       return new Set();
@@ -243,6 +255,43 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
     });
   };
 
+  const togglePin = (e, itemId) => {
+    e?.stopPropagation?.();
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      const willPin = !next.has(itemId);
+      if (willPin) {
+        next.add(itemId);
+      } else {
+        next.delete(itemId);
+      }
+      try {
+        localStorage.setItem("rc.pinnedDocs", JSON.stringify(Array.from(next)));
+      } catch {}
+      setFeedbackToast(willPin ? "Pinned to top" : "Unpinned from top");
+      setTimeout(() => setFeedbackToast(null), 2000);
+      return next;
+    });
+  };
+
+  const handleBulkPin = () => {
+    const allSelectedPinned = Array.from(selectedIds).every((id) => pinnedIds.has(id));
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelectedPinned) {
+        selectedIds.forEach((id) => next.delete(id));
+      } else {
+        selectedIds.forEach((id) => next.add(id));
+      }
+      try {
+        localStorage.setItem("rc.pinnedDocs", JSON.stringify(Array.from(next)));
+      } catch {}
+      setFeedbackToast(allSelectedPinned ? "Unpinned selected items" : "Pinned selected items");
+      setTimeout(() => setFeedbackToast(null), 2000);
+      return next;
+    });
+  };
+
   const handleShare = (e, item) => {
     e.stopPropagation();
     const link = `${window.location.origin}/#/${item.product}/${item.id}`;
@@ -315,8 +364,15 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
     if (filterType !== "all") {
       list = list.filter((i) => i.product === filterType);
     }
-    return list;
-  }, [items, filterType]);
+    // Sort pinned items to the top while preserving primary sort order
+    return [...list].sort((a, b) => {
+      const aPinned = pinnedIds.has(a.id);
+      const bPinned = pinnedIds.has(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [items, filterType, pinnedIds]);
 
   const isMultiSelectActive = selectedIds.size > 0;
   const allFilteredSelected =
@@ -523,7 +579,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
       {/* Dynamic Table Header vs Bulk Action Bar */}
       {isMultiSelectActive ? (
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 text-xs text-slate-700 dark:text-zinc-200 animate-in fade-in duration-150">
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50/90 dark:bg-zinc-850/90 border border-slate-200/70 dark:border-white/[0.08] text-xs text-slate-700 dark:text-zinc-200 shadow-xs animate-in fade-in duration-150">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -537,13 +593,13 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             >
               {allFilteredSelected && <Check size={11} strokeWidth={3} />}
             </button>
-            <span className="font-semibold text-violet-950 dark:text-violet-200">
-              ${selectedIds.size} item${selectedIds.size > 1 ? "s" : ""} selected
+            <span className="font-semibold text-slate-900 dark:text-zinc-100">
+              {selectedIds.size} item{selectedIds.size > 1 ? "s" : ""} selected
             </span>
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
-              className="text-violet-600 dark:text-violet-400 hover:underline font-medium cursor-pointer bg-transparent border-none p-0 text-xs"
+              className="text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 font-medium cursor-pointer bg-transparent border-none p-0 text-xs ml-1"
             >
               Deselect
             </button>
@@ -553,24 +609,36 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             <button
               type="button"
               onClick={handleBulkShare}
-              className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
             >
               <Share2 size={12} />
               <span>Share</span>
             </button>
             <button
               type="button"
-              onClick={handleBulkRemoveRecords}
-              className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs"
+              onClick={handleBulkPin}
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              title="Pin or unpin selected files"
             >
-              Remove records
+              <Pin size={12} />
+              <span>Pin</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkRemoveRecords}
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+              title="Move or reorganize"
+            >
+              <FolderInput size={12} />
+              <span>Move</span>
             </button>
             <button
               type="button"
               onClick={handleBulkDelete}
-              className="px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/40 text-xs font-medium text-red-600 dark:text-red-300 transition-colors cursor-pointer shadow-2xs"
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/30 border border-slate-200/80 dark:border-white/10 text-xs font-medium text-red-600 dark:text-red-400 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
             >
-              Delete
+              <Trash2 size={12} />
+              <span>Delete</span>
             </button>
           </div>
         </div>
@@ -589,6 +657,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
           {filteredItems.map((item) => {
             const isSelected = selectedIds.has(item.id);
             const isStarred = starredIds.has(item.id);
+            const isPinned = pinnedIds.has(item.id);
             const isRenaming = renamingDocId === item.id;
             const isMenuOpen = activeItemMenuId === item.id;
 
@@ -604,7 +673,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 }}
                 className={`grid grid-cols-12 px-2 py-2.5 items-center rounded-xl transition-all cursor-pointer group relative ${
                   isSelected
-                    ? "bg-violet-50/70 dark:bg-violet-950/25 ring-1 ring-violet-200 dark:ring-violet-800/40"
+                    ? "bg-violet-50/40 dark:bg-violet-950/20"
                     : "hover:bg-slate-100/50 dark:hover:bg-zinc-800/30"
                 }`}
               >
@@ -651,11 +720,20 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                       </form>
                     ) : (
                       <>
-                        <div
-                          className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"
-                          title={item.title}
-                        >
-                          {item.title}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"
+                            title={item.title}
+                          >
+                            {item.title}
+                          </span>
+                          {isPinned && (
+                            <Pin
+                              size={11}
+                              className="text-violet-500/80 dark:text-violet-400/80 shrink-0 fill-violet-500/20"
+                              title="Pinned"
+                            />
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-400 dark:text-zinc-500">
                           {item.typeLabel}
@@ -682,132 +760,152 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     {item.size}
                   </span>
 
-                  {/* Contextual Action Group: Revealed on row hover */}
-                  <div
-                    className={`absolute right-0 flex items-center gap-1 transition-opacity ${
-                      isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    }`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Star Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => toggleStar(e, item.id)}
-                      className={`p-1 rounded-md transition-colors cursor-pointer border-none bg-transparent ${
-                        isStarred
-                          ? "text-amber-400 hover:text-amber-500"
-                          : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
-                      }`}
-                      title={isStarred ? "Starred" : "Star file"}
-                    >
-                      <Star
-                        size={13}
-                        className={isStarred ? "fill-amber-400 text-amber-400" : ""}
-                      />
-                    </button>
-
-                    {/* Share Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleShare(e, item)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
-                      title="Share link"
-                    >
-                      <Share2 size={13} />
-                    </button>
-
-                    {/* More Horizontal Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveItemMenuId(isMenuOpen ? null : item.id);
-                      }}
-                      className={`p-1 rounded-md transition-colors cursor-pointer border-none ${
-                        isMenuOpen
-                          ? "bg-slate-200 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100"
-                          : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 bg-transparent"
-                      }`}
-                      title="More actions"
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
-                  </div>
-
-                  {/* Contextual Dropdown Menu */}
-                  {isMenuOpen && (
-                    <div
-                      className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 w-44"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveItemMenuId(null);
-                          if (onLaunch) onLaunch(item.product, item.id);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                  {/* Contextual Action Group: Revealed on row hover only when NOT in multi-select mode */}
+                  {!isMultiSelectActive && (
+                    <>
+                      <div
+                        className={`absolute right-0 flex items-center gap-1 transition-opacity ${
+                          isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <ExternalLink size={13} className="text-slate-400" />
-                        <span>Open</span>
-                      </button>
+                        {/* Star Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => toggleStar(e, item.id)}
+                          className={`p-1 rounded-md transition-colors cursor-pointer border-none bg-transparent ${
+                            isStarred
+                              ? "text-amber-400 hover:text-amber-500"
+                              : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
+                          }`}
+                          title={isStarred ? "Starred" : "Star file"}
+                        >
+                          <Star
+                            size={13}
+                            className={isStarred ? "fill-amber-400 text-amber-400" : ""}
+                          />
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={(e) => startRename(e, item)}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
-                      >
-                        <Edit2 size={13} className="text-slate-400" />
-                        <span>Rename</span>
-                      </button>
+                        {/* Share Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleShare(e, item)}
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
+                          title="Share link"
+                        >
+                          <Share2 size={13} />
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          toggleStar(e, item.id);
-                          setActiveItemMenuId(null);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
-                      >
-                        <Star
-                          size={13}
-                          className={isStarred ? "fill-amber-400 text-amber-400" : "text-slate-400"}
-                        />
-                        <span>{isStarred ? "Unstar" : "Star"}</span>
-                      </button>
+                        {/* More Horizontal Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveItemMenuId(isMenuOpen ? null : item.id);
+                          }}
+                          className={`p-1 rounded-md transition-colors cursor-pointer border-none ${
+                            isMenuOpen
+                              ? "bg-slate-200 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100"
+                              : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 bg-transparent"
+                          }`}
+                          title="More actions"
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          handleShare(e, item);
-                          setActiveItemMenuId(null);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
-                      >
-                        <Share2 size={13} className="text-slate-400" />
-                        <span>Share</span>
-                      </button>
+                      {/* Contextual Dropdown Menu */}
+                      {isMenuOpen && (
+                        <div
+                          className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 w-44"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveItemMenuId(null);
+                              if (onLaunch) onLaunch(item.product, item.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                          >
+                            <ExternalLink size={13} className="text-slate-400" />
+                            <span>Open</span>
+                          </button>
 
-                      <div className="my-1 border-t border-slate-100 dark:border-white/[0.06]" />
+                          <button
+                            type="button"
+                            onClick={(e) => startRename(e, item)}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                          >
+                            <Edit2 size={13} className="text-slate-400" />
+                            <span>Rename</span>
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleRemoveFromRecents(e, item)}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
-                      >
-                        <FolderInput size={13} className="text-slate-400" />
-                        <span>Remove from Recents</span>
-                      </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              togglePin(e, item.id);
+                              setActiveItemMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                          >
+                            {isPinned ? (
+                              <PinOff size={13} className="text-slate-400" />
+                            ) : (
+                              <Pin size={13} className="text-slate-400" />
+                            )}
+                            <span>{isPinned ? "Unpin" : "Pin"}</span>
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteItem(e, item)}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent"
-                      >
-                        <Trash2 size={13} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              toggleStar(e, item.id);
+                              setActiveItemMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                          >
+                            <Star
+                              size={13}
+                              className={isStarred ? "fill-amber-400 text-amber-400" : "text-slate-400"}
+                            />
+                            <span>{isStarred ? "Unstar" : "Star"}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              handleShare(e, item);
+                              setActiveItemMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                          >
+                            <Share2 size={13} className="text-slate-400" />
+                            <span>Share</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveFromRecents(e, item)}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent"
+                          >
+                            <FolderInput size={13} className="text-slate-400" />
+                            <span>Move</span>
+                          </button>
+
+                          <div className="my-1 border-t border-slate-100 dark:border-white/[0.06]" />
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteItem(e, item)}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent"
+                          >
+                            <Trash2 size={13} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -835,7 +933,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 }}
                 className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between h-36 ${
                   isSelected
-                    ? "bg-violet-50/70 dark:bg-violet-950/25 border-violet-300 dark:border-violet-700 shadow-sm"
+                    ? "bg-violet-50/40 dark:bg-violet-950/20 border-violet-200/80 dark:border-violet-900/40 shadow-xs"
                     : "bg-white dark:bg-zinc-850 border-slate-200/70 dark:border-white/[0.06] hover:shadow-md hover:border-slate-300 dark:hover:border-zinc-700"
                 }`}
               >
