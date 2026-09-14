@@ -579,7 +579,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
       {/* Dynamic Table Header vs Bulk Action Bar */}
       {isMultiSelectActive ? (
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50/90 dark:bg-zinc-850/90 border border-slate-200/70 dark:border-white/[0.08] text-xs text-slate-700 dark:text-zinc-200 shadow-xs animate-in fade-in duration-150">
+        <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/40 border border-slate-200/50 dark:border-white/[0.04] text-xs text-slate-700 dark:text-zinc-200 animate-in fade-in duration-150">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -593,55 +593,55 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             >
               {allFilteredSelected && <Check size={11} strokeWidth={3} />}
             </button>
-            <span className="font-semibold text-slate-900 dark:text-zinc-100">
+            <span className="font-semibold text-slate-800 dark:text-zinc-200">
               {selectedIds.size} item{selectedIds.size > 1 ? "s" : ""} selected
             </span>
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
-              className="text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 font-medium cursor-pointer bg-transparent border-none p-0 text-xs ml-1"
+              className="text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 font-medium cursor-pointer bg-transparent border-none p-0 text-xs ml-0.5"
             >
               Deselect
             </button>
           </div>
 
-          {/* Apple-style Segmented Control Container for Bulk Actions */}
-          <div className="flex items-center rounded-lg bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 border border-slate-200/60 dark:border-white/[0.06] shadow-2xs">
+          {/* Integrated Contextual Action Toolbar */}
+          <div className="flex items-center gap-1 rounded-lg bg-slate-200/40 dark:bg-zinc-800/60 px-2 py-0.5 border border-slate-200/40 dark:border-white/[0.04]">
             <button
               type="button"
               onClick={handleBulkShare}
-              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              className="px-2 py-0.5 text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
               title="Share link for selected files"
             >
-              <Share2 size={13} className="text-slate-500 dark:text-zinc-400" />
+              <Share2 size={12.5} className="text-slate-400 dark:text-zinc-400" />
               <span>Share</span>
             </button>
             <button
               type="button"
               onClick={handleBulkPin}
-              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              className="px-2 py-0.5 text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
               title="Pin or unpin selected files"
             >
-              <Pin size={13} className="text-slate-500 dark:text-zinc-400" />
+              <Pin size={12.5} className="text-slate-400 dark:text-zinc-400" />
               <span>Pin</span>
             </button>
             <button
               type="button"
               onClick={handleBulkRemoveRecords}
-              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              className="px-2 py-0.5 text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
               title="Move or reorganize"
             >
-              <FolderInput size={13} className="text-slate-500 dark:text-zinc-400" />
+              <FolderInput size={12.5} className="text-slate-400 dark:text-zinc-400" />
               <span>Move</span>
             </button>
-            <div className="w-[1px] h-3.5 bg-slate-300/60 dark:bg-white/10 mx-0.5" />
+            <div className="w-[1px] h-3 bg-slate-300/60 dark:bg-white/10 mx-0.5" />
             <button
               type="button"
               onClick={handleBulkDelete}
-              className="px-2.5 py-1 rounded-md text-[12px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300 transition-all cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              className="px-2 py-0.5 text-[12px] font-medium text-red-600/80 dark:text-red-400/80 hover:text-red-600 dark:hover:text-red-300 transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
               title="Delete selected files"
             >
-              <Trash2 size={13} />
+              <Trash2 size={12.5} className="text-red-500/80 dark:text-red-400/80" />
               <span>Delete</span>
             </button>
           </div>
