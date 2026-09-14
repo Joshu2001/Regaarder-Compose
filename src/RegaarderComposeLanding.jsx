@@ -132,7 +132,7 @@ export default function RegaarderComposeLanding({
                     className="inline-block cursor-default select-none animate-wave-hand ml-1"
                     style={{
                       transformOrigin: '70% 75%',
-                      animation: 'waveHand 2s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.1s 1 both',
+                      animation: 'waveHand 2s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.22s 1 both',
                       willChange: 'transform'
                     }}
                     role="img"
