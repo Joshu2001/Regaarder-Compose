@@ -1603,7 +1603,7 @@ export default function GlobalWorkspaceSearchModal({
                       handleRunAiSynthesis(query);
                     }
                   }}
-                  className={`px-2.5 py-1 text-[12px] rounded-md transition-colors duration-75 cursor-pointer shrink-0 ${
+                  className={`px-2.5 py-1 text-[12px] rounded-md transition-none cursor-pointer shrink-0 ${
                     isActive
                       ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-black/10 dark:outline-white/15'
                       : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.025] dark:hover:bg-white/[0.035] font-medium'
@@ -1630,7 +1630,7 @@ export default function GlobalWorkspaceSearchModal({
                   ref={moreFilterButtonRef}
                   type="button"
                   onClick={() => setIsMoreFilterMenuOpen((prev) => !prev)}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-[12px] rounded-md transition-colors duration-75 cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1 px-2.5 py-1 text-[12px] rounded-md transition-none cursor-pointer shrink-0 ${
                     MORE_FILTER_TABS.some((t) => t.id === activeFilter)
                       ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-black/10 dark:outline-white/15'
                       : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.025] dark:hover:bg-white/[0.035] font-medium'
@@ -1644,7 +1644,7 @@ export default function GlobalWorkspaceSearchModal({
 
                 {isMoreFilterMenuOpen && createPortal(
                   <div
-                    className="fixed w-52 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl p-1.5 z-[100010] animate-in fade-in zoom-in-95 duration-100"
+                    className="fixed w-52 rounded-xl border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-xl p-1.5 z-[100010] animate-in fade-in zoom-in-95 duration-75"
                     style={{ top: `${moreFilterMenuPosition.top}px`, left: `${moreFilterMenuPosition.left}px` }}
                   >
                     {MORE_FILTER_TABS.map((tab) => {
@@ -2335,7 +2335,7 @@ export default function GlobalWorkspaceSearchModal({
                               setSelectedIndex(itemIdx);
                               handleActivateItem({ type: 'entity', data: entity });
                             }}
-                            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors duration-75 ${
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-none ${
                               isSelected
                                 ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
                                 : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05]'
@@ -2481,7 +2481,7 @@ export default function GlobalWorkspaceSearchModal({
                               setSelectedIndex(itemIdx);
                               handleActivateItem({ type: 'entity', data: entity });
                             }}
-                            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors duration-75 ${
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-none ${
                               isSelected
                                 ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
                                 : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05]'
@@ -2689,7 +2689,7 @@ export default function GlobalWorkspaceSearchModal({
                           setSelectedIndex(itemGlobalIdx);
                           handleActivateItem({ type: 'entity', data: entity });
                         }}
-                        className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-colors duration-75 ${
+                        className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-none ${
                           isSelected
                             ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08] shadow-2xs'
                             : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05] border border-black/[0.03] dark:border-white/[0.04]'
