@@ -682,6 +682,7 @@ export const RegaarderProductIconMap = {
   Orb: OrbIcon,
   AI: RegaarderAiIcon,
   orb: OrbIcon,
+  tasks: TasksIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,

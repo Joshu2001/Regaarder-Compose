@@ -48,10 +48,14 @@
 }
 
 .thin-scrollbar::-webkit-scrollbar,
-.regaarder-scrollbar::-webkit-scrollbar,
-.memory-scrollbar::-webkit-scrollbar {
+.regaarder-scrollbar::-webkit-scrollbar {
   width: 5px !important;
   height: 5px !important;
+}
+
+.memory-scrollbar::-webkit-scrollbar {
+  width: 3.5px !important;
+  height: 3.5px !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-button,
@@ -82,23 +86,32 @@
 
 .thin-scrollbar:hover::-webkit-scrollbar-thumb,
 .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
-.memory-scrollbar:hover::-webkit-scrollbar-thumb,
 .thin-scrollbar:focus-within::-webkit-scrollbar-thumb,
-.regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb,
-.memory-scrollbar:focus-within::-webkit-scrollbar-thumb {
+.regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb {
   background-color: rgba(148, 163, 184, 0.35) !important;
 }
 
+.memory-scrollbar:hover::-webkit-scrollbar-thumb,
+.memory-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.22) !important;
+}
+
 .thin-scrollbar::-webkit-scrollbar-thumb:hover,
-.regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
-.memory-scrollbar::-webkit-scrollbar-thumb:hover {
+.regaarder-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(100, 116, 139, 0.6) !important;
 }
 
+.memory-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.45) !important;
+}
+
 .thin-scrollbar::-webkit-scrollbar-thumb:active,
-.regaarder-scrollbar::-webkit-scrollbar-thumb:active,
-.memory-scrollbar::-webkit-scrollbar-thumb:active {
+.regaarder-scrollbar::-webkit-scrollbar-thumb:active {
   background-color: rgba(71, 85, 105, 0.8) !important;
+}
+
+.memory-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(100, 116, 139, 0.6) !important;
 }
 
 /* Slash menu scrollbar: sleek floating overlay pill scrollbar in neutral grey */

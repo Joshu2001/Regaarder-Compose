@@ -11,6 +11,8 @@ import {
   Trash2,
   Clock,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   User,
   SlidersHorizontal,
   ArrowUpDown,
@@ -23,6 +25,181 @@ const PRIORITY_OPTIONS = [
   { id: "medium", label: "Medium", color: "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200/60 dark:border-sky-900/40" },
   { id: "low", label: "Low", color: "text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 border-slate-200/60 dark:border-zinc-700/60" }
 ];
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+const MONTH_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
+function AppleMiniDatePicker({ value, onSelect, onClose, showTimeInput = false, timeValue = "", onTimeChange = null }) {
+  const [viewDate, setViewDate] = useState(() => new Date());
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const handlePrevMonth = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setViewDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setViewDate(new Date(year, month + 1, 1));
+  };
+
+  const isToday = (day) => {
+    const today = new Date();
+    return (
+      today.getFullYear() === year &&
+      today.getMonth() === month &&
+      today.getDate() === day
+    );
+  };
+
+  const handleSelectDay = (day) => {
+    const formatted = `${MONTH_SHORT[month]} ${day}`;
+    onSelect(formatted);
+  };
+
+  return (
+    <div 
+      onClick={(e) => e.stopPropagation()} 
+      className="w-64 rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-700 shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150 font-sans"
+    >
+      {/* Quick Presets */}
+      <div className="flex items-center gap-1 mb-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800">
+        {[
+          { label: "Today", val: "Today" },
+          { label: "Tomorrow", val: "Tomorrow" },
+          { label: "Next Week", val: "Next Week" }
+        ].map((preset) => {
+          const isSel = value?.startsWith(preset.val);
+          return (
+            <button
+              key={preset.label}
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                onSelect(preset.val);
+              }}
+              className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-medium text-center transition-colors cursor-pointer ${
+                isSel
+                  ? "bg-violet-600 text-white font-semibold shadow-2xs"
+                  : "bg-slate-100/70 hover:bg-slate-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300"
+              }`}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Month & Year Navigation Header */}
+      <div className="flex items-center justify-between px-1 mb-2">
+        <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100">
+          {MONTH_NAMES[month]} {year}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onPointerDown={handlePrevMonth}
+            className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            title="Previous month"
+          >
+            <ChevronLeft size={13} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onPointerDown={handleNextMonth}
+            className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            title="Next month"
+          >
+            <ChevronRight size={13} strokeWidth={2.2} />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+          <span key={d} className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">
+            {d}
+          </span>
+        ))}
+      </div>
+
+      {/* Day Cells */}
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {Array.from({ length: firstDayIndex }).map((_, i) => (
+          <span key={`empty-${i}`} className="w-7 h-7" />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const formatted = `${MONTH_SHORT[month]} ${day}`;
+          const isSel = value?.includes(formatted);
+          const currentDay = isToday(day);
+
+          return (
+            <button
+              key={`day-${day}`}
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                handleSelectDay(day);
+              }}
+              className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center font-medium transition-all cursor-pointer ${
+                isSel
+                  ? "bg-violet-600 text-white font-semibold shadow-2xs"
+                  : currentDay
+                  ? "border border-violet-500/40 text-violet-600 dark:text-violet-400 font-semibold bg-violet-50/50 dark:bg-violet-950/30"
+                  : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
+              }`}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Optional Time & Action Footer */}
+      {showTimeInput && (
+        <div className="border-t border-slate-100 dark:border-zinc-800 mt-2.5 pt-2 space-y-1.5 px-0.5">
+          <div className="flex items-center justify-between text-[10.5px] text-slate-500 dark:text-zinc-400">
+            <span>Optional Time</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              value={timeValue}
+              onChange={(e) => onTimeChange && onTimeChange(e.target.value)}
+              placeholder="e.g. 10:00 AM"
+              className="flex-1 text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500"
+            />
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                onClose();
+              }}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors cursor-pointer shrink-0"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
   const [tasks, setTasks] = useState(() => {
@@ -325,53 +502,15 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
               </button>
 
               {isNewDateOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans space-y-2">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
-                    Due Date
-                  </div>
-                  <div className="space-y-0.5">
-                    {["Today", "Tomorrow", "Next Week"].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          setNewTaskDueDate(preset);
-                        }}
-                        className={`w-full flex items-center justify-between px-2 py-1 rounded-lg text-xs transition-colors cursor-pointer ${
-                          newTaskDueDate.startsWith(preset)
-                            ? "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold"
-                            : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
-                        }`}
-                      >
-                        <span>{preset}</span>
-                        {newTaskDueDate.startsWith(preset) && <Check size={11} />}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="border-t border-slate-100 dark:border-zinc-800 pt-1.5 space-y-1.5 px-1">
-                    <div className="text-[10px] text-slate-400 flex items-center justify-between">
-                      <span>Optional Time:</span>
-                    </div>
-                    <input
-                      type="text"
-                      value={customTimeInput}
-                      onChange={(e) => setCustomTimeInput(e.target.value)}
-                      placeholder="e.g. 10:00 AM"
-                      className="w-full text-xs p-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500"
-                    />
-                    <button
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        setIsNewDateOpen(false);
-                      }}
-                      className="w-full py-1 text-center text-xs font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer"
-                    >
-                      Done
-                    </button>
-                  </div>
+                <div className="absolute right-0 top-full mt-1.5 z-50">
+                  <AppleMiniDatePicker
+                    value={newTaskDueDate}
+                    onSelect={(d) => setNewTaskDueDate(d)}
+                    onClose={() => setIsNewDateOpen(false)}
+                    showTimeInput={true}
+                    timeValue={customTimeInput}
+                    onTimeChange={setCustomTimeInput}
+                  />
                 </div>
               )}
             </div>
@@ -531,31 +670,13 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
                     </button>
 
                     {activeTaskDatePopover === task.id && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute right-0 top-full mt-1.5 w-44 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans space-y-1.5"
-                      >
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
-                          Select Date
-                        </div>
-                        {["Today", "Tomorrow", "Next Week", "Sep 16", "Sep 30"].map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              updateTaskDueDate(task.id, preset);
-                            }}
-                            className={`w-full flex items-center justify-between px-2 py-1 rounded-lg text-xs transition-colors cursor-pointer ${
-                              task.dueDate?.startsWith(preset)
-                                ? "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-semibold"
-                                : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
-                            }`}
-                          >
-                            <span>{preset}</span>
-                            {task.dueDate?.startsWith(preset) && <Check size={11} />}
-                          </button>
-                        ))}
+                      <div className="absolute right-0 top-full mt-1.5 z-50">
+                        <AppleMiniDatePicker
+                          value={task.dueDate}
+                          onSelect={(d) => updateTaskDueDate(task.id, d)}
+                          onClose={() => setActiveTaskDatePopover(null)}
+                          showTimeInput={false}
+                        />
                       </div>
                     )}
                   </div>

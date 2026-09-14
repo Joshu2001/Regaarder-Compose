@@ -1448,11 +1448,12 @@ export default function GlobalWorkspaceSearchModal({
     }
   };
 
-  // Frosted Apple glass surface with 36px backdrop blur
-  const backdropClasses = 'bg-slate-900/35 dark:bg-black/60 backdrop-blur-[24px]';
-  const surfaceClasses = 'bg-white/[0.72] dark:bg-[rgba(30,30,30,0.72)] backdrop-blur-[20px] saturate-[180%] rounded-2xl shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06]';
-  const categoryBarClasses = 'bg-white/[0.45] dark:bg-black/[0.22] border-b border-black/[0.05] dark:border-white/[0.07]';
-  const footerClasses = 'bg-white/[0.45] dark:bg-black/[0.25] border-t border-black/[0.05] dark:border-white/[0.07]';
+  // Restrained Apple-inspired liquid-glass surface treatment
+  const memoryCustomBg = typeof window !== 'undefined' ? localStorage.getItem('rc.memoryBackground') : null;
+  const backdropClasses = 'bg-slate-900/40 dark:bg-black/65 backdrop-blur-[28px]';
+  const surfaceClasses = 'bg-white/[0.80] dark:bg-[#18181b]/[0.82] backdrop-blur-2xl saturate-[170%] rounded-2xl shadow-[0_24px_70px_rgba(0,0,0,0.16),0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_90px_rgba(0,0,0,0.7)] border border-white/60 dark:border-white/[0.10] ring-1 ring-black/[0.04] dark:ring-white/[0.05]';
+  const categoryBarClasses = 'bg-white/[0.50] dark:bg-zinc-900/[0.45] border-b border-black/[0.05] dark:border-white/[0.07] backdrop-blur-md';
+  const footerClasses = 'bg-white/[0.50] dark:bg-zinc-900/[0.45] border-t border-black/[0.05] dark:border-white/[0.07] backdrop-blur-md';
 
   return (
     <div
@@ -1461,9 +1462,17 @@ export default function GlobalWorkspaceSearchModal({
       onKeyDown={handleKeyDown}
       style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
     >
+      {/* Optional User Personalization Behind Liquid Glass Layer */}
+      {memoryCustomBg && (
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-25 dark:opacity-20 bg-cover bg-center filter blur-3xl"
+          style={{ backgroundImage: memoryCustomBg.startsWith('url') || memoryCustomBg.startsWith('#') || memoryCustomBg.startsWith('linear-gradient') ? memoryCustomBg : `url(${memoryCustomBg})` }}
+        />
+      )}
+
       {/* ── Search Surface Shell (1110px wide, 740px high, 16px radius - Apple Executive Proportions with subtle 6.7% width enhancement) ── */}
       <div
-        className={`w-[1110px] max-w-[96vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
+        className={`relative w-[1110px] max-w-[96vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Dominant Search / Header (Adaptive min-h-[62px] fluid height) ── */}
@@ -2324,19 +2333,26 @@ export default function GlobalWorkspaceSearchModal({
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
                             className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                               isSelected
-                                ? 'bg-black/[0.03] dark:bg-white/[0.05]'
-                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                                ? 'bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-sm'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
                             } ${isTask && isCompleted ? 'opacity-60' : ''}`}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               {isTask ? (
-                                <div className="w-7 h-7 rounded-lg bg-violet-500/[0.08] dark:bg-violet-400/[0.1] border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleActivateItem({ type: 'entity', data: entity });
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-violet-600 dark:text-zinc-500 dark:hover:text-violet-400 shrink-0 transition-colors cursor-pointer"
+                                >
                                   {isCompleted ? (
-                                    <CheckCircle2 size={15} strokeWidth={2.2} />
+                                    <CheckCircle2 size={16} strokeWidth={2.2} className="text-violet-600 dark:text-violet-400" />
                                   ) : (
-                                    <CheckSquare size={15} strokeWidth={2.0} />
+                                    <CheckSquare size={16} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500" />
                                   )}
-                                </div>
+                                </button>
                               ) : entity.thumbnail ? (
                                 <img
                                   src={entity.thumbnail}
@@ -2461,20 +2477,27 @@ export default function GlobalWorkspaceSearchModal({
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
                             className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                               isSelected
-                                ? 'bg-black/[0.03] dark:bg-white/[0.05]'
-                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                                ? 'bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-sm'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
                             } ${isCompleted ? 'opacity-60' : ''}`}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               {/* Clean subtle task check icon vs file/product icon */}
                               {isTask ? (
-                                <div className="w-7 h-7 rounded-lg bg-violet-500/[0.08] dark:bg-violet-400/[0.1] border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleActivateItem({ type: 'entity', data: entity });
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-violet-600 dark:text-zinc-500 dark:hover:text-violet-400 shrink-0 transition-colors cursor-pointer"
+                                >
                                   {isCompleted ? (
-                                    <CheckCircle2 size={15} strokeWidth={2.2} />
+                                    <CheckCircle2 size={16} strokeWidth={2.2} className="text-violet-600 dark:text-violet-400" />
                                   ) : (
-                                    <CheckSquare size={15} strokeWidth={2.0} />
+                                    <CheckSquare size={16} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500" />
                                   )}
-                                </div>
+                                </button>
                               ) : entity.thumbnail ? (
                                 <img
                                   src={entity.thumbnail}
@@ -2660,7 +2683,7 @@ export default function GlobalWorkspaceSearchModal({
                         onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
                         className={`group relative flex flex-col p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
+                            ? 'bg-black/[0.035] dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/10 shadow-2xs backdrop-blur-sm'
                             : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]'
                         } ${isTask && isCompleted ? 'opacity-60' : ''}`}
                       >
@@ -2674,13 +2697,20 @@ export default function GlobalWorkspaceSearchModal({
                                 className="w-6 h-6 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1] shrink-0 mt-0.5"
                               />
                             ) : isTask ? (
-                              <div className="w-6 h-6 rounded-md bg-violet-500/[0.08] dark:bg-violet-400/[0.1] border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleActivateItem({ type: 'entity', data: entity });
+                                }}
+                                className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-violet-600 dark:text-zinc-500 dark:hover:text-violet-400 shrink-0 mt-0.5 transition-colors cursor-pointer"
+                              >
                                 {isCompleted ? (
-                                  <CheckCircle2 size={13} strokeWidth={2.2} />
+                                  <CheckCircle2 size={16} strokeWidth={2.2} className="text-violet-600 dark:text-violet-400" />
                                 ) : (
-                                  <CheckSquare size={13} strokeWidth={2.0} />
+                                  <CheckSquare size={16} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-500" />
                                 )}
-                              </div>
+                              </button>
                             ) : entity.thumbnail ? (
                               <img
                                 src={entity.thumbnail}
