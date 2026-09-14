@@ -16,6 +16,7 @@ import {
   synthesizeWorkspaceKnowledge
 } from '../../services/GlobalWorkspaceSearchEngine';
 import { detectLocalLLMServers } from '../../services/orbAiService';
+import { AppNativeSvgIcon } from '../home/AppNativeSvgIcon';
 import {
   ComposeIcon,
   DeckIcon,
@@ -383,13 +384,11 @@ function EvidenceTraceabilityShelf({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="shrink-0">
-                    {isFileTypeEntity(entity || psg) ? (
-                      <FileTypeIcon file={entity || psg} size="xs" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-md bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0">
-                        <RegaarderProductIcon name={entity?.workspace || psg.workspace || 'compose'} size={11} />
-                      </div>
-                    )}
+                    <AppNativeSvgIcon
+                      type={entity?.workspace || psg.workspace || 'compose'}
+                      size={20}
+                      className="shrink-0"
+                    />
                   </div>
                   <span className="text-[11.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
                     {entity?.title || psg.title || 'Source Document'}
@@ -988,6 +987,7 @@ export default function GlobalWorkspaceSearchModal({
 
   const inputRef = useRef(null);
   const resultsContainerRef = useRef(null);
+  const isKeyboardNavRef = useRef(false);
 
   // Persist brand rules to localStorage on update
   useEffect(() => {
@@ -1135,12 +1135,14 @@ export default function GlobalWorkspaceSearchModal({
     };
   }, [isMoreFilterMenuOpen]);
 
-  // Auto-scroll selected result into view
+  // Auto-scroll selected result into view only during keyboard navigation
   useEffect(() => {
+    if (!isKeyboardNavRef.current) return;
+    isKeyboardNavRef.current = false;
     if (!resultsContainerRef.current) return;
     const selectedEl = resultsContainerRef.current.querySelector('[data-selected="true"]');
     if (selectedEl) {
-      selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      selectedEl.scrollIntoView({ block: 'nearest' });
     }
   }, [selectedIndex]);
 
@@ -1390,6 +1392,7 @@ export default function GlobalWorkspaceSearchModal({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      isKeyboardNavRef.current = true;
       setSelectedIndex((prev) =>
         prev < flatSelectableItems.length - 1 ? prev + 1 : 0
       );
@@ -1398,6 +1401,7 @@ export default function GlobalWorkspaceSearchModal({
 
     if (e.key === 'ArrowUp') {
       e.preventDefault();
+      isKeyboardNavRef.current = true;
       setSelectedIndex((prev) =>
         prev > 0 ? prev - 1 : flatSelectableItems.length - 1
       );
@@ -2272,13 +2276,11 @@ export default function GlobalWorkspaceSearchModal({
                               title={matchingClaim ? "Click to view supporting passages in synthesis" : "Click to open source document"}
                             >
                               <div className="shrink-0">
-                                {isFileTypeEntity(src) ? (
-                                  <FileTypeIcon file={src} size="sm" className="mt-0.5 shrink-0" />
-                                ) : (
-                                  <div className="w-6 h-6 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 border border-black/[0.04] dark:border-white/[0.05] mt-0.5">
-                                    <RegaarderProductIcon name={src.workspace} size={12} />
-                                  </div>
-                                )}
+                                <AppNativeSvgIcon
+                                  type={src.workspace || src.resourceType || src.type || src.category || 'compose'}
+                                  size={22}
+                                  className="mt-0.5 shrink-0"
+                                />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
@@ -2331,10 +2333,10 @@ export default function GlobalWorkspaceSearchModal({
                             data-selected={isSelected}
                             onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
-                            className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors duration-75 ${
                               isSelected
-                                ? 'bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-sm'
-                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
+                                ? 'bg-black/[0.04] dark:bg-white/[0.07]'
+                                : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035]'
                             } ${isTask && isCompleted ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
@@ -2359,12 +2361,12 @@ export default function GlobalWorkspaceSearchModal({
                                   alt=""
                                   className="w-7 h-7 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0"
                                 />
-                              ) : isFileTypeEntity(entity) ? (
-                                <FileTypeIcon file={entity} size="sm" className="shrink-0" />
                               ) : (
-                                <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
-                                  <RegaarderProductIcon name={entity.workspace} size={13} strokeWidth={1.6} />
-                                </div>
+                                <AppNativeSvgIcon
+                                  type={entity.workspace || entity.resourceType || entity.type || entity.category || 'compose'}
+                                  size={24}
+                                  className="shrink-0"
+                                />
                               )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
@@ -2475,10 +2477,10 @@ export default function GlobalWorkspaceSearchModal({
                             data-selected={isSelected}
                             onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
-                            className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors duration-75 ${
                               isSelected
-                                ? 'bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-sm'
-                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
+                                ? 'bg-black/[0.04] dark:bg-white/[0.07]'
+                                : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035]'
                             } ${isCompleted ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
@@ -2504,12 +2506,12 @@ export default function GlobalWorkspaceSearchModal({
                                   alt=""
                                   className="w-7 h-7 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0"
                                 />
-                              ) : isFileTypeEntity(entity) ? (
-                                <FileTypeIcon file={entity} size="sm" className="shrink-0" />
                               ) : (
-                                <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
-                                  <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
-                                </div>
+                                <AppNativeSvgIcon
+                                  type={entity.workspace || entity.resourceType || entity.type || entity.category || activeFilter || 'compose'}
+                                  size={24}
+                                  className="shrink-0"
+                                />
                               )}
 
                               <div className="min-w-0">
@@ -2681,10 +2683,10 @@ export default function GlobalWorkspaceSearchModal({
                         data-selected={isSelected}
                         onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                         onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
-                        className={`group relative flex flex-col p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                        className={`group relative flex flex-col p-2.5 rounded-lg cursor-pointer transition-colors duration-75 ${
                           isSelected
-                            ? 'bg-black/[0.035] dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/10 shadow-2xs backdrop-blur-sm'
-                            : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]'
+                            ? 'bg-black/[0.04] dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/10 shadow-2xs'
+                            : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035] border border-black/[0.03] dark:border-white/[0.04]'
                         } ${isTask && isCompleted ? 'opacity-60' : ''}`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
@@ -2717,12 +2719,12 @@ export default function GlobalWorkspaceSearchModal({
                                 alt=""
                                 className="w-6 h-6 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0 mt-0.5"
                               />
-                            ) : isFileTypeEntity(entity) ? (
-                              <FileTypeIcon file={entity} size="sm" className="mt-0.5 shrink-0" />
                             ) : (
-                              <div className="w-6 h-6 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0 mt-0.5">
-                                <RegaarderProductIcon name={entity.workspace} size={12} strokeWidth={1.6} />
-                              </div>
+                              <AppNativeSvgIcon
+                                type={entity.workspace || entity.resourceType || entity.type || entity.category || 'compose'}
+                                size={24}
+                                className="shrink-0 mt-0.5"
+                              />
                             )}
 
                             <div className="min-w-0">
