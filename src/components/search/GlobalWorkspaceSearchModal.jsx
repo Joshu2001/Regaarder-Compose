@@ -1454,10 +1454,10 @@ export default function GlobalWorkspaceSearchModal({
 
   // Restrained Apple-inspired liquid-glass surface treatment: single optimized blur layer to prevent GPU overdraw lag
   const memoryCustomBg = typeof window !== 'undefined' ? localStorage.getItem('rc.memoryBackground') : null;
-  const backdropClasses = 'bg-black/35 dark:bg-black/65';
-  const surfaceClasses = 'bg-white/[0.80] dark:bg-[#161618]/[0.82] backdrop-blur-2xl saturate-[160%] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.18),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_28px_80px_rgba(0,0,0,0.75)] border border-white/80 dark:border-white/[0.09] ring-1 ring-black/[0.03] dark:ring-white/[0.04] will-change-transform';
-  const categoryBarClasses = 'bg-white/[0.55] dark:bg-black/[0.35] border-b border-black/[0.04] dark:border-white/[0.06]';
-  const footerClasses = 'bg-white/[0.55] dark:bg-black/[0.35] border-t border-black/[0.04] dark:border-white/[0.06]';
+  const backdropClasses = 'bg-black/40 dark:bg-black/70';
+  const surfaceClasses = 'bg-white/[0.62] dark:bg-[#161618]/[0.82] backdrop-blur-xl saturate-[125%] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.18),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_28px_80px_rgba(0,0,0,0.75)] border border-white/60 dark:border-white/[0.09] ring-1 ring-black/[0.04] dark:ring-white/[0.04] will-change-transform';
+  const categoryBarClasses = 'bg-black/[0.02] dark:bg-black/[0.25] border-b border-black/[0.04] dark:border-white/[0.06]';
+  const footerClasses = 'bg-black/[0.02] dark:bg-black/[0.25] border-t border-black/[0.04] dark:border-white/[0.06]';
 
   return (
     <div
@@ -2826,7 +2826,7 @@ export default function GlobalWorkspaceSearchModal({
 
         {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory with 3-Item Cap + Progressive Disclosure) ── */}
         {recentInquiries.length > 0 && (
-          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-slate-50/70 dark:bg-zinc-900/60 flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
+          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-black/[0.015] dark:bg-black/[0.25] flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
               <History size={11} className="text-slate-400 dark:text-zinc-500" />
               Recent:
