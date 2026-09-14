@@ -1597,16 +1597,16 @@ export default function GlobalWorkspaceSearchModal({
                   key={tab.id}
                   type="button"
                   onClick={() => {
-                    setActiveFilter(tab.id);
+                    React.startTransition ? React.startTransition(() => setActiveFilter(tab.id)) : setActiveFilter(tab.id);
                     setIsMoreFilterMenuOpen(false);
                     if (mode === 'ai' && query.trim()) {
                       handleRunAiSynthesis(query);
                     }
                   }}
-                  className={`px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
+                  className={`px-2.5 py-1 text-[12px] rounded-md transition-colors duration-75 cursor-pointer shrink-0 ${
                     isActive
                       ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-black/10 dark:outline-white/15'
-                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] font-medium'
+                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.025] dark:hover:bg-white/[0.035] font-medium'
                   }`}
                 >
                   <span>
@@ -1630,10 +1630,10 @@ export default function GlobalWorkspaceSearchModal({
                   ref={moreFilterButtonRef}
                   type="button"
                   onClick={() => setIsMoreFilterMenuOpen((prev) => !prev)}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-[12px] rounded-md transition-all duration-150 cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1 px-2.5 py-1 text-[12px] rounded-md transition-colors duration-75 cursor-pointer shrink-0 ${
                     MORE_FILTER_TABS.some((t) => t.id === activeFilter)
                       ? 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-black/10 dark:outline-white/15'
-                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] font-medium'
+                      : 'border border-transparent text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-black/[0.025] dark:hover:bg-white/[0.035] font-medium'
                   }`}
                   title="More workspace resources"
                   aria-label="More workspace resources"
@@ -1656,7 +1656,7 @@ export default function GlobalWorkspaceSearchModal({
                           type="button"
                           onPointerDown={(e) => {
                             e.preventDefault();
-                            setActiveFilter(tab.id);
+                            React.startTransition ? React.startTransition(() => setActiveFilter(tab.id)) : setActiveFilter(tab.id);
                             setIsMoreFilterMenuOpen(false);
                             if (mode === 'ai' && query.trim()) {
                               handleRunAiSynthesis(query);
@@ -2331,12 +2331,14 @@ export default function GlobalWorkspaceSearchModal({
                           <div
                             key={entity.id}
                             data-selected={isSelected}
-                            onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                            onMouseEnter={() => setSelectedIndex(itemIdx)}
+                            onClick={() => {
+                              setSelectedIndex(itemIdx);
+                              handleActivateItem({ type: 'entity', data: entity });
+                            }}
                             className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors duration-75 ${
                               isSelected
                                 ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
-                                : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035]'
+                                : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05]'
                             } ${isTask && isCompleted ? 'opacity-50' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -2475,12 +2477,14 @@ export default function GlobalWorkspaceSearchModal({
                           <div
                             key={entity.id}
                             data-selected={isSelected}
-                            onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                            onMouseEnter={() => setSelectedIndex(itemIdx)}
+                            onClick={() => {
+                              setSelectedIndex(itemIdx);
+                              handleActivateItem({ type: 'entity', data: entity });
+                            }}
                             className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors duration-75 ${
                               isSelected
                                 ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
-                                : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035]'
+                                : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05]'
                             } ${isCompleted ? 'opacity-50' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -2681,12 +2685,14 @@ export default function GlobalWorkspaceSearchModal({
                       <div
                         key={entity.id}
                         data-selected={isSelected}
-                        onClick={() => handleActivateItem({ type: 'entity', data: entity })}
-                        onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
+                        onClick={() => {
+                          setSelectedIndex(itemGlobalIdx);
+                          handleActivateItem({ type: 'entity', data: entity });
+                        }}
                         className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-colors duration-75 ${
                           isSelected
                             ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08] shadow-2xs'
-                            : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035] border border-black/[0.03] dark:border-white/[0.04]'
+                            : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05] border border-black/[0.03] dark:border-white/[0.04]'
                         } ${isTask && isCompleted ? 'opacity-50' : ''}`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
