@@ -656,8 +656,8 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
       {/* EMPTY STATE */}
       {filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 dark:border-white/[0.08] bg-slate-50/40 dark:bg-zinc-850/20">
-          <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 mb-3 shadow-2xs">
-            <FileText size={22} strokeWidth={1.75} />
+          <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/60 flex items-center justify-center text-slate-500 dark:text-zinc-400 mb-3 shadow-2xs">
+            <FileText size={20} strokeWidth={1.75} />
           </div>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
             {filterType !== "all" ? `No ${filterLabels[filterType] || "matching"} files yet` : "No recent documents yet"}
@@ -667,21 +667,14 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
               ? "Try switching to 'All Types' or create a new file to get started."
               : "Files you create, edit, or import across Docs, Sheets, Decks, and Whiteboards will appear here."}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center">
             <button
               type="button"
               onClick={() => onLaunch && onLaunch("compose")}
-              className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
             >
               <Plus size={13} strokeWidth={2.5} />
-              <span>New Document</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onLaunch && onLaunch("sheet")}
-              className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer"
-            >
-              New Sheet
+              <span>New</span>
             </button>
           </div>
         </div>
