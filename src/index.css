@@ -50,6 +50,18 @@
   animation: roomEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes discoveryNudge {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(3.5px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(2.5px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-discovery-nudge {
+  animation: discoveryNudge 0.9s cubic-bezier(0.25, 1, 0.5, 1) 1.2s 1 forwards;
+}
+
 @media print {
   .print-hide {
     display: none !important;
@@ -181,61 +193,6 @@ html.popover-root, body.popover-root, #popover-root {
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(100, 116, 139, 0.75) !important;
 }
-.regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
-.thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 116, 139, 0.85) !important;
-  border-width: 1px !important;
-}
-
-/* ── Apple-Style Scroll Overflow Affordance Indicators ── */
-.scroll-affordance-container {
-  position: relative;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.scroll-affordance-top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 14px;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05), transparent);
-  pointer-events: none;
-  z-index: 20;
-  opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.scroll-affordance-bottom {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 18px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.06), transparent);
-  pointer-events: none;
-  z-index: 20;
-  opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dark .scroll-affordance-top,
-.app-dark .scroll-affordance-top {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent);
-}
-
-.dark .scroll-affordance-bottom,
-.app-dark .scroll-affordance-bottom {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.35), transparent);
-}
-
-.scroll-affordance-top.is-visible,
-.scroll-affordance-bottom.is-visible {
-  opacity: 1;
-}
-
 
 /* ══════════════════════════════════════════════════════════════════════════
    DYNAMIC BRAND ACCENT SYSTEM (Driven by Settings Accent Color)
