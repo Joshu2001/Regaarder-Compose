@@ -354,8 +354,8 @@ export default function IntentSchedulerInspector({ onClose }) {
           <div className="space-y-3">
             {filteredEvents.length === 0 ? (
               <div className="p-12 text-center rounded-2xl bg-slate-50/50 dark:bg-zinc-850/30 border border-dashed border-slate-200 dark:border-zinc-800 flex flex-col items-center justify-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center border border-violet-100 dark:border-violet-900/30">
-                  <Calendar size={22} />
+                <div className="w-11 h-11 rounded-2xl bg-slate-100/70 dark:bg-zinc-850/60 border border-slate-200/50 dark:border-zinc-800/60 text-slate-500 dark:text-zinc-400 flex items-center justify-center">
+                  <Calendar size={20} strokeWidth={1.8} />
                 </div>
                 <div className="max-w-sm space-y-1">
                   <h4 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">No events scheduled</h4>
