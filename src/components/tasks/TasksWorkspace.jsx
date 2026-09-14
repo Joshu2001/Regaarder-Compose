@@ -70,8 +70,28 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
   useEffect(() => {
     try {
       localStorage.setItem("rc.workspaceTasks", JSON.stringify(tasks));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("rc.tasks-updated", { detail: tasks }));
     } catch {}
   }, [tasks]);
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const stored = localStorage.getItem("rc.workspaceTasks");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) setTasks(parsed);
+        }
+      } catch {}
+    };
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("rc.tasks-updated", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("rc.tasks-updated", handleSync);
+    };
+  }, []);
 
   const handleAddTask = (e) => {
     e.preventDefault();

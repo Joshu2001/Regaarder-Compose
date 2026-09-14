@@ -1052,31 +1052,58 @@ export function buildWorkspaceIndex(context = {}) {
   });
 
   // 2. Real Tasks & Action Items
-  const tasks = context.tasks || [];
-  if (Array.isArray(tasks) && tasks.length > 0) {
-    tasks.forEach((t) => {
-      const taskTitle = (t.title || t.name || '').trim();
-      if (!isRealTitle(taskTitle)) return;
-      const temporal = formatTemporalMetadata(t.updatedAt || t.due || t.createdAt);
+  const rawTasks = [];
+  if (Array.isArray(context.tasks)) rawTasks.push(...context.tasks);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const storedRc = localStorage.getItem('rc.workspaceTasks');
+      if (storedRc) {
+        const parsed = JSON.parse(storedRc);
+        if (Array.isArray(parsed)) rawTasks.push(...parsed);
+      }
+      const storedGen = localStorage.getItem('regaarder_workspace_tasks_v1');
+      if (storedGen) {
+        const parsed = JSON.parse(storedGen);
+        if (Array.isArray(parsed)) rawTasks.push(...parsed);
+      }
+    } catch (_) {}
+  }
+
+  if (rawTasks.length > 0) {
+    const seenTasks = new Set();
+    rawTasks.forEach((t) => {
+      const taskTitle = (t.title || t.name || t.text || '').trim();
+      if (!taskTitle) return;
+      const taskId = String(t.id || taskTitle);
+      if (seenTasks.has(taskId)) return;
+      seenTasks.add(taskId);
+
+      const temporal = formatTemporalMetadata(t.updatedAt || t.due || t.dueDate || t.createdAt);
+      const isCompleted = Boolean(t.completed || t.status === 'Completed' || t.status === 'done');
+      const priorityLabel = t.priority ? (t.priority.charAt(0).toUpperCase() + t.priority.slice(1)) : 'Normal';
+      const assigneeLabel = t.assignee || t.owner || (t.category === 'agent' ? 'Agent' : t.category === 'team' ? 'Team' : 'You');
+      const locationLabel = t.location || `Tasks > ${t.project || 'Initiatives'}`;
+
       items.push({
-        id: `task-${t.id || taskTitle}`,
+        id: `task-${taskId}`,
         type: 'task',
         resourceType: 'task',
         workspace: 'tasks',
         title: taskTitle,
-        subtitle: `${t.assignee || t.owner || 'Unassigned'} • ${t.priority || 'Normal'} Priority • ${t.status || 'Active'}`,
-        location: `Tasks > ${t.project || 'Initiatives'}`,
-        content: `${t.description || taskTitle}. Due date: ${t.due || t.timeline || 'Upcoming'}. Status: ${t.status || 'Active'}. Assignee: ${t.assignee || t.owner || 'Team'}.`,
-        author: t.assignee || t.owner || 'Assigned',
+        subtitle: `${assigneeLabel} • ${priorityLabel} Priority • ${isCompleted ? 'Completed' : 'Active'}`,
+        location: locationLabel,
+        content: `${t.description || taskTitle}. Due: ${t.dueDate || t.due || 'Upcoming'}. Status: ${isCompleted ? 'Completed' : 'Active'}. Assignee: ${assigneeLabel}.`,
+        author: assigneeLabel,
         authorRole: t.tag || 'Deliverable',
-        updatedAt: t.due ? `Due ${t.due}` : temporal.fullText,
+        updatedAt: t.dueDate ? `Due ${t.dueDate}` : (t.due ? `Due ${t.due}` : temporal.fullText),
         metadata: {
-          taskId: t.id,
+          taskId,
           priority: t.priority,
-          status: t.status,
-          assignee: t.assignee || t.owner,
+          status: isCompleted ? 'Completed' : (t.status || 'Active'),
+          completed: isCompleted,
+          assignee: assigneeLabel,
           progress: t.progress,
-          deepLink: `tasks://${t.id}`,
+          deepLink: `tasks://${taskId}`,
           createdAt: temporal.iso,
           modifiedAt: temporal.iso,
           activityAt: temporal.iso,
@@ -1429,6 +1456,8 @@ export function buildWorkspaceIndex(context = {}) {
   if (Array.isArray(context.schedule)) scheduleRecords.push(...context.schedule);
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
+      const storedSched = JSON.parse(localStorage.getItem('regaarder_schedule_events_v1') || '[]');
+      if (Array.isArray(storedSched)) scheduleRecords.push(...storedSched);
       const storedAgenda = JSON.parse(localStorage.getItem('regaarder_intent_scheduler_events_v1') || '[]');
       if (Array.isArray(storedAgenda)) scheduleRecords.push(...storedAgenda);
     } catch (_) {}
@@ -1443,24 +1472,24 @@ export function buildWorkspaceIndex(context = {}) {
       if (seenEvents.has(String(eventId))) return;
       seenEvents.add(String(eventId));
 
-      const temporal = formatTemporalMetadata(event.start || event.date || event.updatedAt);
+      const temporal = formatTemporalMetadata(event.startTime || event.start || event.date || event.updatedAt);
       items.push({
         id: `schedule-${eventId}`,
         type: 'schedule_event',
         resourceType: 'schedule_event',
         workspace: 'schedule',
         title: title || `Schedule Event ${idx + 1}`,
-        subtitle: event.location || event.category || 'Planned meeting or event',
+        subtitle: event.location || event.category || event.intentCategory || 'Planned meeting or event',
         location: `Schedule > ${title || 'Event'}`,
-        content: `${summary || title} ${event.date || event.start || event.dueDate || ''}`.trim(),
+        content: `${summary || title} ${event.date || event.startTime || event.start || event.dueDate || ''}`.trim(),
         author: event.organizer || event.host || 'You',
         authorRole: 'Organizer',
         updatedAt: temporal.fullText,
         metadata: {
           eventId,
           deepLink: `schedule://${eventId}`,
-          start: event.start || event.dueDate || event.date,
-          end: event.end || event.endTime,
+          start: event.startTime || event.start || event.dueDate || event.date,
+          end: event.endTime || event.end,
           location: event.location,
           createdAt: temporal.iso,
           modifiedAt: temporal.iso,

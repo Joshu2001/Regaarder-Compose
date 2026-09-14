@@ -121,6 +121,7 @@ export default function RegaarderComposeLanding({
               onSearchClick={onSearchClick}
               onOpenHelp={onOpenHelp}
               onOpenLibrary={() => setActiveRailTab("library")}
+              onOpenTasks={() => setActiveRailTab("tasks")}
               onOpenSchedule={() => setActiveRailTab("schedule")}
               onClose={() => setIsRightPanelOpen(false)}
             />

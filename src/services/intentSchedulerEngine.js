@@ -197,6 +197,12 @@ function saveEvents(events) {
   memoryEvents = events;
   writeStorage(STORAGE_KEY_EVENTS, events);
   notifyScheduleChanged();
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("rc.schedule-updated", { detail: events }));
+    } catch {}
+  }
 }
 
 function getStoredNegotiations() {
