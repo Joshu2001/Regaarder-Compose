@@ -31,7 +31,8 @@
 }
 
 .thin-scrollbar,
-.regaarder-scrollbar {
+.regaarder-scrollbar,
+.memory-scrollbar {
   scrollbar-width: thin !important;
   scrollbar-color: transparent transparent !important;
   transition: scrollbar-color 0.25s ease;
@@ -39,54 +40,65 @@
 
 .thin-scrollbar:hover,
 .regaarder-scrollbar:hover,
+.memory-scrollbar:hover,
 .thin-scrollbar:focus-within,
-.regaarder-scrollbar:focus-within {
-  scrollbar-color: rgba(148, 163, 184, 0.45) transparent !important;
+.regaarder-scrollbar:focus-within,
+.memory-scrollbar:focus-within {
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar,
-.regaarder-scrollbar::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
+.regaarder-scrollbar::-webkit-scrollbar,
+.memory-scrollbar::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-button,
-.regaarder-scrollbar::-webkit-scrollbar-button {
+.regaarder-scrollbar::-webkit-scrollbar-button,
+.memory-scrollbar::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-track,
-.regaarder-scrollbar::-webkit-scrollbar-track {
+.regaarder-scrollbar::-webkit-scrollbar-track,
+.memory-scrollbar::-webkit-scrollbar-track {
   background: transparent !important;
   margin: 2px !important;
+  border: none !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb,
-.regaarder-scrollbar::-webkit-scrollbar-thumb {
+.regaarder-scrollbar::-webkit-scrollbar-thumb,
+.memory-scrollbar::-webkit-scrollbar-thumb {
   background-color: transparent !important;
   border-radius: 9999px !important;
-  border: 1px solid transparent !important;
+  border: none !important;
   background-clip: padding-box !important;
   transition: background-color 0.25s ease;
 }
 
 .thin-scrollbar:hover::-webkit-scrollbar-thumb,
 .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
+.memory-scrollbar:hover::-webkit-scrollbar-thumb,
 .thin-scrollbar:focus-within::-webkit-scrollbar-thumb,
-.regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.45) !important;
+.regaarder-scrollbar:focus-within::-webkit-scrollbar-thumb,
+.memory-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35) !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb:hover,
-.regaarder-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 116, 139, 0.75) !important;
+.regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
+.memory-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.6) !important;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb:active,
-.regaarder-scrollbar::-webkit-scrollbar-thumb:active {
-  background-color: rgba(71, 85, 105, 0.95) !important;
+.regaarder-scrollbar::-webkit-scrollbar-thumb:active,
+.memory-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(71, 85, 105, 0.8) !important;
 }
 
 /* Slash menu scrollbar: sleek floating overlay pill scrollbar in neutral grey */
@@ -219,6 +231,8 @@
 .app-dark .thin-scrollbar::-webkit-scrollbar-thumb,
 .dark .regaarder-scrollbar::-webkit-scrollbar-thumb,
 .app-dark .regaarder-scrollbar::-webkit-scrollbar-thumb,
+.dark .memory-scrollbar::-webkit-scrollbar-thumb,
+.app-dark .memory-scrollbar::-webkit-scrollbar-thumb,
 .dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb,
 .app-dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb {
   background-color: transparent !important;
@@ -228,20 +242,24 @@
 .app-dark .thin-scrollbar:hover::-webkit-scrollbar-thumb,
 .dark .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
 .app-dark .regaarder-scrollbar:hover::-webkit-scrollbar-thumb,
+.dark .memory-scrollbar:hover::-webkit-scrollbar-thumb,
+.app-dark .memory-scrollbar:hover::-webkit-scrollbar-thumb,
 .dark .editor-auto-dim-scrollbar:hover::-webkit-scrollbar-thumb,
 .app-dark .editor-auto-dim-scrollbar:hover::-webkit-scrollbar-thumb,
 .dark .editor-auto-dim-scrollbar.scrollbar-visible::-webkit-scrollbar-thumb,
 .app-dark .editor-auto-dim-scrollbar.scrollbar-visible::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.22) !important;
 }
 
 .dark .thin-scrollbar::-webkit-scrollbar-thumb:hover,
 .app-dark .thin-scrollbar::-webkit-scrollbar-thumb:hover,
 .dark .regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
 .app-dark .regaarder-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark .memory-scrollbar::-webkit-scrollbar-thumb:hover,
+.app-dark .memory-scrollbar::-webkit-scrollbar-thumb:hover,
 .dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:hover,
 .app-dark .editor-auto-dim-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.45) !important;
+  background-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 

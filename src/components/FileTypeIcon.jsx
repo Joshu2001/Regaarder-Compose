@@ -322,6 +322,27 @@ export function isFileTypeEntity(entity) {
   const workspace = (entity.workspace || '').toLowerCase();
   const title = (entity.title || entity.name || '').toLowerCase();
 
+  // Specific non-file UI objects that have their own dedicated icons
+  if (
+    type === 'task' ||
+    workspace === 'tasks' ||
+    type === 'person' ||
+    workspace === 'people' ||
+    type === 'meeting' ||
+    workspace === 'room' ||
+    type === 'room_note' ||
+    type === 'message' ||
+    workspace === 'relay' ||
+    type === 'chat' ||
+    workspace === 'chat' ||
+    type === 'browser_history' ||
+    workspace === 'browser-history' ||
+    type === 'schedule_event' ||
+    workspace === 'schedule'
+  ) {
+    return false;
+  }
+
   // If title has a known file extension, it's definitely a file
   if (/\.(xlsx?|csv|ods|pdf|docx?|pptx?|key|txt|md|png|jpe?g|svg|webp|mp[34]|mov|json|html)$/i.test(title)) {
     return true;

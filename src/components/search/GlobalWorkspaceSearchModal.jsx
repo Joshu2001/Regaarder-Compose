@@ -6,7 +6,8 @@ import {
   Clock, FileText, Database, ShieldCheck, Compass,
   Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
   Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown,
-  Edit3, RotateCcw, History, MoreHorizontal, Calendar
+  Edit3, RotateCcw, History, MoreHorizontal, Calendar, CheckSquare,
+  Circle, CheckCircle2
 } from 'lucide-react';
 import {
   buildWorkspaceIndex,
@@ -95,6 +96,51 @@ function getEvidenceBadgeConfig(type = 'direct', sourceCount = 1) {
         activeClasses: 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-500/[0.18]'
       };
   }
+}
+
+// Task Priority Badge Component matching Tasks and Schedule Apps
+function TaskPriorityBadge({ priority = 'medium' }) {
+  const p = String(priority).toLowerCase();
+  switch (p) {
+    case 'urgent':
+      return (
+        <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200/60 dark:border-rose-900/40 shrink-0">
+          Urgent
+        </span>
+      );
+    case 'high':
+      return (
+        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-900/40 shrink-0">
+          High
+        </span>
+      );
+    case 'medium':
+      return (
+        <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 rounded-md border border-sky-200/60 dark:border-sky-900/40 shrink-0">
+          Medium
+        </span>
+      );
+    case 'low':
+      return (
+        <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md shrink-0">
+          Low
+        </span>
+      );
+    default:
+      return (
+        <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md shrink-0">
+          Normal
+        </span>
+      );
+  }
+}
+
+// Check if an entity is a task
+function isTaskEntity(entity) {
+  if (!entity) return false;
+  const type = (entity.type || entity.resourceType || '').toLowerCase();
+  const ws = (entity.workspace || '').toLowerCase();
+  return type === 'task' || ws === 'tasks';
 }
 
 // Helper component to render rich executive markdown safely with interactive evidence claims
@@ -1415,9 +1461,9 @@ export default function GlobalWorkspaceSearchModal({
       onKeyDown={handleKeyDown}
       style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
     >
-      {/* ── Search Surface Shell (1040px wide, 740px high, 16px radius - Apple Executive Proportions) ── */}
+      {/* ── Search Surface Shell (1110px wide, 740px high, 16px radius - Apple Executive Proportions with subtle 6.7% width enhancement) ── */}
       <div
-        className={`w-[1040px] max-w-[95vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
+        className={`w-[1110px] max-w-[96vw] h-[740px] max-h-[86vh] overflow-hidden flex flex-col text-slate-900 dark:text-zinc-100 select-text ${surfaceClasses}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Dominant Search / Header (Adaptive min-h-[62px] fluid height) ── */}
@@ -1770,7 +1816,7 @@ export default function GlobalWorkspaceSearchModal({
         {/* ── Surface Body (Search Mode vs Ask Memory Mode) ── */}
         <div
           ref={resultsContainerRef}
-          className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 thin-scrollbar"
+          className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 memory-scrollbar"
         >
           {isMountingGrace ? (
             <div className="space-y-4 py-1 animate-pulse select-none">
@@ -2265,6 +2311,10 @@ export default function GlobalWorkspaceSearchModal({
                       {searchResults.slice(0, 5).map((res, itemIdx) => {
                         const isSelected = selectedIndex === itemIdx;
                         const entity = res.entity;
+                        const isTask = isTaskEntity(entity);
+                        const priority = entity.metadata?.priority || entity.priority || 'medium';
+                        const dueDate = entity.metadata?.dueDate || entity.dueDate || entity.due || (entity.updatedAt?.startsWith('Due ') ? entity.updatedAt.replace(/^Due\s+/i, '') : null);
+                        const isCompleted = Boolean(entity.metadata?.completed ?? entity.completed);
 
                         return (
                           <div
@@ -2276,10 +2326,24 @@ export default function GlobalWorkspaceSearchModal({
                               isSelected
                                 ? 'bg-black/[0.03] dark:bg-white/[0.05]'
                                 : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                            }`}
+                            } ${isTask && isCompleted ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              {isFileTypeEntity(entity) ? (
+                              {isTask ? (
+                                <div className="w-7 h-7 rounded-lg bg-violet-500/[0.08] dark:bg-violet-400/[0.1] border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0">
+                                  {isCompleted ? (
+                                    <CheckCircle2 size={15} strokeWidth={2.2} />
+                                  ) : (
+                                    <CheckSquare size={15} strokeWidth={2.0} />
+                                  )}
+                                </div>
+                              ) : entity.thumbnail ? (
+                                <img
+                                  src={entity.thumbnail}
+                                  alt=""
+                                  className="w-7 h-7 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0"
+                                />
+                              ) : isFileTypeEntity(entity) ? (
                                 <FileTypeIcon file={entity} size="sm" className="shrink-0" />
                               ) : (
                                 <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
@@ -2288,7 +2352,9 @@ export default function GlobalWorkspaceSearchModal({
                               )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
+                                  <span className={`text-[12.5px] font-medium truncate ${
+                                    isTask && isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-800 dark:text-zinc-100'
+                                  }`}>
                                     {entity.title}
                                   </span>
                                   {entity.isCurrent && (
@@ -2298,15 +2364,30 @@ export default function GlobalWorkspaceSearchModal({
                                   )}
                                 </div>
                                 <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
-                                  {entity.location} • {entity.author}
+                                  {entity.location} • {entity.author || 'You'}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
-                                {entity.updatedAt}
-                              </span>
+                            <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                              {isTask && (
+                                <>
+                                  <TaskPriorityBadge priority={priority} />
+                                  {dueDate && (
+                                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-sans">
+                                      <Clock size={11} className="shrink-0" />
+                                      <span>{dueDate}</span>
+                                    </span>
+                                  )}
+                                </>
+                              )}
+
+                              {!isTask && (
+                                <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
+                                  {entity.updatedAt}
+                                </span>
+                              )}
+
                               <ArrowRight
                                 size={12}
                                 className={`transition-transform duration-150 ${
@@ -2367,6 +2448,10 @@ export default function GlobalWorkspaceSearchModal({
                       {searchResults.map((res, itemIdx) => {
                         const isSelected = selectedIndex === itemIdx;
                         const entity = res.entity;
+                        const isTask = isTaskEntity(entity);
+                        const priority = entity.metadata?.priority || entity.priority || 'medium';
+                        const dueDate = entity.metadata?.dueDate || entity.dueDate || entity.due || (entity.updatedAt?.startsWith('Due ') ? entity.updatedAt.replace(/^Due\s+/i, '') : null);
+                        const isCompleted = Boolean(entity.metadata?.completed ?? entity.completed);
 
                         return (
                           <div
@@ -2378,19 +2463,37 @@ export default function GlobalWorkspaceSearchModal({
                               isSelected
                                 ? 'bg-black/[0.03] dark:bg-white/[0.05]'
                                 : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                            }`}
+                            } ${isCompleted ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              {isFileTypeEntity(entity) ? (
+                              {/* Clean subtle task check icon vs file/product icon */}
+                              {isTask ? (
+                                <div className="w-7 h-7 rounded-lg bg-violet-500/[0.08] dark:bg-violet-400/[0.1] border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0">
+                                  {isCompleted ? (
+                                    <CheckCircle2 size={15} strokeWidth={2.2} />
+                                  ) : (
+                                    <CheckSquare size={15} strokeWidth={2.0} />
+                                  )}
+                                </div>
+                              ) : entity.thumbnail ? (
+                                <img
+                                  src={entity.thumbnail}
+                                  alt=""
+                                  className="w-7 h-7 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0"
+                                />
+                              ) : isFileTypeEntity(entity) ? (
                                 <FileTypeIcon file={entity} size="sm" className="shrink-0" />
                               ) : (
                                 <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.04] flex items-center justify-center text-slate-600 dark:text-zinc-300 shrink-0">
                                   <RegaarderProductIcon name={entity.workspace} size={14} strokeWidth={1.6} />
                                 </div>
                               )}
+
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-100 truncate">
+                                  <span className={`text-[12.5px] font-medium truncate ${
+                                    isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-800 dark:text-zinc-100'
+                                  }`}>
                                     {entity.title}
                                   </span>
                                   {entity.isCurrent && (
@@ -2400,15 +2503,31 @@ export default function GlobalWorkspaceSearchModal({
                                   )}
                                 </div>
                                 <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
-                                  {entity.location} • {entity.author}
+                                  {entity.location} • {entity.author || 'You'}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
-                                {entity.updatedAt}
-                              </span>
+                            <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                              {/* Surface Task Priority & Due Date */}
+                              {isTask && (
+                                <>
+                                  <TaskPriorityBadge priority={priority} />
+                                  {dueDate && (
+                                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-sans">
+                                      <Clock size={11} className="shrink-0" />
+                                      <span>{dueDate}</span>
+                                    </span>
+                                  )}
+                                </>
+                              )}
+
+                              {!isTask && (
+                                <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
+                                  {entity.updatedAt}
+                                </span>
+                              )}
+
                               <ArrowRight
                                 size={12}
                                 className={`transition-transform duration-150 ${
@@ -2527,7 +2646,13 @@ export default function GlobalWorkspaceSearchModal({
                     const itemGlobalIdx = searchResults.findIndex((r) => r.entity.id === entity.id);
                     const isSelected = selectedIndex === itemGlobalIdx;
 
-                    return (
+                    return (() => {
+                      const isTask = isTaskEntity(entity);
+                      const priority = entity.metadata?.priority || entity.priority;
+                      const dueDate = entity.metadata?.dueDate || entity.dueDate || entity.due || (entity.updatedAt?.startsWith('Due ') ? entity.updatedAt.replace(/^Due\s+/i, '') : null);
+                      const isCompleted = Boolean(entity.metadata?.completed ?? entity.completed);
+
+                      return (
                       <div
                         key={entity.id}
                         data-selected={isSelected}
@@ -2537,7 +2662,7 @@ export default function GlobalWorkspaceSearchModal({
                           isSelected
                             ? 'bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 shadow-2xs'
                             : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03] border border-black/[0.03] dark:border-white/[0.04]'
-                        }`}
+                        } ${isTask && isCompleted ? 'opacity-60' : ''}`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
                         <div className="flex items-start justify-between gap-3 mb-1">
@@ -2547,6 +2672,20 @@ export default function GlobalWorkspaceSearchModal({
                                 src={entity.avatar}
                                 alt={entity.title}
                                 className="w-6 h-6 rounded-full object-cover ring-1 ring-black/[0.08] dark:ring-white/[0.1] shrink-0 mt-0.5"
+                              />
+                            ) : isTask ? (
+                              <div className="w-6 h-6 rounded-md bg-violet-500/[0.08] dark:bg-violet-400/[0.1] border border-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 mt-0.5">
+                                {isCompleted ? (
+                                  <CheckCircle2 size={13} strokeWidth={2.2} />
+                                ) : (
+                                  <CheckSquare size={13} strokeWidth={2.0} />
+                                )}
+                              </div>
+                            ) : entity.thumbnail ? (
+                              <img
+                                src={entity.thumbnail}
+                                alt=""
+                                className="w-6 h-6 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0 mt-0.5"
                               />
                             ) : isFileTypeEntity(entity) ? (
                               <FileTypeIcon file={entity} size="sm" className="mt-0.5 shrink-0" />
@@ -2558,7 +2697,9 @@ export default function GlobalWorkspaceSearchModal({
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                <h4 className={`text-[12.5px] font-semibold truncate ${
+                                  isTask && isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-zinc-100'
+                                }`}>
                                   <HighlightedText text={entity.title} query={query} isSelected={isSelected} />
                                 </h4>
                                 {entity.type === 'person' && entity.role && (
@@ -2581,19 +2722,33 @@ export default function GlobalWorkspaceSearchModal({
                                 <HighlightedText text={entity.metadata.cellValue} query={query} isSelected={isSelected} />
                               </span>
                             )}
-                            {entity.metadata?.priority && (
-                              <span className={`px-1.5 py-0.2 text-[9px] font-medium rounded uppercase tracking-wider font-mono ${
-                                entity.metadata.priority === 'High'
-                                  ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                              }`}>
-                                {entity.metadata.priority}
-                              </span>
-                            )}
-                            {entity.metadata?.status && (
-                              <span className="px-1.5 py-0.2 text-[9.5px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 rounded">
-                                {entity.metadata.status}
-                              </span>
+                            {isTask ? (
+                              <>
+                                <TaskPriorityBadge priority={priority} />
+                                {dueDate && (
+                                  <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-sans ml-1">
+                                    <Clock size={10.5} className="shrink-0" />
+                                    <span>{dueDate}</span>
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {entity.metadata?.priority && (
+                                  <span className={`px-1.5 py-0.2 text-[9px] font-medium rounded uppercase tracking-wider font-mono ${
+                                    entity.metadata.priority === 'High'
+                                      ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                                  }`}>
+                                    {entity.metadata.priority}
+                                  </span>
+                                )}
+                                {entity.metadata?.status && (
+                                  <span className="px-1.5 py-0.2 text-[9.5px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 rounded">
+                                    {entity.metadata.status}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -2613,7 +2768,8 @@ export default function GlobalWorkspaceSearchModal({
                           </div>
                         )}
                       </div>
-                    );
+                      );
+                    })();
                   })}
                 </div>
               ))}
