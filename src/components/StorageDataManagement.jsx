@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   HardDrive, FileText, MessageSquare, Brain, User, Key, Layers, 
   Trash2, Download, ShieldCheck, Check, AlertTriangle, RefreshCw, 
-  CheckSquare, Square, Inbox
+  CheckSquare, Square, Inbox, Folder, FolderOpen, ExternalLink
 } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { 
@@ -13,6 +13,7 @@ import {
   exportUserDataArchive, 
   formatBytes 
 } from '../services/storageManagerService';
+import { getLocalSyncRoot, openLocalRegaarderFolder } from '../services/localSyncService';
 
 const ICON_MAP = {
   FileText,
@@ -31,6 +32,8 @@ export default function StorageDataManagement({ showToast = () => {} }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  const [localRoot, setLocalRoot] = useState('');
+
   const refreshMetrics = () => {
     const updated = getStorageBreakdown();
     setBreakdown(updated);
@@ -38,6 +41,10 @@ export default function StorageDataManagement({ showToast = () => {} }) {
 
   useEffect(() => {
     refreshMetrics();
+
+    getLocalSyncRoot().then((root) => {
+      if (root) setLocalRoot(root);
+    });
 
     const handleStorageCleared = () => {
       refreshMetrics();
@@ -250,8 +257,55 @@ export default function StorageDataManagement({ showToast = () => {} }) {
         ) : (
           <div className="text-[11.5px] text-slate-400 dark:text-zinc-500 font-normal">
             {t('storage.emptyStateHeadline')}
+      </div>
+      )}
+      </div>
+
+      {/* Local Regaarder Storage Location Card */}
+      <div className="mb-6 p-4 rounded-2xl bg-slate-50/80 dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-violet-100/70 dark:bg-violet-950/50 border border-violet-200/60 dark:border-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 mt-0.5">
+            <Folder size={17} />
           </div>
-        )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800 dark:text-zinc-100">Local Regaarder Storage</span>
+              <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
+                Authoritative Local Source
+              </span>
+            </div>
+            <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-tight truncate">
+              {localRoot || 'Documents/Regaarder'}
+            </p>
+            <div className="flex items-center gap-2 text-[10.5px] text-slate-400 dark:text-zinc-500 mt-1">
+              <span>Documents</span>
+              <span>•</span>
+              <span>Sheets</span>
+              <span>•</span>
+              <span>Decks</span>
+              <span>•</span>
+              <span>Whiteboards</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            const success = await openLocalRegaarderFolder();
+            if (success) {
+              showToast('Opened Regaarder folder in Explorer');
+            } else {
+              showToast('Could not open folder');
+            }
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-all cursor-pointer shadow-2xs shrink-0 self-end sm:self-center"
+          title="Open Documents/Regaarder in File Explorer"
+        >
+          <FolderOpen size={13} className="text-slate-500 dark:text-zinc-400" />
+          <span>Open in Explorer</span>
+          <ExternalLink size={11} className="text-slate-400" />
+        </button>
       </div>
 
       {/* Selection Toolbar */}

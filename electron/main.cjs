@@ -4,6 +4,12 @@ const fs = require('fs');
 const BrowserViewManager = require('./browserViewManager.cjs');
 const { initAutoUpdater } = require('./autoUpdater.cjs');
 
+// Enforce single instance lock so double-clicking .rgdoc / .cmp files in Explorer focuses existing app
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+}
+
 // Disable hardware acceleration to eliminate exit_code=34 Chromium GPU process crashes on Windows
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
@@ -16,6 +22,60 @@ app.commandLine.appendSwitch('allow-file-access-from-files');
 let mainWindow = null;
 let browserViewManager = null;
 let activeAppUrl = null;
+let pendingFileToOpen = null;
+
+const REGAARDER_FILE_EXTENSIONS = ['.rgdoc', '.cmp', '.rgsht', '.rgdck', '.rgwbd'];
+
+function findFileArg(argv) {
+  if (!Array.isArray(argv)) return null;
+  for (const arg of argv) {
+    if (typeof arg === 'string' && REGAARDER_FILE_EXTENSIONS.some(ext => arg.toLowerCase().endsWith(ext))) {
+      try {
+        if (fs.existsSync(arg)) {
+          return path.resolve(arg);
+        }
+      } catch (_) {}
+    }
+  }
+  return null;
+}
+
+// Check if a file was passed as argument on initial app launch
+const initialFileArg = findFileArg(process.argv);
+if (initialFileArg) {
+  pendingFileToOpen = initialFileArg;
+}
+
+app.on('second-instance', (event, commandLine) => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+
+    const fileToOpen = findFileArg(commandLine);
+    if (fileToOpen) {
+      dispatchFileOpen(fileToOpen);
+    }
+  }
+});
+
+function dispatchFileOpen(filePath) {
+  if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.webContents) {
+    pendingFileToOpen = filePath;
+    return;
+  }
+  try {
+    const ext = path.extname(filePath).toLowerCase();
+    const content = fs.readFileSync(filePath, 'utf8');
+    mainWindow.webContents.send('electron:open-file', {
+      filePath,
+      fileName: path.basename(filePath),
+      ext,
+      content,
+    });
+  } catch (err) {
+    console.error('[Electron Main] Failed to dispatch open-file:', err);
+  }
+}
 
 function createWindow() {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -213,6 +273,17 @@ $ws.AppActivate('${targetName}')
   mainWindow.on('move', () => {
     if (browserViewManager) {
       browserViewManager.syncPopoverPosition();
+    }
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingFileToOpen) {
+      const file = pendingFileToOpen;
+      pendingFileToOpen = null;
+      // Slight delay so renderer listeners can initialize
+      setTimeout(() => {
+        dispatchFileOpen(file);
+      }, 500);
     }
   });
 
@@ -914,13 +985,29 @@ ipcMain.handle('shell:show-item-in-folder', async (event, fullPath) => {
   }
 });
 
+ipcMain.handle('shell:open-path', async (event, folderPath) => {
+  try {
+    const targetPath = folderPath || getLocalSyncRoot();
+    if (!fs.existsSync(targetPath)) {
+      fs.mkdirSync(targetPath, { recursive: true });
+    }
+    const errorMessage = await shell.openPath(targetPath);
+    if (errorMessage) {
+      return { success: false, error: errorMessage };
+    }
+    return { success: true, path: targetPath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Local Filesystem Sync — ~/Regaarder/ workspace mirror
+// Local Filesystem Sync — Documents/Regaarder/ workspace mirror
 // Provides the main-process side of the localSync:* IPC channel family.
 // The renderer accesses these via window.electronAPI.localSync.* (preload bridge).
 //
 // Folder layout:
-//   ~/Regaarder/
+//   Documents/Regaarder/
 //     Documents/    — .rgdoc files (compose mode)
 //     Sheets/       — .rgsht files (sheets mode)
 //     Decks/        — .rgdck files (deck mode)
@@ -929,8 +1016,14 @@ ipcMain.handle('shell:show-item-in-folder', async (event, fullPath) => {
 
 const LOCAL_SYNC_SUBDIRS = ['Documents', 'Sheets', 'Decks', 'Whiteboards'];
 
-/** Resolves the absolute sync root — ~/Regaarder. */
+/** Resolves the absolute sync root — Documents/Regaarder. */
 function getLocalSyncRoot() {
+  try {
+    const docsPath = app.getPath('documents');
+    if (docsPath && typeof docsPath === 'string') {
+      return path.join(docsPath, 'Regaarder');
+    }
+  } catch (_) {}
   return path.join(app.getPath('home'), 'Regaarder');
 }
 
@@ -976,14 +1069,15 @@ ipcMain.handle('localSync:write-file', async (event, { subdir, filename, content
 
 ipcMain.handle('localSync:read-file', async (event, { filePath }) => {
   try {
-    const root = getLocalSyncRoot();
-    // Resolve and validate that the path is inside the sync root (path traversal guard).
     const resolved = path.resolve(filePath);
-    if (!resolved.startsWith(root)) {
+    // Allow reading from anywhere if it's a known Regaarder extension, or if it's inside the sync root
+    const root = getLocalSyncRoot();
+    const hasKnownExt = REGAARDER_FILE_EXTENSIONS.some(ext => resolved.toLowerCase().endsWith(ext));
+    if (!resolved.startsWith(root) && !hasKnownExt) {
       return { success: false, error: 'Path is outside the Regaarder sync root' };
     }
     const content = fs.readFileSync(resolved, 'utf8');
-    return { success: true, content };
+    return { success: true, content, filePath: resolved, fileName: path.basename(resolved) };
   } catch (err) {
     return { success: false, error: err.message };
   }

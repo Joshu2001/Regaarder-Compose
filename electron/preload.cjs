@@ -132,15 +132,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Shell Bridge
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   showItemInFolder: (fullPath) => ipcRenderer.invoke('shell:show-item-in-folder', fullPath),
+  openFolder: (folderPath) => ipcRenderer.invoke('shell:open-path', folderPath),
+
+  // File association / double click listener
+  onOpenFile: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('electron:open-file', handler);
+    return () => ipcRenderer.removeListener('electron:open-file', handler);
+  },
 
   // ─── Local Filesystem Sync ────────────────────────────────────────────────
   // Exposes the localSync:* IPC channel family to the renderer.
   // The renderer accesses these via window.electronAPI.localSync.*
   localSync: {
-    /** Returns { root: string } — the resolved ~/Regaarder path. */
+    /** Returns { root: string } — the resolved Documents/Regaarder path. */
     getRoot: () => ipcRenderer.invoke('localSync:get-root'),
 
-    /** Creates ~/Regaarder/{Documents,Sheets,Decks,Whiteboards}/ if absent. */
+    /** Creates Documents/Regaarder/{Documents,Sheets,Decks,Whiteboards}/ if absent. */
     ensureDirs: () => ipcRenderer.invoke('localSync:ensure-dirs'),
 
     /** Writes content to {root}/{subdir}/{filename}. Params: { subdir, filename, content }. */

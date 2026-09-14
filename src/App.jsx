@@ -78,7 +78,7 @@ import MemoryDashboard from './MemoryDashboard';
 import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
-import { initLocalSync, teardownLocalSync } from './services/localSyncService';
+import { initLocalSync, teardownLocalSync, parseRegaarderFile, syncAllDocumentsToDisk } from './services/localSyncService';
 import { readWorkspaceDocuments, writeWorkspaceDocuments, normalizeWorkspaceDocuments } from './services/workspaceDocumentStore';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
@@ -6993,11 +6993,42 @@ function AppCore() {
   const bounceTimeoutRef = useRef(null);
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [swipeCurrentX, setSwipeCurrentX] = useState(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  // Bootstrap local filesystem sync — mirrors workspace documents to ~/Regaarder/
+  // Bootstrap local filesystem sync — mirrors workspace documents to Documents/Regaarder/
   useEffect(() => {
     initLocalSync();
-    return () => { teardownLocalSync(); };
+
+    // Listen for file-open events dispatched from OS (e.g. double-clicking .rgdoc / .cmp in Explorer)
+    let unsubscribeOpenFile = null;
+    if (typeof window !== 'undefined' && typeof window.electronAPI?.onOpenFile === 'function') {
+      unsubscribeOpenFile = window.electronAPI.onOpenFile((fileData) => {
+        try {
+          if (!fileData || !fileData.content) return;
+          const parsed = parseRegaarderFile(fileData.content, fileData.filePath);
+          if (parsed) {
+            const currentDocs = readWorkspaceDocuments();
+            const existingIdx = currentDocs.findIndex((d) => d.id === parsed.id);
+            let updatedDocs;
+            if (existingIdx >= 0) {
+              updatedDocs = [...currentDocs];
+              updatedDocs[existingIdx] = { ...updatedDocs[existingIdx], ...parsed };
+            } else {
+              updatedDocs = [parsed, ...currentDocs];
+            }
+            writeWorkspaceDocuments(updatedDocs);
+            setDocuments(updatedDocs);
+            handleSwitchActiveDoc(parsed.id, parsed.mode || 'compose');
+            showToast?.(`Opened ${fileData.fileName || 'file'}`);
+          }
+        } catch (err) {
+          console.warn('[App] Failed to open external file:', err);
+        }
+      });
+    }
+
+    return () => { 
+      teardownLocalSync(); 
+      if (typeof unsubscribeOpenFile === 'function') unsubscribeOpenFile();
+    };
   }, []);
 
   // Add Keyboard support for swiping when expanded
@@ -18304,6 +18335,29 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   }, [documents]);
 
+  // Global Ctrl+S / Cmd+S shortcut to immediately flush editor content to disk
+  useEffect(() => {
+    const handleGlobalSaveShortcut = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 's') {
+        e.preventDefault();
+        try {
+          if (blankBodyRef.current) {
+            commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
+          }
+          const currentDocs = readWorkspaceDocuments();
+          if (Array.isArray(currentDocs) && currentDocs.length > 0) {
+            syncAllDocumentsToDisk(currentDocs);
+            showToast?.('Saved to local disk');
+          }
+        } catch (err) {
+          console.warn('[Save] Ctrl+S flush error:', err);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalSaveShortcut);
+    return () => window.removeEventListener('keydown', handleGlobalSaveShortcut);
+  }, [activeDocId]);
+
   // Keep active document in documents list updated with latest title and bodyHtml
   useEffect(() => {
     if (activeDocId) {
@@ -18315,22 +18369,27 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   }, [docBodyHtml, docTitle, activeDocId]);
 
-  const activeDoc = documents.find((doc) => doc.id === activeDocId);
+  const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId));
 
   useEffect(() => {
     const persistedTitle = activeDoc?.title?.trim();
     const hasPersistedExplicitTitle = !!persistedTitle && !/^untitled\b/i.test(persistedTitle);
 
+    if (hasPersistedExplicitTitle) {
+      setDocTitle((prev) => (prev !== persistedTitle ? persistedTitle : prev));
+      return;
+    }
+
     if (!docBodyHtml) {
-      setDocTitle(hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
+      setDocTitle((prev) => (prev !== 'Untitled Document' ? 'Untitled Document' : prev));
       return;
     }
     const parser = new DOMParser();
     const doc = parser.parseFromString(docBodyHtml, 'text/html');
     const firstBlock = doc.body.firstElementChild;
     const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    const derivedTitle = titleText || (hasPersistedExplicitTitle ? persistedTitle : 'Untitled Document');
-    setDocTitle(derivedTitle);
+    const derivedTitle = titleText || 'Untitled Document';
+    setDocTitle((prev) => (prev !== derivedTitle ? derivedTitle : prev));
   }, [docBodyHtml, activeDoc?.title]);
 
   const [pdfRotation, setPdfRotation] = useState(0);
@@ -35267,8 +35326,8 @@ Respond with valid JSON formatted like this:
 
   const commitRenameDocument = (docId) => {
     const nextTitle = renameDocValue.trim();
-    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
-    if (activeDocId === docId) {
+    setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(docId) ? { ...doc, title: nextTitle, sheetsTitle: isSheetsMode ? nextTitle : doc.sheetsTitle } : doc)));
+    if (String(activeDocId) === String(docId)) {
       setDocTitle(nextTitle);
       if (isSheetsMode) {
         setSheetsTitle(nextTitle);
@@ -35280,7 +35339,7 @@ Respond with valid JSON formatted like this:
   };
 
   const beginUnsavedDraftRename = () => {
-    const activeDoc = documents.find((doc) => doc.id === activeDocId);
+    const activeDoc = documents.find((doc) => String(doc.id) === String(activeDocId));
     const currentName = (activeDoc?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
     setUnsavedDraftNameInput(currentName);
     setIsEditingUnsavedDraftName(true);
@@ -35295,7 +35354,7 @@ Respond with valid JSON formatted like this:
     }
 
     if (activeDocId) {
-      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+      setDocuments((prev) => prev.map((doc) => (String(doc.id) === String(activeDocId) ? { ...doc, title: nextTitle } : doc)));
     }
     setDocTitle(nextTitle);
     setIsEditingUnsavedDraftName(false);
@@ -50411,7 +50470,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                                 <div className="ml-auto flex items-center gap-4">
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                                    <Cloud size={14} /> {savedStatusLabel}
+                                    <HardDrive size={13} className="text-slate-400 dark:text-zinc-500" /> {savedStatusLabel}
                                   </div>
                                 </div>
                               </div>
@@ -74280,7 +74339,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
                 )}
                 <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
-                  <Cloud size={14} /> {savedStatusLabel}
+                  <HardDrive size={13} className="text-slate-400 dark:text-zinc-500" /> {savedStatusLabel}
                 </div>
               </>
             )}
@@ -82120,9 +82179,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onKeyDown={handleEditorKeyDown}
                   onInput={(e) => {
                     normalizeEditableDirection(e.currentTarget);
-                    if (!e.nativeEvent || e.nativeEvent.inputType === undefined) {
-                      commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml);
-                    }
+                    commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml);
                   }}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}

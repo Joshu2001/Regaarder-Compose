@@ -49,19 +49,24 @@ export const isLocalSyncAvailable = () =>
 
 /**
  * Derives a stable, filesystem-safe filename from a document.
- * Uses the document's `id` as the base so renames don't create orphan files.
- * The human-readable title is stored inside the JSON body, not in the filename.
+ * Uses the sanitized title + document id so the file is immediately recognizable
+ * to the user in Windows Explorer (e.g. "Project_Roadmap_abc-123.rgdoc").
  *
  * @param {object} doc
- * @returns {string}  e.g. "abc-123.rgdoc"
+ * @returns {string}  e.g. "Project_Roadmap_abc-123.rgdoc"
  */
 const resolveFilename = (doc) => {
   const { ext } = MODE_MAP[doc.mode] || MODE_MAP.compose;
-  // Sanitize id: strip characters that are illegal in Windows/macOS/Linux paths.
+  const rawTitle = String(doc.title || doc.sheetsTitle || doc.deckTitle || 'Untitled')
+    .trim()
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+    .replace(/\s+/g, '_')
+    .slice(0, 50);
   const safeId = String(doc.id || 'unknown')
     .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
-    .slice(0, 200);
-  return `${safeId}${ext}`;
+    .slice(0, 50);
+  
+  return rawTitle ? `${rawTitle}_${safeId}${ext}` : `${safeId}${ext}`;
 };
 
 /**
@@ -124,6 +129,17 @@ export const initLocalSync = async () => {
     console.warn('[LocalSync] Could not ensure local directories:', err);
   }
 
+  // Ensure current stored documents are written to disk upon app launch
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage?.getItem('regaarder_documents_v1') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((d) => writeDocumentToLocal(d));
+      }
+    }
+  } catch (_) {}
+
   await _startWatcher();
 };
 
@@ -178,9 +194,36 @@ const _startWatcher = async () => {
 // Public Write API
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Tracks the last written { subdir, filename } per document id to remove obsolete files on rename/mode change
+const _lastWrittenPaths = new Map();
+// Per-document promise queue to guarantee sequential file operations without delete/write race conditions
+const _docWriteQueues = new Map();
+
+/**
+ * Enqueues an async operation for a specific document to guarantee strict ordering.
+ *
+ * @param {string} docKey
+ * @param {() => Promise<any>} task
+ * @returns {Promise<any>}
+ */
+const _enqueueDocOperation = (docKey, task) => {
+  const previousPromise = _docWriteQueues.get(docKey) || Promise.resolve();
+  const nextPromise = previousPromise
+    .catch(() => {}) // never fail chain
+    .then(() => task());
+  _docWriteQueues.set(docKey, nextPromise);
+  nextPromise.finally(() => {
+    if (_docWriteQueues.get(docKey) === nextPromise) {
+      _docWriteQueues.delete(docKey);
+    }
+  });
+  return nextPromise;
+};
+
 /**
  * Writes a single document to its canonical local file path.
  * Fire-and-forget — never throws to the caller.
+ * Automatically cleans up any previously written file for this document if its title or mode changed.
  *
  * @param {object} doc  Normalized workspace document object.
  */
@@ -190,17 +233,36 @@ export const writeDocumentToLocal = (doc) => {
   const subdir = resolveSubdir(doc);
   const filename = resolveFilename(doc);
   const content = serializeDocument(doc);
+  const docKey = String(doc.id);
 
-  window.electronAPI.localSync
-    .writeFile({ subdir, filename, content })
-    .then((result) => {
+  _enqueueDocOperation(docKey, async () => {
+    const previous = _lastWrittenPaths.get(docKey);
+    if (previous && (previous.subdir !== subdir || previous.filename !== filename)) {
+      try {
+        await window.electronAPI.localSync.deleteFile({
+          subdir: previous.subdir,
+          filename: previous.filename,
+        });
+      } catch (err) {
+        console.warn(`[LocalSync] Failed to cleanup old file ${previous.filename}:`, err);
+      }
+    }
+
+    _lastWrittenPaths.set(docKey, { subdir, filename });
+
+    try {
+      const result = await window.electronAPI.localSync.writeFile({
+        subdir,
+        filename,
+        content,
+      });
       if (!result?.success) {
         console.warn(`[LocalSync] Write failed for ${filename}:`, result?.error);
       }
-    })
-    .catch((err) => {
+    } catch (err) {
       console.warn(`[LocalSync] IPC error writing ${filename}:`, err);
-    });
+    }
+  });
 };
 
 /**
@@ -212,20 +274,36 @@ export const writeDocumentToLocal = (doc) => {
 export const deleteDocumentFromLocal = (doc) => {
   if (!isLocalSyncAvailable() || !doc?.id) return;
 
-  const subdir = resolveSubdir(doc);
-  const filename = resolveFilename(doc);
+  const docKey = String(doc.id);
+  const tracked = _lastWrittenPaths.get(docKey);
+  const subdir = tracked?.subdir || resolveSubdir(doc);
+  const filename = tracked?.filename || resolveFilename(doc);
+  _lastWrittenPaths.delete(docKey);
 
-  window.electronAPI.localSync
-    .deleteFile({ subdir, filename })
-    .then((result) => {
-      // ENOENT means the file was never written — treat as success.
+  _enqueueDocOperation(docKey, async () => {
+    try {
+      const result = await window.electronAPI.localSync.deleteFile({
+        subdir,
+        filename,
+      });
       if (!result?.success && result?.error !== 'ENOENT') {
         console.warn(`[LocalSync] Delete failed for ${filename}:`, result?.error);
       }
-    })
-    .catch((err) => {
+    } catch (err) {
       console.warn(`[LocalSync] IPC error deleting ${filename}:`, err);
-    });
+    }
+  });
+};
+
+/**
+ * Synchronizes an entire list of workspace documents directly to their local disk files.
+ * Useful on editor flush, explicit save (Ctrl+S), or workspace load.
+ *
+ * @param {Array<object>} docs
+ */
+export const syncAllDocumentsToDisk = (docs = []) => {
+  if (!Array.isArray(docs) || !isLocalSyncAvailable()) return;
+  docs.filter(Boolean).forEach((doc) => writeDocumentToLocal(doc));
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -273,4 +351,81 @@ export const listLocalDir = async (subdir) => {
 export const onInboundFileChange = (callback) => {
   _inboundCallbacks.add(callback);
   return () => _inboundCallbacks.delete(callback);
+};
+
+/**
+ * Opens the Regaarder storage folder directly in the OS file explorer.
+ *
+ * @param {string} [subpath] Optional subfolder or specific path
+ * @returns {Promise<boolean>}
+ */
+export const openLocalRegaarderFolder = async (subpath) => {
+  if (typeof window === 'undefined' || !window.electronAPI) return false;
+  try {
+    const target = subpath || (await getLocalSyncRoot());
+    if (typeof window.electronAPI.openFolder === 'function') {
+      const res = await window.electronAPI.openFolder(target);
+      return Boolean(res?.success);
+    }
+    if (typeof window.electronAPI.showItemInFolder === 'function') {
+      const res = await window.electronAPI.showItemInFolder(target);
+      return Boolean(res?.success);
+    }
+  } catch (err) {
+    console.warn('[LocalSync] Failed to open local folder:', err);
+  }
+  return false;
+};
+
+/**
+ * Reads and parses a local file from disk.
+ *
+ * @param {string} filePath
+ * @returns {Promise<object|null>}
+ */
+export const readLocalFile = async (filePath) => {
+  if (!isLocalSyncAvailable() || !filePath) return null;
+  try {
+    const result = await window.electronAPI.localSync.readFile({ filePath });
+    if (result?.success && result.content) {
+      return parseRegaarderFile(result.content, filePath);
+    }
+  } catch (err) {
+    console.warn('[LocalSync] Error reading local file:', err);
+  }
+  return null;
+};
+
+/**
+ * Parses raw file content into a normalized document payload.
+ * Supports .rgdoc, .cmp, .rgsht, .rgdck, and .rgwbd JSON files.
+ *
+ * @param {string} content
+ * @param {string} [sourcePath]
+ * @returns {object|null}
+ */
+export const parseRegaarderFile = (content, sourcePath = '') => {
+  try {
+    const parsed = JSON.parse(content);
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    // Detect mode from extension or stored mode
+    const ext = sourcePath ? sourcePath.slice(sourcePath.lastIndexOf('.')).toLowerCase() : '';
+    let mode = parsed.mode;
+    if (!mode) {
+      if (ext === '.rgsht' || parsed.sheetsData || parsed.sheetGrids) mode = 'sheets';
+      else if (ext === '.rgdck' || parsed.slides || parsed.deckSlidesData) mode = 'deck';
+      else if (ext === '.rgwbd' || parsed.whiteboardWidgets || parsed.whiteboardShapes) mode = 'whiteboard';
+      else mode = 'compose';
+    }
+
+    return {
+      ...parsed,
+      mode,
+      localFilePath: sourcePath || parsed.localFilePath,
+    };
+  } catch (err) {
+    console.warn('[LocalSync] Failed to parse Regaarder file:', err);
+    return null;
+  }
 };

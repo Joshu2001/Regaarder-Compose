@@ -78,6 +78,43 @@
       }
     ],
     "icon": "build/icon.ico",
+    "fileAssociations": [
+      {
+        "ext": "rgdoc",
+        "name": "Regaarder Document",
+        "description": "Regaarder Native Document File",
+        "icon": "build/icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "cmp",
+        "name": "Regaarder Compose Document",
+        "description": "Regaarder Compose Native File",
+        "icon": "build/icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "rgsht",
+        "name": "Regaarder Spreadsheet",
+        "description": "Regaarder Spreadsheet File",
+        "icon": "build/icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "rgdck",
+        "name": "Regaarder Presentation Deck",
+        "description": "Regaarder Presentation Deck File",
+        "icon": "build/icon.ico",
+        "role": "Editor"
+      },
+      {
+        "ext": "rgwbd",
+        "name": "Regaarder Whiteboard",
+        "description": "Regaarder Whiteboard File",
+        "icon": "build/icon.ico",
+        "role": "Editor"
+      }
+    ],
     "signtoolOptions": {
       "rfc3161TimeStampServer": "http://timestamp.digicert.com"
     }

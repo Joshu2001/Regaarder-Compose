@@ -99,12 +99,53 @@ export const exportCompose = async (format, contentOrPayload = '', rawData = {},
       return true;
     }
 
-    // 4. Word (.docx / .doc)
-    if (fmt.includes('word') || fmt.includes('doc')) {
-      const docMarkup = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${fileName}</title></head><body>${fullHtml}</body></html>`;
-      const blob = new Blob([docMarkup], { type: 'application/msword' });
-      saveAs(blob, `${fileName}.doc`);
-      return true;
+    // 4. Word (.docx)
+    if (fmt.includes('word') || fmt.includes('docx') || fmt.includes('doc')) {
+      try {
+        const plainParagraphs = fullHtml
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<br\s*[\/]?>/gi, '\n')
+          .replace(/<\/h[1-6]>/gi, '\n\n')
+          .replace(/<\/li>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean);
+
+        const docParagraphs = plainParagraphs.map(text => 
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: unescapeHtml(text),
+                font: 'Arial',
+                size: 22,
+              }),
+            ],
+            spacing: { after: 120 },
+          })
+        );
+
+        if (docParagraphs.length === 0) {
+          docParagraphs.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+        }
+
+        const wordDoc = new Document({
+          sections: [{
+            properties: {},
+            children: docParagraphs,
+          }],
+        });
+
+        const docxBlob = await Packer.toBlob(wordDoc);
+        saveAs(docxBlob, `${fileName}.docx`);
+        return true;
+      } catch (docErr) {
+        console.warn('Packer DOCX export fallback:', docErr);
+        const docMarkup = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${fileName}</title></head><body>${fullHtml}</body></html>`;
+        const blob = new Blob([docMarkup], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        saveAs(blob, `${fileName}.docx`);
+        return true;
+      }
     }
 
     // 5. HTML (.html)

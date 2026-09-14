@@ -81,11 +81,11 @@ function evaluateUserData(key, rawVal) {
   }
 
   // 1. Documents & Workspace Data
-  if (key.startsWith('rc.savedDoc.') || key === 'rc.documents' || key === 'regaarder_documents') {
+  if (key.startsWith('rc.savedDoc.') || key === 'rc.documents' || key === 'regaarder_documents' || key === 'regaarder_documents_v1') {
     if (typeof parsed === 'object' && parsed !== null) {
       if (Array.isArray(parsed)) {
         // Exclude system samples
-        const validDocs = parsed.filter(d => d && (d.title || d.content || d.bodyHtml) && !d.isSample && d.id !== 'sample-doc');
+        const validDocs = parsed.filter(d => d && (d.title || d.content || d.bodyHtml || d.sheetsData || d.sheetGrids || d.slides) && !d.isSample && d.id !== 'sample-doc');
         if (validDocs.length > 0) return { catId: 'documents', itemCount: validDocs.length };
       } else {
         const keys = Object.keys(parsed);
