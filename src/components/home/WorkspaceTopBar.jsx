@@ -86,13 +86,36 @@ export default function WorkspaceTopBar({
           <Layout size={16} />
         </button>
 
-        <button
-          type="button"
-          onClick={onProfileClick}
-          className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8B5CF6] text-white font-medium text-[11px] shadow-2xs cursor-pointer border-none hover:opacity-90 transition-opacity"
-        >
-          {initials}
-        </button>
+        {/* User / Sign-in Control */}
+        <div className="relative">
+          {currentUser ? (
+            <button
+              type="button"
+              onClick={onProfileClick}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8B5CF6] text-white font-medium text-[11px] shadow-2xs cursor-pointer border border-black/[0.08] dark:border-white/[0.12] hover:opacity-90 transition-all overflow-hidden"
+              title={`Profile: ${currentUser.name || currentUser.displayName || currentUser.email || 'User'}`}
+            >
+              {currentUser?.photoURL || currentUser?.avatar ? (
+                <img
+                  src={currentUser.photoURL || currentUser.avatar}
+                  alt={currentUser.name || "User"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onProfileClick}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-semibold text-[11px] border border-slate-300/80 dark:border-zinc-700 hover:bg-violet-600 hover:text-white hover:border-violet-600 dark:hover:bg-violet-600 dark:hover:border-violet-600 transition-all cursor-pointer shadow-2xs"
+              title="Sign in to your workspace"
+            >
+              U
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

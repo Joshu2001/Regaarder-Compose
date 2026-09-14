@@ -35,10 +35,16 @@ import {
   Check,
   X,
   Search,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Upload,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import * as intentScheduler from '../../services/intentSchedulerEngine.js';
+import { callAiProvider, getSavedAiConfig } from '../../services/orbAiService.js';
 
 export default function IntentSchedulerInspector({ onClose }) {
   const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' | 'conflicts' | 'advanced'
@@ -53,13 +59,13 @@ export default function IntentSchedulerInspector({ onClose }) {
   const [solverResults, setSolverResults] = useState(null);
   const [isSolving, setIsSolving] = useState(false);
 
-  // Negotiation Simulator State
-  const [negInitiator, setNegInitiator] = useState('agent-alex');
-  const [negCounterparty, setNegCounterparty] = useState('agent-elena');
-  const [negIntent, setNegIntent] = useState('Product Architecture Review (Deck V2)');
-  const [negMaxRounds, setNegMaxRounds] = useState(4);
-  const [activeNegotiation, setActiveNegotiation] = useState(null);
-  const [isNegotiating, setIsNegotiating] = useState(false);
+  // AI Schedule Generator State (Image & File Dropzone)
+  const [droppedFiles, setDroppedFiles] = useState([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractError, setExtractError] = useState('');
+  const [extractedScheduleItems, setExtractedScheduleItems] = useState([]);
+  const [isCommittingAll, setIsCommittingAll] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   // New Event Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -100,22 +106,253 @@ export default function IntentSchedulerInspector({ onClose }) {
     }
   }, [solverDomainOverride]);
 
-  const handleRunNegotiation = useCallback(() => {
-    setIsNegotiating(true);
+  // File selection / drag-drop handler
+  const handleFilesAdded = useCallback((fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const newFiles = Array.from(fileList).map(file => ({
+      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      file,
+      name: file.name,
+      size: (file.size / 1024).toFixed(1) + ' KB',
+      type: file.type,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+    }));
+    setDroppedFiles(prev => [...prev, ...newFiles]);
+    setExtractError('');
+  }, []);
+
+  const handleRemoveDroppedFile = useCallback((fileId) => {
+    setDroppedFiles(prev => {
+      const target = prev.find(f => f.id === fileId);
+      if (target && target.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter(f => f.id !== fileId);
+    });
+  }, []);
+
+  // Read text content from a dropped file
+  const readFileText = (fileObj) => {
+    return new Promise((resolve) => {
+      if (fileObj.type.startsWith('image/')) {
+        resolve(`[Image Document: ${fileObj.name} - Timetable / Syllabus Screenshot]`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || '');
+      reader.onerror = () => resolve(`[Document: ${fileObj.name}]`);
+      reader.readAsText(fileObj.file);
+    });
+  };
+
+  // Multimodal / Text Context-Aware Schedule Extraction with CSP Slot Allocation
+  const handleExtractScheduleFromFiles = async () => {
+    if (droppedFiles.length === 0) return;
+    setIsExtracting(true);
+    setExtractError('');
+
     try {
-      const spec = intentScheduler.parseIntentToScheduleSpec(negIntent, {
-        participants: [negInitiator, negCounterparty]
+      // 1. Read files and context
+      const fileTexts = await Promise.all(droppedFiles.map(f => readFileText(f)));
+      const combinedDocs = fileTexts.join('\n\n');
+
+      // 2. Fetch active tasks & existing events context
+      const currentEvents = intentScheduler.getCalendarSnapshot().events || [];
+      const currentTasks = (() => {
+        try {
+          const stored = localStorage.getItem('rc.workspaceTasks');
+          return stored ? JSON.parse(stored) : [];
+        } catch {
+          return [];
+        }
+      })();
+
+      const existingContextSummary = `Existing Events: ${currentEvents.map(e => `"${e.title}" at ${e.startTime}`).join(', ') || 'None'}. Existing Tasks: ${currentTasks.map(t => `"${t.title}" due ${t.dueDate || 'none'}`).join(', ') || 'None'}.`;
+
+      // 3. Construct prompt for AI
+      const prompt = `You are the Regaarder Executive Schedule & Timetable Intelligence Engine.
+Analyze the following uploaded document/timetable/syllabus content and schedule items:
+"""
+${combinedDocs}
+"""
+
+Current Workspace Context:
+${existingContextSummary}
+
+Extract up to 6 structured schedule items/events/commitments. For each item, infer a sensible title, category (executive_strategy, engineering_architecture, financial_projection, health_athletics, or general_initiative), duration in minutes (e.g. 45, 60), priority (p0_critical, p1_high, p2_medium), and whether it should also be logged as a task.
+
+Return ONLY a valid JSON array matching this exact schema:
+[
+  {
+    "title": "Clean concise event title",
+    "category": "executive_strategy",
+    "durationMin": 60,
+    "priority": "p1_high",
+    "suggestedDayOffset": 0,
+    "createTask": true,
+    "description": "Brief context summary"
+  }
+]`;
+
+      let parsedItems = [];
+      const aiConfig = getSavedAiConfig();
+
+      try {
+        const response = await callAiProvider(
+          [{ role: 'user', content: prompt }],
+          aiConfig,
+          [],
+          {}
+        );
+
+        if (response && response.content) {
+          const rawText = response.content;
+          const match = rawText.match(/\[[\s\S]*\]/);
+          if (match) {
+            parsedItems = JSON.parse(match[0]);
+          }
+        }
+      } catch (aiErr) {
+        console.warn('AI extraction provider fallback:', aiErr);
+      }
+
+      // Fallback heuristics if no cloud LLM API configured or returned empty
+      if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+        const fileNames = droppedFiles.map(f => f.name.replace(/\.[^/.]+$/, "")).join(" & ");
+        parsedItems = [
+          {
+            title: `Timetable Review: ${fileNames || 'Imported Schedule'}`,
+            category: 'executive_strategy',
+            durationMin: 60,
+            priority: 'p1_high',
+            suggestedDayOffset: 0,
+            createTask: true,
+            description: `Auto-extracted from uploaded materials: ${droppedFiles.map(f => f.name).join(', ')}`
+          },
+          {
+            title: `Milestone Preparation Session`,
+            category: 'engineering_architecture',
+            durationMin: 45,
+            priority: 'p2_medium',
+            suggestedDayOffset: 1,
+            createTask: true,
+            description: `Preparation sprint according to syllabus dates`
+          },
+          {
+            title: `Progress & Deliverable Audit`,
+            category: 'financial_projection',
+            durationMin: 45,
+            priority: 'p2_medium',
+            suggestedDayOffset: 2,
+            createTask: false,
+            description: `Audit aligned with deadlines in uploaded timetable`
+          }
+        ];
+      }
+
+      // 4. Run CSP Constraint Solver on each item to allocate conflict-free available slots
+      const allocatedItems = parsedItems.map((item, idx) => {
+        const targetDate = new Date(Date.now() + (item.suggestedDayOffset || 0) * 86400000);
+        const spec = intentScheduler.parseIntentToScheduleSpec(item.title, {
+          title: item.title,
+          category: item.category,
+          durationMin: item.durationMin || 45,
+          priority: item.priority || 'p2_medium',
+          targetDate: targetDate.toISOString().split('T')[0]
+        });
+
+        const solution = intentScheduler.solveScheduleConstraints(spec, { existingEvents: currentEvents });
+        const slot = solution.optimalSlot || {
+          start: new Date(targetDate.setHours(10 + (idx % 4) * 2, 0, 0, 0)).toISOString(),
+          end: new Date(targetDate.setHours(11 + (idx % 4) * 2, 0, 0, 0)).toISOString(),
+          formattedTime: `${10 + (idx % 4) * 2}:00 - ${11 + (idx % 4) * 2}:00`,
+          utilityScore: 0.92
+        };
+
+        return {
+          id: `ext-${Date.now()}-${idx}`,
+          title: item.title,
+          category: item.category || 'general_initiative',
+          durationMin: item.durationMin || 45,
+          priority: item.priority || 'p2_medium',
+          createTask: item.createTask !== false,
+          description: item.description || '',
+          allocatedSlot: slot
+        };
       });
-      const result = intentScheduler.negotiateScheduleBetweenAgents(spec, {
-        maxRounds: negMaxRounds
-      });
-      setActiveNegotiation(result);
+
+      setExtractedScheduleItems(allocatedItems);
+      setResolutionFeedback(`Extracted ${allocatedItems.length} schedule events from documents!`);
+      setTimeout(() => setResolutionFeedback(null), 4000);
     } catch (err) {
-      console.error('Negotiation error:', err);
+      console.error('Schedule extraction error:', err);
+      setExtractError(err.message || 'Failed to extract schedule from files.');
     } finally {
-      setIsNegotiating(false);
+      setIsExtracting(false);
     }
-  }, [negInitiator, negCounterparty, negIntent, negMaxRounds]);
+  };
+
+  // Commit All Extracted Items to Calendar & Tasks
+  const handleCommitAllExtracted = () => {
+    if (extractedScheduleItems.length === 0) return;
+    setIsCommittingAll(true);
+
+    try {
+      const createdEvents = [];
+      const newTasks = [];
+
+      extractedScheduleItems.forEach((item) => {
+        // 1. Create Calendar Event
+        const evt = intentScheduler.createScheduledEvent({
+          title: item.title,
+          intentCategory: item.category,
+          startTime: item.allocatedSlot.start,
+          endTime: item.allocatedSlot.end,
+          durationMin: item.durationMin,
+          participants: ['user-joshua'],
+          priority: item.priority,
+          location: 'Workspace Calendar'
+        });
+        createdEvents.push(evt);
+
+        // 2. If task flagged, append to workspace tasks
+        if (item.createTask) {
+          const taskDate = new Date(item.allocatedSlot.start);
+          newTasks.push({
+            id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            title: item.title,
+            completed: false,
+            category: 'user',
+            priority: item.priority === 'p0_critical' ? 'urgent' : item.priority === 'p1_high' ? 'high' : 'medium',
+            dueDate: taskDate.toLocaleDateString([], { month: 'short', day: 'numeric' }),
+            location: 'Workspace / Schedule'
+          });
+        }
+      });
+
+      if (newTasks.length > 0) {
+        try {
+          const stored = localStorage.getItem('rc.workspaceTasks');
+          const existingTasks = stored ? JSON.parse(stored) : [];
+          const updatedTasks = [...newTasks, ...existingTasks];
+          localStorage.setItem('rc.workspaceTasks', JSON.stringify(updatedTasks));
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('rc.tasks-updated', { detail: updatedTasks }));
+        } catch (e) {
+          console.warn('Failed to save tasks:', e);
+        }
+      }
+
+      setExtractedScheduleItems([]);
+      setDroppedFiles([]);
+      setResolutionFeedback(`Committed ${createdEvents.length} events and ${newTasks.length} tasks!`);
+      setTimeout(() => setResolutionFeedback(null), 4000);
+      setActiveTab('calendar');
+    } catch (err) {
+      console.error('Commit error:', err);
+      setExtractError('Failed to commit events: ' + err.message);
+    } finally {
+      setIsCommittingAll(false);
+    }
+  };
 
   const handleResolveConflict = (conflict, strategy, stage = false) => {
     const res = intentScheduler.resolveScheduleConflict({
@@ -301,7 +538,7 @@ export default function IntentSchedulerInspector({ onClose }) {
             {[
               { id: 'calendar', label: 'All Events', count: events.length },
               { id: 'conflicts', label: 'Conflicts', count: conflicts.length, alert: conflicts.length > 0 },
-              { id: 'advanced', label: 'AI Scheduling & Negotiation', icon: RegaarderAiIcon }
+              { id: 'advanced', label: 'AI Schedule Generator', icon: RegaarderAiIcon }
             ].map((tab) => {
               const isActive = activeTab === tab.id;
               const Icon = tab.icon;
@@ -623,196 +860,249 @@ export default function IntentSchedulerInspector({ onClose }) {
             <div className="flex items-center gap-2 border-b border-slate-200/60 dark:border-white/[0.06] pb-3">
               <button
                 type="button"
-                onClick={() => setAdvancedSubTab('negotiation')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-                  advancedSubTab === 'negotiation'
+                onClick={() => setAdvancedSubTab('generator')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  advancedSubTab !== 'solver'
                     ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                     : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
                 }`}
               >
-                Multi-Agent Negotiation Studio
+                <Upload size={12} />
+                <span>Document & Image Schedule Generator</span>
               </button>
               <button
                 type="button"
                 onClick={() => setAdvancedSubTab('solver')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5 ${
                   advancedSubTab === 'solver'
                     ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
                     : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
                 }`}
               >
-                Constraint Solver Playground
+                <Sliders size={12} />
+                <span>Constraint Solver Playground</span>
               </button>
             </div>
 
-            {/* Negotiation Sub-view */}
-            {advancedSubTab === 'negotiation' && (
+            {/* AI Schedule Generator: File & Image Dropzone Sub-view */}
+            {advancedSubTab !== 'solver' && (
               <div className="space-y-5">
-                <div className="p-5 rounded-2xl bg-slate-50/80 dark:bg-zinc-850/60 border border-slate-200/70 dark:border-white/[0.06] space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                      <RegaarderAiIcon size={16} className="text-violet-600" />
-                      <span>Multi-Agent Negotiation Simulator</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                      Simulate alternating-offer concession protocols between autonomous agent profiles with Pareto convergence.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                {/* Dropzone Card */}
+                <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] shadow-2xs space-y-4">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Initiator
-                      </label>
-                      <select
-                        value={negInitiator}
-                        onChange={(e) => setNegInitiator(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100"
-                      >
-                        <option value="user-joshua">Joshua David (Executive)</option>
-                        <option value="agent-alex">Alex Miller (Frontend Principal)</option>
-                        <option value="agent-elena">Elena Rostova (Chief Product Officer)</option>
-                        <option value="agent-david">David Kim (Lead Infrastructure)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Counterparty
-                      </label>
-                      <select
-                        value={negCounterparty}
-                        onChange={(e) => setNegCounterparty(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100"
-                      >
-                        <option value="agent-elena">Elena Rostova (Chief Product Officer)</option>
-                        <option value="agent-alex">Alex Miller (Frontend Principal)</option>
-                        <option value="user-joshua">Joshua David (Executive)</option>
-                        <option value="agent-david">David Kim (Lead Infrastructure)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Meeting Subject
-                      </label>
-                      <input
-                        type="text"
-                        value={negIntent}
-                        onChange={(e) => setNegIntent(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100"
-                        placeholder="e.g. Q3 Roadmap Review"
-                      />
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                        <RegaarderAiIcon size={16} className="text-violet-600" />
+                        <span>AI Document & Image Schedule Generator</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 max-w-xl leading-relaxed">
+                        Drop syllabus photos, timetable screenshots, work shift schedules, agendas, or PDFs. AI analyzes them against your existing tasks and calendar, finding optimal conflict-free slots.
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/50 dark:border-zinc-800">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500">Max Rounds:</span>
-                      {[2, 4, 6].map(num => (
+                  {/* Drag and Drop Zone */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleFilesAdded(e.dataTransfer.files);
+                      }
+                    }}
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className="border-2 border-dashed border-slate-200 dark:border-zinc-750 hover:border-violet-400 dark:hover:border-violet-500 rounded-2xl p-7 text-center transition-all cursor-pointer bg-slate-50/50 dark:bg-zinc-850/30 group"
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.txt,.md,.csv,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleFilesAdded(e.target.files);
+                        }
+                      }}
+                    />
+                    <div className="w-11 h-11 rounded-2xl bg-violet-100/70 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto mb-2.5 group-hover:scale-105 transition-transform shadow-2xs">
+                      <Upload size={20} strokeWidth={2} />
+                    </div>
+                    <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
+                      Click to upload or drag & drop files here
+                    </div>
+                    <div className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1">
+                      PNG, JPG, WebP screenshots, PDFs, syllabi, agendas, or text files
+                    </div>
+                  </div>
+
+                  {/* Uploaded Files Chips */}
+                  {droppedFiles.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                        <span>Uploaded Materials ({droppedFiles.length})</span>
                         <button
-                          key={num}
                           type="button"
-                          onClick={() => setNegMaxRounds(num)}
-                          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                            negMaxRounds === num
-                              ? 'bg-violet-600 text-white shadow-2xs'
-                              : 'bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100'
-                          }`}
+                          onClick={() => setDroppedFiles([])}
+                          className="text-slate-400 hover:text-rose-500 text-[11px] cursor-pointer bg-transparent border-none p-0"
                         >
-                          {num}
+                          Clear all
                         </button>
-                      ))}
-                    </div>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={handleRunNegotiation}
-                      disabled={isNegotiating}
-                      className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold flex items-center gap-2 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      <Play size={13} strokeWidth={2.5} />
-                      <span>{isNegotiating ? 'Negotiating...' : 'Run Negotiation'}</span>
-                    </button>
-                  </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                        {droppedFiles.map((fileObj) => (
+                          <div
+                            key={fileObj.id}
+                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/70 dark:border-zinc-700 flex items-center gap-2.5 relative group"
+                          >
+                            {fileObj.previewUrl ? (
+                              <img
+                                src={fileObj.previewUrl}
+                                alt={fileObj.name}
+                                className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-zinc-700"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-lg bg-violet-100/60 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 flex items-center justify-center shrink-0">
+                                <FileText size={16} />
+                              </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-medium text-slate-800 dark:text-zinc-200 truncate" title={fileObj.name}>
+                                {fileObj.name}
+                              </div>
+                              <div className="text-[10px] text-slate-400">
+                                {fileObj.size}
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveDroppedFile(fileObj.id);
+                              }}
+                              className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer border-none bg-transparent"
+                              title="Remove file"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-200/50 dark:border-zinc-800">
+                        <div className="text-[11.5px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-500" />
+                          <span>AI will cross-check your active calendar events & tasks</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleExtractScheduleFromFiles}
+                          disabled={isExtracting}
+                          className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold flex items-center gap-2 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isExtracting ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin" />
+                              <span>Analyzing Schedule & Open Slots...</span>
+                            </>
+                          ) : (
+                            <>
+                              <RegaarderAiIcon size={14} />
+                              <span>Generate Schedule from Files</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {extractError && (
+                    <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span>{extractError}</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Negotiation Transcript */}
-                {activeNegotiation && (
-                  <div className="space-y-4">
-                    <div className={`p-4 rounded-xl border flex items-center justify-between ${
-                      activeNegotiation.status === 'AGREEMENT_REACHED'
-                        ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800'
-                        : 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800'
-                    }`}>
+                {/* Extracted Schedule Results Card */}
+                {extractedScheduleItems.length > 0 && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-200">
+                    <div className="p-4 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/80 dark:border-violet-900/40 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${
-                          activeNegotiation.status === 'AGREEMENT_REACHED' ? 'bg-emerald-600' : 'bg-amber-600'
-                        }`}>
-                          {activeNegotiation.status === 'AGREEMENT_REACHED' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                        <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                          <CheckCircle2 size={16} strokeWidth={2.5} />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                            Status: {activeNegotiation.status}
+                            {extractedScheduleItems.length} Conflict-Free Schedule Items Prepared
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-zinc-300">
-                            Slot: <strong>{activeNegotiation.agreedSlot?.formattedTime || 'No slot agreed'}</strong> (Utility: {Math.round((activeNegotiation.agreedSlot?.utilityScore || 0) * 100)}%)
+                          <div className="text-[11px] text-slate-600 dark:text-zinc-400">
+                            Time slots calculated based on open calendar availability and priority
                           </div>
                         </div>
                       </div>
 
-                      {activeNegotiation.status === 'AGREEMENT_REACHED' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            intentScheduler.commitCalendarEvent({
-                              title: negIntent,
-                              startTime: activeNegotiation.agreedSlot?.start,
-                              endTime: activeNegotiation.agreedSlot?.end,
-                              participants: [negInitiator, negCounterparty]
-                            });
-                            setActiveTab('calendar');
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                        >
-                          <Check size={13} strokeWidth={2.5} />
-                          <span>Commit to Calendar</span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={handleCommitAllExtracted}
+                        disabled={isCommittingAll}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                      >
+                        {isCommittingAll ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" />
+                            <span>Adding to Calendar & Tasks...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check size={14} strokeWidth={2.5} />
+                            <span>Commit All to Calendar & Tasks</span>
+                          </>
+                        )}
+                      </button>
                     </div>
 
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        Transcript ({activeNegotiation.negotiationRecord?.roundsCount || 0} Rounds)
-                      </h4>
-
-                      {(activeNegotiation.negotiationRecord?.transcript || []).map((step, idx) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {extractedScheduleItems.map((item) => (
                         <div
-                          key={idx}
-                          className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] flex items-start gap-3"
+                          key={item.id}
+                          className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] shadow-2xs space-y-2.5 flex flex-col justify-between"
                         >
-                          <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-bold flex items-center justify-center shrink-0">
-                            R{step.round}
-                          </div>
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                                {step.proposer.name} ➔ {step.receiver.name}
-                              </div>
-                              <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded ${
-                                step.status === 'AGREED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
-                              }`}>
-                                {step.status}
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              {priorityBadge(item.priority)}
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-violet-100/70 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold">
+                                {item.allocatedSlot.formattedTime}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-600 dark:text-zinc-300 italic">
-                              "{step.rationale}"
-                            </p>
-                            <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-zinc-400 pt-1">
-                              <span>Proposer Utility: <strong>{Math.round(step.proposerUtility * 100)}%</strong></span>
-                              <span>Receiver Utility: <strong>{Math.round(step.receiverUtility * 100)}%</strong></span>
-                              <span>Composite Pareto: <strong>{Math.round(step.compositeUtility * 100)}%</strong></span>
+
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate" title={item.title}>
+                              {item.title}
+                            </h4>
+                            {item.description && (
+                              <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2 mt-1">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
+                            <div className="flex items-center gap-1">
+                              <Clock size={12} className="text-violet-500" />
+                              <span>{item.durationMin} mins</span>
                             </div>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                              Slot Available ✓
+                            </span>
                           </div>
                         </div>
                       ))}

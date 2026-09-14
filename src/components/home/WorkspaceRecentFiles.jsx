@@ -13,7 +13,9 @@ import {
   FolderInput,
   Check,
   Pin,
-  PinOff
+  PinOff,
+  FileText,
+  Plus
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
@@ -218,13 +220,9 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
       }
 
       parsed.sort((a, b) => (sortOrder === "desc" ? b.savedAt - a.savedAt : a.savedAt - b.savedAt));
-      if (parsed.length > 0) {
-        setItems(parsed);
-      } else {
-        setItems(DEFAULT_SAMPLE_RECENTS);
-      }
+      setItems(parsed);
     } catch {
-      setItems(DEFAULT_SAMPLE_RECENTS);
+      setItems([]);
     }
   }, [sortOrder]);
 
@@ -646,17 +644,51 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             </button>
           </div>
         </div>
-      ) : (
+      ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
           <div className="col-span-5 pl-7">Name</div>
           <div className="col-span-3">Location</div>
           <div className="col-span-3">Last Modified</div>
           <div className="col-span-1 text-right pr-1">Size</div>
         </div>
-      )}
+      ) : null}
+
+      {/* EMPTY STATE */}
+      {filteredItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 dark:border-white/[0.08] bg-slate-50/40 dark:bg-zinc-850/20">
+          <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 mb-3 shadow-2xs">
+            <FileText size={22} strokeWidth={1.75} />
+          </div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+            {filterType !== "all" ? `No ${filterLabels[filterType] || "matching"} files yet` : "No recent documents yet"}
+          </h3>
+          <p className="text-xs text-slate-400 dark:text-zinc-400 max-w-sm mt-1 mb-4 leading-relaxed">
+            {filterType !== "all"
+              ? "Try switching to 'All Types' or create a new file to get started."
+              : "Files you create, edit, or import across Docs, Sheets, Decks, and Whiteboards will appear here."}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onLaunch && onLaunch("compose")}
+              className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              <span>New Document</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onLaunch && onLaunch("sheet")}
+              className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-zinc-700 transition-colors cursor-pointer"
+            >
+              New Sheet
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* LIST VIEW */}
-      {viewMode === "list" && (
+      {filteredItems.length > 0 && viewMode === "list" && (
         <div className="divide-y divide-slate-100/70 dark:divide-white/[0.02]">
           {filteredItems.map((item) => {
             const isSelected = selectedIds.has(item.id);
@@ -919,7 +951,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
       )}
 
       {/* GRID VIEW */}
-      {viewMode === "grid" && (
+      {filteredItems.length > 0 && viewMode === "grid" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
           {filteredItems.map((item) => {
             const isSelected = selectedIds.has(item.id);
