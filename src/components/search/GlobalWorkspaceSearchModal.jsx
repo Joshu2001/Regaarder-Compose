@@ -1452,12 +1452,12 @@ export default function GlobalWorkspaceSearchModal({
     }
   };
 
-  // Restrained Apple-inspired liquid-glass surface treatment
+  // Restrained Apple-inspired liquid-glass surface treatment: stronger translucency, subtle depth, crisp contrast
   const memoryCustomBg = typeof window !== 'undefined' ? localStorage.getItem('rc.memoryBackground') : null;
-  const backdropClasses = 'bg-slate-900/40 dark:bg-black/65 backdrop-blur-[28px]';
-  const surfaceClasses = 'bg-white/[0.80] dark:bg-[#18181b]/[0.82] backdrop-blur-2xl saturate-[170%] rounded-2xl shadow-[0_24px_70px_rgba(0,0,0,0.16),0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_90px_rgba(0,0,0,0.7)] border border-white/60 dark:border-white/[0.10] ring-1 ring-black/[0.04] dark:ring-white/[0.05]';
-  const categoryBarClasses = 'bg-white/[0.50] dark:bg-zinc-900/[0.45] border-b border-black/[0.05] dark:border-white/[0.07] backdrop-blur-md';
-  const footerClasses = 'bg-white/[0.50] dark:bg-zinc-900/[0.45] border-t border-black/[0.05] dark:border-white/[0.07] backdrop-blur-md';
+  const backdropClasses = 'bg-black/25 dark:bg-black/55 backdrop-blur-[16px]';
+  const surfaceClasses = 'bg-white/[0.68] dark:bg-[#161618]/[0.72] backdrop-blur-[32px] saturate-[160%] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_28px_80px_rgba(0,0,0,0.65)] border border-white/80 dark:border-white/[0.09] ring-1 ring-black/[0.03] dark:ring-white/[0.04]';
+  const categoryBarClasses = 'bg-white/[0.30] dark:bg-black/[0.18] border-b border-black/[0.04] dark:border-white/[0.06] backdrop-blur-md';
+  const footerClasses = 'bg-white/[0.30] dark:bg-black/[0.20] border-t border-black/[0.04] dark:border-white/[0.06] backdrop-blur-md';
 
   return (
     <div
@@ -2333,13 +2333,13 @@ export default function GlobalWorkspaceSearchModal({
                             data-selected={isSelected}
                             onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
-                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors duration-75 ${
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors duration-75 ${
                               isSelected
-                                ? 'bg-black/[0.04] dark:bg-white/[0.07]'
+                                ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
                                 : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035]'
-                            } ${isTask && isCompleted ? 'opacity-60' : ''}`}
+                            } ${isTask && isCompleted ? 'opacity-50' : ''}`}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0">
                               {isTask ? (
                                 <button
                                   type="button"
@@ -2359,7 +2359,7 @@ export default function GlobalWorkspaceSearchModal({
                                 <img
                                   src={entity.thumbnail}
                                   alt=""
-                                  className="w-7 h-7 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0"
+                                  className="w-6 h-6 rounded-md object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.08] shrink-0"
                                 />
                               ) : (
                                 <AppNativeSvgIcon
@@ -2370,8 +2370,8 @@ export default function GlobalWorkspaceSearchModal({
                               )}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-[12.5px] font-medium truncate ${
-                                    isTask && isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-800 dark:text-zinc-100'
+                                  <span className={`text-[13px] font-semibold tracking-[-0.01em] truncate ${
+                                    isTask && isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-zinc-100'
                                   }`}>
                                     {entity.title}
                                   </span>
@@ -2381,18 +2381,18 @@ export default function GlobalWorkspaceSearchModal({
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
+                                <div className="text-[11.5px] text-slate-400 dark:text-zinc-400/90 truncate mt-0.5 font-normal">
                                   {entity.location} • {entity.author || 'You'}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                            <div className="flex items-center gap-3 shrink-0 ml-4">
                               {isTask && (
                                 <>
                                   <TaskPriorityBadge priority={priority} />
                                   {dueDate && (
-                                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-sans">
+                                    <span className="text-[11px] text-slate-400 dark:text-zinc-400 flex items-center gap-1 font-sans">
                                       <Clock size={11} className="shrink-0" />
                                       <span>{dueDate}</span>
                                     </span>
@@ -2401,15 +2401,15 @@ export default function GlobalWorkspaceSearchModal({
                               )}
 
                               {!isTask && (
-                                <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
+                                <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">
                                   {entity.updatedAt}
                                 </span>
                               )}
 
                               <ArrowRight
                                 size={12}
-                                className={`transition-transform duration-150 ${
-                                  isSelected ? 'translate-x-0.5 text-slate-800 dark:text-zinc-200' : 'text-slate-300 dark:text-zinc-600'
+                                className={`transition-transform duration-100 ${
+                                  isSelected ? 'translate-x-0.5 text-slate-700 dark:text-zinc-300' : 'text-slate-300 dark:text-zinc-600'
                                 }`}
                               />
                             </div>
@@ -2477,13 +2477,13 @@ export default function GlobalWorkspaceSearchModal({
                             data-selected={isSelected}
                             onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                             onMouseEnter={() => setSelectedIndex(itemIdx)}
-                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors duration-75 ${
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-colors duration-75 ${
                               isSelected
-                                ? 'bg-black/[0.04] dark:bg-white/[0.07]'
+                                ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
                                 : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035]'
-                            } ${isCompleted ? 'opacity-60' : ''}`}
+                            } ${isCompleted ? 'opacity-50' : ''}`}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0">
                               {/* Clean subtle task check icon vs file/product icon */}
                               {isTask ? (
                                 <button
@@ -2516,8 +2516,8 @@ export default function GlobalWorkspaceSearchModal({
 
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-[12.5px] font-medium truncate ${
-                                    isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-800 dark:text-zinc-100'
+                                  <span className={`text-[13px] font-semibold tracking-[-0.01em] truncate ${
+                                    isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-zinc-100'
                                   }`}>
                                     {entity.title}
                                   </span>
@@ -2527,19 +2527,19 @@ export default function GlobalWorkspaceSearchModal({
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-400/90 dark:text-zinc-500 truncate mt-0.5">
+                                <div className="text-[11.5px] text-slate-400 dark:text-zinc-400/90 truncate mt-0.5 font-normal">
                                   {entity.location} • {entity.author || 'You'}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                            <div className="flex items-center gap-3 shrink-0 ml-4">
                               {/* Surface Task Priority & Due Date */}
                               {isTask && (
                                 <>
                                   <TaskPriorityBadge priority={priority} />
                                   {dueDate && (
-                                    <span className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-1 font-sans">
+                                    <span className="text-[11px] text-slate-400 dark:text-zinc-400 flex items-center gap-1 font-sans">
                                       <Clock size={11} className="shrink-0" />
                                       <span>{dueDate}</span>
                                     </span>
@@ -2548,15 +2548,15 @@ export default function GlobalWorkspaceSearchModal({
                               )}
 
                               {!isTask && (
-                                <span className="text-[10.5px] text-slate-400/80 dark:text-zinc-500 font-mono">
+                                <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">
                                   {entity.updatedAt}
                                 </span>
                               )}
 
                               <ArrowRight
                                 size={12}
-                                className={`transition-transform duration-150 ${
-                                  isSelected ? 'translate-x-0.5 text-slate-800 dark:text-zinc-200' : 'text-slate-300 dark:text-zinc-600'
+                                className={`transition-transform duration-100 ${
+                                  isSelected ? 'translate-x-0.5 text-slate-700 dark:text-zinc-300' : 'text-slate-300 dark:text-zinc-600'
                                 }`}
                               />
                             </div>
@@ -2683,15 +2683,15 @@ export default function GlobalWorkspaceSearchModal({
                         data-selected={isSelected}
                         onClick={() => handleActivateItem({ type: 'entity', data: entity })}
                         onMouseEnter={() => setSelectedIndex(itemGlobalIdx)}
-                        className={`group relative flex flex-col p-2.5 rounded-lg cursor-pointer transition-colors duration-75 ${
+                        className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-colors duration-75 ${
                           isSelected
-                            ? 'bg-black/[0.04] dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/10 shadow-2xs'
+                            ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08] shadow-2xs'
                             : 'hover:bg-black/[0.025] dark:hover:bg-white/[0.035] border border-black/[0.03] dark:border-white/[0.04]'
-                        } ${isTask && isCompleted ? 'opacity-60' : ''}`}
+                        } ${isTask && isCompleted ? 'opacity-50' : ''}`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
                         <div className="flex items-start justify-between gap-3 mb-1">
-                          <div className="flex items-start gap-2.5 min-w-0">
+                          <div className="flex items-start gap-3 min-w-0">
                             {entity.avatar ? (
                               <img
                                 src={entity.avatar}
@@ -2729,7 +2729,7 @@ export default function GlobalWorkspaceSearchModal({
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <h4 className={`text-[12.5px] font-semibold truncate ${
+                                <h4 className={`text-[13px] font-semibold tracking-[-0.01em] truncate ${
                                   isTask && isCompleted ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-zinc-100'
                                 }`}>
                                   <HighlightedText text={entity.title} query={query} isSelected={isSelected} />
@@ -2740,7 +2740,7 @@ export default function GlobalWorkspaceSearchModal({
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                              <div className="text-[11.5px] text-slate-400 dark:text-zinc-400/90 truncate mt-0.5 font-normal">
                                 <HighlightedText text={entity.location} query={query} isSelected={isSelected} />
                                 {entity.author && ` • ${entity.author}`}
                               </div>
