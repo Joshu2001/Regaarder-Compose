@@ -2834,3 +2834,29 @@ button.bg-violet-600,
   scroll-margin-top: 120px;
 }
 
+/* Waving Hand Dynamic Animation */
+@keyframes waveHand {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(18deg); }
+  20% { transform: rotate(-14deg); }
+  30% { transform: rotate(18deg); }
+  40% { transform: rotate(-10deg); }
+  50% { transform: rotate(14deg); }
+  60% { transform: rotate(-6deg); }
+  70% { transform: rotate(10deg); }
+  80% { transform: rotate(-2deg); }
+  90% { transform: rotate(4deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wave-hand {
+  display: inline-block !important;
+  transform-origin: 70% 75% !important;
+  will-change: transform !important;
+  animation: waveHand 1.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.15s 1 both !important;
+}
+
+.animate-wave-hand:hover {
+  animation: waveHand 1.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1 both !important;
+}
+

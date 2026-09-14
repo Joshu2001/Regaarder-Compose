@@ -43,6 +43,43 @@ export default function RegaarderComposeLanding({
     ? currentUser.email.split("@")[0]
     : "";
 
+  // Dynamic time-of-day greeting with "Welcome back" return detection
+  const greetingSalutation = React.useMemo(() => {
+    // Check if user has visited previously in this or a prior session
+    const hasPreviousVisit = (() => {
+      try {
+        const lastVisit = localStorage.getItem("rg_last_visit_timestamp");
+        return Boolean(lastVisit);
+      } catch {
+        return false;
+      }
+    })();
+
+    // On return to the home view after initial render or navigation, prefer "Welcome back"
+    if (waveKey > 1 || (waveKey === 1 && hasPreviousVisit)) {
+      return "Welcome back";
+    }
+
+    // Time-based greetings for first mount / fresh time-of-day context
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return "Good morning";
+    } else if (hour >= 12 && hour < 18) {
+      return "Good afternoon";
+    } else {
+      return "Good evening";
+    }
+  }, [waveKey]);
+
+  // Record visit timestamp to distinguish returning users
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("rg_last_visit_timestamp", String(Date.now()));
+    } catch {
+      /* quota */
+    }
+  }, [waveKey]);
+
   return (
     <div className="flex flex-col h-screen w-full bg-[#FAFBFD] dark:bg-[#121214] text-slate-900 dark:text-zinc-100 overflow-hidden font-sans">
       {/* 1. Top Bar */}
@@ -88,7 +125,7 @@ export default function RegaarderComposeLanding({
               <div>
                 <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 flex items-center gap-2 leading-snug">
                   <span>
-                    Good morning{userGreetingName ? `, ${userGreetingName}` : ""}
+                    {greetingSalutation}{userGreetingName ? `, ${userGreetingName}` : ""}
                   </span>
                   <span
                     key={`wave-${waveKey}`}
