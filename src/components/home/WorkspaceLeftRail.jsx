@@ -97,19 +97,39 @@ export default function WorkspaceLeftRail({
           <div className="space-y-1">
             <button
               type="button"
-              onClick={onOpenTasks}
-              className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer border-none"
+              onClick={() => {
+                if (onOpenTasks) onOpenTasks();
+                else if (onSelectTab) onSelectTab("tasks");
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+                activeTab === "tasks"
+                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40"
+              }`}
             >
-              <CheckSquare size={16} className="text-slate-400" />
+              <CheckSquare
+                size={16}
+                className={activeTab === "tasks" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
+              />
               <span>Tasks</span>
             </button>
 
             <button
               type="button"
-              onClick={onOpenSchedule}
-              className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer border-none"
+              onClick={() => {
+                if (onOpenSchedule) onOpenSchedule();
+                else if (onSelectTab) onSelectTab("schedule");
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+                activeTab === "schedule"
+                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40"
+              }`}
             >
-              <Calendar size={16} className="text-slate-400" />
+              <Calendar
+                size={16}
+                className={activeTab === "schedule" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
+              />
               <span>Schedule</span>
             </button>
           </div>
@@ -121,7 +141,11 @@ export default function WorkspaceLeftRail({
         <button
           type="button"
           onClick={() => onSelectTab && onSelectTab("home")}
-          className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer border-none"
+          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+            activeTab === "recent"
+              ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
+              : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40"
+          }`}
         >
           <Clock size={16} className="text-slate-400" />
           <span>Recent</span>
