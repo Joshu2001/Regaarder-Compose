@@ -73635,6 +73635,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onNotificationsClick={() => setNotificationsOpen(true)}
             notifications={notifications}
             currentUser={currentUser}
+            onOpenSettings={() => {
+              setSettingsTab('account');
+              setSettingsModalOpen(true);
+            }}
             onProfileClick={() => {
               if (currentUser) {
                 setComposeProfileMenuOpen(true);
