@@ -1452,12 +1452,12 @@ export default function GlobalWorkspaceSearchModal({
     }
   };
 
-  // Restrained Apple-inspired liquid-glass surface treatment: stronger translucency, subtle depth, crisp contrast
+  // Restrained Apple-inspired liquid-glass surface treatment: single optimized blur layer to prevent GPU overdraw lag
   const memoryCustomBg = typeof window !== 'undefined' ? localStorage.getItem('rc.memoryBackground') : null;
-  const backdropClasses = 'bg-black/25 dark:bg-black/55 backdrop-blur-[16px]';
-  const surfaceClasses = 'bg-white/[0.68] dark:bg-[#161618]/[0.72] backdrop-blur-[32px] saturate-[160%] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_28px_80px_rgba(0,0,0,0.65)] border border-white/80 dark:border-white/[0.09] ring-1 ring-black/[0.03] dark:ring-white/[0.04]';
-  const categoryBarClasses = 'bg-white/[0.30] dark:bg-black/[0.18] border-b border-black/[0.04] dark:border-white/[0.06] backdrop-blur-md';
-  const footerClasses = 'bg-white/[0.30] dark:bg-black/[0.20] border-t border-black/[0.04] dark:border-white/[0.06] backdrop-blur-md';
+  const backdropClasses = 'bg-black/35 dark:bg-black/65';
+  const surfaceClasses = 'bg-white/[0.80] dark:bg-[#161618]/[0.82] backdrop-blur-2xl saturate-[160%] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.18),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[0_28px_80px_rgba(0,0,0,0.75)] border border-white/80 dark:border-white/[0.09] ring-1 ring-black/[0.03] dark:ring-white/[0.04] will-change-transform';
+  const categoryBarClasses = 'bg-white/[0.55] dark:bg-black/[0.35] border-b border-black/[0.04] dark:border-white/[0.06]';
+  const footerClasses = 'bg-white/[0.55] dark:bg-black/[0.35] border-t border-black/[0.04] dark:border-white/[0.06]';
 
   return (
     <div
