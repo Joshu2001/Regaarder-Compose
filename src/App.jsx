@@ -46120,6 +46120,213 @@ Respond with a JSON array of slide objects matching the schema.`;
     </React.Fragment>
   );
 
+  const renderGlobalWorkspaceSearchModal = () => (
+    <GlobalWorkspaceSearchModal
+        isOpen={isMemorySearchOpen}
+        onClose={() => setIsMemorySearchOpen(false)}
+        initialQuery={orbInitialQuery}
+        initialFilter={orbInitialFilter}
+        isDarkMode={isDarkMode}
+        productMode={productMode}
+        onCallAi={callGemini}
+        aiConfig={aiProviderConfig}
+        selectedModel={composeSelectedModel}
+        detectedModels={composeDetectedModels}
+        liveWorkspaceContext={{
+          documents,
+          productMode,
+          activeDocId,
+          docTitle,
+          docBodyHtml,
+          docSubtitle,
+          sheetsTitle,
+          sheetGrids,
+          activeSheetId,
+          deckTitle,
+          deckSlidesData,
+          activeDeckSlideId,
+          tasks: initiatives,
+          rooms: [],
+          comments,
+          chatSessions,
+          chatMessages,
+          scheduleAgendaItems,
+          upcomingEvents,
+          whiteboards: [{ id: 'active-whiteboard', title: (productMode === 'whiteboard' && docTitle && !/^untitled\s+document(?:\s+\d+)?$/i.test(docTitle.trim())) ? docTitle.trim() : 'Untitled Whiteboard', content: whiteboardWidgets.map(widget => widget.title || widget.text || widget.body || '').filter(Boolean).join('\n') }],
+          whiteboardWidgets,
+          whiteboardShapes,
+          whiteboardTitle: (productMode === 'whiteboard' && docTitle && !/^untitled\s+document(?:\s+\d+)?$/i.test(docTitle.trim())) ? docTitle.trim() : 'Untitled Whiteboard',
+          roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
+          relayMessages: [],
+          people: whiteboardCollaborators || []
+        }}
+        onNavigateToEntity={(entity) => {
+          if (!entity) return;
+          const ws = (entity.workspace || '').toLowerCase();
+          if (ws === 'compose') {
+            if (productMode !== 'compose') setProductMode('compose');
+            const targetDocId = entity.metadata?.docId;
+            if (targetDocId) {
+              let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+              if (!targetDoc) {
+                let snapshot = entity.metadata?.docSnapshot;
+                if (!snapshot && typeof window !== 'undefined') {
+                  try {
+                    const rawLib = localStorage.getItem('regaarder_library_documents_v1');
+                    if (rawLib) {
+                      const libList = JSON.parse(rawLib);
+                      snapshot = libList?.find(d => String(d.id) === String(targetDocId));
+                    }
+                  } catch (_) {}
+                }
+                if (snapshot) {
+                  targetDoc = { ...snapshot, id: targetDocId };
+                  setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
+                }
+              }
+
+              if (targetDoc) {
+                setActiveDocId(targetDoc.id);
+                setDocTitle(targetDoc.title || entity.title || '');
+                setDocSubtitle(targetDoc.subtitle || '');
+                setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
+              }
+            }
+
+            // Evidence Traceability: Scroll to and pulse exact passage or snippet
+            const snippetToHighlight = entity.metadata?.highlightSnippet || entity.metadata?.passageText;
+            if (snippetToHighlight && typeof window !== 'undefined') {
+              setTimeout(() => {
+                try {
+                  const contentContainer = document.querySelector('.regaarder-editor, [contenteditable="true"], .document-editor-container') || document.body;
+                  const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT, null, false);
+                  let node;
+                  const searchPhrase = snippetToHighlight.slice(0, 60).toLowerCase().trim();
+                  while ((node = walker.nextNode())) {
+                    if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchPhrase)) {
+                      const parentEl = node.parentElement;
+                      if (parentEl) {
+                        parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        parentEl.classList.add('regaarder-evidence-highlight');
+                        setTimeout(() => {
+                          parentEl.classList.remove('regaarder-evidence-highlight');
+                        }, 3200);
+                        break;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Evidence scroll highlight error:', e);
+                }
+              }, 300);
+            }
+
+            showToast(`Navigated to Document: ${entity.title}`);
+          } else if (ws === 'sheets') {
+            if (productMode !== 'sheets') setProductMode('sheets');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.sheetId) {
+              setActiveSheetId(entity.metadata.sheetId);
+            }
+            showToast(`Navigated to Sheets: ${entity.title}`);
+          } else if (ws === 'deck') {
+            if (productMode !== 'deck') setProductMode('deck');
+            if (entity.metadata?.docId) {
+              switchDocument(entity.metadata.docId);
+            }
+            if (entity.metadata?.slideNumber) {
+              setActiveDeckSlideId(entity.metadata.slideNumber);
+            }
+            showToast(`Navigated to Deck: ${entity.title}`);
+          } else if (ws === 'room') {
+            if (productMode !== 'room') setProductMode('room');
+            showToast(`Navigated to Meeting: ${entity.title}`);
+          } else if (ws === 'notes') {
+            // Room note: switch to Room, then open Notes floating modal
+            if (productMode !== 'room') setProductMode('room');
+            setIsNotesModalOpen(true);
+            showToast(`Opened Room Note: ${entity.title}`);
+          } else if (ws === 'browser-history') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Browser History: ${entity.title}`);
+          } else if (ws === 'tasks') {
+            setRightSidebarOpen(true);
+            setActiveRightTab('tasks');
+            setTaskOwnerFilter('all');
+            const taskId = entity.metadata?.taskId || entity.id;
+            if (taskId && typeof window !== 'undefined') {
+              setTimeout(() => {
+                const el = document.getElementById(`task-item-${taskId}`);
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  el.classList.add('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
+                  setTimeout(() => {
+                    el.classList.remove('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
+                  }, 2500);
+                }
+              }, 150);
+            }
+            if (entity.metadata?.taskId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-task', { detail: { taskId: entity.metadata.taskId } }));
+            }
+            showToast(`Navigated to Task: ${entity.title}`);
+          } else if (ws === 'schedule') {
+            handleMiniSidebarClick('calendar');
+            showToast(`Navigated to Schedule: ${entity.title}`);
+          } else if (ws === 'whiteboard') {
+            if (productMode !== 'whiteboard') setProductMode('whiteboard');
+            setActiveRightTab('whiteboard');
+            setRightSidebarOpen(true);
+            showToast(`Navigated to Whiteboard: ${entity.title}`);
+          } else if (ws === 'comments') {
+            setActiveRightTab('comments');
+            setRightSidebarOpen(true);
+            showToast(`Opened comments: ${entity.title}`);
+          } else if (ws === 'chat') {
+            setActiveRightTab('assistant');
+            setRightSidebarOpen(true);
+            showToast(`Opened chat: ${entity.title}`);
+          } else if (ws === 'browser') {
+            if (productMode !== 'browser') setProductMode('browser');
+            showToast(`Navigated to Research: ${entity.title}`);
+          } else if (ws === 'relay' || ws === 'dm') {
+            if (productMode !== 'dm') setProductMode('dm');
+            if (entity.metadata?.contactId && typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
+            }
+            showToast(`Navigated to Relay: ${entity.title}`);
+          } else {
+            showToast(`Opened: ${entity.title}`);
+          }
+        }}
+        onQuickAction={(action) => {
+          if (!action) return;
+          const ws = action.targetWorkspace;
+          if (ws === 'compose') {
+            setProductMode('compose');
+            if (action.actionType === 'new_doc') {
+              handleCreateNewDocument();
+            }
+          } else if (ws === 'sheets') {
+            setProductMode('sheets');
+            showToast('Created new spreadsheet');
+          } else if (ws === 'deck') {
+            setProductMode('deck');
+            showToast('Created new presentation');
+          } else if (ws === 'room') {
+            createRoomExperience();
+          } else if (ws === 'browser') {
+            setProductMode('browser');
+            showToast('Opened Web Research');
+          } else if (ws === 'tasks') {
+            handleMiniSidebarClick('tasks');
+          }
+        }}
+      />
+  );
+
   if (productMode === 'dm') {
     return (
       <div ref={appShellRef} onPointerDown={handleAppShellPointerDown} onDoubleClick={handleAppShellDoubleClick} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -46226,6 +46433,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}
         {sharedRightPanels}
+        {renderGlobalWorkspaceSearchModal()}
       </div>
     );
   }
@@ -48445,6 +48653,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Global Workspace Switcher Popover in Sheets & Decks */}
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
+        {renderGlobalWorkspaceSearchModal()}
 
         {/* Global Library Dropdown Menu in Sheets & Decks */}
         {libraryDropdownOpen && renderLibraryDropdownContent()}
@@ -72078,210 +72287,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* Global Workspace Search Modal */}
-      <GlobalWorkspaceSearchModal
-        isOpen={isMemorySearchOpen}
-        onClose={() => setIsMemorySearchOpen(false)}
-        initialQuery={orbInitialQuery}
-        initialFilter={orbInitialFilter}
-        isDarkMode={isDarkMode}
-        productMode={productMode}
-        onCallAi={callGemini}
-        aiConfig={aiProviderConfig}
-        selectedModel={composeSelectedModel}
-        detectedModels={composeDetectedModels}
-        liveWorkspaceContext={{
-          documents,
-          productMode,
-          activeDocId,
-          docTitle,
-          docBodyHtml,
-          docSubtitle,
-          sheetsTitle,
-          sheetGrids,
-          activeSheetId,
-          deckTitle,
-          deckSlidesData,
-          activeDeckSlideId,
-          tasks: initiatives,
-          rooms: [],
-          comments,
-          chatSessions,
-          chatMessages,
-          scheduleAgendaItems,
-          upcomingEvents,
-          whiteboards: [{ id: 'active-whiteboard', title: (productMode === 'whiteboard' && docTitle && !/^untitled\s+document(?:\s+\d+)?$/i.test(docTitle.trim())) ? docTitle.trim() : 'Untitled Whiteboard', content: whiteboardWidgets.map(widget => widget.title || widget.text || widget.body || '').filter(Boolean).join('\n') }],
-          whiteboardWidgets,
-          whiteboardShapes,
-          whiteboardTitle: (productMode === 'whiteboard' && docTitle && !/^untitled\s+document(?:\s+\d+)?$/i.test(docTitle.trim())) ? docTitle.trim() : 'Untitled Whiteboard',
-          roomNotes: (() => { try { const raw = localStorage.getItem('regaarder_room_notes_v1'); return raw ? [JSON.parse(raw)] : []; } catch(_) { return []; } })(),
-          relayMessages: [],
-          people: whiteboardCollaborators || []
-        }}
-        onNavigateToEntity={(entity) => {
-          if (!entity) return;
-          const ws = (entity.workspace || '').toLowerCase();
-          if (ws === 'compose') {
-            if (productMode !== 'compose') setProductMode('compose');
-            const targetDocId = entity.metadata?.docId;
-            if (targetDocId) {
-              let targetDoc = documents.find(d => String(d.id) === String(targetDocId));
-              if (!targetDoc) {
-                let snapshot = entity.metadata?.docSnapshot;
-                if (!snapshot && typeof window !== 'undefined') {
-                  try {
-                    const rawLib = localStorage.getItem('regaarder_library_documents_v1');
-                    if (rawLib) {
-                      const libList = JSON.parse(rawLib);
-                      snapshot = libList?.find(d => String(d.id) === String(targetDocId));
-                    }
-                  } catch (_) {}
-                }
-                if (snapshot) {
-                  targetDoc = { ...snapshot, id: targetDocId };
-                  setDocuments(prev => [targetDoc, ...prev.filter(d => String(d.id) !== String(targetDocId))]);
-                }
-              }
-
-              if (targetDoc) {
-                setActiveDocId(targetDoc.id);
-                setDocTitle(targetDoc.title || entity.title || '');
-                setDocSubtitle(targetDoc.subtitle || '');
-                setDocBodyHtml(targetDoc.bodyHtml || targetDoc.content || '');
-              }
-            }
-
-            // Evidence Traceability: Scroll to and pulse exact passage or snippet
-            const snippetToHighlight = entity.metadata?.highlightSnippet || entity.metadata?.passageText;
-            if (snippetToHighlight && typeof window !== 'undefined') {
-              setTimeout(() => {
-                try {
-                  const contentContainer = document.querySelector('.regaarder-editor, [contenteditable="true"], .document-editor-container') || document.body;
-                  const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT, null, false);
-                  let node;
-                  const searchPhrase = snippetToHighlight.slice(0, 60).toLowerCase().trim();
-                  while ((node = walker.nextNode())) {
-                    if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchPhrase)) {
-                      const parentEl = node.parentElement;
-                      if (parentEl) {
-                        parentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        parentEl.classList.add('regaarder-evidence-highlight');
-                        setTimeout(() => {
-                          parentEl.classList.remove('regaarder-evidence-highlight');
-                        }, 3200);
-                        break;
-                      }
-                    }
-                  }
-                } catch (e) {
-                  console.warn('Evidence scroll highlight error:', e);
-                }
-              }, 300);
-            }
-
-            showToast(`Navigated to Document: ${entity.title}`);
-          } else if (ws === 'sheets') {
-            if (productMode !== 'sheets') setProductMode('sheets');
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            }
-            if (entity.metadata?.sheetId) {
-              setActiveSheetId(entity.metadata.sheetId);
-            }
-            showToast(`Navigated to Sheets: ${entity.title}`);
-          } else if (ws === 'deck') {
-            if (productMode !== 'deck') setProductMode('deck');
-            if (entity.metadata?.docId) {
-              switchDocument(entity.metadata.docId);
-            }
-            if (entity.metadata?.slideNumber) {
-              setActiveDeckSlideId(entity.metadata.slideNumber);
-            }
-            showToast(`Navigated to Deck: ${entity.title}`);
-          } else if (ws === 'room') {
-            if (productMode !== 'room') setProductMode('room');
-            showToast(`Navigated to Meeting: ${entity.title}`);
-          } else if (ws === 'notes') {
-            // Room note: switch to Room, then open Notes floating modal
-            if (productMode !== 'room') setProductMode('room');
-            setIsNotesModalOpen(true);
-            showToast(`Opened Room Note: ${entity.title}`);
-          } else if (ws === 'browser-history') {
-            if (productMode !== 'browser') setProductMode('browser');
-            showToast(`Navigated to Browser History: ${entity.title}`);
-          } else if (ws === 'tasks') {
-            setRightSidebarOpen(true);
-            setActiveRightTab('tasks');
-            setTaskOwnerFilter('all');
-            const taskId = entity.metadata?.taskId || entity.id;
-            if (taskId && typeof window !== 'undefined') {
-              setTimeout(() => {
-                const el = document.getElementById(`task-item-${taskId}`);
-                if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  el.classList.add('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
-                  setTimeout(() => {
-                    el.classList.remove('ring-2', 'ring-violet-500', 'bg-violet-50/50', 'dark:bg-violet-950/30');
-                  }, 2500);
-                }
-              }, 150);
-            }
-            if (entity.metadata?.taskId && typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('regaarder:select-task', { detail: { taskId: entity.metadata.taskId } }));
-            }
-            showToast(`Navigated to Task: ${entity.title}`);
-          } else if (ws === 'schedule') {
-            handleMiniSidebarClick('calendar');
-            showToast(`Navigated to Schedule: ${entity.title}`);
-          } else if (ws === 'whiteboard') {
-            if (productMode !== 'whiteboard') setProductMode('whiteboard');
-            setActiveRightTab('whiteboard');
-            setRightSidebarOpen(true);
-            showToast(`Navigated to Whiteboard: ${entity.title}`);
-          } else if (ws === 'comments') {
-            setActiveRightTab('comments');
-            setRightSidebarOpen(true);
-            showToast(`Opened comments: ${entity.title}`);
-          } else if (ws === 'chat') {
-            setActiveRightTab('assistant');
-            setRightSidebarOpen(true);
-            showToast(`Opened chat: ${entity.title}`);
-          } else if (ws === 'browser') {
-            if (productMode !== 'browser') setProductMode('browser');
-            showToast(`Navigated to Research: ${entity.title}`);
-          } else if (ws === 'relay' || ws === 'dm') {
-            if (productMode !== 'dm') setProductMode('dm');
-            if (entity.metadata?.contactId && typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('regaarder:select-dm-contact', { detail: { contactId: entity.metadata.contactId } }));
-            }
-            showToast(`Navigated to Relay: ${entity.title}`);
-          } else {
-            showToast(`Opened: ${entity.title}`);
-          }
-        }}
-        onQuickAction={(action) => {
-          if (!action) return;
-          const ws = action.targetWorkspace;
-          if (ws === 'compose') {
-            setProductMode('compose');
-            if (action.actionType === 'new_doc') {
-              handleCreateNewDocument();
-            }
-          } else if (ws === 'sheets') {
-            setProductMode('sheets');
-            showToast('Created new spreadsheet');
-          } else if (ws === 'deck') {
-            setProductMode('deck');
-            showToast('Created new presentation');
-          } else if (ws === 'room') {
-            createRoomExperience();
-          } else if (ws === 'browser') {
-            setProductMode('browser');
-            showToast('Opened Web Research');
-          } else if (ws === 'tasks') {
-            handleMiniSidebarClick('tasks');
-          }
-        }}
-      />
+      {renderGlobalWorkspaceSearchModal()}
 
       {/* ── Deck Slash Menu Overlay in Sheets/Deck view ── */}
       {productMode === 'deck' && deckSlashMenu.open && typeof document !== 'undefined' && createPortal(

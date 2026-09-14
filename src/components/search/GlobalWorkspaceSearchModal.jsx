@@ -2344,8 +2344,8 @@ export default function GlobalWorkspaceSearchModal({
                             }}
                             className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-none ${
                               isSelected
-                                ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
-                                : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05]'
+                                ? 'bg-black/[0.025] dark:bg-white/[0.05] outline outline-1 outline-black/[0.04] dark:outline-white/[0.05]'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.035]'
                             } ${isTask && isCompleted ? 'opacity-50' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -2490,8 +2490,8 @@ export default function GlobalWorkspaceSearchModal({
                             }}
                             className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-none ${
                               isSelected
-                                ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08]'
-                                : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05]'
+                                ? 'bg-black/[0.025] dark:bg-white/[0.05] outline outline-1 outline-black/[0.04] dark:outline-white/[0.05]'
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.035]'
                             } ${isCompleted ? 'opacity-50' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -2698,8 +2698,8 @@ export default function GlobalWorkspaceSearchModal({
                         }}
                         className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-none ${
                           isSelected
-                            ? 'bg-black/[0.04] dark:bg-white/[0.07] outline outline-1 outline-black/[0.06] dark:outline-white/[0.08] shadow-2xs'
-                            : 'hover:bg-black/[0.035] dark:hover:bg-white/[0.05] border border-black/[0.03] dark:border-white/[0.04]'
+                            ? 'bg-black/[0.025] dark:bg-white/[0.05] outline outline-1 outline-black/[0.04] dark:outline-white/[0.05]'
+                            : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.035] border border-black/[0.03] dark:border-white/[0.04]'
                         } ${isTask && isCompleted ? 'opacity-50' : ''}`}
                       >
                         {/* Header: Icon + Title + Location + Metadata */}
@@ -2826,18 +2826,18 @@ export default function GlobalWorkspaceSearchModal({
 
         {/* ── Recent Inquiries Strip (Apple-Style Ambient Memory with 3-Item Cap + Progressive Disclosure) ── */}
         {recentInquiries.length > 0 && (
-          <div className="px-5 py-2 border-t border-black/[0.04] dark:border-white/[0.05] bg-black/[0.015] dark:bg-black/[0.25] flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
-            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 font-mono shrink-0 flex items-center gap-1">
-              <History size={11} className="text-slate-400 dark:text-zinc-500" />
+          <div className="px-5 py-1.5 border-t border-black/[0.03] dark:border-white/[0.04] bg-black/[0.01] dark:bg-black/[0.15] flex items-center gap-2 overflow-x-auto thin-scrollbar select-none">
+            <span className="text-[9.5px] uppercase font-medium text-slate-400/80 dark:text-zinc-500/80 font-mono shrink-0 flex items-center gap-1">
+              <History size={10} className="text-slate-400/80 dark:text-zinc-500/80" />
               Recent:
             </span>
-            <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar flex-1">
+            <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar flex-1">
               {(isRecentExpanded ? recentInquiries : recentInquiries.slice(0, 3)).map((inq) => (
                 <button
                   key={inq.id}
                   type="button"
                   onClick={() => handleRestorePastInquiry(inq)}
-                  className="px-2.5 py-0.5 rounded-lg text-[11px] bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/60 transition-all shrink-0 cursor-pointer shadow-2xs font-medium"
+                  className="px-2 py-0.5 rounded-md text-[10px] bg-black/[0.02] hover:bg-black/[0.04] dark:bg-white/[0.03] dark:hover:bg-white/[0.06] text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 border border-black/[0.04] dark:border-white/[0.06] transition-colors shrink-0 cursor-pointer font-normal"
                   title={inq.query}
                 >
                   {inq.query.length > 28 ? `${inq.query.slice(0, 28)}…` : inq.query}
@@ -2848,7 +2848,7 @@ export default function GlobalWorkspaceSearchModal({
                 <button
                   type="button"
                   onClick={() => setIsRecentExpanded(prev => !prev)}
-                  className="px-2 py-0.5 rounded-lg text-[10.5px] font-semibold text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] border border-black/[0.05] dark:border-white/[0.08] transition-all shrink-0 cursor-pointer shadow-2xs"
+                  className="px-1.5 py-0.5 rounded-md text-[9.5px] font-normal text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.04] border border-transparent hover:border-black/[0.04] dark:hover:border-white/[0.05] transition-colors shrink-0 cursor-pointer"
                 >
                   {isRecentExpanded ? 'Show less' : `+${recentInquiries.length - 3} more`}
                 </button>
@@ -2857,39 +2857,39 @@ export default function GlobalWorkspaceSearchModal({
             <button
               type="button"
               onClick={handleClearInquiriesHistory}
-              className="text-[10px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 shrink-0 ml-auto transition-colors cursor-pointer"
+              className="text-[9.5px] text-slate-400/70 hover:text-rose-600 dark:hover:text-rose-400 shrink-0 ml-auto transition-colors cursor-pointer"
               title="Clear inquiry history"
             >
-              Clear History
+              Clear
             </button>
           </div>
         )}
 
         {/* ── Footer Cheatsheet Bar ── */}
-        <div className={`flex items-center justify-between px-5 py-2.5 text-[11px] text-slate-500 dark:text-zinc-400 shrink-0 ${footerClasses}`}>
+        <div className={`flex items-center justify-between px-5 py-2 text-[10.5px] text-slate-400 dark:text-zinc-500 shrink-0 ${footerClasses}`}>
           {aiLoading ? (
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-slate-600 dark:text-zinc-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-zinc-100 animate-ping inline-block" />
-                <span className="font-medium text-[11px]">Synthesizing intelligence…</span>
+              <span className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-800 dark:bg-zinc-200 animate-ping inline-block" />
+                <span className="font-medium text-[10.5px]">Synthesizing intelligence…</span>
               </span>
-              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500 ml-2">
-                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>
+              <span className="flex items-center gap-1 text-slate-400/80 dark:text-zinc-500/80 ml-2">
+                <kbd className="px-1 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.05] text-slate-400 dark:text-zinc-400 font-mono text-[9.5px]">Esc</kbd>
                 <span>{t('common.cancel') || 'Cancel'}</span>
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
-                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↑↓</kbd>
+            <div className="flex items-center gap-2.5">
+              <span className="flex items-center gap-1 text-slate-400/80 dark:text-zinc-500/80">
+                <kbd className="px-1 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.05] text-slate-400 dark:text-zinc-400 font-mono text-[9.5px]">↑↓</kbd>
                 <span>{t('search.navigate') || 'Navigate'}</span>
               </span>
-              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
-                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">↵</kbd>
+              <span className="flex items-center gap-1 text-slate-400/80 dark:text-zinc-500/80">
+                <kbd className="px-1 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.05] text-slate-400 dark:text-zinc-400 font-mono text-[9.5px]">↵</kbd>
                 <span>{mode === 'ai' || isQuestionQuery ? 'Ask Memory' : (t('search.open') || 'Open')}</span>
               </span>
-              <span className="flex items-center gap-1 text-slate-400 dark:text-zinc-500">
-                <kbd className="px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 font-mono text-[10px]">Esc</kbd>
+              <span className="flex items-center gap-1 text-slate-400/80 dark:text-zinc-500/80">
+                <kbd className="px-1 py-0.2 rounded bg-black/[0.03] dark:bg-white/[0.05] text-slate-400 dark:text-zinc-400 font-mono text-[9.5px]">Esc</kbd>
                 <span>{t('common.close') || 'Close'}</span>
               </span>
 
@@ -2897,26 +2897,26 @@ export default function GlobalWorkspaceSearchModal({
                 <button
                   type="button"
                   onClick={handleClearMemorySynthesis}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.03] hover:bg-rose-50 dark:bg-white/[0.04] dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 font-medium text-[10.5px] transition-colors cursor-pointer ml-1"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/[0.02] hover:bg-rose-50 dark:bg-white/[0.03] dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 font-normal text-[10px] transition-colors cursor-pointer ml-1"
                   title="Reset search and clear current synthesis"
                 >
-                  <RotateCcw size={10} />
+                  <RotateCcw size={9} />
                   <span>Reset Search</span>
                 </button>
               )}
             </div>
           )}
 
-          <div className="flex items-center gap-2 font-medium text-slate-400 dark:text-zinc-500 text-[10.5px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 inline-block" />
+          <div className="flex items-center gap-2 font-normal text-slate-400/80 dark:text-zinc-500/80 text-[10px]">
+            <span className="w-1.2 h-1.2 rounded-full bg-emerald-500/60 inline-block" />
             <span>{t('search.footerBrand') || 'Regaarder Context Search'}</span>
             <button
               type="button"
               onClick={() => setIsWorkspaceSettingsOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200/80 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-md border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] hover:bg-black/[0.05] dark:bg-white/[0.03] dark:hover:bg-white/[0.06] px-1.5 py-0.5 text-[9.5px] font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
               title="Open workspace settings"
             >
-              <Sliders size={10} strokeWidth={2} />
+              <Sliders size={9} strokeWidth={1.8} />
               <span>Settings</span>
             </button>
           </div>
