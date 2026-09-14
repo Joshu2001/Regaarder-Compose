@@ -122,7 +122,7 @@ export default function RegaarderComposeLanding({
           <main className="flex-1 overflow-y-auto px-10 py-8 custom-scrollbar bg-white dark:bg-[#151518] transition-all">
             <div className="max-w-[940px] mx-auto space-y-7">
               {/* Header Greeting */}
-              <div>
+              <div key={`greeting-header-${waveKey}`} className="animate-greeting-entrance">
                 <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 flex items-center gap-2 leading-snug">
                   <span>
                     {greetingSalutation}{userGreetingName ? `, ${userGreetingName}` : ""}

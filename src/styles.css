@@ -2860,3 +2860,20 @@ button.bg-violet-600,
   animation: waveHand 1.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1 both !important;
 }
 
+/* Apple-style Greeting Entrance (Micro slide-up + fade-in) */
+@keyframes greetingEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-greeting-entrance {
+  animation: greetingEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
