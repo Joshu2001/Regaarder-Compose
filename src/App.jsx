@@ -79,6 +79,7 @@ import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 import { initLocalSync, teardownLocalSync } from './services/localSyncService';
+import { readWorkspaceDocuments, writeWorkspaceDocuments, normalizeWorkspaceDocuments } from './services/workspaceDocumentStore';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 
@@ -10528,19 +10529,7 @@ const DEFAULT_DECK_SLIDES = [
       if (whiteboardInitialPeekTimerRef.current) {
         clearTimeout(whiteboardInitialPeekTimerRef.current);
       }
-      const peekStart = setTimeout(() => {
-        setIsWhiteboardInitialPeek(true);
-        whiteboardInitialPeekTimerRef.current = setTimeout(() => {
-          setIsWhiteboardInitialPeek(false);
-        }, 1600);
-      }, 250);
       prevWhiteboardModeRef.current = true;
-      return () => {
-        clearTimeout(peekStart);
-        if (whiteboardInitialPeekTimerRef.current) {
-          clearTimeout(whiteboardInitialPeekTimerRef.current);
-        }
-      };
     } else if (!isWb) {
       prevWhiteboardModeRef.current = false;
       setIsWhiteboardInitialPeek(false);
@@ -15154,7 +15143,20 @@ const DEFAULT_DECK_SLIDES = [
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
-  const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
+  const [sheetToolbarTab, setSheetToolbarTab] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rc.sheetsLastTab');
+      if (stored === null) {
+        // First time user ever opens sheets: land on 'Data'
+        localStorage.setItem('rc.sheetsLastTab', 'Data');
+        return 'Data';
+      }
+      // If user was previously on 'Data', land on 'Data'. Otherwise land on 'View'
+      return stored === 'Data' ? 'Data' : 'View';
+    } catch {
+      return 'Data';
+    }
+  });
   const [docToolbarTab, setDocToolbarTab] = useState('Write');
   const [deckToolbarTab, setDeckToolbarTab] = useState('Create');
   const [deckReviewActiveModal, setDeckReviewActiveModal] = useState(null);
@@ -18265,6 +18267,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [documents, setDocuments] = useState(() => {
     try {
       if (typeof window !== 'undefined') {
+        const canonical = readWorkspaceDocuments();
+        if (Array.isArray(canonical) && canonical.length > 0) return canonical;
         const saved = localStorage.getItem('regaarder_documents_v1');
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -18289,11 +18293,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   });
   const [activeDocId, setActiveDocId] = useState(null);
 
-  // Auto-persist documents to localStorage
+  // Auto-persist documents to canonical store and local filesystem
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && documents) {
-        localStorage.setItem('regaarder_documents_v1', JSON.stringify(documents));
+        writeWorkspaceDocuments(documents);
       }
     } catch (e) {
       console.warn('Failed to save documents to localStorage:', e);
@@ -34299,7 +34303,19 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
-    setSheetToolbarTab('Data');
+    try {
+      const storedLastTab = localStorage.getItem('rc.sheetsLastTab');
+      if (storedLastTab === null) {
+        localStorage.setItem('rc.sheetsLastTab', 'Data');
+        setSheetToolbarTab('Data');
+      } else if (storedLastTab === 'Data') {
+        setSheetToolbarTab('Data');
+      } else {
+        setSheetToolbarTab('View');
+      }
+    } catch {
+      setSheetToolbarTab('View');
+    }
     setHasImportedData(false);
     setSelectedDatasets([]);
     showToast('Sheets workspace ready');
@@ -35021,7 +35037,7 @@ Respond with valid JSON formatted like this:
     showToast('Converted PDF to editable document');
   };
 
-  const openLandingWorkspace = (destination) => {
+  const openLandingWorkspace = (destination, docIdOrPayload = null) => {
     setCreationPickerOpen(false);
     enterFullscreen();
     setIsDocumentImmersive(true);
@@ -35043,7 +35059,26 @@ Respond with valid JSON formatted like this:
       target = 'compose';
     }
 
-    // If opening a specific saved document from Landing Recent Work Strip:
+    if (!targetDocPayload && docIdOrPayload) {
+      if (typeof docIdOrPayload === 'object') {
+        targetDocPayload = docIdOrPayload.doc || docIdOrPayload;
+      } else {
+        // String or Number doc ID passed
+        const found = documents.find(d => String(d.id) === String(docIdOrPayload));
+        if (found) {
+          targetDocPayload = found;
+        } else {
+          try {
+            const raw = localStorage.getItem(`rc.savedDoc.${docIdOrPayload}`);
+            if (raw) {
+              targetDocPayload = { ...JSON.parse(raw), id: docIdOrPayload };
+            }
+          } catch {}
+        }
+      }
+    }
+
+    // If opening a specific saved document:
     if (targetDocPayload) {
       const docId = targetDocPayload.id;
       const rawData = targetDocPayload.data || targetDocPayload;
@@ -50004,13 +50039,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setIsSheetToolbarCollapsed(false);
                                 }
                                 if (tab === 'Data') {
-                                  setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
+                                  const nextTab = sheetToolbarTab === 'Data' ? null : 'Data';
+                                  setSheetToolbarTab(nextTab);
+                                  try { localStorage.setItem('rc.sheetsLastTab', nextTab || 'View'); } catch {}
                                 } else if (tab === 'Visualize') {
-                                  setSheetToolbarTab(sheetToolbarTab === 'Visualize' ? null : 'Visualize');
+                                  const nextTab = sheetToolbarTab === 'Visualize' ? null : 'Visualize';
+                                  setSheetToolbarTab(nextTab);
+                                  try { localStorage.setItem('rc.sheetsLastTab', nextTab || 'View'); } catch {}
                                   setShowTemplateChart(true);
                                   showToast('Visualize tools & live charts ready');
                                 } else {
-                                  setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
+                                  const nextTab = sheetToolbarTab === tab ? null : tab;
+                                  setSheetToolbarTab(nextTab);
+                                  try { localStorage.setItem('rc.sheetsLastTab', nextTab || 'View'); } catch {}
                                   showToast(`${tab} tools ready`);
                                 }
                               }}

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
+import { readWorkspaceDocuments, deleteWorkspaceDocument } from "../../services/workspaceDocumentStore";
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return "Sep 13, 2026 at 4:12 AM";
@@ -152,12 +153,71 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   const loadRecentDocs = useCallback(() => {
     try {
       const parsed = [];
+      const seenIds = new Set();
+
+      // 1. Read canonical workspace document store (single source of truth for all workspace documents)
+      try {
+        const canonicalDocs = readWorkspaceDocuments();
+        if (Array.isArray(canonicalDocs)) {
+          canonicalDocs.forEach((d) => {
+            if (!d || d.id == null) return;
+            const idStr = String(d.id);
+            seenIds.add(idStr);
+
+            let detectedProduct = (d.mode || "compose").toLowerCase();
+            if (detectedProduct === "sheets") detectedProduct = "sheet";
+            if (!["compose", "sheet", "deck", "whiteboard"].includes(detectedProduct)) {
+              if (d.sheetsTitle || d.sheetGrids) detectedProduct = "sheet";
+              else if (d.deckSlidesData || d.deckTitle) detectedProduct = "deck";
+              else if (d.whiteboardWidgets || d.whiteboardShapes || d.whiteboardStrokes) detectedProduct = "whiteboard";
+              else detectedProduct = "compose";
+            }
+
+            let typeLabel = "Document";
+            let loc = "Workspace / Documents";
+            if (detectedProduct === "sheet") {
+              typeLabel = "Sheet";
+              loc = "Workspace / Sheets";
+            } else if (detectedProduct === "deck") {
+              typeLabel = "Presentation";
+              loc = "Workspace / Decks";
+            } else if (detectedProduct === "whiteboard") {
+              typeLabel = "Whiteboard";
+              loc = "Workspace / Whiteboards";
+            }
+
+            let title = (d.title || d.docTitle || d.sheetsTitle || d.deckTitle || "").trim();
+            if (!title) {
+              title = detectedProduct === "sheet" ? "Untitled Sheet" : detectedProduct === "deck" ? "Untitled Presentation" : detectedProduct === "whiteboard" ? "Untitled Whiteboard" : "Untitled Document";
+            }
+
+            const savedAt = d.updatedAt ? new Date(d.updatedAt).getTime() : (d.createdAt ? new Date(d.createdAt).getTime() : Date.now());
+
+            parsed.push({
+              id: d.id,
+              key: `rc.savedDoc.${d.id}`,
+              title,
+              typeLabel,
+              product: detectedProduct,
+              savedAt: isNaN(savedAt) ? Date.now() : savedAt,
+              location: loc,
+              size: "42 KB",
+              doc: d
+            });
+          });
+        }
+      } catch {}
+
+      // 2. Supplement with rc.savedDoc.* from localStorage for documents saved via older paths
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith("rc.savedDoc.")) {
           try {
             const raw = localStorage.getItem(key);
             if (raw) {
+              const docIdStr = key.replace("rc.savedDoc.", "");
+              if (seenIds.has(docIdStr)) continue;
+
               const data = JSON.parse(raw);
               if (!isMeaningfulWork(data)) continue;
 
@@ -205,14 +265,15 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
               }
 
               parsed.push({
-                id: Number(key.replace("rc.savedDoc.", "")) || Math.random(),
+                id: Number(docIdStr) || docIdStr || Math.random(),
                 key,
                 title,
                 typeLabel,
                 product: detectedProduct,
                 savedAt: data.savedAt || Date.now(),
                 location: loc,
-                size: sizeLabel
+                size: sizeLabel,
+                doc: data
               });
             }
           } catch {}
@@ -229,12 +290,19 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   useEffect(() => {
     loadRecentDocs();
     const handleStorage = (e) => {
-      if (e.key && e.key.startsWith("rc.savedDoc.")) {
+      if (!e || !e.key || e.key.startsWith("rc.savedDoc.") || e.key === "regaarder_documents_v1") {
         loadRecentDocs();
       }
     };
+    const handleCustomUpdate = () => {
+      loadRecentDocs();
+    };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("workspace-storage-update", handleCustomUpdate);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("workspace-storage-update", handleCustomUpdate);
+    };
   }, [loadRecentDocs]);
 
   const toggleStar = (e, itemId) => {
@@ -336,6 +404,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
     e.stopPropagation();
     try {
       if (item.key) localStorage.removeItem(item.key);
+      if (item.id) deleteWorkspaceDocument(item.id);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -406,8 +475,9 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   const handleBulkDelete = () => {
     try {
       items.forEach((item) => {
-        if (selectedIds.has(item.id) && item.key) {
-          localStorage.removeItem(item.key);
+        if (selectedIds.has(item.id)) {
+          if (item.key) localStorage.removeItem(item.key);
+          if (item.id) deleteWorkspaceDocument(item.id);
         }
       });
       setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
