@@ -27,6 +27,14 @@ export default function RegaarderComposeLanding({
   const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'library' | 'recent'
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [waveKey, setWaveKey] = useState(0);
+
+  // Trigger the waving gesture whenever the user returns to the home view
+  React.useEffect(() => {
+    if (activeRailTab === "home") {
+      setWaveKey((prev) => prev + 1);
+    }
+  }, [activeRailTab]);
 
   // Dynamic user greeting based on actual authenticated user
   const userGreetingName = currentUser?.displayName
@@ -83,7 +91,8 @@ export default function RegaarderComposeLanding({
                     Good morning{userGreetingName ? `, ${userGreetingName}` : ""}
                   </span>
                   <span
-                    className="inline-block animate-wave-hand cursor-default select-none"
+                    key={`wave-${waveKey}`}
+                    className="inline-block animate-wave-hand cursor-default select-none text-[22px]"
                     role="img"
                     aria-label="waving hand"
                   >
