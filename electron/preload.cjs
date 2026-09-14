@@ -132,4 +132,48 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Shell Bridge
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   showItemInFolder: (fullPath) => ipcRenderer.invoke('shell:show-item-in-folder', fullPath),
+
+  // ─── Local Filesystem Sync ────────────────────────────────────────────────
+  // Exposes the localSync:* IPC channel family to the renderer.
+  // The renderer accesses these via window.electronAPI.localSync.*
+  localSync: {
+    /** Returns { root: string } — the resolved ~/Regaarder path. */
+    getRoot: () => ipcRenderer.invoke('localSync:get-root'),
+
+    /** Creates ~/Regaarder/{Documents,Sheets,Decks,Whiteboards}/ if absent. */
+    ensureDirs: () => ipcRenderer.invoke('localSync:ensure-dirs'),
+
+    /** Writes content to {root}/{subdir}/{filename}. Params: { subdir, filename, content }. */
+    writeFile: (params) => ipcRenderer.invoke('localSync:write-file', params),
+
+    /** Reads and returns { content } from a given { filePath }. */
+    readFile: ({ filePath }) => ipcRenderer.invoke('localSync:read-file', { filePath }),
+
+    /** Deletes { subdir, filename } from the sync root. Returns { success, error? }. */
+    deleteFile: ({ subdir, filename }) => ipcRenderer.invoke('localSync:delete-file', { subdir, filename }),
+
+    /** Lists entries in a subdirectory. Returns { entries: [{ name, mtime, size }] }. */
+    listDir: (subdir) => ipcRenderer.invoke('localSync:list-dir', { subdir }),
+
+    /** Activates the native fs.watch on the sync root. */
+    startWatch: () => ipcRenderer.invoke('localSync:start-watch'),
+
+    /** Tears down the native fs.watch. */
+    stopWatch: () => ipcRenderer.invoke('localSync:stop-watch'),
+
+    /**
+     * Subscribes to inbound file change events pushed from the main process.
+     * Returns a teardown function that removes the listener.
+     * @param {function({ eventType: string, filePath: string }): void} callback
+     */
+    onFileChanged: (callback) => {
+      const handler = (event, data) => callback(data);
+      ipcRenderer.on('localSync:file-changed', handler);
+      return () => ipcRenderer.removeListener('localSync:file-changed', handler);
+    },
+
+    /** Removes all localSync:file-changed listeners. */
+    offFileChanged: () => ipcRenderer.removeAllListeners('localSync:file-changed'),
+  },
 });
+

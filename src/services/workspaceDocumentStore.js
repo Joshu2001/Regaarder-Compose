@@ -1,3 +1,8 @@
+import {
+  writeDocumentToLocal,
+  deleteDocumentFromLocal,
+} from './localSyncService';
+
 export const WORKSPACE_DOCUMENTS_STORAGE_KEY = 'regaarder_documents_v1';
 export const WORKSPACE_DOCUMENT_MODES = ['compose', 'sheets', 'deck', 'whiteboard'];
 
@@ -117,8 +122,34 @@ export const writeWorkspaceDocuments = (documents) => {
     window.dispatchEvent(new CustomEvent('workspace-storage-update', {
       detail: { key: WORKSPACE_DOCUMENTS_STORAGE_KEY, documents: normalized },
     }));
+
+    // Mirror every document to the local filesystem via the Electron IPC bridge.
+    // This is fire-and-forget — failures are logged inside localSyncService and
+    // never interrupt the primary localStorage persistence path.
+    normalized.forEach((doc) => writeDocumentToLocal(doc));
   } catch (_) {
     // Storage may be unavailable in private or restricted browsing contexts.
   }
   return normalized;
+};
+
+/**
+ * Removes a single document from the workspace by id.
+ * Deletes from localStorage AND from the local filesystem.
+ *
+ * @param {string} id  Document id to remove.
+ * @returns {object[]}  The remaining normalized documents.
+ */
+export const deleteWorkspaceDocument = (id) => {
+  const current = readWorkspaceDocuments();
+  const target = current.find((doc) => doc.id === id);
+  const remaining = current.filter((doc) => doc.id !== id);
+
+  // Remove from the local filesystem before updating localStorage so that
+  // any in-flight watcher events are for a file that still exists.
+  if (target) {
+    deleteDocumentFromLocal(target);
+  }
+
+  return writeWorkspaceDocuments(remaining);
 };

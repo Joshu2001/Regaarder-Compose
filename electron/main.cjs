@@ -914,6 +914,178 @@ ipcMain.handle('shell:show-item-in-folder', async (event, fullPath) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Local Filesystem Sync — ~/Regaarder/ workspace mirror
+// Provides the main-process side of the localSync:* IPC channel family.
+// The renderer accesses these via window.electronAPI.localSync.* (preload bridge).
+//
+// Folder layout:
+//   ~/Regaarder/
+//     Documents/    — .rgdoc files (compose mode)
+//     Sheets/       — .rgsht files (sheets mode)
+//     Decks/        — .rgdck files (deck mode)
+//     Whiteboards/  — .rgwbd files (whiteboard mode)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LOCAL_SYNC_SUBDIRS = ['Documents', 'Sheets', 'Decks', 'Whiteboards'];
+
+/** Resolves the absolute sync root — ~/Regaarder. */
+function getLocalSyncRoot() {
+  return path.join(app.getPath('home'), 'Regaarder');
+}
+
+/** Active fs.watch watcher instance (singleton). */
+let localSyncWatcher = null;
+
+ipcMain.handle('localSync:get-root', async () => {
+  return { success: true, root: getLocalSyncRoot() };
+});
+
+ipcMain.handle('localSync:ensure-dirs', async () => {
+  try {
+    const root = getLocalSyncRoot();
+    fs.mkdirSync(root, { recursive: true });
+    LOCAL_SYNC_SUBDIRS.forEach((subdir) => {
+      fs.mkdirSync(path.join(root, subdir), { recursive: true });
+    });
+    return { success: true, root };
+  } catch (err) {
+    console.error('[LocalSync] ensure-dirs error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('localSync:write-file', async (event, { subdir, filename, content }) => {
+  try {
+    const root = getLocalSyncRoot();
+    const targetDir = path.join(root, subdir);
+    // Guard: only allow writes inside the known sync subdirectories.
+    if (!LOCAL_SYNC_SUBDIRS.includes(subdir)) {
+      return { success: false, error: `Unknown subdir: ${subdir}` };
+    }
+    // Ensure the target directory exists before writing.
+    fs.mkdirSync(targetDir, { recursive: true });
+    const filePath = path.join(targetDir, path.basename(filename));
+    fs.writeFileSync(filePath, content, 'utf8');
+    return { success: true, filePath };
+  } catch (err) {
+    console.error('[LocalSync] write-file error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('localSync:read-file', async (event, { filePath }) => {
+  try {
+    const root = getLocalSyncRoot();
+    // Resolve and validate that the path is inside the sync root (path traversal guard).
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(root)) {
+      return { success: false, error: 'Path is outside the Regaarder sync root' };
+    }
+    const content = fs.readFileSync(resolved, 'utf8');
+    return { success: true, content };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('localSync:delete-file', async (event, { subdir, filename }) => {
+  try {
+    if (!LOCAL_SYNC_SUBDIRS.includes(subdir)) {
+      return { success: false, error: `Unknown subdir: ${subdir}` };
+    }
+    const filePath = path.join(getLocalSyncRoot(), subdir, path.basename(filename));
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    return { success: true };
+  } catch (err) {
+    // Surface the error code so the renderer can differentiate ENOENT from real failures.
+    return { success: false, error: err.code || err.message };
+  }
+});
+
+ipcMain.handle('localSync:list-dir', async (event, { subdir }) => {
+  try {
+    if (!LOCAL_SYNC_SUBDIRS.includes(subdir)) {
+      return { success: false, error: `Unknown subdir: ${subdir}` };
+    }
+    const dirPath = path.join(getLocalSyncRoot(), subdir);
+    if (!fs.existsSync(dirPath)) return { success: true, entries: [] };
+
+    const entries = fs.readdirSync(dirPath)
+      .map((name) => {
+        try {
+          const stat = fs.statSync(path.join(dirPath, name));
+          return { name, mtime: stat.mtime.toISOString(), size: stat.size };
+        } catch (_) {
+          return null;
+        }
+      })
+      .filter(Boolean);
+    return { success: true, entries };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('localSync:start-watch', async () => {
+  // Idempotent — close any previously active watcher first.
+  if (localSyncWatcher) {
+    try { localSyncWatcher.close(); } catch (_) {}
+    localSyncWatcher = null;
+  }
+
+  try {
+    const root = getLocalSyncRoot();
+    // Ensure the root exists before attempting to watch it.
+    fs.mkdirSync(root, { recursive: true });
+
+    localSyncWatcher = fs.watch(root, { recursive: true }, (eventType, relFilename) => {
+      if (!relFilename) return;
+
+      // Only surface changes to files with Regaarder extensions.
+      const knownExts = ['.rgdoc', '.rgsht', '.rgdck', '.rgwbd'];
+      if (!knownExts.some((ext) => relFilename.endsWith(ext))) return;
+
+      const filePath = path.join(root, relFilename);
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        try {
+          mainWindow.webContents.send('localSync:file-changed', {
+            eventType,
+            filePath,
+            relPath: relFilename,
+          });
+        } catch (_) {}
+      }
+    });
+
+    localSyncWatcher.on('error', (err) => {
+      console.warn('[LocalSync] Watcher error:', err.message);
+    });
+
+    console.info(`[LocalSync] Watching: ${root}`);
+    return { success: true, root };
+  } catch (err) {
+    console.error('[LocalSync] start-watch error:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('localSync:stop-watch', async () => {
+  if (localSyncWatcher) {
+    try {
+      localSyncWatcher.close();
+      console.info('[LocalSync] Watcher stopped.');
+    } catch (err) {
+      console.warn('[LocalSync] stop-watch warning:', err.message);
+    }
+    localSyncWatcher = null;
+  }
+  return { success: true };
+});
+
 app.whenReady().then(() => {
   createWindow();
 

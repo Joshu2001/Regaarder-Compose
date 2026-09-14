@@ -662,21 +662,11 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
           <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
             {filterType !== "all" ? `No ${filterLabels[filterType] || "matching"} files yet` : "No recent documents yet"}
           </h3>
-          <p className="text-xs text-slate-400 dark:text-zinc-400 max-w-sm mt-1 mb-4 leading-relaxed">
+          <p className="text-xs text-slate-400 dark:text-zinc-400 max-w-sm mt-1 leading-relaxed">
             {filterType !== "all"
               ? "Try switching to 'All Types' or create a new file to get started."
               : "Files you create, edit, or import across Docs, Sheets, Decks, and Whiteboards will appear here."}
           </p>
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => onLaunch && onLaunch("compose")}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
-            >
-              <Plus size={13} strokeWidth={2.5} />
-              <span>New</span>
-            </button>
-          </div>
         </div>
       ) : null}
 

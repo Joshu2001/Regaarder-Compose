@@ -78,6 +78,7 @@ import MemoryDashboard from './MemoryDashboard';
 import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
+import { initLocalSync, teardownLocalSync } from './services/localSyncService';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 
@@ -6992,6 +6993,12 @@ function AppCore() {
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [swipeCurrentX, setSwipeCurrentX] = useState(null);
   const [isSwiping, setIsSwiping] = useState(false);
+  // Bootstrap local filesystem sync — mirrors workspace documents to ~/Regaarder/
+  useEffect(() => {
+    initLocalSync();
+    return () => { teardownLocalSync(); };
+  }, []);
+
   // Add Keyboard support for swiping when expanded
   useEffect(() => {
     const handleKeyDown = (e) => {
