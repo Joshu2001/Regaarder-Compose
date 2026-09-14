@@ -38,6 +38,13 @@ import RegaarderBrandIcon from './components/RegaarderBrandIcon';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 import { isMeaningfulWork } from './components/LandingRecentWorkStrip';
 import {
+  isFirebaseConfigured,
+  loginWithEmail,
+  registerWithEmail,
+  loginWithGoogle,
+  loginWithApple,
+} from './services/firebaseAuthService';
+import {
   ComposeIcon,
   DeckIcon,
   SheetIcon,
@@ -48158,33 +48165,30 @@ const renderRoomTopHeader = () => (
     setAuthLoading(true);
 
     try {
-      const endpoint = authTab === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = authTab === 'login' 
-        ? { email: authEmail, password: authPassword }
-        : { email: authEmail, password: authPassword, name: authName };
+      let token = null;
+      let user = null;
 
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Authentication failed.');
+      if (isFirebaseConfigured()) {
+        const result = authTab === 'login'
+          ? await loginWithEmail(authEmail, authPassword)
+          : await registerWithEmail(authEmail, authPassword, authName);
+        token = result.token;
+        user = result.user;
+      } else {
+        throw new Error('Sign-in is not configured. Please contact support.');
       }
 
-      localStorage.setItem('rc.token', data.token);
-      localStorage.setItem('rc.user', JSON.stringify(data.user));
-      setCurrentUser(data.user);
+      localStorage.setItem('rc.token', token);
+      localStorage.setItem('rc.user', JSON.stringify(user));
+      setCurrentUser(user);
       setAuthModalOpen(false);
-      showToast(authTab === 'login' ? `Welcome back, ${data.user.name}! ✓` : `Account created! Welcome, ${data.user.name}! ✓`);
-      
+      showToast(authTab === 'login' ? `Welcome back, ${user.name}! ✓` : `Account created! Welcome, ${user.name}! ✓`);
+
       setAuthEmail('');
       setAuthPassword('');
       setAuthName('');
     } catch (err) {
-      setAuthError(err.message);
+      setAuthError(err.message || 'Authentication failed.');
     } finally {
       setAuthLoading(false);
     }
@@ -48194,56 +48198,36 @@ const renderRoomTopHeader = () => (
     setAuthError('');
     setAuthLoading(true);
 
-    // If user provided an email in the input, use it; otherwise use a deterministic unique local device profile
-    let deviceId = localStorage.getItem('rc.device_id');
-    if (!deviceId) {
-      const arr = new Uint8Array(8);
-      if (typeof window !== 'undefined' && window.crypto) {
-        window.crypto.getRandomValues(arr);
-      } else {
-        for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
-      }
-      deviceId = 'dev_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-      localStorage.setItem('rc.device_id', deviceId);
-    }
-
-    const targetEmail = authEmail && authEmail.includes('@')
-      ? authEmail.trim().toLowerCase()
-      : `social_${provider}_${deviceId}@regaarder.local`;
-
-    const targetName = authName ? authName.trim() : (provider === 'google' ? 'Google User' : 'Apple User');
-
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider,
-          email: targetEmail,
-          name: targetName
-        })
-      });
+      let token = null;
+      let user = null;
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Social sign-in failed.');
+      if (isFirebaseConfigured()) {
+        const result = provider === 'google'
+          ? await loginWithGoogle()
+          : await loginWithApple();
+        token = result.token;
+        user = result.user;
+      } else {
+        throw new Error('Social sign-in is not configured. Please contact support.');
       }
 
-      localStorage.setItem('rc.token', data.token);
-      localStorage.setItem('rc.user', JSON.stringify(data.user));
-      setCurrentUser(data.user);
+      localStorage.setItem('rc.token', token);
+      localStorage.setItem('rc.user', JSON.stringify(user));
+      setCurrentUser(user);
       setAuthModalOpen(false);
       showToast(`Connected with ${provider === 'google' ? 'Google' : 'Apple'} ✓`);
-      
+
       setAuthEmail('');
       setAuthPassword('');
       setAuthName('');
     } catch (err) {
-      setAuthError(err.message);
+      setAuthError(err.message || 'Social sign-in failed.');
     } finally {
       setAuthLoading(false);
     }
   };
+
 
   const renderAuthModal = () => {
     if (!authModalOpen) return null;
@@ -48863,7 +48847,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setRenamingDocId(doc.id);
                       setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
                     }}
-                    className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    className={`group relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                       isActive 
                         ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                         : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
@@ -48900,7 +48884,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                         setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                       }}
-                      className="p-0.5 rounded hover:bg-gray-100 shrink-0"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-gray-100 shrink-0"
                       title="Document actions"
                     >
                       <MoreHorizontal size={12} />
@@ -48910,7 +48894,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         event.stopPropagation();
                         requestCloseDocument(doc.id);
                       }}
-                      className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
                       title="Close document"
                     >
                       <X size={12} />
