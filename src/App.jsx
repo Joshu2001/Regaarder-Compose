@@ -35184,7 +35184,7 @@ Respond with valid JSON formatted like this:
       return;
     }
 
-    if (target === 'dm') {
+    if (target === 'dm' || target === 'relay') {
       setActivePrimaryNav('home');
       createDmExperience();
       return;
@@ -35192,6 +35192,14 @@ Respond with valid JSON formatted like this:
 
     if (target === 'room') {
       createRoomLandingExperience();
+      return;
+    }
+
+    if (target === 'browser') {
+      setActivePrimaryNav('home');
+      setProductMode('browser');
+      setRoomPanelMode('docked');
+      showToast('Switched to Research');
       return;
     }
 
