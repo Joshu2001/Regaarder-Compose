@@ -7,6 +7,8 @@ import WorkspaceRecentFiles from "./components/home/WorkspaceRecentFiles";
 import WorkspaceRightPanel from "./components/home/WorkspaceRightPanel";
 import TasksWorkspace from "./components/tasks/TasksWorkspace";
 import IntentSchedulerInspector from "./components/schedule/IntentSchedulerInspector";
+import { useEntitlements } from "./context/EntitlementContext";
+import RegaarderPaywallModal from "./components/paywall/RegaarderPaywallModal";
 
 export default function RegaarderComposeLanding({
   onLaunch,
@@ -28,6 +30,7 @@ export default function RegaarderComposeLanding({
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [waveKey, setWaveKey] = useState(0);
+  const { isPaywallOpen, closePaywall } = useEntitlements();
 
   // Trigger the waving gesture whenever the user returns to the home view
   React.useEffect(() => {
@@ -209,6 +212,12 @@ export default function RegaarderComposeLanding({
           scrollbar-width: none;
         }
       `}} />
+
+      {/* Regaarder Paywall Modal */}
+      <RegaarderPaywallModal
+        isOpen={isPaywallOpen}
+        onClose={closePaywall}
+      />
     </div>
   );
 }

@@ -31,6 +31,8 @@ import LandingRecentWorkStrip, { isMeaningfulWork } from "./components/LandingRe
 import WorkspaceEcosystemVisualizer from "./components/ecosystem/WorkspaceEcosystemVisualizer";
 import AuthPopoverDropdown from "./components/auth/AuthPopoverDropdown";
 import { logoutFirebase } from "./services/firebaseAuthService";
+import { useEntitlements } from "./context/EntitlementContext";
+import RegaarderPaywallModal from "./components/paywall/RegaarderPaywallModal";
 
 const DEFAULT_PRODUCTS = [
   { id: "compose", title: "Docs", icon: ComposeIcon },
@@ -116,6 +118,7 @@ export default function RegaarderComposeLanding({
   });
 
   const hasUnread = notifications.some(n => n.unread);
+  const { currentPlan, planDetails, isPaywallOpen, openPaywall, closePaywall } = useEntitlements();
 
   return (
     <div
@@ -136,17 +139,10 @@ export default function RegaarderComposeLanding({
         <button
           type="button"
           data-workspace-switcher="true"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const rect = e.currentTarget.getBoundingClientRect();
-            onOpenWorkspaceSwitcher?.(rect);
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2.5 h-8 px-2.5 rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 cursor-pointer group outline-none focus:outline-none"
-          title="Switch Workspace"
+          onClick={() => onOpenWorkspaceSwitcher?.()}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all cursor-pointer group outline-none focus:outline-none"
         >
-          <RegaarderBrandIcon size={18} className="text-slate-900 dark:text-white group-hover:opacity-75 transition-opacity" />
+          <span className="w-2 h-2 rounded-full bg-violet-600 animate-pulse" />
           <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-[-0.01em]">
             Regaarder Workspace
           </span>
@@ -159,6 +155,17 @@ export default function RegaarderComposeLanding({
 
         {/* Right: Global Controls */}
         <div className="flex items-center gap-1.5 relative">
+
+          {/* Upgrade / Pricing Button with signature RegaarderAiIcon */}
+          <button
+            type="button"
+            onClick={() => openPaywall({ source: 'header_nav' })}
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-slate-50/70 dark:bg-white/[0.04] text-slate-700 dark:text-zinc-200 text-xs font-semibold transition-all duration-150 cursor-pointer outline-none focus:outline-none"
+            title="View Plans & Intelligence Upgrade"
+          >
+            <RegaarderAiIcon size={12} strokeWidth={2.0} className="text-violet-600 dark:text-violet-400" />
+            <span>{currentPlan === 'free' ? 'Upgrade' : planDetails?.name || 'Plans'}</span>
+          </button>
 
           {/* Search */}
           <button
@@ -279,7 +286,25 @@ export default function RegaarderComposeLanding({
                         <span className="text-slate-400">Account status</span>
                         <span className="font-medium text-emerald-600 dark:text-emerald-400">Active</span>
                       </div>
+                      <div className="flex justify-between py-0.5 items-center">
+                        <span className="text-slate-400">Plan</span>
+                        <span className="font-semibold text-slate-800 dark:text-zinc-200">
+                          {planDetails?.name || 'Free'}
+                        </span>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        openPaywall({ source: 'profile_menu' });
+                      }}
+                      className="w-full py-1.5 px-3 rounded-lg text-xs font-semibold text-white bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-black dark:hover:bg-zinc-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <RegaarderAiIcon size={12} strokeWidth={2.0} />
+                      <span>{currentPlan === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}</span>
+                    </button>
 
                     <button
                       type="button"
@@ -706,6 +731,12 @@ export default function RegaarderComposeLanding({
           animation-delay: 4s;
         }
       `}} />
+
+      {/* ── Regaarder Paywall & Tier Architecture Modal ── */}
+      <RegaarderPaywallModal
+        isOpen={isPaywallOpen}
+        onClose={closePaywall}
+      />
     </div>
   );
 }

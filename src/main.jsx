@@ -6,6 +6,7 @@ import './styles.css'
 import Analytics from './Analytics.jsx'
 import SplashScreen from './components/SplashScreen.jsx'
 import FloatingPipWidgetWindow from './components/room/FloatingPipWidgetWindow.jsx'
+import { EntitlementProvider } from './context/EntitlementContext';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -57,7 +58,11 @@ class ErrorBoundary extends React.Component {
 
 function RootApp() {
   return (
-    <I18nProvider><App /></I18nProvider>
+    <I18nProvider>
+      <EntitlementProvider>
+        <App />
+      </EntitlementProvider>
+    </I18nProvider>
   );
 }
 
@@ -88,4 +93,4 @@ if (hash.includes('floating-pip-widget')) {
     </ErrorBoundary>
   );
 }
- // 1788849770000
+ // 1789478999000
