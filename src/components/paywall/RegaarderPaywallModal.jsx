@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { X, Check, ArrowRight, ShieldCheck, Zap, Sparkles, Building2, ChevronRight } from 'lucide-react';
+import { X, Check, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useEntitlements } from '../../context/EntitlementContext';
 import { PLANS, PLAN_IDS } from '../../services/entitlements';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 
 export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.PRO_ANNUAL }) => {
   const { currentPlan, changePlan } = useEntitlements();
-  
+
   // Customer-facing navigation selector: 'annual', 'monthly', 'founder', 'team'
   const [selectedCycle, setSelectedCycle] = useState('annual');
   // Plan candidate for founder selection (3-Year vs Lifetime)
@@ -49,7 +49,7 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
       aria-modal="true"
       className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 select-none animate-in fade-in duration-200"
     >
-      {/* Frosted backdrop scrim - very light blur + dimming preserving clear workspace recognition */}
+      {/* Frosted backdrop scrim - restrained blur preserving workspace recognition */}
       <div
         className="absolute inset-0 bg-slate-900/25 dark:bg-black/50 backdrop-blur-[2.5px] transition-opacity"
         onClick={onClose}
@@ -60,30 +60,31 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
         className="relative w-full max-w-[920px] bg-gradient-to-b from-[#fbfaff] via-[#fdfdff] to-[#f8f7fc] dark:from-[#171622] dark:via-[#14141d] dark:to-[#111116] border border-violet-100/70 dark:border-violet-900/30 rounded-2xl shadow-[0_20px_60px_-15px_rgba(79,70,229,0.12)] overflow-hidden flex flex-col z-10 transition-all font-sans"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Luminescent top canopy - provides the "WPS-like" breathing presence with Apple-grade restraint */}
-        <div 
-          className="absolute top-0 inset-x-0 h-44 bg-gradient-to-b from-violet-600/[0.08] via-indigo-500/[0.04] to-transparent pointer-events-none" 
-          aria-hidden="true" 
+        {/* Ambient atmospheric lighting - soft subtle Regaarder indigo/violet glow in upper region */}
+        <div
+          className="absolute -top-24 right-10 w-[460px] h-[220px] bg-gradient-to-br from-violet-500/12 via-indigo-500/8 to-transparent rounded-full blur-3xl pointer-events-none"
+          aria-hidden="true"
         />
-        {/* Radial atmosphere glows */}
-        <div 
-          className="absolute -top-20 left-10 w-[420px] h-[200px] bg-gradient-to-br from-violet-600/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" 
-          aria-hidden="true" 
+        <div
+          className="absolute top-1/2 -left-20 w-[300px] h-[200px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"
+          aria-hidden="true"
         />
-        <div 
-          className="absolute top-0 right-10 w-[380px] h-[180px] bg-gradient-to-bl from-indigo-500/10 via-purple-500/8 to-transparent rounded-full blur-3xl pointer-events-none" 
-          aria-hidden="true" 
+        {/* Delicate white/iridescent light shimmer on the upper right */}
+        <div
+          className="absolute -top-10 -right-10 w-[360px] h-[220px] pointer-events-none opacity-70 dark:opacity-30"
+          style={{
+            background:
+              'radial-gradient(circle at 80% 25%, rgba(220, 240, 255, 0.7) 0%, rgba(235, 225, 255, 0.5) 45%, rgba(255, 255, 255, 0.3) 70%, transparent 100%)',
+            filter: 'blur(28px)',
+          }}
+          aria-hidden="true"
         />
 
-        {/* Header Ribbon & Close - restored generous executive breathing room with luminous AI emblem */}
-        <div className="relative pt-6 pb-4 px-8 border-b border-violet-100/70 dark:border-white/[0.05] flex items-center justify-between">
+        {/* Header Ribbon & Close - restrained executive breathing room */}
+        <div className="relative pt-6 pb-4 px-8 border-b border-violet-100/60 dark:border-white/[0.05] flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="relative">
-              {/* Subtle iridescent glow behind AI icon */}
-              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-violet-500/30 to-indigo-500/20 blur-[6px] pointer-events-none" />
-              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-violet-950 via-slate-900 to-indigo-950 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 flex items-center justify-center shadow-sm border border-violet-400/20 dark:border-white/40">
-                <RegaarderAiIcon size={18} strokeWidth={2.0} />
-              </div>
+            <div className="w-[34px] h-[34px] rounded-full bg-[#271f49] dark:bg-white text-white dark:text-[#271f49] flex items-center justify-center shadow-xs shrink-0">
+              <RegaarderAiIcon size={17.5} strokeWidth={2.1} />
             </div>
             <div>
               <h2 className="text-[16.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
@@ -105,16 +106,16 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
           </button>
         </div>
 
-        {/* Cycle Switcher - Cleaned up without badge clutter */}
-        <div className="px-8 pt-4.5 pb-2 flex items-center justify-between flex-wrap gap-2.5">
-          <div className="inline-flex p-0.5 rounded-lg border border-slate-200/80 dark:border-white/10 bg-slate-100/70 dark:bg-zinc-900/70 shadow-2xs">
+        {/* Cycle Switcher - Refined native segmented pill architecture */}
+        <div className="px-8 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2.5">
+          <div className="inline-flex p-0.5 rounded-lg border border-slate-200/50 dark:border-white/10 bg-slate-100/50 dark:bg-zinc-900/50">
             <button
               type="button"
               onClick={() => handleSelectCycle('annual')}
-              className={`px-3 py-1.2 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedCycle === 'annual'
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/90 dark:border-white/15 shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-white/15 shadow-xs'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
               <span>Annual</span>
@@ -126,10 +127,10 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
             <button
               type="button"
               onClick={() => handleSelectCycle('monthly')}
-              className={`px-3 py-1.2 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-[11.5px] font-medium transition-all cursor-pointer ${
                 selectedCycle === 'monthly'
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/90 dark:border-white/15 shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-white/15 shadow-xs font-semibold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
               Monthly
@@ -138,10 +139,10 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
             <button
               type="button"
               onClick={() => handleSelectCycle('founder')}
-              className={`px-3 py-1.2 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-[11.5px] font-medium transition-all cursor-pointer ${
                 selectedCycle === 'founder'
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/90 dark:border-white/15 shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-white/15 shadow-xs font-semibold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
               Founder
@@ -150,10 +151,10 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
             <button
               type="button"
               onClick={() => handleSelectCycle('team')}
-              className={`px-3 py-1.2 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-[11.5px] font-medium transition-all cursor-pointer ${
                 selectedCycle === 'team'
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/90 dark:border-white/15 shadow-xs'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-white/15 shadow-xs font-semibold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
               Team & Org
@@ -170,11 +171,11 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
 
         {/* Cards Stage: Comparative side-by-side layout with balanced padding */}
         <div className="px-8 pt-3 pb-5 grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-          {/* Left Card: Free Plan - visually quieter, calm & dignified */}
-          <div className="flex flex-col justify-between p-5 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/50 dark:bg-zinc-900/25">
+          {/* Left Card: Free Plan - visually quieter, calm & dignified with softer border */}
+          <div className="flex flex-col justify-between p-5 rounded-xl border border-slate-200/40 dark:border-white/[0.04] bg-white/40 dark:bg-zinc-900/20">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                   Everyday Productivity
                 </span>
               </div>
@@ -194,7 +195,7 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                 Unlimited docs, sheets, decks, and whiteboards with zero feature walls.
               </p>
 
-              <div className="my-3 border-t border-slate-200/50 dark:border-white/[0.05]" />
+              <div className="my-3 border-t border-slate-200/40 dark:border-white/[0.04]" />
 
               <ul className="space-y-2 text-[11.5px] text-slate-500 dark:text-zinc-400">
                 <li className="flex items-start gap-2">
@@ -226,18 +227,18 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
               onClick={() => handleUpgrade(PLAN_IDS.FREE)}
               className={`mt-4 w-full py-2 px-3.5 rounded-lg text-[11.5px] font-medium transition-all border outline-none ${
                 currentPlan === PLAN_IDS.FREE
-                  ? 'border-slate-200/60 dark:border-white/10 text-slate-400 dark:text-zinc-600 cursor-default bg-transparent'
-                  : 'border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer'
+                  ? 'border-slate-200/50 dark:border-white/10 text-slate-400 dark:text-zinc-600 cursor-default bg-transparent'
+                  : 'border-slate-300/80 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer'
               }`}
             >
               {currentPlan === PLAN_IDS.FREE ? 'Current Plan' : 'Downgrade to Free'}
             </button>
           </div>
 
-          {/* Right Card: Dynamic Premium Option - elevated with subtle suite atmosphere and luminous border */}
-          <div className="relative flex flex-col justify-between p-5 rounded-xl border-2 border-violet-600/85 dark:border-violet-400 bg-gradient-to-b from-[#fcfbff] via-[#f9f7fe] to-[#f4f1fc] dark:from-[#1b1928] dark:via-[#171524] dark:to-[#13111f] shadow-[0_12px_36px_-6px_rgba(124,58,237,0.18)] dark:shadow-[0_12px_36px_-6px_rgba(139,92,246,0.22)] overflow-hidden">
-            {/* Ambient radial glow in Pro card corner */}
-            <div className="absolute top-0 right-0 w-52 h-52 bg-gradient-to-br from-violet-500/15 via-indigo-500/10 to-transparent rounded-full blur-2xl pointer-events-none" aria-hidden="true" />
+          {/* Right Card: Dynamic Premium Option - refined purple atmosphere, 35% reduced glow */}
+          <div className="relative flex flex-col justify-between p-5 rounded-xl border-2 border-violet-600/85 dark:border-violet-400/80 bg-gradient-to-b from-white via-[#fcfbff] to-[#f7f5fd] dark:from-[#1b1926] dark:via-[#171622] dark:to-[#13121d] shadow-[0_6px_20px_-4px_rgba(124,58,237,0.09)] dark:shadow-[0_6px_20px_-4px_rgba(139,92,246,0.12)] overflow-hidden">
+            {/* Soft inner glow on Pro card - subtly tuned down */}
+            <div className="absolute top-0 right-0 w-36 h-36 bg-violet-500/[0.07] dark:bg-violet-400/[0.07] rounded-full blur-2xl pointer-events-none" aria-hidden="true" />
 
             {/* Top Badge - only Recommended for annual */}
             <div className="relative flex items-center justify-between mb-1">
@@ -246,7 +247,7 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                 <span>Intelligent Workspace</span>
               </div>
               {selectedCycle === 'annual' && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-600 text-white dark:bg-emerald-500 shadow-xs">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-600 text-white dark:bg-emerald-500 shadow-2xs">
                   Recommended
                 </span>
               )}
@@ -309,7 +310,7 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                       onClick={() => setSelectedFounderTier(PLAN_IDS.PRO_THREE_YEAR)}
                       className={`flex-1 p-1.5 rounded-lg border text-left cursor-pointer transition-all ${
                         selectedFounderTier === PLAN_IDS.PRO_THREE_YEAR
-                          ? 'border-violet-600 dark:border-violet-400 bg-white/90 dark:bg-violet-950/60 shadow-xs'
+                          ? 'border-violet-600 dark:border-violet-400 bg-violet-50/70 dark:bg-violet-950/40 shadow-2xs'
                           : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
                       }`}
                     >
@@ -322,7 +323,7 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                       onClick={() => setSelectedFounderTier(PLAN_IDS.FOUNDER_LIFETIME)}
                       className={`flex-1 p-1.5 rounded-lg border text-left cursor-pointer transition-all ${
                         selectedFounderTier === PLAN_IDS.FOUNDER_LIFETIME
-                          ? 'border-violet-600 dark:border-violet-400 bg-white/90 dark:bg-violet-950/60 shadow-xs'
+                          ? 'border-violet-600 dark:border-violet-400 bg-violet-50/70 dark:bg-violet-950/40 shadow-2xs'
                           : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
                       }`}
                     >
@@ -361,9 +362,9 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                 </div>
               )}
 
-              <div className="my-3 border-t border-violet-200/50 dark:border-white/[0.06]" />
+              <div className="my-3 border-t border-violet-100/70 dark:border-white/[0.06]" />
 
-              {/* 4-5 Strongest Outcome-based benefits with refined suite identity cues */}
+              {/* Concise, outcome-based benefits with subtle semantic accents */}
               <ul className="space-y-2 text-[11.5px] text-slate-700 dark:text-zinc-200">
                 <li className="flex items-start gap-2">
                   <div className="mt-0.5 text-violet-600 dark:text-violet-400 shrink-0">
@@ -374,23 +375,19 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check size={13.5} className="text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+                  <Check size={13.5} className="text-emerald-500 shrink-0 mt-0.5" strokeWidth={2.2} />
                   <span>Memora contextual memory that understands your work</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check size={13.5} className="text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                  <Check size={13.5} className="text-emerald-500 shrink-0 mt-0.5" strokeWidth={2.2} />
                   <span>Autonomous research and browser intelligence</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <div className="flex items-center gap-1 shrink-0 mt-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" title="Docs" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Sheets" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Deck" />
-                  </div>
+                  <Check size={13.5} className="text-emerald-500 shrink-0 mt-0.5" strokeWidth={2.2} />
                   <span>Cross-workspace reasoning across Docs, Sheets, and Deck</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check size={13.5} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <Check size={13.5} className="text-emerald-500 shrink-0 mt-0.5" strokeWidth={2.2} />
                   <span>
                     {selectedCycle === 'team'
                       ? 'Shared team workspaces and role governance'
@@ -406,7 +403,7 @@ export const RegaarderPaywallModal = ({ isOpen, onClose, defaultPlan = PLAN_IDS.
                 type="button"
                 disabled={isProcessing}
                 onClick={() => handleUpgrade(currentTargetPlanId)}
-                className="w-full py-2.5 px-4 rounded-lg text-[12px] font-semibold bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 hover:from-violet-500 hover:via-indigo-500 hover:to-violet-600 active:from-violet-700 active:to-indigo-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(124,58,237,0.35)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.45)] outline-none focus:outline-none"
+                className="w-full py-2.5 px-4 rounded-lg text-[12px] font-semibold bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 hover:from-violet-500 hover:via-indigo-500 hover:to-violet-600 active:from-violet-700 active:to-indigo-700 text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(124,58,237,0.3)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.4)] outline-none focus:outline-none"
               >
                 {isProcessing ? (
                   <span>Processing...</span>
