@@ -661,6 +661,35 @@ export const LaserPointerIcon = ({ size = 16, className = "", strokeWidth = 1.5,
   </svg>
 );
 
+/**
+ * Customer Support & Feedback Headset Icon
+ * Direct 1:1 vector recreation of the distinctive support headset icon from WPS (Image 2):
+ * Curved overhead headband, left and right rounded earcups, and microphone boom curving downward toward mouth.
+ */
+export const FeedbackIcon = ({ size = 16, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Headset Headband */}
+    <path d="M4 14v-3a8 8 0 0 1 16 0v3" />
+    {/* Left Earcup */}
+    <rect x="2" y="12.5" width="4" height="6.5" rx="2" />
+    {/* Right Earcup */}
+    <rect x="18" y="12.5" width="4" height="6.5" rx="2" />
+    {/* Microphone Boom wrapping downward */}
+    <path d="M20 17.5v1.5a3 3 0 0 1-3 3h-2" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   History: RegaarderHistoryIcon,
   SaveCloud: RegaarderSaveCloudIcon,
@@ -727,6 +756,10 @@ export const RegaarderProductIconMap = {
   users: PeopleIcon,
   laser: LaserPointerIcon,
   'laser-pointer': LaserPointerIcon,
+  feedback: FeedbackIcon,
+  Feedback: FeedbackIcon,
+  support: FeedbackIcon,
+  Support: FeedbackIcon,
 };
 
 /**

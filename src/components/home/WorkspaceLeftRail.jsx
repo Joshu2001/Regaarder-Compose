@@ -3,10 +3,10 @@ import {
   Folder,
   CheckSquare,
   Calendar,
-  Clock,
   Settings
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
+import { FeedbackIcon } from "../RegaarderProductIcons";
 
 const WORKSPACE_APPS = [
   { id: "compose", label: "Docs", type: "compose" },
@@ -24,7 +24,8 @@ export default function WorkspaceLeftRail({
   onLaunch,
   onOpenTasks,
   onOpenSchedule,
-  onOpenSettings
+  onOpenSettings,
+  onOpenFeedback
 }) {
   return (
     <aside className="w-56 shrink-0 border-r border-slate-200/50 dark:border-white/[0.06] bg-[#F8F9FA] dark:bg-zinc-900/40 px-3.5 py-5 flex flex-col justify-between select-none h-[calc(100vh-54px)]">
@@ -40,7 +41,7 @@ export default function WorkspaceLeftRail({
                 : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-white/[0.04]"
             }`}
           >
-            {/* Solid Filled Purple Home Icon matching Image 1 */}
+            {/* Solid Filled Purple Home Icon matching design */}
             <svg
               width="17"
               height="17"
@@ -140,15 +141,21 @@ export default function WorkspaceLeftRail({
       <div className="pt-4 space-y-1 border-t border-slate-200/50 dark:border-white/[0.04]">
         <button
           type="button"
-          onClick={() => onSelectTab && onSelectTab("home")}
+          onClick={() => {
+            if (onOpenFeedback) {
+              onOpenFeedback();
+            } else if (onSelectTab) {
+              onSelectTab("feedback");
+            }
+          }}
           className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
-            activeTab === "recent"
+            activeTab === "feedback"
               ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
               : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40"
           }`}
         >
-          <Clock size={16} className="text-slate-400" />
-          <span>Recent</span>
+          <FeedbackIcon size={16} className={activeTab === "feedback" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"} />
+          <span>Feedback</span>
         </button>
 
         <button

@@ -9,6 +9,8 @@ import TasksWorkspace from "./components/tasks/TasksWorkspace";
 import IntentSchedulerInspector from "./components/schedule/IntentSchedulerInspector";
 import { useEntitlements } from "./context/EntitlementContext";
 import RegaarderPaywallModal from "./components/paywall/RegaarderPaywallModal";
+import RegaarderFeedbackModal from "./components/feedback/RegaarderFeedbackModal";
+import { FeedbackIcon } from "./components/RegaarderProductIcons";
 
 export default function RegaarderComposeLanding({
   onLaunch,
@@ -26,9 +28,10 @@ export default function RegaarderComposeLanding({
   isDocumentImmersive,
   onToggleImmersive
 }) {
-  const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'library' | 'recent'
+  const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'library' | 'feedback'
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [waveKey, setWaveKey] = useState(0);
   const { isPaywallOpen, closePaywall } = useEntitlements();
 
@@ -108,6 +111,13 @@ export default function RegaarderComposeLanding({
           onOpenTasks={() => setActiveRailTab("tasks")}
           onOpenSchedule={() => setActiveRailTab("schedule")}
           onOpenSettings={onOpenSettings || onProfileClick}
+          onOpenFeedback={() => {
+            if (onOpenFeedback) {
+              onOpenFeedback();
+            } else {
+              setShowFeedbackModal(true);
+            }
+          }}
         />
 
         {/* Center Stage: Dynamic View based on Active Destination */}
@@ -217,6 +227,14 @@ export default function RegaarderComposeLanding({
       <RegaarderPaywallModal
         isOpen={isPaywallOpen}
         onClose={closePaywall}
+      />
+
+      {/* Regaarder Actionable Feedback & Diagnostics Modal */}
+      <RegaarderFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        activeApp="Workspace"
+        activeFile={null}
       />
     </div>
   );
