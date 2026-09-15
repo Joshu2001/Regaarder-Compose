@@ -77,6 +77,8 @@ import GlobalWorkspaceSearchModal from './components/search/GlobalWorkspaceSearc
 import OrbSpotlightModal from './components/orb/OrbSpotlightModal';
 import MemoryDashboard from './MemoryDashboard';
 import ExecutiveDirectMessages from './components/chat/ExecutiveDirectMessages';
+import RelayAuthGate from './components/relay/RelayAuthGate';
+import { getCurrentRelayUser, subscribeToRelayAuth } from './services/relayAccountService';
 import { hasOrbMention, buildOrbWorkspacePromptContext } from './services/orbWorkspaceRAG';
 import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './services/localWhisperService';
 import { initLocalSync, teardownLocalSync, parseRegaarderFile, syncAllDocumentsToDisk } from './services/localSyncService';
@@ -8529,6 +8531,8 @@ function AppCore() {
   const [dmThreadDescriptionDraft, setDmThreadDescriptionDraft] = useState('');
   const [dmMemberView, setDmMemberView] = useState('member');
   const [dmJoinedAt, setDmJoinedAt] = useState(null);
+  // Relay Account Session — eagerly hydrated from localStorage; null = not signed in
+  const [relayCurrentUser, setRelayCurrentUser] = useState(() => getCurrentRelayUser());
   const [dmActiveThreadId, setDmActiveThreadId] = useState('thread-beta-launch');
   const [dmThreads, setDmThreads] = useState([
     { id: 'thread-beta-launch', title: 'Beta Launch', members: 12, unread: 1, pinned: true, description: '', lastMessageAt: Date.now() - 1000 * 60 * 8 },
@@ -46450,95 +46454,109 @@ Respond with a JSON array of slide objects matching the schema.`;
           </div>
         )}
         <main className="flex-1 min-w-0 flex bg-white/80 overflow-hidden">
-          <ExecutiveDirectMessages
-            isDarkMode={isDarkMode}
-            threads={dmThreads}
-            activeThreadId={activeDmThread?.id}
-            onSelectThread={(id) => setDmActiveThreadId(id)}
-            onOpenRoom={() => createRoomLandingExperience()}
-            onOpenMemory={() => setIsMemorySearchOpen(true)}
-            onLogDecisionToMemory={(text, source) => {
-              addWorkspaceMemory(text, `Chat (${source})`, ['Team Chat', 'Decision']);
-              showToast('Decision logged to Workspace Memory Hub');
-            }}
-            onNavigateWorkspace={(ref) => {
-              if (!ref) return;
-              if (ref.type === 'landing') {
-                setProductMode('landing');
-                setFocusedModule('landing');
-              } else if (ref.type === 'sheets') {
-                createSheetsExperience();
-                if (ref.sheetId) setActiveSheetId(ref.sheetId);
-              } else if (ref.type === 'deck') {
-                createDeckExperience();
-                if (ref.slideId) setActiveDeckSlideId(ref.slideId);
-              } else {
-                // Compose Docs mode
-                setCreationPickerOpen(false);
+          {!relayCurrentUser ? (
+            <RelayAuthGate
+              onAuthenticated={(user) => {
+                setRelayCurrentUser(user);
+                showToast(`Welcome to Relay, ${user.displayName}!`);
+              }}
+              onDismiss={() => {
                 setProductMode('compose');
                 setFocusedModule('compose');
-                setDockedModules([]);
-                setRoomPanelMode('docked');
-                setLeftSidebarOpen(false);
-                setActiveDocView('document');
+              }}
+            />
+          ) : (
+            <ExecutiveDirectMessages
+              isDarkMode={isDarkMode}
+              currentUser={relayCurrentUser}
+              threads={dmThreads}
+              activeThreadId={activeDmThread?.id}
+              onSelectThread={(id) => setDmActiveThreadId(id)}
+              onOpenRoom={() => createRoomLandingExperience()}
+              onOpenMemory={() => setIsMemorySearchOpen(true)}
+              onLogDecisionToMemory={(text, source) => {
+                addWorkspaceMemory(text, `Chat (${source})`, ['Team Chat', 'Decision']);
+                showToast('Decision logged to Workspace Memory Hub');
+              }}
+              onNavigateWorkspace={(ref) => {
+                if (!ref) return;
+                if (ref.type === 'landing') {
+                  setProductMode('landing');
+                  setFocusedModule('landing');
+                } else if (ref.type === 'sheets') {
+                  createSheetsExperience();
+                  if (ref.sheetId) setActiveSheetId(ref.sheetId);
+                } else if (ref.type === 'deck') {
+                  createDeckExperience();
+                  if (ref.slideId) setActiveDeckSlideId(ref.slideId);
+                } else {
+                  // Compose Docs mode
+                  setCreationPickerOpen(false);
+                  setProductMode('compose');
+                  setFocusedModule('compose');
+                  setDockedModules([]);
+                  setRoomPanelMode('docked');
+                  setLeftSidebarOpen(false);
+                  setActiveDocView('document');
 
-                const targetDocId = ref.docId || ref.id;
-                if (targetDocId) {
-                  const targetDoc = documents.find(d => String(d.id) === String(targetDocId));
-                  if (targetDoc) {
-                    setActiveDocId(targetDoc.id);
-                    setDocTitle(targetDoc.title || '');
-                    setDocBodyHtml(targetDoc.bodyHtml || '');
-                  }
-                }
-
-                // Deep-link to line and scroll into view with executive outline highlight only for citation clicks
-                if (ref.isCitationClick || (ref.line && ref.line > 1) || (ref.textSnippet && !ref.isDirectOpen)) {
-                  setTimeout(() => {
-                    const editorEl = blankBodyRef.current || document.querySelector('[contenteditable="true"]');
-                    if (!editorEl) return;
-                    let targetEl = null;
-
-                    if (ref.line && ref.line > 0) {
-                      const blocks = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, tr, div'))
-                        .filter(el => el.textContent && el.textContent.trim().length > 0);
-                      if (blocks.length > 0) {
-                        const targetIdx = Math.min(ref.line - 1, blocks.length - 1);
-                        targetEl = blocks[targetIdx];
-                      }
+                  const targetDocId = ref.docId || ref.id;
+                  if (targetDocId) {
+                    const targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+                    if (targetDoc) {
+                      setActiveDocId(targetDoc.id);
+                      setDocTitle(targetDoc.title || '');
+                      setDocBodyHtml(targetDoc.bodyHtml || '');
                     }
+                  }
 
-                    if (!targetEl && ref.textSnippet) {
-                      const cleanSnippet = ref.textSnippet.slice(0, 30).toLowerCase();
-                      const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, null, false);
-                      let n;
-                      while ((n = walker.nextNode())) {
-                        if (n.textContent && n.textContent.toLowerCase().includes(cleanSnippet)) {
-                          targetEl = n.parentElement;
-                          break;
+                  // Deep-link to line and scroll into view with executive outline highlight only for citation clicks
+                  if (ref.isCitationClick || (ref.line && ref.line > 1) || (ref.textSnippet && !ref.isDirectOpen)) {
+                    setTimeout(() => {
+                      const editorEl = blankBodyRef.current || document.querySelector('[contenteditable="true"]');
+                      if (!editorEl) return;
+                      let targetEl = null;
+
+                      if (ref.line && ref.line > 0) {
+                        const blocks = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, tr, div'))
+                          .filter(el => el.textContent && el.textContent.trim().length > 0);
+                        if (blocks.length > 0) {
+                          const targetIdx = Math.min(ref.line - 1, blocks.length - 1);
+                          targetEl = blocks[targetIdx];
                         }
                       }
-                    }
 
-                    if (targetEl) {
-                      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      targetEl.classList.add('regaarder-line-outline-target');
-                      setTimeout(() => {
-                        targetEl.classList.remove('regaarder-line-outline-target');
-                      }, 2600);
-                    }
-                  }, 250);
+                      if (!targetEl && ref.textSnippet) {
+                        const cleanSnippet = ref.textSnippet.slice(0, 30).toLowerCase();
+                        const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, null, false);
+                        let n;
+                        while ((n = walker.nextNode())) {
+                          if (n.textContent && n.textContent.toLowerCase().includes(cleanSnippet)) {
+                            targetEl = n.parentElement;
+                            break;
+                          }
+                        }
+                      }
+
+                      if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetEl.classList.add('regaarder-line-outline-target');
+                        setTimeout(() => {
+                          targetEl.classList.remove('regaarder-line-outline-target');
+                        }, 2600);
+                      }
+                    }, 250);
+                  }
                 }
-              }
-            }}
-            onToggleFullscreen={toggleDocumentImmersiveMode}
-            onCallAi={callGemini}
-            detectedModelsFromApp={composeDetectedModels}
-            onOpenWorkspaceSwitcher={(rect) => {
-              setWorkspaceSwitcherAnchorRect(rect);
-              setWorkspaceSwitcherOpen(true);
-            }}
-          />
+              }}
+              onToggleFullscreen={toggleDocumentImmersiveMode}
+              onCallAi={callGemini}
+              detectedModelsFromApp={composeDetectedModels}
+              onOpenWorkspaceSwitcher={(rect) => {
+                setWorkspaceSwitcherAnchorRect(rect);
+                setWorkspaceSwitcherOpen(true);
+              }}
+            />
+          )}
         </main>
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}

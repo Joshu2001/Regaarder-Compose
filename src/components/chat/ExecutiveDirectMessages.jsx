@@ -18,6 +18,7 @@ import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, 
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
 import { processRelayAgentMessage, extractClarificationFromText } from '../../services/relayAgentService';
+import { searchUsers, getRegistryUsers, upsertUserInRegistry } from '../../services/relayAccountService';
 import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
 
 // Quick Translation Languages for Selection Writing Tools
@@ -285,6 +286,7 @@ const renderFormattedMessageText = (text, highlightQuery = '') => {
 
 export default function ExecutiveDirectMessages({
   isDarkMode = false,
+  currentUser = null,
   threads = [],
   activeThreadId,
   onSelectThread,
@@ -490,6 +492,7 @@ export default function ExecutiveDirectMessages({
   const [profileName, setProfileName] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
   const [profileBio, setProfileBio] = useState('');
+  const [directorySearchQuery, setDirectorySearchQuery] = useState('');
 
   // Group Form Fields
   const [groupName, setGroupName] = useState('');
@@ -2471,6 +2474,21 @@ ${systemPrompt}`
         actions: []
       };
 
+      // Register newly created profile in the searchable directory so others can find them
+      try {
+        upsertUserInRegistry({
+          id: newId,
+          displayName: displayName,
+          handle: `@${cleanHandle || cleanName.toLowerCase().replace(/\s+/g, '')}`,
+          email: '',
+          bio: profileBio.trim(),
+          avatarColor: '#7C6FCD',
+          createdAt: Date.now()
+        });
+      } catch (err) {
+        console.warn('[Relay] Failed to upsert user in registry:', err);
+      }
+
       setConversations(prev => [newContact, ...prev]);
       setThreadMessages(prev => ({
         ...prev,
@@ -2545,6 +2563,54 @@ ${systemPrompt}`
       setPersonaName('');
       setPersonaInstructions('');
     }
+  };
+
+  // Connect / Start DM with a user found in the searchable directory
+  const handleConnectDirectoryUser = (user) => {
+    if (!user) return;
+    const existing = conversations.find(c => c.id === user.id || (user.handle && c.username === user.handle));
+    if (existing) {
+      setActiveContactId(existing.id);
+      setIsNewChatModalOpen(false);
+      setDirectorySearchQuery('');
+      return;
+    }
+
+    const initials = (user.displayName || user.name || 'User')
+      .split(' ')
+      .filter(Boolean)
+      .map(part => part[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || 'U';
+
+    const connectedContact = {
+      id: user.id || `user-${Date.now()}`,
+      name: user.displayName || user.name || 'User',
+      username: user.handle || `@${(user.displayName || user.name || 'user').toLowerCase().replace(/\s+/g, '')}`,
+      bio: user.bio || '',
+      avatar: initials,
+      avatarColor: user.avatarColor || '#7C6FCD',
+      isGroup: false,
+      isAi: false,
+      lastMsg: 'Direct message initiated.',
+      time: 'Just now',
+      unread: 0,
+      category: 'all',
+      online: true,
+      fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • CONTACT • VERIFIED`,
+      topics: [user.displayName || user.name || 'User'],
+      actions: []
+    };
+
+    setConversations(prev => [connectedContact, ...prev]);
+    setThreadMessages(prev => ({
+      ...prev,
+      [connectedContact.id]: []
+    }));
+    setActiveContactId(connectedContact.id);
+    setIsNewChatModalOpen(false);
+    setDirectorySearchQuery('');
   };
 
   const handleImportPersonaMd = (e) => {
@@ -5181,43 +5247,112 @@ ${systemPrompt}`
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-3.5 text-xs">
-              {/* ── 1. INSTAGRAM-STYLE USER PROFILE (Name, @Username, Bio) ── */}
+              {/* ── 1. INSTAGRAM-STYLE USER DIRECTORY SEARCH & PROFILE ── */}
               {modalMode === 'profile' && (
-                <div className="space-y-2.5">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600">Full Name</label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="e.g. Joshua David"
-                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                      <AtSign size={12} /> Unique Username ID
+                <div className="space-y-3">
+                  {/* Search Existing Users in Directory */}
+                  <div className="space-y-1.5 pb-2 border-b border-black/[0.06] dark:border-white/[0.06]">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300 flex items-center justify-between">
+                      <span>Find Someone in Directory</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Search by name, @handle, or email</span>
                     </label>
-                    <input
-                      type="text"
-                      value={profileUsername}
-                      onChange={(e) => setProfileUsername(e.target.value)}
-                      placeholder="@joshua or @arch_lead"
-                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none font-mono"
-                    />
+                    <div className="relative">
+                      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={directorySearchQuery}
+                        onChange={(e) => setDirectorySearchQuery(e.target.value)}
+                        placeholder="Search co-founders, team, or contacts..."
+                        className="w-full pl-8 pr-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Directory Search Results Dropdown / List */}
+                    {directorySearchQuery.trim().length > 0 && (
+                      <div className="max-h-36 overflow-y-auto rounded-xl bg-slate-50 dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] p-1 space-y-1">
+                        {(() => {
+                          const results = searchUsers(directorySearchQuery);
+                          if (results.length === 0) {
+                            return (
+                              <div className="p-2 text-center text-[11px] text-slate-400">
+                                No registered users found for "{directorySearchQuery}"
+                              </div>
+                            );
+                          }
+                          return results.map(u => (
+                            <div
+                              key={u.id}
+                              onClick={() => handleConnectDirectoryUser(u)}
+                              className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-zinc-700/60 cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+                                  style={{ backgroundColor: u.avatarColor || '#7C6FCD' }}
+                                >
+                                  {(u.displayName || 'U').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">{u.displayName}</p>
+                                  <p className="text-[10.5px] text-slate-400 font-mono truncate">{u.handle || u.email}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConnectDirectoryUser(u);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-[10.5px] text-white font-semibold cursor-pointer shrink-0 ml-2"
+                              >
+                                Message
+                              </button>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600">Role / Status Bio</label>
-                    <input
-                      type="text"
-                      value={profileBio}
-                      onChange={(e) => setProfileBio(e.target.value)}
-                      placeholder="e.g. Lead System Architect • Core Workspace"
-                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                    />
+                  {/* Or Create / Add Contact Manually */}
+                  <div className="space-y-2.5">
+                    <p className="text-[10.5px] font-semibold text-slate-400 dark:text-zinc-400 uppercase tracking-wider">
+                      Or create local contact
+                    </p>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300">Full Name</label>
+                      <input
+                        type="text"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                        placeholder="e.g. Joshua David"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300 flex items-center gap-1">
+                        <AtSign size={12} /> Unique Username ID
+                      </label>
+                      <input
+                        type="text"
+                        value={profileUsername}
+                        onChange={(e) => setProfileUsername(e.target.value)}
+                        placeholder="@joshua or @arch_lead"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300">Role / Status Bio</label>
+                      <input
+                        type="text"
+                        value={profileBio}
+                        onChange={(e) => setProfileBio(e.target.value)}
+                        placeholder="e.g. Lead System Architect • Core Workspace"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
