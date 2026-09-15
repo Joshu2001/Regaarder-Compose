@@ -53568,8 +53568,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     )}
                                     {isBottomRightCorner && (
                                       <div 
-                                        className="absolute -bottom-[3px] -right-[3px] w-[6px] h-[6px] rounded-[1px] z-30 cursor-crosshair ring-1 ring-white dark:ring-zinc-900 shadow-xs hover:scale-125 transition-transform select-none" 
-                                        style={{ backgroundColor: selectionBorderColor }}
+                                        className="absolute -bottom-[2.5px] -right-[2.5px] w-[5px] h-[5px] rounded-[1px] z-30 cursor-crosshair ring-1 ring-white dark:ring-zinc-900 hover:scale-125 transition-transform select-none" 
+                                        style={{ backgroundColor: selectionBorderColor, opacity: 0.85 }}
                                       />
                                     )}
                                   </div>
