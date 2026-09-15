@@ -619,6 +619,7 @@
       "visualize": "Visualize",
       "view": "View"
     },
+    "insert": "Insert",
     "addRow": "+ Row",
     "removeRow": "- Row",
     "addCol": "+ Col",

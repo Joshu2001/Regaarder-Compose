@@ -276,6 +276,14 @@ $ws.AppActivate('${targetName}')
     }
   });
 
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Renderer Console] [Level ${level}] ${message} (${sourceId}:${line})`);
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Renderer Failed Load] ${errorCode}: ${errorDescription} (${validatedURL})`);
+  });
+
   mainWindow.webContents.on('did-finish-load', () => {
     if (pendingFileToOpen) {
       const file = pendingFileToOpen;
@@ -318,16 +326,16 @@ $ws.AppActivate('${targetName}')
 
   const portsToTry = [
     process.env.VITE_DEV_SERVER_URL,
-    'http://localhost:4173',
-    'http://127.0.0.1:4173',
-    'http://[::1]:4173',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://[::1]:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
     'http://127.0.0.1:5176',
-    'http://localhost:5176'
+    'http://localhost:5176',
+    'http://127.0.0.1:5173',
+    'http://localhost:5173',
+    'http://127.0.0.1:5174',
+    'http://localhost:5174',
+    'http://127.0.0.1:5175',
+    'http://localhost:5175',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173'
   ].filter(Boolean);
 
   const loadApp = (portIndex = 0, attemptsLeft = 25) => {

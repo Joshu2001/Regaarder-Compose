@@ -1,6 +1,8 @@
 import React from "react";
 import {
+  ComposeIcon,
   DeckIcon,
+  SheetIcon,
   RoomIcon,
   WhiteboardIcon,
   RelayIcon,
@@ -9,16 +11,65 @@ import {
 
 /**
  * App Native SVG Icon:
- * - Docs: Purple (#8B5CF6) rounded tile with solid white document glyph
- * - Sheets: Emerald (#10B981) rounded tile with solid white spreadsheet glyph
- * - Deck: Orange (#F97316) rounded tile with bold/filled white presentation glyph
- * - Whiteboard: Blue (#3B82F6) rounded tile with bold/filled white whiteboard glyph
- * - Room: Violet (#7C3AED) rounded tile with bold/filled white camera glyph
- * - Relay: Clean blue/indigo icon WITHOUT background box
- * - Browser: Clean vibrant blue icon WITHOUT background box
+ * Supports variant="tile" (default for Home/Recents: filled color tile badge)
+ * and variant="minimal" (for document tabs: clean ~14-16px outline glyph without background box).
  */
-export function AppNativeSvgIcon({ type, size = 24, className = "" }) {
+export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "tile" }) {
   const norm = (type || "").toLowerCase();
+
+  // Minimal outline mode: clean native stroke with muted brand accent, no background box.
+  // strokeWidth aligns to the icon library's native 1.6 grammar weight so icons read
+  // as quiet secondary metadata rather than competing with the document title.
+  if (variant === "minimal") {
+    if (norm.includes("sheet")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-emerald-500 dark:text-emerald-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 ${className}`}>
+          <SheetIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    if (norm.includes("deck") || norm.includes("present") || norm.includes("slide")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-orange-500 dark:text-orange-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 ${className}`}>
+          <DeckIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    if (norm.includes("whiteboard") || norm.includes("canvas")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-blue-500 dark:text-blue-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${className}`}>
+          <WhiteboardIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    if (norm.includes("room") || norm.includes("meet")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-violet-500 dark:text-violet-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${className}`}>
+          <RoomIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    if (norm.includes("browser")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-sky-500 dark:text-sky-300 group-hover:text-sky-600 dark:group-hover:text-sky-400 ${className}`}>
+          <BrowserIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    if (norm.includes("relay")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-indigo-500 dark:text-indigo-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 ${className}`}>
+          <RelayIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    // Default Docs/Compose: neutral — the tab background/border carries the active state signal.
+    return (
+      <div className={`flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 ${className}`}>
+        <ComposeIcon size={size} strokeWidth={1.6} />
+      </div>
+    );
+  }
 
   // 1. Browser: Clean vibrant blue (#2563EB), NO container
   if (norm.includes("browser")) {

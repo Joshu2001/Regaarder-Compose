@@ -67,6 +67,7 @@ import {
   LaserPointerIcon,
   FileTypeIcon
 } from './components/RegaarderProductIcons';
+import { AppNativeSvgIcon } from './components/home/AppNativeSvgIcon';
 import RoomLandingPage from './RoomLandingPage';
 import BrowserWorkspace from './components/browser/BrowserWorkspace';
 import PopoverWindowContainer from './components/browser/PopoverWindowContainer';
@@ -6875,7 +6876,7 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 
   return (
     <AppleToolbarDropdown
-      label={t('sheets.gridlines') ? `${t('sheets.gridlines')} ·` : "Gridlines ·"}
+      label={t('sheets.gridlines') ? `${t('sheets.gridlines')}:` : "Gridlines:"}
       value={currentValue}
       options={options}
       onChange={handleSelect}
@@ -14287,7 +14288,8 @@ const DEFAULT_DECK_SLIDES = [
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-  const [showTemplateChart, setShowTemplateChart] = useState(true);
+  const [showTemplateChart, setShowTemplateChart] = useState(false);
+  const [sheetsInsertMenuOpen, setSheetsInsertMenuOpen] = useState(false);
   const [templateChartType, setTemplateChartType] = useState('column');
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetDocId, setShareTargetDocId] = useState(null);
@@ -37029,8 +37031,10 @@ Respond with a JSON array of slide objects matching the schema.`;
   const getDocMode = useCallback((doc) => {
     if (!doc) return 'compose';
     if (doc.mode) return doc.mode;
-    if (doc.sheetsData && doc.sheetsData.length > 0 && (doc.title?.toLowerCase().includes('sheet') || doc.sheetsTitle)) return 'sheets';
-    if (doc.deckSlidesData && doc.deckSlidesData.length > 0 && (doc.title?.toLowerCase().includes('deck') || doc.deckTitle)) return 'deck';
+    // Structural heuristics — presence of type-specific fields is authoritative
+    if (doc.sheetsData !== undefined || doc.sheetsTitle !== undefined || doc.title?.toLowerCase().includes('sheet')) return 'sheets';
+    if (doc.deckSlidesData !== undefined || doc.deckTitle !== undefined || doc.title?.toLowerCase().includes('deck')) return 'deck';
+    if (doc.isWhiteboard || doc.title?.toLowerCase().includes('whiteboard')) return 'whiteboard';
     return 'compose';
   }, []);
 
@@ -37796,6 +37800,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [deckSlidesData, activeDocId]);
 
     const isSheetsMode = productMode === 'sheets';
+    const isDeckMode = productMode === 'deck';
     const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
     const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
@@ -38798,7 +38803,6 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
     }, 50);
 
-    setShowTemplateChart(true);
     setTemplateChartType('bar');
     setSheetToolbarTab(null);
     showToast('Project Tracking template loaded!');
@@ -48883,61 +48887,66 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
                 </div>
 
-                <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
+                {!isSheetsMode && !isDeckMode && (
+                  <>
+                    <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
-                {/* Dedicated Home Tab (pinned before all document tabs, like WPS/browsers) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setProductMode('landing');
-                  }}
-                  className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                    productMode === 'landing'
-                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
-                      : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
-                  }`}
-                  title="Go to Home Dashboard"
-                >
-                  <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
-                  <span>Home</span>
-                </button>
+                    {/* Dedicated Home Tab (pinned before all document tabs, like WPS/browsers) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeTransientMenus();
+                        setProductMode('landing');
+                      }}
+                      className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                        productMode === 'landing'
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                          : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+                      }`}
+                      title="Go to Home Dashboard"
+                    >
+                      <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                      <span>Home</span>
+                    </button>
 
-                {/* Library / Saved Docs Affordance */}
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setLibraryDropdownAnchorRect(rect);
-                    setLibraryDropdownOpen(prev => !prev);
-                  }}
-                  className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer select-none ${
-                    libraryDropdownOpen
-                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
-                      : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
-                  }`}
-                  title="Open Library & Saved Documents"
-                >
-                  <BookOpen size={13} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-                  <span>Library</span>
-                  <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
+                    {/* Library / Saved Docs Affordance */}
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setLibraryDropdownAnchorRect(rect);
+                        setLibraryDropdownOpen(prev => !prev);
+                      }}
+                      className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer select-none ${
+                        libraryDropdownOpen
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
+                          : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
+                      }`}
+                      title="Open Library & Saved Documents"
+                    >
+                      <BookOpen size={13} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                      <span>Library</span>
+                      <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Center Section: Document Tab Strip */}
               <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
                 {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
                   const docIndex = windowedTabDocuments.startIndex + localIndex;
-                const defaultName = productMode === 'sheets' ? (t('sheets.untitledSheet') || 'Untitled Sheet') : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
-                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
+                const defaultName = productMode === 'sheets' ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
+                const isDefaultTitle = !doc.title?.trim() || doc.title === 'Untitled Document' || doc.title === 'Untitled Sheet' || doc.title.startsWith('Untitled Sheet ') || doc.title === 'Untitled Deck' || doc.title.startsWith('Tab ');
                 const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
                   ? (t('whiteboard.untitledWhiteboard') || UNTITLED_WHITEBOARD_LABEL)
                   : (isSheetsMode && activeDocId === doc.id && sheetsTitle?.trim() && sheetsTitle !== 'Untitled Sheet'
                       ? sheetsTitle
                       : (!isDefaultTitle ? doc.title : defaultName));
                 const isActive = activeDocId === doc.id;
+                const docMode = getDocMode(doc);
 
                 return (
                   <div
@@ -48948,12 +48957,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setRenamingDocId(doc.id);
                       setRenameDocValue(doc.title || (isSheetsMode ? sheetsTitle : '') || '');
                     }}
-                    className={`group relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                    className={`group/tab relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                       isActive 
                         ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                         : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
                     }`}
                   >
+                    <AppNativeSvgIcon variant="minimal" size={14} type={docMode} className="shrink-0" />
                     {renamingDocId === doc.id ? (
                       <input
                         autoFocus
@@ -48985,7 +48995,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                         setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-gray-100 shrink-0"
+                      className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded hover:bg-gray-100 shrink-0"
                       title="Document actions"
                     >
                       <MoreHorizontal size={12} />
@@ -48995,7 +49005,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         event.stopPropagation();
                         requestCloseDocument(doc.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
+                      className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
                       title="Close document"
                     >
                       <X size={12} />
@@ -49173,13 +49183,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <button
                     type="button"
                     onClick={() => {
-                      const targetFilter = isSheetsMode ? 'sheets' : isDeckMode ? 'deck' : 'compose';
+                      const targetFilter = isSheetsMode ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
                       setOrbInitialFilter(targetFilter);
                       setOrbInitialQuery('');
                       setIsMemorySearchOpen(true);
                     }}
                     className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
-                    title={`Browse ${isSheetsMode ? 'Sheets' : isDeckMode ? 'Decks' : 'Documents'} Library`}
+                    title={`Browse ${isSheetsMode ? 'Sheets' : productMode === 'deck' ? 'Decks' : 'Documents'} Library`}
                   >
                     <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
                     <span>Library</span>
@@ -50461,13 +50471,85 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                   })()}
                                 </div>
-                                <div className="inline-flex items-center p-0.5 gap-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none shrink-0 whitespace-nowrap">
-                                  <button type="button" onClick={addSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.addRow') || '+ Row'}</button>
-                                  <button type="button" onClick={removeSheetRow} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.removeRow') || '- Row'}</button>
-                                  <div className="h-3 w-px bg-slate-300/70 dark:bg-zinc-800 my-0.5" />
-                                  <button type="button" onClick={addSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.addCol') || '+ Col'}</button>
-                                  <button type="button" onClick={removeSheetColumn} className="px-2 py-1 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer">{t('sheets.removeCol') || '- Col'}</button>
-                                </div>
+                                      {/* + Insert Dropdown Menu */}
+                                      <div className="relative">
+                                        <div className="inline-flex items-center p-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none shrink-0 whitespace-nowrap">
+                                          <button
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              setSheetToolbarMenuOpen((prev) => prev === 'insert' ? null : 'insert');
+                                            }}
+                                            className={`px-2 py-1 flex items-center gap-1 rounded-lg text-xs font-medium transition-all active:scale-95 cursor-pointer ${
+                                              sheetToolbarMenuOpen === 'insert'
+                                                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs'
+                                                : 'text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-zinc-800/70'
+                                            }`}
+                                            title={t('sheets.insert') || 'Insert'}
+                                          >
+                                            <span>+ {t('sheets.insert') || 'Insert'}</span>
+                                            <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400" />
+                                          </button>
+                                        </div>
+                                        {sheetToolbarMenuOpen === 'insert' && (
+                                          <div
+                                            className="absolute top-full left-0 mt-2 z-[420] w-48 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/70 dark:border-zinc-800/80 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 select-none"
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                          >
+                                            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 mb-1">
+                                              {t('sheets.rowOptions') || 'Rows'}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                addSheetRow();
+                                                setSheetToolbarMenuOpen(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-between"
+                                            >
+                                              <span>{t('sheets.addRow') || '+ Row'}</span>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                removeSheetRow();
+                                                setSheetToolbarMenuOpen(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-between"
+                                            >
+                                              <span>{t('sheets.removeRow') || '- Row'}</span>
+                                            </button>
+                                            <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                                            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 mb-1">
+                                              {t('sheets.colOptions') || 'Columns'}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                addSheetColumn();
+                                                setSheetToolbarMenuOpen(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-between"
+                                            >
+                                              <span>{t('sheets.addCol') || '+ Col'}</span>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                removeSheetColumn();
+                                                setSheetToolbarMenuOpen(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer flex items-center justify-between"
+                                            >
+                                              <span>{t('sheets.removeCol') || '- Col'}</span>
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
                                 <div className="ml-auto flex items-center gap-4">
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
                                     <HardDrive size={13} className="text-slate-400 dark:text-zinc-500" /> {savedStatusLabel}
@@ -53486,7 +53568,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     )}
                                     {isBottomRightCorner && (
                                       <div 
-                                        className="absolute -bottom-[2px] -right-[2px] w-[4px] h-[4px] rounded-[1px] z-30 cursor-crosshair ring-1 ring-white/90 dark:ring-zinc-950/90 shadow-xs hover:scale-125 transition-transform select-none" 
+                                        className="absolute -bottom-[3px] -right-[3px] w-[6px] h-[6px] rounded-[1px] z-30 cursor-crosshair ring-1 ring-white dark:ring-zinc-900 shadow-xs hover:scale-125 transition-transform select-none" 
                                         style={{ backgroundColor: selectionBorderColor }}
                                       />
                                     )}
@@ -54477,8 +54559,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             setDeckActiveToolbarMenu(null);
                                           
                                          }
+                                       },
+                                       {
+                                         label: 'More',
+                                         icon: MoreHorizontal,
+                                         menuItems: ['Animation', 'Styles', 'Vector & Wave', 'Media & Logo'],
+                                         isMoreMenu: true
                                        },].map((btn) => {
                                       const isOpen = deckActiveToolbarMenu === btn.label;
+                                      const isPrimaryVisible = ['Themes', 'Background', 'Insert', 'AI', 'More'].includes(btn.label) || isOpen;
+                                      if (!isPrimaryVisible) return null;
                                        if (btn.customButton) {
                                          return (
                                            <div key={btn.label} className="relative shrink-0">
@@ -54517,7 +54607,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               <div 
                                                 onClick={(e) => e.stopPropagation()}
                                                 className={`absolute ${
-                                                  btn.label === 'Media & Logo' || btn.label === 'Insert' || btn.label === 'AI' 
+                                                  btn.label === 'Media & Logo' || btn.label === 'Insert' || btn.label === 'AI' || btn.label === 'More' 
                                                     ? 'right-0' 
                                                     : btn.label === 'Background' || btn.label === 'Vector & Wave' || btn.label === 'Styles' || btn.label === 'Animation' 
                                                     ? 'left-1/2 -translate-x-1/2' 
@@ -54532,7 +54622,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   btn.label === 'AI' ? 'w-[345px] max-h-[380px]' : 'w-60'
                                                 } flex flex-col bg-[#ffffff] dark:bg-[#13151b] border border-slate-200/90 dark:border-zinc-800/90 ring-1 ring-black/[0.04] dark:ring-white/[0.05] rounded-[15px] shadow-[0_16px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[9999] overflow-hidden transition-all duration-150 animate-in fade-in`}
                                               >
-                                                {btn.label === 'Animation' ? (
+                                                {btn.label === 'More' ? (
+                                                  <div className="p-2 w-64 flex flex-col gap-1 bg-white dark:bg-[#13151b] select-none">
+                                                    <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                                                      Secondary & Creative Controls
+                                                    </div>
+                                                    {[
+                                                      { id: 'Animation', label: t('deck.animation') || 'Animation', icon: Wand2, desc: 'Keynote physics & entrances' },
+                                                      { id: 'Styles', label: t('deck.styles') || 'Styles', icon: RegaarderStylesIcon, desc: 'Palette atmospheres & themes' },
+                                                      { id: 'Vector & Wave', label: t('deck.vectorWave') || 'Vector & Wave', icon: RegaarderVectorIcon, desc: '3D meshes & fluid waves' },
+                                                      { id: 'Media & Logo', label: t('deck.mediaLogo') || 'Media & Logo', icon: RegaarderMediaIcon, desc: 'Logos, SVGs & image assets' }
+                                                    ].map((item) => (
+                                                      <button
+                                                        key={item.id}
+                                                        type="button"
+                                                        onPointerDown={(e) => {
+                                                          e.preventDefault();
+                                                          e.stopPropagation();
+                                                          setDeckActiveToolbarMenu(item.id);
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2.5 hover:bg-slate-100 dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
+                                                      >
+                                                        <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400 group-hover:text-[#7C4DFF] group-hover:bg-violet-50 dark:group-hover:bg-violet-950/40 transition-colors shrink-0">
+                                                          <item.icon size={13} />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                          <span className="font-semibold leading-tight">{item.label}</span>
+                                                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 leading-tight mt-0.5">{item.desc}</span>
+                                                        </div>
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                ) : btn.label === 'Animation' ? (
                                                   <>
                                                     {/* Apple Keynote Realistic Motion Physics Keyframes */}
                                                     <style>{`
@@ -55549,7 +55670,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
 
                                 {/* ── CONTEXTUAL SECONDARY TOOLBAR STRIP (SHOWN ONLY WHEN RELEVANT OBJECT IS SELECTED) ── */}
-                                {['line', 'badge', 'pill', 'vector'].includes(deckSelection.type) && (
+                                {['line', 'badge', 'pill', 'vector', 'text', 'image', 'shape', 'bento', 'bentoCard'].includes(deckSelection.type) && (
                                 <div className="w-full flex items-center justify-between gap-2 px-2.5 py-1 mt-1 bg-slate-50/80 dark:bg-zinc-800/50 rounded-xl border border-slate-200/50 dark:border-zinc-800 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 animate-in fade-in slide-in-from-top-1 duration-150 overflow-x-auto no-scrollbar">
                                   {deckSelection.type === 'line' ? (
                                     /* Secondary Line Inspector */
@@ -56007,7 +56128,166 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       );
                                     })()
-                                  ) : null}
+                                                                     ) : deckSelection.type === 'text' ? (
+                                     /* Contextual Text Formatting Toolbar */
+                                     <div className="flex items-center gap-2.5 relative select-none">
+                                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/40 text-[#7C4DFF] font-semibold text-[11px] shrink-0">
+                                         <Type size={12} />
+                                         <span>Text Object</span>
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <div className="flex items-center gap-1">
+                                         {['#ffffff', '#00f0ff', '#7C4DFF', '#a855f7', '#f43f5e', '#10b981', '#f59e0b', '#94a3b8'].map((c) => (
+                                           <button
+                                             key={c}
+                                             type="button"
+                                             onClick={() => {
+                                               const currentShapes = activeDeckSlide?.shapes || [];
+                                               const shape = currentShapes.find((s) => s.id === deckSelection.id);
+                                               if (shape) {
+                                                 const updated = currentShapes.map((s) => s.id === deckSelection.id ? { ...s, fill: c } : s);
+                                                 updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                               }
+                                             }}
+                                             className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110 transition-transform"
+                                             style={{ backgroundColor: c }}
+                                           />
+                                         ))}
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           setDeckActiveToolbarMenu('Animation');
+                                         }}
+                                         className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                                       >
+                                         <Wand2 size={11} /> Animate
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           const currentShapes = activeDeckSlide?.shapes || [];
+                                           updateDeckSlideField(activeDeckSlide?.id, 'shapes', currentShapes.filter((s) => s.id !== deckSelection.id));
+                                           setDeckSelection({ type: 'none', id: null });
+                                           showToast('Text block deleted');
+                                         }}
+                                         className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
+                                       >
+                                         <Trash2 size={11} /> Delete
+                                       </button>
+                                     </div>
+                                   ) : deckSelection.type === 'image' ? (
+                                     /* Contextual Image Toolbar */
+                                     <div className="flex items-center gap-2.5 relative select-none">
+                                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 font-semibold text-[11px] shrink-0">
+                                         <ImageIcon size={12} />
+                                         <span>Image Object</span>
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <button
+                                         type="button"
+                                         onClick={() => bringImageToFront(deckSelection.id)}
+                                         className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-xs font-medium cursor-pointer"
+                                       >
+                                         Bring to Front
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           setDeckActiveToolbarMenu('Media & Logo');
+                                         }}
+                                         className="px-2 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/40 text-[#7C4DFF] hover:bg-violet-100 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                                       >
+                                         <RegaarderMediaIcon size={11} /> Media & Logo Tools
+                                       </button>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <button
+                                         type="button"
+                                         onClick={() => deleteImage(deckSelection.id)}
+                                         className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
+                                       >
+                                         <Trash2 size={11} /> Delete
+                                       </button>
+                                     </div>
+                                   ) : deckSelection.type === 'shape' ? (
+                                     /* Contextual Shape Toolbar */
+                                     <div className="flex items-center gap-2.5 relative select-none">
+                                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 font-semibold text-[11px] shrink-0">
+                                         <Square size={12} />
+                                         <span>Shape</span>
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <div className="flex items-center gap-1">
+                                         <span>Fill:</span>
+                                         {['#7C4DFF', '#00f0ff', '#ec4899', '#10b981', '#f59e0b', 'rgba(255,255,255,0.1)', '#ffffff'].map((c) => (
+                                           <button
+                                             key={c}
+                                             type="button"
+                                             onClick={() => {
+                                               const currentShapes = activeDeckSlide?.shapes || [];
+                                               const updated = currentShapes.map((s) => s.id === deckSelection.id ? { ...s, fill: c } : s);
+                                               updateDeckSlideField(activeDeckSlide?.id, 'shapes', updated);
+                                             }}
+                                             className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-zinc-600 hover:scale-110 transition-transform"
+                                             style={{ backgroundColor: c }}
+                                           />
+                                         ))}
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           const currentShapes = activeDeckSlide?.shapes || [];
+                                           updateDeckSlideField(activeDeckSlide?.id, 'shapes', currentShapes.filter((s) => s.id !== deckSelection.id));
+                                           setDeckSelection({ type: 'none', id: null });
+                                           showToast('Shape removed');
+                                         }}
+                                         className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
+                                       >
+                                         <Trash2 size={11} /> Delete
+                                       </button>
+                                     </div>
+                                   ) : (deckSelection.type === 'bento' || deckSelection.type === 'bentoCard') ? (
+                                     /* Contextual Bento Card Toolbar */
+                                     <div className="flex items-center gap-2.5 relative select-none">
+                                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 font-semibold text-[11px] shrink-0">
+                                         <LayoutGrid size={12} />
+                                         <span>Bento Card</span>
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <div className="flex items-center gap-1">
+                                         {['midnight', 'lavender', 'cyber', 'frosted'].map((st) => (
+                                           <button
+                                             key={st}
+                                             type="button"
+                                             onClick={() => {
+                                               const bCards = activeDeckSlide?.bentoCards || [];
+                                               const updated = bCards.map((bc) => bc.id === deckSelection.id ? { ...bc, style: st } : bc);
+                                               updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', updated);
+                                               showToast(`Card style set to ${st}`);
+                                             }}
+                                             className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-700 hover:bg-violet-100 text-[10px] capitalize font-medium"
+                                           >
+                                             {st}
+                                           </button>
+                                         ))}
+                                       </div>
+                                       <div className="w-px h-3.5 bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           const bCards = activeDeckSlide?.bentoCards || [];
+                                           updateDeckSlideField(activeDeckSlide?.id, 'bentoCards', bCards.filter((bc) => bc.id !== deckSelection.id));
+                                           setDeckSelection({ type: 'none', id: null });
+                                           showToast('Card removed');
+                                         }}
+                                         className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0"
+                                       >
+                                         <Trash2 size={11} /> Delete
+                                       </button>
+                                     </div>
+                                   ) : null}
                                 </div>
                                 )}
                               </div>
@@ -75905,9 +76185,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
               const docIndex = windowedTabDocuments.startIndex + localIndex;
               const rawTitle = doc.title?.trim();
-              const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard';
-              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : rawTitle)) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : `${t('common.tab') || 'Tab'} ${docIndex + 1}`);
+              const isSheetsDoc = getDocMode(doc) === 'sheets' || productMode === 'sheets';
+              const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : (rawTitle === 'Untitled Sheet' ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` : rawTitle))) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : (isSheetsDoc ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` : `${t('common.tab') || 'Tab'} ${docIndex + 1}`));
               const isActive = activeDocId === doc.id;
+              const docMode = getDocMode(doc);
 
               return (
                 <div
@@ -75918,12 +76199,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                  className={`group/tab relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                     isActive 
                       ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
                       : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
                   }`}
                 >
+                  <AppNativeSvgIcon variant="minimal" size={14} type={docMode} className="shrink-0" />
                   {renamingDocId === doc.id ? (
                     <input
                       autoFocus
@@ -75955,7 +76237,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
                       setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                     }}
-                    className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
+                    className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
                     title="Document actions"
                   >
                     <MoreHorizontal size={12} />
@@ -75965,7 +76247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       event.stopPropagation();
                       requestCloseDocument(doc.id);
                     }}
-                    className="p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
+                    className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
                     title="Close document"
                   >
                     <X size={12} />
