@@ -16648,10 +16648,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-[12.5px] font-semibold leading-tight truncate">
-                      Memory Hub
+                      Memora
                     </span>
                     <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 truncate">
-                      Guidelines & Habits
+                      Workspace Intelligence
                     </span>
                   </div>
                 </div>
