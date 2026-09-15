@@ -46454,109 +46454,100 @@ Respond with a JSON array of slide objects matching the schema.`;
           </div>
         )}
         <main className="flex-1 min-w-0 flex bg-white/80 overflow-hidden">
-          {!relayCurrentUser ? (
-            <RelayAuthGate
-              onAuthenticated={(user) => {
-                setRelayCurrentUser(user);
-                showToast(`Welcome to Relay, ${user.displayName}!`);
-              }}
-              onDismiss={() => {
+          <ExecutiveDirectMessages
+            isDarkMode={isDarkMode}
+            currentUser={relayCurrentUser}
+            onRequireAuth={(user) => {
+              setRelayCurrentUser(user);
+              showToast(`Welcome to Relay, ${user.displayName}!`);
+            }}
+            threads={dmThreads}
+            activeThreadId={activeDmThread?.id}
+            onSelectThread={(id) => setDmActiveThreadId(id)}
+            onOpenRoom={() => createRoomLandingExperience()}
+            onOpenMemory={() => setIsMemorySearchOpen(true)}
+            onLogDecisionToMemory={(text, source) => {
+              addWorkspaceMemory(text, `Chat (${source})`, ['Team Chat', 'Decision']);
+              showToast('Decision logged to Workspace Memory Hub');
+            }}
+            onNavigateWorkspace={(ref) => {
+              if (!ref) return;
+              if (ref.type === 'landing') {
+                setProductMode('landing');
+                setFocusedModule('landing');
+              } else if (ref.type === 'sheets') {
+                createSheetsExperience();
+                if (ref.sheetId) setActiveSheetId(ref.sheetId);
+              } else if (ref.type === 'deck') {
+                createDeckExperience();
+                if (ref.slideId) setActiveDeckSlideId(ref.slideId);
+              } else {
+                // Compose Docs mode
+                setCreationPickerOpen(false);
                 setProductMode('compose');
                 setFocusedModule('compose');
-              }}
-            />
-          ) : (
-            <ExecutiveDirectMessages
-              isDarkMode={isDarkMode}
-              currentUser={relayCurrentUser}
-              threads={dmThreads}
-              activeThreadId={activeDmThread?.id}
-              onSelectThread={(id) => setDmActiveThreadId(id)}
-              onOpenRoom={() => createRoomLandingExperience()}
-              onOpenMemory={() => setIsMemorySearchOpen(true)}
-              onLogDecisionToMemory={(text, source) => {
-                addWorkspaceMemory(text, `Chat (${source})`, ['Team Chat', 'Decision']);
-                showToast('Decision logged to Workspace Memory Hub');
-              }}
-              onNavigateWorkspace={(ref) => {
-                if (!ref) return;
-                if (ref.type === 'landing') {
-                  setProductMode('landing');
-                  setFocusedModule('landing');
-                } else if (ref.type === 'sheets') {
-                  createSheetsExperience();
-                  if (ref.sheetId) setActiveSheetId(ref.sheetId);
-                } else if (ref.type === 'deck') {
-                  createDeckExperience();
-                  if (ref.slideId) setActiveDeckSlideId(ref.slideId);
-                } else {
-                  // Compose Docs mode
-                  setCreationPickerOpen(false);
-                  setProductMode('compose');
-                  setFocusedModule('compose');
-                  setDockedModules([]);
-                  setRoomPanelMode('docked');
-                  setLeftSidebarOpen(false);
-                  setActiveDocView('document');
+                setDockedModules([]);
+                setRoomPanelMode('docked');
+                setLeftSidebarOpen(false);
+                setActiveDocView('document');
 
-                  const targetDocId = ref.docId || ref.id;
-                  if (targetDocId) {
-                    const targetDoc = documents.find(d => String(d.id) === String(targetDocId));
-                    if (targetDoc) {
-                      setActiveDocId(targetDoc.id);
-                      setDocTitle(targetDoc.title || '');
-                      setDocBodyHtml(targetDoc.bodyHtml || '');
-                    }
-                  }
-
-                  // Deep-link to line and scroll into view with executive outline highlight only for citation clicks
-                  if (ref.isCitationClick || (ref.line && ref.line > 1) || (ref.textSnippet && !ref.isDirectOpen)) {
-                    setTimeout(() => {
-                      const editorEl = blankBodyRef.current || document.querySelector('[contenteditable="true"]');
-                      if (!editorEl) return;
-                      let targetEl = null;
-
-                      if (ref.line && ref.line > 0) {
-                        const blocks = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, tr, div'))
-                          .filter(el => el.textContent && el.textContent.trim().length > 0);
-                        if (blocks.length > 0) {
-                          const targetIdx = Math.min(ref.line - 1, blocks.length - 1);
-                          targetEl = blocks[targetIdx];
-                        }
-                      }
-
-                      if (!targetEl && ref.textSnippet) {
-                        const cleanSnippet = ref.textSnippet.slice(0, 30).toLowerCase();
-                        const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, null, false);
-                        let n;
-                        while ((n = walker.nextNode())) {
-                          if (n.textContent && n.textContent.toLowerCase().includes(cleanSnippet)) {
-                            targetEl = n.parentElement;
-                            break;
-                          }
-                        }
-                      }
-
-                      if (targetEl) {
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        targetEl.classList.add('regaarder-line-outline-target');
-                        setTimeout(() => {
-                          targetEl.classList.remove('regaarder-line-outline-target');
-                        }, 2600);
-                      }
-                    }, 250);
+                const targetDocId = ref.docId || ref.id;
+                if (targetDocId) {
+                  const targetDoc = documents.find(d => String(d.id) === String(targetDocId));
+                  if (targetDoc) {
+                    setActiveDocId(targetDoc.id);
+                    setDocTitle(targetDoc.title || '');
+                    setDocBodyHtml(targetDoc.bodyHtml || '');
                   }
                 }
-              }}
-              onToggleFullscreen={toggleDocumentImmersiveMode}
-              onCallAi={callGemini}
-              detectedModelsFromApp={composeDetectedModels}
-              onOpenWorkspaceSwitcher={(rect) => {
-                setWorkspaceSwitcherAnchorRect(rect);
-                setWorkspaceSwitcherOpen(true);
-              }}
-            />
-          )}
+
+                // Deep-link to line and scroll into view with executive outline highlight only for citation clicks
+                if (ref.isCitationClick || (ref.line && ref.line > 1) || (ref.textSnippet && !ref.isDirectOpen)) {
+                  setTimeout(() => {
+                    const editorEl = blankBodyRef.current || document.querySelector('[contenteditable="true"]');
+                    if (!editorEl) return;
+                    let targetEl = null;
+
+                    if (ref.line && ref.line > 0) {
+                      const blocks = Array.from(editorEl.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, tr, div'))
+                        .filter(el => el.textContent && el.textContent.trim().length > 0);
+                      if (blocks.length > 0) {
+                        const targetIdx = Math.min(ref.line - 1, blocks.length - 1);
+                        targetEl = blocks[targetIdx];
+                      }
+                    }
+
+                    if (!targetEl && ref.textSnippet) {
+                      const cleanSnippet = ref.textSnippet.slice(0, 30).toLowerCase();
+                      const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, null, false);
+                      let n;
+                      while ((n = walker.nextNode())) {
+                        if (n.textContent && n.textContent.toLowerCase().includes(cleanSnippet)) {
+                          targetEl = n.parentElement;
+                          break;
+                        }
+                      }
+                    }
+
+                    if (targetEl) {
+                      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      targetEl.classList.add('regaarder-line-outline-target');
+                      setTimeout(() => {
+                        targetEl.classList.remove('regaarder-line-outline-target');
+                      }, 2600);
+                    }
+                  }, 250);
+                }
+              }
+            }}
+            onToggleFullscreen={toggleDocumentImmersiveMode}
+            onCallAi={callGemini}
+            detectedModelsFromApp={composeDetectedModels}
+            onOpenWorkspaceSwitcher={(rect) => {
+              setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen(true);
+            }}
+          />
         </main>
         {workspaceSwitcherOpen && renderWorkspaceSwitcherDropdownContent()}
         {sharedReplayPanel}

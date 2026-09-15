@@ -19,6 +19,7 @@ import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
 import { processRelayAgentMessage, extractClarificationFromText } from '../../services/relayAgentService';
 import { searchUsers, getRegistryUsers, upsertUserInRegistry } from '../../services/relayAccountService';
+import RelayAuthGate from '../relay/RelayAuthGate';
 import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
 
 // Quick Translation Languages for Selection Writing Tools
@@ -287,6 +288,7 @@ const renderFormattedMessageText = (text, highlightQuery = '') => {
 export default function ExecutiveDirectMessages({
   isDarkMode = false,
   currentUser = null,
+  onRequireAuth,
   threads = [],
   activeThreadId,
   onSelectThread,
@@ -486,6 +488,7 @@ export default function ExecutiveDirectMessages({
 
   // ── Create Modal State (Instagram-Style Create Profile, Team Group, or AI Persona) ──
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [isAuthGateOpen, setIsAuthGateOpen] = useState(false);
   const [modalMode, setModalMode] = useState('profile'); // 'profile' | 'group' | 'persona'
   
   // Clean Profile Form Fields (Instagram Standard: Name, Username ID, Bio)
@@ -2771,11 +2774,15 @@ ${systemPrompt}`
               <button
                 type="button"
                 onClick={() => {
-                  setModalMode('profile');
-                  setIsNewChatModalOpen(true);
+                  if (!currentUser) {
+                    setIsAuthGateOpen(true);
+                  } else {
+                    setModalMode('profile');
+                    setIsNewChatModalOpen(true);
+                  }
                 }}
                 className="w-7 h-7 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
-                title="Create Profile, Group or Deploy Persona"
+                title={currentUser ? "Create Profile, Group or Deploy Persona" : "Sign in to add contacts or chat"}
               >
                 <Plus size={16} strokeWidth={2.2} />
               </button>
@@ -5197,6 +5204,30 @@ ${systemPrompt}`
             >
               {isAiVoicePaused ? <Play size={18} /> : <Pause size={18} />}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONTEXTUAL AUTH GATE MODAL (WHEN ADDING PERSON/GROUP WHILE LOGGED OUT) ── */}
+      {isAuthGateOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setIsAuthGateOpen(false);
+          }}
+        >
+          <div className="w-full max-w-sm">
+            <RelayAuthGate
+              onAuthenticated={(user) => {
+                setIsAuthGateOpen(false);
+                if (onRequireAuth) {
+                  onRequireAuth(user);
+                }
+                setModalMode('profile');
+                setIsNewChatModalOpen(true);
+              }}
+              onDismiss={() => setIsAuthGateOpen(false)}
+            />
           </div>
         </div>
       )}
