@@ -23,7 +23,7 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
   if (variant === "minimal") {
     if (norm.includes("sheet")) {
       return (
-        <div className={`flex items-center justify-center shrink-0 text-emerald-500 dark:text-emerald-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 ${className}`}>
+        <div className={`flex items-center justify-center shrink-0 text-emerald-600/80 dark:text-emerald-400/80 group-hover/tab:text-emerald-600 dark:group-hover/tab:text-emerald-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors ${className}`}>
           <SheetIcon size={size} strokeWidth={1.6} />
         </div>
       );
