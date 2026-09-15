@@ -48946,7 +48946,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ? sheetsTitle
                       : (!isDefaultTitle ? doc.title : defaultName));
                 const isActive = activeDocId === doc.id;
-                const docMode = getDocMode(doc);
+                const docMode = isSheetsMode ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(doc);
 
                 return (
                   <div
@@ -76188,7 +76188,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const isSheetsDoc = getDocMode(doc) === 'sheets' || productMode === 'sheets';
               const label = rawTitle ? (rawTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : (rawTitle === 'Untitled Sheet' ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` : rawTitle))) : (isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) : (isSheetsDoc ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` : `${t('common.tab') || 'Tab'} ${docIndex + 1}`));
               const isActive = activeDocId === doc.id;
-              const docMode = getDocMode(doc);
+              const docMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(doc);
 
               return (
                 <div
