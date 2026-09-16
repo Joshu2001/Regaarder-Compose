@@ -1216,7 +1216,7 @@ function registerWindowsShellNew() {
       {
         ext: '.rgdck',
         progId: 'Regaarder.Compose.Deck',
-        desc: 'Regaarder Presentation Deck',
+        desc: 'Regaarder Presentation',
         mime: 'application/x-regaarder-deck',
       },
     ];
@@ -1229,8 +1229,9 @@ function registerWindowsShellNew() {
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /v "PerceivedType" /t REG_SZ /d "Document" /f`);
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /v "Content Type" /t REG_SZ /d "${mime}" /f`);
       
-      // 2. HKCU\Software\Classes\<ext>\ShellNew -> enables Explorer "New > Regaarder Document"
+      // 2. HKCU\Software\Classes\<ext>\ShellNew -> enables Explorer "New > <desc>"
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}\\ShellNew" /v "NullFile" /t REG_SZ /d "" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${ext}\\ShellNew" /v "ItemName" /t REG_SZ /d "${desc}" /f`);
 
       // 3. HKCU\Software\Classes\<progId>
       commands.push(`reg add "HKCU\\Software\\Classes\\${progId}" /ve /t REG_SZ /d "${desc}" /f`);

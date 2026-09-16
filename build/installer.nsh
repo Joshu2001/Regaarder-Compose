@@ -20,6 +20,7 @@
   WriteRegStr HKCR ".rgdoc" "PerceivedType" "Document"
   WriteRegStr HKCR ".rgdoc" "Content Type" "application/x-regaarder-doc"
   WriteRegStr HKCR ".rgdoc\ShellNew" "NullFile" ""
+  WriteRegStr HKCR ".rgdoc\ShellNew" "ItemName" "Regaarder Document"
 
   ; Register ProgID for Regaarder Spreadsheet
   WriteRegStr HKCR "Regaarder.Sheet" "" "Regaarder Spreadsheet"
@@ -31,6 +32,7 @@
   WriteRegStr HKCR ".rgsht" "PerceivedType" "Document"
   WriteRegStr HKCR ".rgsht" "Content Type" "application/x-regaarder-sheet"
   WriteRegStr HKCR ".rgsht\ShellNew" "NullFile" ""
+  WriteRegStr HKCR ".rgsht\ShellNew" "ItemName" "Regaarder Spreadsheet"
 
   ; Register ProgID for Regaarder Deck
   WriteRegStr HKCR "Regaarder.Deck" "" "Regaarder Presentation Deck"
@@ -42,6 +44,7 @@
   WriteRegStr HKCR ".rgdck" "PerceivedType" "Document"
   WriteRegStr HKCR ".rgdck" "Content Type" "application/x-regaarder-deck"
   WriteRegStr HKCR ".rgdck\ShellNew" "NullFile" ""
+  WriteRegStr HKCR ".rgdck\ShellNew" "ItemName" "Regaarder Presentation"
 
   ; Notify Windows Shell of file association changes
   System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'
