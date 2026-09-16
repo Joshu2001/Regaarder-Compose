@@ -20,6 +20,7 @@ import {
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
 import { readWorkspaceDocuments, deleteWorkspaceDocument } from "../../services/workspaceDocumentStore";
+import { revealDocumentInLocalFolder } from "../../services/localSyncService";
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return "Sep 13, 2026 at 4:12 AM";
@@ -833,8 +834,18 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 </div>
 
                 {/* Location */}
-                <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400 truncate pr-2">
-                  {item.location}
+                <div className="col-span-3 text-[12.5px] truncate pr-2 flex items-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      revealDocumentInLocalFolder(item.doc || item);
+                    }}
+                    className="text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:underline transition-colors cursor-pointer bg-transparent border-none p-0 text-left truncate max-w-full font-normal"
+                    title="Open file location"
+                  >
+                    {item.location}
+                  </button>
                 </div>
 
                 {/* Last Modified */}

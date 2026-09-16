@@ -64,7 +64,7 @@ export default function WorkspaceLeftRail({
             }`}
           >
             <Folder size={16} className="text-slate-500" />
-            <span>Library</span>
+            <span>Projects</span>
           </button>
         </div>
 

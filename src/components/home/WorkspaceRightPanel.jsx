@@ -335,7 +335,7 @@ export default function WorkspaceRightPanel({
             className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[12px] text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors text-left cursor-pointer bg-transparent border-none"
           >
             <Folder size={14} className="text-slate-400" />
-            <span>Open Library</span>
+            <span>Open Projects</span>
           </button>
 
           <button

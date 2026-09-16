@@ -55,7 +55,7 @@ export const isLocalSyncAvailable = () =>
  * @param {object} doc
  * @returns {string}  e.g. "Project_Roadmap_abc-123.rgdoc"
  */
-const resolveFilename = (doc) => {
+export const resolveFilename = (doc) => {
   const { ext } = MODE_MAP[doc.mode] || MODE_MAP.compose;
   const rawTitle = String(doc.title || doc.sheetsTitle || doc.deckTitle || 'Untitled')
     .trim()
@@ -75,7 +75,7 @@ const resolveFilename = (doc) => {
  * @param {object} doc
  * @returns {string}  e.g. "Documents"
  */
-const resolveSubdir = (doc) =>
+export const resolveSubdir = (doc) =>
   (MODE_MAP[doc.mode] || MODE_MAP.compose).subdir;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,6 +375,51 @@ export const openLocalRegaarderFolder = async (subpath) => {
     console.warn('[LocalSync] Failed to open local folder:', err);
   }
   return false;
+};
+
+/**
+ * Reveals a document file in the native system file explorer (e.g. Windows Explorer),
+ * selecting/highlighting the specific file.
+ * Automatically ensures the file is flushed to disk before revealing.
+ *
+ * @param {object} doc Normalized document object or recent file item.
+ * @returns {Promise<boolean>}
+ */
+export const revealDocumentInLocalFolder = async (doc) => {
+  if (typeof window === 'undefined' || !window.electronAPI || !doc) return false;
+
+  try {
+    // Normalise doc object
+    const actualDoc = doc.doc || doc;
+    const root = await getLocalSyncRoot();
+    if (!root) return false;
+
+    // Determine subdir and filename
+    const subdir = resolveSubdir(actualDoc);
+    const filename = resolveFilename(actualDoc);
+
+    // If local sync is available and doc has content/id, ensure latest copy exists on disk
+    if (isLocalSyncAvailable() && actualDoc.id) {
+      writeDocumentToLocal(actualDoc);
+    }
+
+    // Build the full platform-appropriate path
+    const isWindows = root.includes('\\') || navigator.userAgent.includes('Windows');
+    const separator = isWindows ? '\\' : '/';
+    const fullPath = [root, subdir, filename].join(separator);
+
+    if (typeof window.electronAPI.showItemInFolder === 'function') {
+      const res = await window.electronAPI.showItemInFolder(fullPath);
+      if (res?.success) return true;
+    }
+
+    // Fallback to opening folder if file show fails
+    const folderPath = [root, subdir].join(separator);
+    return await openLocalRegaarderFolder(folderPath);
+  } catch (err) {
+    console.warn('[LocalSync] Failed to reveal document in folder:', err);
+    return false;
+  }
 };
 
 /**
