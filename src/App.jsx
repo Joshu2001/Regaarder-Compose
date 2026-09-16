@@ -161,6 +161,8 @@ import ContextSourcePreviewModal from './components/ContextSourcePreviewModal';
 import ScreenShareSourceModal from './components/room/ScreenShareSourceModal';
 import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
 import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
+import RegaarderIntentOnboarding from './components/onboarding/RegaarderIntentOnboarding';
+import { ONBOARDING_INTENT_PRESETS } from './components/onboarding/onboardingPresets';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
 import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
@@ -6889,6 +6891,26 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 
 function AppCore() {
   const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
+
+  const [showIntentOnboarding, setShowIntentOnboarding] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const hasSeen = localStorage.getItem('rc.hasSeenIntentOnboarding_v2');
+        return !hasSeen;
+      }
+    } catch (_e) {}
+    return true;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.openRegaarderOnboarding = () => setShowIntentOnboarding(true);
+      const handler = () => setShowIntentOnboarding(true);
+      window.addEventListener('rc:open-onboarding', handler);
+      return () => window.removeEventListener('rc:open-onboarding', handler);
+    }
+  }, []);
+  const [nextActionPrompt, setNextActionPrompt] = useState('');
 
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
   const [orbOpen, setOrbOpen] = useState(false);
@@ -83367,7 +83389,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {productMode === 'compose' && (
-          <AppleGestureOnboardingHotspots />
+          <AppleGestureOnboardingHotspots
+            nextActionPrompt={nextActionPrompt}
+            onTriggerNextAction={() => {
+              if (activeRightTab !== 'assistant') {
+                setActiveRightTab('assistant');
+              }
+              setRightSidebarOpen(true);
+              showToast('Expanded assistant for next steps');
+            }}
+          />
         )}
 
         {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
@@ -88980,6 +89011,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsOmniPortalOpen(false)}
         onBatchAbsorbed={handleBatchAbsorbed}
       />
+
+      {/* ── Layer 8: First-Principles Intent Onboarding ──────────────── */}
+      {showIntentOnboarding && (
+        <RegaarderIntentOnboarding
+          onDismiss={() => {
+            setShowIntentOnboarding(false);
+          }}
+          onComplete={(preparedDoc) => {
+            setShowIntentOnboarding(false);
+            if (preparedDoc) {
+              const newDoc = {
+                ...preparedDoc,
+                id: Date.now()
+              };
+              setDocuments(prev => [newDoc, ...prev]);
+              setActiveDocId(newDoc.id);
+              setDocTitle(newDoc.title || '');
+              setDocSubtitle(newDoc.subtitle || '');
+              setDocBodyHtml(newDoc.bodyHtml || '');
+              if (newDoc.initiatives) {
+                setInitiatives(newDoc.initiatives);
+              }
+              setIsBlankDocument(false);
+              if (newDoc.suggestedNextAction) {
+                setNextActionPrompt(newDoc.suggestedNextAction);
+              }
+              setProductMode(newDoc.mode || 'compose');
+              showToast(`Workspace prepared: ${newDoc.title}`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -89009,4 +89072,4 @@ export default function App() {
 
 
 
-// Triggering HMR refresh: 2026-09-13T11:18:30+08:00
+// Triggering HMR refresh: 2026-09-16T09:17:30+08:00
