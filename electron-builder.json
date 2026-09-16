@@ -83,35 +83,35 @@
         "ext": "rgdoc",
         "name": "Regaarder Document",
         "description": "Regaarder Native Document File",
-        "icon": "build/icon.ico",
+        "icon": "build/doc.ico",
         "role": "Editor"
       },
       {
         "ext": "cmp",
         "name": "Regaarder Compose Document",
         "description": "Regaarder Compose Native File",
-        "icon": "build/icon.ico",
+        "icon": "build/doc.ico",
         "role": "Editor"
       },
       {
         "ext": "rgsht",
         "name": "Regaarder Spreadsheet",
         "description": "Regaarder Spreadsheet File",
-        "icon": "build/icon.ico",
+        "icon": "build/sheet.ico",
         "role": "Editor"
       },
       {
         "ext": "rgdck",
-        "name": "Regaarder Presentation Deck",
-        "description": "Regaarder Presentation Deck File",
-        "icon": "build/icon.ico",
+        "name": "Regaarder Presentation",
+        "description": "Regaarder Presentation File",
+        "icon": "build/deck.ico",
         "role": "Editor"
       },
       {
         "ext": "rgwbd",
         "name": "Regaarder Whiteboard",
         "description": "Regaarder Whiteboard File",
-        "icon": "build/icon.ico",
+        "icon": "build/whiteboard.ico",
         "role": "Editor"
       }
     ],

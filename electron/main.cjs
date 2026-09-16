@@ -1206,42 +1206,57 @@ function registerWindowsShellNew() {
         progId: 'Regaarder.Compose.Doc',
         desc: 'Regaarder Document',
         mime: 'application/x-regaarder-doc',
+        iconName: 'doc.ico',
       },
       {
         ext: '.rgsht',
         progId: 'Regaarder.Compose.Sheet',
         desc: 'Regaarder Spreadsheet',
         mime: 'application/x-regaarder-sheet',
+        iconName: 'sheet.ico',
       },
       {
         ext: '.rgdck',
         progId: 'Regaarder.Compose.Deck',
         desc: 'Regaarder Presentation',
         mime: 'application/x-regaarder-deck',
+        iconName: 'deck.ico',
       },
       {
         ext: '.rgwbd',
         progId: 'Regaarder.Compose.Whiteboard',
         desc: 'Regaarder Whiteboard',
         mime: 'application/x-regaarder-whiteboard',
+        iconName: 'whiteboard.ico',
       },
     ];
 
     const commands = [];
 
-    fileTypes.forEach(({ ext, progId, desc, mime }) => {
+    fileTypes.forEach(({ ext, progId, desc, mime, iconName }) => {
+      // Resolve custom dedicated icon path: check electron/icons, build, or fallback to exePath
+      let iconTarget = `\\"${exePath}\\",0`;
+      const localIconPath = path.join(__dirname, 'icons', iconName);
+      const buildIconPath = path.join(__dirname, '..', 'build', iconName);
+      if (fs.existsSync(localIconPath)) {
+        iconTarget = `\\"${localIconPath}\\"`;
+      } else if (fs.existsSync(buildIconPath)) {
+        iconTarget = `\\"${buildIconPath}\\"`;
+      }
+
       // 1. HKCU\Software\Classes\<ext>
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /ve /t REG_SZ /d "${progId}" /f`);
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /v "PerceivedType" /t REG_SZ /d "Document" /f`);
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /v "Content Type" /t REG_SZ /d "${mime}" /f`);
       
-      // 2. HKCU\Software\Classes\<ext>\ShellNew -> enables Explorer "New > <desc>"
+      // 2. HKCU\Software\Classes\<ext>\ShellNew -> enables Explorer "New > <desc>" with custom icon
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}\\ShellNew" /v "NullFile" /t REG_SZ /d "" /f`);
       commands.push(`reg add "HKCU\\Software\\Classes\\${ext}\\ShellNew" /v "ItemName" /t REG_SZ /d "${desc}" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${ext}\\ShellNew" /v "IconPath" /t REG_SZ /d "${iconTarget}" /f`);
 
       // 3. HKCU\Software\Classes\<progId>
       commands.push(`reg add "HKCU\\Software\\Classes\\${progId}" /ve /t REG_SZ /d "${desc}" /f`);
-      commands.push(`reg add "HKCU\\Software\\Classes\\${progId}\\DefaultIcon" /ve /t REG_SZ /d "\\"${exePath}\\",0" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${progId}\\DefaultIcon" /ve /t REG_SZ /d "${iconTarget}" /f`);
       commands.push(`reg add "HKCU\\Software\\Classes\\${progId}\\shell\\open\\command" /ve /t REG_SZ /d "\\"${exePath}\\" \\"%1\\"" /f`);
     });
 
