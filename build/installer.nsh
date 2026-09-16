@@ -35,7 +35,7 @@
   WriteRegStr HKCR ".rgsht\ShellNew" "ItemName" "Regaarder Spreadsheet"
 
   ; Register ProgID for Regaarder Deck
-  WriteRegStr HKCR "Regaarder.Deck" "" "Regaarder Presentation Deck"
+  WriteRegStr HKCR "Regaarder.Deck" "" "Regaarder Presentation"
   WriteRegStr HKCR "Regaarder.Deck\DefaultIcon" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME},0"
   WriteRegStr HKCR "Regaarder.Deck\shell\open\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
 
@@ -45,6 +45,18 @@
   WriteRegStr HKCR ".rgdck" "Content Type" "application/x-regaarder-deck"
   WriteRegStr HKCR ".rgdck\ShellNew" "NullFile" ""
   WriteRegStr HKCR ".rgdck\ShellNew" "ItemName" "Regaarder Presentation"
+
+  ; Register ProgID for Regaarder Whiteboard
+  WriteRegStr HKCR "Regaarder.Whiteboard" "" "Regaarder Whiteboard"
+  WriteRegStr HKCR "Regaarder.Whiteboard\DefaultIcon" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME},0"
+  WriteRegStr HKCR "Regaarder.Whiteboard\shell\open\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
+
+  ; Register .rgwbd and Explorer "New > Regaarder Whiteboard"
+  WriteRegStr HKCR ".rgwbd" "" "Regaarder.Whiteboard"
+  WriteRegStr HKCR ".rgwbd" "PerceivedType" "Document"
+  WriteRegStr HKCR ".rgwbd" "Content Type" "application/x-regaarder-whiteboard"
+  WriteRegStr HKCR ".rgwbd\ShellNew" "NullFile" ""
+  WriteRegStr HKCR ".rgwbd\ShellNew" "ItemName" "Regaarder Whiteboard"
 
   ; Notify Windows Shell of file association changes
   System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'
@@ -59,6 +71,8 @@
   DeleteRegKey HKCR ".rgsht\ShellNew"
   DeleteRegKey HKCR "Regaarder.Deck"
   DeleteRegKey HKCR ".rgdck\ShellNew"
+  DeleteRegKey HKCR "Regaarder.Whiteboard"
+  DeleteRegKey HKCR ".rgwbd\ShellNew"
 
   ; Notify Windows Shell of association removal
   System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (0x08000000, 0, 0, 0)'

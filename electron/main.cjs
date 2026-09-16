@@ -1219,6 +1219,12 @@ function registerWindowsShellNew() {
         desc: 'Regaarder Presentation',
         mime: 'application/x-regaarder-deck',
       },
+      {
+        ext: '.rgwbd',
+        progId: 'Regaarder.Compose.Whiteboard',
+        desc: 'Regaarder Whiteboard',
+        mime: 'application/x-regaarder-whiteboard',
+      },
     ];
 
     const commands = [];
