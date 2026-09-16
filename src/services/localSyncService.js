@@ -57,16 +57,13 @@ export const isLocalSyncAvailable = () =>
  */
 export const resolveFilename = (doc) => {
   const { ext } = MODE_MAP[doc.mode] || MODE_MAP.compose;
-  const rawTitle = String(doc.title || doc.sheetsTitle || doc.deckTitle || 'Untitled')
+  const rawTitle = String(doc.title || doc.sheetsTitle || doc.deckTitle || '')
     .trim()
     .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
-    .replace(/\s+/g, '_')
-    .slice(0, 50);
-  const safeId = String(doc.id || 'unknown')
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
-    .slice(0, 50);
+    .slice(0, 80);
   
-  return rawTitle ? `${rawTitle}_${safeId}${ext}` : `${safeId}${ext}`;
+  const cleanTitle = rawTitle || 'Untitled Document';
+  return `${cleanTitle}${ext}`;
 };
 
 /**
@@ -129,13 +126,34 @@ export const initLocalSync = async () => {
     console.warn('[LocalSync] Could not ensure local directories:', err);
   }
 
-  // Ensure current stored documents are written to disk upon app launch
+  // Ensure current stored documents are written to disk upon app launch and clean up legacy suffixed files
   try {
     const raw = typeof window !== 'undefined' ? window.localStorage?.getItem('regaarder_documents_v1') : null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         parsed.forEach((d) => writeDocumentToLocal(d));
+
+        // Asynchronously clean up old suffixed files in the sync directories
+        (async () => {
+          try {
+            const subdirs = ['Documents', 'Sheets', 'Decks', 'Whiteboards'];
+            for (const subdir of subdirs) {
+              const entries = await listLocalDir(subdir);
+              for (const entry of entries) {
+                // Match legacy files that had timestamps or legacy-document in filename
+                if (/_\d{10,}\.(rgdoc|rgsht|rgdck|rgwbd)$/.test(entry.name) || /legacy-document/i.test(entry.name)) {
+                  try {
+                    await window.electronAPI.localSync.deleteFile({
+                      subdir,
+                      filename: entry.name,
+                    });
+                  } catch (_) {}
+                }
+              }
+            }
+          } catch (_) {}
+        })();
       }
     }
   } catch (_) {}
