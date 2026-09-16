@@ -1188,7 +1188,71 @@ ipcMain.handle('localSync:stop-watch', async () => {
   return { success: true };
 });
 
+/**
+ * Registers Windows Explorer "New" context menu entries (ShellNew)
+ * and file type descriptions for all Regaarder native formats (.rgdoc, .rgsht, .rgdck).
+ * Writes safely to HKCU (no admin privileges required).
+ */
+function registerWindowsShellNew() {
+  if (process.platform !== 'win32') return;
+
+  try {
+    const { exec } = require('child_process');
+    const exePath = process.execPath;
+
+    const fileTypes = [
+      {
+        ext: '.rgdoc',
+        progId: 'Regaarder.Compose.Doc',
+        desc: 'Regaarder Document',
+        mime: 'application/x-regaarder-doc',
+      },
+      {
+        ext: '.rgsht',
+        progId: 'Regaarder.Compose.Sheet',
+        desc: 'Regaarder Spreadsheet',
+        mime: 'application/x-regaarder-sheet',
+      },
+      {
+        ext: '.rgdck',
+        progId: 'Regaarder.Compose.Deck',
+        desc: 'Regaarder Presentation Deck',
+        mime: 'application/x-regaarder-deck',
+      },
+    ];
+
+    const commands = [];
+
+    fileTypes.forEach(({ ext, progId, desc, mime }) => {
+      // 1. HKCU\Software\Classes\<ext>
+      commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /ve /t REG_SZ /d "${progId}" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /v "PerceivedType" /t REG_SZ /d "Document" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${ext}" /v "Content Type" /t REG_SZ /d "${mime}" /f`);
+      
+      // 2. HKCU\Software\Classes\<ext>\ShellNew -> enables Explorer "New > Regaarder Document"
+      commands.push(`reg add "HKCU\\Software\\Classes\\${ext}\\ShellNew" /v "NullFile" /t REG_SZ /d "" /f`);
+
+      // 3. HKCU\Software\Classes\<progId>
+      commands.push(`reg add "HKCU\\Software\\Classes\\${progId}" /ve /t REG_SZ /d "${desc}" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${progId}\\DefaultIcon" /ve /t REG_SZ /d "\\"${exePath}\\",0" /f`);
+      commands.push(`reg add "HKCU\\Software\\Classes\\${progId}\\shell\\open\\command" /ve /t REG_SZ /d "\\"${exePath}\\" \\"%1\\"" /f`);
+    });
+
+    const fullBatch = commands.join(' & ');
+    exec(fullBatch, (err) => {
+      if (err) {
+        console.warn('[ShellNew] Registration note:', err.message);
+      } else {
+        console.info('[ShellNew] Explorer New menu registered successfully for Regaarder formats.');
+      }
+    });
+  } catch (err) {
+    console.warn('[ShellNew] Failed to configure registry:', err);
+  }
+}
+
 app.whenReady().then(() => {
+  registerWindowsShellNew();
   createWindow();
 
   app.on('activate', () => {
