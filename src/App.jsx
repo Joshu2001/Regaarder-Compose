@@ -85,7 +85,7 @@ import { initLocalSync, teardownLocalSync, parseRegaarderFile, syncAllDocumentsT
 import { readWorkspaceDocuments, writeWorkspaceDocuments, normalizeWorkspaceDocuments } from './services/workspaceDocumentStore';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
-import RegaarderNotebookViewer from './components/RegaarderNotebookViewer';
+import RegaarderNotebookViewer, { NotesWriteToolbarControls } from './components/RegaarderNotebookViewer';
 import { convertPdfToEditableHtml } from './utils/pdfToHtmlConverter';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
@@ -76737,7 +76737,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
 
-              {docToolbarTab === 'Write' && !activeDoc?.isPdfDoc && (
+              {/* Notes-specific Write toolbar — quiet, paper-centric controls */}
+              {docToolbarTab === 'Write' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') && (
+                <div className="w-full py-0.5 animate-in fade-in duration-150">
+                  <NotesWriteToolbarControls
+                    activeDoc={activeDoc}
+                    onUpdateDoc={(patch) => {
+                      setDocuments((prev) =>
+                        prev.map((d) => (d.id === activeDoc?.id ? { ...d, ...patch } : d))
+                      );
+                    }}
+                    onNewNote={createNotesExperience}
+                    onConvertToDoc={() => {
+                      if (!activeDoc) return;
+                      setDocuments((prev) =>
+                        prev.map((d) =>
+                          d.id === activeDoc.id
+                            ? { ...d, isNotesDoc: false, mode: 'compose', isPdfDoc: false }
+                            : d
+                        )
+                      );
+                      setProductMode('compose');
+                      showToast?.('Note promoted to document');
+                    }}
+                    isDarkMode={isDarkMode}
+                  />
+                </div>
+              )}
+
+              {docToolbarTab === 'Write' && !activeDoc?.isPdfDoc && !activeDoc?.isNotesDoc && activeDoc?.mode !== 'notes' && (
                 <div className="w-full flex flex-col gap-2">
                   <div className="w-full flex flex-wrap items-center justify-start gap-3 sm:gap-4">
             {/* Group 1: Typography Structure */}
