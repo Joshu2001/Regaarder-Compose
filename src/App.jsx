@@ -83618,7 +83618,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {(isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
-            className="pointer-events-none absolute left-6 top-20 z-[140]"
+            className={`pointer-events-none absolute z-[140] ${
+              (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')
+                ? 'right-8 bottom-10'
+                : 'left-6 top-20'
+            }`}
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
           >
             <div className="pointer-events-auto flex items-center gap-2 group relative">

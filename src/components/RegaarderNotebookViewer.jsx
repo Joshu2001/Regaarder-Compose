@@ -104,10 +104,19 @@ export function NotesWriteToolbarControls({
   onConvertToDoc,
   isDarkMode,
 }) {
-  const [activeTool, setActiveTool] = useState(activeDoc?.activeTool || "text");
+  const [activeTool, setActiveTool] = useState(activeDoc?.activeTool || (activeDoc?.isHandwriting ? "pen" : "text"));
   const [openPopover, setOpenPopover] = useState(null); // 'insert' | 'ai' | 'ruling' | 'more'
   const [isAiLoading, setIsAiLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Synchronize local activeTool with activeDoc state changes
+  useEffect(() => {
+    if (activeDoc?.activeTool) {
+      setActiveTool(activeDoc.activeTool);
+    } else if (activeDoc?.isHandwriting !== undefined) {
+      setActiveTool(activeDoc.isHandwriting ? "pen" : "text");
+    }
+  }, [activeDoc?.activeTool, activeDoc?.isHandwriting]);
 
   const refs = {
     insert: useRef(null),
@@ -260,7 +269,10 @@ export function NotesWriteToolbarControls({
       {/* Pen tool */}
       <button
         type="button"
-        onClick={handleTogglePen}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          handleTogglePen();
+        }}
         className={btnClass(activeTool === "pen")}
         title="Pen / Handwriting mode (cursive feel)"
       >
@@ -271,7 +283,10 @@ export function NotesWriteToolbarControls({
       {/* Text tool */}
       <button
         type="button"
-        onClick={handleToggleText}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          handleToggleText();
+        }}
         className={btnClass(activeTool === "text")}
         title="Type Text"
       >
@@ -282,7 +297,10 @@ export function NotesWriteToolbarControls({
       {/* Highlight tool */}
       <button
         type="button"
-        onClick={handleHighlight}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          handleHighlight();
+        }}
         className={btnClass(activeTool === "highlight")}
         title="Highlight selected text"
       >
@@ -293,7 +311,10 @@ export function NotesWriteToolbarControls({
       {/* Checklist tool */}
       <button
         type="button"
-        onClick={handleInsertChecklist}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          handleInsertChecklist();
+        }}
         className={btnClass(activeTool === "checklist")}
         title="Insert interactive checklist item"
       >
@@ -903,6 +924,8 @@ function RuledNotebookCanvas({
 
   // Sync bodyHtml to DOM without dropping cursor
   const lastHtmlRef = useRef(bodyHtml);
+  const debounceTimerRef = useRef(null);
+
   useEffect(() => {
     if (!editorRef.current) return;
     if (bodyHtml !== lastHtmlRef.current && editorRef.current.innerHTML !== bodyHtml) {
@@ -911,11 +934,40 @@ function RuledNotebookCanvas({
     }
   }, [bodyHtml]);
 
+  // Flush pending changes immediately
+  const flushUpdates = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    const currentHtml = editorRef.current?.innerHTML || "";
+    if (currentHtml !== lastHtmlRef.current) {
+      lastHtmlRef.current = currentHtml;
+      onUpdateBodyHtml?.(currentHtml);
+    }
+  }, [onUpdateBodyHtml]);
+
+  // Debounced input handler: gives native 60fps typing without triggering root App re-renders per keypress
   const handleEditorInput = useCallback(() => {
     const html = editorRef.current?.innerHTML || "";
     lastHtmlRef.current = html;
-    onUpdateBodyHtml?.(html);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      onUpdateBodyHtml?.(html);
+    }, 280);
   }, [onUpdateBodyHtml]);
+
+  // Flush on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleTitleKeyDown = useCallback((e) => {
     if (e.key === "Enter") {
@@ -1059,6 +1111,7 @@ function RuledNotebookCanvas({
           contentEditable
           suppressContentEditableWarning
           onInput={handleEditorInput}
+          onBlur={flushUpdates}
           className="outline-none w-full min-h-[550px] text-slate-800 dark:text-zinc-200"
           style={{
             fontSize: "15px",
