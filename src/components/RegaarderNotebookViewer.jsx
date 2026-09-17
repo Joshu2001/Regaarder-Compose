@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Search, MoreHorizontal, ChevronDown, Check,
-  X, ArrowUpDown, AlignLeft, CheckSquare, Edit3, Type,
+  X, ArrowUpDown, AlignLeft, AlignJustify, CheckSquare, Edit3, Type,
   Highlighter, Paperclip, ImagePlus, FileText, Pin, PinOff,
   Table, Sliders
 } from "lucide-react";
@@ -429,7 +429,7 @@ export function NotesWriteToolbarControls({
           }`}
           title="Change Paper Ruling & Line Spacing"
         >
-          <Sliders size={13} strokeWidth={1.8} />
+          <AlignJustify size={13} strokeWidth={1.8} />
           <span>{RULING_PRESETS[rulingType]?.label || "Ruled"}</span>
           <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
         </button>
@@ -588,7 +588,7 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
         <div
           className="absolute inset-0 opacity-40 pointer-events-none"
           style={{
-            backgroundImage: "linear-gradient(rgba(147, 197, 253, 0.45) 1px, transparent 1px)",
+            backgroundImage: "linear-gradient(rgba(147, 197, 253, 0.3) 1px, transparent 1px)",
             backgroundSize: "100% 20px",
             backgroundPosition: "0 28px",
           }}
@@ -596,18 +596,18 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
       )}
       {rulingType === "grid" && (
         <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
+          className="absolute inset-0 opacity-25 pointer-events-none"
           style={{
-            backgroundImage: "linear-gradient(to right, rgba(148, 163, 184, 0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.3) 1px, transparent 1px)",
+            backgroundImage: "linear-gradient(to right, rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.2) 1px, transparent 1px)",
             backgroundSize: "16px 16px",
           }}
         />
       )}
       {rulingType === "dot" && (
         <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
+          className="absolute inset-0 opacity-25 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(rgba(100, 116, 139, 0.45) 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(rgba(100, 116, 139, 0.3) 1px, transparent 1px)",
             backgroundSize: "16px 16px",
           }}
         />
@@ -620,7 +620,7 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
           style={{
             left: 28,
             width: 1.5,
-            backgroundColor: "rgba(248, 113, 113, 0.5)",
+            backgroundColor: "rgba(248, 113, 113, 0.45)",
           }}
         />
       )}
@@ -642,7 +642,7 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
 
         {/* Body Content Preview */}
         <div
-          className="text-[11px] text-slate-700 dark:text-zinc-300 line-clamp-5 leading-relaxed overflow-hidden"
+          className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-5 leading-relaxed overflow-hidden"
           style={{ lineHeight: "20px" }}
         >
           {bodyText || "Empty notebook entry. Start typing your thoughts..."}
@@ -788,8 +788,8 @@ function NotesSidebar({
           </button>
         </div>
 
-        {/* Notes List */}
-        <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1 thin-scrollbar">
+        {/* Notes List: Refined with comfortable vertical breathing room (py-3 px-3) and clear hierarchy */}
+        <div className="flex-1 overflow-y-auto px-2 py-1.5 space-y-1.5 thin-scrollbar">
           {notes.length === 0 ? (
             <div className="text-center py-8 text-xs text-slate-400">No notes found</div>
           ) : (
@@ -801,21 +801,21 @@ function NotesSidebar({
                   onClick={() => onSelectDoc(note.id)}
                   onMouseEnter={(e) => handleMouseEnterNote(note, e.currentTarget)}
                   onMouseLeave={handleMouseLeaveNote}
-                  className={`group relative w-full text-left p-2.5 rounded-xl transition-all cursor-pointer select-none ${
+                  className={`group relative w-full text-left px-3 py-3 rounded-xl transition-all cursor-pointer select-none ${
                     isActive
-                      ? "bg-[#F3F0FF] dark:bg-violet-950/30 text-slate-900 dark:text-zinc-100"
+                      ? "bg-[#F3F0FF] dark:bg-violet-950/30 text-slate-900 dark:text-zinc-100 shadow-2xs"
                       : "hover:bg-slate-50 dark:hover:bg-zinc-800/50 text-slate-700 dark:text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-1.5 mb-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
                       {isActive ? (
                         <NotesIcon size={14} className="shrink-0 text-violet-600 dark:text-violet-400" />
                       ) : (
                         getNoteIcon(note)
                       )}
                       <span
-                        className={`text-xs font-semibold truncate ${
+                        className={`text-[12.5px] font-semibold truncate ${
                           isActive ? "text-slate-900 dark:text-zinc-100" : "text-slate-800 dark:text-zinc-200"
                         }`}
                       >
@@ -838,13 +838,13 @@ function NotesSidebar({
                     </button>
                   </div>
 
-                  {/* Date stamp */}
-                  <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium mb-0.5">
+                  {/* Date stamp: subtle and quiet */}
+                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-medium mb-1">
                     {formatNoteDate(note)}
                   </div>
 
-                  {/* Snippet preview */}
-                  <div className="text-[11px] text-slate-500 dark:text-zinc-400 truncate leading-tight">
+                  {/* Snippet preview: quieter, lower contrast so titles remain primary */}
+                  <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate leading-normal">
                     {getNoteSnippet(note)}
                   </div>
                 </div>
@@ -933,35 +933,47 @@ function RuledNotebookCanvas({
     });
   }, []);
 
-  // Line ruling background styling
+  // Line ruling background styling: Subtler horizontal rules that support the writing
   const rulingBgStyle = useMemo(() => {
     if (rulingType === "plain") {
       return {};
     }
     if (rulingType === "grid") {
-      const lineCol = isDarkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(148, 163, 184, 0.25)";
+      const lineCol = isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(148, 163, 184, 0.16)";
       return {
         backgroundImage: `linear-gradient(to right, ${lineCol} 1px, transparent 1px), linear-gradient(to bottom, ${lineCol} 1px, transparent 1px)`,
         backgroundSize: `${baselinePx}px ${baselinePx}px`,
-        backgroundPosition: `120px 80px`,
+        backgroundPosition: `140px 80px`,
       };
     }
     if (rulingType === "dot") {
-      const dotCol = isDarkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(100, 116, 139, 0.35)";
+      const dotCol = isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(100, 116, 139, 0.22)";
       return {
-        backgroundImage: `radial-gradient(${dotCol} 1.2px, transparent 1.2px)`,
+        backgroundImage: `radial-gradient(${dotCol} 1.1px, transparent 1.1px)`,
         backgroundSize: `${baselinePx}px ${baselinePx}px`,
-        backgroundPosition: `120px 80px`,
+        backgroundPosition: `140px 80px`,
       };
     }
-    // Standard 'ruled' college pattern
-    const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.14)" : "rgba(147, 197, 253, 0.4)";
+    // Standard 'ruled' college pattern: Subtler 0.20 opacity so lines whisper rather than compete
+    const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.09)" : "rgba(147, 197, 253, 0.22)";
     return {
       backgroundImage: `linear-gradient(${ruleCol} 1px, transparent 1px)`,
       backgroundSize: `100% ${baselinePx}px`,
       backgroundPosition: `0 80px`,
     };
   }, [rulingType, baselinePx, isDarkMode]);
+
+  // Exact vertical baseline math:
+  // With background lines at 80px + k*baselinePx, a 2-line title container occupies [80px, 80px + 2*baselinePx].
+  // The bottom of this container is at 80px + 2*baselinePx.
+  // We place the title baseline 5px above this line.
+  // The editor starts at 80px + 2*baselinePx. With lineHeight = baselinePx,
+  // the first line's baseline lands at: 80px + 2*baselinePx + baselineTopOffset + 0.78*fontSize.
+  // To align it to 80px + 3*baselinePx - 5px, baselineTopOffset = baselinePx - 0.78*fontSize - 5px.
+  const baselineTopOffset = useMemo(() => {
+    // 15px font with ~0.78 cap/baseline ratio gives ~11.7px descent+ascent geometry
+    return Math.max(0, Math.round(baselinePx - 16.5));
+  }, [baselinePx]);
 
   return (
     <div className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text">
@@ -983,32 +995,33 @@ function RuledNotebookCanvas({
         <span>1 / 1</span>
       </div>
 
-      {/* Ruling lines layer */}
+      {/* Ruling lines layer: Subtle, high-precision background */}
       <div
         className="absolute inset-0 pointer-events-none transition-all duration-150"
         style={rulingBgStyle}
       />
 
-      {/* Vertical red margin guide line (only shown on ruled pattern) */}
+      {/* Vertical red margin guide line: left 100px */}
       {rulingType === "ruled" && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none"
           style={{
             left: 100,
             width: 1.5,
-            backgroundColor: "rgba(248, 113, 113, 0.45)",
+            backgroundColor: "rgba(248, 113, 113, 0.38)",
           }}
         />
       )}
 
-      {/* Notebook writing content container */}
+      {/* Notebook writing content container:
+          visual order: red margin (at 100px) -> breathing space (40px) -> content (at 140px) */}
       <div
         className="relative min-h-full"
         style={{
-          paddingLeft: rulingType === "ruled" ? 120 : 64,
+          paddingLeft: rulingType === "ruled" ? 140 : 64,
           paddingRight: 64,
           paddingTop: 80,
-          paddingBottom: 120,
+          paddingBottom: 140,
         }}
       >
         {/* Large Note Title: Perfectly calibrated so text baseline rests above the line */}
@@ -1039,7 +1052,7 @@ function RuledNotebookCanvas({
           />
         </div>
 
-        {/* Note Body Editor: Calibrated baseline alignment so text sits cleanly on top of the ruling */}
+        {/* Note Body Editor: Mathematically aligned so every single line's baseline rests 4-5px above its ruled line */}
         <div
           id="regaarder-notebook-editor"
           ref={editorRef}
@@ -1050,7 +1063,7 @@ function RuledNotebookCanvas({
           style={{
             fontSize: "15px",
             lineHeight: `${baselinePx}px`,
-            paddingTop: `${Math.max(2, baselinePx - 27)}px`,
+            paddingTop: `${baselineTopOffset}px`,
             fontFamily: isHandwriting
               ? "'Caveat', 'Segoe Script', 'Bradley Hand', cursive, serif"
               : "'Newsreader', 'Georgia', -apple-system, serif",
