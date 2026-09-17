@@ -34042,7 +34042,14 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (targetDoc.whiteboardStrokes !== undefined) setWhiteboardStrokes(targetDoc.whiteboardStrokes || []);
     if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
 
-    if (productMode === 'landing') {
+    // Always sync productMode to the target document's app context so switching
+    // between Notes tabs and Docs tabs never shows the wrong viewer or toolbar.
+    if (targetDoc.isNotesDoc || targetDoc.mode === 'notes') {
+      setProductMode('notes');
+    } else if (productMode === 'notes') {
+      // Leaving Notes — restore to compose
+      setProductMode('compose');
+    } else if (productMode === 'landing') {
       if (targetDoc.mode) {
         setProductMode(targetDoc.mode);
       } else if (targetDoc.sheetsData) {
@@ -37173,6 +37180,8 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const getDocMode = useCallback((doc) => {
     if (!doc) return 'compose';
+    // Notes docs must be identified before the generic mode fallback
+    if (doc.isNotesDoc || doc.mode === 'notes') return 'notes';
     if (doc.mode) return doc.mode;
     // Structural heuristics — presence of type-specific fields is authoritative
     if (doc.sheetsData !== undefined || doc.sheetsTitle !== undefined || doc.title?.toLowerCase().includes('sheet')) return 'sheets';
@@ -37185,6 +37194,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     if (activeRightTab === 'whiteboard' || productMode === 'whiteboard') return 'whiteboard';
     if (productMode === 'sheets') return 'sheets';
     if (productMode === 'deck') return 'deck';
+    if (productMode === 'notes') return 'notes';
     return 'compose';
   }, [productMode, activeRightTab]);
 
@@ -37234,7 +37244,12 @@ Respond with a JSON array of slide objects matching the schema.`;
         switchDocument(modeDocs[0].id);
       }
     } else {
-      createNewComposition({ silent: true });
+      // Notes mode needs a note doc, not a generic compose doc
+      if (activeWorkspaceMode === 'notes') {
+        createNotesExperience();
+      } else {
+        createNewComposition({ silent: true });
+      }
     }
   }, [activeWorkspaceMode]);
 
