@@ -3,7 +3,7 @@ import {
   Plus, Search, MoreHorizontal, ChevronDown, Check,
   X, ArrowUpDown, AlignLeft, AlignJustify, CheckSquare, Edit3, Type,
   Highlighter, Paperclip, ImagePlus, FileText, Pin, PinOff,
-  Table, Sliders
+  Table, Sliders, Undo2, Redo2, Sparkles, ChevronRight, Hash, Eye
 } from "lucide-react";
 import { RegaarderAiIcon, NotesIcon } from "./RegaarderProductIcons";
 import { executeAiTurn } from "../services/llmProviderService";
@@ -49,9 +49,9 @@ export const RULING_PRESETS = {
   },
 };
 
-// ─── Toolbar Popover Shell ──────────────────────────────────────────────────────
+// ─── Floating Toolbar Popover Shell ─────────────────────────────────────────────
 
-function ToolbarPopover({ anchorRef, onClose, children, width = 210 }) {
+function ToolbarPopover({ anchorRef, onClose, children, width = 220 }) {
   const popRef = useRef(null);
 
   useEffect(() => {
@@ -60,13 +60,9 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 210 }) {
     if (!anchor || !pop) return;
 
     const rect = anchor.getBoundingClientRect();
-    pop.style.top = `${rect.bottom + 6}px`;
-    pop.style.left = `${rect.left}px`;
-
-    const rightEdge = rect.left + width;
-    if (rightEdge > window.innerWidth - 12) {
-      pop.style.left = `${window.innerWidth - width - 12}px`;
-    }
+    // Default open upward above the floating dock
+    pop.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+    pop.style.left = `${Math.max(12, Math.min(window.innerWidth - width - 16, rect.left + rect.width / 2 - width / 2))}px`;
 
     const handleOutside = (e) => {
       if (!pop.contains(e.target) && !anchor.contains(e.target)) onClose();
@@ -78,38 +74,32 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 210 }) {
   return (
     <div
       ref={popRef}
-      className="fixed z-50 rounded-xl shadow-xl border p-2 animate-in fade-in zoom-in-95 duration-100 select-none text-slate-800 dark:text-zinc-100"
-      style={{
-        width,
-        background: "rgba(255, 255, 255, 0.98)",
-        borderColor: "rgba(0, 0, 0, 0.08)",
-        backdropFilter: "blur(16px)",
-      }}
+      className="fixed z-50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-zinc-700/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl"
+      style={{ width }}
     >
       {children}
     </div>
   );
 }
 
-// ─── Notes Write Toolbar Controls (matching reference) ──────────────────────────
+// ─── Floating Bottom Dock (Inspired by Whiteboard Dock Model) ───────────────────
 
-/**
- * NotesWriteToolbarControls
- * Action controls in reference: Pen (active outline/pill), Text, Highlight, Checklist, Insert ⌄, AI ⌄, ... More
- */
-export function NotesWriteToolbarControls({
+export function NotesFloatingDock({
   activeDoc,
   onUpdateDoc,
-  onNewNote,
   onConvertToDoc,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  stats,
   isDarkMode,
 }) {
   const [activeTool, setActiveTool] = useState(activeDoc?.activeTool || (activeDoc?.isHandwriting ? "pen" : "text"));
-  const [openPopover, setOpenPopover] = useState(null); // 'insert' | 'ai' | 'ruling' | 'more'
+  const [openPopover, setOpenPopover] = useState(null); // 'ruling' | 'add' | 'ai' | 'more'
   const [isAiLoading, setIsAiLoading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Synchronize local activeTool with activeDoc state changes
   useEffect(() => {
     if (activeDoc?.activeTool) {
       setActiveTool(activeDoc.activeTool);
@@ -119,21 +109,20 @@ export function NotesWriteToolbarControls({
   }, [activeDoc?.activeTool, activeDoc?.isHandwriting]);
 
   const refs = {
-    insert: useRef(null),
-    ai: useRef(null),
     ruling: useRef(null),
+    add: useRef(null),
+    ai: useRef(null),
     more: useRef(null),
   };
 
   const closeAll = () => setOpenPopover(null);
   const toggle = (id) => setOpenPopover((prev) => (prev === id ? null : id));
 
-  // Paper ruling and thickness settings with localStorage persistence
   const savedRuling = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_ruling") : null;
   const savedThickness = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_thickness") : null;
 
-  const rulingType = activeDoc?.rulingType || savedRuling || "ruled"; // 'ruled' | 'grid' | 'dot' | 'plain'
-  const rulingThickness = activeDoc?.rulingThickness || savedThickness || "normal"; // 'fine' | 'normal' | 'bold'
+  const rulingType = activeDoc?.rulingType || savedRuling || "ruled";
+  const rulingThickness = activeDoc?.rulingThickness || savedThickness || "normal";
 
   const handleSetRuling = (newType) => {
     try {
@@ -155,14 +144,12 @@ export function NotesWriteToolbarControls({
     document.execCommand(cmd, false, value);
   };
 
-  // Pen tool toggle: switch between handwriting cursive feel and standard typeface
   const handleTogglePen = () => {
     const nextTool = activeTool === "pen" ? "text" : "pen";
     setActiveTool(nextTool);
     onUpdateDoc?.({ activeTool: nextTool, isHandwriting: nextTool === "pen" });
   };
 
-  // Text tool: standard typing
   const handleToggleText = () => {
     setActiveTool("text");
     onUpdateDoc?.({ activeTool: "text", isHandwriting: false });
@@ -170,29 +157,24 @@ export function NotesWriteToolbarControls({
     if (editor) editor.focus();
   };
 
-  // Highlight tool: wraps selection or toggles yellow highlight
   const handleHighlight = () => {
-    setActiveTool("highlight");
     exec("hiliteColor", "#FEF08A");
   };
 
-  // Checklist tool: inserts interactive checklist line
   const handleInsertChecklist = () => {
-    setActiveTool("checklist");
     const editor = document.getElementById("regaarder-notebook-editor");
     if (editor) editor.focus();
     const checkboxHtml = `<div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#D97706;cursor:pointer;" onchange="this.nextElementSibling.style.textDecoration=this.checked?'line-through':'none';this.nextElementSibling.style.opacity=this.checked?'0.6':'1';" /><span>New action item</span></div><br/>`;
     exec("insertHTML", checkboxHtml);
+    closeAll();
   };
 
-  // Insert Table
   const handleInsertTable = () => {
     const tableHtml = `<table style="width:100%;border-collapse:collapse;margin:12px 0;border:1px solid rgba(148,163,184,0.3);"><tbody><tr><th style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;text-align:left;background:rgba(241,245,249,0.5);">Header 1</th><th style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;text-align:left;background:rgba(241,245,249,0.5);">Header 2</th><th style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;text-align:left;background:rgba(241,245,249,0.5);">Status</th></tr><tr><td style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;">Item A</td><td style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;">Notes...</td><td style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;">In Progress</td></tr></tbody></table><br/>`;
     exec("insertHTML", tableHtml);
     closeAll();
   };
 
-  // AI Actions Implementation
   const handleAiAction = async (actionType) => {
     closeAll();
     const editor = document.getElementById("regaarder-notebook-editor");
@@ -208,9 +190,9 @@ export function NotesWriteToolbarControls({
     try {
       let prompt = "";
       if (actionType === "summarize") {
-        prompt = `Here is a handwritten/typed notebook entry titled "${title}":\n\n${rawContent}\n\nPlease generate a crisp, executive 3-bullet summary synthesizing key insights, decisions, and takeaways. Output clean HTML paragraphs or <ul><li> bullet points.`;
+        prompt = `Here is a notebook entry titled "${title}":\n\n${rawContent}\n\nPlease generate a crisp, executive 3-bullet summary synthesizing key insights, decisions, and takeaways. Output clean HTML paragraphs or <ul><li> bullet points.`;
       } else if (actionType === "checklist") {
-        prompt = `Here is a handwritten/typed notebook entry titled "${title}":\n\n${rawContent}\n\nPlease extract all action items and next steps into an executive checklist. Format each item as an HTML div with class "note-todo-item" and checkbox. Example: <div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#7C3AED;cursor:pointer;" /><span>Action text</span></div>`;
+        prompt = `Here is a notebook entry titled "${title}":\n\n${rawContent}\n\nPlease extract all action items and next steps into an executive checklist. Format each item as an HTML div with class "note-todo-item" and checkbox. Example: <div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#7C3AED;cursor:pointer;" /><span>Action text</span></div>`;
       } else if (actionType === "continue") {
         prompt = `Here is a notebook entry titled "${title}":\n\n${rawContent}\n\nPlease brainstorm the next logical steps, strategic implications, or 2 paragraphs continuing this line of thought seamlessly.`;
       } else if (actionType === "refine") {
@@ -248,16 +230,28 @@ export function NotesWriteToolbarControls({
     }
   };
 
-  const btnClass = (isActive) =>
-    `flex items-center gap-1.5 px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all duration-150 cursor-pointer select-none ${
-      isActive
-        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 shadow-2xs font-semibold"
-        : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 border border-transparent"
-    }`;
+  const handleUndoClick = () => {
+    if (onUndo) {
+      onUndo();
+    } else {
+      exec("undo");
+    }
+  };
+
+  const handleRedoClick = () => {
+    if (onRedo) {
+      onRedo();
+    } else {
+      exec("redo");
+    }
+  };
 
   return (
-    <div className="flex items-center gap-1.5 animate-in fade-in duration-150 select-none flex-wrap">
-      {/* Hidden file input for image upload */}
+    <div
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto"
+      style={{ willChange: "transform" }}
+    >
+      {/* Hidden file input for image insertion */}
       <input
         ref={fileInputRef}
         type="file"
@@ -275,308 +269,587 @@ export function NotesWriteToolbarControls({
         }}
       />
 
-      {/* 1. Primary input toggle: Pen (handwriting / cursive) */}
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleTogglePen();
-        }}
-        className={btnClass(activeTool === "pen")}
-        title="Pen / Handwriting mode (cursive feel)"
-      >
-        <Edit3 size={13} strokeWidth={2} />
-        <span>Pen</span>
-      </button>
+      {/* Floating Island Dock matching Whiteboard styling */}
+      <div className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={handleUndoClick}
+            disabled={canUndo === false}
+            className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+              canUndo === false
+                ? "text-slate-300 dark:text-zinc-600 cursor-not-allowed"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800"
+            }`}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 size={15} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={handleRedoClick}
+            disabled={canRedo === false}
+            className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+              canRedo === false
+                ? "text-slate-300 dark:text-zinc-600 cursor-not-allowed"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800"
+            }`}
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 size={15} strokeWidth={2} />
+          </button>
+        </div>
 
-      {/* 2. Primary input toggle: Text (standard typing) */}
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleToggleText();
-        }}
-        className={btnClass(activeTool === "text")}
-        title="Type Text"
-      >
-        <Type size={13} strokeWidth={2} />
-        <span>Text</span>
-      </button>
+        {/* Divider */}
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
 
-      {/* Divider */}
-      <div className="w-px h-3.5 bg-slate-200/70 dark:bg-zinc-800 mx-0.5 shrink-0" />
+        {/* Mode Toggle: Pen vs Text */}
+        <div className="flex items-center p-0.5 rounded-xl bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/50 dark:border-zinc-700/50">
+          <button
+            type="button"
+            onClick={handleTogglePen}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+              activeTool === "pen"
+                ? "bg-white dark:bg-zinc-900 text-amber-700 dark:text-amber-400 shadow-2xs border border-slate-200/60 dark:border-zinc-700/60"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
+            }`}
+            title="Handwriting cursive pen mode"
+          >
+            <Edit3 size={13} strokeWidth={2} />
+            <span>Pen</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleText}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+              activeTool === "text"
+                ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs border border-slate-200/60 dark:border-zinc-700/60"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
+            }`}
+            title="Standard typography typing mode"
+          >
+            <Type size={13} strokeWidth={2} />
+            <span>Text</span>
+          </button>
+        </div>
 
-      {/* 3. Paper Ruling & Line Spacing ⌄ */}
-      <div className="relative">
-        <button
-          ref={refs.ruling}
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            toggle("ruling");
-          }}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
-            openPopover === "ruling" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-          }`}
-          title="Change Paper Ruling & Line Spacing"
-        >
-          <AlignJustify size={13} strokeWidth={1.8} />
-          <span>{RULING_PRESETS[rulingType]?.label || "Ruled"}</span>
-          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
-        </button>
+        {/* Divider */}
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
 
-        {openPopover === "ruling" && (
-          <ToolbarPopover anchorRef={refs.ruling} onClose={closeAll} width={215}>
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
-              Paper Ruling
-            </div>
-            <div className="flex flex-col gap-0.5 mb-2">
-              {Object.values(RULING_PRESETS).map((preset) => {
-                const isSelected = rulingType === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      handleSetRuling(preset.id);
-                    }}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                      isSelected ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-semibold" : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
-                    }`}
-                  >
-                    <div>
-                      <div className="font-medium">{preset.label}</div>
-                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.sub}</div>
-                    </div>
-                    {isSelected && <Check size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
+        {/* Ruling & Grid Selector */}
+        <div className="relative">
+          <button
+            ref={refs.ruling}
+            type="button"
+            onClick={() => toggle("ruling")}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+              openPopover === "ruling"
+                ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/70"
+            }`}
+            title="Paper ruling and grid layout"
+          >
+            <AlignJustify size={14} strokeWidth={1.8} />
+            <span>{RULING_PRESETS[rulingType]?.label || "Ruled"}</span>
+            <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
+          </button>
 
-            <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
+          {openPopover === "ruling" && (
+            <ToolbarPopover anchorRef={refs.ruling} onClose={closeAll} width={230}>
+              <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                Paper Ruling Pattern
+              </div>
+              <div className="flex flex-col gap-0.5 mb-2">
+                {Object.values(RULING_PRESETS).map((preset) => {
+                  const isSelected = rulingType === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        handleSetRuling(preset.id);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-semibold"
+                          : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-medium">{preset.label}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.sub}</div>
+                      </div>
+                      {isSelected && <Check size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
-              Line Spacing / Thickness
-            </div>
-            <div className="flex items-center gap-1 px-1 py-1">
-              {[
-                { id: "fine", label: "Fine" },
-                { id: "normal", label: "Normal" },
-                { id: "bold", label: "Wide" },
-              ].map(({ id, label }) => {
-                const isSelected = rulingThickness === id;
-                return (
+              <div className="my-1.5 border-t border-slate-100 dark:border-zinc-800" />
+
+              <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                Line Spacing / Thickness
+              </div>
+              <div className="flex items-center gap-1 px-1 py-1">
+                {[
+                  { id: "fine", label: "Fine" },
+                  { id: "normal", label: "Normal" },
+                  { id: "bold", label: "Wide" },
+                ].map(({ id, label }) => {
+                  const isSelected = rulingThickness === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        handleSetThickness(id);
+                      }}
+                      className={`flex-1 py-1 px-2 text-center text-xs rounded-lg transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-amber-600 dark:bg-amber-500 text-white font-semibold shadow-2xs"
+                          : "bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </ToolbarPopover>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
+
+        {/* + Add (Insert Image, Table, Checklist, Link) */}
+        <div className="relative">
+          <button
+            ref={refs.add}
+            type="button"
+            onClick={() => toggle("add")}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+              openPopover === "add"
+                ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/70"
+            }`}
+            title="Insert content"
+          >
+            <Plus size={14} strokeWidth={2} />
+            <span>Add</span>
+          </button>
+
+          {openPopover === "add" && (
+            <ToolbarPopover anchorRef={refs.add} onClose={closeAll} width={190}>
+              <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                Insert Content
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleInsertChecklist();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-800 dark:hover:text-amber-200 transition-colors text-left cursor-pointer"
+                >
+                  <CheckSquare size={14} strokeWidth={1.8} className="text-amber-600" />
+                  <span>Checklist Item</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <ImagePlus size={14} strokeWidth={1.8} />
+                  <span>Image</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleInsertTable();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Table size={14} strokeWidth={1.8} />
+                  <span>Table Grid</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    const url = prompt("Enter URL link:");
+                    if (url) exec("createLink", url);
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Paperclip size={14} strokeWidth={1.8} />
+                  <span>Hyperlink</span>
+                </button>
+              </div>
+            </ToolbarPopover>
+          )}
+        </div>
+
+        {/* AI Note Assistant (MANDATORY RegaarderAiIcon signature) */}
+        <div className="relative">
+          <button
+            ref={refs.ai}
+            type="button"
+            disabled={isAiLoading}
+            onClick={() => toggle("ai")}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              openPopover === "ai"
+                ? "bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300"
+                : "text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40"
+            } ${isAiLoading ? "opacity-60 cursor-wait" : ""}`}
+            title="Regaarder AI Note Assistant"
+          >
+            <RegaarderAiIcon size={14} className={isAiLoading ? "animate-spin text-violet-600" : "text-violet-600 dark:text-violet-400"} />
+            <span>{isAiLoading ? "Synthesizing..." : "AI"}</span>
+            <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
+          </button>
+
+          {openPopover === "ai" && (
+            <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={230}>
+              <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
+                Regaarder AI Note Assistant
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {[
+                  { id: "summarize", label: "Summarize thoughts", sub: "Generate executive bullet points" },
+                  { id: "checklist", label: "Extract action items", sub: "Convert ideas into interactive checklist" },
+                  { id: "continue", label: "Continue writing", sub: "Brainstorm strategic next steps" },
+                  { id: "refine", label: "Refine phrasing", sub: "Elevate tone while preserving handwritten voice" },
+                ].map(({ id, label, sub }) => (
                   <button
                     key={id}
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      handleSetThickness(id);
+                      handleAiAction(id);
                     }}
-                    className={`flex-1 py-1 px-2 text-center text-xs rounded-md transition-all ${
-                      isSelected
-                        ? "bg-amber-600 dark:bg-amber-500 text-white font-medium shadow-2xs"
-                        : "bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300"
-                    }`}
+                    className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer group"
                   >
-                    {label}
+                    <div className="flex items-center gap-1.5">
+                      <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:hover:text-violet-300">
+                        {label}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 pl-4 mt-0.5">{sub}</div>
                   </button>
-                );
-              })}
-            </div>
-          </ToolbarPopover>
-        )}
-      </div>
+                ))}
+              </div>
+            </ToolbarPopover>
+          )}
+        </div>
 
-      {/* 4. AI ⌄ (with official RegaarderAiIcon signature) */}
+        {/* Divider */}
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
+
+        {/* More Actions Popover */}
+        <div className="relative">
+          <button
+            ref={refs.more}
+            type="button"
+            onClick={() => toggle("more")}
+            className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+              openPopover === "more"
+                ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/70 dark:hover:bg-zinc-800/70"
+            }`}
+            title="More actions and stats"
+          >
+            <MoreHorizontal size={15} strokeWidth={2} />
+          </button>
+
+          {openPopover === "more" && (
+            <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={210}>
+              <div className="px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                Note Actions
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleHighlight();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Highlighter size={14} strokeWidth={1.8} className="text-amber-500" />
+                  <span>Highlight Selection</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    onUpdateDoc?.({ pinned: !activeDoc?.pinned });
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  {activeDoc?.pinned ? <PinOff size={14} strokeWidth={1.8} /> : <Pin size={14} strokeWidth={1.8} />}
+                  <span>{activeDoc?.pinned ? "Unpin Note" : "Pin Note to Top"}</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    onConvertToDoc?.();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <FileText size={14} strokeWidth={1.8} />
+                  <span>Promote to Compose Doc</span>
+                </button>
+              </div>
+
+              {/* Note Word & Character Stats */}
+              {stats && (
+                <>
+                  <div className="my-1.5 border-t border-slate-100 dark:border-zinc-800" />
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500">
+                    <span>{stats.words} words</span>
+                    <span>•</span>
+                    <span>{stats.chars} chars</span>
+                  </div>
+                </>
+              )}
+            </ToolbarPopover>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Exported Notes Write Toolbar Controls (for Compose Header bar) ────────────
+
+export function NotesWriteToolbarControls({
+  activeDoc,
+  onUpdateDoc,
+  onNewNote,
+  onConvertToDoc,
+  isDarkMode,
+}) {
+  const [openPopover, setOpenPopover] = useState(null);
+  const rulingRef = useRef(null);
+  const addRef = useRef(null);
+
+  const rulingType = activeDoc?.rulingType || "ruled";
+  const rulingThickness = activeDoc?.rulingThickness || "normal";
+
+  const handleSetRuling = (newType) => {
+    try {
+      localStorage.setItem("regaarder_notes_default_ruling", newType);
+    } catch (_) {}
+    onUpdateDoc?.({ rulingType: newType });
+    setOpenPopover(null);
+  };
+
+  const handleSetThickness = (newThickness) => {
+    try {
+      localStorage.setItem("regaarder_notes_default_thickness", newThickness);
+    } catch (_) {}
+    onUpdateDoc?.({ rulingThickness: newThickness });
+    setOpenPopover(null);
+  };
+
+  const exec = (cmd, value = null) => {
+    const editor = document.getElementById("regaarder-notebook-editor");
+    if (editor) editor.focus();
+    document.execCommand(cmd, false, value);
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Ruling Selector */}
       <div className="relative">
         <button
-          ref={refs.ai}
+          ref={rulingRef}
           type="button"
-          disabled={isAiLoading}
-          onPointerDown={(e) => {
-            e.preventDefault();
-            toggle("ai");
-          }}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
-            openPopover === "ai" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-          } ${isAiLoading ? "opacity-60 cursor-wait" : ""}`}
+          onClick={() => setOpenPopover((prev) => (prev === "ruling" ? null : "ruling"))}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          title="Notebook Ruling & Margin Style"
         >
-          <RegaarderAiIcon size={14} strokeWidth={1.8} className={isAiLoading ? "animate-spin text-violet-600" : "text-violet-600"} />
-          <span>{isAiLoading ? "Synthesizing..." : "AI"}</span>
-          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
+          <Sliders size={13} className="text-amber-500" />
+          <span className="capitalize">{RULING_PRESETS[rulingType]?.label || "Ruled"}</span>
+          <ChevronDown size={11} className="opacity-60" />
         </button>
 
-        {openPopover === "ai" && (
-          <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={220}>
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
-              AI Note Actions
+        {openPopover === "ruling" && (
+          <div className="absolute left-0 top-full mt-1.5 z-50 w-52 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl flex flex-col gap-1">
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+              Ruling Pattern
             </div>
-            <div className="flex flex-col gap-0.5">
+            {Object.values(RULING_PRESETS).map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleSetRuling(preset.id);
+                }}
+                className={`flex items-center justify-between w-full px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                  rulingType === preset.id
+                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold"
+                    : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <div className="text-left">
+                  <div>{preset.label}</div>
+                  <div className="text-[10px] text-slate-400 font-normal">{preset.sub}</div>
+                </div>
+                {rulingType === preset.id && <Check size={13} className="text-amber-500 shrink-0" />}
+              </button>
+            ))}
+            <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+              Line Spacing
+            </div>
+            <div className="grid grid-cols-3 gap-1 px-1">
               {[
-                { id: "summarize", label: "Summarize thoughts", sub: "Generate executive key points" },
-                { id: "checklist", label: "Structure into checklist", sub: "Convert items into tasks" },
-                { id: "continue", label: "Continue writing", sub: "Brainstorm next steps" },
-                { id: "refine", label: "Refine tone & grammar", sub: "Polish handwritten phrasing" },
-              ].map(({ id, label, sub }) => (
+                { id: "fine", label: "Fine" },
+                { id: "normal", label: "Medium" },
+                { id: "bold", label: "Wide" },
+              ].map(({ id, label }) => (
                 <button
                   key={id}
                   type="button"
                   onPointerDown={(e) => {
                     e.preventDefault();
-                    handleAiAction(id);
+                    handleSetThickness(id);
                   }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors cursor-pointer"
+                  className={`py-1 text-center rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                    rulingThickness === id
+                      ? "bg-amber-500 text-white font-semibold"
+                      : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900"
+                  }`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <RegaarderAiIcon size={12} className="text-violet-600" />
-                    <span className="text-xs font-medium text-slate-800 dark:text-zinc-200">{label}</span>
-                  </div>
-                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 pl-4">{sub}</div>
+                  {label}
                 </button>
               ))}
             </div>
-          </ToolbarPopover>
+          </div>
         )}
       </div>
 
-      {/* 5. Streamlined More ... (encapsulating Highlight, Checklist, Insert image/link/table, Pin, and Promote) */}
-      <div className="relative">
+      <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
+
+      {/* Quick Formatting shortcuts */}
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          exec("bold");
+        }}
+        className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors font-bold text-xs"
+        title="Bold (Ctrl+B)"
+      >
+        B
+      </button>
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          exec("italic");
+        }}
+        className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors italic text-xs font-serif"
+        title="Italic (Ctrl+I)"
+      >
+        I
+      </button>
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          exec("insertUnorderedList");
+        }}
+        className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+        title="Bullet List"
+      >
+        <AlignLeft size={13} />
+      </button>
+
+      {/* Checklist Button */}
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          const checkHtml = `<div class="note-todo-item" style="display: flex; align-items: flex-start; gap: 8px; margin: 4px 0;"><input type="checkbox" style="width: 15px; height: 15px; margin-top: 7px; accent-color: #D97706; cursor: pointer;" /><span>&nbsp;</span></div>`;
+          exec("insertHTML", checkHtml);
+        }}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+        title="Insert Interactive Checklist"
+      >
+        <CheckSquare size={13} className="text-amber-500" />
+        <span>Checklist</span>
+      </button>
+
+      <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
+
+      {/* Handwriting Font Toggle */}
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onUpdateDoc?.({ isHandwriting: !activeDoc?.isHandwriting });
+        }}
+        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+          activeDoc?.isHandwriting
+            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
+        }`}
+        title="Toggle Cursive Handwriting vs Serif Print Font"
+      >
+        <Type size={13} />
+        <span>{activeDoc?.isHandwriting ? "Handwriting" : "Print Serif"}</span>
+      </button>
+
+      <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
+
+      {/* Convert Note to Doc */}
+      <button
+        type="button"
+        onClick={onConvertToDoc}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+        title="Promote Note into Full Compose Document"
+      >
+        <FileText size={13} />
+        <span>Promote to Doc</span>
+      </button>
+
+      {/* New Note Shortcut */}
+      {onNewNote && (
         <button
-          ref={refs.more}
           type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            toggle("more");
-          }}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
-            openPopover === "more" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-          }`}
-          title="More tools & actions"
+          onClick={onNewNote}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors cursor-pointer shadow-sm"
+          title="Create New Note"
         >
-          <MoreHorizontal size={13} strokeWidth={2} />
-          <span>More</span>
+          <Plus size={13} strokeWidth={2.5} />
+          <span>New Note</span>
         </button>
-
-        {openPopover === "more" && (
-          <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={200}>
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
-              Formatting & Tools
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  handleHighlight();
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                <Highlighter size={13} strokeWidth={1.8} className="text-amber-500" />
-                <span>Highlight selection</span>
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  handleInsertChecklist();
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                <CheckSquare size={13} strokeWidth={1.8} className="text-amber-600" />
-                <span>Insert checklist</span>
-              </button>
-            </div>
-
-            <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
-
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
-              Insert Media & Data
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                <ImagePlus size={13} strokeWidth={1.8} />
-                <span>Insert Image</span>
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  const url = prompt("Enter URL link:");
-                  if (url) exec("createLink", url);
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                <Paperclip size={13} strokeWidth={1.8} />
-                <span>Insert Link</span>
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  handleInsertTable();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                <Table size={13} strokeWidth={1.8} />
-                <span>Insert Table</span>
-              </button>
-            </div>
-
-            <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
-
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  onConvertToDoc?.();
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                <FileText size={13} strokeWidth={1.8} />
-                <span>Convert to Document</span>
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  onUpdateDoc?.({ pinned: !activeDoc?.pinned });
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
-              >
-                {activeDoc?.pinned ? <PinOff size={13} strokeWidth={1.8} /> : <Pin size={13} strokeWidth={1.8} />}
-                <span>{activeDoc?.pinned ? "Unpin Note" : "Pin Note"}</span>
-              </button>
-            </div>
-          </ToolbarPopover>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
 // ─── Hover Note Snapshot Card ───────────────────────────────────────────────────
 
-/**
- * HoverNoteSnapshotCard
- * Renders a miniature preview screenshot/card showing the note's ruled canvas on hover.
- */
 function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
   if (!note || !anchorRect) return null;
 
@@ -588,19 +861,16 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
     year: "numeric"
   }) : "Today";
 
-  // Calculate coordinates: Anchor directly to the right edge of the sidebar item
-  const top = Math.max(12, Math.min(window.innerHeight - 240, anchorRect.top - 20));
-  const left = anchorRect.right + 10;
-
+  const top = Math.max(16, Math.min(window.innerHeight - 250, anchorRect.top - 20));
+  const left = anchorRect.right + 12;
   const rulingType = note.rulingType || "ruled";
 
   return (
     <div
-      className="fixed z-[300] w-[270px] pointer-events-none rounded-xl shadow-2xl border border-slate-200/90 dark:border-zinc-800 bg-[#FCFAF7] dark:bg-[#1C1C1F] p-3 animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
+      className="fixed z-[350] w-[270px] pointer-events-none rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-slate-200/90 dark:border-zinc-800 bg-[#FCFAF7] dark:bg-[#1C1C1F] p-3.5 animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
       style={{
         top: `${top}px`,
         left: `${left}px`,
-        boxShadow: "0 20px 35px -8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)",
       }}
     >
       {/* Background ruling representation */}
@@ -633,26 +903,24 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
         />
       )}
 
-      {/* Vertical red margin line representation */}
+      {/* Vertical red margin line */}
       {rulingType === "ruled" && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none"
           style={{
-            left: 28,
+            left: 24,
             width: 1.5,
             backgroundColor: "rgba(248, 113, 113, 0.45)",
           }}
         />
       )}
 
-      <div className="relative pl-6">
-        {/* Header Snapshot Tag */}
+      <div className="relative pl-5">
         <div className="flex items-center justify-between text-[9.5px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
           <span>{dateStr}</span>
           <span className="text-amber-600 dark:text-amber-400 font-bold">Snapshot</span>
         </div>
 
-        {/* Note Title */}
         <div
           className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 truncate italic mb-1.5"
           style={{ fontFamily: "'Newsreader', 'Georgia', serif" }}
@@ -660,7 +928,6 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
           {title}
         </div>
 
-        {/* Body Content Preview */}
         <div
           className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-5 leading-relaxed overflow-hidden"
           style={{ lineHeight: "20px" }}
@@ -672,24 +939,27 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
   );
 }
 
-// ─── Collapsible Notes Sidebar ──────────────────────────────────────────────────
+// ─── Hover-Reveal Floating Notes Sidebar (Reference #3 Model) ───────────────────
 
-function NotesSidebar({
+function HoverRevealNotesSidebar({
   documents,
   activeDoc,
   onSelectDoc,
   onNewNote,
-  onCloseSidebar,
+  isOpen,
+  isPinned,
+  onTogglePin,
+  onClose,
+  onMouseEnter,
+  onMouseLeave,
   sortAscending,
   onToggleSort,
   isDarkMode,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeMenuDocId, setActiveMenuDocId] = useState(null);
-  const [hoveredNoteInfo, setHoveredNoteInfo] = useState(null); // { note, rect }
+  const [hoveredNoteInfo, setHoveredNoteInfo] = useState(null);
   const hoverTimeoutRef = useRef(null);
 
-  // Filter notes belonging to notes mode or isNotesDoc
   const notes = useMemo(() => {
     const list = (documents || []).filter((d) => d.isNotesDoc || d.mode === "notes");
     const filtered = list.filter((n) => {
@@ -701,13 +971,16 @@ function NotesSidebar({
     });
 
     return filtered.sort((a, b) => {
+      // Pinned notes always surface first
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+
       const timeA = a.updatedAt || a.createdAt || 0;
       const timeB = b.updatedAt || b.createdAt || 0;
       return sortAscending ? timeA - timeB : timeB - timeA;
     });
   }, [documents, searchQuery, sortAscending]);
 
-  // Format date or timestamp cleanly matching reference (e.g. "Today · 3:42 PM", "Sep 14, 2025")
   const formatNoteDate = (doc) => {
     if (!doc.createdAt && !doc.updatedAt) return "Today · 3:42 PM";
     const d = new Date(doc.updatedAt || doc.createdAt);
@@ -724,14 +997,12 @@ function NotesSidebar({
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
-  // Extract preview snippet
   const getNoteSnippet = (doc) => {
-    if (!doc.bodyHtml) return "Finish the Regaarder Workspace mockups...";
+    if (!doc.bodyHtml) return "Start typing your thoughts...";
     const plain = doc.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
     return plain.length > 55 ? plain.substring(0, 55) + "..." : plain || "Empty note";
   };
 
-  // Choose icon based on note title/type
   const getNoteIcon = (doc) => {
     const title = (doc.title || "").toLowerCase();
     if (title.includes("idea") || title.includes("project")) {
@@ -746,7 +1017,7 @@ function NotesSidebar({
     return <NotesIcon size={14} className="shrink-0 text-amber-600 dark:text-amber-500" />;
   };
 
-  const handleMouseEnterNote = (note, element) => {
+  const handleMouseEnterItem = (note, element) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       const rect = element.getBoundingClientRect();
@@ -754,7 +1025,7 @@ function NotesSidebar({
     }, 180);
   };
 
-  const handleMouseLeaveNote = () => {
+  const handleMouseLeaveItem = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     setHoveredNoteInfo(null);
   };
@@ -762,24 +1033,48 @@ function NotesSidebar({
   return (
     <>
       <aside
-        className="w-[260px] h-full flex flex-col border-r border-slate-200/70 dark:border-zinc-800 bg-[#FFFFFF] dark:bg-[#18181B] shrink-0 select-none z-10 transition-all duration-200"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        className={`fixed top-4 bottom-4 left-4 z-50 w-[280px] flex flex-col rounded-2xl bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isOpen || isPinned
+            ? "translate-x-0 opacity-100 pointer-events-auto"
+            : "-translate-x-[calc(100%+24px)] opacity-0 pointer-events-none"
+        }`}
       >
-        {/* Header: Notes icon + Notes text + Close button */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        {/* Header: Notes title + Pin toggle + Close */}
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
           <div className="flex items-center gap-2">
             <NotesIcon size={18} className="text-amber-600 dark:text-amber-500" />
             <span className="text-[14px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
               Notes
             </span>
+            <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400">
+              {notes.length}
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={onCloseSidebar}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-            title="Close notes sidebar"
-          >
-            <X size={14} strokeWidth={2} />
-          </button>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onTogglePin}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isPinned
+                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                  : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
+              }`}
+              title={isPinned ? "Unpin sidebar (auto-hide)" : "Pin sidebar open"}
+            >
+              <Pin size={13} className={isPinned ? "fill-current" : ""} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Close sidebar"
+            >
+              <X size={14} strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
         {/* Search Input */}
@@ -801,15 +1096,15 @@ function NotesSidebar({
           <button
             type="button"
             onClick={onNewNote}
-            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200/80 dark:border-amber-800/60 font-semibold text-xs transition-colors cursor-pointer shadow-2xs"
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
           >
             <Plus size={14} strokeWidth={2.2} />
             <span>New Note</span>
           </button>
         </div>
 
-        {/* Notes List: Refined with comfortable vertical breathing room (py-3 px-3) and clear hierarchy */}
-        <div className="flex-1 overflow-y-auto px-2 py-1.5 space-y-1.5 thin-scrollbar">
+        {/* Notes List */}
+        <div className="flex-1 overflow-y-auto px-2 py-1.5 space-y-1 thin-scrollbar">
           {notes.length === 0 ? (
             <div className="text-center py-8 text-xs text-slate-400">No notes found</div>
           ) : (
@@ -819,15 +1114,15 @@ function NotesSidebar({
                 <div
                   key={note.id}
                   onClick={() => onSelectDoc(note.id)}
-                  onMouseEnter={(e) => handleMouseEnterNote(note, e.currentTarget)}
-                  onMouseLeave={handleMouseLeaveNote}
-                  className={`group relative w-full text-left px-3 py-3 rounded-xl transition-all cursor-pointer select-none ${
+                  onMouseEnter={(e) => handleMouseEnterItem(note, e.currentTarget)}
+                  onMouseLeave={handleMouseLeaveItem}
+                  className={`group relative w-full text-left px-3 py-2.5 rounded-xl transition-all cursor-pointer select-none ${
                     isActive
-                      ? "bg-amber-50/70 dark:bg-amber-950/30 text-slate-900 dark:text-zinc-100 border-l-2 border-amber-500 shadow-2xs"
-                      : "hover:bg-slate-50 dark:hover:bg-zinc-800/50 text-slate-700 dark:text-zinc-300"
+                      ? "bg-amber-50 dark:bg-amber-950/40 text-slate-900 dark:text-zinc-100 border-l-2 border-amber-500 shadow-2xs"
+                      : "hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                  <div className="flex items-center justify-between gap-1.5 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       {isActive ? (
                         <NotesIcon size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
@@ -843,27 +1138,15 @@ function NotesSidebar({
                       </span>
                     </div>
 
-                    {/* Context menu trigger */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveMenuDocId(activeMenuDocId === note.id ? null : note.id);
-                      }}
-                      className={`p-0.5 rounded text-slate-400 hover:text-slate-700 transition-opacity ${
-                        isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                      }`}
-                    >
-                      <MoreHorizontal size={13} />
-                    </button>
+                    {note.pinned && (
+                      <Pin size={11} className="text-amber-600 dark:text-amber-400 fill-current shrink-0" />
+                    )}
                   </div>
 
-                  {/* Date stamp: subtle and quiet */}
-                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-medium mb-1">
+                  <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium mb-0.5">
                     {formatNoteDate(note)}
                   </div>
 
-                  {/* Snippet preview: quieter, lower contrast so titles remain primary */}
                   <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate leading-normal">
                     {getNoteSnippet(note)}
                   </div>
@@ -873,21 +1156,21 @@ function NotesSidebar({
           )}
         </div>
 
-        {/* Footer: note count + sort icon */}
+        {/* Footer: Sort toggle */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-zinc-800/80 text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
           <span>{notes.length} notes</span>
           <button
             type="button"
             onClick={onToggleSort}
-            className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
             title="Toggle sort order"
           >
-            <ArrowUpDown size={13} strokeWidth={1.8} />
+            <ArrowUpDown size={12} strokeWidth={1.8} />
+            <span className="text-[10.5px]">{sortAscending ? "Oldest" : "Newest"}</span>
           </button>
         </div>
       </aside>
 
-      {/* Render Hover Snapshot Preview Card */}
       {hoveredNoteInfo && (
         <HoverNoteSnapshotCard
           note={hoveredNoteInfo.note}
@@ -899,29 +1182,26 @@ function NotesSidebar({
   );
 }
 
-// ─── Ruled Notebook Canvas (Dominant Hero Area) ──────────────────────────────────
+// ─── Ruled Notebook Canvas (Dominant Hero Writing Surface) ──────────────────────
 
 function RuledNotebookCanvas({
   title,
   onUpdateTitle,
   bodyHtml,
   onUpdateBodyHtml,
-  sidebarCollapsed,
-  onOpenSidebar,
   rulingType = "ruled",
   rulingThickness = "normal",
   isHandwriting = false,
   isDarkMode = false,
+  onOpenSidebar,
 }) {
   const editorRef = useRef(null);
   const titleRef = useRef(null);
 
-  // Compute exact rhythm from selected ruling and thickness
   const activePreset = RULING_PRESETS[rulingType] || RULING_PRESETS.ruled;
   const config = activePreset[rulingThickness] || activePreset.normal;
   const baselinePx = config.baseline || 32;
 
-  // Sync bodyHtml to DOM without dropping cursor
   const lastHtmlRef = useRef(bodyHtml);
   const debounceTimerRef = useRef(null);
 
@@ -933,7 +1213,6 @@ function RuledNotebookCanvas({
     }
   }, [bodyHtml]);
 
-  // Flush pending changes immediately
   const flushUpdates = useCallback(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -946,7 +1225,6 @@ function RuledNotebookCanvas({
     }
   }, [onUpdateBodyHtml]);
 
-  // Debounced input handler: gives native 60fps typing without triggering root App re-renders per keypress
   const handleEditorInput = useCallback(() => {
     const html = editorRef.current?.innerHTML || "";
     lastHtmlRef.current = html;
@@ -959,7 +1237,6 @@ function RuledNotebookCanvas({
     }, 280);
   }, [onUpdateBodyHtml]);
 
-  // Flush on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
@@ -975,7 +1252,6 @@ function RuledNotebookCanvas({
     }
   }, []);
 
-  // Today formatted e.g. "Sep 17, 2025"
   const formattedDate = useMemo(() => {
     return new Date().toLocaleDateString("en-US", {
       month: "short",
@@ -984,7 +1260,6 @@ function RuledNotebookCanvas({
     });
   }, []);
 
-  // Line ruling background styling: Subtler horizontal rules that support the writing
   const rulingBgStyle = useMemo(() => {
     if (rulingType === "plain") {
       return {};
@@ -1005,7 +1280,6 @@ function RuledNotebookCanvas({
         backgroundPosition: `136px 80px`,
       };
     }
-    // Standard 'ruled' college pattern: Subtler 0.18 opacity so lines whisper rather than compete
     const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(147, 197, 253, 0.18)";
     return {
       backgroundImage: `linear-gradient(${ruleCol} 1px, transparent 1px)`,
@@ -1014,39 +1288,19 @@ function RuledNotebookCanvas({
     };
   }, [rulingType, baselinePx, isDarkMode]);
 
-  // Exact vertical baseline math:
-  // With background lines at 80px + k*baselinePx, a 2-line title container occupies [80px, 80px + 2*baselinePx].
-  // The bottom of this container is at 80px + 2*baselinePx.
-  // We place the title baseline 5px above this line.
-  // The editor starts at 80px + 2*baselinePx. With lineHeight = baselinePx,
-  // the first line's baseline lands at: 80px + 2*baselinePx + baselineTopOffset + 0.78*fontSize.
-  // To align it to 80px + 3*baselinePx - 5px, baselineTopOffset = baselinePx - 0.78*fontSize - 5px.
   const baselineTopOffset = useMemo(() => {
-    // 15px font with ~0.78 cap/baseline ratio gives ~11.7px descent+ascent geometry
     return Math.max(0, Math.round(baselinePx - 16.5));
   }, [baselinePx]);
 
   return (
     <div className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text">
-      {/* If sidebar is collapsed, provide quiet expand button */}
-      {sidebarCollapsed && (
-        <button
-          type="button"
-          onClick={onOpenSidebar}
-          className="absolute left-3 top-3 z-20 p-1.5 rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-slate-200/70 shadow-xs text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
-          title="Open Notes Sidebar"
-        >
-          <NotesIcon size={16} className="text-amber-600 dark:text-amber-500" />
-        </button>
-      )}
-
       {/* Top right notebook header: Date + Page indicator */}
       <div className="absolute right-12 top-6 z-10 flex items-center gap-6 text-[12px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
         <span>{formattedDate}</span>
         <span>1 / 1</span>
       </div>
 
-      {/* Ruling lines layer: Subtle, high-precision background */}
+      {/* Ruling lines layer */}
       <div
         className="absolute inset-0 pointer-events-none transition-all duration-150"
         style={rulingBgStyle}
@@ -1064,18 +1318,17 @@ function RuledNotebookCanvas({
         />
       )}
 
-      {/* Notebook writing content container:
-          visual order: red margin (at 72px) -> breathing space (72px) -> content (at 144px) */}
+      {/* Notebook writing content container */}
       <div
-        className="relative min-h-full"
+        className="relative min-h-full max-w-4xl mx-auto"
         style={{
           paddingLeft: rulingType === "ruled" ? 144 : 56,
           paddingRight: 56,
           paddingTop: 80,
-          paddingBottom: 140,
+          paddingBottom: 160,
         }}
       >
-        {/* Large Note Title: Perfectly calibrated so text baseline rests above the line */}
+        {/* Large Note Title: baseline rests naturally on the ruled line */}
         <div
           style={{
             height: baselinePx * 2,
@@ -1103,7 +1356,7 @@ function RuledNotebookCanvas({
           />
         </div>
 
-        {/* Note Body Editor: Mathematically aligned so every single line's baseline rests 4-5px above its ruled line */}
+        {/* Note Body Editor */}
         <div
           id="regaarder-notebook-editor"
           ref={editorRef}
@@ -1111,7 +1364,7 @@ function RuledNotebookCanvas({
           suppressContentEditableWarning
           onInput={handleEditorInput}
           onBlur={flushUpdates}
-          className="outline-none w-full min-h-[550px] text-slate-800 dark:text-zinc-200"
+          className="outline-none w-full min-h-[600px] text-slate-800 dark:text-zinc-200"
           style={{
             fontSize: "15px",
             lineHeight: `${baselinePx}px`,
@@ -1132,54 +1385,140 @@ function RuledNotebookCanvas({
 
 /**
  * RegaarderNotebookViewer
- * Edge-to-edge ruled notebook viewer with dedicated collapsible Notes sidebar and hover previews.
+ * Edge-to-edge ruled notebook viewer featuring:
+ * - Spatial hover-reveal sidebar anchored to left edge (Reference #3)
+ * - Floating bottom dock toolbar (Undo/Redo | Pen/Text | Ruling | + Add | AI | More)
+ * - Pure notebook hero writing canvas with sub-millimeter baseline alignment
  */
 export default function RegaarderNotebookViewer({
   activeDoc,
   onUpdateBodyHtml,
   onUpdateTitle,
+  onUpdateDoc,
+  onConvertToDoc,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   documents,
   onSelectDoc,
   onNewNote,
   isDarkMode,
 }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarPinned, setIsSidebarPinned] = useState(false);
   const [sortAscending, setSortAscending] = useState(false);
+  const sidebarLeaveTimerRef = useRef(null);
 
   const rulingType = activeDoc?.rulingType || "ruled";
   const rulingThickness = activeDoc?.rulingThickness || "normal";
   const isHandwriting = activeDoc?.isHandwriting || activeDoc?.activeTool === "pen";
 
+  // Hover detection handlers for left edge
+  const handleLeftEdgeEnter = () => {
+    if (sidebarLeaveTimerRef.current) {
+      clearTimeout(sidebarLeaveTimerRef.current);
+      sidebarLeaveTimerRef.current = null;
+    }
+    setIsSidebarOpen(true);
+  };
+
+  const handleSidebarMouseEnter = () => {
+    if (sidebarLeaveTimerRef.current) {
+      clearTimeout(sidebarLeaveTimerRef.current);
+      sidebarLeaveTimerRef.current = null;
+    }
+    setIsSidebarOpen(true);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (isSidebarPinned) return;
+    if (sidebarLeaveTimerRef.current) {
+      clearTimeout(sidebarLeaveTimerRef.current);
+    }
+    sidebarLeaveTimerRef.current = setTimeout(() => {
+      setIsSidebarOpen(false);
+    }, 320);
+  };
+
+  // Real-time word and character counts
+  const stats = useMemo(() => {
+    const text = (activeDoc?.bodyHtml || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (!text) return { words: 0, chars: 0 };
+    const words = text.split(/\s+/).filter(Boolean).length;
+    return { words, chars: text.length };
+  }, [activeDoc?.bodyHtml]);
+
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-[#18181B]">
-      {/* Collapsible Sidebar */}
-      {!sidebarCollapsed && (
-        <NotesSidebar
-          documents={documents}
-          activeDoc={activeDoc}
-          onSelectDoc={onSelectDoc}
-          onNewNote={onNewNote}
-          onCloseSidebar={() => setSidebarCollapsed(true)}
-          sortAscending={sortAscending}
-          onToggleSort={() => setSortAscending((prev) => !prev)}
-          isDarkMode={isDarkMode}
-        />
+    <div className="relative flex h-full w-full overflow-hidden bg-white dark:bg-[#18181B]">
+      {/* 1. Left Edge Hover Trigger Zone (16px invisible strip along left margin) */}
+      <div
+        onMouseEnter={handleLeftEdgeEnter}
+        className="absolute top-0 bottom-0 left-0 w-4 z-40 pointer-events-auto"
+        title="Hover to reveal Notes list"
+      />
+
+      {/* 2. Quiet floating pill button at top left to explicitly open sidebar if preferred */}
+      {!isSidebarOpen && !isSidebarPinned && (
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen(true)}
+          className="absolute left-4 top-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:border-amber-400 transition-all cursor-pointer group select-none animate-in fade-in"
+          title="Open Notes Sidebar"
+        >
+          <NotesIcon size={14} className="text-amber-600 dark:text-amber-500" />
+          <span className="text-xs font-semibold">Notes</span>
+          <ChevronRight size={12} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+        </button>
       )}
 
-      {/* Dominant Ruled Notebook Canvas */}
+      {/* 3. Hover-Reveal Floating Notes Sidebar (Retractable Card Overlay) */}
+      <HoverRevealNotesSidebar
+        documents={documents}
+        activeDoc={activeDoc}
+        onSelectDoc={onSelectDoc}
+        onNewNote={onNewNote}
+        isOpen={isSidebarOpen}
+        isPinned={isSidebarPinned}
+        onTogglePin={() => setIsSidebarPinned((prev) => !prev)}
+        onClose={() => {
+          setIsSidebarPinned(false);
+          setIsSidebarOpen(false);
+        }}
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
+        sortAscending={sortAscending}
+        onToggleSort={() => setSortAscending((prev) => !prev)}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* 4. Dominant Ruled Notebook Writing Surface */}
       <RuledNotebookCanvas
         title={activeDoc?.title}
         onUpdateTitle={onUpdateTitle}
         bodyHtml={activeDoc?.bodyHtml || ""}
         onUpdateBodyHtml={onUpdateBodyHtml}
-        sidebarCollapsed={sidebarCollapsed}
-        onOpenSidebar={() => setSidebarCollapsed(false)}
         rulingType={rulingType}
         rulingThickness={rulingThickness}
         isHandwriting={isHandwriting}
+        isDarkMode={isDarkMode}
+        onOpenSidebar={() => setIsSidebarOpen(true)}
+      />
+
+      {/* 5. Floating Bottom Dock (Whiteboard-Inspired Capsule Dock) */}
+      <NotesFloatingDock
+        activeDoc={activeDoc}
+        onUpdateDoc={onUpdateDoc}
+        onConvertToDoc={onConvertToDoc}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        stats={stats}
         isDarkMode={isDarkMode}
       />
     </div>
   );
 }
+
 

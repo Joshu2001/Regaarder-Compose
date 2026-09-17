@@ -34392,10 +34392,13 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setLeftSidebarOpen(false);
     setActiveDocView('document');
 
-    // If options.forceNew is not requested and documents exist, restore active or most recent document
-    if (!options.forceNew && documents && documents.length > 0) {
-      const targetDoc = documents.find(d => String(d.id) === String(activeDocId)) || documents[documents.length - 1];
-      if (targetDoc && (targetDoc.title || targetDoc.bodyHtml)) {
+    // Filter for genuine Compose documents (excluding notes, sheets, deck, whiteboard, etc.)
+    const composeDocs = (documents || []).filter(d => getDocMode(d) === 'compose');
+
+    // If options.forceNew is not requested and compose documents exist, restore active or most recent compose document
+    if (!options.forceNew && composeDocs.length > 0) {
+      const targetDoc = composeDocs.find(d => String(d.id) === String(activeDocId)) || composeDocs[composeDocs.length - 1];
+      if (targetDoc) {
         setActiveDocId(targetDoc.id);
         setDocTitle(targetDoc.title || 'Untitled Document');
         setDocBodyHtml(targetDoc.bodyHtml || '');
@@ -37962,8 +37965,10 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     const isSheetsMode = productMode === 'sheets';
     const isDeckMode = productMode === 'deck';
+    const isNotesWorkspace = productMode === 'notes' || (productMode !== 'compose' && Boolean(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'));
     const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
-    const isWhiteboardTopNavRevealed = !isWhiteboardWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
+    const isSpatialWorkspace = isWhiteboardWorkspace || isNotesWorkspace;
+    const isWhiteboardTopNavRevealed = !isSpatialWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
@@ -74130,7 +74135,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* 1. Left Navigation Sidebar — Full length Document Outline */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-[#FAFAFC] dark:bg-[#18181b] border-r border-slate-200/80 dark:border-zinc-800/80 h-screen min-h-screen h-full z-[380]"
-        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: (productMode === 'whiteboard' || activeRightTab === 'whiteboard' || isNotesWorkspace) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {/* Panel Header */}
         <div className="h-14 px-4 border-b border-slate-100 dark:border-zinc-800/60 shrink-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md flex items-center justify-between">
@@ -74668,8 +74673,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
         
-        {/* Top Header & Document Tab Strip Auto-Hide Container for Whiteboard */}
-        {isWhiteboardWorkspace && (
+        {/* Top Header & Document Tab Strip Auto-Hide Container for Spatial Workspaces (Whiteboard & Notes) */}
+        {isSpatialWorkspace && (
           <>
             {/* Top proximity trigger zone to smoothly reveal navigation when hovering near top edge */}
             {!isWhiteboardTopNavRevealed && (
@@ -74687,8 +74692,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className="absolute top-2 left-1/2 -translate-x-1/2 z-[340] flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 cursor-pointer select-none group/hud animate-in fade-in slide-in-from-top-1"
                 title="Hover or click to reveal workspace tabs, export, and controls"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                <span className="text-[11.5px] font-semibold tracking-tight">{(docTitle === 'Untitled Whiteboard' || !docTitle?.trim()) ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : docTitle}</span>
+                <div className={`w-1.5 h-1.5 rounded-full ${isNotesWorkspace ? 'bg-amber-500' : 'bg-violet-500'} animate-pulse`} />
+                <span className="text-[11.5px] font-semibold tracking-tight">
+                  {isNotesWorkspace 
+                    ? (docTitle || 'Untitled Note') 
+                    : ((docTitle === 'Untitled Whiteboard' || !docTitle?.trim()) ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : docTitle)}
+                </span>
                 <ChevronDown size={11} className="text-slate-400 dark:text-zinc-500 group-hover/hud:translate-y-0.5 transition-transform" />
               </div>
             )}
@@ -74699,7 +74708,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           onMouseEnter={handleWhiteboardTopNavEnter}
           onMouseLeave={handleWhiteboardTopNavLeave}
           className={`flex flex-col select-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
-            isWhiteboardWorkspace
+            isSpatialWorkspace
               ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] ${
                   isWhiteboardTopNavRevealed 
                     ? 'translate-y-0 opacity-100 pointer-events-auto' 
@@ -76623,7 +76632,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }
           }}
           className={`mx-4 mt-1 mb-1 w-[calc(100%-2rem)] p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-1.5 z-20 shrink-0 transition-all duration-200 ${
-            productMode === 'whiteboard' || (activeRightTab === 'whiteboard' && isWhiteboardImmersive) ? 'hidden' : ''
+            productMode === 'whiteboard' || (activeRightTab === 'whiteboard' && isWhiteboardImmersive) || isNotesWorkspace ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
@@ -76778,7 +76787,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               )}
 
               {/* Notes-specific Write toolbar — quiet, paper-centric controls */}
-              {docToolbarTab === 'Write' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') && (
+              {docToolbarTab === 'Write' && isNotesWorkspace && (
                 <div className="w-full py-0.5 animate-in fade-in duration-150">
                   <NotesWriteToolbarControls
                     activeDoc={activeDoc}
@@ -76805,7 +76814,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
 
-              {docToolbarTab === 'Write' && !activeDoc?.isPdfDoc && !activeDoc?.isNotesDoc && activeDoc?.mode !== 'notes' && (
+              {docToolbarTab === 'Write' && !activeDoc?.isPdfDoc && !isNotesWorkspace && (
                 <div className="w-full flex flex-col gap-2">
                   <div className="w-full flex flex-wrap items-center justify-start gap-3 sm:gap-4">
             {/* Group 1: Typography Structure */}
@@ -82380,7 +82389,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onCloseMarkup={() => setPdfMarkupActive(false)}
                 isDarkMode={isDarkMode}
               />
-            ) : (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? (
+            ) : (productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'))) ? (
               <RegaarderNotebookViewer
                 activeDoc={activeDoc}
                 onUpdateTitle={(title) => {
@@ -82390,6 +82399,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onUpdateBodyHtml={(html) => {
                   setDocBodyHtml(html);
                   setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, bodyHtml: html } : d));
+                }}
+                onUpdateDoc={(patch) => {
+                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, ...patch } : d));
+                }}
+                onConvertToDoc={() => {
+                  if (!activeDoc) return;
+                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, isNotesDoc: false, mode: 'compose' } : d));
+                  setProductMode('compose');
                 }}
                 documents={documents}
                 onSelectDoc={(id) => switchDocument(id)}
