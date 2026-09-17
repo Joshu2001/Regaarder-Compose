@@ -469,11 +469,102 @@ export const readLocalFile = async (filePath) => {
  */
 export const parseRegaarderFile = (content, sourcePath = '') => {
   try {
-    const parsed = JSON.parse(content);
+    const ext = sourcePath ? sourcePath.slice(sourcePath.lastIndexOf('.')).toLowerCase() : '';
+    const trimmed = typeof content === 'string' ? content.trim() : '';
+
+    // Handle 0-byte or newly created files from Windows Explorer "New" context menu
+    if (!trimmed || trimmed === '{}') {
+      let mode = 'compose';
+      let defaultTitle = 'Untitled Document';
+      if (ext === '.rgsht') {
+        mode = 'sheets';
+        defaultTitle = 'Untitled Sheet';
+      } else if (ext === '.rgdck') {
+        mode = 'deck';
+        defaultTitle = 'Untitled Presentation';
+      } else if (ext === '.rgwbd') {
+        mode = 'whiteboard';
+        defaultTitle = 'Untitled Whiteboard';
+      }
+
+      // Extract filename without extension if named specifically by user in Explorer
+      let initialTitle = defaultTitle;
+      if (sourcePath) {
+        const baseName = sourcePath.split(/[\\/]/).pop() || '';
+        const nameWithoutExt = baseName.replace(/\.[^/.]+$/, '').trim();
+        if (nameWithoutExt && !nameWithoutExt.startsWith('New Regaarder')) {
+          initialTitle = nameWithoutExt;
+        }
+      }
+
+      const newId = Date.now();
+      const emptyDoc = {
+        id: newId,
+        mode,
+        type: mode,
+        title: initialTitle,
+        sheetsTitle: mode === 'sheets' ? initialTitle : undefined,
+        deckTitle: mode === 'deck' ? initialTitle : undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        localFilePath: sourcePath || undefined,
+        bodyHtml: mode === 'compose' ? '<p></p>' : undefined,
+        sheetsData: mode === 'sheets' ? [] : undefined,
+        deckSlidesData: mode === 'deck' ? [] : undefined,
+        whiteboardWidgets: mode === 'whiteboard' ? [] : undefined,
+      };
+
+      return emptyDoc;
+    }
+
+    // Handle PDF files directly
+    if (ext === '.pdf') {
+      const baseName = sourcePath.split(/[\\/]/).pop() || 'Document.pdf';
+      const nameWithoutExt = baseName.replace(/\.[^/.]+$/, '').trim();
+      const newId = Date.now();
+      return {
+        id: newId,
+        mode: 'compose',
+        type: 'compose',
+        title: nameWithoutExt || 'Native PDF Document',
+        subtitle: 'Native PDF Document',
+        originalFileName: baseName,
+        isPdfDoc: true,
+        fileType: 'pdf',
+        pdfBlobUrl: typeof content === 'string' && content.startsWith('data:') ? content : null,
+        localFilePath: sourcePath,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    // Handle Plain Text & Markdown files directly
+    if (ext === '.txt' || ext === '.md') {
+      const baseName = sourcePath.split(/[\\/]/).pop() || 'Document.txt';
+      const nameWithoutExt = baseName.replace(/\.[^/.]+$/, '').trim();
+      const newId = Date.now();
+      const formattedHtml = content
+        .split('\n')
+        .map(line => `<p>${line || '<br/>'}</p>`)
+        .join('');
+      return {
+        id: newId,
+        mode: 'compose',
+        type: 'compose',
+        title: nameWithoutExt || 'Document',
+        subtitle: ext === '.md' ? 'Markdown Document' : 'Plain Text Document',
+        originalFileName: baseName,
+        bodyHtml: formattedHtml,
+        localFilePath: sourcePath,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    const parsed = JSON.parse(trimmed);
     if (!parsed || typeof parsed !== 'object') return null;
 
     // Detect mode from extension or stored mode
-    const ext = sourcePath ? sourcePath.slice(sourcePath.lastIndexOf('.')).toLowerCase() : '';
     let mode = parsed.mode;
     if (!mode) {
       if (ext === '.rgsht' || parsed.sheetsData || parsed.sheetGrids) mode = 'sheets';

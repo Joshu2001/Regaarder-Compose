@@ -179,13 +179,18 @@ import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
 import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
 import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './utils/exportUtils';
 import AnalyticsHubUI from './analytics/AnalyticsHubUI';
-const API_BASE_URL = (typeof process !== 'undefined' && process.env?.VITE_COLLAB_SERVER_URL) || 
-  (import.meta.env?.VITE_COLLAB_SERVER_URL) || 
-  (typeof window !== 'undefined' && window.location?.origin ? (
-    window.location.port === '5173' || window.location.port === '5174'
-      ? `${window.location.protocol}//${window.location.hostname}:3001`
-      : window.location.origin
-  ) : 'http://localhost:3001');
+const API_BASE_URL = (() => {
+  const envUrl = (typeof process !== 'undefined' && process.env?.VITE_COLLAB_SERVER_URL) || 
+    (import.meta.env?.VITE_COLLAB_SERVER_URL);
+  if (envUrl) return envUrl;
+  if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.startsWith('file:')) {
+    if (window.location.port === '5173' || window.location.port === '5174') {
+      return `${window.location.protocol}//${window.location.hostname}:3001`;
+    }
+    return window.location.origin;
+  }
+  return 'http://localhost:3001';
+})();
 
 function hexToRgb(hex) {
   if (!hex || typeof hex !== 'string') return { r: 124, g: 58, b: 237 };
@@ -7022,31 +7027,55 @@ function AppCore() {
   useEffect(() => {
     initLocalSync();
 
+    // Process incoming file data and open directly into its product mode
+    const handleIncomingFileData = (fileData) => {
+      try {
+        if (!fileData || fileData.content === undefined || fileData.content === null) return;
+        const parsed = parseRegaarderFile(fileData.content, fileData.filePath);
+        if (parsed) {
+          const currentDocs = readWorkspaceDocuments();
+          const existingIdx = currentDocs.findIndex((d) => String(d.id) === String(parsed.id));
+          let updatedDocs;
+          if (existingIdx >= 0) {
+            updatedDocs = [...currentDocs];
+            updatedDocs[existingIdx] = { ...updatedDocs[existingIdx], ...parsed };
+          } else {
+            updatedDocs = [parsed, ...currentDocs];
+          }
+          writeWorkspaceDocuments(updatedDocs);
+          setDocuments(updatedDocs);
+
+          const openItem = () => {
+            if (typeof window.openSavedLibraryItemGlobal === 'function') {
+              window.openSavedLibraryItemGlobal(parsed);
+            } else {
+              setTimeout(openItem, 100);
+            }
+          };
+          openItem();
+          showToast?.(`Opened ${fileData.fileName || 'file'}`);
+        }
+      } catch (err) {
+        console.warn('[App] Failed to open external file:', err);
+      }
+    };
+
     // Listen for file-open events dispatched from OS (e.g. double-clicking .rgdoc / .cmp in Explorer)
     let unsubscribeOpenFile = null;
     if (typeof window !== 'undefined' && typeof window.electronAPI?.onOpenFile === 'function') {
       unsubscribeOpenFile = window.electronAPI.onOpenFile((fileData) => {
-        try {
-          if (!fileData || !fileData.content) return;
-          const parsed = parseRegaarderFile(fileData.content, fileData.filePath);
-          if (parsed) {
-            const currentDocs = readWorkspaceDocuments();
-            const existingIdx = currentDocs.findIndex((d) => d.id === parsed.id);
-            let updatedDocs;
-            if (existingIdx >= 0) {
-              updatedDocs = [...currentDocs];
-              updatedDocs[existingIdx] = { ...updatedDocs[existingIdx], ...parsed };
-            } else {
-              updatedDocs = [parsed, ...currentDocs];
-            }
-            writeWorkspaceDocuments(updatedDocs);
-            setDocuments(updatedDocs);
-            handleSwitchActiveDoc(parsed.id, parsed.mode || 'compose');
-            showToast?.(`Opened ${fileData.fileName || 'file'}`);
-          }
-        } catch (err) {
-          console.warn('[App] Failed to open external file:', err);
+        handleIncomingFileData(fileData);
+      });
+    }
+
+    // Check for pending file to open from cold application launch
+    if (typeof window !== 'undefined' && typeof window.electronAPI?.getPendingFile === 'function') {
+      window.electronAPI.getPendingFile().then((pendingFile) => {
+        if (pendingFile) {
+          handleIncomingFileData(pendingFile);
         }
+      }).catch((err) => {
+        console.warn('[App] Failed to check pending file:', err);
       });
     }
 
@@ -18555,29 +18584,38 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       setIsAwarenessReady(true);
     }, 400);
     const userToken = localStorage.getItem('rc.token');
-    const wsUrl = API_BASE_URL.replace(/^http/, 'ws') + '/yjs';
+    const wsUrl = (API_BASE_URL.startsWith('ws') || API_BASE_URL.startsWith('http'))
+      ? API_BASE_URL.replace(/^http/, 'ws') + '/yjs'
+      : 'ws://localhost:3001/yjs';
     const roomName = roomId ? `compose-room-${roomId}` : `compose-room-${activeDocId || 'default'}`;
-    providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current, {
-      params: userToken ? { token: userToken } : {},
-      maxBackoffTime: 30000,
-      resyncInterval: 0,
-      disableBc: false
-    });
+    try {
+      providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current, {
+        params: userToken ? { token: userToken } : {},
+        maxBackoffTime: 30000,
+        resyncInterval: 0,
+        disableBc: false
+      });
 
-    providerRef.current.on('connection-error', () => {
-      // Gracefully handle offline backend collaboration server
-    });
+      providerRef.current.on('connection-error', () => {
+        // Gracefully handle offline backend collaboration server
+      });
+    } catch (wsErr) {
+      console.warn('[Yjs Collaboration] Offline mode - WebSocket initialization skipped:', wsErr);
+      providerRef.current = null;
+    }
 
-    const awareness = providerRef.current.awareness;
-    awareness.setLocalStateField('user', {
-      name: currentUser ? currentUser.name : guestUser.name,
-      color: currentUser ? '#8b5cf6' : guestUser.color,
-      avatar: currentUser?.avatar || guestUser.avatar
-    });
-    awareness.setLocalStateField('roomId', roomId);
-    awareness.setLocalStateField('isRoomMicOn', isRoomMicOn);
-    awareness.setLocalStateField('isRoomCameraOn', isRoomCameraOn);
-    awareness.setLocalStateField('socketId', socketId);
+    const awareness = providerRef.current?.awareness;
+    if (awareness) {
+      awareness.setLocalStateField('user', {
+        name: currentUser ? currentUser.name : guestUser.name,
+        color: currentUser ? '#8b5cf6' : guestUser.color,
+        avatar: currentUser?.avatar || guestUser.avatar
+      });
+      awareness.setLocalStateField('roomId', roomId);
+      awareness.setLocalStateField('isRoomMicOn', isRoomMicOn);
+      awareness.setLocalStateField('isRoomCameraOn', isRoomCameraOn);
+      awareness.setLocalStateField('socketId', socketId);
+    }
 
     awareness.on('change', ({ added, removed }) => {
       const states = awareness.getStates();
@@ -34194,6 +34232,13 @@ Answer the user's question, provide an insightful summary, or explain the contex
   }, [documents, productMode, activeRightTab, defaultInitiatives]);
 
   useEffect(() => {
+    window.openSavedLibraryItemGlobal = openSavedLibraryItem;
+    return () => {
+      delete window.openSavedLibraryItemGlobal;
+    };
+  }, [openSavedLibraryItem]);
+
+  useEffect(() => {
     if (recentDocumentsModalOpen || libraryDropdownOpen) {
       const docsMap = new Map();
 
@@ -35092,14 +35137,83 @@ Respond with valid JSON formatted like this:
     showToast(`Absorbed ${absorbedDocs.length} enterprise document${absorbedDocs.length > 1 ? 's' : ''} into workspace`);
   };
 
-  const handleConvertPdfToEditableDoc = (targetDocId) => {
+  const handleConvertPdfToEditableDoc = async (targetDocId) => {
     const docId = targetDocId || activeDocId;
     const docToConvert = documents.find((d) => d.id === docId);
     if (!docToConvert) return;
 
+    showToast('Extracting document contents from PDF...');
+
     let convertedHtml = docToConvert.cleanExtractedText || '';
+
+    // If cleanExtractedText is not cached, dynamically extract all text from the PDF buffer or DataURL
     if (!convertedHtml) {
-      convertedHtml = `<h1 class="text-2xl font-bold my-3 text-slate-900 dark:text-white">${escapeHtml(docToConvert.title || 'Converted Document')}</h1><p class="my-2 text-slate-700 dark:text-zinc-300 leading-relaxed">Document transcribed from ${escapeHtml(docToConvert.originalFileName || 'PDF')}. Ready for editing in Regaarder Compose.</p>`;
+      try {
+        let arrayBuffer = null;
+        if (docToConvert.rawBlob && typeof docToConvert.rawBlob.arrayBuffer === 'function') {
+          arrayBuffer = await docToConvert.rawBlob.arrayBuffer();
+        } else if (docToConvert.pdfBlobUrl) {
+          const resp = await fetch(docToConvert.pdfBlobUrl);
+          if (resp.ok) {
+            arrayBuffer = await resp.arrayBuffer();
+          }
+        }
+
+        if (arrayBuffer) {
+          const pdfjs = await import('pdfjs-dist');
+          const loadingTask = pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) });
+          const pdf = await loadingTask.promise;
+          const extractedParagraphs = [];
+
+          for (let pNum = 1; pNum <= pdf.numPages; pNum += 1) {
+            const page = await pdf.getPage(pNum);
+            const textContent = await page.getTextContent();
+            
+            // Reconstruct lines preserving paragraph grouping
+            let currentLine = '';
+            let lastY = null;
+
+            for (const item of textContent.items) {
+              if (!item.str) continue;
+              const y = item.transform ? item.transform[5] : null;
+              if (lastY !== null && y !== null && Math.abs(y - lastY) > 5) {
+                if (currentLine.trim()) {
+                  extractedParagraphs.push(currentLine.trim());
+                }
+                currentLine = item.str;
+              } else {
+                currentLine += (currentLine ? ' ' : '') + item.str;
+              }
+              lastY = y;
+            }
+            if (currentLine.trim()) {
+              extractedParagraphs.push(currentLine.trim());
+            }
+          }
+
+          if (extractedParagraphs.length > 0) {
+            convertedHtml = extractedParagraphs
+              .map((p, idx) => {
+                const isHeading = idx === 0 || (p.length < 80 && !p.endsWith('.') && (p.startsWith('#') || p === p.toUpperCase() || /^[A-Z0-9\s\-:]{3,60}$/.test(p)));
+                const cleanP = p.replace(/^#+\s*/, '').trim();
+                if (idx === 0) {
+                  return `<h1 class="text-2xl font-bold my-4 text-slate-900 dark:text-white">${escapeHtml(cleanP)}</h1>`;
+                }
+                if (isHeading) {
+                  return `<h2 class="text-xl font-bold my-3 text-slate-900 dark:text-white">${escapeHtml(cleanP)}</h2>`;
+                }
+                return `<p class="my-2 text-slate-800 dark:text-zinc-200 leading-relaxed">${escapeHtml(cleanP)}</p>`;
+              })
+              .join('\n');
+          }
+        }
+      } catch (err) {
+        console.error('[App] Failed to extract text during PDF conversion:', err);
+      }
+    }
+
+    if (!convertedHtml) {
+      convertedHtml = `<h1 class="text-2xl font-bold my-3 text-slate-900 dark:text-white">${escapeHtml(docToConvert.title || 'Converted Document')}</h1><p class="my-2 text-slate-700 dark:text-zinc-300 leading-relaxed">Ready for editing in Regaarder Workspace.</p>`;
     }
 
     setDocuments((prev) =>
@@ -35109,7 +35223,7 @@ Respond with valid JSON formatted like this:
             ...d,
             isPdfDoc: false,
             bodyHtml: convertedHtml,
-            subtitle: 'Converted from PDF',
+            subtitle: 'Editable Document',
           };
         }
         return d;
@@ -35118,7 +35232,7 @@ Respond with valid JSON formatted like this:
 
     if (activeDocId === docId) {
       setDocBodyHtml(convertedHtml);
-      setDocSubtitle('Converted from PDF');
+      setDocSubtitle('Editable Document');
     }
 
     showToast('Converted PDF to editable document');
@@ -76481,27 +76595,56 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
             {/* Apple Segmented Control Track */}
             <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
-              {['Context', 'Templates', 'Write', 'Review', 'View'].map((tab) => (
-                <button
-                  key={tab}
-                  data-toolbar-tab={tab}
-                  type="button"
-                  onClick={() => {
-                    if (isDocumentSubToolbarCollapsed) {
-                      setIsDocumentSubToolbarCollapsed(false);
-                    }
-                    setDocToolbarTab(tab);
-                    showToast?.(t('status.tabToolsReady', { tab: (tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab) }) || `${tab} ${t('status.toolsReady') || 'tools ready'}`);
-                  }}
-                  className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
-                    docToolbarTab === tab
-                      ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
-                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
-                  }`}
-                >
-                  {tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab}
-                </button>
-              ))}
+              {activeDoc?.isPdfDoc ? (
+                ['View', 'Annotate', 'Convert'].map((tab) => {
+                  const isPdfActive = (tab === 'Annotate' && pdfMarkupActive) || (tab === 'View' && !pdfMarkupActive);
+                  return (
+                    <button
+                      key={tab}
+                      data-toolbar-tab={tab}
+                      type="button"
+                      onClick={() => {
+                        if (tab === 'Annotate') {
+                          setPdfMarkupActive(true);
+                        } else if (tab === 'View') {
+                          setPdfMarkupActive(false);
+                        } else if (tab === 'Convert') {
+                          handleConvertPdfToEditableDoc(activeDoc.id);
+                        }
+                      }}
+                      className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                        isPdfActive
+                          ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })
+              ) : (
+                ['Context', 'Templates', 'Write', 'Review', 'View'].map((tab) => (
+                  <button
+                    key={tab}
+                    data-toolbar-tab={tab}
+                    type="button"
+                    onClick={() => {
+                      if (isDocumentSubToolbarCollapsed) {
+                        setIsDocumentSubToolbarCollapsed(false);
+                      }
+                      setDocToolbarTab(tab);
+                      showToast?.(t('status.tabToolsReady', { tab: (tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab) }) || `${tab} ${t('status.toolsReady') || 'tools ready'}`);
+                    }}
+                    className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                      docToolbarTab === tab
+                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
+                    }`}
+                  >
+                    {tab === 'Context' ? t('toolbar.context') : tab === 'Templates' ? t('toolbar.templates') : tab === 'Write' ? t('toolbar.write') : tab === 'Review' ? t('toolbar.review') : tab === 'View' ? t('toolbar.view') : tab}
+                  </button>
+                ))
+              )}
             </div>
 
             {/* Collapse / Expand Toggle Button */}
@@ -76534,7 +76677,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           ({activeDoc.originalSize})
                         </span>
                       )}
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.08] shrink-0">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/50 shrink-0">
                         Read-Only Vector
                       </span>
                     </div>
@@ -76589,7 +76732,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => handleConvertPdfToEditableDoc(activeDoc.id)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-[0_2px_8px_rgba(124,58,237,0.25)] active:scale-95 transition-all cursor-pointer select-none"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white shadow-xs active:scale-[0.98] transition-all cursor-pointer select-none"
                       title="Convert this PDF into an editable rich text Compose document"
                     >
                       <FileEdit size={13} />
@@ -82225,18 +82368,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {renderWatermark(0)}
             {(() => {
               const currentThemeHeadings = {
-                violet: '#6d28d9',
+                violet: '#0f172a',
                 emerald: '#047857',
                 amber: '#b45309',
                 rose: '#be123c',
-                slate: '#1e293b'
+                slate: '#0f172a'
               };
               const darkThemeHeadings = {
-                violet: '#c4b5fd',
+                violet: '#f8fafc',
                 emerald: '#6ee7b7',
                 amber: '#fde68a',
                 rose: '#fecdd3',
-                slate: '#f1f5f9'
+                slate: '#f8fafc'
               };
               const currentThemeBrands = {
                 violet: '#7c3aed',
@@ -82267,7 +82410,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 slate: '#27272a'
               };
 
-              const hColor = isDarkMode ? (darkThemeHeadings[docTheme] || '#c4b5fd') : (currentThemeHeadings[docTheme] || brandColor || '#6d28d9');
+              const hColor = isDarkMode ? (darkThemeHeadings[docTheme] || '#f8fafc') : (currentThemeHeadings[docTheme] || '#0f172a');
               const bColor = isDarkMode ? '#a78bfa' : (currentThemeBrands[docTheme] || brandColor || '#7c3aed');
               const bdColor = isDarkMode ? '#3f3f46' : (currentThemeBorders[docTheme] || '#e2e8f0');
               const bgColor = isDarkMode ? (darkThemeBgs[docTheme] || '#27272a') : (currentThemeBgs[docTheme] || '#f8fafc');
@@ -83317,7 +83460,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
 
-        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !activeDoc?.isPdfDoc && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             style={{

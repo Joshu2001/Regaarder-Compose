@@ -12,7 +12,11 @@ import {
   Undo2, 
   Trash2,
   GripVertical,
-  X
+  X,
+  Layout,
+  ChevronLeft,
+  ChevronRight,
+  Move
 } from 'lucide-react';
 
 if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -75,6 +79,127 @@ function redrawPageStrokes(ctx, strokes, width, height) {
 }
 
 /**
+ * Fast Miniature Thumbnail Canvas for Sidebar
+ */
+/**
+ * Fast Miniature Thumbnail Canvas for Sidebar with Interactive WPS-Style Viewport Indicator
+ */
+function PdfThumbnailCanvas({ 
+  pdf, 
+  pageNumber, 
+  rotation = 0,
+  isActive = false,
+  viewportCoverage = null, // { topRatio: 0..1, heightRatio: 0..1 }
+  onViewportPan, // (newTopRatio: 0..1) => void
+}) {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [isRendered, setIsRendered] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState(1 / 1.294); // default standard ratio
+  const isDraggingViewportRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartTopRef = useRef(0);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const renderThumb = async () => {
+      if (!pdf || !canvasRef.current) return;
+      try {
+        const page = await pdf.getPage(pageNumber);
+        if (isCancelled) return;
+        const viewport = page.getViewport({ scale: 1, rotation });
+        if (viewport.width && viewport.height) {
+          setAspectRatio(viewport.width / viewport.height);
+        }
+        const thumbWidth = 180;
+        const scale = thumbWidth / viewport.width;
+        const thumbViewport = page.getViewport({ scale, rotation });
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        if (!ctx) return;
+
+        canvas.width = Math.floor(thumbViewport.width);
+        canvas.height = Math.floor(thumbViewport.height);
+        canvas.style.width = '100%';
+        canvas.style.height = 'auto';
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        await page.render({ canvasContext: ctx, viewport: thumbViewport }).promise;
+        if (!isCancelled) setIsRendered(true);
+      } catch (_) {}
+    };
+    renderThumb();
+    return () => { isCancelled = true; };
+  }, [pdf, pageNumber, rotation]);
+
+  // Handle interactive dragging of the viewport highlight box to pan the main editor
+  const handleViewportPointerDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    isDraggingViewportRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartTopRef.current = viewportCoverage?.topRatio || 0;
+
+    const handlePointerMove = (ev) => {
+      if (!isDraggingViewportRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const deltaY = ev.clientY - dragStartYRef.current;
+      const deltaRatio = deltaY / (rect.height || 1);
+      const newTop = Math.max(0, Math.min(1 - (viewportCoverage?.heightRatio || 0.2), dragStartTopRef.current + deltaRatio));
+      onViewportPan?.(newTop);
+    };
+
+    const handlePointerUp = () => {
+      isDraggingViewportRef.current = false;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
+
+  const topPercent = Math.max(0, Math.min(100, (viewportCoverage?.topRatio || 0) * 100));
+  const heightPercent = Math.max(12, Math.min(100, (viewportCoverage?.heightRatio || 0.4) * 100));
+
+  return (
+    <div 
+      ref={containerRef}
+      style={{ aspectRatio: `${aspectRatio}` }}
+      className="w-full relative bg-white dark:bg-zinc-800 rounded-sm overflow-hidden flex items-center justify-center shadow-xs border border-slate-200/80 dark:border-zinc-700/60"
+    >
+      <canvas ref={canvasRef} className="w-full h-auto block shadow-2xs pointer-events-none" />
+      
+      {!isRendered && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-zinc-800">
+          <Loader2 size={12} className="animate-spin text-slate-400" />
+        </div>
+      )}
+
+      {/* Regaarder Purple Interactive Viewport Indicator Box */}
+      {isActive && viewportCoverage && isRendered && (
+        <div
+          onPointerDown={handleViewportPointerDown}
+          className="absolute left-0 right-0 z-20 cursor-grab active:cursor-grabbing border-2 border-violet-500 bg-violet-500/15 transition-none select-none shadow-[0_0_8px_rgba(139,92,246,0.3)]"
+          style={{
+            top: `${topPercent}%`,
+            height: `${heightPercent}%`,
+          }}
+          title="Drag to scroll document"
+        >
+          {/* Subtle drag bar indicator */}
+          <div className="w-full h-0.5 bg-violet-500/60 absolute top-0" />
+          <div className="w-full h-0.5 bg-violet-500/60 absolute bottom-0" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * High-DPI Vector Page Canvas
  * Renders an individual PDF page onto an HTML5 canvas matched to devicePixelRatio & zoomLevel.
  */
@@ -128,32 +253,33 @@ function PdfPageCanvas({
 
         // Get natural unscaled viewport for the page
         const naturalViewport = page.getViewport({ scale: 1, rotation });
+        const naturalAspect = naturalViewport.width / naturalViewport.height;
         const targetWidth = pageMaxWidth || 816;
-        const baseScale = targetWidth / naturalViewport.width;
-        const pageCssHeight = naturalViewport.height * baseScale;
+        const pageCssHeight = Math.round(targetWidth / naturalAspect);
         
-        setPageSize({ width: targetWidth, height: pageCssHeight });
+        setPageSize({ width: targetWidth, height: pageCssHeight, aspect: naturalAspect });
 
         // High-DPI scaling: combine retina devicePixelRatio (min 2x) with zoom scale
         const dpr = Math.max(window.devicePixelRatio || 1, 2);
         const zoomScaleFactor = Math.max(0.5, Math.min(3, zoomLevel / 100));
+        const baseScale = targetWidth / naturalViewport.width;
         const finalRenderScale = baseScale * dpr * zoomScaleFactor;
 
         const renderViewport = page.getViewport({ scale: finalRenderScale, rotation });
 
-        // Set backing canvas pixel buffer to high-resolution
+        // Set backing canvas pixel buffer to exact high-resolution
         canvas.width = Math.floor(renderViewport.width);
         canvas.height = Math.floor(renderViewport.height);
 
-        // Set CSS display layout dimensions
-        canvas.style.width = '100%';
+        // Set CSS display layout dimensions strictly matched to proportional height
+        canvas.style.width = `${targetWidth}px`;
         canvas.style.height = `${pageCssHeight}px`;
 
         // Sync markup canvas dimensions
         if (markupCanvasRef.current) {
           markupCanvasRef.current.width = Math.floor(renderViewport.width);
           markupCanvasRef.current.height = Math.floor(renderViewport.height);
-          markupCanvasRef.current.style.width = '100%';
+          markupCanvasRef.current.style.width = `${targetWidth}px`;
           markupCanvasRef.current.style.height = `${pageCssHeight}px`;
 
           const mCtx = markupCanvasRef.current.getContext('2d');
@@ -614,6 +740,54 @@ export default function NativePdfDocumentViewer({
   const [pageStrokes, setPageStrokes] = useState({}); // { [pageNumber]: Array<Stroke> }
   const [activePageNumber, setActivePageNumber] = useState(1);
 
+  // Page ordering state (enables WPS-style thumbnail drag and drop reordering)
+  const [pageOrder, setPageOrder] = useState([]);
+  const [isThumbSidebarOpen, setIsThumbSidebarOpen] = useState(true);
+  const [draggedThumbIndex, setDraggedThumbIndex] = useState(null);
+  const [viewportCoverage, setViewportCoverage] = useState({ topRatio: 0, heightRatio: 0.5 });
+
+  useEffect(() => {
+    if (numPages > 0) {
+      setPageOrder(Array.from({ length: numPages }, (_, i) => i + 1));
+    }
+  }, [numPages]);
+
+  // Track active page viewport coverage ratio in real-time as user scrolls editor
+  useEffect(() => {
+    const scrollContainer = document.querySelector('.editor-auto-dim-scrollbar') || window;
+
+    const calculateCoverage = () => {
+      const activeEl = document.querySelector(`[data-pdf-page-number="${activePageNumber}"]`);
+      if (!activeEl) return;
+
+      const pRect = activeEl.getBoundingClientRect();
+      const cRect = scrollContainer === window 
+        ? { top: 0, bottom: window.innerHeight, height: window.innerHeight }
+        : scrollContainer.getBoundingClientRect();
+
+      const visibleTop = Math.max(pRect.top, cRect.top);
+      const visibleBottom = Math.min(pRect.bottom, cRect.bottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+      if (pRect.height > 0) {
+        const topOffset = Math.max(0, cRect.top - pRect.top);
+        const topRatio = Math.min(1, Math.max(0, topOffset / pRect.height));
+        const heightRatio = Math.min(1, Math.max(0.12, visibleHeight / pRect.height));
+        setViewportCoverage({ topRatio, heightRatio });
+      }
+    };
+
+    calculateCoverage();
+    const target = scrollContainer === window ? window : scrollContainer;
+    target.addEventListener('scroll', calculateCoverage, { passive: true });
+    window.addEventListener('resize', calculateCoverage, { passive: true });
+
+    return () => {
+      target.removeEventListener('scroll', calculateCoverage);
+      window.removeEventListener('resize', calculateCoverage);
+    };
+  }, [activePageNumber, isLoading, loadError]);
+
   // Calculate paper max-width matching Compose standards
   const pageMaxWidth = pageOrientation === 'landscape'
     ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)
@@ -700,6 +874,53 @@ export default function NativePdfDocumentViewer({
     }));
   }, [activePageNumber]);
 
+  const activeStrokes = pageStrokes[activePageNumber] || [];
+  const totalStrokesAcrossDoc = Object.values(pageStrokes).reduce((acc, list) => acc + (list?.length || 0), 0);
+
+  // Panning handler: when the user drags the red viewport box in the thumbnail, scroll the main document
+  const handleViewportPan = useCallback((newTopRatio) => {
+    const activeEl = document.querySelector(`[data-pdf-page-number="${activePageNumber}"]`);
+    const scrollContainer = document.querySelector('.editor-auto-dim-scrollbar') || window;
+    if (!activeEl) return;
+
+    const pageTopInContainer = activeEl.offsetTop;
+    const pageHeight = activeEl.offsetHeight;
+    const targetScrollTop = pageTopInContainer + (newTopRatio * pageHeight);
+
+    if (scrollContainer === window) {
+      window.scrollTo({ top: targetScrollTop, behavior: 'auto' });
+    } else {
+      scrollContainer.scrollTop = targetScrollTop;
+    }
+  }, [activePageNumber]);
+
+  // Active page detection via IntersectionObserver so tools & indicator track visible page during scroll
+  useEffect(() => {
+    if (isLoading || loadError || !pdfDoc) return;
+    const pageElements = document.querySelectorAll('[data-pdf-page-number]');
+    if (!pageElements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries.filter((e) => e.isIntersecting);
+        if (visibleEntries.length > 0) {
+          visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          const pNum = parseInt(visibleEntries[0].target.getAttribute('data-pdf-page-number'), 10);
+          if (!isNaN(pNum)) {
+            setActivePageNumber(pNum);
+          }
+        }
+      },
+      {
+        threshold: [0.1, 0.3, 0.5, 0.8],
+      }
+    );
+
+    pageElements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [numPages, pdfDoc, isLoading, loadError]);
+
   // Loading Screen
   if (isLoading) {
     return (
@@ -758,97 +979,195 @@ export default function NativePdfDocumentViewer({
     );
   }
 
-  // Active page detection via IntersectionObserver so tools & indicator track visible page during scroll
-  useEffect(() => {
-    const pageElements = document.querySelectorAll('[data-pdf-page-number]');
-    if (!pageElements.length) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries.filter((e) => e.isIntersecting);
-        if (visibleEntries.length > 0) {
-          visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-          const pNum = parseInt(visibleEntries[0].target.getAttribute('data-pdf-page-number'), 10);
-          if (!isNaN(pNum)) {
-            setActivePageNumber(pNum);
-          }
-        }
-      },
-      {
-        threshold: [0.1, 0.3, 0.5, 0.8],
-      }
-    );
 
-    pageElements.forEach((el) => observer.observe(el));
+  const handleThumbnailDragStart = (e, index) => {
+    setDraggedThumbIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
 
-    return () => observer.disconnect();
-  }, [numPages, pdfDoc]);
+  const handleThumbnailDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
 
-  // Sequential Multi-Page Presentation in Native Document Flow
-  const pageNumbers = Array.from({ length: numPages }, (_, i) => i + 1);
-  const activeStrokes = pageStrokes[activePageNumber] || [];
-  const totalStrokesAcrossDoc = Object.values(pageStrokes).reduce((acc, s) => acc + (s?.length || 0), 0);
+  const handleThumbnailDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedThumbIndex === null || draggedThumbIndex === dropIndex) return;
+
+    setPageOrder((prev) => {
+      const updated = [...prev];
+      const [movedPage] = updated.splice(draggedThumbIndex, 1);
+      updated.splice(dropIndex, 0, movedPage);
+      return updated;
+    });
+
+    setDraggedThumbIndex(null);
+  };
+
+  const scrollToPage = (pNum) => {
+    const el = document.querySelector(`[data-pdf-page-number="${pNum}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActivePageNumber(pNum);
+    }
+  };
+
+
 
   return (
-    <div className="w-full flex flex-col items-center pb-16 relative">
-      {/* Viewport-Anchored Global Floating Annotation Dock via Portal */}
-      {markupActive && typeof document !== 'undefined' && createPortal(
-        <StickyAnnotationDock
-          toolMode={toolMode}
-          setToolMode={setToolMode}
-          activeColor={activeColor}
-          setActiveColor={setActiveColor}
-          canUndo={totalStrokesAcrossDoc > 0}
-          onUndo={handleUndo}
-          canClear={activeStrokes.length > 0}
-          onClear={handleClear}
-          activePageNumber={activePageNumber}
-          numPages={numPages}
-          onClose={onCloseMarkup}
-          zoomLevel={zoomLevel}
-          pageOrientation={pageOrientation}
-          docPageSize={docPageSize}
-        />,
-        document.body
+    <div className="w-full flex-1 flex min-h-0 relative">
+      {/* Apple-Style Docked Left Document Navigation Sidebar (Sticky Pane) */}
+      {numPages > 1 && (
+        <aside
+          className={`shrink-0 z-20 select-none flex sticky top-0 h-[calc(100vh-175px)] self-start transition-[width] duration-200 border-r border-slate-200/90 dark:border-zinc-800 ${
+            isThumbSidebarOpen ? 'w-[230px]' : 'w-11'
+          }`}
+        >
+          {isThumbSidebarOpen ? (
+            <div className="w-[230px] h-full flex flex-col bg-slate-50/95 dark:bg-zinc-900/95 backdrop-blur-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-200/80 dark:border-zinc-800/80 text-[11px] font-medium text-slate-600 dark:text-zinc-400 bg-white/70 dark:bg-zinc-800/40 shrink-0">
+                <span className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-zinc-300">
+                  <Layout size={13} className="text-slate-500 dark:text-zinc-400" />
+                  <span>Pages</span>
+                  <span className="text-[10px] font-normal text-slate-400 dark:text-zinc-500">
+                    ({numPages})
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsThumbSidebarOpen(false)}
+                  className="p-1 rounded-md hover:bg-black/[0.05] dark:hover:bg-white/[0.08] text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  title="Collapse thumbnails"
+                >
+                  <ChevronLeft size={13} />
+                </button>
+              </div>
+
+              {/* Scrollable list of thumbnails */}
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3.5 thin-scrollbar">
+                {pageOrder.map((pageNumber, idx) => {
+                  const isActive = activePageNumber === pageNumber;
+                  return (
+                    <div
+                      key={pageNumber}
+                      draggable
+                      onDragStart={(e) => handleThumbnailDragStart(e, idx)}
+                      onDragOver={(e) => handleThumbnailDragOver(e, idx)}
+                      onDrop={(e) => handleThumbnailDrop(e, idx)}
+                      onClick={() => scrollToPage(pageNumber)}
+                      className={`group/thumb relative rounded-xl p-2 transition-all duration-150 cursor-pointer border ${
+                        isActive
+                          ? 'border-slate-300 dark:border-zinc-700 bg-slate-200/50 dark:bg-zinc-800/80 shadow-xs'
+                          : 'border-slate-200/80 dark:border-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-700 bg-white/70 dark:bg-zinc-800/30 hover:bg-white dark:hover:bg-zinc-800'
+                      }`}
+                      title={`Page ${pageNumber} (drag to reorder)`}
+                    >
+                      <div className="absolute top-3 left-3 z-30 opacity-0 group-hover/thumb:opacity-100 p-1 rounded-md bg-black/60 backdrop-blur-xs text-white cursor-grab active:cursor-grabbing transition-opacity shadow-xs">
+                        <GripVertical size={11} />
+                      </div>
+
+                      {/* Thumbnail Canvas with ONLY the Regaarder Purple Viewport indicator */}
+                      <PdfThumbnailCanvas 
+                        pdf={pdfDoc} 
+                        pageNumber={pageNumber} 
+                        rotation={rotation}
+                        isActive={isActive}
+                        viewportCoverage={isActive ? viewportCoverage : null}
+                        onViewportPan={handleViewportPan}
+                      />
+
+                      {/* Understated Page Number Label */}
+                      <div className="mt-1.5 flex items-center justify-center">
+                        <span className={`text-[11px] font-medium tracking-tight ${
+                          isActive 
+                            ? 'text-slate-800 dark:text-zinc-100 font-bold' 
+                            : 'text-slate-400 dark:text-zinc-500 group-hover/thumb:text-slate-600 dark:group-hover/thumb:text-zinc-300'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="w-11 h-full flex flex-col items-center pt-3 bg-slate-50/80 dark:bg-zinc-900/80">
+              <button
+                type="button"
+                onClick={() => setIsThumbSidebarOpen(true)}
+                className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 shadow-2xs text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 transition-all hover:scale-105 cursor-pointer h-8 w-8 flex items-center justify-center"
+                title="Expand page thumbnails"
+              >
+                <Layout size={14} />
+              </button>
+            </div>
+          )}
+        </aside>
       )}
 
-      {/* Pages Flow */}
-      <div className="w-full flex flex-col items-center gap-8">
-        {pageNumbers.map((pageNumber) => (
-          <div
-            key={pageNumber}
-            data-pdf-page-number={pageNumber}
-            data-enterprise-page="true"
-            className={`w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border transition-all overflow-hidden relative group animate-in fade-in duration-200 ${
-              isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200/50'
-            }`}
-            style={{
-              maxWidth: `${pageMaxWidth}px`,
-            }}
-          >
-            {/* Subtle Page Number Badge */}
-            {numPages > 1 && (
-              <div className="absolute bottom-3 right-4 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-400 dark:text-zinc-500 backdrop-blur-xs opacity-40 group-hover:opacity-100 transition-opacity select-none pointer-events-none">
-                {pageNumber} / {numPages}
-              </div>
-            )}
+      {/* Main Pages Flow — Centered in Viewport */}
+      <div className="flex-1 min-w-0 flex flex-col items-center p-6 md:p-8 pt-8 pb-20">
+        {/* Viewport-Anchored Global Floating Annotation Dock via Portal */}
+        {markupActive && typeof document !== 'undefined' && createPortal(
+          <StickyAnnotationDock
+            toolMode={toolMode}
+            setToolMode={setToolMode}
+            activeColor={activeColor}
+            setActiveColor={setActiveColor}
+            canUndo={totalStrokesAcrossDoc > 0}
+            onUndo={handleUndo}
+            canClear={activeStrokes.length > 0}
+            onClear={handleClear}
+            activePageNumber={activePageNumber}
+            numPages={numPages}
+            onClose={onCloseMarkup}
+            zoomLevel={zoomLevel}
+            pageOrientation={pageOrientation}
+            docPageSize={docPageSize}
+          />,
+          document.body
+        )}
 
-            {/* High-DPI Vector Page Canvas */}
-            <PdfPageCanvas
-              pdf={pdfDoc}
-              pageNumber={pageNumber}
-              zoomLevel={zoomLevel}
-              rotation={rotation}
-              pageMaxWidth={pageMaxWidth}
-              markupActive={markupActive}
-              toolMode={toolMode}
-              activeColor={activeColor}
-              strokes={pageStrokes[pageNumber] || []}
-              onAddStroke={handleAddStroke}
-              onSetActivePage={setActivePageNumber}
-            />
-          </div>
-        ))}
+        <div className="w-full flex flex-col items-center gap-8">
+          {(pageOrder.length > 0 ? pageOrder : [1]).map((pageNumber) => (
+            <div
+              key={pageNumber}
+              data-pdf-page-number={pageNumber}
+              data-enterprise-page="true"
+              className={`mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border transition-all overflow-hidden relative group animate-in fade-in duration-200 ${
+                isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200/50'
+              }`}
+              style={{
+                width: `${pageMaxWidth}px`,
+                maxWidth: `${pageMaxWidth}px`,
+              }}
+            >
+              {/* Subtle Page Number Badge */}
+              {numPages > 1 && (
+                <div className="absolute bottom-3 right-4 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-400 dark:text-zinc-500 backdrop-blur-xs opacity-40 group-hover:opacity-100 transition-opacity select-none pointer-events-none">
+                  {pageNumber} / {numPages}
+                </div>
+              )}
+
+              {/* High-DPI Vector Page Canvas */}
+              <PdfPageCanvas
+                pdf={pdfDoc}
+                pageNumber={pageNumber}
+                zoomLevel={zoomLevel}
+                rotation={rotation}
+                pageMaxWidth={pageMaxWidth}
+                markupActive={markupActive}
+                toolMode={toolMode}
+                activeColor={activeColor}
+                strokes={pageStrokes[pageNumber] || []}
+                onAddStroke={handleAddStroke}
+                onSetActivePage={setActivePageNumber}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

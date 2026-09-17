@@ -58,8 +58,9 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Regaarder',
+    title: 'Regaarder Workspace',
     backgroundColor: '#0f172a',
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -68,6 +69,10 @@ function createWindow() {
       webSecurity: true
     }
   });
+
+  // Permanently remove the default "File Edit View Window" menu bar
+  mainWindow.removeMenu();
+  mainWindow.setMenuBarVisibility(false);
 
   browserViewManager = new BrowserViewManager(mainWindow);
 

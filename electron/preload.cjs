@@ -135,6 +135,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFolder: (folderPath) => ipcRenderer.invoke('shell:open-path', folderPath),
 
   // File association / double click listener
+  getPendingFile: () => ipcRenderer.invoke('app:get-pending-file'),
   onOpenFile: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('electron:open-file', handler);

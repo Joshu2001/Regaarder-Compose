@@ -24,17 +24,23 @@ let browserViewManager = null;
 let activeAppUrl = null;
 let pendingFileToOpen = null;
 
-const REGAARDER_FILE_EXTENSIONS = ['.rgdoc', '.cmp', '.rgsht', '.rgdck', '.rgwbd'];
+const REGAARDER_FILE_EXTENSIONS = [
+  '.rgdoc', '.cmp', '.rgsht', '.rgdck', '.rgwbd',
+  '.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.md'
+];
 
 function findFileArg(argv) {
   if (!Array.isArray(argv)) return null;
   for (const arg of argv) {
-    if (typeof arg === 'string' && REGAARDER_FILE_EXTENSIONS.some(ext => arg.toLowerCase().endsWith(ext))) {
-      try {
-        if (fs.existsSync(arg)) {
-          return path.resolve(arg);
-        }
-      } catch (_) {}
+    if (typeof arg === 'string') {
+      const lower = arg.toLowerCase();
+      if (REGAARDER_FILE_EXTENSIONS.some(ext => lower.endsWith(ext))) {
+        try {
+          if (fs.existsSync(arg)) {
+            return path.resolve(arg);
+          }
+        } catch (_) {}
+      }
     }
   }
   return null;
@@ -58,24 +64,54 @@ app.on('second-instance', (event, commandLine) => {
   }
 });
 
+function getFilePayload(filePath) {
+  try {
+    const ext = path.extname(filePath).toLowerCase();
+    const fileName = path.basename(filePath);
+    const isBinary = ['.pdf', '.docx', '.xlsx', '.pptx'].includes(ext);
+
+    let content = '';
+    let base64 = null;
+
+    if (isBinary) {
+      const buffer = fs.readFileSync(filePath);
+      base64 = buffer.toString('base64');
+      content = `data:${ext === '.pdf' ? 'application/pdf' : 'application/octet-stream'};base64,${base64}`;
+    } else {
+      content = fs.readFileSync(filePath, 'utf8');
+    }
+
+    return {
+      filePath,
+      fileName,
+      ext,
+      isBinary,
+      content,
+      base64,
+    };
+  } catch (err) {
+    console.error('[Electron Main] Failed to get file payload:', err);
+    return null;
+  }
+}
+
 function dispatchFileOpen(filePath) {
   if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.webContents) {
     pendingFileToOpen = filePath;
     return;
   }
-  try {
-    const ext = path.extname(filePath).toLowerCase();
-    const content = fs.readFileSync(filePath, 'utf8');
-    mainWindow.webContents.send('electron:open-file', {
-      filePath,
-      fileName: path.basename(filePath),
-      ext,
-      content,
-    });
-  } catch (err) {
-    console.error('[Electron Main] Failed to dispatch open-file:', err);
+  const payload = getFilePayload(filePath);
+  if (payload) {
+    mainWindow.webContents.send('electron:open-file', payload);
   }
 }
+
+ipcMain.handle('app:get-pending-file', () => {
+  if (!pendingFileToOpen) return null;
+  const filePath = pendingFileToOpen;
+  pendingFileToOpen = null;
+  return getFilePayload(filePath);
+});
 
 function createWindow() {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -232,8 +268,9 @@ $ws.AppActivate('${targetName}')
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Regaarder',
+    title: 'Regaarder Workspace',
     backgroundColor: '#0f172a',
+    autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -244,6 +281,10 @@ $ws.AppActivate('${targetName}')
       allowRunningInsecureContent: false
     }
   });
+
+  // Permanently remove the default "File Edit View Window" menu bar
+  mainWindow.removeMenu();
+  mainWindow.setMenuBarVisibility(false);
 
   browserViewManager = new BrowserViewManager(mainWindow);
   initAutoUpdater(mainWindow);

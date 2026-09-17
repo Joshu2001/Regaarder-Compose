@@ -1,6 +1,6 @@
 {
-  "appId": "com.regaarder.compose",
-  "productName": "Regaarder Compose",
+  "appId": "com.regaarder.workspace",
+  "productName": "Regaarder Workspace",
   "electronVersion": "43.4.0",
   "copyright": "Copyright © 2026 Regaarder / Meneur",
   "directories": {
@@ -125,7 +125,7 @@
     "perMachine": false,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Regaarder Compose",
+    "shortcutName": "Regaarder Workspace",
     "include": "build/installer.nsh"
   },
   "linux": {

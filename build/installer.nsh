@@ -16,6 +16,12 @@
   File /oname=$INSTDIR\resources\icons\sheet.ico "${BUILD_RESOURCES_DIR}\sheet.ico"
   File /oname=$INSTDIR\resources\icons\deck.ico "${BUILD_RESOURCES_DIR}\deck.ico"
   File /oname=$INSTDIR\resources\icons\whiteboard.ico "${BUILD_RESOURCES_DIR}\whiteboard.ico"
+  File /oname=$INSTDIR\resources\icons\workspace.ico "${BUILD_RESOURCES_DIR}\icon.ico"
+
+  ; Register Top-Level "Open with Regaarder Workspace" Shell Verb on all files (*)
+  WriteRegStr HKCR "*\shell\RegaarderWorkspace" "" "Open with Regaarder Workspace"
+  WriteRegStr HKCR "*\shell\RegaarderWorkspace" "Icon" "$INSTDIR\${APP_EXECUTABLE_FILENAME},0"
+  WriteRegStr HKCR "*\shell\RegaarderWorkspace\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
 
   ; Register ProgID for Regaarder Document
   WriteRegStr HKCR "Regaarder.Document" "" "Regaarder Document"
@@ -74,8 +80,9 @@
 !macroend
 
 !macro customUnInstall
-  DetailPrint "Cleaning up regaarder:// protocol handler and ShellNew associations..."
+  DetailPrint "Cleaning up regaarder:// protocol handler, context menus, and ShellNew associations..."
   DeleteRegKey HKCR "regaarder"
+  DeleteRegKey HKCR "*\shell\RegaarderWorkspace"
   DeleteRegKey HKCR "Regaarder.Document"
   DeleteRegKey HKCR ".rgdoc\ShellNew"
   DeleteRegKey HKCR "Regaarder.Sheet"
