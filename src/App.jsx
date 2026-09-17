@@ -85,6 +85,7 @@ import { initLocalSync, teardownLocalSync, parseRegaarderFile, syncAllDocumentsT
 import { readWorkspaceDocuments, writeWorkspaceDocuments, normalizeWorkspaceDocuments } from './services/workspaceDocumentStore';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
+import { convertPdfToEditableHtml } from './utils/pdfToHtmlConverter';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -35144,72 +35145,28 @@ Respond with valid JSON formatted like this:
 
     showToast('Extracting document contents from PDF...');
 
-    let convertedHtml = docToConvert.cleanExtractedText || '';
+    let convertedHtml = '';
 
-    // If cleanExtractedText is not cached, dynamically extract all text from the PDF buffer or DataURL
-    if (!convertedHtml) {
-      try {
-        let arrayBuffer = null;
-        if (docToConvert.rawBlob && typeof docToConvert.rawBlob.arrayBuffer === 'function') {
-          arrayBuffer = await docToConvert.rawBlob.arrayBuffer();
-        } else if (docToConvert.pdfBlobUrl) {
-          const resp = await fetch(docToConvert.pdfBlobUrl);
-          if (resp.ok) {
-            arrayBuffer = await resp.arrayBuffer();
-          }
+    try {
+      let arrayBuffer = null;
+      if (docToConvert.rawBlob && typeof docToConvert.rawBlob.arrayBuffer === 'function') {
+        arrayBuffer = await docToConvert.rawBlob.arrayBuffer();
+      } else if (docToConvert.pdfBlobUrl) {
+        const resp = await fetch(docToConvert.pdfBlobUrl);
+        if (resp.ok) {
+          arrayBuffer = await resp.arrayBuffer();
         }
-
-        if (arrayBuffer) {
-          const pdfjs = await import('pdfjs-dist');
-          const loadingTask = pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) });
-          const pdf = await loadingTask.promise;
-          const extractedParagraphs = [];
-
-          for (let pNum = 1; pNum <= pdf.numPages; pNum += 1) {
-            const page = await pdf.getPage(pNum);
-            const textContent = await page.getTextContent();
-            
-            // Reconstruct lines preserving paragraph grouping
-            let currentLine = '';
-            let lastY = null;
-
-            for (const item of textContent.items) {
-              if (!item.str) continue;
-              const y = item.transform ? item.transform[5] : null;
-              if (lastY !== null && y !== null && Math.abs(y - lastY) > 5) {
-                if (currentLine.trim()) {
-                  extractedParagraphs.push(currentLine.trim());
-                }
-                currentLine = item.str;
-              } else {
-                currentLine += (currentLine ? ' ' : '') + item.str;
-              }
-              lastY = y;
-            }
-            if (currentLine.trim()) {
-              extractedParagraphs.push(currentLine.trim());
-            }
-          }
-
-          if (extractedParagraphs.length > 0) {
-            convertedHtml = extractedParagraphs
-              .map((p, idx) => {
-                const isHeading = idx === 0 || (p.length < 80 && !p.endsWith('.') && (p.startsWith('#') || p === p.toUpperCase() || /^[A-Z0-9\s\-:]{3,60}$/.test(p)));
-                const cleanP = p.replace(/^#+\s*/, '').trim();
-                if (idx === 0) {
-                  return `<h1 class="text-2xl font-bold my-4 text-slate-900 dark:text-white">${escapeHtml(cleanP)}</h1>`;
-                }
-                if (isHeading) {
-                  return `<h2 class="text-xl font-bold my-3 text-slate-900 dark:text-white">${escapeHtml(cleanP)}</h2>`;
-                }
-                return `<p class="my-2 text-slate-800 dark:text-zinc-200 leading-relaxed">${escapeHtml(cleanP)}</p>`;
-              })
-              .join('\n');
-          }
-        }
-      } catch (err) {
-        console.error('[App] Failed to extract text during PDF conversion:', err);
       }
+
+      if (arrayBuffer) {
+        convertedHtml = await convertPdfToEditableHtml(arrayBuffer);
+      }
+    } catch (err) {
+      console.error('[App] Failed to extract text & images during PDF conversion:', err);
+    }
+
+    if (!convertedHtml && docToConvert.cleanExtractedText) {
+      convertedHtml = docToConvert.cleanExtractedText;
     }
 
     if (!convertedHtml) {

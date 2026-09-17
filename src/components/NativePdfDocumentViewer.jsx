@@ -571,7 +571,7 @@ function StickyAnnotationDock({
         top: `${dockPos.top + dragOffset.y}px`,
         left: `${dockPos.left + dragOffset.x}px`,
         transform: 'translateX(-50%)',
-        zIndex: 9999,
+        zIndex: 10001,
       }}
       className="pointer-events-none animate-in fade-in slide-in-from-top-2 duration-150"
     >
@@ -760,11 +760,13 @@ export default function NativePdfDocumentViewer({
   useEffect(() => {
     const updateLayoutMetrics = () => {
       const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-      const isFs = !!fsEl;
+      const appShell = document.querySelector('[data-enterprise-app-shell]') || document.querySelector('.editor-auto-dim-scrollbar')?.closest('.overflow-hidden') || document.body;
+      const isFs = !!fsEl || !!document.querySelector('.fixed.inset-0.z-\\[9999\\]');
       setIsFullscreenActive(isFs);
-      setPortalNode(fsEl ?? document.body);
+      // Portal into fullscreen element, appShell if available, or document.body
+      setPortalNode(fsEl ?? appShell ?? document.body);
 
-      // In fullscreen, if the top navigation/toolbar is hidden, top is 0; otherwise compute from editor container top
+      // In fullscreen/immersive mode, if top navigation/toolbar is hidden, top is 0; otherwise compute from editor container top
       const scrollContainer = document.querySelector('.editor-auto-dim-scrollbar');
       if (scrollContainer) {
         const rect = scrollContainer.getBoundingClientRect();
@@ -1072,7 +1074,7 @@ export default function NativePdfDocumentViewer({
       {numPages > 1 && portalNode && createPortal(
         <aside
           style={{ top: `${sidebarTop}px` }}
-          className={`fixed left-0 bottom-0 z-[500] select-none flex transition-[width] duration-200 border-r border-slate-200/90 dark:border-zinc-800 shadow-[4px_0_24px_-4px_rgba(0,0,0,0.06)] dark:shadow-[4px_0_24px_-4px_rgba(0,0,0,0.4)] ${
+          className={`fixed left-0 bottom-0 z-[10000] select-none flex transition-[width] duration-200 border-r border-slate-200/90 dark:border-zinc-800 shadow-[4px_0_24px_-4px_rgba(0,0,0,0.06)] dark:shadow-[4px_0_24px_-4px_rgba(0,0,0,0.4)] ${
             isThumbSidebarOpen ? 'w-[230px]' : 'w-11'
           }`}
         >
