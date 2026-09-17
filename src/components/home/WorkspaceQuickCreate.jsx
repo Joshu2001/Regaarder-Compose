@@ -11,6 +11,12 @@ const PRIMARY_CREATE_ACTIONS = [
     type: "compose"
   },
   {
+    id: "notes",
+    title: "Notes",
+    subtitle: "Capture & think freely",
+    type: "notes"
+  },
+  {
     id: "sheet",
     title: "Sheets",
     subtitle: "Analyze & visualize",

@@ -6,7 +6,8 @@ import {
   RoomIcon,
   WhiteboardIcon,
   RelayIcon,
-  BrowserIcon
+  BrowserIcon,
+  NotesIcon
 } from "../RegaarderProductIcons";
 
 /**
@@ -63,6 +64,13 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
       return (
         <div className={`flex items-center justify-center shrink-0 text-indigo-500 dark:text-indigo-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 ${className}`}>
           <RelayIcon size={size} strokeWidth={1.6} />
+        </div>
+      );
+    }
+    if (norm.includes("notes") || norm.includes("notebook")) {
+      return (
+        <div className={`flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400 group-hover:text-amber-600 dark:group-hover:text-amber-300 ${className}`}>
+          <NotesIcon size={size} strokeWidth={1.6} />
         </div>
       );
     }
@@ -143,7 +151,15 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
     );
   }
 
-  // 6. Room: Violet (#7C3AED) with bold white room camera glyph
+  // 6. Notes: Warm amber (#D97706) with white notebook glyph
+  if (norm.includes("notes") || norm.includes("notebook")) {
+    return renderBadge(
+      "#D97706",
+      <NotesIcon size={innerIconSize} strokeWidth={2.4} className="text-white" />
+    );
+  }
+
+  // 7. Room: Violet (#7C3AED) with bold white room camera glyph
   if (norm.includes("room") || norm.includes("meet")) {
     return renderBadge(
       "#7C3AED",

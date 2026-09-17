@@ -85,6 +85,7 @@ import { initLocalSync, teardownLocalSync, parseRegaarderFile, syncAllDocumentsT
 import { readWorkspaceDocuments, writeWorkspaceDocuments, normalizeWorkspaceDocuments } from './services/workspaceDocumentStore';
 import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
+import RegaarderNotebookViewer from './components/RegaarderNotebookViewer';
 import { convertPdfToEditableHtml } from './utils/pdfToHtmlConverter';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
@@ -34394,6 +34395,37 @@ Answer the user's question, provide an insightful summary, or explain the contex
     createNewComposition(options);
   };
 
+  const createNotesExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('notes');
+    setFocusedModule('notes');
+    setDockedModules([]);
+    setRoomPanelMode('docked');
+    setLeftSidebarOpen(false);
+    setActiveDocView('document');
+
+    // Create a fresh notes document and register it in the workspace
+    const noteId = `note-${Date.now()}`;
+    const newNote = {
+      id: noteId,
+      mode: 'notes',
+      isNotesDoc: true,
+      title: '',
+      bodyHtml: '',
+      ruling: 'college',
+      color: null,
+      pinned: false,
+      isBlank: true,
+      createdAt: Date.now(),
+    };
+
+    setDocuments(prev => [newNote, ...(prev || [])]);
+    setActiveDocId(noteId);
+    setDocTitle('');
+    setDocBodyHtml('');
+    showToast('Notes ready');
+  };
+
   const createDeckExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('deck');
@@ -35256,6 +35288,12 @@ Respond with valid JSON formatted like this:
     if (target === 'compose') {
       setActivePrimaryNav('drafts');
       createComposeExperience();
+      return;
+    }
+
+    if (target === 'notes' || target === 'notebook') {
+      setActivePrimaryNav('home');
+      createNotesExperience();
       return;
     }
 
@@ -82260,6 +82298,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 docPageSize={docPageSize}
                 markupActive={pdfMarkupActive}
                 onCloseMarkup={() => setPdfMarkupActive(false)}
+                isDarkMode={isDarkMode}
+              />
+            ) : (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? (
+              <RegaarderNotebookViewer
+                activeDoc={activeDoc}
+                onUpdateTitle={(title) => {
+                  setDocTitle(title);
+                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, title } : d));
+                }}
+                onUpdateBodyHtml={(html) => {
+                  setDocBodyHtml(html);
+                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, bodyHtml: html } : d));
+                }}
+                documents={documents}
+                onSelectDoc={(id) => switchDocument(id)}
+                onNewNote={createNotesExperience}
                 isDarkMode={isDarkMode}
               />
             ) : (

@@ -6,7 +6,7 @@ import {
   Settings
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
-import { FeedbackIcon } from "../RegaarderProductIcons";
+import { FeedbackIcon, NotesIcon } from "../RegaarderProductIcons";
 
 const WORKSPACE_APPS = [
   { id: "compose", label: "Docs", type: "compose" },
@@ -132,6 +132,25 @@ export default function WorkspaceLeftRail({
                 className={activeTab === "schedule" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
               />
               <span>Schedule</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onLaunch) onLaunch("notes");
+                else if (onSelectTab) onSelectTab("notes");
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+                activeTab === "notes"
+                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 font-semibold"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-800/40"
+              }`}
+            >
+              <NotesIcon
+                size={16}
+                className={activeTab === "notes" ? "text-amber-600 dark:text-amber-400" : "text-slate-400"}
+              />
+              <span>Notes</span>
             </button>
           </div>
         </div>

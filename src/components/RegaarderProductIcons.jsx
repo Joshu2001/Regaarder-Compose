@@ -31,6 +31,35 @@ export const ComposeIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
+/**
+ * NotesIcon — Regaarder Notes product identity.
+ * Notebook with vertical margin spine and three ruled lines.
+ * Follows 24×24 / 1.6-stroke grammar.
+ */
+export const NotesIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Notebook outer frame */}
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    {/* Vertical margin rule (left spine guide) */}
+    <line x1="8" y1="3" x2="8" y2="21" opacity="0.5" />
+    {/* Three horizontal ruled lines */}
+    <line x1="11" y1="9" x2="17" y2="9" />
+    <line x1="11" y1="13" x2="17" y2="13" />
+    <line x1="11" y1="17" x2="17" y2="17" />
+  </svg>
+);
+
 export const DeckIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
