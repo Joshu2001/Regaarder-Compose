@@ -128,15 +128,24 @@ export function NotesWriteToolbarControls({
   const closeAll = () => setOpenPopover(null);
   const toggle = (id) => setOpenPopover((prev) => (prev === id ? null : id));
 
-  // Paper ruling and thickness settings
-  const rulingType = activeDoc?.rulingType || "ruled"; // 'ruled' | 'grid' | 'dot' | 'plain'
-  const rulingThickness = activeDoc?.rulingThickness || "normal"; // 'fine' | 'normal' | 'bold'
+  // Paper ruling and thickness settings with localStorage persistence
+  const savedRuling = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_ruling") : null;
+  const savedThickness = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_thickness") : null;
+
+  const rulingType = activeDoc?.rulingType || savedRuling || "ruled"; // 'ruled' | 'grid' | 'dot' | 'plain'
+  const rulingThickness = activeDoc?.rulingThickness || savedThickness || "normal"; // 'fine' | 'normal' | 'bold'
 
   const handleSetRuling = (newType) => {
+    try {
+      localStorage.setItem("regaarder_notes_default_ruling", newType);
+    } catch (_) {}
     onUpdateDoc?.({ rulingType: newType });
   };
 
   const handleSetThickness = (newThickness) => {
+    try {
+      localStorage.setItem("regaarder_notes_default_thickness", newThickness);
+    } catch (_) {}
     onUpdateDoc?.({ rulingThickness: newThickness });
   };
 
@@ -172,7 +181,7 @@ export function NotesWriteToolbarControls({
     setActiveTool("checklist");
     const editor = document.getElementById("regaarder-notebook-editor");
     if (editor) editor.focus();
-    const checkboxHtml = `<div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#7C3AED;cursor:pointer;" onchange="this.nextElementSibling.style.textDecoration=this.checked?'line-through':'none';this.nextElementSibling.style.opacity=this.checked?'0.6':'1';" /><span>New action item</span></div><br/>`;
+    const checkboxHtml = `<div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#D97706;cursor:pointer;" onchange="this.nextElementSibling.style.textDecoration=this.checked?'line-through':'none';this.nextElementSibling.style.opacity=this.checked?'0.6':'1';" /><span>New action item</span></div><br/>`;
     exec("insertHTML", checkboxHtml);
   };
 
@@ -242,8 +251,8 @@ export function NotesWriteToolbarControls({
   const btnClass = (isActive) =>
     `flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-medium transition-all duration-150 cursor-pointer select-none ${
       isActive
-        ? "bg-[#F3F0FF] text-[#7C3AED] border border-[#DDD6FE] shadow-2xs font-semibold"
-        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent"
+        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-2xs font-semibold"
+        : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 border border-transparent"
     }`;
 
   return (
@@ -398,14 +407,14 @@ export function NotesWriteToolbarControls({
             openPopover === "ai" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
           } ${isAiLoading ? "opacity-60 cursor-wait" : ""}`}
         >
-          <RegaarderAiIcon size={14} strokeWidth={1.8} className={isAiLoading ? "animate-spin text-violet-600" : ""} />
+          <RegaarderAiIcon size={14} strokeWidth={1.8} className={isAiLoading ? "animate-spin text-violet-600" : "text-violet-600"} />
           <span>{isAiLoading ? "Synthesizing..." : "AI"}</span>
           <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
         </button>
 
         {openPopover === "ai" && (
           <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={220}>
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
               AI Note Actions
             </div>
             <div className="flex flex-col gap-0.5">
@@ -425,7 +434,7 @@ export function NotesWriteToolbarControls({
                   className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
-                    <RegaarderAiIcon size={12} />
+                    <RegaarderAiIcon size={12} className="text-violet-600" />
                     <span className="text-xs font-medium text-slate-800">{label}</span>
                   </div>
                   <div className="text-[10.5px] text-slate-400 pl-4">{sub}</div>
@@ -472,14 +481,14 @@ export function NotesWriteToolbarControls({
                       handleSetRuling(preset.id);
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                      isSelected ? "bg-violet-50 text-violet-700 font-semibold" : "text-slate-700 hover:bg-slate-100"
+                      isSelected ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-semibold" : "text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                     }`}
                   >
                     <div>
                       <div className="font-medium">{preset.label}</div>
-                      <div className="text-[10px] text-slate-400 font-normal">{preset.sub}</div>
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{preset.sub}</div>
                     </div>
-                    {isSelected && <Check size={13} className="text-violet-600 shrink-0" />}
+                    {isSelected && <Check size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />}
                   </button>
                 );
               })}
@@ -507,8 +516,8 @@ export function NotesWriteToolbarControls({
                     }}
                     className={`flex-1 py-1 px-2 text-center text-xs rounded-md transition-all ${
                       isSelected
-                        ? "bg-violet-600 text-white font-medium shadow-2xs"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        ? "bg-amber-600 dark:bg-amber-500 text-white font-medium shadow-2xs"
+                        : "bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300"
                     }`}
                   >
                     {label}
@@ -650,7 +659,7 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
         {/* Header Snapshot Tag */}
         <div className="flex items-center justify-between text-[9.5px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
           <span>{dateStr}</span>
-          <span className="text-violet-600 dark:text-violet-400 font-bold">Snapshot</span>
+          <span className="text-amber-600 dark:text-amber-400 font-bold">Snapshot</span>
         </div>
 
         {/* Note Title */}
@@ -744,7 +753,7 @@ function NotesSidebar({
     if (title.includes("meeting") || title.includes("personal") || title.includes("business")) {
       return <FileText size={14} className="shrink-0 text-slate-400 group-hover:text-slate-600" />;
     }
-    return <NotesIcon size={14} className="shrink-0 text-violet-600" />;
+    return <NotesIcon size={14} className="shrink-0 text-amber-600 dark:text-amber-500" />;
   };
 
   const handleMouseEnterNote = (note, element) => {
@@ -768,7 +777,7 @@ function NotesSidebar({
         {/* Header: Notes icon + Notes text + Close button */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
           <div className="flex items-center gap-2">
-            <NotesIcon size={18} className="text-violet-600 dark:text-violet-400" />
+            <NotesIcon size={18} className="text-amber-600 dark:text-amber-500" />
             <span className="text-[14px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
               Notes
             </span>
@@ -792,7 +801,7 @@ function NotesSidebar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 focus:bg-white dark:focus:bg-zinc-900 border border-transparent focus:border-violet-400 rounded-xl outline-none transition-all text-slate-800 dark:text-zinc-200 placeholder-slate-400"
+              className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 focus:bg-white dark:focus:bg-zinc-900 border border-transparent focus:border-amber-400 dark:focus:border-amber-500 rounded-xl outline-none transition-all text-slate-800 dark:text-zinc-200 placeholder-slate-400"
             />
           </div>
         </div>
@@ -802,7 +811,7 @@ function NotesSidebar({
           <button
             type="button"
             onClick={onNewNote}
-            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#F3F0FF] dark:bg-violet-950/40 text-[#6D28D9] dark:text-violet-300 hover:bg-[#EDE9FE] dark:hover:bg-violet-900/50 font-semibold text-xs transition-colors cursor-pointer shadow-2xs"
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200/80 dark:border-amber-800/60 font-semibold text-xs transition-colors cursor-pointer shadow-2xs"
           >
             <Plus size={14} strokeWidth={2.2} />
             <span>New Note</span>
@@ -824,14 +833,14 @@ function NotesSidebar({
                   onMouseLeave={handleMouseLeaveNote}
                   className={`group relative w-full text-left px-3 py-3 rounded-xl transition-all cursor-pointer select-none ${
                     isActive
-                      ? "bg-[#F3F0FF] dark:bg-violet-950/30 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                      ? "bg-amber-50/70 dark:bg-amber-950/30 text-slate-900 dark:text-zinc-100 border-l-2 border-amber-500 shadow-2xs"
                       : "hover:bg-slate-50 dark:hover:bg-zinc-800/50 text-slate-700 dark:text-zinc-300"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1.5 mb-1.5">
                     <div className="flex items-center gap-2 min-w-0">
                       {isActive ? (
-                        <NotesIcon size={14} className="shrink-0 text-violet-600 dark:text-violet-400" />
+                        <NotesIcon size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
                       ) : (
                         getNoteIcon(note)
                       )}
@@ -995,7 +1004,7 @@ function RuledNotebookCanvas({
       return {
         backgroundImage: `linear-gradient(to right, ${lineCol} 1px, transparent 1px), linear-gradient(to bottom, ${lineCol} 1px, transparent 1px)`,
         backgroundSize: `${baselinePx}px ${baselinePx}px`,
-        backgroundPosition: `140px 80px`,
+        backgroundPosition: `136px 80px`,
       };
     }
     if (rulingType === "dot") {
@@ -1003,11 +1012,11 @@ function RuledNotebookCanvas({
       return {
         backgroundImage: `radial-gradient(${dotCol} 1.1px, transparent 1.1px)`,
         backgroundSize: `${baselinePx}px ${baselinePx}px`,
-        backgroundPosition: `140px 80px`,
+        backgroundPosition: `136px 80px`,
       };
     }
-    // Standard 'ruled' college pattern: Subtler 0.20 opacity so lines whisper rather than compete
-    const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.09)" : "rgba(147, 197, 253, 0.22)";
+    // Standard 'ruled' college pattern: Subtler 0.18 opacity so lines whisper rather than compete
+    const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(147, 197, 253, 0.18)";
     return {
       backgroundImage: `linear-gradient(${ruleCol} 1px, transparent 1px)`,
       backgroundSize: `100% ${baselinePx}px`,
@@ -1037,7 +1046,7 @@ function RuledNotebookCanvas({
           className="absolute left-3 top-3 z-20 p-1.5 rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-slate-200/70 shadow-xs text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
           title="Open Notes Sidebar"
         >
-          <NotesIcon size={16} className="text-violet-600" />
+          <NotesIcon size={16} className="text-amber-600 dark:text-amber-500" />
         </button>
       )}
 
@@ -1053,12 +1062,12 @@ function RuledNotebookCanvas({
         style={rulingBgStyle}
       />
 
-      {/* Vertical red margin guide line: left 100px */}
+      {/* Vertical red margin guide line: left 80px */}
       {rulingType === "ruled" && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none"
           style={{
-            left: 100,
+            left: 80,
             width: 1.5,
             backgroundColor: "rgba(248, 113, 113, 0.38)",
           }}
@@ -1066,12 +1075,12 @@ function RuledNotebookCanvas({
       )}
 
       {/* Notebook writing content container:
-          visual order: red margin (at 100px) -> breathing space (40px) -> content (at 140px) */}
+          visual order: red margin (at 80px) -> breathing space (56px) -> content (at 136px) */}
       <div
         className="relative min-h-full"
         style={{
-          paddingLeft: rulingType === "ruled" ? 140 : 64,
-          paddingRight: 64,
+          paddingLeft: rulingType === "ruled" ? 136 : 56,
+          paddingRight: 56,
           paddingTop: 80,
           paddingBottom: 140,
         }}

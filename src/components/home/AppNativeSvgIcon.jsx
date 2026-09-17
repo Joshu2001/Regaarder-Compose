@@ -69,7 +69,7 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
     }
     if (norm.includes("notes") || norm.includes("notebook")) {
       return (
-        <div className={`flex items-center justify-center shrink-0 text-violet-600 dark:text-violet-400 group-hover:text-violet-700 dark:group-hover:text-violet-300 ${className}`}>
+        <div className={`flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-500 group-hover:text-amber-700 dark:group-hover:text-amber-400 ${className}`}>
           <NotesIcon size={size} strokeWidth={1.6} />
         </div>
       );
