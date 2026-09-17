@@ -249,9 +249,9 @@ export function NotesWriteToolbarControls({
   };
 
   const btnClass = (isActive) =>
-    `flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-medium transition-all duration-150 cursor-pointer select-none ${
+    `flex items-center gap-1.5 px-3 py-1 rounded-lg text-[12.5px] font-medium transition-all duration-150 cursor-pointer select-none ${
       isActive
-        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-2xs font-semibold"
+        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 shadow-2xs font-semibold"
         : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 border border-transparent"
     }`;
 
@@ -275,7 +275,7 @@ export function NotesWriteToolbarControls({
         }}
       />
 
-      {/* Pen tool */}
+      {/* 1. Primary input toggle: Pen (handwriting / cursive) */}
       <button
         type="button"
         onPointerDown={(e) => {
@@ -289,7 +289,7 @@ export function NotesWriteToolbarControls({
         <span>Pen</span>
       </button>
 
-      {/* Text tool */}
+      {/* 2. Primary input toggle: Text (standard typing) */}
       <button
         type="button"
         onPointerDown={(e) => {
@@ -303,149 +303,10 @@ export function NotesWriteToolbarControls({
         <span>Text</span>
       </button>
 
-      {/* Highlight tool */}
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleHighlight();
-        }}
-        className={btnClass(activeTool === "highlight")}
-        title="Highlight selected text"
-      >
-        <Highlighter size={13} strokeWidth={2} />
-        <span>Highlight</span>
-      </button>
+      {/* Divider */}
+      <div className="w-px h-3.5 bg-slate-200/70 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
-      {/* Checklist tool */}
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleInsertChecklist();
-        }}
-        className={btnClass(activeTool === "checklist")}
-        title="Insert interactive checklist item"
-      >
-        <CheckSquare size={13} strokeWidth={2} />
-        <span>Checklist</span>
-      </button>
-
-      {/* Insert ⌄ */}
-      <div className="relative">
-        <button
-          ref={refs.insert}
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            toggle("insert");
-          }}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
-            openPopover === "insert" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-          }`}
-        >
-          <Plus size={13} strokeWidth={2} />
-          <span>Insert</span>
-          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
-        </button>
-
-        {openPopover === "insert" && (
-          <ToolbarPopover anchorRef={refs.insert} onClose={closeAll} width={180}>
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12.5px] text-slate-700 hover:bg-slate-100 transition-colors text-left"
-              >
-                <ImagePlus size={13} strokeWidth={1.8} />
-                <span>Image</span>
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  const url = prompt("Enter URL link:");
-                  if (url) exec("createLink", url);
-                  closeAll();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12.5px] text-slate-700 hover:bg-slate-100 transition-colors text-left"
-              >
-                <Paperclip size={13} strokeWidth={1.8} />
-                <span>Link</span>
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  handleInsertTable();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12.5px] text-slate-700 hover:bg-slate-100 transition-colors text-left"
-              >
-                <Table size={13} strokeWidth={1.8} />
-                <span>Table</span>
-              </button>
-            </div>
-          </ToolbarPopover>
-        )}
-      </div>
-
-      {/* AI ⌄ (with official RegaarderAiIcon signature) */}
-      <div className="relative">
-        <button
-          ref={refs.ai}
-          type="button"
-          disabled={isAiLoading}
-          onPointerDown={(e) => {
-            e.preventDefault();
-            toggle("ai");
-          }}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
-            openPopover === "ai" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
-          } ${isAiLoading ? "opacity-60 cursor-wait" : ""}`}
-        >
-          <RegaarderAiIcon size={14} strokeWidth={1.8} className={isAiLoading ? "animate-spin text-violet-600" : "text-violet-600"} />
-          <span>{isAiLoading ? "Synthesizing..." : "AI"}</span>
-          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
-        </button>
-
-        {openPopover === "ai" && (
-          <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={220}>
-            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
-              AI Note Actions
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {[
-                { id: "summarize", label: "Summarize thoughts", sub: "Generate executive key points" },
-                { id: "checklist", label: "Structure into checklist", sub: "Convert items into tasks" },
-                { id: "continue", label: "Continue writing", sub: "Brainstorm next steps" },
-                { id: "refine", label: "Refine tone & grammar", sub: "Polish handwritten phrasing" },
-              ].map(({ id, label, sub }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handleAiAction(id);
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <RegaarderAiIcon size={12} className="text-violet-600" />
-                    <span className="text-xs font-medium text-slate-800">{label}</span>
-                  </div>
-                  <div className="text-[10.5px] text-slate-400 pl-4">{sub}</div>
-                </button>
-              ))}
-            </div>
-          </ToolbarPopover>
-        )}
-      </div>
-
-      {/* Ruling & Thickness ⌄ (switch between grids, no grids, line thickness) */}
+      {/* 3. Paper Ruling & Line Spacing ⌄ */}
       <div className="relative">
         <button
           ref={refs.ruling}
@@ -529,7 +390,59 @@ export function NotesWriteToolbarControls({
         )}
       </div>
 
-      {/* More ... */}
+      {/* 4. AI ⌄ (with official RegaarderAiIcon signature) */}
+      <div className="relative">
+        <button
+          ref={refs.ai}
+          type="button"
+          disabled={isAiLoading}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            toggle("ai");
+          }}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+            openPopover === "ai" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+          } ${isAiLoading ? "opacity-60 cursor-wait" : ""}`}
+        >
+          <RegaarderAiIcon size={14} strokeWidth={1.8} className={isAiLoading ? "animate-spin text-violet-600" : "text-violet-600"} />
+          <span>{isAiLoading ? "Synthesizing..." : "AI"}</span>
+          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
+        </button>
+
+        {openPopover === "ai" && (
+          <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={220}>
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
+              AI Note Actions
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {[
+                { id: "summarize", label: "Summarize thoughts", sub: "Generate executive key points" },
+                { id: "checklist", label: "Structure into checklist", sub: "Convert items into tasks" },
+                { id: "continue", label: "Continue writing", sub: "Brainstorm next steps" },
+                { id: "refine", label: "Refine tone & grammar", sub: "Polish handwritten phrasing" },
+              ].map(({ id, label, sub }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleAiAction(id);
+                  }}
+                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <RegaarderAiIcon size={12} className="text-violet-600" />
+                    <span className="text-xs font-medium text-slate-800 dark:text-zinc-200">{label}</span>
+                  </div>
+                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 pl-4">{sub}</div>
+                </button>
+              ))}
+            </div>
+          </ToolbarPopover>
+        )}
+      </div>
+
+      {/* 5. Streamlined More ... (encapsulating Highlight, Checklist, Insert image/link/table, Pin, and Promote) */}
       <div className="relative">
         <button
           ref={refs.more}
@@ -541,13 +454,90 @@ export function NotesWriteToolbarControls({
           className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
             openPopover === "more" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
           }`}
+          title="More tools & actions"
         >
           <MoreHorizontal size={13} strokeWidth={2} />
           <span>More</span>
         </button>
 
         {openPopover === "more" && (
-          <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={190}>
+          <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={200}>
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+              Formatting & Tools
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleHighlight();
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+              >
+                <Highlighter size={13} strokeWidth={1.8} className="text-amber-500" />
+                <span>Highlight selection</span>
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleInsertChecklist();
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+              >
+                <CheckSquare size={13} strokeWidth={1.8} className="text-amber-600" />
+                <span>Insert checklist</span>
+              </button>
+            </div>
+
+            <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
+
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+              Insert Media & Data
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+              >
+                <ImagePlus size={13} strokeWidth={1.8} />
+                <span>Insert Image</span>
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  const url = prompt("Enter URL link:");
+                  if (url) exec("createLink", url);
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+              >
+                <Paperclip size={13} strokeWidth={1.8} />
+                <span>Insert Link</span>
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleInsertTable();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+              >
+                <Table size={13} strokeWidth={1.8} />
+                <span>Insert Table</span>
+              </button>
+            </div>
+
+            <div className="my-1 border-t border-slate-100 dark:border-zinc-800"></div>
+
             <div className="flex flex-col gap-0.5">
               <button
                 type="button"
@@ -556,7 +546,7 @@ export function NotesWriteToolbarControls({
                   onConvertToDoc?.();
                   closeAll();
                 }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
               >
                 <FileText size={13} strokeWidth={1.8} />
                 <span>Convert to Document</span>
@@ -568,7 +558,7 @@ export function NotesWriteToolbarControls({
                   onUpdateDoc?.({ pinned: !activeDoc?.pinned });
                   closeAll();
                 }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-slate-100 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
               >
                 {activeDoc?.pinned ? <PinOff size={13} strokeWidth={1.8} /> : <Pin size={13} strokeWidth={1.8} />}
                 <span>{activeDoc?.pinned ? "Unpin Note" : "Pin Note"}</span>

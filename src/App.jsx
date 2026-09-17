@@ -76382,13 +76382,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`group/tab relative shrink-0 px-3 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                  className={`group/tab relative shrink-0 px-2.5 py-0.5 rounded-[6px] text-[11.5px] transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                     isActive 
-                      ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60' 
-                      : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'
+                      ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/60 dark:border-zinc-700/50' 
+                      : 'bg-transparent border border-transparent text-slate-400 dark:text-zinc-500 hover:bg-slate-200/30 dark:hover:bg-zinc-800/40 hover:text-slate-600 dark:hover:text-zinc-300 font-normal'
                   }`}
                 >
-                  <AppNativeSvgIcon variant="minimal" size={14} type={docMode} className="shrink-0" />
+                  <AppNativeSvgIcon
+                    variant="minimal"
+                    size={13}
+                    type={docMode}
+                    className={`shrink-0 transition-opacity ${isActive ? 'opacity-80' : 'opacity-40 group-hover/tab:opacity-70'}`}
+                  />
                   {renamingDocId === doc.id ? (
                     <input
                       autoFocus
