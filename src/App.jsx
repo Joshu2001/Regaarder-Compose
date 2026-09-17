@@ -80868,7 +80868,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseMove={handleEditorMouseMove}
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className={`flex-1 min-h-0 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8 transition-[margin-right] duration-200 ease-out ${
+            className={`flex-1 min-h-0 ${(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'overflow-hidden p-0' : 'overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8'} transition-[margin-right] duration-200 ease-out ${
               (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
             style={{
@@ -80878,15 +80878,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }}
           >
           <div
-            className="mx-auto"
+            className={(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? "w-full h-full" : "mx-auto"}
             style={{
               width: '100%',
-              maxWidth: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`,
-              transform: `scale(${zoomLevel / 100})`,
+              height: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : undefined,
+              maxWidth: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`,
+              transform: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? undefined : `scale(${zoomLevel / 100})`,
               transformOrigin: 'top center',
               transition: 'transform 180ms ease-out',
             }}
           >
+            {!(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') && (
             <div className={`flex justify-between items-center mb-1 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-0.5 text-[11px] font-bold text-slate-500 shadow-sm relative z-[100] transition-all duration-300 ${
               (pageSizeDropdownOpen || pageMarginDropdownOpen) ? 'opacity-100' : 'opacity-0 hover:opacity-100'
             }`}>
@@ -80971,6 +80973,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
               </div>
             </div>
+            )}
 
           <div
             ref={documentCardRef}
@@ -80997,9 +81000,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
               // Auto page-insert on Enter disabled; pages are now created on-demand via the "+ New page" CTA
               return;
             }}
-            className={`compose-editor-surface box-border mx-auto relative bg-transparent border-none transition-all ${isDarkMode ? 'app-dark' : ''}`}
+            className={`compose-editor-surface box-border ${(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'w-full h-full' : 'mx-auto'} relative bg-transparent border-none transition-all ${isDarkMode ? 'app-dark' : ''}`}
             style={{ 
-              width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
+              width: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
+              height: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : undefined,
               '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
             }}
           >

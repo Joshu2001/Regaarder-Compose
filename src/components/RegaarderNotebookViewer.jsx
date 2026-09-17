@@ -1,42 +1,29 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
-  ChevronLeft, ChevronRight, Plus, Moon, Sun, AlignLeft, Grid3X3, Circle,
-  Layout, Pin, PinOff, FileText, CheckSquare, Paperclip, Search, MoreHorizontal,
-  Bold, Italic, Underline, List, ListOrdered, ImagePlus, ChevronDown,
+  Plus, Search, MoreHorizontal, ChevronDown,
+  X, ArrowUpDown, AlignLeft, CheckSquare, Edit3, Type,
+  Highlighter, Paperclip, ImagePlus, FileText, Pin, PinOff
 } from "lucide-react";
-import { RegaarderAiIcon } from "./RegaarderProductIcons";
+import { RegaarderAiIcon, NotesIcon } from "./RegaarderProductIcons";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const RULING_OPTIONS = [
-  { id: "college", label: "Ruled",  icon: AlignLeft },
-  { id: "grid",    label: "Grid",   icon: Grid3X3  },
-  { id: "dots",    label: "Dots",   icon: Circle   },
-  { id: "plain",   label: "Plain",  icon: Layout   },
-];
-
-// Baseline spacing that locks all ruled paper variants to a shared rhythm.
-const BASELINE_PX = 32;
+const BASELINE_PX = 36; // Exact ruling rhythm matching reference design
 
 // ─── Toolbar Popover Shell ──────────────────────────────────────────────────────
 
-/**
- * ToolbarPopover — Reusable anchored popover for any Notes toolbar overflow.
- * Anchors to a trigger ref via getBoundingClientRect (AGENTS.md §5).
- */
-function ToolbarPopover({ anchorRef, onClose, children, width = 200 }) {
+function ToolbarPopover({ anchorRef, onClose, children, width = 210 }) {
   const popRef = useRef(null);
 
   useEffect(() => {
     const anchor = anchorRef.current;
-    const pop    = popRef.current;
+    const pop = popRef.current;
     if (!anchor || !pop) return;
 
     const rect = anchor.getBoundingClientRect();
-    pop.style.top  = `${rect.bottom + 8}px`;
+    pop.style.top = `${rect.bottom + 6}px`;
     pop.style.left = `${rect.left}px`;
 
-    // Clamp to viewport right edge
     const rightEdge = rect.left + width;
     if (rightEdge > window.innerWidth - 12) {
       pop.style.left = `${window.innerWidth - width - 12}px`;
@@ -52,12 +39,12 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 200 }) {
   return (
     <div
       ref={popRef}
-      className="fixed z-50 rounded-[10px] shadow-xl border p-3"
+      className="fixed z-50 rounded-xl shadow-xl border p-2 animate-in fade-in zoom-in-95 duration-100 select-none text-slate-800 dark:text-zinc-100"
       style={{
         width,
-        background: "rgba(255,255,255,0.97)",
-        borderColor: "rgba(0,0,0,0.09)",
-        backdropFilter: "blur(12px)",
+        background: "rgba(255, 255, 255, 0.98)",
+        borderColor: "rgba(0, 0, 0, 0.08)",
+        backdropFilter: "blur(16px)",
       }}
     >
       {children}
@@ -65,23 +52,11 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 200 }) {
   );
 }
 
-// ─── Notes Write Toolbar Controls (named export) ────────────────────────────────
+// ─── Notes Write Toolbar Controls (matching reference) ──────────────────────────
 
 /**
  * NotesWriteToolbarControls
- *
- * Renders the Write sub-toolbar row that appears inside the main Compose toolbar
- * when the active document is a Notes doc. This is intentionally quieter than
- * the Docs Write toolbar — the notebook canvas is the hero, not the toolbar.
- *
- * Style · Font · Size  |  Lists · Insert  |  AI  |  More (appearance, pin, convert…)
- *
- * Props forwarded from App.jsx's toolbar context:
- *   activeDoc        — current notes doc object
- *   onUpdateDoc      — (patch: Partial<Doc>) => void  — updates doc fields
- *   onNewNote        — () => void
- *   onConvertToDoc   — () => void  — promote note → Compose document
- *   isDarkMode       — boolean
+ * Action controls in reference: Pen (active outline/pill), Text, Highlight, Checklist, Insert ⌄, AI ⌄, ... More
  */
 export function NotesWriteToolbarControls({
   activeDoc,
@@ -90,650 +65,464 @@ export function NotesWriteToolbarControls({
   onConvertToDoc,
   isDarkMode,
 }) {
-  const [openPopover, setOpenPopover] = useState(null); // 'style'|'font'|'size'|'lists'|'insert'|'ai'|'more'
+  const [activeTool, setActiveTool] = useState("pen"); // 'pen' | 'text' | 'highlight' | 'checklist'
+  const [openPopover, setOpenPopover] = useState(null); // 'insert' | 'ai' | 'more'
   const refs = {
-    style:  useRef(null),
-    font:   useRef(null),
-    size:   useRef(null),
-    lists:  useRef(null),
     insert: useRef(null),
-    ai:     useRef(null),
-    more:   useRef(null),
+    ai: useRef(null),
+    more: useRef(null),
   };
 
-  const isPinned  = !!activeDoc?.pinned;
-  const ruling    = activeDoc?.ruling || "college";
-  const closeAll  = () => setOpenPopover(null);
-  const toggle    = (id) => setOpenPopover((prev) => (prev === id ? null : id));
+  const closeAll = () => setOpenPopover(null);
+  const toggle = (id) => setOpenPopover((prev) => (prev === id ? null : id));
 
-  // Execute a document.execCommand inside the notebook body editor.
-  // The body editor in PaperCanvas is a contentEditable div; commands propagate.
   const exec = (cmd, value = null) => {
     document.execCommand(cmd, false, value);
   };
 
-  const btnBase =
-    "flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-colors cursor-pointer select-none";
-  const btnIdle =
-    "text-slate-600 hover:text-slate-900 hover:bg-black/[0.05] dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-white/[0.06]";
-  const btnActive =
-    "bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_0_0_1px_rgba(0,0,0,0.10)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.10)]";
-
-  const sep = (
-    <div className="w-px h-5 mx-0.5 shrink-0" style={{ background: "rgba(0,0,0,0.09)" }} />
-  );
+  const btnClass = (isActive) =>
+    `flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-medium transition-all duration-150 cursor-pointer select-none ${
+      isActive
+        ? "bg-[#F3F0FF] text-[#7C3AED] border border-[#DDD6FE] shadow-2xs font-semibold"
+        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent"
+    }`;
 
   return (
-    <div className="w-full flex items-center gap-1 animate-in fade-in duration-150 select-none">
-
-      {/* ── Group 1: Style ── */}
+    <div className="flex items-center gap-1.5 animate-in fade-in duration-150 select-none">
+      {/* Pen tool */}
       <button
-        ref={refs.style}
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("style"); }}
-        className={`${btnBase} ${openPopover === "style" ? btnActive : btnIdle}`}
-        title="Paragraph style"
+        onClick={() => setActiveTool("pen")}
+        className={btnClass(activeTool === "pen")}
+        title="Pen / Handwriting mode"
       >
-        Paragraph
-        <ChevronDown size={11} strokeWidth={2} className="opacity-50" />
+        <Edit3 size={13} strokeWidth={2} />
+        <span>Pen</span>
       </button>
 
-      {/* ── Group 2: Font ── */}
+      {/* Text tool */}
       <button
-        ref={refs.font}
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("font"); }}
-        className={`${btnBase} ${openPopover === "font" ? btnActive : btnIdle}`}
-        title="Font family"
+        onClick={() => {
+          setActiveTool("text");
+          exec("formatBlock", "p");
+        }}
+        className={btnClass(activeTool === "text")}
+        title="Type Text"
       >
-        Serif
-        <ChevronDown size={11} strokeWidth={2} className="opacity-50" />
+        <Type size={13} strokeWidth={2} />
+        <span>Text</span>
       </button>
 
-      {/* ── Group 3: Size ── */}
+      {/* Highlight tool */}
       <button
-        ref={refs.size}
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("size"); }}
-        className={`${btnBase} ${openPopover === "size" ? btnActive : btnIdle}`}
-        title="Font size"
+        onClick={() => {
+          setActiveTool("highlight");
+          exec("hiliteColor", "#FEF08A");
+        }}
+        className={btnClass(activeTool === "highlight")}
+        title="Highlight"
       >
-        15
-        <ChevronDown size={11} strokeWidth={2} className="opacity-50" />
+        <Highlighter size={13} strokeWidth={2} />
+        <span>Highlight</span>
       </button>
 
-      {/* ── Inline quick-format icons (B / I / U) ── */}
-      <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-[6px]"
-           style={{ background: "rgba(0,0,0,0.03)" }}>
+      {/* Checklist tool */}
+      <button
+        type="button"
+        onClick={() => {
+          setActiveTool("checklist");
+          exec(
+            "insertHTML",
+            '<div class="note-todo-item" style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input type="checkbox" style="width:16px;height:16px;accent-color:#7C3AED;cursor:pointer;" /> <span>New action item</span></div>'
+          );
+        }}
+        className={btnClass(activeTool === "checklist")}
+        title="Checklist"
+      >
+        <CheckSquare size={13} strokeWidth={2} />
+        <span>Checklist</span>
+      </button>
+
+      {/* Insert ⌄ */}
+      <div className="relative">
         <button
+          ref={refs.insert}
           type="button"
-          onPointerDown={(e) => { e.preventDefault(); exec("bold"); }}
-          className="p-1 rounded-[5px] text-slate-500 hover:text-slate-900 hover:bg-black/[0.06] transition-colors"
-          title="Bold"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            toggle("insert");
+          }}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+            openPopover === "insert" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+          }`}
         >
-          <Bold size={12} strokeWidth={2.5} />
+          <Plus size={13} strokeWidth={2} />
+          <span>Insert</span>
+          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
         </button>
-        <button
-          type="button"
-          onPointerDown={(e) => { e.preventDefault(); exec("italic"); }}
-          className="p-1 rounded-[5px] text-slate-500 hover:text-slate-900 hover:bg-black/[0.06] transition-colors"
-          title="Italic"
-        >
-          <Italic size={12} strokeWidth={2.5} />
-        </button>
-        <button
-          type="button"
-          onPointerDown={(e) => { e.preventDefault(); exec("underline"); }}
-          className="p-1 rounded-[5px] text-slate-500 hover:text-slate-900 hover:bg-black/[0.06] transition-colors"
-          title="Underline"
-        >
-          <Underline size={12} strokeWidth={2.5} />
-        </button>
-      </div>
 
-      {sep}
-
-      {/* ── Group 4: Lists ── */}
-      <button
-        ref={refs.lists}
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("lists"); }}
-        className={`${btnBase} ${openPopover === "lists" ? btnActive : btnIdle}`}
-        title="List styles"
-      >
-        <List size={13} strokeWidth={1.8} />
-        Lists
-        <ChevronDown size={11} strokeWidth={2} className="opacity-50" />
-      </button>
-
-      {/* ── Group 5: Insert ── */}
-      <button
-        ref={refs.insert}
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("insert"); }}
-        className={`${btnBase} ${openPopover === "insert" ? btnActive : btnIdle}`}
-        title="Insert"
-      >
-        <Plus size={13} strokeWidth={2} />
-        Insert
-        <ChevronDown size={11} strokeWidth={2} className="opacity-50" />
-      </button>
-
-      {sep}
-
-      {/* ── AI (Regaarder signature icon — NEVER sparkles) ── */}
-      <button
-        ref={refs.ai}
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("ai"); }}
-        className={`${btnBase} ${openPopover === "ai" ? btnActive : btnIdle}`}
-        title="AI actions"
-      >
-        <RegaarderAiIcon size={14} />
-        AI
-        <ChevronDown size={11} strokeWidth={2} className="opacity-50" />
-      </button>
-
-      {sep}
-
-      {/* ── More (overflow: appearance, pin, convert) ── */}
-      <button
-        ref={refs.more}
-        type="button"
-        onPointerDown={(e) => { e.preventDefault(); toggle("more"); }}
-        className={`${btnBase} ${openPopover === "more" ? btnActive : btnIdle}`}
-        title="More actions"
-      >
-        <MoreHorizontal size={13} strokeWidth={1.8} />
-        More
-      </button>
-
-      {/* ══════════════ POPOVERS ══════════════ */}
-
-      {/* Style popover */}
-      {openPopover === "style" && (
-        <ToolbarPopover anchorRef={refs.style} onClose={closeAll} width={180}>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            Paragraph Style
-          </p>
-          {["Paragraph", "Heading 1", "Heading 2", "Heading 3", "Quote", "Code"].map((s) => (
-            <button
-              key={s}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                const tag = s === "Paragraph" ? "p" : s === "Quote" ? "blockquote" : s === "Code" ? "pre" : `h${s.slice(-1)}`;
-                exec("formatBlock", tag);
-                closeAll();
-              }}
-              className="w-full text-left px-2.5 py-1.5 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-            >
-              {s}
-            </button>
-          ))}
-        </ToolbarPopover>
-      )}
-
-      {/* Font popover */}
-      {openPopover === "font" && (
-        <ToolbarPopover anchorRef={refs.font} onClose={closeAll} width={196}>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            Font
-          </p>
-          {[
-            { label: "Serif (Default)", value: "'New York', Georgia, serif" },
-            { label: "Sans-Serif",      value: "-apple-system, BlinkMacSystemFont, sans-serif" },
-            { label: "Mono",            value: "'SF Mono', 'Fira Code', monospace" },
-          ].map(({ label, value }) => (
-            <button
-              key={label}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                exec("fontName", value);
-                closeAll();
-              }}
-              className="w-full text-left px-2.5 py-1.5 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-            >
-              {label}
-            </button>
-          ))}
-        </ToolbarPopover>
-      )}
-
-      {/* Size popover */}
-      {openPopover === "size" && (
-        <ToolbarPopover anchorRef={refs.size} onClose={closeAll} width={130}>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            Size
-          </p>
-          <div className="grid grid-cols-3 gap-1">
-            {[12, 14, 15, 16, 18, 20, 24, 28, 32].map((sz) => (
+        {openPopover === "insert" && (
+          <ToolbarPopover anchorRef={refs.insert} onClose={closeAll} width={180}>
+            <div className="flex flex-col gap-0.5">
               <button
-                key={sz}
+                type="button"
                 onPointerDown={(e) => {
                   e.preventDefault();
-                  exec("fontSize", sz <= 16 ? 3 : sz <= 20 ? 4 : sz <= 24 ? 5 : 6);
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.onchange = (ev) => {
+                    const file = ev.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                      exec("insertHTML", `<img src="${re.result}" style="max-width:100%;border-radius:8px;margin:8px 0;" />`);
+                    };
+                    reader.readAsDataURL(file);
+                  };
+                  input.click();
                   closeAll();
                 }}
-                className="px-2 py-1.5 rounded-[6px] text-[12px] text-center text-slate-700 hover:bg-black/[0.05] transition-colors"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12.5px] text-slate-700 hover:bg-slate-100 transition-colors text-left"
               >
-                {sz}
+                <ImagePlus size={13} strokeWidth={1.8} />
+                <span>Image</span>
               </button>
-            ))}
-          </div>
-        </ToolbarPopover>
-      )}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  const url = prompt("Enter URL link:");
+                  if (url) exec("createLink", url);
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12.5px] text-slate-700 hover:bg-slate-100 transition-colors text-left"
+              >
+                <Paperclip size={13} strokeWidth={1.8} />
+                <span>Link</span>
+              </button>
+            </div>
+          </ToolbarPopover>
+        )}
+      </div>
 
-      {/* Lists popover */}
-      {openPopover === "lists" && (
-        <ToolbarPopover anchorRef={refs.lists} onClose={closeAll} width={190}>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            Lists
-          </p>
-          <button
-            onPointerDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); closeAll(); }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-          >
-            <List size={13} strokeWidth={1.8} />
-            Bullet List
-          </button>
-          <button
-            onPointerDown={(e) => { e.preventDefault(); exec("insertOrderedList"); closeAll(); }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-          >
-            <ListOrdered size={13} strokeWidth={1.8} />
-            Numbered List
-          </button>
-          <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              exec("insertHTML", '<input type="checkbox" disabled /> ');
-              closeAll();
-            }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-          >
-            <CheckSquare size={13} strokeWidth={1.8} />
-            Checklist
-          </button>
-        </ToolbarPopover>
-      )}
+      {/* AI ⌄ (with official RegaarderAiIcon signature) */}
+      <div className="relative">
+        <button
+          ref={refs.ai}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            toggle("ai");
+          }}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+            openPopover === "ai" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+          }`}
+        >
+          <RegaarderAiIcon size={14} strokeWidth={1.8} />
+          <span>AI</span>
+          <ChevronDown size={11} strokeWidth={2} className="opacity-60" />
+        </button>
 
-      {/* Insert popover */}
-      {openPopover === "insert" && (
-        <ToolbarPopover anchorRef={refs.insert} onClose={closeAll} width={196}>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            Insert
-          </p>
-          <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              exec("insertHTML", '<hr style="border:none;border-top:1px solid rgba(0,0,0,0.1);margin:12px 0"/>');
-              closeAll();
-            }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-          >
-            Divider
-          </button>
-          <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              // Trigger image picker via a hidden input
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = "image/*";
-              input.onchange = (ev) => {
-                const file = ev.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (re) => {
-                  exec("insertHTML", `<img src="${re.result}" style="max-width:100%;border-radius:6px;margin:8px 0" />`);
-                };
-                reader.readAsDataURL(file);
-              };
-              input.click();
-              closeAll();
-            }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-          >
-            <ImagePlus size={13} strokeWidth={1.8} />
-            Image
-          </button>
-          <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              const url = prompt("Paste URL:");
-              if (url) exec("createLink", url);
-              closeAll();
-            }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-          >
-            <Paperclip size={13} strokeWidth={1.8} />
-            Link / Attachment
-          </button>
-        </ToolbarPopover>
-      )}
-
-      {/* AI popover */}
-      {openPopover === "ai" && (
-        <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={210}>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            AI Actions
-          </p>
-          {[
-            { label: "Summarize note",        subtitle: "Condense into key points" },
-            { label: "Organize & structure",  subtitle: "Add headings and sections" },
-            { label: "Extract tasks",         subtitle: "Turn action items into tasks" },
-            { label: "Improve writing",       subtitle: "Clarity, tone, and flow" },
-            { label: "Translate…",            subtitle: "Rewrite in another language" },
-          ].map(({ label, subtitle }) => (
-            <button
-              key={label}
-              onPointerDown={(e) => { e.preventDefault(); closeAll(); }}
-              className="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-black/[0.04] transition-colors group"
-            >
-              <div className="flex items-center gap-2">
-                <RegaarderAiIcon size={12} />
-                <span className="text-[12.5px] font-medium text-slate-800">{label}</span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-0.5 pl-[20px]">{subtitle}</p>
-            </button>
-          ))}
-        </ToolbarPopover>
-      )}
-
-      {/* More popover */}
-      {openPopover === "more" && (
-        <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={220}>
-          {/* Note appearance */}
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5"
-             style={{ color: "rgba(0,0,0,0.35)" }}>
-            Note Appearance
-          </p>
-          <div className="grid grid-cols-2 gap-1 mb-3">
-            {RULING_OPTIONS.map(({ id, label, icon: Icon }) => {
-              const active = ruling === id;
-              return (
+        {openPopover === "ai" && (
+          <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={210}>
+            <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+              AI Note Actions
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {[
+                { label: "Summarize thoughts", sub: "Generate brief key points" },
+                { label: "Structure into checklist", sub: "Convert items into tasks" },
+                { label: "Continue writing", sub: "Brainstorm next steps" },
+                { label: "Refine tone & grammar", sub: "Polish handwritten phrasing" },
+              ].map(({ label, sub }) => (
                 <button
-                  key={id}
+                  key={label}
+                  type="button"
                   onPointerDown={(e) => {
                     e.preventDefault();
-                    onUpdateDoc?.({ ruling: id });
                     closeAll();
                   }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-[6px] text-[12px] font-medium transition-colors"
-                  style={{
-                    background: active ? "rgba(217,119,6,0.10)" : "rgba(0,0,0,0.04)",
-                    color:      active ? "#D97706" : "rgba(0,0,0,0.65)",
-                    border:     active ? "1px solid rgba(217,119,6,0.22)" : "1px solid transparent",
-                  }}
-                >
-                  <Icon size={12} strokeWidth={active ? 2 : 1.6} />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="border-t pt-2" style={{ borderColor: "rgba(0,0,0,0.07)" }}>
-            {/* Pin / Unpin */}
-            <button
-              onPointerDown={(e) => {
-                e.preventDefault();
-                onUpdateDoc?.({ pinned: !isPinned });
-                closeAll();
-              }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-            >
-              {isPinned ? <PinOff size={13} strokeWidth={1.8} /> : <Pin size={13} strokeWidth={1.8} />}
-              {isPinned ? "Unpin note" : "Pin note"}
-            </button>
-
-            {/* Search within notes */}
-            <button
-              onPointerDown={(e) => { e.preventDefault(); closeAll(); }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-            >
-              <Search size={13} strokeWidth={1.8} />
-              Search within notes
-            </button>
-
-            {/* Convert note → document */}
-            <button
-              onPointerDown={(e) => {
-                e.preventDefault();
-                onConvertToDoc?.();
-                closeAll();
-              }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-            >
-              <FileText size={13} strokeWidth={1.8} />
-              Convert to Document
-            </button>
-
-            {/* Convert note → task */}
-            <button
-              onPointerDown={(e) => { e.preventDefault(); closeAll(); }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[12.5px] text-slate-700 hover:bg-black/[0.05] transition-colors"
-            >
-              <CheckSquare size={13} strokeWidth={1.8} />
-              Convert to Task
-            </button>
-          </div>
-        </ToolbarPopover>
-      )}
-    </div>
-  );
-}
-
-// ─── Sub-components ─────────────────────────────────────────────────────────────
-
-/**
- * NoteNavigatorPanel — Collapsible left rail showing note entries.
- * Entry format: date + title + first-line snippet + optional color chip + pin indicator.
- */
-function NoteNavigatorPanel({ documents, activeDoc, onSelectDoc, onNewNote, collapsed }) {
-  const entries = (documents || [])
-    .filter((d) => d.isNotesDoc || d.mode === "notes")
-    .sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      return (b.createdAt || 0) - (a.createdAt || 0);
-    });
-
-  return (
-    <div
-      className="flex flex-col border-r shrink-0 transition-all duration-250"
-      style={{
-        width: collapsed ? 0 : 224,
-        overflow: "hidden",
-        borderColor: "rgba(0,0,0,0.07)",
-        background: "rgba(250,249,247,0.95)",
-      }}
-    >
-      {!collapsed && (
-        <>
-          {/* Rail header */}
-          <div className="flex items-center justify-between px-3 pt-3 pb-2">
-            <span
-              className="text-[11px] font-semibold tracking-widest uppercase"
-              style={{ color: "rgba(0,0,0,0.32)" }}
-            >
-              Notes
-            </span>
-            <button
-              onClick={onNewNote}
-              className="flex items-center justify-center w-6 h-6 rounded-md transition-colors"
-              style={{ color: "rgba(0,0,0,0.45)" }}
-              title="New note"
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.06)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              <Plus size={14} strokeWidth={2} />
-            </button>
-          </div>
-
-          {/* Entry list */}
-          <div className="flex-1 overflow-y-auto px-1.5 pb-3">
-            {entries.length === 0 && (
-              <p className="px-2 py-3 text-[12px]" style={{ color: "rgba(0,0,0,0.32)" }}>
-                No notes yet
-              </p>
-            )}
-            {entries.map((note) => {
-              const isActive = activeDoc?.id === note.id;
-              const dateStr  = note.createdAt
-                ? new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                : "";
-              const snippet = note.bodyHtml
-                ? note.bodyHtml.replace(/<[^>]*>/g, "").slice(0, 60)
-                : "Empty note";
-
-              return (
-                <button
-                  key={note.id}
-                  onClick={() => onSelectDoc(note.id)}
-                  className="w-full text-left px-2 py-2 rounded-[6px] mb-0.5 transition-colors group"
-                  style={{
-                    background: isActive ? "rgba(217,119,6,0.09)" : "transparent",
-                    border: isActive ? "1px solid rgba(217,119,6,0.18)" : "1px solid transparent",
-                  }}
-                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
-                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
-                    {note.pinned && (
-                      <Pin size={10} strokeWidth={2} style={{ color: "#D97706", flexShrink: 0 }} />
-                    )}
-                    {note.color && (
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: note.color }} />
-                    )}
-                    <span
-                      className="text-[12.5px] font-medium truncate leading-tight"
-                      style={{ color: "rgba(0,0,0,0.78)" }}
-                    >
-                      {note.title || "Untitled"}
-                    </span>
+                    <RegaarderAiIcon size={12} />
+                    <span className="text-xs font-medium text-slate-800">{label}</span>
                   </div>
-                  {dateStr && (
-                    <span className="text-[10.5px] mt-0.5 block" style={{ color: "rgba(0,0,0,0.38)" }}>
-                      {dateStr}
-                    </span>
-                  )}
-                  <p className="text-[11px] mt-0.5 truncate leading-snug" style={{ color: "rgba(0,0,0,0.42)" }}>
-                    {snippet}
-                  </p>
+                  <div className="text-[10.5px] text-slate-400 pl-4">{sub}</div>
                 </button>
-              );
-            })}
-          </div>
-        </>
-      )}
+              ))}
+            </div>
+          </ToolbarPopover>
+        )}
+      </div>
+
+      {/* More ... */}
+      <div className="relative">
+        <button
+          ref={refs.more}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            toggle("more");
+          }}
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+            openPopover === "more" ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+          }`}
+        >
+          <MoreHorizontal size={13} strokeWidth={2} />
+          <span>More</span>
+        </button>
+
+        {openPopover === "more" && (
+          <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={190}>
+            <div className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onConvertToDoc?.();
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-slate-100 transition-colors text-left"
+              >
+                <FileText size={13} strokeWidth={1.8} />
+                <span>Convert to Document</span>
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onUpdateDoc?.({ pinned: !activeDoc?.pinned });
+                  closeAll();
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-slate-100 transition-colors text-left"
+              >
+                {activeDoc?.pinned ? <PinOff size={13} strokeWidth={1.8} /> : <Pin size={13} strokeWidth={1.8} />}
+                <span>{activeDoc?.pinned ? "Unpin Note" : "Pin Note"}</span>
+              </button>
+            </div>
+          </ToolbarPopover>
+        )}
+      </div>
     </div>
   );
 }
 
-/**
- * AppearancePopover — Ruling mode + Night Paper toggle.
- * Anchored to the trigger button using getBoundingClientRect().
- */
-function AppearancePopover({ ruling, onRulingChange, nightPaper, onNightPaperToggle, anchorRef, onClose }) {
-  const popRef = useRef(null);
+// ─── Collapsible Notes Sidebar ──────────────────────────────────────────────────
 
-  useEffect(() => {
-    const anchor = anchorRef.current;
-    const pop    = popRef.current;
-    if (!anchor || !pop) return;
+function NotesSidebar({
+  documents,
+  activeDoc,
+  onSelectDoc,
+  onNewNote,
+  onCloseSidebar,
+  sortAscending,
+  onToggleSort,
+}) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeMenuDocId, setActiveMenuDocId] = useState(null);
 
-    const rect = anchor.getBoundingClientRect();
-    pop.style.top  = `${rect.bottom + 8}px`;
-    pop.style.left = `${rect.left}px`;
+  // Filter notes belonging to notes mode or isNotesDoc
+  const notes = useMemo(() => {
+    const list = (documents || []).filter((d) => d.isNotesDoc || d.mode === "notes");
+    const filtered = list.filter((n) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      const titleMatch = (n.title || "Untitled Note").toLowerCase().includes(q);
+      const bodyMatch = (n.bodyHtml || "").toLowerCase().includes(q);
+      return titleMatch || bodyMatch;
+    });
 
-    const handleOutside = (e) => {
-      if (!pop.contains(e.target) && !anchor.contains(e.target)) onClose();
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [anchorRef, onClose]);
+    return filtered.sort((a, b) => {
+      const timeA = a.updatedAt || a.createdAt || 0;
+      const timeB = b.updatedAt || b.createdAt || 0;
+      return sortAscending ? timeA - timeB : timeB - timeA;
+    });
+  }, [documents, searchQuery, sortAscending]);
+
+  // Format date or timestamp cleanly matching reference (e.g. "Today · 3:42 PM", "Sep 14, 2025")
+  const formatNoteDate = (doc) => {
+    if (!doc.createdAt && !doc.updatedAt) return "Today · 3:42 PM";
+    const d = new Date(doc.updatedAt || doc.createdAt);
+    const now = new Date();
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      const timeStr = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      return `Today · ${timeStr}`;
+    }
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  // Extract preview snippet
+  const getNoteSnippet = (doc) => {
+    if (!doc.bodyHtml) return "Finish the Regaarder Workspace mockups...";
+    const plain = doc.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return plain.length > 55 ? plain.substring(0, 55) + "..." : plain || "Empty note";
+  };
+
+  // Choose icon based on note title/type
+  const getNoteIcon = (doc) => {
+    const title = (doc.title || "").toLowerCase();
+    if (title.includes("idea") || title.includes("project")) {
+      return <Edit3 size={14} className="shrink-0 text-slate-400 group-hover:text-slate-600" />;
+    }
+    if (title.includes("plan") || title.includes("study") || title.includes("action")) {
+      return <AlignLeft size={14} className="shrink-0 text-slate-400 group-hover:text-slate-600" />;
+    }
+    if (title.includes("meeting") || title.includes("personal") || title.includes("business")) {
+      return <FileText size={14} className="shrink-0 text-slate-400 group-hover:text-slate-600" />;
+    }
+    return <NotesIcon size={14} className="shrink-0 text-violet-600" />;
+  };
 
   return (
-    <div
-      ref={popRef}
-      className="fixed z-50 rounded-[10px] shadow-xl border p-3"
-      style={{
-        background: "rgba(255,255,255,0.96)",
-        borderColor: "rgba(0,0,0,0.09)",
-        backdropFilter: "blur(12px)",
-        width: 210,
-      }}
+    <aside
+      className="w-[260px] h-full flex flex-col border-r border-slate-200/70 dark:border-zinc-800 bg-[#FFFFFF] dark:bg-[#18181B] shrink-0 select-none z-10 transition-all duration-200"
     >
-      <p className="text-[10.5px] font-semibold tracking-widest uppercase mb-2"
-         style={{ color: "rgba(0,0,0,0.35)" }}>
-        Paper Style
-      </p>
-      <div className="grid grid-cols-2 gap-1.5 mb-3">
-        {RULING_OPTIONS.map(({ id, label, icon: Icon }) => {
-          const active = ruling === id;
-          return (
-            <button
-              key={id}
-              onClick={() => onRulingChange(id)}
-              className="flex items-center gap-2 px-2.5 py-2 rounded-[6px] text-[12px] font-medium transition-colors"
-              style={{
-                background: active ? "rgba(217,119,6,0.1)"   : "rgba(0,0,0,0.04)",
-                color:      active ? "#D97706"                : "rgba(0,0,0,0.65)",
-                border:     active ? "1px solid rgba(217,119,6,0.22)" : "1px solid transparent",
-              }}
-            >
-              <Icon size={13} strokeWidth={active ? 2 : 1.6} />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-      <div className="border-t pt-2.5" style={{ borderColor: "rgba(0,0,0,0.07)" }}>
+      {/* Header: Notes icon + Notes text + Close button */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center gap-2">
+          <NotesIcon size={18} className="text-violet-600 dark:text-violet-400" />
+          <span className="text-[14px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+            Notes
+          </span>
+        </div>
         <button
-          onClick={onNightPaperToggle}
-          className="flex items-center justify-between w-full px-1 py-1 rounded-md"
+          type="button"
+          onClick={onCloseSidebar}
+          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          title="Close notes sidebar"
         >
-          <div className="flex items-center gap-2">
-            {nightPaper
-              ? <Moon size={13} strokeWidth={1.6} style={{ color: "#6366F1" }} />
-              : <Sun  size={13} strokeWidth={1.6} style={{ color: "#D97706" }} />
-            }
-            <span className="text-[12px] font-medium" style={{ color: "rgba(0,0,0,0.65)" }}>
-              {nightPaper ? "Night Paper" : "Day Paper"}
-            </span>
-          </div>
-          <div
-            className="w-8 h-4 rounded-full transition-colors relative"
-            style={{ background: nightPaper ? "#6366F1" : "rgba(0,0,0,0.14)" }}
-          >
-            <div
-              className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform shadow-sm"
-              style={{ transform: nightPaper ? "translateX(16px)" : "translateX(2px)" }}
-            />
-          </div>
+          <X size={14} strokeWidth={2} />
         </button>
       </div>
-    </div>
+
+      {/* Search Input */}
+      <div className="px-3 py-1.5">
+        <div className="relative flex items-center">
+          <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search notes..."
+            className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 focus:bg-white dark:focus:bg-zinc-900 border border-transparent focus:border-violet-400 rounded-xl outline-none transition-all text-slate-800 dark:text-zinc-200 placeholder-slate-400"
+          />
+        </div>
+      </div>
+
+      {/* CTA: + New Note */}
+      <div className="px-3 py-1.5">
+        <button
+          type="button"
+          onClick={onNewNote}
+          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#F3F0FF] dark:bg-violet-950/40 text-[#6D28D9] dark:text-violet-300 hover:bg-[#EDE9FE] dark:hover:bg-violet-900/50 font-semibold text-xs transition-colors cursor-pointer shadow-2xs"
+        >
+          <Plus size={14} strokeWidth={2.2} />
+          <span>New Note</span>
+        </button>
+      </div>
+
+      {/* Notes List */}
+      <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1 thin-scrollbar">
+        {notes.length === 0 ? (
+          <div className="text-center py-8 text-xs text-slate-400">No notes found</div>
+        ) : (
+          notes.map((note) => {
+            const isActive = activeDoc?.id === note.id;
+            return (
+              <div
+                key={note.id}
+                onClick={() => onSelectDoc(note.id)}
+                className={`group relative w-full text-left p-2.5 rounded-xl transition-all cursor-pointer select-none ${
+                  isActive
+                    ? "bg-[#F3F0FF] dark:bg-violet-950/30 text-slate-900 dark:text-zinc-100"
+                    : "hover:bg-slate-50 dark:hover:bg-zinc-800/50 text-slate-700 dark:text-zinc-300"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1.5 mb-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {isActive ? (
+                      <NotesIcon size={14} className="shrink-0 text-violet-600 dark:text-violet-400" />
+                    ) : (
+                      getNoteIcon(note)
+                    )}
+                    <span
+                      className={`text-xs font-semibold truncate ${
+                        isActive ? "text-slate-900 dark:text-zinc-100" : "text-slate-800 dark:text-zinc-200"
+                      }`}
+                    >
+                      {note.title || "Untitled Note"}
+                    </span>
+                  </div>
+
+                  {/* Context menu trigger (visible on active note or hover) */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuDocId(activeMenuDocId === note.id ? null : note.id);
+                    }}
+                    className={`p-0.5 rounded text-slate-400 hover:text-slate-700 transition-opacity ${
+                      isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    <MoreHorizontal size={13} />
+                  </button>
+                </div>
+
+                {/* Date stamp */}
+                <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium mb-0.5">
+                  {formatNoteDate(note)}
+                </div>
+
+                {/* Snippet preview */}
+                <div className="text-[11px] text-slate-500 dark:text-zinc-400 truncate leading-tight">
+                  {getNoteSnippet(note)}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Footer: note count + sort icon */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-zinc-800/80 text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+        <span>{notes.length} notes</span>
+        <button
+          type="button"
+          onClick={onToggleSort}
+          className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+          title="Toggle sort order"
+        >
+          <ArrowUpDown size={13} strokeWidth={1.8} />
+        </button>
+      </div>
+    </aside>
   );
 }
 
-/**
- * PaperCanvas — The ruled-paper hero area.
- * Draws the baseline grid via CSS background-image for performance.
- * Content is a native contentEditable div locked to the same baseline rhythm.
- */
-function PaperCanvas({ ruling, nightPaper, title, onUpdateTitle, bodyHtml, onUpdateBodyHtml }) {
-  const editorRef = useRef(null);
-  const titleRef  = useRef(null);
+// ─── Ruled Notebook Canvas (Dominant Hero Area) ──────────────────────────────────
 
-  // Sync bodyHtml → DOM only on external changes (avoids cursor jump)
+function RuledNotebookCanvas({
+  title,
+  onUpdateTitle,
+  bodyHtml,
+  onUpdateBodyHtml,
+  sidebarCollapsed,
+  onOpenSidebar,
+}) {
+  const editorRef = useRef(null);
+  const titleRef = useRef(null);
+
+  // Sync bodyHtml to DOM without dropping cursor
   const lastHtmlRef = useRef(bodyHtml);
   useEffect(() => {
     if (!editorRef.current) return;
@@ -756,103 +545,97 @@ function PaperCanvas({ ruling, nightPaper, title, onUpdateTitle, bodyHtml, onUpd
     }
   }, []);
 
-  // Paper visual tokens
-  const paper = {
-    background:       nightPaper ? "#1C1C1E"                 : "#FFFEF9",
-    ruleColor:        nightPaper ? "rgba(255,255,255,0.08)"  : "rgba(0,0,0,0.07)",
-    marginColor:      nightPaper ? "rgba(220,80,70,0.3)"     : "rgba(220,80,70,0.22)",
-    textColor:        nightPaper ? "rgba(255,255,255,0.88)"  : "rgba(0,0,0,0.84)",
-    placeholderColor: nightPaper ? "rgba(255,255,255,0.22)"  : "rgba(0,0,0,0.22)",
-    titleColor:       nightPaper ? "rgba(255,255,255,0.92)"  : "rgba(0,0,0,0.88)",
-  };
-
-  const getPaperPattern = () => {
-    if (ruling === "plain") return "none";
-    if (ruling === "grid") {
-      return `
-        linear-gradient(${paper.ruleColor} 1px, transparent 1px),
-        linear-gradient(90deg, ${paper.ruleColor} 1px, transparent 1px)
-      `;
-    }
-    if (ruling === "dots") {
-      return `radial-gradient(circle, ${paper.ruleColor} 1.2px, transparent 1.2px)`;
-    }
-    // college ruled: horizontal lines only
-    return `linear-gradient(${paper.ruleColor} 1px, transparent 1px)`;
-  };
-
-  const getPaperSize = () => {
-    if (ruling === "dots" || ruling === "grid") return `${BASELINE_PX}px ${BASELINE_PX}px`;
-    return `100% ${BASELINE_PX}px`;
-  };
-
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric",
-  });
+  // Today formatted e.g. "Sep 17, 2025"
+  const formattedDate = useMemo(() => {
+    return new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto relative" style={{ background: paper.background }}>
-      {/* Ruled paper pattern */}
+    <div className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text">
+      {/* If sidebar is collapsed, provide quiet expand button */}
+      {sidebarCollapsed && (
+        <button
+          type="button"
+          onClick={onOpenSidebar}
+          className="absolute left-3 top-3 z-20 p-1.5 rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-slate-200/70 shadow-xs text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+          title="Open Notes Sidebar"
+        >
+          <NotesIcon size={16} className="text-violet-600" />
+        </button>
+      )}
+
+      {/* Top right notebook header: Date + Page indicator */}
+      <div className="absolute right-12 top-6 z-10 flex items-center gap-6 text-[12px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
+        <span>{formattedDate}</span>
+        <span>1 / 1</span>
+      </div>
+
+      {/* Ruled lines pattern spanning full width */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage:    getPaperPattern(),
-          backgroundSize:     getPaperSize(),
-          backgroundPosition: `0 ${BASELINE_PX + 80}px`,
+          backgroundImage: "linear-gradient(rgba(147, 197, 253, 0.35) 1px, transparent 1px)",
+          backgroundSize: `100% ${BASELINE_PX}px`,
+          backgroundPosition: `0 96px`,
         }}
       />
 
-      {/* Vertical margin rule — fixed at 64px from paper left edge */}
-      {(ruling === "college" || ruling === "plain") && (
-        <div
-          className="absolute top-0 bottom-0 pointer-events-none"
-          style={{ left: 64, width: 1, background: paper.marginColor }}
-        />
-      )}
+      {/* Vertical red margin guide line */}
+      <div
+        className="absolute top-0 bottom-0 pointer-events-none"
+        style={{
+          left: 100,
+          width: 1.5,
+          backgroundColor: "rgba(248, 113, 113, 0.4)",
+        }}
+      />
 
-      {/* Paper content column */}
-      <div className="relative mx-auto" style={{ maxWidth: 680, padding: "40px 48px 80px 80px" }}>
-        {/* Date header */}
-        <p
-          className="text-[11.5px] font-medium tracking-wide mb-3 select-none"
-          style={{ color: paper.placeholderColor }}
-        >
-          {today}
-        </p>
+      {/* Notebook writing content container */}
+      <div
+        className="relative min-h-full"
+        style={{
+          paddingLeft: 120,
+          paddingRight: 64,
+          paddingTop: 80,
+          paddingBottom: 120,
+        }}
+      >
+        {/* Large Note Title: Italicized serif resting right on the baseline */}
+        <div style={{ height: BASELINE_PX * 1.5, marginBottom: BASELINE_PX * 0.5 }}>
+          <input
+            ref={titleRef}
+            type="text"
+            value={title || ""}
+            onChange={(e) => onUpdateTitle?.(e.target.value)}
+            onKeyDown={handleTitleKeyDown}
+            placeholder="Untitled Note"
+            className="w-full bg-transparent border-none outline-none font-medium italic text-slate-800 dark:text-zinc-100 placeholder-slate-400 leading-none"
+            style={{
+              fontSize: "28px",
+              fontFamily: "'Newsreader', 'Georgia', 'Times New Roman', serif",
+              lineHeight: `${BASELINE_PX}px`,
+            }}
+          />
+        </div>
 
-        {/* Note title */}
-        <input
-          ref={titleRef}
-          type="text"
-          value={title || ""}
-          onChange={(e) => onUpdateTitle?.(e.target.value)}
-          onKeyDown={handleTitleKeyDown}
-          placeholder="Untitled"
-          className="w-full bg-transparent border-none outline-none font-bold mb-6 leading-tight"
-          style={{
-            fontSize:   26,
-            color:      paper.titleColor,
-            caretColor: "#D97706",
-            fontFamily: "'New York', 'Georgia', 'Times New Roman', serif",
-          }}
-        />
-
-        {/* Body editor */}
+        {/* Note Body Editor: Text line-height matches ruled lines perfectly */}
         <div
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
           onInput={handleEditorInput}
-          className="outline-none w-full min-h-[400px] leading-8"
+          className="outline-none w-full min-h-[500px] text-slate-800 dark:text-zinc-200"
           style={{
-            fontSize:   15,
+            fontSize: "15px",
             lineHeight: `${BASELINE_PX}px`,
-            color:      paper.textColor,
-            caretColor: "#D97706",
-            fontFamily: "'New York', 'Georgia', 'Times New Roman', serif",
-            wordBreak:  "break-word",
+            fontFamily: "'Newsreader', 'Georgia', -apple-system, serif",
+            wordBreak: "break-word",
           }}
-          data-placeholder="Start writing..."
+          data-placeholder="Start typing your thoughts..."
         />
       </div>
     </div>
@@ -863,18 +646,7 @@ function PaperCanvas({ ruling, nightPaper, title, onUpdateTitle, bodyHtml, onUpd
 
 /**
  * RegaarderNotebookViewer
- *
- * Hero ruled-paper canvas for Regaarder Notes.
- * Follows the PDF viewer integration pattern (isPdfDoc / isNotesDoc flag).
- *
- * Props:
- *   activeDoc        — current doc object ({ id, title, bodyHtml, ruling, isNotesDoc, … })
- *   onUpdateBodyHtml — (html: string) => void
- *   onUpdateTitle    — (title: string) => void
- *   documents        — all docs in the workspace
- *   onSelectDoc      — (id: string) => void
- *   onNewNote        — () => void
- *   isDarkMode       — boolean
+ * Edge-to-edge ruled notebook viewer with dedicated collapsible Notes sidebar.
  */
 export default function RegaarderNotebookViewer({
   activeDoc,
@@ -885,109 +657,34 @@ export default function RegaarderNotebookViewer({
   onNewNote,
   isDarkMode,
 }) {
-  const [navCollapsed,    setNavCollapsed]    = useState(false);
-  const [ruling,          setRuling]          = useState(activeDoc?.ruling || "college");
-  const [nightPaper,      setNightPaper]      = useState(isDarkMode || false);
-  const [appearanceOpen,  setAppearanceOpen]  = useState(false);
-  const appearanceTriggerRef = useRef(null);
-
-  const handleRulingChange = useCallback((r) => {
-    setRuling(r);
-  }, []);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sortAscending, setSortAscending] = useState(false);
 
   return (
-    <div
-      className="flex flex-col h-full w-full overflow-hidden"
-      style={{ background: nightPaper ? "#1C1C1E" : "#FFFEF9" }}
-    >
-      {/* Internal canvas toolbar strip (navigator toggle + appearance) */}
-      <div
-        className="flex items-center gap-2 px-3 shrink-0 border-b"
-        style={{
-          height:      44,
-          borderColor: nightPaper ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)",
-          background:  nightPaper ? "rgba(28,28,30,0.92)"    : "rgba(255,254,249,0.92)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
-        {/* Navigator toggle */}
-        <button
-          onClick={() => setNavCollapsed((v) => !v)}
-          className="flex items-center justify-center w-7 h-7 rounded-[6px] transition-colors shrink-0"
-          style={{ color: nightPaper ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.38)" }}
-          title={navCollapsed ? "Show navigator" : "Hide navigator"}
-          onMouseEnter={(e) => (e.currentTarget.style.background = nightPaper ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-        >
-          {navCollapsed
-            ? <ChevronRight size={15} strokeWidth={2} />
-            : <ChevronLeft  size={15} strokeWidth={2} />
-          }
-        </button>
-
-        {/* Appearance selector */}
-        <button
-          ref={appearanceTriggerRef}
-          onClick={() => setAppearanceOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-colors"
-          style={{
-            color:      nightPaper ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.48)",
-            background: appearanceOpen
-              ? (nightPaper ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)")
-              : "transparent",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = nightPaper ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)")}
-          onMouseLeave={(e) => { if (!appearanceOpen) e.currentTarget.style.background = "transparent"; }}
-        >
-          <Layout size={13} strokeWidth={1.6} />
-          {RULING_OPTIONS.find((r) => r.id === ruling)?.label || "Ruled"}
-        </button>
-
-        <div className="flex-1" />
-
-        {/* AI entry */}
-        <button
-          className="flex items-center justify-center w-7 h-7 rounded-[6px] transition-colors"
-          style={{ color: nightPaper ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.38)" }}
-          title="AI suggestions"
-          onMouseEnter={(e) => (e.currentTarget.style.background = nightPaper ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-        >
-          <RegaarderAiIcon size={16} />
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <NoteNavigatorPanel
+    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-[#18181B]">
+      {/* Collapsible Sidebar */}
+      {!sidebarCollapsed && (
+        <NotesSidebar
           documents={documents}
           activeDoc={activeDoc}
           onSelectDoc={onSelectDoc}
           onNewNote={onNewNote}
-          collapsed={navCollapsed}
-        />
-
-        <PaperCanvas
-          ruling={ruling}
-          nightPaper={nightPaper}
-          title={activeDoc?.title}
-          onUpdateTitle={onUpdateTitle}
-          bodyHtml={activeDoc?.bodyHtml || ""}
-          onUpdateBodyHtml={onUpdateBodyHtml}
-        />
-      </div>
-
-      {/* Appearance Popover */}
-      {appearanceOpen && (
-        <AppearancePopover
-          ruling={ruling}
-          onRulingChange={handleRulingChange}
-          nightPaper={nightPaper}
-          onNightPaperToggle={() => setNightPaper((v) => !v)}
-          anchorRef={appearanceTriggerRef}
-          onClose={() => setAppearanceOpen(false)}
+          onCloseSidebar={() => setSidebarCollapsed(true)}
+          sortAscending={sortAscending}
+          onToggleSort={() => setSortAscending((prev) => !prev)}
         />
       )}
+
+      {/* Dominant Ruled Notebook Canvas */}
+      <RuledNotebookCanvas
+        title={activeDoc?.title}
+        onUpdateTitle={onUpdateTitle}
+        bodyHtml={activeDoc?.bodyHtml || ""}
+        onUpdateBodyHtml={onUpdateBodyHtml}
+        sidebarCollapsed={sidebarCollapsed}
+        onOpenSidebar={() => setSidebarCollapsed(false)}
+      />
     </div>
   );
 }
+
