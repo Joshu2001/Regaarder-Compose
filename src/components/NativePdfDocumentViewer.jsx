@@ -752,6 +752,45 @@ export default function NativePdfDocumentViewer({
     }
   }, [numPages]);
 
+  // Dynamic header offset & Fullscreen detection
+  const [isFullscreenActive, setIsFullscreenActive] = useState(false);
+  const [portalNode, setPortalNode] = useState(typeof document !== 'undefined' ? (document.fullscreenElement ?? document.body) : null);
+  const [sidebarTop, setSidebarTop] = useState(112);
+
+  useEffect(() => {
+    const updateLayoutMetrics = () => {
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      const isFs = !!fsEl;
+      setIsFullscreenActive(isFs);
+      setPortalNode(fsEl ?? document.body);
+
+      // In fullscreen, if the top navigation/toolbar is hidden, top is 0; otherwise compute from editor container top
+      const scrollContainer = document.querySelector('.editor-auto-dim-scrollbar');
+      if (scrollContainer) {
+        const rect = scrollContainer.getBoundingClientRect();
+        setSidebarTop(Math.max(0, Math.round(rect.top)));
+      } else {
+        setSidebarTop(isFs ? 0 : 112);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', updateLayoutMetrics);
+    document.addEventListener('webkitfullscreenchange', updateLayoutMetrics);
+    document.addEventListener('mozfullscreenchange', updateLayoutMetrics);
+    document.addEventListener('MSFullscreenChange', updateLayoutMetrics);
+    window.addEventListener('resize', updateLayoutMetrics);
+
+    updateLayoutMetrics();
+
+    return () => {
+      document.removeEventListener('fullscreenchange', updateLayoutMetrics);
+      document.removeEventListener('webkitfullscreenchange', updateLayoutMetrics);
+      document.removeEventListener('mozfullscreenchange', updateLayoutMetrics);
+      document.removeEventListener('MSFullscreenChange', updateLayoutMetrics);
+      window.removeEventListener('resize', updateLayoutMetrics);
+    };
+  }, []);
+
   // Track active page viewport coverage ratio in real-time as user scrolls editor
   useEffect(() => {
     const scrollContainer = document.querySelector('.editor-auto-dim-scrollbar') || window;
@@ -877,8 +916,10 @@ export default function NativePdfDocumentViewer({
   const activeStrokes = pageStrokes[activePageNumber] || [];
   const totalStrokesAcrossDoc = Object.values(pageStrokes).reduce((acc, list) => acc + (list?.length || 0), 0);
 
-  // Panning handler: when the user drags the red viewport box in the thumbnail, scroll the main document
+  // Panning handler: when the user drags the purple viewport box in the thumbnail, scroll the main document within the active page only
+  const isDraggingViewportActiveRef = useRef(false);
   const handleViewportPan = useCallback((newTopRatio) => {
+    isDraggingViewportActiveRef.current = true;
     const activeEl = document.querySelector(`[data-pdf-page-number="${activePageNumber}"]`);
     const scrollContainer = document.querySelector('.editor-auto-dim-scrollbar') || window;
     if (!activeEl) return;
@@ -894,7 +935,7 @@ export default function NativePdfDocumentViewer({
     }
   }, [activePageNumber]);
 
-  // Active page detection via IntersectionObserver so tools & indicator track visible page during scroll
+  // Active page detection via IntersectionObserver so tools & indicator track visible page during scroll (ignored during active drag)
   useEffect(() => {
     if (isLoading || loadError || !pdfDoc) return;
     const pageElements = document.querySelectorAll('[data-pdf-page-number]');
@@ -902,6 +943,8 @@ export default function NativePdfDocumentViewer({
 
     const observer = new IntersectionObserver(
       (entries) => {
+        // Do not switch active page while dragging the viewport box inside a page thumbnail
+        if (isDraggingViewportActiveRef.current) return;
         const visibleEntries = entries.filter((e) => e.isIntersecting);
         if (visibleEntries.length > 0) {
           visibleEntries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
@@ -918,7 +961,15 @@ export default function NativePdfDocumentViewer({
 
     pageElements.forEach((el) => observer.observe(el));
 
-    return () => observer.disconnect();
+    const handleGlobalPointerUp = () => {
+      isDraggingViewportActiveRef.current = false;
+    };
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+    };
   }, [numPages, pdfDoc, isLoading, loadError]);
 
   // Loading Screen
@@ -1016,11 +1067,12 @@ export default function NativePdfDocumentViewer({
 
 
   return (
-    <div className="w-full flex-1 flex min-h-0 relative">
-      {/* Apple-Style Docked Left Document Navigation Sidebar (Sticky Pane) */}
-      {numPages > 1 && (
+    <div className="w-full flex-1 flex flex-col items-center min-h-0 relative">
+      {/* Apple-Style Docked Left Document Navigation Sidebar (Pinned Fixed Left Pane via Portal) */}
+      {numPages > 1 && portalNode && createPortal(
         <aside
-          className={`shrink-0 z-20 select-none flex sticky top-0 h-[calc(100vh-175px)] self-start transition-[width] duration-200 border-r border-slate-200/90 dark:border-zinc-800 ${
+          style={{ top: `${sidebarTop}px` }}
+          className={`fixed left-0 bottom-0 z-[500] select-none flex transition-[width] duration-200 border-r border-slate-200/90 dark:border-zinc-800 shadow-[4px_0_24px_-4px_rgba(0,0,0,0.06)] dark:shadow-[4px_0_24px_-4px_rgba(0,0,0,0.4)] ${
             isThumbSidebarOpen ? 'w-[230px]' : 'w-11'
           }`}
         >
@@ -1044,8 +1096,11 @@ export default function NativePdfDocumentViewer({
                 </button>
               </div>
 
-              {/* Scrollable list of thumbnails */}
-              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3.5 thin-scrollbar">
+              {/* Scrollable list of thumbnails with isolated scroll chain */}
+              <div 
+                className="flex-1 overflow-y-auto p-3 flex flex-col gap-3.5 thin-scrollbar"
+                style={{ overscrollBehavior: 'contain' }}
+              >
                 {pageOrder.map((pageNumber, idx) => {
                   const isActive = activePageNumber === pageNumber;
                   return (
@@ -1104,13 +1159,14 @@ export default function NativePdfDocumentViewer({
               </button>
             </div>
           )}
-        </aside>
+        </aside>,
+        portalNode
       )}
 
-      {/* Main Pages Flow — Centered in Viewport */}
-      <div className="flex-1 min-w-0 flex flex-col items-center p-6 md:p-8 pt-8 pb-20">
+      {/* Main Pages Flow — Perfectly Centered in Viewport */}
+      <div className="w-full flex flex-col items-center p-6 md:p-8 pt-8 pb-20">
         {/* Viewport-Anchored Global Floating Annotation Dock via Portal */}
-        {markupActive && typeof document !== 'undefined' && createPortal(
+        {markupActive && portalNode && createPortal(
           <StickyAnnotationDock
             toolMode={toolMode}
             setToolMode={setToolMode}
@@ -1127,7 +1183,7 @@ export default function NativePdfDocumentViewer({
             pageOrientation={pageOrientation}
             docPageSize={docPageSize}
           />,
-          document.body
+          portalNode
         )}
 
         <div className="w-full flex flex-col items-center gap-8">

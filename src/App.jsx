@@ -78026,7 +78026,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseMove={handleEditorMouseMove}
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className="flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
+            className={`flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] transition-opacity duration-300 opacity-100 ${
+              activeDoc?.isPdfDoc ? 'p-0 pt-0 pb-16' : 'p-6 md:p-8 pt-14 md:pt-14'
+            }`}
           >
           {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
             <div className="absolute inset-0 z-30 bg-[#FAFAFC] dark:bg-[#0d0d0f] overflow-hidden flex flex-col">
@@ -83544,7 +83546,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         )}
 
-        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        {(isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}

@@ -1272,17 +1272,37 @@ function registerWindowsShellNew() {
       },
     ];
 
+    // Ensure custom format icons are physically available on disk for Windows Explorer
+    // When packaged in app.asar, Explorer cannot extract icons directly from asar archives.
+    const iconsOutputDir = path.join(app.getPath('userData'), 'icons');
+    try {
+      if (!fs.existsSync(iconsOutputDir)) {
+        fs.mkdirSync(iconsOutputDir, { recursive: true });
+      }
+    } catch (_) {}
+
     const commands = [];
 
     fileTypes.forEach(({ ext, progId, desc, mime, iconName }) => {
-      // Resolve custom dedicated icon path: check electron/icons, build, or fallback to exePath
+      // Resolve custom dedicated icon path: extract to userData, check local/build, or fallback to exePath
       let iconTarget = `\\"${exePath}\\",0`;
+      const userDataIconPath = path.join(iconsOutputDir, iconName);
       const localIconPath = path.join(__dirname, 'icons', iconName);
       const buildIconPath = path.join(__dirname, '..', 'build', iconName);
-      if (fs.existsSync(localIconPath)) {
-        iconTarget = `\\"${localIconPath}\\"`;
-      } else if (fs.existsSync(buildIconPath)) {
-        iconTarget = `\\"${buildIconPath}\\"`;
+
+      try {
+        const sourceIcon = fs.existsSync(localIconPath) ? localIconPath : (fs.existsSync(buildIconPath) ? buildIconPath : null);
+        if (sourceIcon) {
+          // Copy to userData on disk if not already present or updated
+          fs.copyFileSync(sourceIcon, userDataIconPath);
+          iconTarget = `\\"${userDataIconPath}\\"`;
+        }
+      } catch (copyErr) {
+        if (fs.existsSync(localIconPath) && !localIconPath.includes('app.asar')) {
+          iconTarget = `\\"${localIconPath}\\"`;
+        } else if (fs.existsSync(buildIconPath) && !buildIconPath.includes('app.asar')) {
+          iconTarget = `\\"${buildIconPath}\\"`;
+        }
       }
 
       // 1. HKCU\Software\Classes\<ext>
