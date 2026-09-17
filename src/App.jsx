@@ -18439,17 +18439,20 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       return;
     }
 
+    const isNotes = activeDoc?.isNotesDoc || activeDoc?.mode === 'notes' || productMode === 'notes';
+    const defaultTitle = isNotes ? 'Untitled Note' : 'Untitled Document';
+
     if (!docBodyHtml) {
-      setDocTitle((prev) => (prev !== 'Untitled Document' ? 'Untitled Document' : prev));
+      setDocTitle((prev) => (prev !== defaultTitle ? defaultTitle : prev));
       return;
     }
     const parser = new DOMParser();
     const doc = parser.parseFromString(docBodyHtml, 'text/html');
     const firstBlock = doc.body.firstElementChild;
     const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
-    const derivedTitle = titleText || 'Untitled Document';
+    const derivedTitle = titleText || defaultTitle;
     setDocTitle((prev) => (prev !== derivedTitle ? derivedTitle : prev));
-  }, [docBodyHtml, activeDoc?.title]);
+  }, [docBodyHtml, activeDoc?.title, activeDoc?.isNotesDoc, activeDoc?.mode, productMode]);
 
   const [pdfRotation, setPdfRotation] = useState(0);
   const [pdfMarkupActive, setPdfMarkupActive] = useState(false);
@@ -40563,7 +40566,12 @@ Respond with a JSON array of slide objects matching the schema.`;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
   const activeDraftDisplayTitle = (() => {
+    const isNotes = activeDoc?.isNotesDoc || activeDoc?.mode === 'notes' || productMode === 'notes';
     const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
+    if (isNotes) {
+      if (!rawTitle || rawTitle === 'Untitled Document') return 'Untitled Note';
+      return rawTitle;
+    }
     if (rawTitle === 'Untitled Whiteboard') return t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard';
     return rawTitle || (lastSavedAt ? (t('common.savedDrafts') || SAVED_DRAFT_LABEL) : (t('common.unsavedDraft') || 'Unsaved draft'));
   })();
@@ -78057,10 +78065,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
         
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
+        <div className={`flex-1 relative w-full h-full overflow-hidden ${
+          (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'bg-white dark:bg-[#18181B]' : 'bg-[#F7F7F9]'
+        }`}>
           
         <div 
-          className="flex-1 flex flex-col min-h-0 bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 cursor-pointer"
+          className={`flex-1 flex flex-col min-h-0 overflow-hidden z-50 cursor-pointer ${
+            (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')
+              ? 'border-0 rounded-none shadow-none bg-white dark:bg-[#18181B]'
+              : 'bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl'
+          }`}
           style={getWorkspaceModuleStyle('compose')}
           onClick={() => handleWorkspaceModuleClick('compose')}
         >
@@ -78076,8 +78090,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onMouseMove={handleEditorMouseMove}
             onMouseLeave={handleEditorMouseLeave}
             onScroll={handleEditorScroll}
-            className={`flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative bg-[#F7F7F9] transition-opacity duration-300 opacity-100 ${
-              activeDoc?.isPdfDoc ? 'p-0 pt-0 pb-16' : 'p-6 md:p-8 pt-14 md:pt-14'
+            className={`flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative transition-opacity duration-300 opacity-100 ${
+              (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')
+                ? 'p-0 bg-white dark:bg-[#18181B]'
+                : (activeDoc?.isPdfDoc ? 'p-0 pt-0 pb-16 bg-[#F7F7F9]' : 'p-6 md:p-8 pt-14 md:pt-14 bg-[#F7F7F9]')
             }`}
           >
           {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (

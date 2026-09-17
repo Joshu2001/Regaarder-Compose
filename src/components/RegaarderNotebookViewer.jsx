@@ -1062,12 +1062,12 @@ function RuledNotebookCanvas({
         style={rulingBgStyle}
       />
 
-      {/* Vertical red margin guide line: left 80px */}
+      {/* Vertical red margin guide line: left 72px */}
       {rulingType === "ruled" && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none"
           style={{
-            left: 80,
+            left: 72,
             width: 1.5,
             backgroundColor: "rgba(248, 113, 113, 0.38)",
           }}
@@ -1075,11 +1075,11 @@ function RuledNotebookCanvas({
       )}
 
       {/* Notebook writing content container:
-          visual order: red margin (at 80px) -> breathing space (56px) -> content (at 136px) */}
+          visual order: red margin (at 72px) -> breathing space (72px) -> content (at 144px) */}
       <div
         className="relative min-h-full"
         style={{
-          paddingLeft: rulingType === "ruled" ? 136 : 56,
+          paddingLeft: rulingType === "ruled" ? 144 : 56,
           paddingRight: 56,
           paddingTop: 80,
           paddingBottom: 140,

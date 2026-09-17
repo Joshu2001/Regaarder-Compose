@@ -4,13 +4,14 @@ import {
 } from './localSyncService';
 
 export const WORKSPACE_DOCUMENTS_STORAGE_KEY = 'regaarder_documents_v1';
-export const WORKSPACE_DOCUMENT_MODES = ['compose', 'sheets', 'deck', 'whiteboard'];
+export const WORKSPACE_DOCUMENT_MODES = ['compose', 'sheets', 'deck', 'whiteboard', 'notes'];
 
 const MODE_LABELS = {
   compose: 'Untitled Document',
   sheets: 'Untitled Sheet',
   deck: 'Untitled Deck',
   whiteboard: 'Untitled Whiteboard',
+  notes: 'Untitled Note',
 };
 
 const isValidIsoDate = (value) => {
@@ -50,8 +51,8 @@ const hasGeneratedTitle = (title, mode) => {
   if (!trimmed) return true;
   const label = MODE_LABELS[mode] || MODE_LABELS.compose;
   if (new RegExp(`^${label}(?:\\s+\\d+)?$`, 'i').test(trimmed)) return true;
-  // If a document in whiteboard, sheet, or deck mode has another mode's generic title (e.g. Untitled Document on whiteboard)
-  if (/^untitled\s+(?:document|sheet|deck|whiteboard)(?:\s+\d+)?$/i.test(trimmed)) return true;
+  // If a document in whiteboard, sheet, deck, or notes mode has another mode's generic title (e.g. Untitled Document on whiteboard)
+  if (/^untitled\s+(?:document|sheet|deck|whiteboard|note)(?:\s+\d+)?$/i.test(trimmed)) return true;
   return false;
 };
 
