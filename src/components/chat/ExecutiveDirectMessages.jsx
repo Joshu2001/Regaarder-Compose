@@ -12,7 +12,7 @@ import {
   UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
   SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet, UploadCloud,
   AtSign, Globe, Smartphone, User, Terminal, HardDriveDownload,
-  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest, Network
+  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest, Network, Folder
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
@@ -645,6 +645,63 @@ export default function ExecutiveDirectMessages({
   }, [aiChatSessions]);
 
   const [isAiHistoryOpen, setIsAiHistoryOpen] = useState(false);
+
+  // ── Share Project into Relay Listener ──
+  useEffect(() => {
+    const handleProjectShare = (e) => {
+      const detail = e.detail;
+      if (!detail?.project) return;
+      const { project, recipientIds = [], note = '' } = detail;
+      const targetIds = recipientIds.length > 0 ? recipientIds : [activeContactId || 'chat-assistant'];
+
+      setThreadMessages(prev => {
+        const updated = { ...prev };
+        targetIds.forEach(recId => {
+          const existing = updated[recId] || [];
+          const projectShareMsg = {
+            id: `proj-share-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            author: 'You',
+            role: 'you',
+            text: note ? note : `Shared project: ${project.name}`,
+            createdAt: Date.now(),
+            status: 'sent',
+            actionCard: {
+              type: 'project',
+              id: project.id,
+              title: project.name,
+              color: project.color || '#7C3AED',
+              description: project.description || project.customInstructions || 'Workspace project container',
+              project
+            }
+          };
+          updated[recId] = [...existing, projectShareMsg];
+        });
+        return updated;
+      });
+
+      // Update conversations preview
+      setConversations(prev => prev.map(c => {
+        if (targetIds.includes(c.id)) {
+          return {
+            ...c,
+            lastMsg: `Shared project: ${project.name}`,
+            time: 'Just now'
+          };
+        }
+        return c;
+      }));
+
+      // Switch active contact to the recipient if single recipient
+      if (targetIds.length > 0) {
+        setActiveContactId(targetIds[0]);
+      }
+    };
+
+    window.addEventListener('regaarder:relay-share-project', handleProjectShare);
+    return () => {
+      window.removeEventListener('regaarder:relay-share-project', handleProjectShare);
+    };
+  }, [activeContactId]);
 
   // Unified contact list for forward modal (conversations + threads)
   const forwardRecipientsList = useMemo(() => {
@@ -4110,6 +4167,13 @@ ${systemPrompt}`
                                 <DocsSemanticFileBadge type="compose" title={msg.actionCard.title} size="md" />
                               ) : msg.actionCard.type === 'sheet' ? (
                                 <DocsSemanticFileBadge type="sheets" title={msg.actionCard.title} size="md" />
+                              ) : msg.actionCard.type === 'project' ? (
+                                <div
+                                  className="w-5 h-5 rounded-[5px] text-white flex items-center justify-center shrink-0 shadow-xs"
+                                  style={{ backgroundColor: msg.actionCard.color || '#7C3AED' }}
+                                >
+                                  <Folder size={12} strokeWidth={2.2} />
+                                </div>
                               ) : msg.actionCard.type === 'staging_pr' ? (
                                 <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                                   <GitPullRequest size={12} strokeWidth={2.2} />
@@ -4163,9 +4227,9 @@ ${systemPrompt}`
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 shrink-0">
                                 ⚡ Topology Compiled
                               </span>
-                            ) : msg.actionCard.type === 'room_harvester' ? (
+                            ) : msg.actionCard.type === 'project' ? (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
-                                ⚡ In-Meeting Live
+                                📁 Shared Project
                               </span>
                             ) : (
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
@@ -4317,6 +4381,26 @@ ${systemPrompt}`
                             >
                               <Radio size={12} />
                               <span>Open Room Observer Inspector</span>
+                              <ArrowRight size={11} />
+                            </button>
+                          )}
+                          {msg.actionCard.type === 'project' && (
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                if (onNavigateWorkspace) {
+                                  onNavigateWorkspace({
+                                    type: 'landing',
+                                    targetTab: 'projects',
+                                    projectId: msg.actionCard.id
+                                  });
+                                }
+                              }}
+                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                            >
+                              <Folder size={12} />
+                              <span>Open Project</span>
                               <ArrowRight size={11} />
                             </button>
                           )}

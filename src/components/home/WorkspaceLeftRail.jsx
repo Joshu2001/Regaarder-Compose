@@ -3,7 +3,8 @@ import {
   Folder,
   CheckSquare,
   Calendar,
-  Settings
+  Settings,
+  Plus
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { FeedbackIcon, NotesIcon } from "../RegaarderProductIcons";
@@ -21,6 +22,7 @@ const WORKSPACE_APPS = [
 export default function WorkspaceLeftRail({
   activeTab = "home",
   onSelectTab,
+  onNewProject,
   onLaunch,
   onOpenTasks,
   onOpenSchedule,
@@ -54,18 +56,39 @@ export default function WorkspaceLeftRail({
             <span>Home</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => onSelectTab && onSelectTab("library")}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors cursor-pointer border-none ${
-              activeTab === "library"
-                ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-white/[0.04]"
-            }`}
-          >
-            <Folder size={16} className="text-slate-500" />
-            <span>Projects</span>
-          </button>
+          <div className="relative group/proj flex items-center">
+            <button
+              type="button"
+              onClick={() => onSelectTab && onSelectTab("projects")}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-colors cursor-pointer border-none ${
+                activeTab === "projects" || activeTab === "library"
+                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-white/[0.04]"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Folder size={16} className={activeTab === "projects" || activeTab === "library" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-500"} />
+                <span>Projects</span>
+              </div>
+            </button>
+
+            {/* Antigravity / ChatGPT style '+' quick create button revealed on hover */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onNewProject) {
+                  onNewProject();
+                } else if (onSelectTab) {
+                  onSelectTab("projects");
+                }
+              }}
+              title="Create new project"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-lg text-slate-500 hover:text-[#7C3AED] dark:text-zinc-400 dark:hover:text-violet-300 hover:bg-slate-300/50 dark:hover:bg-zinc-700/60 opacity-0 group-hover/proj:opacity-100 transition-all cursor-pointer border-none bg-transparent z-10"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
         </div>
 
         {/* Workspace Apps */}

@@ -154,3 +154,26 @@ export const deleteWorkspaceDocument = (id) => {
 
   return writeWorkspaceDocuments(remaining);
 };
+
+/**
+ * Updates a single document in the workspace by id.
+ *
+ * @param {string} id  Document id to update.
+ * @param {object} updates  Object of fields to update.
+ * @returns {object[]}  The updated normalized documents.
+ */
+export const updateWorkspaceDocument = (id, updates) => {
+  const current = readWorkspaceDocuments();
+  const updated = current.map((doc) => {
+    if (doc.id === id || String(doc.id) === String(id)) {
+      return {
+        ...doc,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    }
+    return doc;
+  });
+  return writeWorkspaceDocuments(updated);
+};
+

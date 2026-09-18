@@ -11,6 +11,14 @@ import { useEntitlements } from "./context/EntitlementContext";
 import RegaarderPaywallModal from "./components/paywall/RegaarderPaywallModal";
 import RegaarderFeedbackModal from "./components/feedback/RegaarderFeedbackModal";
 import { FeedbackIcon } from "./components/RegaarderProductIcons";
+import ProjectsWorkspace from "./components/projects/ProjectsWorkspace";
+import CreateProjectModal from "./components/projects/CreateProjectModal";
+import {
+  readWorkspaceProjects,
+  createProject,
+  writeWorkspaceProjects
+} from "./services/workspaceProjectStore";
+import { readWorkspaceDocuments } from "./services/workspaceDocumentStore";
 
 export default function RegaarderComposeLanding({
   onLaunch,
@@ -28,12 +36,50 @@ export default function RegaarderComposeLanding({
   isDocumentImmersive,
   onToggleImmersive
 }) {
-  const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'library' | 'feedback'
+  const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'projects' | 'library' | 'feedback'
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [projects, setProjects] = useState(() => readWorkspaceProjects());
+  const [documents, setDocuments] = useState(() => readWorkspaceDocuments());
   const [waveKey, setWaveKey] = useState(0);
   const { isPaywallOpen, closePaywall } = useEntitlements();
+
+  const [activeProjectId, setActiveProjectId] = useState(null);
+
+  // Keep projects and documents in sync with storage updates
+  React.useEffect(() => {
+    const handleProjectsUpdate = (e) => {
+      if (e.detail?.projects) setProjects(e.detail.projects);
+      else setProjects(readWorkspaceProjects());
+    };
+    const handleDocsUpdate = () => {
+      setDocuments(readWorkspaceDocuments());
+    };
+    const handleSetLandingTab = (e) => {
+      if (e.detail?.tab) {
+        setActiveRailTab(e.detail.tab);
+      }
+      if (e.detail?.projectId) {
+        setActiveProjectId(e.detail.projectId);
+      }
+    };
+    window.addEventListener("workspace-projects-update", handleProjectsUpdate);
+    window.addEventListener("workspace-storage-update", handleDocsUpdate);
+    window.addEventListener("regaarder:set-landing-tab", handleSetLandingTab);
+    return () => {
+      window.removeEventListener("workspace-projects-update", handleProjectsUpdate);
+      window.removeEventListener("workspace-storage-update", handleDocsUpdate);
+      window.removeEventListener("regaarder:set-landing-tab", handleSetLandingTab);
+    };
+  }, []);
+
+  const handleCreateProject = (projectData) => {
+    const created = createProject(projectData);
+    setProjects(readWorkspaceProjects());
+    setActiveRailTab("projects");
+  };
 
   // Trigger the waving gesture whenever the user returns to the home view
   React.useEffect(() => {
@@ -107,6 +153,7 @@ export default function RegaarderComposeLanding({
         <WorkspaceLeftRail
           activeTab={activeRailTab}
           onSelectTab={setActiveRailTab}
+          onNewProject={() => setShowCreateProjectModal(true)}
           onLaunch={onLaunch}
           onOpenTasks={() => setActiveRailTab("tasks")}
           onOpenSchedule={() => setActiveRailTab("schedule")}
@@ -130,6 +177,14 @@ export default function RegaarderComposeLanding({
           <div className="flex-1 flex flex-col h-full bg-white dark:bg-[#151518] overflow-hidden">
             <IntentSchedulerInspector onClose={() => setActiveRailTab("home")} />
           </div>
+        ) : activeRailTab === "projects" || activeRailTab === "library" ? (
+          <ProjectsWorkspace
+            projects={projects}
+            documents={documents}
+            initialProjectId={activeProjectId}
+            onOpenCreateModal={() => setShowCreateProjectModal(true)}
+            onLaunchApp={onLaunch}
+          />
         ) : (
           /* Default Home / Recent View */
           <main className="flex-1 overflow-y-auto px-10 py-8 custom-scrollbar bg-white dark:bg-[#151518] transition-all">
@@ -235,6 +290,13 @@ export default function RegaarderComposeLanding({
         onClose={() => setShowFeedbackModal(false)}
         activeApp="Workspace"
         activeFile={null}
+      />
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={showCreateProjectModal}
+        onClose={() => setShowCreateProjectModal(false)}
+        onCreate={handleCreateProject}
       />
     </div>
   );

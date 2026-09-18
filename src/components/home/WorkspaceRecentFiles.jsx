@@ -11,15 +11,18 @@ import {
   Share2,
   Edit2,
   FolderInput,
+  Folder,
   Check,
   Pin,
   PinOff,
   FileText,
-  Plus
+  Plus,
+  X
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
-import { readWorkspaceDocuments, deleteWorkspaceDocument } from "../../services/workspaceDocumentStore";
+import { readWorkspaceDocuments, deleteWorkspaceDocument, updateWorkspaceDocument } from "../../services/workspaceDocumentStore";
+import { readWorkspaceProjects } from "../../services/workspaceProjectStore";
 import { revealDocumentInLocalFolder } from "../../services/localSyncService";
 
 function formatTimestamp(timestamp) {
@@ -136,6 +139,67 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   // Share feedback notification
   const [feedbackToast, setFeedbackToast] = useState(null);
 
+  // Add/Share to Project state
+  const [assignProjectDoc, setAssignProjectDoc] = useState(null);
+  const [workspaceProjects, setWorkspaceProjects] = useState([]);
+
+  const handleOpenAssignProject = (e, item) => {
+    e.stopPropagation();
+    setActiveItemMenuId(null);
+    setWorkspaceProjects(readWorkspaceProjects());
+    setAssignProjectDoc(item);
+  };
+
+  const handleAssignToProject = (project) => {
+    if (!assignProjectDoc) return;
+    const docId = assignProjectDoc.id;
+    const projectName = project ? project.name : null;
+    const projectId = project ? project.id : null;
+    const locationStr = project ? `Projects / ${project.name}` : "Workspace / Documents";
+
+    // 1. Update canonical store
+    try {
+      updateWorkspaceDocument(docId, {
+        projectId,
+        location: locationStr
+      });
+    } catch {}
+
+    // 2. Update legacy key if present
+    if (assignProjectDoc.key) {
+      try {
+        const raw = localStorage.getItem(assignProjectDoc.key);
+        if (raw) {
+          const data = JSON.parse(raw);
+          data.projectId = projectId;
+          data.location = locationStr;
+          localStorage.setItem(assignProjectDoc.key, JSON.stringify(data));
+        }
+      } catch {}
+    }
+
+    // 3. Update local items state
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === docId
+          ? {
+              ...i,
+              location: locationStr,
+              doc: {
+                ...i.doc,
+                projectId,
+                location: locationStr
+              }
+            }
+          : i
+      )
+    );
+
+    setAssignProjectDoc(null);
+    setFeedbackToast(project ? `Added to "${project.name}"` : "Removed from project");
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
   const containerRef = useRef(null);
 
   // Unified click-outside dismissal
@@ -175,16 +239,24 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             }
 
             let typeLabel = "Document";
-            let loc = "Workspace / Documents";
-            if (detectedProduct === "sheet") {
+            let loc = d.location || "Workspace / Documents";
+            if (d.projectId) {
+              try {
+                const projects = readWorkspaceProjects();
+                const matchedProj = projects.find((p) => p.id === d.projectId);
+                if (matchedProj) {
+                  loc = `Projects / ${matchedProj.name}`;
+                }
+              } catch {}
+            } else if (detectedProduct === "sheet") {
               typeLabel = "Sheet";
-              loc = "Workspace / Sheets";
+              loc = d.location || "Workspace / Sheets";
             } else if (detectedProduct === "deck") {
               typeLabel = "Presentation";
-              loc = "Workspace / Decks";
+              loc = d.location || "Workspace / Decks";
             } else if (detectedProduct === "whiteboard") {
               typeLabel = "Whiteboard";
-              loc = "Workspace / Whiteboards";
+              loc = d.location || "Workspace / Whiteboards";
             }
 
             let title = (d.title || d.docTitle || d.sheetsTitle || d.deckTitle || "").trim();
@@ -236,21 +308,30 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
               let detectedProduct = "compose";
               let typeLabel = "Document";
-              let loc = "Workspace / Documents";
-
-              const lowerTitle = (title || "").toLowerCase();
-              if (lowerTitle.includes("sheet")) {
-                detectedProduct = "sheet";
-                typeLabel = "Sheet";
-                loc = "Workspace / Sheets";
-              } else if (lowerTitle.includes("deck") || lowerTitle.includes("present") || lowerTitle.includes("slide")) {
-                detectedProduct = "deck";
-                typeLabel = "Presentation";
-                loc = "Workspace / Decks";
-              } else if (lowerTitle.includes("whiteboard") || lowerTitle.includes("canvas")) {
-                detectedProduct = "whiteboard";
-                typeLabel = "Whiteboard";
-                loc = "Workspace / Whiteboards";
+              let loc = data.location || "Workspace / Documents";
+              if (data.projectId) {
+                try {
+                  const projects = readWorkspaceProjects();
+                  const matchedProj = projects.find((p) => p.id === data.projectId);
+                  if (matchedProj) {
+                    loc = `Projects / ${matchedProj.name}`;
+                  }
+                } catch {}
+              } else {
+                const lowerTitle = (title || "").toLowerCase();
+                if (lowerTitle.includes("sheet")) {
+                  detectedProduct = "sheet";
+                  typeLabel = "Sheet";
+                  loc = data.location || "Workspace / Sheets";
+                } else if (lowerTitle.includes("deck") || lowerTitle.includes("present") || lowerTitle.includes("slide")) {
+                  detectedProduct = "deck";
+                  typeLabel = "Presentation";
+                  loc = data.location || "Workspace / Decks";
+                } else if (lowerTitle.includes("whiteboard") || lowerTitle.includes("canvas")) {
+                  detectedProduct = "whiteboard";
+                  typeLabel = "Whiteboard";
+                  loc = data.location || "Workspace / Whiteboards";
+                }
               }
 
               if (!title || title.trim() === "." || title.trim() === "..") {
@@ -986,6 +1067,15 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
                           <button
                             type="button"
+                            onClick={(e) => handleOpenAssignProject(e, item)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Folder size={14} className="text-slate-400" />
+                            <span>Add to project...</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={(e) => handleRemoveFromRecents(e, item)}
                             className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
@@ -1067,6 +1157,14 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     </button>
                     <button
                       type="button"
+                      onClick={(e) => handleOpenAssignProject(e, item)}
+                      title="Add to project"
+                      className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
+                    >
+                      <Folder size={12} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={(e) => handleShare(e, item)}
                       className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 transition-colors cursor-pointer border-none bg-transparent"
                     >
@@ -1096,6 +1194,115 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ASSIGN TO PROJECT MODAL */}
+      {assignProjectDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setAssignProjectDoc(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/80 dark:border-white/10 p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 flex items-center justify-center">
+                  <Folder size={16} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100">
+                    Add to Project
+                  </h3>
+                  <p className="text-[12px] text-slate-500 dark:text-zinc-400 truncate max-w-[260px]">
+                    {assignProjectDoc.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignProjectDoc(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {workspaceProjects.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 dark:text-zinc-500 text-[13px]">
+                  No projects found. Create a project in the Projects hub first.
+                </div>
+              ) : (
+                workspaceProjects.map((project) => {
+                  const isCurrent =
+                    assignProjectDoc.doc?.projectId === project.id ||
+                    assignProjectDoc.location?.includes(project.name);
+
+                  return (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => handleAssignToProject(project)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left cursor-pointer ${
+                        isCurrent
+                          ? "bg-violet-50/70 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700/60"
+                          : "bg-slate-50/70 dark:bg-zinc-800/60 border-slate-200/60 dark:border-zinc-700/50 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-3.5 h-3.5 rounded-md shrink-0 shadow-2xs"
+                          style={{ backgroundColor: project.color || "#8B5CF6" }}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-medium text-slate-900 dark:text-zinc-100 truncate">
+                            {project.name}
+                          </div>
+                          {project.description && (
+                            <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
+                              {project.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {isCurrent ? (
+                        <span className="text-[11px] font-medium text-violet-600 dark:text-violet-400 shrink-0 ml-2">
+                          Current
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 ml-2 group-hover:text-violet-600">
+                          Select
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {assignProjectDoc.doc?.projectId && (
+              <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => handleAssignToProject(null)}
+                  className="text-[12px] text-red-600 dark:text-red-400 hover:underline cursor-pointer bg-transparent border-none p-0 font-medium"
+                >
+                  Remove from project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssignProjectDoc(null)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer bg-transparent border-none"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

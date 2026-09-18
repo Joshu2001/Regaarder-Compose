@@ -54,6 +54,7 @@ import {
   MemoryIcon,
   TasksIcon,
   ChatIcon, RelayIcon,
+  NotesIcon,
   AssistIcon,
   AgentsIcon,
   BrowserIcon,
@@ -16595,6 +16596,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                 { mode: 'deck', label: t('nav.deck') || 'Decks', desc: t('workspaceDesc.deck') || 'Slide & Presentation', icon: DeckIcon },
                 { mode: 'whiteboard', label: t('nav.whiteboard') || 'Whiteboard', desc: t('workspaceDesc.whiteboard') || 'Visual Canvas & Diagrams', icon: WhiteboardIcon },
                 { mode: 'room', label: t('nav.room') || 'Room', desc: t('workspaceDesc.room') || 'Team Video & Meetings', icon: RoomIcon },
+                { mode: 'notes', label: 'Notes', desc: 'Capture & Think Freely', icon: NotesIcon },
                 { mode: 'dm', label: 'Relay', desc: 'Direct Team & AI Messaging', icon: RelayIcon },
                 { mode: 'browser', label: t('nav.browser') || 'Browser', desc: t('workspaceDesc.browser') || 'AI Knowledge Browser', icon: BrowserIcon }
               ].map((item) => {
@@ -16637,6 +16639,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                       }
                       if (item.mode === 'compose') {
                         createComposeExperience();
+                        return;
+                      }
+                      if (item.mode === 'notes') {
+                        createNotesExperience();
                         return;
                       }
                       if (item.mode === 'dm') {
@@ -46642,6 +46648,18 @@ Respond with a JSON array of slide objects matching the schema.`;
               if (ref.type === 'landing') {
                 setProductMode('landing');
                 setFocusedModule('landing');
+                if (ref.targetTab) {
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent('regaarder:set-landing-tab', {
+                        detail: {
+                          tab: ref.targetTab,
+                          projectId: ref.projectId || null
+                        }
+                      })
+                    );
+                  } catch (e) {}
+                }
               } else if (ref.type === 'sheets') {
                 createSheetsExperience();
                 if (ref.sheetId) setActiveSheetId(ref.sheetId);
@@ -83570,7 +83588,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
 
-        {!isComposing && !activeDoc?.isPdfDoc && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !activeDoc?.isPdfDoc && !isNotesWorkspace && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             style={{
@@ -83846,7 +83864,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {/* Bottom Status Bar */}
-        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && !isNotesWorkspace && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} {t('common.words') || 'words'} - {documentStats.characters} {t('common.characters') || 'characters'}</span>
