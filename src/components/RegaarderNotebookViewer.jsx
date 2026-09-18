@@ -3,7 +3,9 @@ import {
   Plus, Search, MoreHorizontal, ChevronDown, Check,
   X, ArrowUpDown, AlignLeft, AlignJustify, CheckSquare, Edit3, Type,
   Highlighter, Paperclip, ImagePlus, FileText, Pin, PinOff,
-  Table, Sliders, Undo2, Redo2, Sparkles, ChevronRight, Hash, Eye
+  Table, Sliders, Undo2, Redo2, Sparkles, ChevronRight, Hash, Eye,
+  Lock, Unlock, Shield, Users, Share2, Copy, Download, Eraser,
+  PenTool, Brush, Palette, Trash2, ExternalLink, Play
 } from "lucide-react";
 import { RegaarderAiIcon, NotesIcon } from "./RegaarderProductIcons";
 import { executeAiTurn } from "../services/llmProviderService";
@@ -96,9 +98,15 @@ export function NotesFloatingDock({
   isDarkMode,
 }) {
   const [activeTool, setActiveTool] = useState(activeDoc?.activeTool || (activeDoc?.isHandwriting ? "pen" : "text"));
-  const [openPopover, setOpenPopover] = useState(null); // 'ruling' | 'add' | 'ai' | 'more'
+  const [openPopover, setOpenPopover] = useState(null); // 'pen' | 'ruling' | 'add' | 'ai' | 'more'
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [copiedToast, setCopiedToast] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Pen tool configurations
+  const penTool = activeDoc?.penTool || "ballpoint";
+  const penColor = activeDoc?.penColor || "#1c1917";
+  const penWidth = activeDoc?.penWidth || 3;
 
   useEffect(() => {
     if (activeDoc?.activeTool) {
@@ -109,6 +117,7 @@ export function NotesFloatingDock({
   }, [activeDoc?.activeTool, activeDoc?.isHandwriting]);
 
   const refs = {
+    pen: useRef(null),
     ruling: useRef(null),
     add: useRef(null),
     ai: useRef(null),
@@ -169,10 +178,45 @@ export function NotesFloatingDock({
     closeAll();
   };
 
-  const handleInsertTable = () => {
-    const tableHtml = `<table style="width:100%;border-collapse:collapse;margin:12px 0;border:1px solid rgba(148,163,184,0.3);"><tbody><tr><th style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;text-align:left;background:rgba(241,245,249,0.5);">Header 1</th><th style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;text-align:left;background:rgba(241,245,249,0.5);">Header 2</th><th style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;text-align:left;background:rgba(241,245,249,0.5);">Status</th></tr><tr><td style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;">Item A</td><td style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;">Notes...</td><td style="border:1px solid rgba(148,163,184,0.3);padding:6px 12px;">In Progress</td></tr></tbody></table><br/>`;
-    exec("insertHTML", tableHtml);
-    closeAll();
+  const handleShareAsText = async () => {
+    const editor = document.getElementById("regaarder-notebook-editor");
+    const rawContent = editor ? (editor.innerText || editor.textContent || "") : (activeDoc?.bodyHtml || "");
+    const title = activeDoc?.title || "Untitled Note";
+    const textToCopy = `${title}\n\n${rawContent}`.trim();
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 2000);
+    } catch (err) {
+      console.warn("Failed to copy note text:", err);
+    }
+  };
+
+  const handleShareAsPicture = () => {
+    // Printable / image export hook
+    window.print();
+  };
+
+  const handleRedactSelection = () => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString();
+    const redactMarkup = `<mark style="background:#0f172a;color:#0f172a;border-radius:3px;padding:1px 5px;user-select:none;cursor:default;" title="Redacted Content">${selectedText || "REDACTED"}</mark>`;
+    exec("insertHTML", redactMarkup);
+  };
+
+  const handleTogglePassword = () => {
+    if (activeDoc?.isLocked) {
+      onUpdateDoc?.({ isLocked: false });
+    } else {
+      const pin = window.prompt("Enter a 4-digit PIN to lock this note:", "1234");
+      if (pin) {
+        onUpdateDoc?.({ isLocked: true, passcode: pin.trim() });
+      }
+    }
+  };
+
+  const handleToggleCollab = () => {
+    onUpdateDoc?.({ isCollab: !activeDoc?.isCollab });
   };
 
   const handleAiAction = async (actionType) => {
@@ -305,19 +349,27 @@ export function NotesFloatingDock({
         <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1 shrink-0" />
 
         {/* Mode Toggle: Pen vs Text */}
-        <div className="flex items-center p-0.5 rounded-xl bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/50 dark:border-zinc-700/50">
+        <div className="flex items-center p-0.5 rounded-xl bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/50 dark:border-zinc-700/50 relative">
           <button
+            ref={refs.pen}
             type="button"
-            onClick={handleTogglePen}
+            onClick={() => {
+              if (activeTool !== "pen") {
+                handleTogglePen();
+              } else {
+                toggle("pen");
+              }
+            }}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
               activeTool === "pen"
                 ? "bg-white dark:bg-zinc-900 text-amber-700 dark:text-amber-400 shadow-2xs border border-slate-200/60 dark:border-zinc-700/60"
                 : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
             }`}
-            title="Handwriting cursive pen mode"
+            title="Handwriting pen mode & palette"
           >
             <Edit3 size={13} strokeWidth={2} />
             <span>Pen</span>
+            {activeTool === "pen" && <ChevronDown size={10} className="text-amber-600/70" />}
           </button>
           <button
             type="button"
@@ -332,6 +384,194 @@ export function NotesFloatingDock({
             <Type size={13} strokeWidth={2} />
             <span>Text</span>
           </button>
+
+          {/* Pen Tool Popover */}
+          {openPopover === "pen" && (
+            <ToolbarPopover anchorRef={refs.pen} onClose={closeAll} width={230}>
+              <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                Pen Tools & Inking
+              </div>
+              <div className="grid grid-cols-3 gap-1 mb-2">
+                {[
+                  { id: "ballpoint", label: "Pen", icon: Edit3 },
+                  { id: "highlighter", label: "Highlighter", icon: Highlighter },
+                  { id: "eraser", label: "Eraser", icon: Eraser },
+                ].map(({ id, label, icon: IconComp }) => {
+                  const isSelected = penTool === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        onUpdateDoc?.({ penTool: id });
+                      }}
+                      className={`flex flex-col items-center justify-center gap-1 py-1.5 px-1 rounded-xl text-[11px] font-medium transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 font-semibold shadow-2xs"
+                          : "hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400"
+                      }`}
+                    >
+                      <IconComp size={15} strokeWidth={isSelected ? 2.2 : 1.8} />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Color Swatches */}
+              {penTool !== "eraser" && (
+                <>
+                  <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                    Ink Color
+                  </div>
+                  <div className="flex items-center justify-between px-1 mb-2">
+                    {[
+                      { name: "Onyx", value: "#1c1917" },
+                      { name: "Navy", value: "#1e3a8a" },
+                      { name: "Amber", value: "#d97706" },
+                      { name: "Crimson", value: "#dc2626" },
+                      { name: "Emerald", value: "#059669" },
+                      { name: "Purple", value: "#7c3aed" },
+                    ].map((col) => {
+                      const isChosen = penColor === col.value;
+                      return (
+                        <button
+                          key={col.value}
+                          type="button"
+                          title={col.name}
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            onUpdateDoc?.({ penColor: col.value });
+                          }}
+                          className={`w-6 h-6 rounded-full transition-transform cursor-pointer relative flex items-center justify-center ${
+                            isChosen ? "scale-110 ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-zinc-900" : "hover:scale-105"
+                          }`}
+                          style={{ backgroundColor: col.value }}
+                        >
+                          {isChosen && <Check size={11} className="text-white drop-shadow-xs" strokeWidth={3} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Stroke Width Selection */}
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                  Thickness
+                </span>
+                <span className="text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400">
+                  {penWidth}px
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-1 mb-2">
+                {[
+                  { id: 2, label: "Fine", h: 2 },
+                  { id: 4, label: "Medium", h: 4 },
+                  { id: 6, label: "Bold", h: 6 },
+                  { id: 10, label: "Heavy", h: 8 },
+                ].map((st) => {
+                  const isSelected = penWidth === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        onUpdateDoc?.({ penWidth: st.id });
+                      }}
+                      className={`flex-1 flex flex-col items-center gap-1 py-1 px-1 rounded-lg text-[10px] cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-slate-200/80 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 font-semibold"
+                          : "hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500"
+                      }`}
+                    >
+                      <div
+                        className="rounded-full w-full max-w-[24px]"
+                        style={{ height: st.h, backgroundColor: penColor || "#1c1917" }}
+                      />
+                      <span>{st.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Thickness Custom Slider */}
+              <div className="px-2 pb-2">
+                <input
+                  type="range"
+                  min="1"
+                  max="16"
+                  step="1"
+                  value={penWidth}
+                  onChange={(e) => {
+                    const w = parseInt(e.target.value, 10) || 3;
+                    onUpdateDoc?.({ penWidth: w });
+                  }}
+                  className="w-full accent-amber-500 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              {/* Inking Accuracy & Smoothing Calibration */}
+              <div className="px-2 pt-1.5 pb-1 border-t border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                    Calibration & Smoothing
+                  </span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium capitalize">
+                    {activeDoc?.penSmoothing || "balanced"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 mb-1">
+                  {[
+                    { id: "raw", label: "Responsive", tip: "Instant sub-pixel response" },
+                    { id: "balanced", label: "Balanced", tip: "Natural handwriting flow" },
+                    { id: "smooth", label: "Silky", tip: "Maximum curve stabilization" },
+                  ].map((lvl) => {
+                    const isSelected = (activeDoc?.penSmoothing || "balanced") === lvl.id;
+                    return (
+                      <button
+                        key={lvl.id}
+                        type="button"
+                        title={lvl.tip}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          onUpdateDoc?.({ penSmoothing: lvl.id });
+                        }}
+                        className={`py-1 px-1 rounded-lg text-[10.5px] font-medium text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 font-semibold shadow-2xs border border-amber-300/60 dark:border-amber-700/60"
+                            : "hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-transparent"
+                        }`}
+                      >
+                        {lvl.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Clear Drawings Button */}
+              <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    if (window.confirm("Clear all handwriting & drawing strokes on this note?")) {
+                      onUpdateDoc?.({ drawings: [] });
+                      closeAll();
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  <span>Clear All Inking</span>
+                </button>
+              </div>
+            </ToolbarPopover>
+          )}
         </div>
 
         {/* Divider */}
@@ -574,7 +814,7 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "more" && (
-            <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={210}>
+            <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={230}>
               <div className="px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
                 Note Actions
               </div>
@@ -590,6 +830,82 @@ export function NotesFloatingDock({
                 >
                   <Highlighter size={14} strokeWidth={1.8} className="text-amber-500" />
                   <span>Highlight Selection</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <ImagePlus size={14} strokeWidth={1.8} />
+                  <span>Insert Image</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleRedactSelection();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Shield size={14} strokeWidth={1.8} className="text-slate-600 dark:text-zinc-300" />
+                  <span>Redact Selection</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleShareAsText();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Copy size={14} strokeWidth={1.8} />
+                  <span>Share as Plain Text</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleShareAsPicture();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Download size={14} strokeWidth={1.8} />
+                  <span>Export / Snapshot Note</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleTogglePassword();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  {activeDoc?.isLocked ? (
+                    <Unlock size={14} strokeWidth={1.8} className="text-emerald-600" />
+                  ) : (
+                    <Lock size={14} strokeWidth={1.8} className="text-amber-600" />
+                  )}
+                  <span>{activeDoc?.isLocked ? "Remove Password Lock" : "Password Protect Note"}</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleToggleCollab();
+                    closeAll();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                >
+                  <Users size={14} strokeWidth={1.8} className={activeDoc?.isCollab ? "text-indigo-600" : ""} />
+                  <span>{activeDoc?.isCollab ? "Disable Collaboration" : "Collaborative Editing"}</span>
                 </button>
                 <button
                   type="button"
@@ -632,6 +948,14 @@ export function NotesFloatingDock({
           )}
         </div>
       </div>
+
+      {/* Copied to clipboard visual toast */}
+      {copiedToast && (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-900/90 dark:bg-zinc-800 text-white text-xs font-medium rounded-full shadow-lg pointer-events-none animate-in fade-in duration-150 flex items-center gap-1.5">
+          <Check size={12} className="text-emerald-400" />
+          <span>Copied plain text</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -928,12 +1252,14 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
           {title}
         </div>
 
-        <div
-          className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-5 leading-relaxed overflow-hidden"
-          style={{ lineHeight: "20px" }}
-        >
-          {bodyText || "Empty notebook entry. Start typing your thoughts..."}
-        </div>
+        {bodyText && (
+          <div
+            className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-5 leading-relaxed overflow-hidden"
+            style={{ lineHeight: "20px" }}
+          >
+            {bodyText}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -959,9 +1285,47 @@ function HoverRevealNotesSidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredNoteInfo, setHoveredNoteInfo] = useState(null);
   const hoverTimeoutRef = useRef(null);
+  const notesListRef = useRef(null);
+
+  // Reveal scrollbar only when nearing the end of the scroll content
+  useEffect(() => {
+    const el = notesListRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const ratio = el.scrollTop / (el.scrollHeight - el.clientHeight || 1);
+      el.classList.toggle("near-end", ratio > 0.75);
+    };
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Check if a note document contains actual user-created content (real data)
+  const hasRealNoteData = (doc) => {
+    if (!doc) return false;
+    if (doc.isBlank) return false;
+
+    // Check for actual typed or formatted text
+    const plainText = (doc.bodyHtml || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+
+    // Check for drawings / handwriting strokes
+    const hasStrokes = Array.isArray(doc.drawings) && doc.drawings.length > 0;
+
+    // Check for genuine user-given title (not default/generic placeholders)
+    const trimmedTitle = (doc.title || "").trim();
+    const isGenericTitle = !trimmedTitle || /^(?:untitled\s*(?:note|document|sheet|deck|whiteboard|entry)?(?:\s+\d+)?|new\s*action\s*item)$/i.test(trimmedTitle);
+    const hasCustomTitle = !isGenericTitle;
+
+    // A note is real only if it has typed text, drawing strokes, or a deliberate non-generic title with text
+    return plainText.length > 0 || hasStrokes || (hasCustomTitle && plainText.length > 0);
+  };
 
   const notes = useMemo(() => {
-    const list = (documents || []).filter((d) => d.isNotesDoc || d.mode === "notes");
+    const list = (documents || []).filter(
+      (d) => (d.isNotesDoc || d.mode === "notes") && hasRealNoteData(d)
+    );
     const filtered = list.filter((n) => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -982,8 +1346,9 @@ function HoverRevealNotesSidebar({
   }, [documents, searchQuery, sortAscending]);
 
   const formatNoteDate = (doc) => {
-    if (!doc.createdAt && !doc.updatedAt) return "Today · 3:42 PM";
-    const d = new Date(doc.updatedAt || doc.createdAt);
+    const timestamp = doc.updatedAt || doc.createdAt;
+    if (!timestamp) return "";
+    const d = new Date(timestamp);
     const now = new Date();
     const isToday =
       d.getDate() === now.getDate() &&
@@ -998,9 +1363,19 @@ function HoverRevealNotesSidebar({
   };
 
   const getNoteSnippet = (doc) => {
-    if (!doc.bodyHtml) return "Start typing your thoughts...";
-    const plain = doc.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-    return plain.length > 55 ? plain.substring(0, 55) + "..." : plain || "Empty note";
+    if (!doc.bodyHtml) return "";
+    // Strip HTML tags, collapse whitespace, decode basic entities
+    const plain = doc.bodyHtml
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&#?\w+;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!plain || plain.length < 3) return "";
+    return plain.length > 55 ? plain.substring(0, 55) + "…" : plain;
   };
 
   const getNoteIcon = (doc) => {
@@ -1035,7 +1410,7 @@ function HoverRevealNotesSidebar({
       <aside
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        className={`fixed top-4 bottom-4 left-4 z-50 w-[280px] flex flex-col rounded-2xl bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-4 bottom-4 left-4 z-50 w-[280px] flex flex-col rounded-2xl bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] select-none transition-[transform,opacity] duration-[120ms] ease-out ${
           isOpen || isPinned
             ? "translate-x-0 opacity-100 pointer-events-auto"
             : "-translate-x-[calc(100%+24px)] opacity-0 pointer-events-none"
@@ -1103,13 +1478,39 @@ function HoverRevealNotesSidebar({
           </button>
         </div>
 
-        {/* Notes List */}
-        <div className="flex-1 overflow-y-auto px-2 py-1.5 space-y-1 thin-scrollbar">
+        {/* Notes List — scrollbar only appears when nearing the bottom of overflow content */}
+        <div ref={notesListRef} className="flex-1 overflow-y-auto px-2 py-1.5 space-y-1 notes-list-scrollbar">
           {notes.length === 0 ? (
-            <div className="text-center py-8 text-xs text-slate-400">No notes found</div>
+            <div className="flex flex-col items-center justify-center h-full min-h-[260px] px-4 py-8 text-center select-none animate-in fade-in duration-300">
+              <div className="relative mb-3 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 flex items-center justify-center shadow-xs">
+                  <NotesIcon size={26} className="text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mb-1">
+                {searchQuery.trim() ? "No matching notes" : "No Notes Yet"}
+              </h3>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-500 max-w-[190px] leading-relaxed mb-4">
+                {searchQuery.trim()
+                  ? "Try searching for a different keyword or title."
+                  : "Capture thoughts, brainstorms, and sketches on ruled pages."}
+              </p>
+              {!searchQuery.trim() && (
+                <button
+                  type="button"
+                  onClick={onNewNote}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-xs font-semibold border border-amber-200/80 dark:border-amber-800/60 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus size={13} strokeWidth={2.2} />
+                  <span>Create First Note</span>
+                </button>
+              )}
+            </div>
           ) : (
-            notes.map((note) => {
+            notes.map((note, index) => {
               const isActive = activeDoc?.id === note.id;
+              const snippet = getNoteSnippet(note);
+              const dateText = formatNoteDate(note);
               return (
                 <div
                   key={note.id}
@@ -1134,7 +1535,7 @@ function HoverRevealNotesSidebar({
                           isActive ? "text-slate-900 dark:text-zinc-100" : "text-slate-800 dark:text-zinc-200"
                         }`}
                       >
-                        {note.title || "Untitled Note"}
+                        {note.title?.trim() || "Untitled Note"}
                       </span>
                     </div>
 
@@ -1143,13 +1544,17 @@ function HoverRevealNotesSidebar({
                     )}
                   </div>
 
-                  <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium mb-0.5">
-                    {formatNoteDate(note)}
-                  </div>
+                  {dateText && (
+                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium mb-0.5">
+                      {dateText}
+                    </div>
+                  )}
 
-                  <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate leading-normal">
-                    {getNoteSnippet(note)}
-                  </div>
+                  {snippet && (
+                    <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate leading-normal">
+                      {snippet}
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -1185,10 +1590,12 @@ function HoverRevealNotesSidebar({
 // ─── Ruled Notebook Canvas (Dominant Hero Writing Surface) ──────────────────────
 
 function RuledNotebookCanvas({
+  activeDoc,
   title,
   onUpdateTitle,
   bodyHtml,
   onUpdateBodyHtml,
+  onUpdateDoc,
   rulingType = "ruled",
   rulingThickness = "normal",
   isHandwriting = false,
@@ -1197,6 +1604,16 @@ function RuledNotebookCanvas({
 }) {
   const editorRef = useRef(null);
   const titleRef = useRef(null);
+  const drawingSvgRef = useRef(null);
+
+  const [enteredPin, setEnteredPin] = useState("");
+  const [pinError, setPinError] = useState(false);
+  const [isUnlockedLocally, setIsUnlockedLocally] = useState(false);
+  const [isDrawingNow, setIsDrawingNow] = useState(false);
+  const [currentStroke, setCurrentStroke] = useState(null);
+
+  const isLocked = Boolean(activeDoc?.isLocked) && !isUnlockedLocally;
+  const drawings = activeDoc?.drawings || [];
 
   const activePreset = RULING_PRESETS[rulingType] || RULING_PRESETS.ruled;
   const config = activePreset[rulingThickness] || activePreset.normal;
@@ -1234,8 +1651,21 @@ function RuledNotebookCanvas({
     }
     debounceTimerRef.current = setTimeout(() => {
       onUpdateBodyHtml?.(html);
+
+      // Auto-extract first non-empty line as note title if user hasn't explicitly set a custom title
+      const plain = html
+        .replace(/<[^>]*>/g, "\n")
+        .replace(/&nbsp;/g, " ")
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)[0];
+
+      if (plain && (!title || /^untitled\s*note(?:\s+\d+)?$/i.test(title.trim()))) {
+        const autoTitle = plain.length > 36 ? plain.substring(0, 36).trim() + "…" : plain;
+        onUpdateTitle?.(autoTitle);
+      }
     }, 280);
-  }, [onUpdateBodyHtml]);
+  }, [onUpdateBodyHtml, onUpdateTitle, title]);
 
   useEffect(() => {
     return () => {
@@ -1251,6 +1681,161 @@ function RuledNotebookCanvas({
       editorRef.current?.focus();
     }
   }, []);
+
+  // ─── Smart Paste Handler (YouTube / Vimeo / Images / Web links) ──────────────
+  const handleEditorPaste = useCallback((e) => {
+    const text = e.clipboardData?.getData("text/plain")?.trim();
+    if (!text) return;
+
+    // Check YouTube URL
+    const ytMatch = text.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      e.preventDefault();
+      const videoId = ytMatch[1];
+      const ytHtml = `<div class="regaarder-media-embed" contenteditable="false" style="margin:16px 0;max-width:560px;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.12);background:#000;"><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;"><iframe src="https://www.youtube-nocookie.com/embed/${videoId}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div><p><br/></p>`;
+      document.execCommand("insertHTML", false, ytHtml);
+      return;
+    }
+
+    // Check Vimeo URL
+    const vimeoMatch = text.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+      e.preventDefault();
+      const vimeoId = vimeoMatch[1];
+      const vimeoHtml = `<div class="regaarder-media-embed" contenteditable="false" style="margin:16px 0;max-width:560px;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.12);background:#000;"><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;"><iframe src="https://player.vimeo.com/video/${vimeoId}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div></div><p><br/></p>`;
+      document.execCommand("insertHTML", false, vimeoHtml);
+      return;
+    }
+
+    // Check Direct Image URL
+    if (text.match(/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i)) {
+      e.preventDefault();
+      const imgHtml = `<img src="${text}" alt="Embedded Image" style="max-width:100%;border-radius:8px;margin:12px 0;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:block;" /><p><br/></p>`;
+      document.execCommand("insertHTML", false, imgHtml);
+      return;
+    }
+
+    // Check general http/https link -> rich card embed
+    if (/^https?:\/\/[^\s]+$/i.test(text)) {
+      try {
+        const urlObj = new URL(text);
+        e.preventDefault();
+        const linkCardHtml = `<div class="regaarder-link-preview" contenteditable="false" style="margin:12px 0;display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;background:rgba(241,245,249,0.7);border:1px solid rgba(203,213,225,0.8);text-decoration:none;"><span style="font-size:16px;">🔗</span><div><div style="font-size:12.5px;font-weight:600;color:#0f172a;"><a href="${text}" target="_blank" rel="noopener noreferrer" style="color:#0284c7;text-decoration:none;">${urlObj.hostname}</a></div><div style="font-size:11px;color:#64748b;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${text}</div></div></div><p><br/></p>`;
+        document.execCommand("insertHTML", false, linkCardHtml);
+      } catch (_) {}
+    }
+  }, []);
+
+  const canvasContainerRef = useRef(null);
+
+  // Dynamic scrollbar: completely hidden by default, emerges only when content overflows heavily and scrolled near the end
+  useEffect(() => {
+    const el = canvasContainerRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const scrollRange = el.scrollHeight - el.clientHeight;
+      if (scrollRange <= 180) {
+        el.classList.remove("has-visible-scrollbar");
+        return;
+      }
+      const scrollRatio = el.scrollTop / scrollRange;
+      // Appears when text is close to the end of the note (> 65% scrolled) or when overflowing heavily and scrolling
+      if (scrollRatio > 0.65) {
+        el.classList.add("has-visible-scrollbar");
+      } else {
+        el.classList.remove("has-visible-scrollbar");
+      }
+    };
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // ─── Drawing Overlay Pointer Event Handlers ─────────────────────────────────
+  const handlePointerDown = (e) => {
+    if (!isHandwriting) return;
+    const svg = drawingSvgRef.current;
+    if (!svg) return;
+
+    // Capture pointer for 60fps ultra-responsive drawing without dropped events
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const tool = activeDoc?.penTool || "ballpoint";
+    const color = activeDoc?.penColor || "#1c1917";
+    const width = activeDoc?.penWidth || 3;
+    const smoothing = activeDoc?.penSmoothing || "balanced";
+
+    if (tool === "eraser") {
+      // Remove strokes near (x, y)
+      const filtered = drawings.filter((st) => {
+        return !st.points.some(([px, py]) => Math.hypot(px - x, py - y) < 18);
+      });
+      if (filtered.length !== drawings.length) {
+        onUpdateDoc?.({ drawings: filtered });
+      }
+      setIsDrawingNow(true);
+      return;
+    }
+
+    setIsDrawingNow(true);
+    setCurrentStroke({
+      tool,
+      color,
+      width: tool === "highlighter" ? Math.max(16, width * 4) : width,
+      opacity: tool === "highlighter" ? 0.35 : 1,
+      smoothing,
+      points: [[x, y]],
+    });
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDrawingNow) return;
+    const svg = drawingSvgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const tool = activeDoc?.penTool || "ballpoint";
+    if (tool === "eraser") {
+      const filtered = drawings.filter((st) => {
+        return !st.points.some(([px, py]) => Math.hypot(px - x, py - y) < 18);
+      });
+      if (filtered.length !== drawings.length) {
+        onUpdateDoc?.({ drawings: filtered });
+      }
+      return;
+    }
+
+    if (currentStroke) {
+      setCurrentStroke((prev) => ({
+        ...prev,
+        points: [...prev.points, [x, y]],
+      }));
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (e?.currentTarget && e.pointerId !== undefined) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+    }
+    if (!isDrawingNow) return;
+    setIsDrawingNow(false);
+    if (currentStroke && currentStroke.points.length > 0) {
+      const updatedDrawings = [...drawings, currentStroke];
+      onUpdateDoc?.({ drawings: updatedDrawings });
+      setCurrentStroke(null);
+    }
+  };
 
   const formattedDate = useMemo(() => {
     return new Date().toLocaleDateString("en-US", {
@@ -1269,7 +1854,7 @@ function RuledNotebookCanvas({
       return {
         backgroundImage: `linear-gradient(to right, ${lineCol} 1px, transparent 1px), linear-gradient(to bottom, ${lineCol} 1px, transparent 1px)`,
         backgroundSize: `${baselinePx}px ${baselinePx}px`,
-        backgroundPosition: `136px 80px`,
+        backgroundPosition: `56px 36px`,
       };
     }
     if (rulingType === "dot") {
@@ -1277,14 +1862,14 @@ function RuledNotebookCanvas({
       return {
         backgroundImage: `radial-gradient(${dotCol} 1.1px, transparent 1.1px)`,
         backgroundSize: `${baselinePx}px ${baselinePx}px`,
-        backgroundPosition: `136px 80px`,
+        backgroundPosition: `56px 36px`,
       };
     }
     const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(147, 197, 253, 0.18)";
     return {
       backgroundImage: `linear-gradient(${ruleCol} 1px, transparent 1px)`,
       backgroundSize: `100% ${baselinePx}px`,
-      backgroundPosition: `0 80px`,
+      backgroundPosition: `0 36px`,
     };
   }, [rulingType, baselinePx, isDarkMode]);
 
@@ -1292,10 +1877,73 @@ function RuledNotebookCanvas({
     return Math.max(0, Math.round(baselinePx - 16.5));
   }, [baselinePx]);
 
+  // Convert points array to SVG path 'd' string with midpoint quadratic bezier curve smoothing
+  const getSvgPathData = (points, smoothingLevel = "balanced") => {
+    if (!points || points.length === 0) return "";
+    if (points.length === 1) {
+      return `M ${points[0][0]} ${points[0][1]} L ${points[0][0] + 0.5} ${points[0][1] + 0.5}`;
+    }
+    if (points.length === 2 || smoothingLevel === "raw") {
+      let d = `M ${points[0][0]} ${points[0][1]}`;
+      for (let i = 1; i < points.length; i++) {
+        d += ` L ${points[i][0]} ${points[i][1]}`;
+      }
+      return d;
+    }
+
+    // Quadratic Bezier curve using midpoints between vertices for Apple-grade smoothness
+    let d = `M ${points[0][0]} ${points[0][1]}`;
+    const p0 = points[0];
+    const p1 = points[1];
+    const midX = (p0[0] + p1[0]) / 2;
+    const midY = (p0[1] + p1[1]) / 2;
+    d += ` L ${midX} ${midY}`;
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const current = points[i];
+      const next = points[i + 1];
+      const mx = (current[0] + next[0]) / 2;
+      const my = (current[1] + next[1]) / 2;
+      d += ` Q ${current[0]} ${current[1]}, ${mx} ${my}`;
+    }
+
+    const last = points[points.length - 1];
+    d += ` L ${last[0]} ${last[1]}`;
+    return d;
+  };
+
+  // Password Unlock Submission
+  const handleUnlockSubmit = (e) => {
+    e.preventDefault();
+    const correctPin = activeDoc?.passcode || "1234";
+    if (enteredPin === correctPin) {
+      setIsUnlockedLocally(true);
+      setPinError(false);
+      setEnteredPin("");
+    } else {
+      setPinError(true);
+    }
+  };
+
   return (
-    <div className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text">
-      {/* Top right notebook header: Date + Page indicator */}
-      <div className="absolute right-12 top-6 z-10 flex items-center gap-6 text-[12px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
+    <div
+      ref={canvasContainerRef}
+      className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text notes-canvas-scrollbar"
+    >
+      {/* Top right notebook header: Date + Page indicator + Collab / Lock badges */}
+      <div className="absolute right-8 top-3 z-10 flex items-center gap-3 text-[11.5px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
+        {activeDoc?.isCollab && (
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold text-[10px]">
+            <Users size={11} />
+            <span>Collab</span>
+          </span>
+        )}
+        {activeDoc?.isLocked && (
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold text-[10px]">
+            <Lock size={11} />
+            <span>Protected</span>
+          </span>
+        )}
         <span>{formattedDate}</span>
         <span>1 / 1</span>
       </div>
@@ -1306,77 +1954,127 @@ function RuledNotebookCanvas({
         style={rulingBgStyle}
       />
 
-      {/* Vertical red margin guide line: left 72px */}
+      {/* Vertical red margin guide line: left 56px (Image 1 authentic placement) */}
       {rulingType === "ruled" && (
         <div
           className="absolute top-0 bottom-0 pointer-events-none"
           style={{
-            left: 72,
+            left: 56,
             width: 1.5,
-            backgroundColor: "rgba(248, 113, 113, 0.38)",
+            backgroundColor: "rgba(248, 113, 113, 0.42)",
           }}
         />
       )}
 
-      {/* Notebook writing content container */}
-      <div
-        className="relative min-h-full max-w-4xl mx-auto"
-        style={{
-          paddingLeft: rulingType === "ruled" ? 144 : 56,
-          paddingRight: 56,
-          paddingTop: 80,
-          paddingBottom: 160,
-        }}
-      >
-        {/* Large Note Title: baseline rests naturally on the ruled line */}
+      {/* If Password-Locked, Show Apple-Style Lock Card */}
+      {isLocked ? (
+        <div className="flex flex-col items-center justify-center min-h-[500px] h-full p-8 text-center select-none animate-in fade-in duration-300">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100/80 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center mb-4 shadow-sm border border-amber-200/80 dark:border-amber-800/80">
+            <Lock size={28} strokeWidth={2.2} />
+          </div>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-100 mb-1">
+            This Note is Password-Protected
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mb-5 max-w-[260px]">
+            Enter your 4-digit PIN to view and edit the contents of this notebook entry.
+          </p>
+          <form onSubmit={handleUnlockSubmit} className="flex flex-col items-center gap-3">
+            <input
+              type="password"
+              maxLength={8}
+              value={enteredPin}
+              onChange={(e) => {
+                setEnteredPin(e.target.value);
+                if (pinError) setPinError(false);
+              }}
+              placeholder="Enter PIN"
+              className={`w-36 text-center text-sm py-2 px-3 rounded-xl bg-white dark:bg-zinc-800 border ${
+                pinError
+                  ? "border-rose-500 ring-2 ring-rose-400/20"
+                  : "border-slate-200 dark:border-zinc-700 focus:border-amber-500"
+              } outline-none tracking-widest text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold`}
+            />
+            {pinError && <span className="text-xs text-rose-500 font-medium">Incorrect PIN. Try again.</span>}
+            <button
+              type="submit"
+              className="py-1.5 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              Unlock Note
+            </button>
+          </form>
+        </div>
+      ) : (
+        /* Notebook writing content container - edge-to-edge starting immediately from top-left margin */
         <div
+          className="relative min-h-full w-full"
           style={{
-            height: baselinePx * 2,
-            marginBottom: 0,
-            display: "flex",
-            alignItems: "flex-end",
-            paddingBottom: 5,
+            paddingLeft: rulingType === "ruled" ? 72 : 36,
+            paddingRight: 40,
+            paddingTop: 36,
+            paddingBottom: 160,
           }}
         >
-          <input
-            ref={titleRef}
-            type="text"
-            value={title || ""}
-            onChange={(e) => onUpdateTitle?.(e.target.value)}
-            onKeyDown={handleTitleKeyDown}
-            placeholder="Untitled Note"
-            className="w-full bg-transparent border-none outline-none font-medium italic text-slate-900 dark:text-zinc-100 placeholder-slate-400 p-0 m-0"
+          {/* SVG Inking Canvas Overlay (Active when Pen mode is enabled) */}
+          <svg
+            ref={drawingSvgRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            className={`absolute inset-0 w-full h-full ${
+              isHandwriting
+                ? `pointer-events-auto z-20 ${(activeDoc?.penTool || "ballpoint") === "eraser" ? "cursor-cell" : "cursor-crosshair-pen"}`
+                : "pointer-events-none z-10 cursor-default"
+            }`}
+            style={{ touchAction: "none" }}
+          >
+            {drawings.map((st, i) => (
+              <path
+                key={i}
+                d={getSvgPathData(st.points, st.smoothing || activeDoc?.penSmoothing || "balanced")}
+                fill="none"
+                stroke={st.color || "#1c1917"}
+                strokeWidth={st.width || 3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={st.opacity || 1}
+              />
+            ))}
+            {currentStroke && (
+              <path
+                d={getSvgPathData(currentStroke.points, currentStroke.smoothing || activeDoc?.penSmoothing || "balanced")}
+                fill="none"
+                stroke={currentStroke.color || "#1c1917"}
+                strokeWidth={currentStroke.width || 3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={currentStroke.opacity || 1}
+              />
+            )}
+          </svg>
+
+          {/* Note Body Editor - starts immediately at top-left ruled baseline like Image 1 */}
+          <div
+            id="regaarder-notebook-editor"
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleEditorInput}
+            onPaste={handleEditorPaste}
+            onBlur={flushUpdates}
+            className="outline-none w-full min-h-[600px] text-slate-800 dark:text-zinc-200 relative z-15"
             style={{
-              fontSize: "26px",
+              fontSize: "15px",
+              lineHeight: `${baselinePx}px`,
+              paddingTop: `${baselineTopOffset}px`,
               fontFamily: isHandwriting
                 ? "'Caveat', 'Segoe Script', 'Bradley Hand', cursive, serif"
-                : "'Newsreader', 'Georgia', 'Times New Roman', serif",
-              lineHeight: `${baselinePx}px`,
+                : "'Newsreader', 'Georgia', -apple-system, serif",
+              wordBreak: "break-word",
             }}
+            data-placeholder="Start typing your thoughts..."
           />
         </div>
-
-        {/* Note Body Editor */}
-        <div
-          id="regaarder-notebook-editor"
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleEditorInput}
-          onBlur={flushUpdates}
-          className="outline-none w-full min-h-[600px] text-slate-800 dark:text-zinc-200"
-          style={{
-            fontSize: "15px",
-            lineHeight: `${baselinePx}px`,
-            paddingTop: `${baselineTopOffset}px`,
-            fontFamily: isHandwriting
-              ? "'Caveat', 'Segoe Script', 'Bradley Hand', cursive, serif"
-              : "'Newsreader', 'Georgia', -apple-system, serif",
-            wordBreak: "break-word",
-          }}
-          data-placeholder="Start typing your thoughts..."
-        />
-      </div>
+      )}
     </div>
   );
 }
@@ -1414,7 +2112,7 @@ export default function RegaarderNotebookViewer({
   const rulingThickness = activeDoc?.rulingThickness || "normal";
   const isHandwriting = activeDoc?.isHandwriting || activeDoc?.activeTool === "pen";
 
-  // Hover detection handlers for left edge
+  // Hover detection handlers for left edge (Instantaneous reveal)
   const handleLeftEdgeEnter = () => {
     if (sidebarLeaveTimerRef.current) {
       clearTimeout(sidebarLeaveTimerRef.current);
@@ -1438,7 +2136,7 @@ export default function RegaarderNotebookViewer({
     }
     sidebarLeaveTimerRef.current = setTimeout(() => {
       setIsSidebarOpen(false);
-    }, 320);
+    }, 200);
   };
 
   // Real-time word and character counts
@@ -1449,12 +2147,25 @@ export default function RegaarderNotebookViewer({
     return { words, chars: text.length };
   }, [activeDoc?.bodyHtml]);
 
+  // Track mouse coordinates to seamlessly open the Notes modal when hovering near the left edge
+  const handleContainerMouseMove = (e) => {
+    // If mouse is within 72px from left edge, instantly reveal notes sidebar
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    if (relX >= 0 && relX <= 72) {
+      handleLeftEdgeEnter();
+    }
+  };
+
   return (
-    <div className="relative flex h-full w-full overflow-hidden bg-white dark:bg-[#18181B]">
-      {/* 1. Left Edge Hover Trigger Zone (16px invisible strip along left margin) */}
+    <div 
+      onMouseMove={handleContainerMouseMove}
+      className="relative flex h-full w-full overflow-hidden bg-white dark:bg-[#18181B]"
+    >
+      {/* 1. Left Edge Hover Trigger Zone (Expanded 72px invisible strip along left margin) */}
       <div
         onMouseEnter={handleLeftEdgeEnter}
-        className="absolute top-0 bottom-0 left-0 w-4 z-40 pointer-events-auto"
+        className="absolute top-0 bottom-0 left-0 w-18 z-40 pointer-events-auto"
         title="Hover to reveal Notes list"
       />
 
@@ -1494,10 +2205,12 @@ export default function RegaarderNotebookViewer({
 
       {/* 4. Dominant Ruled Notebook Writing Surface */}
       <RuledNotebookCanvas
+        activeDoc={activeDoc}
         title={activeDoc?.title}
         onUpdateTitle={onUpdateTitle}
         bodyHtml={activeDoc?.bodyHtml || ""}
         onUpdateBodyHtml={onUpdateBodyHtml}
+        onUpdateDoc={onUpdateDoc}
         rulingType={rulingType}
         rulingThickness={rulingThickness}
         isHandwriting={isHandwriting}
