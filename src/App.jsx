@@ -6900,18 +6900,39 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 function AppCore() {
   const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
 
-  const [showIntentOnboarding, setShowIntentOnboarding] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const hasSeen = localStorage.getItem('rc.hasSeenIntentOnboarding_v2');
-        return !hasSeen;
-      }
-    } catch (_e) {}
-    return true;
-  });
+  const [showIntentOnboarding, setShowIntentOnboarding] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('rc.workspaceTasks');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const mockTitles = new Set([
+              "Review Q3 financial report with accounting team",
+              "Finalize brand design refresh slides for keynote",
+              "Synthesize customer interviews and transcript highlights",
+              "Update security compliance documentation for ISO audit"
+            ]);
+            const cleaned = parsed.filter(
+              (t) =>
+                t &&
+                t.title &&
+                !mockTitles.has(t.title) &&
+                !String(t.id).startsWith("task-1") &&
+                !String(t.id).startsWith("task-2") &&
+                !String(t.id).startsWith("task-3") &&
+                !String(t.id).startsWith("task-4") &&
+                !String(t.id).startsWith("sample-task-")
+            );
+            if (cleaned.length !== parsed.length) {
+              localStorage.setItem('rc.workspaceTasks', JSON.stringify(cleaned));
+            }
+          }
+        }
+      } catch (_e) {}
+
       window.openRegaarderOnboarding = () => setShowIntentOnboarding(true);
       const handler = () => setShowIntentOnboarding(true);
       window.addEventListener('rc:open-onboarding', handler);

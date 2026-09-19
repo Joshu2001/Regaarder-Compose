@@ -202,44 +202,12 @@ function AppleMiniDatePicker({ value, onSelect, onClose, showTimeInput = false, 
   );
 }
 
-const SAMPLE_TASKS = [
-  {
-    id: "sample-task-1",
-    title: "Review Q3 financial report with accounting team",
-    completed: false,
-    category: "user",
-    priority: "high",
-    dueDate: "Today",
-    location: "Workspace / Sheets"
-  },
-  {
-    id: "sample-task-2",
-    title: "Finalize brand design refresh slides for keynote",
-    completed: false,
-    category: "user",
-    priority: "urgent",
-    dueDate: "Tomorrow",
-    location: "Workspace / Decks"
-  },
-  {
-    id: "sample-task-3",
-    title: "Synthesize customer interviews and transcript highlights",
-    completed: false,
-    category: "agent",
-    priority: "medium",
-    dueDate: "Sep 16",
-    location: "Workspace / Documents"
-  },
-  {
-    id: "sample-task-4",
-    title: "Update security compliance documentation for ISO audit",
-    completed: true,
-    category: "team",
-    priority: "low",
-    dueDate: "Sep 12",
-    location: "Workspace / Documents"
-  }
-];
+const KNOWN_MOCK_TASK_TITLES = new Set([
+  "Review Q3 financial report with accounting team",
+  "Finalize brand design refresh slides for keynote",
+  "Synthesize customer interviews and transcript highlights",
+  "Update security compliance documentation for ISO audit"
+]);
 
 export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
   const [tasks, setTasks] = useState(() => {
@@ -247,15 +215,25 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
       const stored = localStorage.getItem("rc.workspaceTasks");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          // Permanently filter out any legacy mock placeholder tasks
+          const realOnly = parsed.filter(
+            (t) =>
+              t &&
+              t.title &&
+              !KNOWN_MOCK_TASK_TITLES.has(t.title) &&
+              !String(t.id).startsWith("task-1") &&
+              !String(t.id).startsWith("task-2") &&
+              !String(t.id).startsWith("task-3") &&
+              !String(t.id).startsWith("task-4") &&
+              !String(t.id).startsWith("sample-task-")
+          );
+          return realOnly;
+        }
       }
     } catch {}
     return [];
   });
-
-  const loadSampleTasks = () => {
-    setTasks(SAMPLE_TASKS);
-  };
 
   const [filterCategory, setFilterCategory] = useState("all"); // 'all' | 'user' | 'agent' | 'team' | 'completed'
   const [searchQuery, setSearchQuery] = useState("");
@@ -289,7 +267,20 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
         const stored = localStorage.getItem("rc.workspaceTasks");
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) setTasks(parsed);
+          if (Array.isArray(parsed)) {
+            const realOnly = parsed.filter(
+              (t) =>
+                t &&
+                t.title &&
+                !KNOWN_MOCK_TASK_TITLES.has(t.title) &&
+                !String(t.id).startsWith("task-1") &&
+                !String(t.id).startsWith("task-2") &&
+                !String(t.id).startsWith("task-3") &&
+                !String(t.id).startsWith("task-4") &&
+                !String(t.id).startsWith("sample-task-")
+            );
+            setTasks(realOnly);
+          }
         }
       } catch {}
     };
@@ -607,7 +598,7 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
                     : filterCategory === "completed"
                     ? "Tasks you mark as complete will be cataloged and tracked here."
                     : tasks.length === 0
-                    ? "Create your first task above or load an example workspace task set."
+                    ? "Use the input above to organize, prioritize, and track deliverables."
                     : `No tasks found under ${
                         filterCategory === "user"
                           ? "Your Tasks"
@@ -626,15 +617,7 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
                   >
                     Clear Search
                   </button>
-                ) : tasks.length === 0 ? (
-                  <button
-                    type="button"
-                    onClick={loadSampleTasks}
-                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-xs font-medium border border-slate-200/90 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer"
-                  >
-                    Load Example Tasks
-                  </button>
-                ) : (
+                ) : tasks.length === 0 ? null : (
                   <button
                     type="button"
                     onClick={() => setFilterCategory("all")}
