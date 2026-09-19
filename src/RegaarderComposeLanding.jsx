@@ -36,7 +36,19 @@ export default function RegaarderComposeLanding({
   isDocumentImmersive,
   onToggleImmersive
 }) {
-  const [activeRailTab, setActiveRailTab] = useState("home"); // 'home' | 'tasks' | 'schedule' | 'projects' | 'library' | 'feedback'
+  // Initialize navigation state from session bridge if present
+  const [initialNav] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("regaarder_landing_target");
+      if (stored) {
+        sessionStorage.removeItem("regaarder_landing_target");
+        return JSON.parse(stored);
+      }
+    } catch (_) {}
+    return null;
+  });
+
+  const [activeRailTab, setActiveRailTab] = useState(initialNav?.tab || "home"); // 'home' | 'tasks' | 'schedule' | 'projects' | 'library' | 'feedback'
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -46,7 +58,8 @@ export default function RegaarderComposeLanding({
   const [waveKey, setWaveKey] = useState(0);
   const { isPaywallOpen, closePaywall } = useEntitlements();
 
-  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [activeProjectId, setActiveProjectId] = useState(initialNav?.projectId || null);
+  const [activeProjectTab, setActiveProjectTab] = useState(initialNav?.projectTab || "overview");
 
   // Keep projects and documents in sync with storage updates
   React.useEffect(() => {
@@ -63,6 +76,9 @@ export default function RegaarderComposeLanding({
       }
       if (e.detail?.projectId) {
         setActiveProjectId(e.detail.projectId);
+      }
+      if (e.detail?.projectTab) {
+        setActiveProjectTab(e.detail.projectTab);
       }
     };
     window.addEventListener("workspace-projects-update", handleProjectsUpdate);
@@ -182,6 +198,7 @@ export default function RegaarderComposeLanding({
             projects={projects}
             documents={documents}
             initialProjectId={activeProjectId}
+            initialProjectTab={activeProjectTab}
             onOpenCreateModal={() => setShowCreateProjectModal(true)}
             onLaunchApp={onLaunch}
           />

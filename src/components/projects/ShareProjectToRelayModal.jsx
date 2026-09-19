@@ -21,6 +21,7 @@ export default function ShareProjectToRelayModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipientIds, setSelectedRecipientIds] = useState([]);
   const [shareNote, setShareNote] = useState('');
+  const [permissionRole, setPermissionRole] = useState('editor'); // 'editor' | 'viewer'
   const [redirectToRelay, setRedirectToRelay] = useState(true);
 
   // Read available contacts from Relay state and persistent registry
@@ -128,6 +129,7 @@ export default function ShareProjectToRelayModal({
         recipients: selectedRecipients,
         project,
         note: shareNote.trim(),
+        permissionRole,
         redirectToRelay
       });
     }
@@ -281,8 +283,39 @@ export default function ShareProjectToRelayModal({
           )}
         </div>
 
+        {/* Permission Level Selector (Apple-style segmented control) */}
+        <div className="px-4 py-2 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
+          <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+            Permission
+          </span>
+          <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.04]">
+            <button
+              type="button"
+              onClick={() => setPermissionRole('editor')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none ${
+                permissionRole === 'editor'
+                  ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-2xs'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent'
+              }`}
+            >
+              Can edit
+            </button>
+            <button
+              type="button"
+              onClick={() => setPermissionRole('viewer')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none ${
+                permissionRole === 'viewer'
+                  ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-2xs'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent'
+              }`}
+            >
+              Can view
+            </button>
+          </div>
+        </div>
+
         {/* Optional Note / Message Input */}
-        <div className="px-4 py-2.5 border-t border-black/[0.04] dark:border-white/[0.06]">
+        <div className="px-4 py-2 border-t border-black/[0.04] dark:border-white/[0.06]">
           <input
             type="text"
             value={shareNote}

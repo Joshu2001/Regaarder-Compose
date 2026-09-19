@@ -46711,11 +46711,19 @@ Respond with a JSON array of slide objects matching the schema.`;
                 setFocusedModule('landing');
                 if (ref.targetTab) {
                   try {
+                    sessionStorage.setItem('regaarder_landing_target', JSON.stringify({
+                      tab: ref.targetTab,
+                      projectId: ref.projectId || null,
+                      projectTab: ref.projectTab || null
+                    }));
+                  } catch (_) {}
+                  try {
                     window.dispatchEvent(
                       new CustomEvent('regaarder:set-landing-tab', {
                         detail: {
                           tab: ref.targetTab,
-                          projectId: ref.projectId || null
+                          projectId: ref.projectId || null,
+                          projectTab: ref.projectTab || null
                         }
                       })
                     );

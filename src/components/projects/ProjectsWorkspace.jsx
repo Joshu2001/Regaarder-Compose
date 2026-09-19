@@ -53,6 +53,7 @@ import AddExistingFilesToProjectModal from "./AddExistingFilesToProjectModal";
 import InviteProjectMemberModal from "./InviteProjectMemberModal";
 import EditProjectMemoryModal from "./EditProjectMemoryModal";
 import AppleDatePickerPopover, { formatDateDisplay, formatDateToIso } from "./AppleDatePickerPopover";
+import { getCurrentRelayUser } from "../../services/relayAccountService";
 
 export default function ProjectsWorkspace({
   projects = [],
@@ -60,12 +61,13 @@ export default function ProjectsWorkspace({
   onOpenCreateModal,
   onLaunchApp,
   onSelectProject,
-  initialProjectId = null
+  initialProjectId = null,
+  initialProjectTab = "overview"
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("updated"); // 'updated' | 'created' | 'alpha'
   const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId);
-  const [activeProjectTab, setActiveProjectTab] = useState("overview"); // 'overview' | 'files' | 'tasks' | 'members'
+  const [activeProjectTab, setActiveProjectTab] = useState(initialProjectTab || "overview"); // 'overview' | 'files' | 'tasks' | 'members'
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [shareToRelayProject, setShareToRelayProject] = useState(null);
@@ -101,6 +103,28 @@ export default function ProjectsWorkspace({
       setSelectedProjectId(initialProjectId);
     }
   }, [initialProjectId]);
+
+  useEffect(() => {
+    if (initialProjectTab) {
+      setActiveProjectTab(initialProjectTab);
+    }
+  }, [initialProjectTab]);
+
+  // Listen for direct workspace tab switch events if already mounted
+  useEffect(() => {
+    const handleSetLandingTab = (e) => {
+      if (e.detail?.projectId) {
+        setSelectedProjectId(e.detail.projectId);
+      }
+      if (e.detail?.projectTab) {
+        setActiveProjectTab(e.detail.projectTab);
+      }
+    };
+    window.addEventListener("regaarder:set-landing-tab", handleSetLandingTab);
+    return () => {
+      window.removeEventListener("regaarder:set-landing-tab", handleSetLandingTab);
+    };
+  }, []);
 
   // Active project if drilling down
   const activeProject = useMemo(() => {
@@ -156,6 +180,35 @@ export default function ProjectsWorkspace({
       { id: "owner_1", name: "You", email: "you@regaarder.com", role: "owner", avatarColor: activeProject.color || "#7C3AED" }
     ];
   }, [activeProject]);
+
+  // Current authenticated user's permission role on this project
+  const currentUserRole = useMemo(() => {
+    if (!activeProject) return "owner";
+    const relayUser = getCurrentRelayUser();
+    if (!relayUser) {
+      // Default local user is owner unless project has explicit members not matching
+      return "owner";
+    }
+    // Check if user is explicit member
+    const memberRecord = projectMembers.find(
+      (m) =>
+        m.id === relayUser.id ||
+        (m.email && relayUser.email && m.email.toLowerCase() === relayUser.email.toLowerCase()) ||
+        (m.name && relayUser.displayName && m.name.toLowerCase() === relayUser.displayName.toLowerCase())
+    );
+    if (memberRecord) {
+      return memberRecord.role || "viewer";
+    }
+    // If not in members list, check if user is the creator
+    if (activeProject.createdBy && activeProject.createdBy === relayUser.id) {
+      return "owner";
+    }
+    // Fallback: If members list has members and current user is not found, default to viewer if shared, else owner
+    return activeProject.members && activeProject.members.length > 0 ? "viewer" : "owner";
+  }, [activeProject, projectMembers]);
+
+  const isViewer = currentUserRole === "viewer";
+  const canEdit = !isViewer;
 
   // Tasks belonging to this project
   const projectTasks = useMemo(() => {
@@ -235,8 +288,38 @@ export default function ProjectsWorkspace({
     setShareToRelayProject(project);
   };
 
-  const handleCompleteShareToRelay = ({ recipientIds, recipients, project, note, redirectToRelay = true }) => {
+  const handleCompleteShareToRelay = ({ recipientIds, recipients, project, note, permissionRole = 'editor', redirectToRelay = true }) => {
     setShareToRelayProject(null);
+
+    // Synchronize project members with shared recipients and their designated permissionRole
+    try {
+      const existingMembers = Array.isArray(project.members) ? [...project.members] : [
+        { id: "owner_1", name: "You", email: "you@regaarder.com", role: "owner", avatarColor: project.color || "#7C3AED" }
+      ];
+      const existingIds = new Set(existingMembers.map((m) => m.id || m.email));
+      const newlyAddedMembers = [];
+
+      (recipients || []).forEach((r) => {
+        if (!existingIds.has(r.id) && !existingIds.has(r.email) && !r.isAi) {
+          newlyAddedMembers.push({
+            id: r.id,
+            name: r.name || r.displayName || "Collaborator",
+            email: r.email || `${r.id}@relay.internal`,
+            role: permissionRole || "viewer",
+            avatarColor: r.color || project.color || "#7C3AED"
+          });
+          existingIds.add(r.id);
+        }
+      });
+
+      if (newlyAddedMembers.length > 0) {
+        updateProject(project.id, {
+          members: [...existingMembers, ...newlyAddedMembers]
+        });
+      }
+    } catch (memErr) {
+      console.warn("[ProjectsWorkspace] Failed to update project members on share:", memErr);
+    }
 
     const targetIds = (recipientIds && recipientIds.length > 0) ? recipientIds : ["chat-assistant"];
     const RELAY_MESSAGES_STORAGE_KEY = "regaarder_relay_messages_v1";
@@ -781,6 +864,11 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                 <h1 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
                   {activeProject.name}
                 </h1>
+                {isViewer && (
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-200/60 dark:border-white/[0.06]">
+                    View only
+                  </span>
+                )}
               </div>
             </div>
           ) : (
@@ -821,14 +909,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsInviteMemberModalOpen(true)}
-                className="h-8 px-3 rounded-lg border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-              >
-                <UserPlus size={13} />
-                <span>Invite</span>
-              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setIsInviteMemberModalOpen(true)}
+                  className="h-8 px-3 rounded-lg border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                >
+                  <UserPlus size={13} />
+                  <span>Invite</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -839,16 +929,18 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                 <span>Share to Relay</span>
               </button>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  setEditingProject(activeProject);
-                }}
-                className="h-8 w-8 rounded-lg border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
-                title="Edit project"
-              >
-                <Edit2 size={13} />
-              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    setEditingProject(activeProject);
+                  }}
+                  className="h-8 w-8 rounded-lg border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                  title="Edit project"
+                >
+                  <Edit2 size={13} />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -966,20 +1058,21 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                         </div>
 
                         {/* Top-Right Add Phase Action */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsAddPhaseMenuOpen((prev) => !prev);
-                            }}
-                            className="h-7 px-2.5 rounded-lg border border-slate-200/80 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-200 text-[11.5px] font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
-                            title="Add phase options"
-                          >
-                            <Plus size={12} />
-                            <span>Add phase</span>
-                            <ChevronDown size={11} className={`text-slate-400 transition-transform duration-150 ${isAddPhaseMenuOpen ? "rotate-180" : ""}`} />
-                          </button>
+                        {canEdit && (
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsAddPhaseMenuOpen((prev) => !prev);
+                              }}
+                              className="h-7 px-2.5 rounded-lg border border-slate-200/80 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-200 text-[11.5px] font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                              title="Add phase options"
+                            >
+                              <Plus size={12} />
+                              <span>Add phase</span>
+                              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-150 ${isAddPhaseMenuOpen ? "rotate-180" : ""}`} />
+                            </button>
 
                           {/* Dropdown Options */}
                           {isAddPhaseMenuOpen && (
@@ -1035,6 +1128,7 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                             </div>
                           )}
                         </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1051,27 +1145,29 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                             No roadmap planned yet
                           </h3>
                           <p className="text-[11px] text-slate-400 dark:text-zinc-500 max-w-xs mb-2.5 leading-relaxed">
-                            Add phases and milestones to structure the project.
+                            {canEdit ? "Add phases and milestones to structure the project." : "No phases or milestones have been published yet."}
                           </p>
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              type="button"
-                              onClick={() => setIsAddPhaseModalOpen(true)}
-                              className="h-7 px-3 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                            >
-                              <Plus size={11} />
-                              <span>Add phase</span>
-                            </button>
-                            <span className="text-[10px] text-slate-300 dark:text-zinc-600">•</span>
-                            <button
-                              type="button"
-                              onClick={() => setIsAiRoadmapModalOpen(true)}
-                              className="text-[11px] text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5 cursor-pointer border-none bg-transparent transition-colors py-0.5"
-                            >
-                              <RegaarderAiIcon size={11} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
-                              <span>Plan with Regaarder AI</span>
-                            </button>
-                          </div>
+                          {canEdit && (
+                            <div className="flex items-center gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => setIsAddPhaseModalOpen(true)}
+                                className="h-7 px-3 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Plus size={11} />
+                                <span>Add phase</span>
+                              </button>
+                              <span className="text-[10px] text-slate-300 dark:text-zinc-600">•</span>
+                              <button
+                                type="button"
+                                onClick={() => setIsAiRoadmapModalOpen(true)}
+                                className="text-[11px] text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5 cursor-pointer border-none bg-transparent transition-colors py-0.5"
+                              >
+                                <RegaarderAiIcon size={11} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
+                                <span>Plan with Regaarder AI</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <>
@@ -1476,8 +1572,11 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                             <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.04]">
                               <button
                                 type="button"
-                                onClick={(e) => handleSetPhaseStatus(activePhase.id, "upcoming", e)}
-                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none ${
+                                disabled={!canEdit}
+                                onClick={(e) => canEdit && handleSetPhaseStatus(activePhase.id, "upcoming", e)}
+                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all border-none ${
+                                  !canEdit ? "cursor-default" : "cursor-pointer"
+                                } ${
                                   activePhase.status === "upcoming"
                                     ? "bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs"
                                     : "text-slate-400 dark:text-zinc-400 hover:text-slate-700 bg-transparent"
@@ -1487,8 +1586,11 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                               </button>
                               <button
                                 type="button"
-                                onClick={(e) => handleSetPhaseStatus(activePhase.id, "in-progress", e)}
-                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none ${
+                                disabled={!canEdit}
+                                onClick={(e) => canEdit && handleSetPhaseStatus(activePhase.id, "in-progress", e)}
+                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all border-none ${
+                                  !canEdit ? "cursor-default" : "cursor-pointer"
+                                } ${
                                   activePhase.status === "in-progress"
                                     ? "bg-[#7C3AED] text-white shadow-2xs font-semibold"
                                     : "text-slate-400 dark:text-zinc-400 hover:text-slate-700 bg-transparent"
@@ -1498,8 +1600,11 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                               </button>
                               <button
                                 type="button"
-                                onClick={(e) => handleSetPhaseStatus(activePhase.id, "completed", e)}
-                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none flex items-center gap-1 ${
+                                disabled={!canEdit}
+                                onClick={(e) => canEdit && handleSetPhaseStatus(activePhase.id, "completed", e)}
+                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all border-none flex items-center gap-1 ${
+                                  !canEdit ? "cursor-default" : "cursor-pointer"
+                                } ${
                                   activePhase.status === "completed"
                                     ? "bg-emerald-600 text-white shadow-2xs font-semibold"
                                     : "text-slate-400 dark:text-zinc-400 hover:text-emerald-600 bg-transparent"
@@ -1510,14 +1615,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                               </button>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeletePhase(activePhase.id, e)}
-                              className="h-7 px-2 rounded-lg text-[11px] font-medium text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer border-none bg-transparent"
-                              title="Delete phase"
-                            >
-                              Delete
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeletePhase(activePhase.id, e)}
+                                className="h-7 px-2 rounded-lg text-[11px] font-medium text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer border-none bg-transparent"
+                                title="Delete phase"
+                              >
+                                Delete
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => setSelectedPhaseId(null)}
@@ -1542,19 +1649,21 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                             <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200">
                               Phase Milestones & Deliverables ({milestones.length})
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => setIsAddingMilestone(true)}
-                              className="text-[11.5px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-1 cursor-pointer border-none bg-transparent"
-                            >
-                              <Plus size={11} />
-                              <span>Add milestone</span>
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => setIsAddingMilestone(true)}
+                                className="text-[11.5px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                              >
+                                <Plus size={11} />
+                                <span>Add milestone</span>
+                              </button>
+                            )}
                           </div>
 
                           {milestones.length === 0 && !isAddingMilestone ? (
                             <div className="p-3 text-center text-[11.5px] text-slate-400 italic">
-                              No milestones added to this phase yet. Add one to track concrete deliverables.
+                              No milestones added to this phase yet.
                             </div>
                           ) : (
                             <div className="space-y-1.5">
@@ -1564,12 +1673,15 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                                   className="flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-zinc-800 hover:bg-slate-50/60 dark:hover:bg-zinc-850 group"
                                 >
                                   <div
-                                    onClick={() => handleToggleMilestone(activePhase.id, m.id)}
-                                    className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1"
+                                    onClick={() => canEdit && handleToggleMilestone(activePhase.id, m.id)}
+                                    className={`flex items-center gap-2.5 min-w-0 flex-1 ${canEdit ? "cursor-pointer" : "cursor-default"}`}
                                   >
                                     <button
                                       type="button"
-                                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors cursor-pointer border-none ${
+                                      disabled={!canEdit}
+                                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors border-none ${
+                                        !canEdit ? "cursor-default" : "cursor-pointer"
+                                      } ${
                                         m.completed
                                           ? "bg-emerald-500 text-white"
                                           : "border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-transparent"
@@ -1590,14 +1702,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                                         Due {m.dueDate}
                                       </span>
                                     )}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteMilestone(activePhase.id, m.id)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 cursor-pointer border-none bg-transparent"
-                                      title="Delete milestone"
-                                    >
-                                      <X size={11} />
-                                    </button>
+                                    {canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteMilestone(activePhase.id, m.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 cursor-pointer border-none bg-transparent"
+                                        title="Delete milestone"
+                                      >
+                                        <X size={11} />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -1684,27 +1798,31 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsAddingGoal(true)}
-                        className="text-[11.5px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-1 cursor-pointer border-none bg-transparent transition-colors"
-                      >
-                        <Plus size={12} />
-                        <span>Add goal</span>
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingGoal(true)}
+                          className="text-[11.5px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-1 cursor-pointer border-none bg-transparent transition-colors"
+                        >
+                          <Plus size={12} />
+                          <span>Add goal</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="space-y-1.5">
                       {projectGoals.length === 0 && !isAddingGoal ? (
                         <div className="py-2.5 flex items-center justify-between text-[12px] text-slate-400 dark:text-zinc-500">
                           <span>No milestone goals defined yet.</span>
-                          <button
-                            type="button"
-                            onClick={() => setIsAddingGoal(true)}
-                            className="text-[11.5px] text-[#7C3AED] dark:text-violet-400 font-medium hover:underline cursor-pointer border-none bg-transparent"
-                          >
-                            + Add initial goal
-                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => setIsAddingGoal(true)}
+                              className="text-[11.5px] text-[#7C3AED] dark:text-violet-400 font-medium hover:underline cursor-pointer border-none bg-transparent"
+                            >
+                              + Add initial goal
+                            </button>
+                          )}
                         </div>
                       ) : (
                         projectGoals.map((goal) => (
@@ -1713,12 +1831,15 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                             className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50/80 dark:hover:bg-zinc-850/50 transition-colors group"
                           >
                             <div
-                              onClick={() => handleToggleGoal(goal.id)}
-                              className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1"
+                              onClick={() => canEdit && handleToggleGoal(goal.id)}
+                              className={`flex items-center gap-2.5 min-w-0 flex-1 ${canEdit ? "cursor-pointer" : "cursor-default"}`}
                             >
                               <button
                                 type="button"
-                                className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors cursor-pointer border-none ${
+                                disabled={!canEdit}
+                                className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors border-none ${
+                                  !canEdit ? "cursor-default" : "cursor-pointer"
+                                } ${
                                   goal.completed
                                     ? "bg-emerald-500/90 text-white shadow-2xs"
                                     : "border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-transparent"
@@ -1735,14 +1856,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                               </span>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteGoal(goal.id)}
-                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity cursor-pointer border-none bg-transparent"
-                              title="Remove goal"
-                            >
-                              <X size={12} />
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteGoal(goal.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity cursor-pointer border-none bg-transparent"
+                                title="Remove goal"
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
                           </div>
                         ))
                       )}
@@ -1786,13 +1909,15 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                         <RegaarderAiIcon size={16} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-400" />
                         <span>AI Memory Directives</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditMemoryModalOpen(true)}
-                        className="text-[12px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors px-1 py-0.5"
-                      >
-                        Edit
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditMemoryModalOpen(true)}
+                          className="text-[12px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors px-1 py-0.5"
+                        >
+                          Edit
+                        </button>
+                      )}
                     </div>
                     <div className="bg-slate-50/60 dark:bg-zinc-850/30 p-3.5 sm:p-4 rounded-xl border border-slate-100 dark:border-white/[0.03]">
                       <p className="text-[12.5px] text-slate-600 dark:text-zinc-350 leading-relaxed m-0 font-normal">
@@ -1807,39 +1932,41 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                 </div>
 
                 {/* Quick Actions / Create Inside Project */}
-                <div>
-                  <div className="text-[12px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-3">
-                    Create In Project
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-                    {[
-                      { id: "compose", label: "New Doc", desc: "Compose document" },
-                      { id: "sheet", label: "New Sheet", desc: "Interactive grid" },
-                      { id: "deck", label: "New Deck", desc: "Slide presentation" },
-                      { id: "notes", label: "New Note", desc: "Quick notes & scratchpad" },
-                      { id: "whiteboard", label: "New Whiteboard", desc: "Infinite canvas" }
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => onLaunchApp && onLaunchApp(item.id, { projectId: activeProject.id })}
-                        className="p-3.5 rounded-2xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-600 hover:shadow-xs transition-all text-left cursor-pointer flex items-center gap-3 group"
-                      >
-                        <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-                          <AppNativeSvgIcon type={item.id} size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                            {item.label}
+                {canEdit && (
+                  <div>
+                    <div className="text-[12px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-3">
+                      Create In Project
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                      {[
+                        { id: "compose", label: "New Doc", desc: "Compose document" },
+                        { id: "sheet", label: "New Sheet", desc: "Interactive grid" },
+                        { id: "deck", label: "New Deck", desc: "Slide presentation" },
+                        { id: "notes", label: "New Note", desc: "Quick notes & scratchpad" },
+                        { id: "whiteboard", label: "New Whiteboard", desc: "Infinite canvas" }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => onLaunchApp && onLaunchApp(item.id, { projectId: activeProject.id })}
+                          className="p-3.5 rounded-2xl border border-slate-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-300 dark:hover:border-zinc-600 hover:shadow-xs transition-all text-left cursor-pointer flex items-center gap-3 group"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+                            <AppNativeSvgIcon type={item.id} size={18} />
                           </div>
-                          <div className="text-[11px] text-slate-400 truncate">
-                            {item.desc}
+                          <div className="min-w-0">
+                            <div className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                              {item.label}
+                            </div>
+                            <div className="text-[11px] text-slate-400 truncate">
+                              {item.desc}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -1850,16 +1977,18 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                   <div className="text-[12px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
                     Project Files ({projectDocuments.length})
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddFilesModalOpen(true)}
-                      className="flex items-center gap-1.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
-                    >
-                      <Plus size={13} />
-                      <span>Add existing files</span>
-                    </button>
-                  </div>
+                  {canEdit && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddFilesModalOpen(true)}
+                        className="flex items-center gap-1.5 text-[12px] font-medium text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+                      >
+                        <Plus size={13} />
+                        <span>Add existing files</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {projectDocuments.length === 0 ? (
@@ -1871,16 +2000,20 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                       No files linked to {activeProject.name} yet
                     </p>
                     <p className="text-[12px] text-slate-400 max-w-sm mt-0.5 mb-4">
-                      Create documents or link existing workspace artifacts directly into this project.
+                      {canEdit
+                        ? "Create documents or link existing workspace artifacts directly into this project."
+                        : "No documents or artifacts have been added to this project yet."}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddFilesModalOpen(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-slate-800 dark:text-zinc-200 border border-slate-200/90 dark:border-zinc-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
-                    >
-                      <Plus size={13} />
-                      <span>Add existing files</span>
-                    </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAddFilesModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-slate-800 dark:text-zinc-200 border border-slate-200/90 dark:border-zinc-700 text-xs font-medium shadow-2xs transition-all cursor-pointer"
+                      >
+                        <Plus size={13} />
+                        <span>Add existing files</span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1904,14 +2037,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleRemoveDocFromProject(e, doc.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer border-none bg-transparent"
-                          title="Remove from project"
-                        >
-                          <X size={13} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveDocFromProject(e, doc.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer border-none bg-transparent"
+                            title="Remove from project"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1931,14 +2066,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                       Assign and track work specific to {activeProject.name}.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingTask(true)}
-                    className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
-                  >
-                    <Plus size={13} />
-                    <span>New task</span>
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingTask(true)}
+                      className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
+                    >
+                      <Plus size={13} />
+                      <span>New task</span>
+                    </button>
+                  )}
                 </div>
 
                 {isAddingTask && (
@@ -1990,7 +2127,7 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                       No tasks created for this project yet
                     </p>
                     <p className="text-[11.5px] text-slate-400 mt-0.5">
-                      Create a task to assign action items to teammates.
+                      {canEdit ? "Create a task to assign action items to teammates." : "No tasks have been assigned in this project."}
                     </p>
                   </div>
                 ) : (
@@ -2003,8 +2140,11 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <button
                             type="button"
-                            onClick={() => handleToggleTask(t.id)}
-                            className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors cursor-pointer border-none ${
+                            disabled={!canEdit}
+                            onClick={() => canEdit && handleToggleTask(t.id)}
+                            className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors border-none ${
+                              !canEdit ? "cursor-default" : "cursor-pointer"
+                            } ${
                               t.completed
                                 ? "bg-emerald-500 text-white"
                                 : "border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-transparent"
@@ -2025,13 +2165,15 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                               {t.assignee}
                             </span>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTask(t.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity cursor-pointer border-none bg-transparent"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTask(t.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity cursor-pointer border-none bg-transparent"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -2052,14 +2194,16 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                       Collaborators with access to this project workspace.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsInviteMemberModalOpen(true)}
-                    className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
-                  >
-                    <UserPlus size={13} />
-                    <span>Invite member</span>
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setIsInviteMemberModalOpen(true)}
+                      className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
+                    >
+                      <UserPlus size={13} />
+                      <span>Invite member</span>
+                    </button>
+                  )}
                 </div>
 
                 {projectMembers.length === 0 ? (
@@ -2069,16 +2213,20 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                       No members assigned to this project yet
                     </p>
                     <p className="text-[11.5px] text-slate-400 max-w-sm mt-0.5 mb-4">
-                      Invite team members to collaborate on tasks, roadmaps, and documents.
+                      {canEdit
+                        ? "Invite team members to collaborate on tasks, roadmaps, and documents."
+                        : "No collaborator roster available for this project."}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setIsInviteMemberModalOpen(true)}
-                      className="h-8 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
-                    >
-                      <UserPlus size={13} />
-                      <span>Invite first member</span>
-                    </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setIsInviteMemberModalOpen(true)}
+                        className="h-8 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
+                      >
+                        <UserPlus size={13} />
+                        <span>Invite first member</span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-white dark:bg-zinc-900 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-800 shadow-2xs">
@@ -2112,7 +2260,7 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                             {m.role}
                           </span>
 
-                          {m.role !== "owner" && (
+                          {canEdit && m.role !== "owner" && (
                             <button
                               type="button"
                               onClick={() => handleRemoveMember(m.id)}

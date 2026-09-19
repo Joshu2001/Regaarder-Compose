@@ -4169,7 +4169,8 @@ ${systemPrompt}`
                                 onNavigateWorkspace({
                                   type: 'landing',
                                   targetTab: 'projects',
-                                  projectId: msg.actionCard.id
+                                  projectId: msg.actionCard.id,
+                                  projectTab: 'files'
                                 });
                               }
                             }}
