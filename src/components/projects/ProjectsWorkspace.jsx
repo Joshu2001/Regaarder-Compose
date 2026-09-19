@@ -271,15 +271,16 @@ export default function ProjectsWorkspace({
         id: `proj-share-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         author: "You",
         role: "you",
-        text: note ? note : `Shared project: ${project.name}`,
+        text: note ? note : "",
         createdAt: Date.now(),
         status: "sent",
         actionCard: {
           type: "project",
           id: project.id,
           title: project.name,
+          icon: project.icon || "folder",
           color: project.color || "#7C3AED",
-          description: project.description || project.customInstructions || "Workspace project container",
+          description: project.description || project.customInstructions || "",
           project
         }
       };

@@ -192,7 +192,7 @@ export default function ShareProjectToRelayModal({
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
-              {project.description || project.customInstructions || 'Workspace project container'}
+              {project.description || project.customInstructions || ''}
             </p>
           </div>
         </div>

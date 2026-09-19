@@ -21,6 +21,7 @@ import { processRelayAgentMessage, extractClarificationFromText } from '../../se
 import { searchUsers, getRegistryUsers, upsertUserInRegistry } from '../../services/relayAccountService';
 import RelayAuthGate from '../relay/RelayAuthGate';
 import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
+import { getProjectIconComponent } from '../projects/CreateProjectModal';
 
 // Quick Translation Languages for Selection Writing Tools
 const TRANSLATE_LANGUAGES = [
@@ -662,15 +663,16 @@ export default function ExecutiveDirectMessages({
             id: `proj-share-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             author: 'You',
             role: 'you',
-            text: note ? note : `Shared project: ${project.name}`,
+            text: note ? note : '',
             createdAt: Date.now(),
             status: 'sent',
             actionCard: {
               type: 'project',
               id: project.id,
               title: project.name,
+              icon: project.icon || 'folder',
               color: project.color || '#7C3AED',
-              description: project.description || project.customInstructions || 'Workspace project container',
+              description: project.description || project.customInstructions || '',
               project
             }
           };
@@ -4157,254 +4159,275 @@ ${systemPrompt}`
                         </div>
                       )}
 
-                      {/* ── Autonomous Action Card (Document created, Task scheduled, Sheet modified) ── */}
+                      {/* ── Autonomous Action Card (Document created, Task scheduled, Sheet modified, Shared Project) ── */}
                       {msg.actionCard && (
-                        <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700/80 shadow-xs space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {/* Real Colorful Semantic SVG File Badge */}
-                              {msg.actionCard.type === 'document' ? (
-                                <DocsSemanticFileBadge type="compose" title={msg.actionCard.title} size="md" />
-                              ) : msg.actionCard.type === 'sheet' ? (
-                                <DocsSemanticFileBadge type="sheets" title={msg.actionCard.title} size="md" />
-                              ) : msg.actionCard.type === 'project' ? (
-                                <div
-                                  className="w-5 h-5 rounded-[5px] text-white flex items-center justify-center shrink-0 shadow-xs"
-                                  style={{ backgroundColor: msg.actionCard.color || '#7C3AED' }}
-                                >
-                                  <Folder size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'staging_pr' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <GitPullRequest size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'schedule' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <Calendar size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'portal' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <UploadCloud size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'directive' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <ListTodo size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'topology' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <Network size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'room_harvester' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <Radio size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : (
-                                <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <CheckSquare size={12} strokeWidth={2.2} />
-                                </div>
-                              )}
-                              <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                                {msg.actionCard.title}
-                              </span>
-                            </div>
-                            {msg.actionCard.type === 'staging_pr' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
-                                ⏳ Pending Review
-                              </span>
-                            ) : msg.actionCard.type === 'schedule' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
-                                ⚡ Negotiated
-                              </span>
-                            ) : msg.actionCard.type === 'portal' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
-                                ⚡ Ready to Ingest
-                              </span>
-                            ) : msg.actionCard.type === 'directive' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 shrink-0">
-                                ⚡ Directive Queued
-                              </span>
-                            ) : msg.actionCard.type === 'topology' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 shrink-0">
-                                ⚡ Topology Compiled
-                              </span>
-                            ) : msg.actionCard.type === 'project' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
-                                📁 Shared Project
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
-                                ✓ Executed
-                              </span>
-                            )}
-                          </div>
-
-                          <p className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-snug">
-                            {msg.actionCard.description}
-                          </p>
-
-                          {msg.actionCard.previewSnippet && (
-                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/60 p-2 rounded-lg border border-black/[0.04] dark:border-white/[0.05] italic truncate">
-                              "{msg.actionCard.previewSnippet}"
-                            </div>
-                          )}
-
-                          {msg.actionCard.type === 'document' && msg.actionCard.docId && (
-                            <button
-                              type="button"
-                              onClick={() => onNavigateWorkspace && onNavigateWorkspace({ type: 'compose', docId: msg.actionCard.docId })}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/50"
-                            >
-                              <span>Open in Compose Docs</span>
-                              <ArrowRight size={12} />
-                            </button>
-                          )}
-
-                          {msg.actionCard.type === 'schedule' && (
-                            <div className="space-y-2 mt-1">
-                              {msg.actionCard.agreedSlot && (
-                                <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sky-800 dark:text-sky-300">
-                                      {msg.actionCard.agreedSlot.formattedTime || msg.actionCard.agreedSlot.start}
-                                    </span>
+                        msg.actionCard.type === 'project' ? (
+                          <div
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              if (onNavigateWorkspace) {
+                                onNavigateWorkspace({
+                                  type: 'landing',
+                                  targetTab: 'projects',
+                                  projectId: msg.actionCard.id
+                                });
+                              }
+                            }}
+                            className="group mb-2.5 flex items-center justify-between gap-3 p-3 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.08] transition-all cursor-pointer select-none"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              {(() => {
+                                const IconComp = getProjectIconComponent(msg.actionCard.icon || msg.actionCard.project?.icon);
+                                return (
+                                  <div
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs"
+                                    style={{
+                                      backgroundColor: `${msg.actionCard.color || '#7C3AED'}18`
+                                    }}
+                                  >
+                                    <IconComp
+                                      size={18}
+                                      strokeWidth={1.8}
+                                      style={{
+                                        color: msg.actionCard.color || '#7C3AED'
+                                      }}
+                                    />
                                   </div>
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300">
-                                    {msg.actionCard.confidence || 90}% Match
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (typeof window !== 'undefined' && window.__REGAARDER_COMMIT_EVENT__) {
-                                      window.__REGAARDER_COMMIT_EVENT__(msg.actionCard.event || {
-                                        title: msg.actionCard.title.replace('Scheduled: ', ''),
-                                        startTime: msg.actionCard.agreedSlot?.start || new Date().toISOString(),
-                                        endTime: msg.actionCard.agreedSlot?.end || new Date().toISOString(),
-                                        participants: msg.actionCard.participants || ['user-joshua']
-                                      });
-                                    }
-                                  }}
-                                  className="flex-1 py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                                >
-                                  <Check size={12} />
-                                  <span>Confirm Meeting</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__) {
-                                      window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__();
-                                    }
-                                  }}
-                                  className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11.5px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                                >
-                                  <span>Inspect</span>
-                                  <ArrowRight size={11} />
-                                </button>
+                                );
+                              })()}
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                  {msg.actionCard.title}
+                                </span>
+                                {msg.actionCard.description && (
+                                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                                    {msg.actionCard.description}
+                                  </p>
+                                )}
                               </div>
                             </div>
-                          )}
+                            <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-800 dark:text-zinc-500 dark:group-hover:text-zinc-200 transition-colors">
+                              <span className="text-[11px] font-medium hidden sm:inline">Open</span>
+                              <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700/80 shadow-xs space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {/* Real Colorful Semantic SVG File Badge */}
+                                {msg.actionCard.type === 'document' ? (
+                                  <DocsSemanticFileBadge type="compose" title={msg.actionCard.title} size="md" />
+                                ) : msg.actionCard.type === 'sheet' ? (
+                                  <DocsSemanticFileBadge type="sheets" title={msg.actionCard.title} size="md" />
+                                ) : msg.actionCard.type === 'staging_pr' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <GitPullRequest size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'schedule' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Calendar size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'portal' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <UploadCloud size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'directive' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <ListTodo size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'topology' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Network size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'room_harvester' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Radio size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : (
+                                  <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <CheckSquare size={12} strokeWidth={2.2} />
+                                  </div>
+                                )}
+                                <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                  {msg.actionCard.title}
+                                </span>
+                              </div>
+                              {msg.actionCard.type === 'staging_pr' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
+                                  ⏳ Pending Review
+                                </span>
+                              ) : msg.actionCard.type === 'schedule' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
+                                  ⚡ Negotiated
+                                </span>
+                              ) : msg.actionCard.type === 'portal' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
+                                  ⚡ Ready to Ingest
+                                </span>
+                              ) : msg.actionCard.type === 'directive' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 shrink-0">
+                                  ⚡ Directive Queued
+                                </span>
+                              ) : msg.actionCard.type === 'topology' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 shrink-0">
+                                  ⚡ Topology Compiled
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
+                                  ✓ Executed
+                                </span>
+                              )}
+                            </div>
 
-                          {msg.actionCard.type === 'staging_pr' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_STAGING_MODAL__) {
-                                  window.__REGAARDER_OPEN_STAGING_MODAL__(msg.actionCard.branchId);
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm hover:shadow"
-                            >
-                              <GitPullRequest size={12} />
-                              <span>Review Redline Diff & Merge</span>
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'portal' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_PORTAL_INSPECTOR__) {
-                                  window.__REGAARDER_OPEN_PORTAL_INSPECTOR__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <UploadCloud size={12} />
-                              <span>Open Omni-Portal Inspector</span>
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'directive' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__) {
-                                  window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <ListTodo size={12} />
-                              <span>Open Directive Queue Inspector</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'topology' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__) {
-                                  window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <Network size={12} />
-                              <span>Open Spatial Topology Inspector</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'room_harvester' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
-                                  window.__REGAARDER_OPEN_ROOM_HARVESTER__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <Radio size={12} />
-                              <span>Open Room Observer Inspector</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'project' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (onNavigateWorkspace) {
-                                  onNavigateWorkspace({
-                                    type: 'landing',
-                                    targetTab: 'projects',
-                                    projectId: msg.actionCard.id
-                                  });
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-slate-900 text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <Folder size={12} />
-                              <span>Open Project</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                        </div>
+                            <p className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-snug">
+                              {msg.actionCard.description}
+                            </p>
+
+                            {msg.actionCard.previewSnippet && (
+                              <div className="text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/60 p-2 rounded-lg border border-black/[0.04] dark:border-white/[0.05] italic truncate">
+                                "{msg.actionCard.previewSnippet}"
+                              </div>
+                            )}
+
+                            {msg.actionCard.type === 'document' && msg.actionCard.docId && (
+                              <button
+                                type="button"
+                                onClick={() => onNavigateWorkspace && onNavigateWorkspace({ type: 'compose', docId: msg.actionCard.docId })}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/50"
+                              >
+                                <span>Open in Compose Docs</span>
+                                <ArrowRight size={12} />
+                              </button>
+                            )}
+
+                            {msg.actionCard.type === 'schedule' && (
+                              <div className="space-y-2 mt-1">
+                                {msg.actionCard.agreedSlot && (
+                                  <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-sky-800 dark:text-sky-300">
+                                        {msg.actionCard.agreedSlot.formattedTime || msg.actionCard.agreedSlot.start}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300">
+                                      {msg.actionCard.confidence || 90}% Match
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (typeof window !== 'undefined' && window.__REGAARDER_COMMIT_EVENT__) {
+                                        window.__REGAARDER_COMMIT_EVENT__(msg.actionCard.event || {
+                                          title: msg.actionCard.title.replace('Scheduled: ', ''),
+                                          startTime: msg.actionCard.agreedSlot?.start || new Date().toISOString(),
+                                          endTime: msg.actionCard.agreedSlot?.end || new Date().toISOString(),
+                                          participants: msg.actionCard.participants || ['user-joshua']
+                                        });
+                                      }
+                                    }}
+                                    className="flex-1 py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                                  >
+                                    <Check size={12} />
+                                    <span>Confirm Meeting</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__) {
+                                        window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__();
+                                      }
+                                    }}
+                                    className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11.5px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <span>Inspect</span>
+                                    <ArrowRight size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {msg.actionCard.type === 'staging_pr' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_STAGING_MODAL__) {
+                                    window.__REGAARDER_OPEN_STAGING_MODAL__(msg.actionCard.branchId);
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm hover:shadow"
+                              >
+                                <GitPullRequest size={12} />
+                                <span>Review Redline Diff & Merge</span>
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'portal' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_PORTAL_INSPECTOR__) {
+                                    window.__REGAARDER_OPEN_PORTAL_INSPECTOR__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <UploadCloud size={12} />
+                                <span>Open Omni-Portal Inspector</span>
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'directive' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__) {
+                                    window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <ListTodo size={12} />
+                                <span>Open Directive Queue Inspector</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'topology' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__) {
+                                    window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <Network size={12} />
+                                <span>Open Spatial Topology Inspector</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'room_harvester' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
+                                    window.__REGAARDER_OPEN_ROOM_HARVESTER__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <Radio size={12} />
+                                <span>Open Room Observer Inspector</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            )}
+                          </div>
+                        )
                       )}
 
                       {/* ── Autonomous Reference Sources & Citations (Deep Link to Line) ── */}
@@ -4532,7 +4555,15 @@ ${systemPrompt}`
                           )}
                         </div>
                       ) : (
-                        renderFormattedMessageText(msg.text, isChatSearchOpen ? chatSearchQuery : '')
+                        (() => {
+                          const isRedundantProjectText =
+                            msg.actionCard?.type === 'project' &&
+                            (!msg.text ||
+                              msg.text === `Shared project: ${msg.actionCard.title}` ||
+                              msg.text.trim() === '');
+                          if (isRedundantProjectText) return null;
+                          return renderFormattedMessageText(msg.text, isChatSearchOpen ? chatSearchQuery : '');
+                        })()
                       )}
 
                       <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
