@@ -457,10 +457,10 @@ Return ONLY a valid JSON array matching this exact schema:
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-              <Calendar className="text-violet-600 dark:text-violet-400" size={22} />
+              <Calendar className="text-slate-600 dark:text-zinc-300" size={22} />
               <span>Schedule</span>
             </h1>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-violet-100/70 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
               {events.length} {events.length === 1 ? 'event' : 'events'}
             </span>
             {conflicts.length > 0 && (
@@ -486,7 +486,7 @@ Return ONLY a valid JSON array matching this exact schema:
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
             <Plus size={14} />
             <span>New Event</span>
@@ -525,7 +525,7 @@ Return ONLY a valid JSON array matching this exact schema:
           <button
             type="submit"
             disabled={!quickInput.trim()}
-            className="px-3 py-1.5 rounded-xl bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
+            className="px-3 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/50 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-[#7C3AED] dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/50 text-xs font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
           >
             Schedule
           </button>
@@ -597,22 +597,14 @@ Return ONLY a valid JSON array matching this exact schema:
                 <div className="max-w-sm space-y-1">
                   <h4 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">No events scheduled</h4>
                   <p className="text-xs text-slate-400 dark:text-zinc-400">
-                    {searchQuery ? 'No events match your search.' : 'Add a new session or load example events to get started.'}
+                    {searchQuery ? 'No events match your search.' : 'Create an event or load an example schedule.'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => setIsCreateOpen(true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Plus size={13} />
-                    <span>New Event</span>
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => intentScheduler.loadSampleSchedule()}
-                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-xs font-medium border border-slate-200/90 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer"
                   >
                     Load Example Schedule
                   </button>
@@ -1355,7 +1347,7 @@ Return ONLY a valid JSON array matching this exact schema:
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
                 >
                   {newEventStage ? 'Stage Event into PR' : 'Create Event'}
                 </button>
