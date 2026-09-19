@@ -25,6 +25,12 @@ const LEGACY_PLACEHOLDER_PHASE_IDS = new Set([
   "phase-launch"
 ]);
 
+const LEGACY_PLACEHOLDER_GOAL_TEXTS = new Set([
+  "Define core scope and product requirements",
+  "Create draft designs and interactive prototypes",
+  "Prepare delivery assets and launch review"
+]);
+
 export const readWorkspaceProjects = () => {
   if (typeof window === 'undefined') return [];
   try {
@@ -39,19 +45,28 @@ export const readWorkspaceProjects = () => {
     // Purge legacy hardcoded demo projects so user only sees their own created projects
     const userOnly = parsed.filter((p) => p && !LEGACY_SAMPLE_IDS.has(p.id));
 
-    // One-time migration: strip projects whose phases array consists entirely of the
-    // legacy auto-seeded placeholder IDs — these were never user-authored phases.
+    // One-time migration: strip projects whose phases or goals array consists entirely of the
+    // legacy auto-seeded placeholder items — these were never user-authored content.
     let needsSave = userOnly.length !== parsed.length;
     const migrated = userOnly.map((p) => {
+      let updatedProject = { ...p };
       if (
-        Array.isArray(p.phases) &&
-        p.phases.length > 0 &&
-        p.phases.every((ph) => LEGACY_PLACEHOLDER_PHASE_IDS.has(ph.id))
+        Array.isArray(updatedProject.phases) &&
+        updatedProject.phases.length > 0 &&
+        updatedProject.phases.every((ph) => LEGACY_PLACEHOLDER_PHASE_IDS.has(ph.id))
       ) {
         needsSave = true;
-        return { ...p, phases: [] };
+        updatedProject.phases = [];
       }
-      return p;
+      if (
+        Array.isArray(updatedProject.goals) &&
+        updatedProject.goals.length > 0 &&
+        updatedProject.goals.every((g) => LEGACY_PLACEHOLDER_GOAL_TEXTS.has(g.text))
+      ) {
+        needsSave = true;
+        updatedProject.goals = [];
+      }
+      return updatedProject;
     });
 
     if (needsSave) {
@@ -158,11 +173,7 @@ export const createProject = ({
     color: color || "#7C3AED",
     icon: icon || "folder",
     phases: Array.isArray(phases) ? phases : (phases || []),
-    goals: goals || [
-      { id: `goal_${Date.now()}_1`, text: "Define core scope and product requirements", completed: false },
-      { id: `goal_${Date.now()}_2`, text: "Create draft designs and interactive prototypes", completed: false },
-      { id: `goal_${Date.now()}_3`, text: "Prepare delivery assets and launch review", completed: false }
-    ],
+    goals: Array.isArray(goals) ? goals : (goals || []),
     members: members || [
       { id: "user_owner", name: "You", email: "you@regaarder.com", role: "owner", avatarColor: color || "#7C3AED" }
     ],

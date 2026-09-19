@@ -51,6 +51,7 @@ import CreateProjectModal, { getProjectIconComponent } from "./CreateProjectModa
 import ShareProjectToRelayModal from "./ShareProjectToRelayModal";
 import AddExistingFilesToProjectModal from "./AddExistingFilesToProjectModal";
 import InviteProjectMemberModal from "./InviteProjectMemberModal";
+import EditProjectMemoryModal from "./EditProjectMemoryModal";
 
 export default function ProjectsWorkspace({
   projects = [],
@@ -120,6 +121,7 @@ export default function ProjectsWorkspace({
   // Modal states for user-owned roadmap editing
   const [isAddPhaseModalOpen, setIsAddPhaseModalOpen] = useState(false);
   const [isAiRoadmapModalOpen, setIsAiRoadmapModalOpen] = useState(false);
+  const [isEditMemoryModalOpen, setIsEditMemoryModalOpen] = useState(false);
   const [aiRoadmapProposal, setAiRoadmapProposal] = useState(null);
   const [isGeneratingAiRoadmap, setIsGeneratingAiRoadmap] = useState(false);
   const [aiPromptInput, setAiPromptInput] = useState("");
@@ -1433,37 +1435,40 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                   })()}
                 </div>
 
-                {/* Grid: Project Goals & Project Memory */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Goals Checklist */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] space-y-4 shadow-2xs">
+                {/* Natural Single-Column Project Information Hierarchy */}
+                <div className="space-y-4">
+                  {/* Primary Section: Milestone Goals (Content-driven height) */}
+                  <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] space-y-3 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Target size={16} className="text-[#7C3AED] dark:text-violet-400" />
-                        <h3 className="text-[14px] font-semibold text-slate-900 dark:text-zinc-100">
+                        <Target size={15} className="text-[#7C3AED] dark:text-violet-400" />
+                        <h3 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100">
                           Milestone Goals
                         </h3>
+                        {projectGoals.length > 0 && (
+                          <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                            ({projectGoals.filter((g) => g.completed).length}/{projectGoals.length})
+                          </span>
+                        )}
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsAddingGoal(true)}
-                        className="text-[11.5px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                        className="text-[11.5px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 flex items-center gap-1 cursor-pointer border-none bg-transparent transition-colors"
                       >
                         <Plus size={12} />
                         <span>Add goal</span>
                       </button>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {projectGoals.length === 0 && !isAddingGoal ? (
-                        <div className="py-4 px-3 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center">
-                          <p className="text-[12px] text-slate-400 dark:text-zinc-500 m-0">
-                            No milestone goals defined yet.
-                          </p>
+                        <div className="py-2.5 flex items-center justify-between text-[12px] text-slate-400 dark:text-zinc-500">
+                          <span>No milestone goals defined yet.</span>
                           <button
                             type="button"
                             onClick={() => setIsAddingGoal(true)}
-                            className="mt-1.5 text-[11.5px] text-[#7C3AED] dark:text-violet-400 font-medium hover:underline cursor-pointer border-none bg-transparent"
+                            className="text-[11.5px] text-[#7C3AED] dark:text-violet-400 font-medium hover:underline cursor-pointer border-none bg-transparent"
                           >
                             + Add initial goal
                           </button>
@@ -1472,7 +1477,7 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                         projectGoals.map((goal) => (
                           <div
                             key={goal.id}
-                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/80 hover:bg-slate-50/80 dark:hover:bg-zinc-800/50 transition-colors group"
+                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50/80 dark:hover:bg-zinc-850/50 transition-colors group"
                           >
                             <div
                               onClick={() => handleToggleGoal(goal.id)}
@@ -1541,28 +1546,25 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                     </div>
                   </div>
 
-                  {/* Project Memory & Directives */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] space-y-4 shadow-2xs flex flex-col justify-between">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100">
-                          <RegaarderAiIcon size={16} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-400" />
-                          <span>AI Memory Directives</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setEditingProject(activeProject)}
-                          className="text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent"
-                        >
-                          Edit
-                        </button>
+                  {/* Contextual Section: AI Memory Directives (Compact contextual surface) */}
+                  <div className="p-4.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-900 dark:text-zinc-100">
+                        <RegaarderAiIcon size={15} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-400" />
+                        <span>AI Memory Directives</span>
                       </div>
-                      <p className="text-[12px] text-slate-600 dark:text-zinc-300 leading-relaxed m-0 bg-slate-50/80 dark:bg-zinc-850/60 p-3.5 rounded-xl border border-slate-100 dark:border-white/[0.04]">
-                        {activeProject.customInstructions || activeProject.description || "No custom instructions defined yet. Regaarder AI leverages standard workspace conventions for files in this project."}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditMemoryModalOpen(true)}
+                        className="text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors"
+                      >
+                        Edit
+                      </button>
                     </div>
-
-                    <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-[11.5px] text-slate-400">
+                    <p className="text-[12px] text-slate-600 dark:text-zinc-400 leading-relaxed m-0 bg-slate-50/50 dark:bg-zinc-850/30 py-2.5 px-3 rounded-xl border border-slate-100/80 dark:border-white/[0.02]">
+                      {activeProject.customInstructions || activeProject.description || "No custom instructions defined yet. Regaarder AI leverages standard workspace conventions for files in this project."}
+                    </p>
+                    <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500">
                       <span>Collaborators: {projectMembers.length}</span>
                       <span>Updated {new Date(activeProject.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                     </div>
@@ -2086,6 +2088,23 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
               icon: updatedFields.icon
             });
             setEditingProject(null);
+          }}
+        />
+      )}
+
+      {/* Dedicated Project Memory Modal */}
+      {isEditMemoryModalOpen && activeProject && (
+        <EditProjectMemoryModal
+          isOpen={isEditMemoryModalOpen}
+          project={activeProject}
+          projects={projects}
+          documents={documents}
+          onClose={() => setIsEditMemoryModalOpen(false)}
+          onSave={({ projectId, customInstructions, memoryDocIds }) => {
+            updateProject(projectId, {
+              customInstructions,
+              memoryDocIds
+            });
           }}
         />
       )}
