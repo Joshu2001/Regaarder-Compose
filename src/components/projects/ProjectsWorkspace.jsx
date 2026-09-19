@@ -1546,25 +1546,27 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                     </div>
                   </div>
 
-                  {/* Contextual Section: AI Memory Directives (Compact contextual surface) */}
-                  <div className="p-4.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] space-y-2.5 shadow-2xs">
+                  {/* Contextual Section: AI Memory Directives (Refined breathing room & quiet surface) */}
+                  <div className="p-5 sm:p-5.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/70 dark:border-white/[0.06] space-y-3.5 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-900 dark:text-zinc-100">
-                        <RegaarderAiIcon size={15} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-400" />
+                      <div className="flex items-center gap-2.5 text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100">
+                        <RegaarderAiIcon size={16} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-400" />
                         <span>AI Memory Directives</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsEditMemoryModalOpen(true)}
-                        className="text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors"
+                        className="text-[12px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors px-1 py-0.5"
                       >
                         Edit
                       </button>
                     </div>
-                    <p className="text-[12px] text-slate-600 dark:text-zinc-400 leading-relaxed m-0 bg-slate-50/50 dark:bg-zinc-850/30 py-2.5 px-3 rounded-xl border border-slate-100/80 dark:border-white/[0.02]">
-                      {activeProject.customInstructions || activeProject.description || "No custom instructions defined yet. Regaarder AI leverages standard workspace conventions for files in this project."}
-                    </p>
-                    <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500">
+                    <div className="bg-slate-50/60 dark:bg-zinc-850/30 p-3.5 sm:p-4 rounded-xl border border-slate-100 dark:border-white/[0.03]">
+                      <p className="text-[12.5px] text-slate-600 dark:text-zinc-350 leading-relaxed m-0 font-normal">
+                        {activeProject.customInstructions || activeProject.description || "No custom instructions defined yet. Regaarder AI leverages standard workspace conventions for files in this project."}
+                      </p>
+                    </div>
+                    <div className="pt-0.5 flex items-center justify-between text-[11.5px] text-slate-400 dark:text-zinc-500">
                       <span>Collaborators: {projectMembers.length}</span>
                       <span>Updated {new Date(activeProject.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                     </div>
