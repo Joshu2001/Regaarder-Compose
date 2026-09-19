@@ -21,6 +21,7 @@ export default function ShareProjectToRelayModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipientIds, setSelectedRecipientIds] = useState([]);
   const [shareNote, setShareNote] = useState('');
+  const [redirectToRelay, setRedirectToRelay] = useState(true);
 
   // Read available contacts from Relay state and persistent registry
   const recipientList = useMemo(() => {
@@ -126,7 +127,8 @@ export default function ShareProjectToRelayModal({
         recipientIds: selectedRecipientIds,
         recipients: selectedRecipients,
         project,
-        note: shareNote.trim()
+        note: shareNote.trim(),
+        redirectToRelay
       });
     }
   };
@@ -303,7 +305,17 @@ export default function ShareProjectToRelayModal({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-zinc-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={redirectToRelay}
+                onChange={(e) => setRedirectToRelay(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-slate-300 dark:border-zinc-600 text-slate-900 focus:ring-0 cursor-pointer accent-[#7C3AED]"
+              />
+              <span>Open in Relay</span>
+            </label>
+
             <button
               type="button"
               onClick={onClose}

@@ -200,7 +200,7 @@ export default function ProjectsWorkspace({
     return result;
   }, [projects, searchQuery, sortBy]);
 
-  const [shareSuccessId, setShareSuccessId] = useState(null);
+  const [shareToastMessage, setShareToastMessage] = useState(null);
 
   const togglePin = (e, project) => {
     e.stopPropagation();
@@ -222,8 +222,8 @@ export default function ProjectsWorkspace({
     const shareUrl = `${window.location.origin}?project=${project.id}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        setShareSuccessId(project.id);
-        setTimeout(() => setShareSuccessId(null), 2500);
+        setShareToastMessage("Project share link copied to clipboard!");
+        setTimeout(() => setShareToastMessage(null), 2500);
       }).catch(() => {});
     }
     setMenuOpenId(null);
@@ -235,31 +235,120 @@ export default function ProjectsWorkspace({
     setShareToRelayProject(project);
   };
 
-  const handleCompleteShareToRelay = ({ recipientIds, recipients, project, note }) => {
+  const handleCompleteShareToRelay = ({ recipientIds, recipients, project, note, redirectToRelay = true }) => {
     setShareToRelayProject(null);
 
-    // 1. Dispatch custom event with full payload for Relay to ingest immediately
+    const targetIds = (recipientIds && recipientIds.length > 0) ? recipientIds : ["chat-assistant"];
+    const RELAY_MESSAGES_STORAGE_KEY = "regaarder_relay_messages_v1";
+    const RELAY_CONVERSATIONS_STORAGE_KEY = "regaarder_relay_conversations_v2";
+
+    // 1. Direct Persistent Storage Injection so Relay displays the folder card whether mounted or not
+    try {
+      let currentMessages = {};
+      const savedMsgs = localStorage.getItem(RELAY_MESSAGES_STORAGE_KEY);
+      if (savedMsgs) {
+        try {
+          const parsed = JSON.parse(savedMsgs);
+          if (parsed && typeof parsed === "object") currentMessages = parsed;
+        } catch (_) {}
+      }
+
+      // Ensure default assistant thread exists if empty
+      if (!currentMessages["chat-assistant"]) {
+        currentMessages["chat-assistant"] = [
+          {
+            id: "m-welcome",
+            author: "Assistant",
+            role: "assistant",
+            text: "Welcome to Regaarder Relay. All communications are end-to-end encrypted with zero-knowledge keys.\n\nYou can chat by typing, attach documents, switch AI models dynamically, or start real-time conversational voice sessions using the Voice Chat with AI button.",
+            createdAt: Date.now() - 1000 * 60 * 2,
+            status: "read"
+          }
+        ];
+      }
+
+      const projectShareMsg = {
+        id: `proj-share-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        author: "You",
+        role: "you",
+        text: note ? note : `Shared project: ${project.name}`,
+        createdAt: Date.now(),
+        status: "sent",
+        actionCard: {
+          type: "project",
+          id: project.id,
+          title: project.name,
+          color: project.color || "#7C3AED",
+          description: project.description || project.customInstructions || "Workspace project container",
+          project
+        }
+      };
+
+      targetIds.forEach((recId) => {
+        const existing = currentMessages[recId] || [];
+        currentMessages[recId] = [...existing, projectShareMsg];
+      });
+      localStorage.setItem(RELAY_MESSAGES_STORAGE_KEY, JSON.stringify(currentMessages));
+
+      // Update conversations preview in localStorage
+      let currentConversations = [];
+      const savedConvs = localStorage.getItem(RELAY_CONVERSATIONS_STORAGE_KEY);
+      if (savedConvs) {
+        try {
+          const parsed = JSON.parse(savedConvs);
+          if (Array.isArray(parsed)) currentConversations = parsed;
+        } catch (_) {}
+      }
+      if (currentConversations.length > 0) {
+        currentConversations = currentConversations.map((c) => {
+          if (targetIds.includes(c.id)) {
+            return {
+              ...c,
+              lastMsg: `Shared project: ${project.name}`,
+              time: "Just now"
+            };
+          }
+          return c;
+        });
+        localStorage.setItem(RELAY_CONVERSATIONS_STORAGE_KEY, JSON.stringify(currentConversations));
+      }
+    } catch (e) {
+      console.warn("[ProjectsWorkspace] Failed to persist shared project message:", e);
+    }
+
+    // 2. Dispatch live window event (for when Relay is already active in background or split)
     try {
       window.dispatchEvent(
         new CustomEvent("regaarder:relay-share-project", {
           detail: {
             project,
-            recipientIds,
+            recipientIds: targetIds,
             recipients,
             note: note || ""
           }
         })
       );
+      // Select the recipient contact when Relay opens
+      if (targetIds.length > 0) {
+        window.dispatchEvent(
+          new CustomEvent("regaarder:select-dm-contact", {
+            detail: { contactId: targetIds[0] }
+          })
+        );
+      }
     } catch (err) {}
 
-    // 2. Navigate / launch Relay app seamlessly
-    if (onLaunchApp) {
+    // 3. User navigation choice: redirect or stay on page
+    if (redirectToRelay && onLaunchApp) {
       onLaunchApp("relay", {
         shareProject: project,
-        recipientId: recipientIds[0] || null,
-        recipientIds,
+        recipientId: targetIds[0] || null,
+        recipientIds: targetIds,
         note: note || ""
       });
+    } else {
+      setShareToastMessage(`Project "${project.name}" shared to Relay`);
+      setTimeout(() => setShareToastMessage(null), 3000);
     }
   };
 
@@ -650,10 +739,10 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
   return (
     <main className="flex-1 flex flex-col h-full bg-white dark:bg-[#151518] overflow-hidden">
       {/* Share Toast Notification */}
-      {shareSuccessId && (
+      {shareToastMessage && (
         <div className="fixed top-16 right-8 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-[12.5px] font-medium shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
           <Check size={14} className="text-emerald-400" />
-          <span>Project share link copied to clipboard!</span>
+          <span>{shareToastMessage}</span>
         </div>
       )}
 
