@@ -315,6 +315,18 @@ export default function ProjectsWorkspace({
     updateProject(activeProject.id, { phases: updated });
   };
 
+  const handleSetPhaseStatus = (phaseId, newStatus, e) => {
+    e?.stopPropagation();
+    if (!activeProject) return;
+    const updated = projectPhases.map((p) => {
+      if (p.id === phaseId) {
+        return { ...p, status: newStatus };
+      }
+      return p;
+    });
+    updateProject(activeProject.id, { phases: updated });
+  };
+
   // Phase Reordering (Up/Down)
   const handleMovePhase = (idx, direction, e) => {
     e?.stopPropagation();
@@ -1009,18 +1021,34 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                                             />
                                           )}
                                         </div>
+                                        {/* Status toggle trigger button with Apple-like affordance */}
                                         <button
                                           type="button"
                                           onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
-                                          className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
-                                          title="Advance phase status"
+                                          className={`px-2 py-0.5 rounded-full text-[10.5px] font-medium flex items-center gap-1 transition-all cursor-pointer border ${
+                                            isCompleted
+                                              ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800"
+                                              : isInProgress
+                                              ? "bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/60 dark:hover:bg-violet-900/60 text-[#7C3AED] dark:text-violet-300 border-violet-200/80 dark:border-violet-800"
+                                              : "bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-zinc-700"
+                                          }`}
+                                          title={isCompleted ? "Completed (Click to change status)" : isInProgress ? "In Progress (Click to mark completed)" : "Upcoming (Click to start phase)"}
                                         >
                                           {isCompleted ? (
-                                            <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-500" />
+                                            <>
+                                              <Check size={11} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />
+                                              <span>Done</span>
+                                            </>
                                           ) : isInProgress ? (
-                                            <span className="w-2 h-2 rounded-full bg-[#7C3AED] dark:bg-violet-400 block" />
+                                            <>
+                                              <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] dark:bg-violet-400" />
+                                              <span>Active</span>
+                                            </>
                                           ) : (
-                                            <Circle size={13} className="text-slate-300 dark:text-zinc-600" />
+                                            <>
+                                              <Circle size={10} className="text-slate-400" />
+                                              <span>Start</span>
+                                            </>
                                           )}
                                         </button>
                                       </div>
@@ -1232,9 +1260,25 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                                           <button
                                             type="button"
                                             onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
-                                            className="text-[10px] text-slate-400 hover:text-slate-700 cursor-pointer border-none bg-transparent"
+                                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-0.5 cursor-pointer border ${
+                                              phase.status === "completed"
+                                                ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                                                : phase.status === "in-progress"
+                                                ? "bg-violet-50 dark:bg-violet-950/50 text-[#7C3AED] dark:text-violet-300 border-violet-200 dark:border-violet-800"
+                                                : "bg-slate-100 dark:bg-zinc-800 text-slate-500 border-slate-200 dark:border-zinc-700"
+                                            }`}
+                                            title="Click to advance status"
                                           >
-                                            Advance
+                                            {phase.status === "completed" ? (
+                                              <>
+                                                <Check size={9} strokeWidth={2.5} />
+                                                <span>Done</span>
+                                              </>
+                                            ) : phase.status === "in-progress" ? (
+                                              <span>Active</span>
+                                            ) : (
+                                              <span>Start</span>
+                                            )}
                                           </button>
                                         </div>
                                         {phase.description && (
@@ -1294,17 +1338,48 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={(e) => handleTogglePhaseStatus(activePhase.id, e)}
-                              className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-[11px] font-medium text-slate-700 dark:text-zinc-200 cursor-pointer hover:bg-slate-100"
-                            >
-                              Cycle Status
-                            </button>
+                            {/* Apple-style status segmented control */}
+                            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.04]">
+                              <button
+                                type="button"
+                                onClick={(e) => handleSetPhaseStatus(activePhase.id, "upcoming", e)}
+                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none ${
+                                  activePhase.status === "upcoming"
+                                    ? "bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-2xs"
+                                    : "text-slate-400 dark:text-zinc-400 hover:text-slate-700 bg-transparent"
+                                }`}
+                              >
+                                Upcoming
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleSetPhaseStatus(activePhase.id, "in-progress", e)}
+                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none ${
+                                  activePhase.status === "in-progress"
+                                    ? "bg-[#7C3AED] text-white shadow-2xs font-semibold"
+                                    : "text-slate-400 dark:text-zinc-400 hover:text-slate-700 bg-transparent"
+                                }`}
+                              >
+                                In Progress
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleSetPhaseStatus(activePhase.id, "completed", e)}
+                                className={`h-6 px-2 rounded-md text-[11px] font-medium transition-all cursor-pointer border-none flex items-center gap-1 ${
+                                  activePhase.status === "completed"
+                                    ? "bg-emerald-600 text-white shadow-2xs font-semibold"
+                                    : "text-slate-400 dark:text-zinc-400 hover:text-emerald-600 bg-transparent"
+                                }`}
+                              >
+                                <Check size={11} strokeWidth={2.5} />
+                                <span>Completed</span>
+                              </button>
+                            </div>
+
                             <button
                               type="button"
                               onClick={(e) => handleDeletePhase(activePhase.id, e)}
-                              className="h-7 px-2.5 rounded-lg text-[11px] font-medium text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer border-none bg-transparent"
+                              className="h-7 px-2 rounded-lg text-[11px] font-medium text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer border-none bg-transparent"
                               title="Delete phase"
                             >
                               Delete
