@@ -25,7 +25,6 @@ import {
   Circle,
   Flag,
   Target,
-  Sparkles,
   UserPlus,
   Layers,
   ArrowRight,
@@ -39,7 +38,9 @@ import {
   AlertCircle,
   Wand2,
   RefreshCw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Workflow,
+  MapPin
 } from "lucide-react";
 import { AppNativeSvgIcon } from "../home/AppNativeSvgIcon";
 import { RegaarderAiIcon } from "../RegaarderProductIcons";
@@ -106,21 +107,22 @@ export default function ProjectsWorkspace({
 
   // Project phases with fallback
   const projectPhases = useMemo(() => {
-    if (!activeProject) return DEFAULT_ROADMAP_PHASES;
-    return activeProject.phases && activeProject.phases.length > 0
-      ? activeProject.phases
-      : DEFAULT_ROADMAP_PHASES;
+    if (!activeProject) return [];
+    return Array.isArray(activeProject.phases) ? activeProject.phases : [];
   }, [activeProject]);
 
   // Roadmap presentation view mode ('roadmap' | 'timeline' | 'board')
   const [roadmapViewMode, setRoadmapViewMode] = useState("roadmap");
   // Phase selected for inspection/editing drawer
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
+  // Add phase dropdown menu (Manual vs AI synthesis)
+  const [isAddPhaseMenuOpen, setIsAddPhaseMenuOpen] = useState(false);
   // Modal states for user-owned roadmap editing
   const [isAddPhaseModalOpen, setIsAddPhaseModalOpen] = useState(false);
   const [isAiRoadmapModalOpen, setIsAiRoadmapModalOpen] = useState(false);
   const [aiRoadmapProposal, setAiRoadmapProposal] = useState(null);
   const [isGeneratingAiRoadmap, setIsGeneratingAiRoadmap] = useState(false);
+  const [aiPromptInput, setAiPromptInput] = useState("");
   const [newPhaseLabel, setNewPhaseLabel] = useState("");
   const [newPhaseDesc, setNewPhaseDesc] = useState("");
   const [newPhaseStart, setNewPhaseStart] = useState("");
@@ -408,18 +410,19 @@ export default function ProjectsWorkspace({
   };
 
   // AI Roadmap Generation / Revision
-  const handleGenerateAiRoadmap = async () => {
+  const handleGenerateAiRoadmap = async (customGoalPrompt = "") => {
     if (!activeProject) return;
     setIsGeneratingAiRoadmap(true);
-    setAiRoadmapProposal(null);
 
     try {
       const aiConfig = getSavedAiConfig();
+      const userGoalSection = (customGoalPrompt || aiPromptInput || "").trim();
       const prompt = `You are the Regaarder Executive Project Architect.
 Propose a practical, modern 4 to 5-phase structured roadmap for this workspace project:
 Project Name: "${activeProject.name}"
 Description: "${activeProject.description || "General strategic workspace project"}"
 Directives / Memory: "${activeProject.customInstructions || "High aesthetic quality, executive execution"}"
+${userGoalSection ? `User Strategic Goals & Instructions: "${userGoalSection}"` : ""}
 
 Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
 [
@@ -611,14 +614,17 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
     return Math.round(score);
   }, [projectPhases]);
 
-  // Close 3-dot menus on outside click
+  // Close 3-dot menus and dropdowns on outside click
   useEffect(() => {
-    const handleOutside = () => setMenuOpenId(null);
-    if (menuOpenId) {
+    const handleOutside = () => {
+      setMenuOpenId(null);
+      setIsAddPhaseMenuOpen(false);
+    };
+    if (menuOpenId || isAddPhaseMenuOpen) {
       window.addEventListener("click", handleOutside);
       return () => window.removeEventListener("click", handleOutside);
     }
-  }, [menuOpenId]);
+  }, [menuOpenId, isAddPhaseMenuOpen]);
 
   return (
     <main className="flex-1 flex flex-col h-full bg-white dark:bg-[#151518] overflow-hidden">
@@ -647,11 +653,20 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
               </button>
               <ChevronRight size={13} className="text-slate-400" />
               <div className="flex items-center gap-2">
-                <Folder
-                  size={20}
-                  strokeWidth={1.8}
-                  className="shrink-0 text-[#7C3AED] dark:text-violet-400"
-                />
+                {(() => {
+                  const ProjectIconComp = getProjectIconComponent(activeProject.icon);
+                  return (
+                    <ProjectIconComp
+                      size={18}
+                      strokeWidth={1.6}
+                      style={{
+                        color: activeProject.color || "#7C3AED",
+                        fill: `${activeProject.color || "#7C3AED"}`,
+                      }}
+                      className="shrink-0"
+                    />
+                  );
+                })()}
                 <h1 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
                   {activeProject.name}
                 </h1>
@@ -733,10 +748,10 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
         <div className="px-10 border-b border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between bg-[#FAFAFC] dark:bg-[#18181B]/50">
           <div className="flex items-center gap-1 py-2">
             {[
-              { id: "overview", label: "Overview & Roadmap" },
-              { id: "files", label: `Files & Artifacts (${projectDocuments.length})` },
-              { id: "tasks", label: `Tasks (${projectTasks.length})` },
-              { id: "members", label: `Members (${projectMembers.length})` }
+              { id: "overview", label: "Overview & Roadmap", count: null },
+              { id: "files", label: "Files & Artifacts", count: projectDocuments.length },
+              { id: "tasks", label: "Tasks", count: projectTasks.length },
+              { id: "members", label: "Members", count: projectMembers.length }
             ].map((tab) => {
               const isActive = activeProjectTab === tab.id;
               return (
@@ -744,13 +759,24 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveProjectTab(tab.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all cursor-pointer border-none select-none ${
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer border-none select-none flex items-center gap-1.5 ${
                     isActive
-                      ? "bg-white dark:bg-zinc-800 text-[#7C3AED] dark:text-violet-300 shadow-2xs border border-slate-200/60 dark:border-zinc-700/60 font-semibold"
+                      ? "bg-white dark:bg-zinc-800 text-[#7C3AED] dark:text-violet-300 shadow-2xs border border-slate-200/70 dark:border-zinc-700 font-semibold"
                       : "bg-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/60 dark:hover:bg-zinc-800/40"
                   }`}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  {tab.count !== null && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium transition-colors ${
+                        isActive
+                          ? "bg-violet-50 dark:bg-violet-950/60 text-[#7C3AED] dark:text-violet-300"
+                          : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -783,315 +809,445 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
             {activeProjectTab === "overview" && (
               <div className="space-y-7 animate-in fade-in duration-150">
                 {/* Visual Roadmap & Interactive Progression */}
-                <div className="p-6 rounded-2xl bg-[#F8F9FB] dark:bg-zinc-900/50 border border-slate-200/70 dark:border-white/[0.06] space-y-5">
-                  {/* Top Bar: Title, View Mode Switcher, and Roadmap Actions */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-zinc-500">
-                          Project Roadmap
-                        </span>
-                        <span className="text-[11px] text-slate-300 dark:text-zinc-600">•</span>
-                        <span className="text-[11.5px] font-medium text-slate-500 dark:text-zinc-400">
-                          {projectPhases.filter((p) => p.status === "completed").length} of {projectPhases.length} phases complete
-                        </span>
-                      </div>
-                      <h2 className="text-[15.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight mt-0.5">
-                        Plan phases, milestones, and next steps.
-                      </h2>
+                <div className="p-5 sm:p-5.5 rounded-2xl bg-[#F8F9FB] dark:bg-zinc-900/50 border border-slate-200/70 dark:border-white/[0.06] space-y-2.5">
+                  {/* Top Bar: Title, View Mode Switcher, and Roadmap Actions (Progressively Disclosed) */}
+                  <div className="flex items-center justify-between gap-3 min-h-[26px]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 tracking-tight">
+                        Roadmap
+                      </span>
+                      {projectPhases.length > 0 && (
+                        <>
+                          <span className="text-[11px] text-slate-300 dark:text-zinc-600">•</span>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+                            {projectPhases.filter((p) => p.status === "completed").length} of {projectPhases.length} complete
+                          </span>
+                        </>
+                      )}
                     </div>
 
-                    {/* View Switcher & Actions */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* Quiet Segmented View Switcher (Minimal Visual Weight) */}
-                      <div className="flex items-center p-0.5 rounded-lg bg-slate-200/60 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
-                        {[
-                          { id: "roadmap", label: "Roadmap" },
-                          { id: "timeline", label: "Timeline" },
-                          { id: "board", label: "Board" }
-                        ].map((mode) => {
-                          const isCurrent = roadmapViewMode === mode.id;
-                          return (
-                            <button
-                              key={mode.id}
-                              type="button"
-                              onClick={() => setRoadmapViewMode(mode.id)}
-                              className={`h-6 px-2.5 rounded-md text-[11.5px] font-medium transition-all cursor-pointer border-none ${
-                                isCurrent
-                                  ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold"
-                                  : "bg-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200"
-                              }`}
+                    {/* View Switcher & Actions — Progressively revealed only once phases exist */}
+                    {projectPhases.length > 0 && (
+                      <div className="flex items-center gap-2 flex-wrap animate-in fade-in duration-150">
+                        {/* Quiet Segmented View Switcher */}
+                        <div className="flex items-center p-0.5 rounded-lg bg-slate-100/80 dark:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-750/40">
+                          {[
+                            { id: "roadmap", label: "Roadmap" },
+                            { id: "timeline", label: "Timeline" },
+                            { id: "board", label: "Board" }
+                          ].map((mode) => {
+                            const isCurrent = roadmapViewMode === mode.id;
+                            return (
+                              <button
+                                key={mode.id}
+                                type="button"
+                                onClick={() => setRoadmapViewMode(mode.id)}
+                                className={`h-6 px-2.5 rounded-md text-[11.5px] font-medium transition-all cursor-pointer border-none ${
+                                  isCurrent
+                                    ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold"
+                                    : "bg-transparent text-slate-400 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200"
+                                }`}
+                              >
+                                {mode.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Top-Right Add Phase Action */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsAddPhaseMenuOpen((prev) => !prev);
+                            }}
+                            className="h-7 px-2.5 rounded-lg border border-slate-200/80 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-slate-700 dark:text-zinc-200 text-[11.5px] font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                            title="Add phase options"
+                          >
+                            <Plus size={12} />
+                            <span>Add phase</span>
+                            <ChevronDown size={11} className={`text-slate-400 transition-transform duration-150 ${isAddPhaseMenuOpen ? "rotate-180" : ""}`} />
+                          </button>
+
+                          {/* Dropdown Options */}
+                          {isAddPhaseMenuOpen && (
+                            <div
+                              className="absolute right-0 top-8.5 w-60 bg-white dark:bg-zinc-850 rounded-xl shadow-xl border border-slate-200/90 dark:border-zinc-700 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {mode.label}
-                            </button>
-                          );
-                        })}
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setIsAddPhaseMenuOpen(false);
+                                  setIsAddPhaseModalOpen(true);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-zinc-700/50 flex items-start gap-2.5 cursor-pointer border-none bg-transparent transition-colors group"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 group-hover:bg-slate-200 dark:group-hover:bg-zinc-700 shrink-0 mt-0.5">
+                                  <Plus size={13} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200 leading-tight">
+                                    Add Phase Manually
+                                  </div>
+                                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 leading-normal mt-0.5">
+                                    Define title, duration, and target milestones
+                                  </div>
+                                </div>
+                              </button>
+
+                              <div className="my-1 border-t border-slate-100 dark:border-white/[0.06]" />
+
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setIsAddPhaseMenuOpen(false);
+                                  setIsAiRoadmapModalOpen(true);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-violet-50/60 dark:hover:bg-violet-950/30 flex items-start gap-2.5 cursor-pointer border-none bg-transparent transition-colors group"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center text-[#7C3AED] dark:text-violet-300 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/60 shrink-0 mt-0.5">
+                                  <RegaarderAiIcon size={13} strokeWidth={1.7} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-[12px] font-medium text-[#7C3AED] dark:text-violet-300 flex items-center gap-1.5 leading-tight">
+                                    <span>AI Planner</span>
+                                  </div>
+                                  <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 leading-normal mt-0.5">
+                                    Synthesize milestones from project goals & docs
+                                  </div>
+                                </div>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Add Phase Button */}
-                      <button
-                        type="button"
-                        onClick={() => setIsAddPhaseModalOpen(true)}
-                        className="h-7 px-2.5 rounded-lg border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700/60 text-[11.5px] font-medium flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
-                        title="Add new phase to roadmap"
-                      >
-                        <Plus size={12} />
-                        <span>Add phase</span>
-                      </button>
-
-                      {/* Secondary Intelligent Action: AI Plan */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAiRoadmapModalOpen(true);
-                          handleGenerateAiRoadmap();
-                        }}
-                        className="h-7 px-2.5 rounded-lg border border-slate-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-750 text-[11.5px] font-medium flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
-                        title="Assist roadmap with AI"
-                      >
-                        <RegaarderAiIcon size={12.5} strokeWidth={1.7} className="text-slate-500 dark:text-zinc-400" />
-                        <span>AI Plan</span>
-                      </button>
-                    </div>
+                    )}
                   </div>
 
                   {/* VIEW 1: PROGRESSION ROADMAP */}
                   {roadmapViewMode === "roadmap" && (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
-                        {projectPhases.map((phase, idx) => {
-                          const isCompleted = phase.status === "completed";
-                          const isInProgress = phase.status === "in-progress";
-                          const isSelected = selectedPhaseId === phase.id;
-                          const milestoneCount = phase.milestones ? phase.milestones.length : 0;
-                          const completedMilestones = phase.milestones ? phase.milestones.filter((m) => m.completed).length : 0;
-
-                          // Check dependency blockers: if prior phase is not completed while this phase is upcoming
-                          const prevPhase = idx > 0 ? projectPhases[idx - 1] : null;
-                          const isBlocked = !isCompleted && !isInProgress && prevPhase && prevPhase.status !== "completed";
-
-                          return (
-                            <div
-                              key={phase.id}
-                              onClick={() => setSelectedPhaseId(isSelected ? null : phase.id)}
-                              className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between min-h-[115px] group relative ${
-                                isSelected
-                                  ? "bg-white dark:bg-zinc-900 ring-2 ring-[#7C3AED] dark:ring-violet-500 border-transparent shadow-xs"
-                                  : isCompleted
-                                  ? "bg-white dark:bg-zinc-900 border-slate-200/70 dark:border-zinc-800 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-700"
-                                  : isInProgress
-                                  ? "bg-white dark:bg-zinc-900 border-slate-200/90 dark:border-zinc-750 shadow-2xs hover:border-slate-300"
-                                  : "bg-slate-100/50 dark:bg-zinc-800/40 border-slate-200/50 dark:border-zinc-800/80 hover:bg-white dark:hover:bg-zinc-850"
-                              }`}
+                      {projectPhases.length === 0 ? (
+                        <div className="py-3.5 px-4 flex flex-col items-center justify-center text-center animate-in fade-in duration-200">
+                          <div className="w-7 h-7 rounded-lg bg-slate-200/50 dark:bg-zinc-800/60 flex items-center justify-center text-slate-400/80 dark:text-zinc-500 mb-1.5">
+                            <Workflow size={14} strokeWidth={1.5} />
+                          </div>
+                          <h3 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 mb-0.5">
+                            No roadmap planned yet
+                          </h3>
+                          <p className="text-[11px] text-slate-400 dark:text-zinc-500 max-w-xs mb-2.5 leading-relaxed">
+                            Add phases and milestones to structure the project.
+                          </p>
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setIsAddPhaseModalOpen(true)}
+                              className="h-7 px-3 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                             >
-                              <div>
-                                {/* Header: Phase Label, Step Number, and Status Toggle */}
-                                <div className="flex items-center justify-between gap-1 mb-2">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                      0{idx + 1}
-                                    </span>
-                                    {isBlocked && (
-                                      <span
-                                        className="text-[9.5px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-medium flex items-center gap-0.5"
-                                        title={`Blocked: Depends on Phase 0${idx} (${prevPhase.label}) completion`}
-                                      >
-                                        <AlertCircle size={9} />
-                                        Blocked
+                              <Plus size={11} />
+                              <span>Add phase</span>
+                            </button>
+                            <span className="text-[10px] text-slate-300 dark:text-zinc-600">•</span>
+                            <button
+                              type="button"
+                              onClick={() => setIsAiRoadmapModalOpen(true)}
+                              className="text-[11px] text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5 cursor-pointer border-none bg-transparent transition-colors py-0.5"
+                            >
+                              <RegaarderAiIcon size={11} strokeWidth={1.7} className="text-slate-400 dark:text-zinc-500" />
+                              <span>Plan with Regaarder AI</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Horizontally scrollable phase flow — connected river of progression */}
+                          <div className="flex items-stretch gap-0 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+                            {projectPhases.map((phase, idx) => {
+                              const isCompleted = phase.status === "completed";
+                              const isInProgress = phase.status === "in-progress";
+                              const isSelected = selectedPhaseId === phase.id;
+                              const milestoneCount = phase.milestones ? phase.milestones.length : 0;
+                              const completedMilestones = phase.milestones ? phase.milestones.filter((m) => m.completed).length : 0;
+                              const prevPhase = idx > 0 ? projectPhases[idx - 1] : null;
+                              const isBlocked = !isCompleted && !isInProgress && prevPhase && prevPhase.status !== "completed";
+                              const isLast = idx === projectPhases.length - 1;
+
+                              return (
+                                <React.Fragment key={phase.id}>
+                                  {/* Phase Card */}
+                                  <div
+                                    onClick={() => setSelectedPhaseId(isSelected ? null : phase.id)}
+                                    className={`flex-shrink-0 w-[160px] p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between min-h-[148px] group relative ${
+                                      isSelected
+                                        ? "bg-white dark:bg-zinc-900 ring-2 ring-[#7C3AED] dark:ring-violet-500 border-transparent shadow-xs"
+                                        : isCompleted || isInProgress
+                                        ? "bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-700"
+                                        : "bg-slate-50/60 dark:bg-zinc-850/40 border-slate-200/60 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-850 hover:border-slate-300"
+                                    }`}
+                                  >
+                                    <div>
+                                      {/* Header row: step index + status toggle */}
+                                      <div className="flex items-center justify-between gap-1 mb-2.5">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            {String(idx + 1).padStart(2, "0")}
+                                          </span>
+                                          {isBlocked && (
+                                            <span
+                                              className="w-2 h-2 rounded-full bg-amber-400 block shrink-0"
+                                              title={`Blocked: Depends on Phase ${String(idx).padStart(2, "0")} (${prevPhase.label}) completion`}
+                                            />
+                                          )}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
+                                          className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+                                          title="Advance phase status"
+                                        >
+                                          {isCompleted ? (
+                                            <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-500" />
+                                          ) : isInProgress ? (
+                                            <span className="w-2 h-2 rounded-full bg-[#7C3AED] dark:bg-violet-400 block" />
+                                          ) : (
+                                            <Circle size={13} className="text-slate-300 dark:text-zinc-600" />
+                                          )}
+                                        </button>
+                                      </div>
+
+                                      {/* Phase name & description */}
+                                      <div className="space-y-1">
+                                        <h3 className={`text-[13px] font-semibold leading-tight ${
+                                          isSelected
+                                            ? "text-[#7C3AED] dark:text-violet-300 font-bold"
+                                            : isCompleted || isInProgress
+                                            ? "text-slate-900 dark:text-zinc-100"
+                                            : "text-slate-600 dark:text-zinc-400"
+                                        }`}>
+                                          {phase.label}
+                                        </h3>
+                                        {phase.description && (
+                                          <p className="text-[10.5px] text-slate-400 dark:text-zinc-500 leading-relaxed line-clamp-2 m-0">
+                                            {phase.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Footer: milestones + reorder controls */}
+                                    <div className="pt-2.5 mt-auto border-t border-slate-100 dark:border-white/[0.04] flex items-center justify-between text-[10.5px] text-slate-400">
+                                      <span>
+                                        {milestoneCount > 0 ? `${completedMilestones}/${milestoneCount}` : "—"}
                                       </span>
-                                    )}
+                                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {idx > 0 && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => handleMovePhase(idx, -1, e)}
+                                            className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent"
+                                            title="Move earlier"
+                                          >
+                                            <ArrowUp size={10} />
+                                          </button>
+                                        )}
+                                        {idx < projectPhases.length - 1 && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => handleMovePhase(idx, 1, e)}
+                                            className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent"
+                                            title="Move later"
+                                          >
+                                            <ArrowDown size={10} />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
-                                    className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
-                                    title="Advance phase status"
-                                  >
-                                    {isCompleted ? (
-                                      <CheckCircle2 size={15} className="text-emerald-500" />
-                                    ) : isInProgress ? (
-                                      <span className="w-2 h-2 rounded-full bg-[#7C3AED] dark:bg-violet-400 block" />
-                                    ) : (
-                                      <Circle size={14} className="text-slate-300 dark:text-zinc-600" />
-                                    )}
-                                  </button>
-                                </div>
-
-                                {/* Phase Name & Description */}
-                                <div className="space-y-0.5">
-                                  <h3 className={`text-[13px] font-semibold truncate ${
-                                    isSelected
-                                      ? "text-[#7C3AED] dark:text-violet-300 font-bold"
-                                      : isCompleted || isInProgress
-                                      ? "text-slate-900 dark:text-zinc-100"
-                                      : "text-slate-600 dark:text-zinc-400"
-                                  }`}>
-                                    {phase.label}
-                                  </h3>
-                                  {phase.description && (
-                                    <p className="text-[11px] text-slate-400 line-clamp-1 m-0">
-                                      {phase.description}
-                                    </p>
+                                  {/* Connector arrow between phases (not after last) */}
+                                  {!isLast && (
+                                    <div className="flex items-center self-center flex-shrink-0 px-1">
+                                      <ChevronRight
+                                        size={14}
+                                        className={isCompleted ? "text-emerald-500 dark:text-emerald-400" : "text-slate-300 dark:text-zinc-700"}
+                                      />
+                                    </div>
                                   )}
-                                </div>
-                              </div>
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
 
-                              {/* Footer: Date Range & Milestone Telemetry */}
-                              <div className="pt-2 mt-2 border-t border-slate-100 dark:border-white/[0.04] flex items-center justify-between text-[10.5px] text-slate-400">
-                                <span>
-                                  {milestoneCount > 0 ? `${completedMilestones}/${milestoneCount} milestones` : "No milestones"}
-                                </span>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  {idx > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => handleMovePhase(idx, -1, e)}
-                                      className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent"
-                                      title="Move earlier"
-                                    >
-                                      <ArrowUp size={11} />
-                                    </button>
-                                  )}
-                                  {idx < projectPhases.length - 1 && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => handleMovePhase(idx, 1, e)}
-                                      className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent"
-                                      title="Move later"
-                                    >
-                                      <ArrowDown size={11} />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                          <div className="text-[11px] text-slate-400 flex items-center justify-between px-1 pt-1">
+                            <span>Click any phase to inspect milestones, deliverables, and dates.</span>
+                          </div>
+                        </>
 
-                      <div className="text-[11px] text-slate-400 flex items-center justify-between px-1 pt-1">
-                        <span>Click any phase card to inspect its milestones, deliverables, and dates.</span>
-                        <span>Drag & order controls appear on phase hover.</span>
-                      </div>
+                      )}
                     </div>
                   )}
 
                   {/* VIEW 2: TIMELINE (CHRONOLOGICAL / GANTT) */}
                   {roadmapViewMode === "timeline" && (
                     <div className="space-y-3 pt-1">
-                      <div className="rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-800/80">
-                        {projectPhases.map((phase, idx) => (
-                          <div
-                            key={phase.id}
-                            onClick={() => setSelectedPhaseId(phase.id)}
-                            className="p-3 flex items-center justify-between hover:bg-slate-50/70 dark:hover:bg-zinc-850/50 cursor-pointer transition-colors"
+                      {projectPhases.length === 0 ? (
+                        <div className="py-12 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-white/60 dark:bg-zinc-900/30">
+                          <GanttChartSquare size={22} className="text-slate-400 mb-2" />
+                          <p className="text-[13.5px] font-medium text-slate-700 dark:text-zinc-300">
+                            No timeline milestones to display
+                          </p>
+                          <p className="text-[12px] text-slate-400 max-w-sm mt-0.5 mb-4">
+                            Timeline tracks dates across sequential delivery phases. Add phases to build your schedule.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setIsAiRoadmapModalOpen(true)}
+                            className="h-8 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
                           >
-                            <div className="flex items-center gap-3 min-w-[200px]">
-                              <span className="text-[11px] font-mono text-slate-400">Phase 0{idx + 1}</span>
-                              <div className="min-w-0">
-                                <div className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate">
-                                  {phase.label}
-                                </div>
-                                <div className="text-[10.5px] text-slate-400">
-                                  {phase.startDate || "TBD"} → {phase.endDate || "TBD"}
+                            <RegaarderAiIcon size={12} strokeWidth={1.8} />
+                            <span>Plan with AI Planner</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-800/80">
+                          {projectPhases.map((phase, idx) => (
+                            <div
+                              key={phase.id}
+                              onClick={() => setSelectedPhaseId(phase.id)}
+                              className="p-3 flex items-center justify-between hover:bg-slate-50/70 dark:hover:bg-zinc-850/50 cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center gap-3 min-w-[200px]">
+                                <span className="text-[11px] font-mono text-slate-400">Phase 0{idx + 1}</span>
+                                <div className="min-w-0">
+                                  <div className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate">
+                                    {phase.label}
+                                  </div>
+                                  <div className="text-[10.5px] text-slate-400">
+                                    {phase.startDate || "TBD"} → {phase.endDate || "TBD"}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            {/* Chronological Track Bar */}
-                            <div className="flex-1 max-w-md mx-6 hidden sm:block">
-                              <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{
-                                    width: phase.status === "completed" ? "100%" : phase.status === "in-progress" ? "55%" : "10%",
-                                    backgroundColor: phase.status === "completed" ? "#10B981" : phase.status === "in-progress" ? (activeProject.color || "#7C3AED") : "#94A3B8"
-                                  }}
-                                />
+                              {/* Chronological Track Bar */}
+                              <div className="flex-1 max-w-md mx-6 hidden sm:block">
+                                <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all"
+                                    style={{
+                                      width: phase.status === "completed" ? "100%" : phase.status === "in-progress" ? "55%" : "10%",
+                                      backgroundColor: phase.status === "completed" ? "#10B981" : phase.status === "in-progress" ? (activeProject.color || "#7C3AED") : "#94A3B8"
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10.5px] font-medium capitalize px-2 py-0.5 rounded-md ${
+                                  phase.status === "completed"
+                                    ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
+                                    : phase.status === "in-progress"
+                                    ? "bg-violet-50 dark:bg-violet-950/60 text-[#7C3AED] dark:text-violet-300"
+                                    : "bg-slate-100 dark:bg-zinc-800 text-slate-500"
+                                }`}>
+                                  {phase.status.replace("-", " ")}
+                                </span>
                               </div>
                             </div>
-
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[10.5px] font-medium capitalize px-2 py-0.5 rounded-md ${
-                                phase.status === "completed"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
-                                  : phase.status === "in-progress"
-                                  ? "bg-violet-50 dark:bg-violet-950/60 text-[#7C3AED] dark:text-violet-300"
-                                  : "bg-slate-100 dark:bg-zinc-800 text-slate-500"
-                              }`}>
-                                {phase.status.replace("-", " ")}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* VIEW 3: BOARD (KANBAN-STYLE COLUMNS) */}
                   {roadmapViewMode === "board" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-                      {[
-                        { id: "completed", label: "Completed", color: "text-emerald-500" },
-                        { id: "in-progress", label: "In Progress", color: "text-[#7C3AED]" },
-                        { id: "upcoming", label: "Upcoming", color: "text-slate-400" }
-                      ].map((col) => {
-                        const colPhases = projectPhases.filter((p) => p.status === col.id);
-                        return (
-                          <div
-                            key={col.id}
-                            className="p-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3"
+                    <div className="space-y-3 pt-1">
+                      {projectPhases.length === 0 ? (
+                        <div className="py-12 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-white/60 dark:bg-zinc-900/30">
+                          <Kanban size={22} className="text-slate-400 mb-2" />
+                          <p className="text-[13.5px] font-medium text-slate-700 dark:text-zinc-300">
+                            No phases on the board
+                          </p>
+                          <p className="text-[12px] text-slate-400 max-w-sm mt-0.5 mb-4">
+                            Phases are organized across Completed, In Progress, and Upcoming status lanes.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setIsAiRoadmapModalOpen(true)}
+                            className="h-8 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
                           >
-                            <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.04]">
-                              <span className="text-[12px] font-semibold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${col.id === 'completed' ? 'bg-emerald-500' : col.id === 'in-progress' ? 'bg-[#7C3AED]' : 'bg-slate-400'}`} />
-                                {col.label}
-                              </span>
-                              <span className="text-[11px] font-medium text-slate-400">
-                                {colPhases.length}
-                              </span>
-                            </div>
-
-                            <div className="space-y-2">
-                              {colPhases.length === 0 ? (
-                                <div className="py-6 text-center text-[11px] text-slate-400 italic">
-                                  No phases in this column
+                            <RegaarderAiIcon size={12} strokeWidth={1.8} />
+                            <span>Plan with AI Planner</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                          {[
+                            { id: "completed", label: "Completed", color: "text-emerald-500" },
+                            { id: "in-progress", label: "In Progress", color: "text-[#7C3AED]" },
+                            { id: "upcoming", label: "Upcoming", color: "text-slate-400" }
+                          ].map((col) => {
+                            const colPhases = projectPhases.filter((p) => p.status === col.id);
+                            return (
+                              <div
+                                key={col.id}
+                                className="p-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3"
+                              >
+                                <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.04]">
+                                  <span className="text-[12px] font-semibold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${col.id === 'completed' ? 'bg-emerald-500' : col.id === 'in-progress' ? 'bg-[#7C3AED]' : 'bg-slate-400'}`} />
+                                    {col.label}
+                                  </span>
+                                  <span className="text-[11px] font-medium text-slate-400">
+                                    {colPhases.length}
+                                  </span>
                                 </div>
-                              ) : (
-                                colPhases.map((phase) => (
-                                  <div
-                                    key={phase.id}
-                                    onClick={() => setSelectedPhaseId(phase.id)}
-                                    className="p-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-850 hover:bg-white dark:hover:bg-zinc-800 shadow-2xs cursor-pointer transition-all space-y-1.5"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                                        {phase.label}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
-                                        className="text-[10px] text-slate-400 hover:text-slate-700 cursor-pointer border-none bg-transparent"
+
+                                <div className="space-y-2">
+                                  {colPhases.length === 0 ? (
+                                    <div className="py-6 text-center text-[11px] text-slate-400 italic">
+                                      No phases in this column
+                                    </div>
+                                  ) : (
+                                    colPhases.map((phase) => (
+                                      <div
+                                        key={phase.id}
+                                        onClick={() => setSelectedPhaseId(phase.id)}
+                                        className="p-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-850 hover:bg-white dark:hover:bg-zinc-800 shadow-2xs cursor-pointer transition-all space-y-1.5"
                                       >
-                                        Advance
-                                      </button>
-                                    </div>
-                                    {phase.description && (
-                                      <p className="text-[11px] text-slate-400 line-clamp-2 m-0">
-                                        {phase.description}
-                                      </p>
-                                    )}
-                                    <div className="text-[10.5px] text-slate-400 pt-1">
-                                      {phase.milestones?.length || 0} milestones
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                            {phase.label}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
+                                            className="text-[10px] text-slate-400 hover:text-slate-700 cursor-pointer border-none bg-transparent"
+                                          >
+                                            Advance
+                                          </button>
+                                        </div>
+                                        {phase.description && (
+                                          <p className="text-[11px] text-slate-400 line-clamp-2 m-0">
+                                            {phase.description}
+                                          </p>
+                                        )}
+                                        <div className="text-[10.5px] text-slate-400 pt-1">
+                                          {phase.milestones?.length || 0} milestones
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1299,44 +1455,59 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                     </div>
 
                     <div className="space-y-2">
-                      {projectGoals.map((goal) => (
-                        <div
-                          key={goal.id}
-                          className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/80 hover:bg-slate-50/80 dark:hover:bg-zinc-800/50 transition-colors group"
-                        >
-                          <div
-                            onClick={() => handleToggleGoal(goal.id)}
-                            className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1"
-                          >
-                            <button
-                              type="button"
-                              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors cursor-pointer border-none ${
-                                goal.completed
-                                  ? "bg-emerald-500 text-white"
-                                  : "border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-transparent"
-                              }`}
-                            >
-                              <Check size={11} strokeWidth={3} />
-                            </button>
-                            <span className={`text-[12.5px] truncate ${
-                              goal.completed
-                                ? "line-through text-slate-400 dark:text-zinc-500"
-                                : "text-slate-700 dark:text-zinc-200 font-medium"
-                            }`}>
-                              {goal.text}
-                            </span>
-                          </div>
-
+                      {projectGoals.length === 0 && !isAddingGoal ? (
+                        <div className="py-4 px-3 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center">
+                          <p className="text-[12px] text-slate-400 dark:text-zinc-500 m-0">
+                            No milestone goals defined yet.
+                          </p>
                           <button
                             type="button"
-                            onClick={() => handleDeleteGoal(goal.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity cursor-pointer border-none bg-transparent"
-                            title="Remove goal"
+                            onClick={() => setIsAddingGoal(true)}
+                            className="mt-1.5 text-[11.5px] text-[#7C3AED] dark:text-violet-400 font-medium hover:underline cursor-pointer border-none bg-transparent"
                           >
-                            <X size={12} />
+                            + Add initial goal
                           </button>
                         </div>
-                      ))}
+                      ) : (
+                        projectGoals.map((goal) => (
+                          <div
+                            key={goal.id}
+                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-zinc-800/80 hover:bg-slate-50/80 dark:hover:bg-zinc-800/50 transition-colors group"
+                          >
+                            <div
+                              onClick={() => handleToggleGoal(goal.id)}
+                              className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1"
+                            >
+                              <button
+                                type="button"
+                                className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors cursor-pointer border-none ${
+                                  goal.completed
+                                    ? "bg-emerald-500/90 text-white shadow-2xs"
+                                    : "border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-transparent"
+                                }`}
+                              >
+                                <Check size={10} strokeWidth={2.2} />
+                              </button>
+                              <span className={`text-[12.5px] truncate ${
+                                goal.completed
+                                  ? "line-through text-slate-400 dark:text-zinc-500"
+                                  : "text-slate-700 dark:text-zinc-200 font-medium"
+                              }`}>
+                                {goal.text}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGoal(goal.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity cursor-pointer border-none bg-transparent"
+                              title="Remove goal"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))
+                      )}
 
                       {isAddingGoal && (
                         <form onSubmit={handleAddGoal} className="flex items-center gap-2 pt-1">
@@ -1386,14 +1557,14 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                           Edit
                         </button>
                       </div>
-                      <p className="text-[12.5px] text-slate-600 dark:text-zinc-300 leading-relaxed m-0 bg-slate-50 dark:bg-zinc-850 p-3.5 rounded-xl border border-slate-100 dark:border-white/[0.04]">
+                      <p className="text-[12px] text-slate-600 dark:text-zinc-300 leading-relaxed m-0 bg-slate-50/80 dark:bg-zinc-850/60 p-3.5 rounded-xl border border-slate-100 dark:border-white/[0.04]">
                         {activeProject.customInstructions || activeProject.description || "No custom instructions defined yet. Regaarder AI leverages standard workspace conventions for files in this project."}
                       </p>
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-[11.5px] text-slate-400">
                       <span>Collaborators: {projectMembers.length}</span>
-                      <span>Updated {new Date(activeProject.updatedAt).toLocaleDateString()}</span>
+                      <span>Updated {new Date(activeProject.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                     </div>
                   </div>
                 </div>
@@ -1654,51 +1825,71 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                   </button>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-white dark:bg-zinc-900 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-800 shadow-2xs">
-                  {projectMembers.map((m) => (
-                    <div key={m.id} className="p-3.5 flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
-                          style={{ backgroundColor: m.avatarColor || activeProject.color || "#7C3AED" }}
-                        >
-                          {(m.name || "U").slice(0, 1).toUpperCase()}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                            {m.name}
-                          </div>
-                          <div className="text-[11px] text-slate-400 truncate">
-                            {m.email || "Workspace User"}
+                {projectMembers.length === 0 ? (
+                  <div className="py-12 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-slate-50/50 dark:bg-zinc-900/20">
+                    <Users size={24} className="text-slate-400 mb-2" />
+                    <p className="text-[13.5px] font-medium text-slate-700 dark:text-zinc-300">
+                      No members assigned to this project yet
+                    </p>
+                    <p className="text-[11.5px] text-slate-400 max-w-sm mt-0.5 mb-4">
+                      Invite team members to collaborate on tasks, roadmaps, and documents.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsInviteMemberModalOpen(true)}
+                      className="h-8 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs"
+                    >
+                      <UserPlus size={13} />
+                      <span>Invite first member</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-white dark:bg-zinc-900 overflow-hidden divide-y divide-slate-100 dark:divide-zinc-800 shadow-2xs">
+                    {projectMembers.map((m) => (
+                      <div key={m.id} className="p-3.5 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
+                            style={{ backgroundColor: m.avatarColor || activeProject.color || "#7C3AED" }}
+                          >
+                            {(m.name || "U").slice(0, 1).toUpperCase()}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                              {m.name}
+                            </div>
+                            <div className="text-[11px] text-slate-400 truncate">
+                              {m.email || "Workspace User"}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className={`text-[11px] font-semibold capitalize px-2 py-0.5 rounded-lg ${
-                          m.role === "owner"
-                            ? "bg-violet-100 dark:bg-violet-950/60 text-[#7C3AED] dark:text-violet-300"
-                            : m.role === "editor"
-                            ? "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"
-                            : "bg-slate-50 dark:bg-zinc-850 text-slate-500"
-                        }`}>
-                          {m.role}
-                        </span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`text-[11px] font-semibold capitalize px-2 py-0.5 rounded-lg ${
+                            m.role === "owner"
+                              ? "bg-violet-100 dark:bg-violet-950/60 text-[#7C3AED] dark:text-violet-300"
+                              : m.role === "editor"
+                              ? "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"
+                              : "bg-slate-50 dark:bg-zinc-850 text-slate-500"
+                          }`}>
+                            {m.role}
+                          </span>
 
-                        {m.role !== "owner" && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveMember(m.id)}
-                            className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer border-none bg-transparent"
-                            title="Remove member"
-                          >
-                            <X size={13} />
-                          </button>
-                        )}
+                          {m.role !== "owner" && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(m.id)}
+                              className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer border-none bg-transparent"
+                              title="Remove member"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1758,8 +1949,14 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                               {proj.name}
                             </h3>
                             <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              <span>{activePhase?.label || "Research"}</span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                activePhase?.status === "completed"
+                                  ? "bg-emerald-500"
+                                  : activePhase?.status === "in-progress"
+                                  ? "bg-[#7C3AED] dark:bg-violet-400"
+                                  : "bg-slate-300 dark:bg-zinc-600"
+                              }`} />
+                              <span>{activePhase?.label || "Discovery"}</span>
                             </div>
                           </div>
                         </div>
@@ -2034,94 +2231,146 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-[620px] bg-white dark:bg-[#1C1C1F] rounded-2xl shadow-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden flex flex-col p-6 space-y-4"
+            className="w-full max-w-[580px] bg-white dark:bg-[#1C1C1F] rounded-2xl shadow-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden flex flex-col p-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <RegaarderAiIcon size={18} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-400" />
-                <h3 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100">
-                  AI Roadmap Assistant
+                <h3 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                  AI Planner
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAiRoadmapModalOpen(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors"
               >
                 <X size={15} />
               </button>
             </div>
 
-            <p className="text-[12px] text-slate-500 dark:text-zinc-400 m-0">
-              Regaarder AI synthesized a structured roadmap proposal based on your project goals and memory directives. Review the suggested sequence before updating your roadmap.
-            </p>
+            {/* Step 1: Input & Context Prompt (Progressive Disclosure) */}
+            <div className="space-y-2">
+              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300 block">
+                What do you want to achieve with <span className="font-semibold text-slate-900 dark:text-zinc-100">{activeProject.name}</span>?
+              </label>
+              <div className="relative">
+                <textarea
+                  value={aiPromptInput}
+                  onChange={(e) => setAiPromptInput(e.target.value)}
+                  placeholder="Describe your primary goals, timeline constraints, or target deliverables..."
+                  rows={3}
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-850/60 text-xs text-slate-900 dark:text-zinc-100 outline-none focus:border-slate-400 dark:focus:border-zinc-500 placeholder:text-slate-400 resize-none transition-colors leading-relaxed"
+                />
+              </div>
+              {/* Quick Prompt Starters */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {[
+                  "4-week MVP launch",
+                  "Iterative design & user feedback",
+                  "Production hardening & security"
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setAiPromptInput(tag)}
+                    className="px-2.5 py-1 rounded-md text-[11px] font-normal text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-750 transition-colors cursor-pointer border-none"
+                  >
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
 
+            {/* Step 2 & 3: Loading or Generated Proposal Preview */}
             {isGeneratingAiRoadmap ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center space-y-2.5">
-                <RefreshCw size={24} className="text-[#7C3AED] animate-spin" />
-                <span className="text-[13px] font-medium text-slate-700 dark:text-zinc-300">
-                  Synthesizing contextual project roadmap...
+              <div className="py-10 flex flex-col items-center justify-center text-center space-y-2.5 bg-slate-50/50 dark:bg-zinc-850/30 rounded-xl border border-slate-100 dark:border-zinc-800">
+                <RefreshCw size={22} className="text-[#7C3AED] animate-spin" />
+                <span className="text-[12.5px] font-medium text-slate-700 dark:text-zinc-300">
+                  Synthesizing phased execution plan...
+                </span>
+                <span className="text-[11px] text-slate-400 max-w-xs">
+                  Analyzing project directives, scope boundaries, and milestones
                 </span>
               </div>
             ) : aiRoadmapProposal ? (
-              <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1 custom-scrollbar">
-                {aiRoadmapProposal.map((phase, idx) => (
-                  <div
-                    key={phase.id || idx}
-                    className="p-3 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-850/60 space-y-1"
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
+                  <span>Proposed Phased Roadmap ({aiRoadmapProposal.length} phases)</span>
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateAiRoadmap(aiPromptInput)}
+                    className="text-[#7C3AED] dark:text-violet-400 hover:underline flex items-center gap-1 cursor-pointer border-none bg-transparent font-medium"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12.5px] font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
-                        <span className="text-[10px] uppercase font-mono text-[#7C3AED] dark:text-violet-400">Phase 0{idx + 1}</span>
-                        <span>{phase.label}</span>
-                      </span>
-                      <span className="text-[11px] text-slate-400 capitalize">
-                        {phase.status || "upcoming"}
-                      </span>
-                    </div>
-                    {phase.description && (
-                      <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 m-0">
-                        {phase.description}
-                      </p>
-                    )}
-                    {phase.milestones && phase.milestones.length > 0 && (
-                      <div className="pt-1 text-[11px] text-slate-400">
-                        Deliverables: {phase.milestones.map(m => m.title).join(" • ")}
+                    <RefreshCw size={11} />
+                    <span>Regenerate</span>
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
+                  {aiRoadmapProposal.map((phase, idx) => (
+                    <div
+                      key={phase.id || idx}
+                      className="p-3 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-850/60 space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12.5px] font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold text-slate-400">0{idx + 1}</span>
+                          <span>{phase.label}</span>
+                        </span>
+                        <span className="text-[10.5px] text-slate-400 capitalize">
+                          {phase.status || "upcoming"}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {phase.description && (
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 m-0 leading-normal">
+                          {phase.description}
+                        </p>
+                      )}
+                      {phase.milestones && phase.milestones.length > 0 && (
+                        <div className="pt-1 text-[10.5px] text-slate-400 truncate">
+                          <span className="font-medium text-slate-500 dark:text-zinc-400">Milestones: </span>
+                          {phase.milestones.map((m) => m.title).join(" • ")}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : null}
 
+            {/* Modal Actions Footer */}
             <div className="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-white/[0.04]">
               <button
                 type="button"
-                onClick={handleGenerateAiRoadmap}
-                disabled={isGeneratingAiRoadmap}
-                className="text-[12px] font-medium text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                onClick={() => setIsAiRoadmapModalOpen(false)}
+                className="px-3 h-8 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer border-none bg-transparent transition-colors"
               >
-                <RefreshCw size={12} className={isGeneratingAiRoadmap ? "animate-spin" : ""} />
-                <span>Regenerate</span>
+                Cancel
               </button>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAiRoadmapModalOpen(false)}
-                  className="px-3.5 h-8 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 cursor-pointer border-none bg-transparent"
-                >
-                  Discard
-                </button>
-                <button
-                  type="button"
-                  disabled={!aiRoadmapProposal || isGeneratingAiRoadmap}
-                  onClick={handleApplyAiRoadmapProposal}
-                  className="px-4 h-8 rounded-lg bg-[#7C3AED] hover:bg-violet-700 text-white text-xs font-semibold disabled:opacity-40 cursor-pointer border-none shadow-xs"
-                >
-                  Apply Roadmap
-                </button>
+                {!aiRoadmapProposal ? (
+                  <button
+                    type="button"
+                    disabled={isGeneratingAiRoadmap}
+                    onClick={() => handleGenerateAiRoadmap(aiPromptInput)}
+                    className="px-4 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-none shadow-xs disabled:opacity-40 transition-all"
+                  >
+                    <RegaarderAiIcon size={13} strokeWidth={1.8} className="text-[#7C3AED] dark:text-violet-500" />
+                    <span>Generate Roadmap</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isGeneratingAiRoadmap}
+                    onClick={handleApplyAiRoadmapProposal}
+                    className="px-4 h-8 rounded-lg bg-[#7C3AED] hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-none shadow-xs disabled:opacity-40 transition-all"
+                  >
+                    <span>Apply Roadmap</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, X, Send, Check, Users, Folder } from 'lucide-react';
 import { getRegistryUsers } from '../../services/relayAccountService';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
+import { getProjectIconComponent } from './CreateProjectModal';
 
 /**
  * ShareProjectToRelayModal
@@ -163,19 +164,28 @@ export default function ShareProjectToRelayModal({
         </div>
 
         {/* Project Preview Snippet */}
-        <div className="p-3.5 mx-4 mt-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-white/[0.06] flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-2xs"
-            style={{ backgroundColor: project.color || '#7C3AED' }}
-          >
-            <Folder size={17} strokeWidth={2} />
-          </div>
+        <div className="p-3 mx-4 mt-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-white/[0.06] flex items-center gap-3">
+          {(() => {
+            const IconComp = getProjectIconComponent(project.icon);
+            return (
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+                <IconComp
+                  size={20}
+                  strokeWidth={1.6}
+                  style={{
+                    color: project.color || '#7C3AED',
+                    fill: project.color || '#7C3AED'
+                  }}
+                />
+              </div>
+            );
+          })()}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+              <h4 className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
                 {project.name}
               </h4>
-              <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-200/70 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300">
                 Project
               </span>
             </div>
@@ -197,8 +207,7 @@ export default function ShareProjectToRelayModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search contacts, channels, or AI assistants..."
-              className="w-full h-9 pl-10 pr-3.5 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400/90 focus:outline-none focus:ring-2 focus:ring-violet-500/20 border border-transparent focus:border-slate-200 dark:focus:border-zinc-700 transition-all"
-              autoFocus
+              className="w-full h-9 pl-10 pr-3.5 rounded-xl bg-slate-100/80 dark:bg-zinc-800/80 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400/90 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-zinc-600 border border-transparent focus:border-slate-200 dark:focus:border-zinc-700 transition-all"
             />
           </div>
         </div>
@@ -220,15 +229,15 @@ export default function ShareProjectToRelayModal({
                   onClick={() => toggleRecipient(recipient.id)}
                   className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-100'
-                      : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-800 dark:text-zinc-200'
+                      ? 'bg-slate-100/90 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100'
+                      : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-zinc-300'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className={`w-7.5 h-7.5 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 ${
                         recipient.isAi
-                          ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white'
+                          ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
                           : recipient.color
                           ? 'text-white'
                           : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200'
@@ -240,13 +249,13 @@ export default function ShareProjectToRelayModal({
                       }
                     >
                       {recipient.isAi ? (
-                        <RegaarderAiIcon size={14} strokeWidth={2.0} />
+                        <RegaarderAiIcon size={13} strokeWidth={1.8} />
                       ) : (
                         recipient.avatar
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold truncate leading-tight">
+                      <p className="text-xs font-medium truncate leading-tight">
                         {recipient.name}
                       </p>
                       <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
@@ -256,13 +265,13 @@ export default function ShareProjectToRelayModal({
                   </div>
 
                   <div
-                    className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-colors ${
+                    className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
                       isSelected
-                        ? 'bg-violet-600 border-violet-600 text-white'
+                        ? 'bg-slate-900 dark:bg-zinc-100 border-slate-900 dark:border-zinc-100 text-white dark:text-zinc-900'
                         : 'border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
                     }`}
                   >
-                    {isSelected && <Check size={11} strokeWidth={3} />}
+                    {isSelected && <Check size={10} strokeWidth={3} />}
                   </div>
                 </div>
               );
@@ -277,7 +286,7 @@ export default function ShareProjectToRelayModal({
             value={shareNote}
             onChange={(e) => setShareNote(e.target.value)}
             placeholder="Add an optional message..."
-            className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+            className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-zinc-600"
           />
         </div>
 
@@ -287,7 +296,7 @@ export default function ShareProjectToRelayModal({
             {selectedRecipientIds.length === 0 ? (
               <span>Select who to send to</span>
             ) : (
-              <span className="font-semibold text-violet-600 dark:text-violet-400">
+              <span className="font-medium text-slate-700 dark:text-zinc-300">
                 {selectedRecipientIds.length} recipient
                 {selectedRecipientIds.length > 1 ? 's' : ''} selected
               </span>
@@ -306,7 +315,7 @@ export default function ShareProjectToRelayModal({
               type="button"
               disabled={selectedRecipientIds.length === 0}
               onClick={handleSend}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xs transition-all cursor-pointer border-none"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xs transition-all cursor-pointer border-none"
             >
               <Send size={12} />
               <span>Share</span>

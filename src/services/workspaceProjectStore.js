@@ -11,6 +11,20 @@ const LEGACY_SAMPLE_IDS = new Set([
   "proj_deck_prediction"
 ]);
 
+/**
+ * Phase IDs that were seeded by DEFAULT_ROADMAP_PHASES before the empty-state system was
+ * introduced. Any project whose entire phases array consists exclusively of these IDs was
+ * auto-populated — not hand-authored — and should be migrated to an empty phases list so
+ * the proper empty-state UI renders on first load.
+ */
+const LEGACY_PLACEHOLDER_PHASE_IDS = new Set([
+  "phase-research",
+  "phase-design",
+  "phase-dev",
+  "phase-testing",
+  "phase-launch"
+]);
+
 export const readWorkspaceProjects = () => {
   if (typeof window === 'undefined') return [];
   try {
@@ -21,13 +35,29 @@ export const readWorkspaceProjects = () => {
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    
+
     // Purge legacy hardcoded demo projects so user only sees their own created projects
     const userOnly = parsed.filter((p) => p && !LEGACY_SAMPLE_IDS.has(p.id));
-    if (userOnly.length !== parsed.length) {
-      window.localStorage.setItem(WORKSPACE_PROJECTS_STORAGE_KEY, JSON.stringify(userOnly));
+
+    // One-time migration: strip projects whose phases array consists entirely of the
+    // legacy auto-seeded placeholder IDs — these were never user-authored phases.
+    let needsSave = userOnly.length !== parsed.length;
+    const migrated = userOnly.map((p) => {
+      if (
+        Array.isArray(p.phases) &&
+        p.phases.length > 0 &&
+        p.phases.every((ph) => LEGACY_PLACEHOLDER_PHASE_IDS.has(ph.id))
+      ) {
+        needsSave = true;
+        return { ...p, phases: [] };
+      }
+      return p;
+    });
+
+    if (needsSave) {
+      window.localStorage.setItem(WORKSPACE_PROJECTS_STORAGE_KEY, JSON.stringify(migrated));
     }
-    return userOnly;
+    return migrated;
   } catch (_) {
     return [];
   }
@@ -127,9 +157,9 @@ export const createProject = ({
     customInstructions: customInstructions.trim(),
     color: color || "#7C3AED",
     icon: icon || "folder",
-    phases: phases || DEFAULT_ROADMAP_PHASES,
+    phases: Array.isArray(phases) ? phases : (phases || []),
     goals: goals || [
-      { id: `goal_${Date.now()}_1`, text: "Define core scope and product requirements", completed: true },
+      { id: `goal_${Date.now()}_1`, text: "Define core scope and product requirements", completed: false },
       { id: `goal_${Date.now()}_2`, text: "Create draft designs and interactive prototypes", completed: false },
       { id: `goal_${Date.now()}_3`, text: "Prepare delivery assets and launch review", completed: false }
     ],

@@ -11,7 +11,6 @@ import {
   Globe,
   Shield,
   Terminal,
-  Sparkles,
   Kanban,
   Check
 } from "lucide-react";
