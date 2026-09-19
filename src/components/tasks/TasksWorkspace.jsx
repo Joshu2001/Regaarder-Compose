@@ -5,6 +5,7 @@ import {
   Search,
   Filter,
   CheckCircle2,
+  CheckCircle,
   Circle,
   Calendar,
   Flag,
@@ -201,51 +202,60 @@ function AppleMiniDatePicker({ value, onSelect, onClose, showTimeInput = false, 
   );
 }
 
+const SAMPLE_TASKS = [
+  {
+    id: "sample-task-1",
+    title: "Review Q3 financial report with accounting team",
+    completed: false,
+    category: "user",
+    priority: "high",
+    dueDate: "Today",
+    location: "Workspace / Sheets"
+  },
+  {
+    id: "sample-task-2",
+    title: "Finalize brand design refresh slides for keynote",
+    completed: false,
+    category: "user",
+    priority: "urgent",
+    dueDate: "Tomorrow",
+    location: "Workspace / Decks"
+  },
+  {
+    id: "sample-task-3",
+    title: "Synthesize customer interviews and transcript highlights",
+    completed: false,
+    category: "agent",
+    priority: "medium",
+    dueDate: "Sep 16",
+    location: "Workspace / Documents"
+  },
+  {
+    id: "sample-task-4",
+    title: "Update security compliance documentation for ISO audit",
+    completed: true,
+    category: "team",
+    priority: "low",
+    dueDate: "Sep 12",
+    location: "Workspace / Documents"
+  }
+];
+
 export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
   const [tasks, setTasks] = useState(() => {
     try {
       const stored = localStorage.getItem("rc.workspaceTasks");
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return [
-      {
-        id: "task-1",
-        title: "Review Q3 financial report with accounting team",
-        completed: false,
-        category: "user",
-        priority: "high",
-        dueDate: "Today",
-        location: "Workspace / Sheets"
-      },
-      {
-        id: "task-2",
-        title: "Finalize brand design refresh slides for keynote",
-        completed: false,
-        category: "user",
-        priority: "urgent",
-        dueDate: "Tomorrow",
-        location: "Workspace / Decks"
-      },
-      {
-        id: "task-3",
-        title: "Synthesize customer interviews and transcript highlights",
-        completed: false,
-        category: "agent",
-        priority: "medium",
-        dueDate: "Sep 16",
-        location: "Workspace / Documents"
-      },
-      {
-        id: "task-4",
-        title: "Update security compliance documentation for ISO audit",
-        completed: true,
-        category: "team",
-        priority: "low",
-        dueDate: "Sep 12",
-        location: "Workspace / Documents"
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
       }
-    ];
+    } catch {}
+    return [];
   });
+
+  const loadSampleTasks = () => {
+    setTasks(SAMPLE_TASKS);
+  };
 
   const [filterCategory, setFilterCategory] = useState("all"); // 'all' | 'user' | 'agent' | 'team' | 'completed'
   const [searchQuery, setSearchQuery] = useState("");
@@ -397,10 +407,10 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-              <CheckSquare className="text-violet-600 dark:text-violet-400" size={22} />
+              <CheckSquare className="text-slate-600 dark:text-zinc-300" size={22} />
               <span>Tasks</span>
             </h1>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-violet-100/70 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
               {tasks.filter((t) => !t.completed).length} active
             </span>
           </div>
@@ -518,7 +528,7 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
             <button
               type="submit"
               disabled={!newTaskInput.trim()}
-              className="px-3.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-xs font-semibold transition-all cursor-pointer border-none shadow-2xs"
+              className="px-3.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 disabled:opacity-40 text-xs font-semibold transition-all cursor-pointer border-none shadow-2xs"
             >
               Add Task
             </button>
@@ -569,8 +579,71 @@ export default function TasksWorkspace({ onBackToHome, onOpenSchedule }) {
           className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-white dark:bg-zinc-850/40 shadow-2xs divide-y divide-slate-100 dark:divide-white/[0.04]"
         >
           {filteredTasks.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 dark:text-zinc-500 text-xs">
-              No tasks found in this view.
+            <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+              <div className="w-11 h-11 rounded-2xl bg-slate-100/70 dark:bg-zinc-850/60 border border-slate-200/50 dark:border-zinc-800/60 text-slate-500 dark:text-zinc-400 flex items-center justify-center">
+                {filterCategory === "completed" ? (
+                  <CheckCircle size={20} strokeWidth={1.8} />
+                ) : (
+                  <CheckSquare size={20} strokeWidth={1.8} />
+                )}
+              </div>
+              <div className="max-w-sm space-y-1">
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                  {searchQuery.trim()
+                    ? "No tasks match your search"
+                    : filterCategory === "completed"
+                    ? "No completed tasks yet"
+                    : filterCategory === "user"
+                    ? "No personal tasks"
+                    : filterCategory === "agent"
+                    ? "No agent tasks queued"
+                    : filterCategory === "team"
+                    ? "No team deliverables"
+                    : "No tasks yet"}
+                </h4>
+                <p className="text-xs text-slate-400 dark:text-zinc-400">
+                  {searchQuery.trim()
+                    ? `No tasks found matching "${searchQuery}". Try searching for another keyword or clear the search.`
+                    : filterCategory === "completed"
+                    ? "Tasks you mark as complete will be cataloged and tracked here."
+                    : tasks.length === 0
+                    ? "Create your first task above or load an example workspace task set."
+                    : `No tasks found under ${
+                        filterCategory === "user"
+                          ? "Your Tasks"
+                          : filterCategory === "agent"
+                          ? "Agent Tasks"
+                          : "Team Tasks"
+                      }. Use the input above to add one.`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                {searchQuery.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-xs font-medium border border-slate-200/90 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer"
+                  >
+                    Clear Search
+                  </button>
+                ) : tasks.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={loadSampleTasks}
+                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-xs font-medium border border-slate-200/90 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer"
+                  >
+                    Load Example Tasks
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setFilterCategory("all")}
+                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-xs font-medium border border-slate-200/90 dark:border-zinc-700 shadow-2xs transition-all cursor-pointer"
+                  >
+                    View All Tasks
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             filteredTasks.map((task) => (
