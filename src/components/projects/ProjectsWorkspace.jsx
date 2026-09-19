@@ -132,6 +132,8 @@ export default function ProjectsWorkspace({
   const [newPhaseEnd, setNewPhaseEnd] = useState("");
   // Active date picker popover: null | 'phaseStart' | 'phaseEnd' | 'milestone'
   const [activeDatePicker, setActiveDatePicker] = useState(null);
+  // Active phase status dropdown menu (phaseId | null)
+  const [openPhaseStatusMenuId, setOpenPhaseStatusMenuId] = useState(null);
 
   // Milestone inline draft inside drawer
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
@@ -637,12 +639,13 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
       setMenuOpenId(null);
       setIsAddPhaseMenuOpen(false);
       setActiveDatePicker(null);
+      setOpenPhaseStatusMenuId(null);
     };
-    if (menuOpenId || isAddPhaseMenuOpen || activeDatePicker) {
+    if (menuOpenId || isAddPhaseMenuOpen || activeDatePicker || openPhaseStatusMenuId) {
       window.addEventListener("click", handleOutside);
       return () => window.removeEventListener("click", handleOutside);
     }
-  }, [menuOpenId, isAddPhaseMenuOpen, activeDatePicker]);
+  }, [menuOpenId, isAddPhaseMenuOpen, activeDatePicker, openPhaseStatusMenuId]);
 
   return (
     <main className="flex-1 flex flex-col h-full bg-white dark:bg-[#151518] overflow-hidden">
@@ -1021,36 +1024,77 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                                             />
                                           )}
                                         </div>
-                                        {/* Status toggle trigger button with Apple-like affordance */}
-                                        <button
-                                          type="button"
-                                          onClick={(e) => handleTogglePhaseStatus(phase.id, e)}
-                                          className={`px-2 py-0.5 rounded-full text-[10.5px] font-medium flex items-center gap-1 transition-all cursor-pointer border ${
-                                            isCompleted
-                                              ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800"
-                                              : isInProgress
-                                              ? "bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/60 dark:hover:bg-violet-900/60 text-[#7C3AED] dark:text-violet-300 border-violet-200/80 dark:border-violet-800"
-                                              : "bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-zinc-700"
-                                          }`}
-                                          title={isCompleted ? "Completed (Click to change status)" : isInProgress ? "In Progress (Click to mark completed)" : "Upcoming (Click to start phase)"}
-                                        >
-                                          {isCompleted ? (
-                                            <>
-                                              <Check size={11} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />
-                                              <span>Done</span>
-                                            </>
-                                          ) : isInProgress ? (
-                                            <>
-                                              <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] dark:bg-violet-400" />
-                                              <span>Active</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Circle size={10} className="text-slate-400" />
-                                              <span>Start</span>
-                                            </>
+                                        {/* Status Dropdown Trigger: Quiet colored indicator, expands label on hover, opens menu on click */}
+                                        <div className="relative">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenPhaseStatusMenuId(openPhaseStatusMenuId === phase.id ? null : phase.id);
+                                            }}
+                                            className={`group/status flex items-center gap-1.5 h-6 px-1.5 rounded-full border transition-all cursor-pointer ${
+                                              isCompleted
+                                                ? "bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border-emerald-200/90 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+                                                : isInProgress
+                                                ? "bg-violet-50/80 hover:bg-violet-100 dark:bg-violet-950/60 dark:hover:bg-violet-900/60 border-violet-200/90 dark:border-violet-800 text-[#7C3AED] dark:text-violet-300"
+                                                : "bg-slate-100/70 hover:bg-slate-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-750 border-slate-200/80 dark:border-zinc-700 text-slate-600 dark:text-zinc-400"
+                                            }`}
+                                            title="Change phase status"
+                                          >
+                                            {/* Colored State Indicator */}
+                                            <span
+                                              className={`w-2 h-2 rounded-full shrink-0 transition-transform group-hover/status:scale-110 ${
+                                                isCompleted
+                                                  ? "bg-emerald-500"
+                                                  : isInProgress
+                                                  ? "bg-[#7C3AED] dark:bg-violet-400"
+                                                  : "bg-slate-400 dark:bg-zinc-500"
+                                              }`}
+                                            />
+                                            {/* Status Label (reveals state text on hover with smooth transition) */}
+                                            <span className="text-[10.5px] font-medium max-w-0 overflow-hidden group-hover/status:max-w-[75px] transition-all duration-200 whitespace-nowrap opacity-0 group-hover/status:opacity-100 pr-0.5">
+                                              {isCompleted ? "Done" : isInProgress ? "Active" : "Upcoming"}
+                                            </span>
+                                          </button>
+
+                                          {/* Apple Status Dropdown Menu */}
+                                          {openPhaseStatusMenuId === phase.id && (
+                                            <div
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="absolute top-full right-0 mt-1 w-34 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-slate-200/90 dark:border-zinc-700 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100 font-sans"
+                                            >
+                                              {[
+                                                { id: "upcoming", label: "Upcoming", color: "bg-slate-400" },
+                                                { id: "in-progress", label: "In Progress", color: "bg-[#7C3AED]" },
+                                                { id: "completed", label: "Completed", color: "bg-emerald-500" }
+                                              ].map((opt) => {
+                                                const isCurrent = phase.status === opt.id;
+                                                return (
+                                                  <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onPointerDown={(e) => {
+                                                      e.preventDefault();
+                                                      handleSetPhaseStatus(phase.id, opt.id, e);
+                                                      setOpenPhaseStatusMenuId(null);
+                                                    }}
+                                                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer border-none text-left ${
+                                                      isCurrent
+                                                        ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold"
+                                                        : "text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/60 bg-transparent"
+                                                    }`}
+                                                  >
+                                                    <span className="flex items-center gap-1.5">
+                                                      <span className={`w-1.5 h-1.5 rounded-full ${opt.color}`} />
+                                                      <span>{opt.label}</span>
+                                                    </span>
+                                                    {isCurrent && <Check size={11} strokeWidth={2.5} className="text-emerald-500" />}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
                                           )}
-                                        </button>
+                                        </div>
                                       </div>
 
                                       {/* Phase name & description */}
