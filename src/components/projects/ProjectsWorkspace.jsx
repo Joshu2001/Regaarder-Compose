@@ -52,6 +52,7 @@ import ShareProjectToRelayModal from "./ShareProjectToRelayModal";
 import AddExistingFilesToProjectModal from "./AddExistingFilesToProjectModal";
 import InviteProjectMemberModal from "./InviteProjectMemberModal";
 import EditProjectMemoryModal from "./EditProjectMemoryModal";
+import AppleDatePickerPopover, { formatDateDisplay, formatDateToIso } from "./AppleDatePickerPopover";
 
 export default function ProjectsWorkspace({
   projects = [],
@@ -129,6 +130,8 @@ export default function ProjectsWorkspace({
   const [newPhaseDesc, setNewPhaseDesc] = useState("");
   const [newPhaseStart, setNewPhaseStart] = useState("");
   const [newPhaseEnd, setNewPhaseEnd] = useState("");
+  // Active date picker popover: null | 'phaseStart' | 'phaseEnd' | 'milestone'
+  const [activeDatePicker, setActiveDatePicker] = useState(null);
 
   // Milestone inline draft inside drawer
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
@@ -616,17 +619,18 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
     return Math.round(score);
   }, [projectPhases]);
 
-  // Close 3-dot menus and dropdowns on outside click
+  // Close 3-dot menus, dropdowns, and date pickers on outside click
   useEffect(() => {
     const handleOutside = () => {
       setMenuOpenId(null);
       setIsAddPhaseMenuOpen(false);
+      setActiveDatePicker(null);
     };
-    if (menuOpenId || isAddPhaseMenuOpen) {
+    if (menuOpenId || isAddPhaseMenuOpen || activeDatePicker) {
       window.addEventListener("click", handleOutside);
       return () => window.removeEventListener("click", handleOutside);
     }
-  }, [menuOpenId, isAddPhaseMenuOpen]);
+  }, [menuOpenId, isAddPhaseMenuOpen, activeDatePicker]);
 
   return (
     <main className="flex-1 flex flex-col h-full bg-white dark:bg-[#151518] overflow-hidden">
@@ -1402,12 +1406,32 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
                                     className="flex-1 h-7 px-2.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-[12px] text-slate-800 dark:text-zinc-100 outline-none"
                                     autoFocus
                                   />
-                                  <input
-                                    type="date"
-                                    value={newMilestoneDate}
-                                    onChange={(e) => setNewMilestoneDate(e.target.value)}
-                                    className="h-7 px-2 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-[11px] text-slate-600 dark:text-zinc-300 outline-none"
-                                  />
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveDatePicker(activeDatePicker === "milestone" ? null : "milestone");
+                                      }}
+                                      className={`h-7 px-2 rounded-lg border text-left flex items-center gap-1 text-[11px] transition-all cursor-pointer ${
+                                        activeDatePicker === "milestone"
+                                          ? "border-[#7C3AED] ring-1 ring-[#7C3AED] bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100"
+                                          : "border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 text-slate-600 dark:text-zinc-300"
+                                      }`}
+                                    >
+                                      <Calendar size={11} className="text-slate-400" />
+                                      <span>{formatDateDisplay(newMilestoneDate, "Due date")}</span>
+                                    </button>
+
+                                    {activeDatePicker === "milestone" && (
+                                      <AppleDatePickerPopover
+                                        value={newMilestoneDate}
+                                        onSelect={(iso) => setNewMilestoneDate(iso)}
+                                        onClose={() => setActiveDatePicker(null)}
+                                        align="left"
+                                      />
+                                    )}
+                                  </div>
                                   <button
                                     type="submit"
                                     disabled={!newMilestoneTitle.trim()}
@@ -2198,27 +2222,70 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
+                {/* Start Date */}
+                <div className="space-y-1 relative">
                   <label className="text-[11.5px] font-medium text-slate-600 dark:text-zinc-400">
                     Start Date
                   </label>
-                  <input
-                    type="date"
-                    value={newPhaseStart}
-                    onChange={(e) => setNewPhaseStart(e.target.value)}
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-850 text-xs text-slate-700 dark:text-zinc-300 outline-none"
-                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDatePicker(activeDatePicker === "phaseStart" ? null : "phaseStart");
+                    }}
+                    className={`w-full h-8 px-2.5 rounded-lg border text-left flex items-center justify-between text-xs transition-all cursor-pointer ${
+                      activeDatePicker === "phaseStart"
+                        ? "border-[#7C3AED] ring-1 ring-[#7C3AED] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                        : "border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-850 hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    <span className={newPhaseStart ? "font-medium" : "text-slate-400 dark:text-zinc-500"}>
+                      {formatDateDisplay(newPhaseStart, "Select start date")}
+                    </span>
+                    <Calendar size={13} className="text-slate-400 shrink-0 ml-1" />
+                  </button>
+
+                  {activeDatePicker === "phaseStart" && (
+                    <AppleDatePickerPopover
+                      value={newPhaseStart}
+                      onSelect={(iso) => setNewPhaseStart(iso)}
+                      onClose={() => setActiveDatePicker(null)}
+                      align="left"
+                    />
+                  )}
                 </div>
-                <div className="space-y-1">
+
+                {/* Target End Date */}
+                <div className="space-y-1 relative">
                   <label className="text-[11.5px] font-medium text-slate-600 dark:text-zinc-400">
                     Target End Date
                   </label>
-                  <input
-                    type="date"
-                    value={newPhaseEnd}
-                    onChange={(e) => setNewPhaseEnd(e.target.value)}
-                    className="w-full h-8 px-2.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-850 text-xs text-slate-700 dark:text-zinc-300 outline-none"
-                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveDatePicker(activeDatePicker === "phaseEnd" ? null : "phaseEnd");
+                    }}
+                    className={`w-full h-8 px-2.5 rounded-lg border text-left flex items-center justify-between text-xs transition-all cursor-pointer ${
+                      activeDatePicker === "phaseEnd"
+                        ? "border-[#7C3AED] ring-1 ring-[#7C3AED] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
+                        : "border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-850 hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    <span className={newPhaseEnd ? "font-medium" : "text-slate-400 dark:text-zinc-500"}>
+                      {formatDateDisplay(newPhaseEnd, "Select end date")}
+                    </span>
+                    <Calendar size={13} className="text-slate-400 shrink-0 ml-1" />
+                  </button>
+
+                  {activeDatePicker === "phaseEnd" && (
+                    <AppleDatePickerPopover
+                      value={newPhaseEnd}
+                      onSelect={(iso) => setNewPhaseEnd(iso)}
+                      onClose={() => setActiveDatePicker(null)}
+                      align="right"
+                    />
+                  )}
                 </div>
               </div>
 
