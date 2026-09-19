@@ -18445,7 +18445,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       return;
     }
 
-    const isNotes = activeDoc?.isNotesDoc || activeDoc?.mode === 'notes' || productMode === 'notes';
+    const isNotes = productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'));
     const defaultTitle = isNotes ? 'Untitled Note' : 'Untitled Document';
 
     if (!docBodyHtml) {
@@ -34055,23 +34055,19 @@ Answer the user's question, provide an insightful summary, or explain the contex
     // between Notes tabs and Docs tabs never shows the wrong viewer or toolbar.
     if (targetDoc.isNotesDoc || targetDoc.mode === 'notes') {
       setProductMode('notes');
-    } else if (productMode === 'notes') {
-      // Leaving Notes — restore to compose
+    } else if (targetDoc.mode === 'sheets' || targetDoc.sheetsData) {
+      setProductMode('sheets');
+    } else if (targetDoc.mode === 'deck' || targetDoc.deckSlidesData) {
+      setProductMode('deck');
+    } else if (targetDoc.mode === 'whiteboard') {
+      setProductMode('whiteboard');
+    } else {
+      // It is a compose doc: ensure compose mode is fully restored
       setProductMode('compose');
-    } else if (productMode === 'landing') {
-      if (targetDoc.mode) {
-        setProductMode(targetDoc.mode);
-      } else if (targetDoc.sheetsData) {
-        setProductMode('sheets');
-      } else if (targetDoc.deckSlidesData) {
-        setProductMode('deck');
-      } else {
-        setProductMode('compose');
-      }
     }
   };
 
-  const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
+  const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '', projectId = null, shouldRename = false } = {}) => {
     const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
     const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
     const initialDeckSlidesData = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
@@ -34082,6 +34078,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       mode: currentWorkspaceMode,
+      projectId: projectId || null,
       title: defaultTitleForMode,
       subtitle: '',
       initiatives: [],
@@ -34127,6 +34124,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
     trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
       documentId: String(newDoc.id),
     });
+
+    if (shouldRename) {
+      setRenamingDocId(newDoc.id);
+      setRenameDocValue(defaultTitleForMode);
+    }
+
     if (!silent) {
       showToast('Blank document created');
     }
@@ -34414,7 +34417,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     createNewComposition(options);
   };
 
-  const createNotesExperience = () => {
+  const createNotesExperience = (options = {}) => {
     setCreationPickerOpen(false);
     setProductMode('notes');
     setFocusedModule('notes');
@@ -34428,9 +34431,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     const newNote = {
       id: noteId,
       mode: 'notes',
+      projectId: options.projectId || null,
       isNotesDoc: true,
-      title: '',
-      bodyHtml: '',
+      title: options.initialTitle || '',
+      bodyHtml: options.initialHtml || '',
       ruling: 'college',
       color: null,
       pinned: false,
@@ -34440,12 +34444,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
 
     setDocuments(prev => [newNote, ...(prev || [])]);
     setActiveDocId(noteId);
-    setDocTitle('');
-    setDocBodyHtml('');
+    setDocTitle(options.initialTitle || '');
+    setDocBodyHtml(options.initialHtml || '');
     showToast('Notes ready');
   };
 
-  const createDeckExperience = () => {
+  const createDeckExperience = (options = {}) => {
     setCreationPickerOpen(false);
     setProductMode('deck');
     setFocusedModule('deck');
@@ -34454,8 +34458,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (isScreenSharing || window.__currentScreenShareStream) {
       setRoomState('active');
     }
-    setDeckTitle('Untitled deck');
-    setDeckSlidesData(JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES)));
+    const deckTitleVal = options.initialTitle || 'Untitled deck';
+    const initialDeckSlides = JSON.parse(JSON.stringify(DEFAULT_BLANK_DECK_SLIDES));
+    setDeckTitle(deckTitleVal);
+    setDeckSlidesData(initialDeckSlides);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -34467,10 +34473,31 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDeckSlidesPanelOpen(true);
     setRightSidebarOpen(false);
     setActiveRightTab('assistant');
+
+    // Register deck document in documents collection
+    const deckDocId = Date.now() + Math.floor(Math.random() * 1000);
+    const newDeckDoc = {
+      id: deckDocId,
+      mode: 'deck',
+      projectId: options.projectId || null,
+      title: deckTitleVal,
+      deckTitle: deckTitleVal,
+      deckSlidesData: initialDeckSlides,
+      activeDeckSlideId: 1,
+      subtitle: '',
+      initiatives: [],
+      appendedSections: [],
+      isBlank: true,
+      bodyHtml: '',
+      pinned: false,
+    };
+    setDocuments(prev => [...(prev || []), newDeckDoc]);
+    setActiveDocId(deckDocId);
+
     showToast('Deck workspace ready');
   };
 
-  const createSheetsExperience = () => {
+  const createSheetsExperience = (options = {}) => {
     setCreationPickerOpen(false);
     setProductMode('sheets');
     setFocusedModule('sheets');
@@ -34479,7 +34506,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (isScreenSharing || window.__currentScreenShareStream) {
       setRoomState('active');
     }
-    setSheetsTitle('Untitled Sheet');
+    const sheetTitleVal = options.initialTitle || 'Untitled Sheet';
+    const initialSheetsData = [{ id: 1, title: 'Sheet 1', subtitle: '' }];
+    const initialSheetGrids = { 1: { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array.from({ length: 26 }, () => '')), formats: {}, columnWidths: {}, rowHeights: {} } };
+    setSheetsTitle(sheetTitleVal);
+    setSheetsData(initialSheetsData);
+    setSheetGrids(initialSheetGrids);
     setLeftSidebarOpen(false);
     setActiveSheetId(1);
     setDeckPromptInput('');
@@ -34502,6 +34534,28 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
     setHasImportedData(false);
     setSelectedDatasets([]);
+
+    // Register sheet document in documents collection
+    const sheetDocId = Date.now() + Math.floor(Math.random() * 1000);
+    const newSheetDoc = {
+      id: sheetDocId,
+      mode: 'sheets',
+      projectId: options.projectId || null,
+      title: sheetTitleVal,
+      sheetsTitle: sheetTitleVal,
+      sheetsData: initialSheetsData,
+      sheetGrids: initialSheetGrids,
+      activeSheetId: 1,
+      subtitle: '',
+      initiatives: [],
+      appendedSections: [],
+      isBlank: true,
+      bodyHtml: '',
+      pinned: false,
+    };
+    setDocuments(prev => [...(prev || []), newSheetDoc]);
+    setActiveDocId(sheetDocId);
+
     showToast('Sheets workspace ready');
   };
 
@@ -34860,7 +34914,11 @@ Respond with valid JSON formatted like this:
     showToast('AI template generated and saved');
   };
 
-  const createWhiteboardExperience = (initialTitle = '') => {
+  const createWhiteboardExperience = (titleOrOptions = '') => {
+    const options = (typeof titleOrOptions === 'object' && titleOrOptions !== null) ? titleOrOptions : { initialTitle: titleOrOptions };
+    const initialTitle = options.initialTitle || (typeof titleOrOptions === 'string' ? titleOrOptions : '');
+    const projectId = options.projectId || null;
+
     setCreationPickerOpen(false);
     setProductMode('whiteboard');
     setFocusedModule('whiteboard');
@@ -34878,6 +34936,7 @@ Respond with valid JSON formatted like this:
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       mode: 'whiteboard',
+      projectId: projectId,
       title: title,
       subtitle: '',
       whiteboardStrokes: [],
@@ -35304,33 +35363,35 @@ Respond with valid JSON formatted like this:
       return;
     }
 
+    const launchOptions = (typeof docIdOrPayload === 'object' && docIdOrPayload !== null) ? docIdOrPayload : {};
+
     if (target === 'compose') {
       setActivePrimaryNav('drafts');
-      createComposeExperience();
+      createComposeExperience(launchOptions);
       return;
     }
 
     if (target === 'notes' || target === 'notebook') {
       setActivePrimaryNav('home');
-      createNotesExperience();
+      createNotesExperience(launchOptions);
       return;
     }
 
     if (target === 'deck') {
       setActivePrimaryNav('library');
-      createDeckExperience();
+      createDeckExperience(launchOptions);
       return;
     }
 
     if (target === 'sheet' || target === 'sheets' || target === 'data mining') {
       setActivePrimaryNav('home');
-      createSheetsExperience();
+      createSheetsExperience(launchOptions);
       return;
     }
 
     if (target === 'whiteboard') {
       setActivePrimaryNav('home');
-      createWhiteboardExperience();
+      createWhiteboardExperience(launchOptions);
       return;
     }
 
@@ -40577,7 +40638,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
   const activeDraftDisplayTitle = (() => {
-    const isNotes = activeDoc?.isNotesDoc || activeDoc?.mode === 'notes' || productMode === 'notes';
+    const isNotes = productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'));
     const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
     if (isNotes) {
       if (!rawTitle || rawTitle === 'Untitled Document') return 'Untitled Note';
@@ -40612,8 +40673,8 @@ Respond with a JSON array of slide objects matching the schema.`;
         rightX = maxAllowedX;
       }
       
-      const targetY = rect.top + 15;
-      const topY = Math.max(100, Math.min(window.innerHeight - 80, targetY));
+      const targetY = rect.top + 48;
+      const topY = Math.max(136, Math.min(window.innerHeight - 80, targetY));
 
       setDictationAnchor({ left: rightX, top: topY });
     };
@@ -80913,10 +80974,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           )}
           <div
-            onMouseMove={handleEditorMouseMove}
-            onMouseLeave={handleEditorMouseLeave}
-            onScroll={handleEditorScroll}
-            className={`flex-1 min-h-0 ${(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'overflow-hidden p-0' : 'overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative px-2 pt-1 pb-6 md:px-4 md:pt-1.5 md:pb-8'} transition-[margin-right] duration-200 ease-out ${
+            className={`flex-1 min-h-0 ${(productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'))) ? 'overflow-hidden p-0' : 'overflow-visible relative px-2 pt-4 pb-6 md:px-4 md:pt-6 md:pb-8'} transition-[margin-right] duration-200 ease-out ${
               (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
             style={{
@@ -83675,7 +83733,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {(isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className={`pointer-events-none absolute z-[140] ${
-              (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')
+              (productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')))
                 ? 'right-8 bottom-10'
                 : 'left-6 top-20'
             }`}

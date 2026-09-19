@@ -46,15 +46,96 @@ export const writeWorkspaceProjects = (projects) => {
   return projects;
 };
 
-export const createProject = ({ name, description = "", customInstructions = "", color = "#7C3AED", icon = "folder" }) => {
+export const DEFAULT_ROADMAP_PHASES = [
+  {
+    id: "phase-research",
+    label: "Research",
+    status: "completed",
+    startDate: "2026-09-01",
+    endDate: "2026-09-08",
+    description: "Scope user requirements, competitor analysis, and technical feasibility.",
+    milestones: [
+      { id: "m-res-1", title: "Synthesize target user pain points & requirements", completed: true, dueDate: "2026-09-04" },
+      { id: "m-res-2", title: "Complete architecture feasibility review", completed: true, dueDate: "2026-09-08" }
+    ]
+  },
+  {
+    id: "phase-design",
+    label: "Design",
+    status: "in-progress",
+    startDate: "2026-09-09",
+    endDate: "2026-09-18",
+    description: "Design UI/UX layouts, wireframes, component systems, and design reviews.",
+    milestones: [
+      { id: "m-des-1", title: "Finalize Apple-inspired component hierarchy", completed: true, dueDate: "2026-09-13" },
+      { id: "m-des-2", title: "Produce interactive prototype & client walkthrough", completed: false, dueDate: "2026-09-18" }
+    ]
+  },
+  {
+    id: "phase-dev",
+    label: "Development",
+    status: "upcoming",
+    startDate: "2026-09-19",
+    endDate: "2026-10-05",
+    description: "Full-stack code implementation, state management, and ecosystem integration.",
+    milestones: [
+      { id: "m-dev-1", title: "Implement modular roadmap state & views", completed: false, dueDate: "2026-09-25", dependencies: ["m-des-2"] },
+      { id: "m-dev-2", title: "Connect AI synthesis & Relay sharing pipelines", completed: false, dueDate: "2026-10-05" }
+    ]
+  },
+  {
+    id: "phase-testing",
+    label: "Testing",
+    status: "upcoming",
+    startDate: "2026-10-06",
+    endDate: "2026-10-15",
+    description: "Rigorous unit testing, QA smoke tests, performance audits, and polish.",
+    milestones: [
+      { id: "m-tst-1", title: "Cross-platform regression & accessibility check", completed: false, dueDate: "2026-10-10" },
+      { id: "m-tst-2", title: "End-to-end user journey validation", completed: false, dueDate: "2026-10-15" }
+    ]
+  },
+  {
+    id: "phase-launch",
+    label: "Launch",
+    status: "upcoming",
+    startDate: "2026-10-16",
+    endDate: "2026-10-22",
+    description: "Production deployment, release communication, and user enablement.",
+    milestones: [
+      { id: "m-lnc-1", title: "Deploy release build to production cluster", completed: false, dueDate: "2026-10-18" },
+      { id: "m-lnc-2", title: "Publish release changelog and team briefing", completed: false, dueDate: "2026-10-22" }
+    ]
+  }
+];
+
+export const createProject = ({
+  name,
+  description = "",
+  customInstructions = "",
+  color = "#7C3AED",
+  icon = "folder",
+  phases = null,
+  goals = null,
+  members = null
+}) => {
   const current = readWorkspaceProjects();
   const newProject = {
     id: `proj_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name: name.trim(),
     description: description.trim(),
     customInstructions: customInstructions.trim(),
-    color,
-    icon,
+    color: color || "#7C3AED",
+    icon: icon || "folder",
+    phases: phases || DEFAULT_ROADMAP_PHASES,
+    goals: goals || [
+      { id: `goal_${Date.now()}_1`, text: "Define core scope and product requirements", completed: true },
+      { id: `goal_${Date.now()}_2`, text: "Create draft designs and interactive prototypes", completed: false },
+      { id: `goal_${Date.now()}_3`, text: "Prepare delivery assets and launch review", completed: false }
+    ],
+    members: members || [
+      { id: "user_owner", name: "You", email: "you@regaarder.com", role: "owner", avatarColor: color || "#7C3AED" }
+    ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     pinned: false,

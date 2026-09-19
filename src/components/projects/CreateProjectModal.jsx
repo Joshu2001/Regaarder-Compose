@@ -1,6 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Sparkles, Folder, Lightbulb } from "lucide-react";
+import {
+  X,
+  Folder,
+  Briefcase,
+  Compass,
+  Rocket,
+  Target,
+  Layers,
+  Code2,
+  Globe,
+  Shield,
+  Terminal,
+  Sparkles,
+  Kanban,
+  Check
+} from "lucide-react";
 import { RegaarderAiIcon } from "../RegaarderProductIcons";
+
+export const PROJECT_ICON_OPTIONS = [
+  { id: "folder", label: "Folder", icon: Folder },
+  { id: "briefcase", label: "Briefcase", icon: Briefcase },
+  { id: "compass", label: "Compass", icon: Compass },
+  { id: "rocket", label: "Rocket", icon: Rocket },
+  { id: "target", label: "Target", icon: Target },
+  { id: "layers", label: "Layers", icon: Layers },
+  { id: "code", label: "Code", icon: Code2 },
+  { id: "globe", label: "Globe", icon: Globe },
+  { id: "shield", label: "Shield", icon: Shield },
+  { id: "terminal", label: "Terminal", icon: Terminal },
+  { id: "kanban", label: "Board", icon: Kanban }
+];
+
+export const getProjectIconComponent = (iconId) => {
+  const found = PROJECT_ICON_OPTIONS.find((item) => item.id === iconId);
+  return found ? found.icon : Folder;
+};
 
 const COLOR_OPTIONS = [
   { label: "Purple", value: "#7C3AED" },
@@ -8,6 +42,7 @@ const COLOR_OPTIONS = [
   { label: "Emerald", value: "#059669" },
   { label: "Amber", value: "#D97706" },
   { label: "Rose", value: "#E11D48" },
+  { label: "Indigo", value: "#4F46E5" },
   { label: "Slate", value: "#475569" }
 ];
 
@@ -17,6 +52,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, project 
   const [description, setDescription] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].value);
+  const [selectedIcon, setSelectedIcon] = useState("folder");
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -26,11 +62,13 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, project 
         setDescription(project.description || "");
         setCustomInstructions(project.customInstructions || "");
         setSelectedColor(project.color || COLOR_OPTIONS[0].value);
+        setSelectedIcon(project.icon || "folder");
       } else {
         setName("");
         setDescription("");
         setCustomInstructions("");
         setSelectedColor(COLOR_OPTIONS[0].value);
+        setSelectedIcon("folder");
       }
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -46,7 +84,8 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, project 
       name: name.trim(),
       description: description.trim(),
       customInstructions: customInstructions.trim(),
-      color: selectedColor
+      color: selectedColor,
+      icon: selectedIcon
     });
     onClose();
   };
@@ -85,11 +124,26 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, project 
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
-          {/* Project Name Input */}
+          {/* Project Name Input with live icon preview */}
           <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">
-              Project name
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">
+                Project name
+              </label>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                <span>Preview:</span>
+                {(() => {
+                  const PreviewGlyph = getProjectIconComponent(selectedIcon);
+                  return (
+                    <PreviewGlyph
+                      size={18}
+                      strokeWidth={1.8}
+                      style={{ color: selectedColor }}
+                    />
+                  );
+                })()}
+              </div>
+            </div>
             <div className="relative flex items-center">
               <input
                 ref={inputRef}
@@ -115,6 +169,35 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, project 
               placeholder="Brief description of the project..."
               className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900/50 text-[13px] text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-500 transition-all"
             />
+          </div>
+
+          {/* Project Icon Glyph Selector */}
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">
+              Project icon
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {PROJECT_ICON_OPTIONS.map((item) => {
+                const IconComponent = item.icon;
+                const isSelected = selectedIcon === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedIcon(item.id)}
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer border ${
+                      isSelected
+                        ? "border-slate-300 dark:border-zinc-600 bg-slate-50 dark:bg-zinc-800 shadow-2xs scale-105"
+                        : "border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-400 hover:border-slate-300 dark:hover:border-zinc-700 hover:text-slate-600 dark:hover:text-zinc-200"
+                    }`}
+                    style={isSelected ? { color: selectedColor } : {}}
+                    title={item.label}
+                  >
+                    <IconComponent size={16} strokeWidth={isSelected ? 2.2 : 1.7} />
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Color Tag Picker */}
