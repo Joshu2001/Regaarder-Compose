@@ -89380,11 +89380,72 @@ if (productMode === 'deck' || productMode === 'sheets') {
           onDismiss={() => {
             setShowIntentOnboarding(false);
           }}
-          onComplete={(preparedDoc) => {
+          onComplete={(payload) => {
             setShowIntentOnboarding(false);
-            if (preparedDoc) {
+            if (!payload) return;
+
+            // Path A & B: Action / Tool Navigation (Omni-Portal, Research Browser, Tasks Workspace)
+            if (payload.type === 'action') {
+              if (payload.destination === 'omni-portal') {
+                setIsOmniPortalOpen(true);
+                if (payload.toast) showToast(payload.toast);
+                return;
+              }
+
+              if (payload.destination === 'browser') {
+                setActivePrimaryNav('home');
+                setProductMode('browser');
+                setRoomPanelMode('docked');
+                if (payload.query) {
+                  setOrbInitialQuery(payload.query);
+                }
+                if (payload.toast) showToast(payload.toast);
+                return;
+              }
+
+              if (payload.destination === 'tasks') {
+                if (Array.isArray(payload.createdTasks) && payload.createdTasks.length > 0) {
+                  try {
+                    const stored = localStorage.getItem('rc.workspaceTasks');
+                    const parsed = stored ? JSON.parse(stored) : [];
+                    const updated = [...payload.createdTasks, ...(Array.isArray(parsed) ? parsed : [])];
+                    localStorage.setItem('rc.workspaceTasks', JSON.stringify(updated));
+                    window.dispatchEvent(new Event('storage'));
+                    window.dispatchEvent(new CustomEvent('rc.tasks-updated', { detail: updated }));
+                  } catch (_e) {}
+                }
+                openLandingWorkspace('tasks');
+                if (payload.toast) showToast(payload.toast);
+                return;
+              }
+
+              openLandingWorkspace(payload.destination);
+              if (payload.toast) showToast(payload.toast);
+              return;
+            }
+
+            // Path C: Direct Canvas Creation (Doc, Sheet, Deck, Whiteboard)
+            if (payload.type === 'create_canvas') {
+              const targetMode = payload.mode || 'compose';
+              const targetTitle = payload.title || (targetMode === 'sheets' ? 'Untitled Sheet' : targetMode === 'deck' ? 'Untitled Deck' : targetMode === 'whiteboard' ? 'Untitled Whiteboard' : 'Untitled Document');
+              
+              if (targetMode === 'sheets') {
+                createSheetsExperience({ initialTitle: targetTitle });
+              } else if (targetMode === 'deck') {
+                createDeckExperience({ initialTitle: targetTitle });
+              } else if (targetMode === 'whiteboard') {
+                createWhiteboardExperience({ initialTitle: targetTitle });
+              } else {
+                createComposeExperience({ initialTitle: targetTitle });
+              }
+              if (payload.toast) showToast(payload.toast);
+              return;
+            }
+
+            // Fallback: Legacy or document-prepared payload
+            if (payload.title || payload.bodyHtml) {
               const newDoc = {
-                ...preparedDoc,
+                ...payload,
                 id: Date.now()
               };
               setDocuments(prev => [newDoc, ...prev]);

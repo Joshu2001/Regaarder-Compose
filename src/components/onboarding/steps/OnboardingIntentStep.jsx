@@ -1,33 +1,34 @@
 import React, { useState } from 'react';
-import { ArrowRight, Sparkles, FolderGit2, Search, CheckSquare, Edit3 } from 'lucide-react';
+import { ArrowRight, FolderGit2, Search, CheckSquare, Edit3 } from 'lucide-react';
+import { RegaarderAiIcon } from '../../RegaarderProductIcons';
 import RegaarderBrandIcon from '../../RegaarderBrandIcon';
 
 const INTENT_CARDS = [
   {
     id: 'new',
     title: 'Start something new',
-    description: 'Create a project, plan, or document from scratch.',
-    icon: Sparkles,
+    description: 'Create a doc, sheet, or presentation canvas from scratch.',
+    icon: RegaarderAiIcon,
     badgeColor: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50'
   },
   {
     id: 'organize',
     title: 'Organize existing work',
-    description: 'Bring your docs, files, and ideas together.',
+    description: 'Ingest and index your docs, files, and project context.',
     icon: FolderGit2,
     badgeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50'
   },
   {
     id: 'analyze',
     title: 'Research or analyze',
-    description: 'Find information, get insights, compare options.',
+    description: 'Uncover insights, search memory, and analyze data with Orb.',
     icon: Search,
     badgeColor: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50'
   },
   {
     id: 'plan',
     title: 'Plan and execute',
-    description: 'Manage tasks, schedule, and track progress.',
+    description: 'Track deliverables, manage sprint tasks, and align schedules.',
     icon: CheckSquare,
     badgeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50'
   }
@@ -71,7 +72,7 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
             What are you working on?
           </h1>
           <p className="text-[14px] text-slate-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-            Tell Regaarder what you'd like to do. I'll set up the right workspace for you in seconds.
+            Choose how you'd like to begin. Regaarder will activate the exact tools, memory, and workspace you need.
           </p>
         </div>
 
@@ -92,7 +93,7 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
                 }`}
               >
                 <div className={`p-2.5 rounded-xl shrink-0 transition-transform group-hover:scale-105 ${card.badgeColor}`}>
-                  <Icon size={18} strokeWidth={1.9} />
+                  <Icon size={18} strokeWidth={1.8} />
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-[14px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">
@@ -117,7 +118,7 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
               type="text"
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
-              placeholder="Or tell me in your own words..."
+              placeholder="Or describe your project in your own words..."
               className="w-full h-12 pl-11 pr-12 text-[13.5px] rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-1 focus:ring-violet-500/30 transition-all shadow-2xs"
             />
             <button

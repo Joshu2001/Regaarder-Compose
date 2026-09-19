@@ -1,48 +1,37 @@
 import React, { useState } from 'react';
 import OnboardingIntentStep from './steps/OnboardingIntentStep';
-import OnboardingPreparationStep from './steps/OnboardingPreparationStep';
-import OnboardingWorkspacePayoff from './steps/OnboardingWorkspacePayoff';
-import OnboardingContextualHint from './steps/OnboardingContextualHint';
-import OnboardingNextValueStep from './steps/OnboardingNextValueStep';
+import OnboardingOrganizeStep from './steps/OnboardingOrganizeStep';
+import OnboardingAnalyzeStep from './steps/OnboardingAnalyzeStep';
+import OnboardingPlanStep from './steps/OnboardingPlanStep';
+import OnboardingNewCanvasStep from './steps/OnboardingNewCanvasStep';
 import OnboardingBlankWorkspaceStep from './steps/OnboardingBlankWorkspaceStep';
-import { ONBOARDING_INTENT_PRESETS, createCustomIntentPreset } from './onboardingPresets';
 
 export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
+  // Navigation steps: 'intent' | 'organize' | 'analyze' | 'plan' | 'new' | 'blank_workspace'
   const [currentStep, setCurrentStep] = useState('intent');
   const [selectedIntentId, setSelectedIntentId] = useState('new');
-  const [activePreset, setActivePreset] = useState(ONBOARDING_INTENT_PRESETS['new']);
+  const [customPrompt, setCustomPrompt] = useState('');
 
-  // Handle intent selection (Step 1 -> Step 2)
+  // Handle Step 1 intent selection -> Diverge into specialized Step 2 paths
   const handleSelectIntent = (intentId, freeText) => {
     setSelectedIntentId(intentId);
+    setCustomPrompt(freeText || '');
 
-    let preset;
-    if (freeText && freeText.trim().length > 0) {
-      preset = createCustomIntentPreset(freeText.trim());
+    if (intentId === 'organize') {
+      setCurrentStep('organize');
+    } else if (intentId === 'analyze') {
+      setCurrentStep('analyze');
+    } else if (intentId === 'plan') {
+      setCurrentStep('plan');
+    } else if (intentId === 'new' || intentId === 'custom') {
+      setCurrentStep('new');
     } else {
-      preset = ONBOARDING_INTENT_PRESETS[intentId] || ONBOARDING_INTENT_PRESETS['new'];
+      setCurrentStep('new');
     }
-    setActivePreset(preset);
-    setCurrentStep('preparing');
   };
 
-  // Preparation finished (Step 2 -> Step 3: Populated Workspace Payoff)
-  const handlePreparationComplete = () => {
-    setCurrentStep('workspace_payoff');
-  };
-
-  // Click View Document in Payoff (Step 3 -> Step 4: Contextual Teaching)
-  const handleViewDocument = () => {
-    setCurrentStep('contextual_hint');
-  };
-
-  // Contextual Teaching action (Step 4 -> Step 5: Next Value)
-  const handleContextualNext = () => {
-    setCurrentStep('next_value');
-  };
-
-  // Final completion from Next Value
-  const handleFinalComplete = (chosenAction) => {
+  // Final Action dispatcher to parent App shell
+  const handlePathComplete = (resultPayload) => {
     try {
       localStorage.setItem('rc.hasSeenIntentOnboarding_v1', 'true');
       localStorage.setItem('rc.hasSeenIntentOnboarding_v2', 'true');
@@ -50,19 +39,15 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
     } catch (_e) {}
 
     if (typeof onComplete === 'function') {
-      onComplete({
-        ...activePreset,
-        suggestedNextAction: chosenAction?.prompt || activePreset?.suggestedNextAction
-      });
+      onComplete(resultPayload);
     }
   };
 
-  // Skip from Step 1 -> Step 6 (Blank Workspace Flow)
+  // Skip flow to start with clean workspace
   const handleSkipToBlank = () => {
     setCurrentStep('blank_workspace');
   };
 
-  // Blank workspace confirmed from Step 6
   const handleStartBlank = () => {
     try {
       localStorage.setItem('rc.hasSeenIntentOnboarding_v1', 'true');
@@ -77,6 +62,7 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
   return (
     <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/40 dark:bg-black/70 backdrop-blur-md p-4 sm:p-6 select-none animate-in fade-in duration-300">
       <div className="relative w-full max-w-4xl min-h-[600px] rounded-3xl bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.24)] overflow-hidden transition-all flex flex-col">
+        {/* Step 1: Broad Intent Selector */}
         {currentStep === 'intent' && (
           <OnboardingIntentStep
             onSelectIntent={handleSelectIntent}
@@ -84,35 +70,40 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
           />
         )}
 
-        {currentStep === 'preparing' && (
-          <OnboardingPreparationStep
-            onComplete={handlePreparationComplete}
+        {/* Specialized Path 1: Organize Existing Work (Universal Memory & File Ingestion) */}
+        {currentStep === 'organize' && (
+          <OnboardingOrganizeStep
+            onBack={() => setCurrentStep('intent')}
+            onComplete={handlePathComplete}
           />
         )}
 
-        {currentStep === 'workspace_payoff' && (
-          <OnboardingWorkspacePayoff
-            preset={activePreset}
-            onViewDocument={handleViewDocument}
-            onFinish={() => handleFinalComplete(null)}
+        {/* Specialized Path 2: Research or Analyze (Orb Deep Research & Search) */}
+        {currentStep === 'analyze' && (
+          <OnboardingAnalyzeStep
+            onBack={() => setCurrentStep('intent')}
+            onComplete={handlePathComplete}
           />
         )}
 
-        {currentStep === 'contextual_hint' && (
-          <OnboardingContextualHint
-            preset={activePreset}
-            onNextStep={handleContextualNext}
-            onDismiss={() => handleFinalComplete(null)}
+        {/* Specialized Path 3: Plan and Execute (Real Milestones & Tasks Workspace) */}
+        {currentStep === 'plan' && (
+          <OnboardingPlanStep
+            onBack={() => setCurrentStep('intent')}
+            onComplete={handlePathComplete}
           />
         )}
 
-        {currentStep === 'next_value' && (
-          <OnboardingNextValueStep
-            onStartWorking={() => handleFinalComplete(null)}
-            onActionSelect={(action) => handleFinalComplete(action)}
+        {/* Specialized Path 4: Start Something New (Canvas Chooser: Doc, Sheet, Deck, Whiteboard) */}
+        {currentStep === 'new' && (
+          <OnboardingNewCanvasStep
+            initialPrompt={customPrompt}
+            onBack={() => setCurrentStep('intent')}
+            onComplete={handlePathComplete}
           />
         )}
 
+        {/* Clean Fallback */}
         {currentStep === 'blank_workspace' && (
           <OnboardingBlankWorkspaceStep
             onStartBlank={handleStartBlank}
