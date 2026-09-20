@@ -40720,8 +40720,9 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
+      const bottomBarTop = window.innerHeight - 40;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: 150 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: Math.round((140 + bottomBarTop) / 2) });
         return;
       }
 
@@ -40735,8 +40736,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         rightX = maxAllowedX;
       }
       
-      const targetY = rect.top + 48;
-      const topY = Math.max(136, Math.min(window.innerHeight - 80, targetY));
+      // Exact vertical midpoint between the top of the document card and the bottom status bar
+      const targetY = (rect.top + bottomBarTop) / 2;
+      const topY = Math.max(136, Math.min(bottomBarTop - 40, targetY));
 
       setDictationAnchor({ left: rightX, top: topY });
     };

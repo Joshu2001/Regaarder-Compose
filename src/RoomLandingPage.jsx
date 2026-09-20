@@ -1688,7 +1688,7 @@ export default function RoomLandingPage({
                     <button
                       type="button"
                       onClick={() => setIsSchedulingModalOpen(true)}
-                      className="px-4.5 py-2.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 dark:bg-zinc-850 dark:hover:bg-zinc-800 active:scale-[0.98] text-slate-700 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-750 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-[22px] py-2.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 dark:bg-zinc-850 dark:hover:bg-zinc-800 active:scale-[0.98] text-slate-700 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-750 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
                     >
                       <Calendar size={14} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-400" />
                       <span>Schedule</span>
