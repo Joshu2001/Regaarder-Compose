@@ -40,11 +40,11 @@ export const OUTCOME_PATHS = [
     color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200/60 dark:border-indigo-800/40'
   },
   {
-    id: 'research',
-    title: 'Research or understand something',
-    description: 'Investigate topics, compare information, and synthesize answers.',
-    badge: 'Investigate & Decide',
-    iconName: 'Search',
+    id: 'memora',
+    title: 'Recall with Memora',
+    description: 'Search across past work, synthesized context, and connected files.',
+    badge: 'Memory & Context',
+    iconName: 'MemoryIcon',
     color: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 border-sky-200/60 dark:border-sky-800/40'
   },
   {
@@ -308,30 +308,31 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
   const prompt = customPrompt.trim();
   const rawTitle = prompt ? (prompt.charAt(0).toUpperCase() + prompt.slice(1)) : 'Initiative Workspace';
 
-  // 1. Research + Create (e.g. Browser + Deck / Compose)
-  if (set.has('research') && set.has('create')) {
+  // 1. Memora / Research + Create
+  if ((set.has('memora') || set.has('research')) && set.has('create')) {
     if (set.has('collaborate')) {
       return {
         type: 'action',
-        destination: 'browser',
-        query: prompt || 'Market research & competitive analysis',
-        toast: 'Research engine, creation studio, and team sync prepared'
+        destination: 'omni-portal',
+        query: prompt || 'Synthesized knowledge context',
+        toast: 'Memora intelligence, creation studio, and team sync prepared'
       };
     }
     return {
       type: 'create_canvas',
-      mode: 'deck',
-      title: rawTitle !== 'Initiative Workspace' ? rawTitle : 'Research Synthesis & Presentation',
-      toast: 'Presentation canvas with research context prepared'
+      mode: 'compose',
+      title: rawTitle !== 'Initiative Workspace' ? rawTitle : 'Knowledge Synthesis Draft',
+      bodyHtml: `<h1>${rawTitle !== 'Initiative Workspace' ? rawTitle : 'Knowledge Synthesis'}</h1><p>Initialized with Memora contextual knowledge.</p><h2>1. Key Findings & Insights</h2><p>Synthesize core points here. Press <code>/</code> for intelligent editing tools.</p>`,
+      toast: 'Composition canvas with Memora context prepared'
     };
   }
 
-  // 2. Bring work together + Research (Universal Memory + Document Understanding / Search)
-  if (set.has('organize') && set.has('research')) {
+  // 2. Bring work together + Memora (Universal Memory + Document Understanding / Search)
+  if (set.has('organize') && (set.has('memora') || set.has('research'))) {
     return {
       type: 'action',
       destination: 'omni-portal',
-      toast: 'Universal Memory & Research Hub activated'
+      toast: 'Universal Memory & Memora Hub activated'
     };
   }
 
@@ -375,13 +376,14 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     };
   }
 
-  // 7. Research + Work with others
-  if (set.has('research') && set.has('collaborate')) {
+  // 7. Memora / Research + Work with others
+  if ((set.has('memora') || set.has('research')) && set.has('collaborate')) {
     return {
       type: 'action',
-      destination: 'browser',
-      query: prompt || 'Collaborative intelligence search',
-      toast: 'Shared research and collaborative room activated'
+      destination: 'room',
+      meetingTopic: prompt || 'Context Review & Team Alignment',
+      enableAiTranscription: true,
+      toast: 'Shared Memora intelligence and collaborative room activated'
     };
   }
 
@@ -413,13 +415,13 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     };
   }
 
-  if (set.has('research')) {
+  if (set.has('memora') || set.has('research')) {
     return {
       type: 'action',
-      destination: 'browser',
-      guidedIntent: 'research',
+      destination: 'omni-portal',
+      guidedIntent: 'memora',
       query: prompt || '',
-      toast: 'Deep Research & Browser activated'
+      toast: 'Memora Knowledge Context activated'
     };
   }
 

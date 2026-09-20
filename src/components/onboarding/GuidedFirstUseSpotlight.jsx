@@ -54,13 +54,21 @@ export default function GuidedFirstUseSpotlight({
       targetSelector: '[data-onboarding-target="new-project-button"]',
       nextActionNote: 'Track milestones, tasks, and deadlines in one cohesive roadmap.'
     },
-    research: {
-      title: 'Research or understand something',
+    memora: {
+      title: 'Recall with Memora',
       badge: 'Quick Start',
-      headline: 'Deep Research with Orb',
-      instruction: 'Type your research question to investigate sources across web and memory.',
-      targetSelector: '[data-onboarding-target="orb-search-input"]',
-      nextActionNote: 'Orb synthesizes citations and writes structured briefings.'
+      headline: 'Universal Memory & Context',
+      instruction: 'Search across your documents, notes, and connected knowledge with Memora.',
+      targetSelector: '[data-onboarding-target="omni-dropzone"], [data-onboarding-target="orb-search-input"]',
+      nextActionNote: 'Memora indexes context across past sessions and ingested files.'
+    },
+    research: {
+      title: 'Recall with Memora',
+      badge: 'Quick Start',
+      headline: 'Universal Memory & Context',
+      instruction: 'Search across your documents, notes, and connected knowledge with Memora.',
+      targetSelector: '[data-onboarding-target="omni-dropzone"], [data-onboarding-target="orb-search-input"]',
+      nextActionNote: 'Memora indexes context across past sessions and ingested files.'
     },
     collaborate: {
       title: 'Work with others',
