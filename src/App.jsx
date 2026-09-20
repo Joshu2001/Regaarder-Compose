@@ -89442,6 +89442,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
               return;
             }
 
+            // Path D: Prepared Project Workspace (e.g. "I need to launch my startup")
+            if (payload.type === 'project_prepared' && payload.projectId) {
+              if (Array.isArray(payload.createdTasks) && payload.createdTasks.length > 0) {
+                try {
+                  const stored = localStorage.getItem('rc.workspaceTasks');
+                  const parsed = stored ? JSON.parse(stored) : [];
+                  const updated = [...payload.createdTasks, ...(Array.isArray(parsed) ? parsed : [])];
+                  localStorage.setItem('rc.workspaceTasks', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('storage'));
+                  window.dispatchEvent(new CustomEvent('rc.tasks-updated', { detail: updated }));
+                } catch (_e) {}
+              }
+
+              // Route directly to the prepared project in Landing Projects Workspace
+              setProductMode('landing');
+              window.dispatchEvent(new CustomEvent('regaarder:set-landing-tab', {
+                detail: {
+                  tab: 'projects',
+                  projectId: payload.projectId,
+                  projectTab: 'overview'
+                }
+              }));
+              if (payload.toast) showToast(payload.toast);
+              return;
+            }
+
             // Fallback: Legacy or document-prepared payload
             if (payload.title || payload.bodyHtml) {
               const newDoc = {
