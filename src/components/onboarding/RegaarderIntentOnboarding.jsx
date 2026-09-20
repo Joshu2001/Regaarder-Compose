@@ -63,8 +63,8 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/40 dark:bg-black/70 backdrop-blur-md p-4 sm:p-6 select-none animate-in fade-in duration-300">
-      <div className="relative w-full max-w-4xl min-h-[600px] rounded-3xl bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.24)] overflow-hidden transition-all flex flex-col">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/45 dark:bg-black/75 backdrop-blur-md p-4 sm:p-6 lg:p-8 select-none animate-in fade-in duration-300">
+      <div className="relative w-full max-w-5xl min-h-[640px] rounded-3xl bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-white/10 shadow-[0_28px_72px_rgba(0,0,0,0.28)] overflow-hidden transition-all flex flex-col">
         {/* Step 1: Feature Outcome Selector */}
         {currentStep === 'intent' && (
           <OnboardingIntentStep
