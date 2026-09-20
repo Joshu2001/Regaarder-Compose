@@ -7,6 +7,8 @@ import OnboardingNewCanvasStep from './steps/OnboardingNewCanvasStep';
 import OnboardingRoomStep from './steps/OnboardingRoomStep';
 import OnboardingBlankWorkspaceStep from './steps/OnboardingBlankWorkspaceStep';
 
+import { composeCombinedIntents } from '../../services/intentInferenceService';
+
 export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
   // Navigation steps: 'intent' | 'organize' | 'research' | 'plan' | 'create' | 'collaborate' | 'blank_workspace'
   const [currentStep, setCurrentStep] = useState('intent');
@@ -14,16 +16,43 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
   const [customPrompt, setCustomPrompt] = useState('');
 
   // Handle outcome selection or direct natural language inference
-  const handleSelectIntent = (outcomeId, freeText, directInferredAction = null) => {
-    setSelectedOutcomeId(outcomeId);
+  const handleSelectIntent = (outcomeIdOrIds, freeText, directInferredAction = null) => {
     setCustomPrompt(freeText || '');
 
-    // If a direct natural language intent was inferred (e.g. "I need to launch my startup" or "Write a proposal"),
-    // deliver immediate time-to-first-value without forcing extra manual configuration screens!
-    if (outcomeId === 'inferred' && directInferredAction) {
+    // If a direct natural language intent was inferred, deliver immediate time-to-first-value!
+    if (outcomeIdOrIds === 'inferred' && directInferredAction) {
+      setSelectedOutcomeId('inferred');
       handlePathComplete(directInferredAction);
       return;
     }
+
+    // Multi-select handling (Array of intent IDs)
+    if (Array.isArray(outcomeIdOrIds)) {
+      const selectedList = outcomeIdOrIds;
+      if (selectedList.length === 0) return;
+
+      setSelectedOutcomeId(selectedList.join('+'));
+
+      // If single selection in array, route to its dedicated setup step if appropriate
+      if (selectedList.length === 1) {
+        const single = selectedList[0];
+        if (single === 'organize') setCurrentStep('organize');
+        else if (single === 'research') setCurrentStep('research');
+        else if (single === 'plan') setCurrentStep('plan');
+        else if (single === 'collaborate') setCurrentStep('collaborate');
+        else setCurrentStep('create');
+        return;
+      }
+
+      // If multiple intents selected (e.g. 2 or 3), compose combined workspace directly
+      const combinedPayload = composeCombinedIntents(selectedList, freeText || '');
+      handlePathComplete(combinedPayload);
+      return;
+    }
+
+    // Legacy single string fallback
+    const outcomeId = outcomeIdOrIds;
+    setSelectedOutcomeId(outcomeId);
 
     if (outcomeId === 'organize') {
       setCurrentStep('organize');

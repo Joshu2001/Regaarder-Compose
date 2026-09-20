@@ -18360,7 +18360,9 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     setter(target.textContent || '');
   };
 
-  const commitEditableHtmlForActiveDoc = (target, setter, event) => {
+  const docHtmlDebounceTimerRef = useRef(null);
+
+  const commitEditableHtmlForActiveDoc = (target, setter, event, immediate = false) => {
     if (!target || typeof setter !== 'function') {
       return;
     }
@@ -18372,7 +18374,25 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     if (sourceDocId && currentDocId && sourceDocId !== currentDocId) {
       return;
     }
-    setter(target.innerHTML || '');
+
+    const html = target.innerHTML || '';
+
+    if (immediate) {
+      if (docHtmlDebounceTimerRef.current) {
+        clearTimeout(docHtmlDebounceTimerRef.current);
+        docHtmlDebounceTimerRef.current = null;
+      }
+      setter(html);
+      return;
+    }
+
+    if (docHtmlDebounceTimerRef.current) {
+      clearTimeout(docHtmlDebounceTimerRef.current);
+    }
+    docHtmlDebounceTimerRef.current = setTimeout(() => {
+      setter(html);
+      docHtmlDebounceTimerRef.current = null;
+    }, 200);
   };
 
   const [docTitle, setDocTitle] = useState('');
@@ -20407,6 +20427,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   }, [documents, activeDocId]);
 
+  // Synchronize blankBodyRef DOM with docBodyHtml only when content diverges externally or document switches
+  useEffect(() => {
+    if (blankBodyRef.current && blankBodyRef.current.innerHTML !== docBodyHtml) {
+      blankBodyRef.current.innerHTML = docBodyHtml || '';
+    }
+  }, [activeDocId, docBodyHtml]);
+
   useEffect(() => {
     if (!activeWhiteboardId && whiteboards.length) {
       setActiveWhiteboardId(whiteboards[0].id);
@@ -21510,10 +21537,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       return;
     }
 
+    let mutationDebounceTimer = null;
     const observer = new MutationObserver(() => {
-      computeDocumentStats();
-      computeDocumentOutline();
-      window.refreshImageCaptions?.();
+      if (mutationDebounceTimer) {
+        clearTimeout(mutationDebounceTimer);
+      }
+      mutationDebounceTimer = setTimeout(() => {
+        computeDocumentStats();
+        computeDocumentOutline();
+        window.refreshImageCaptions?.();
+        mutationDebounceTimer = null;
+      }, 300);
     });
 
     const targetNode = documentCardRef.current || blankBodyRef.current;
@@ -21525,7 +21559,12 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       });
     }
 
-    return () => observer.disconnect();
+    return () => {
+      if (mutationDebounceTimer) {
+        clearTimeout(mutationDebounceTimer);
+      }
+      observer.disconnect();
+    };
   }, [
     computeDocumentStats,
     computeDocumentOutline,
@@ -82861,7 +82900,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml);
                   }}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
-                  onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
+                  onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e, true)}
                   onClick={(e) => {
                     const targetElement = e.target;
                     const tableEl = targetElement.closest('table');
@@ -82915,7 +82954,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   data-doc-id={activeDocId || ''}
                   className={`mb-4 min-h-[70vh] cursor-text outline-none text-sm leading-relaxed transition-colors ${isDarkMode ? 'text-zinc-100' : 'text-slate-800'}`}
                   style={{ fontFamily: resolveFontFamily(editorFont), textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-                  dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
                 {canShowComposeActions && (
                   <div className="mb-8 flex items-center justify-end gap-2 relative z-20 pointer-events-auto">

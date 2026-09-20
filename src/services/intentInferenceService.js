@@ -18,15 +18,15 @@ export const OUTCOME_PATHS = [
   {
     id: 'create',
     title: 'Create something',
-    description: 'Write an executive doc, calculate data models, design slides, or draw on a canvas.',
+    description: 'Write, calculate, design, present, or sketch.',
     badge: 'Draft & Build',
     iconName: 'ComposeIcon',
     color: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border-violet-200/60 dark:border-violet-800/40'
   },
   {
     id: 'organize',
-    title: 'Make sense of my information',
-    description: 'Bring together existing files, notes, and research into a searchable, connected memory bank.',
+    title: 'Bring my work together',
+    description: 'Connect files, notes, knowledge, and existing work.',
     badge: 'Connect Knowledge',
     iconName: 'FolderGit2',
     color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/60 dark:border-emerald-800/40'
@@ -34,23 +34,23 @@ export const OUTCOME_PATHS = [
   {
     id: 'plan',
     title: 'Plan and execute a project',
-    description: 'Organize deliverables, track milestones, align team calendars, and deliver on schedule.',
+    description: 'Organize deliverables, milestones, tasks, and deadlines.',
     badge: 'Milestones & Tasks',
     iconName: 'CheckSquare',
     color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200/60 dark:border-indigo-800/40'
   },
   {
     id: 'research',
-    title: 'Research or decide',
-    description: 'Investigate a topic, audit competitors, compare alternatives, and synthesize answers with AI.',
+    title: 'Research or understand something',
+    description: 'Investigate topics, compare information, and synthesize answers.',
     badge: 'Investigate & Decide',
     iconName: 'Search',
     color: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 border-sky-200/60 dark:border-sky-800/40'
   },
   {
     id: 'collaborate',
-    title: 'Meet or collaborate',
-    description: 'Work with your team through spatial video rooms, live shared canvases, or team channels.',
+    title: 'Work with others',
+    description: 'Meet, collaborate, share, and coordinate with your team.',
     badge: 'Live Collaboration',
     iconName: 'RoomIcon',
     color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-200/60 dark:border-rose-800/40'
@@ -263,3 +263,115 @@ export function inferWorkflowFromText(text = '') {
     toast: `Workspace prepared for: "${capitalizedTitle}"`
   };
 }
+
+/**
+ * Compose a unified workspace payload based on multiple simultaneous intent selections.
+ * 
+ * Rules:
+ * - Research + Create → Browser + relevant creation canvas (e.g. Deck or Compose)
+ * - Bring work together + Project → Memora/import + Projects/Tasks/Schedule
+ * - Project + Work with others → Projects + Tasks + Collaborative Room
+ * - Research + Create + Work with others → Research + creation + collaboration
+ * - Single intent → routes to that intent's standard workspace configuration
+ *
+ * @param {string[]} intentIds - Selected intent IDs ('create', 'organize', 'plan', 'research', 'collaborate')
+ * @param {string} customPrompt - Optional free-text prompt
+ * @returns {object} Action payload for AppCore
+ */
+export function composeCombinedIntents(intentIds = [], customPrompt = '') {
+  const set = new Set(intentIds);
+  const prompt = customPrompt.trim();
+  const rawTitle = prompt ? (prompt.charAt(0).toUpperCase() + prompt.slice(1)) : 'Initiative Workspace';
+
+  // 1. Research + Create (e.g. Browser + Deck / Compose)
+  if (set.has('research') && set.has('create')) {
+    if (set.has('collaborate')) {
+      return {
+        type: 'action',
+        destination: 'browser',
+        query: prompt || 'Market research & competitive analysis',
+        toast: 'Research engine, creation tools, and team sync prepared'
+      };
+    }
+    return {
+      type: 'create_canvas',
+      mode: 'deck',
+      title: prompt || 'Research Synthesis & Presentation',
+      toast: 'Research and creation studio configured'
+    };
+  }
+
+  // 2. Bring work together + Project (Memora / Import + Projects / Tasks)
+  if (set.has('organize') && set.has('plan')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Project tracking connected'
+    };
+  }
+
+  // 3. Project + Work with others (Projects + Tasks + Room)
+  if (set.has('plan') && set.has('collaborate')) {
+    return {
+      type: 'action',
+      destination: 'room',
+      meetingTopic: prompt || 'Project Kickoff & Milestone Alignment',
+      enableAiTranscription: true,
+      toast: 'Team room with project milestones configured'
+    };
+  }
+
+  // 4. Research + Work with others
+  if (set.has('research') && set.has('collaborate')) {
+    return {
+      type: 'action',
+      destination: 'browser',
+      query: prompt || 'Collaborative intelligence search',
+      toast: 'Shared research and collaborative room activated'
+    };
+  }
+
+  // 5. Single selections
+  if (set.has('plan')) {
+    return {
+      type: 'action',
+      destination: 'tasks',
+      toast: 'Milestones & Tasks workspace ready'
+    };
+  }
+
+  if (set.has('organize')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Knowledge Hub activated'
+    };
+  }
+
+  if (set.has('research')) {
+    return {
+      type: 'action',
+      destination: 'browser',
+      query: prompt || '',
+      toast: 'Deep Research & Browser activated'
+    };
+  }
+
+  if (set.has('collaborate')) {
+    return {
+      type: 'action',
+      destination: 'room',
+      meetingTopic: prompt || 'Team Strategy Room',
+      toast: 'Collaborative Room ready'
+    };
+  }
+
+  // Default: Create canvas
+  return {
+    type: 'create_canvas',
+    mode: 'compose',
+    title: prompt || 'Executive Document',
+    toast: 'Workspace configured and ready'
+  };
+}
+
