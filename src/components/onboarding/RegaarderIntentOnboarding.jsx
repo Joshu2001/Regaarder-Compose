@@ -6,60 +6,39 @@ import OnboardingPlanStep from './steps/OnboardingPlanStep';
 import OnboardingNewCanvasStep from './steps/OnboardingNewCanvasStep';
 import OnboardingRoomStep from './steps/OnboardingRoomStep';
 import OnboardingBlankWorkspaceStep from './steps/OnboardingBlankWorkspaceStep';
+import OnboardingPreparingWorkspaceStep from './steps/OnboardingPreparingWorkspaceStep';
 
 import { composeCombinedIntents } from '../../services/intentInferenceService';
 
 export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
-  // Navigation steps: 'intent' | 'organize' | 'research' | 'plan' | 'create' | 'collaborate' | 'blank_workspace'
+  // Navigation steps: 'intent' | 'preparing' | 'organize' | 'research' | 'plan' | 'create' | 'collaborate' | 'blank_workspace'
   const [currentStep, setCurrentStep] = useState('intent');
   const [selectedOutcomeId, setSelectedOutcomeId] = useState('create');
   const [customPrompt, setCustomPrompt] = useState('');
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   // Handle outcome selection or direct natural language inference
   const handleSelectIntent = (outcomeIdOrIds, freeText, directInferredAction = null) => {
     setCustomPrompt(freeText || '');
 
-    // If a direct natural language intent was inferred, deliver immediate time-to-first-value!
+    // If a direct natural language intent was inferred, prepare tailored payload
     if (outcomeIdOrIds === 'inferred' && directInferredAction) {
       setSelectedOutcomeId('inferred');
-      handlePathComplete(directInferredAction);
+      setPendingPayload(directInferredAction);
+      setCurrentStep('preparing');
       return;
     }
 
-    // Multi-select handling (Array of intent IDs)
-    if (Array.isArray(outcomeIdOrIds)) {
-      const selectedList = outcomeIdOrIds;
-      if (selectedList.length === 0) return;
-
-      setSelectedOutcomeId(selectedList.join('+'));
-
-      // If single selection in array, route directly into the REAL product UI with guided guidance!
-      if (selectedList.length === 1) {
-        const single = selectedList[0];
-        const combinedPayload = composeCombinedIntents([single], freeText || '');
-        handlePathComplete({
-          ...combinedPayload,
-          guidedIntent: single,
-          isSingleGuidedIntent: true
-        });
-        return;
-      }
-
-      // If multiple intents selected (e.g. 2 or 3), compose combined workspace directly
-      const combinedPayload = composeCombinedIntents(selectedList, freeText || '');
-      handlePathComplete(combinedPayload);
-      return;
-    }
-
-    // Legacy single string fallback
-    const outcomeId = outcomeIdOrIds || 'create';
-    setSelectedOutcomeId(outcomeId);
-    const combinedPayload = composeCombinedIntents([outcomeId], freeText || '');
-    handlePathComplete({
+    // Single intent or multi intent
+    const single = Array.isArray(outcomeIdOrIds) ? outcomeIdOrIds[0] : (outcomeIdOrIds || 'create');
+    setSelectedOutcomeId(single);
+    const combinedPayload = composeCombinedIntents([single], freeText || '');
+    setPendingPayload({
       ...combinedPayload,
-      guidedIntent: outcomeId,
+      guidedIntent: single,
       isSingleGuidedIntent: true
     });
+    setCurrentStep('preparing');
   };
 
   // Final Action dispatcher to parent App shell
@@ -92,13 +71,22 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950/45 dark:bg-black/75 backdrop-blur-md p-4 sm:p-6 lg:p-8 select-none animate-in fade-in duration-300">
-      <div className="relative w-full max-w-5xl min-h-[640px] rounded-3xl bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-white/10 shadow-[0_28px_72px_rgba(0,0,0,0.28)] overflow-hidden transition-all flex flex-col">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/[0.12] dark:bg-black/[0.22] backdrop-blur-[6px] p-4 sm:p-6 lg:p-8 select-none animate-in fade-in duration-200">
+      <div className="relative w-full max-w-[820px] rounded-2xl bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.18),0_1px_3px_rgba(15,23,42,0.06)] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] overflow-hidden transition-all flex flex-col">
         {/* Step 1: Outcome-Oriented Question & First-Class Natural Language Input */}
         {currentStep === 'intent' && (
           <OnboardingIntentStep
             onSelectIntent={handleSelectIntent}
             onSkip={handleSkipToBlank}
+          />
+        )}
+
+        {/* Labor Illusion Step: Contextual Workspace Preparation */}
+        {currentStep === 'preparing' && (
+          <OnboardingPreparingWorkspaceStep
+            intent={selectedOutcomeId}
+            customPrompt={customPrompt}
+            onComplete={() => handlePathComplete(pendingPayload)}
           />
         )}
 

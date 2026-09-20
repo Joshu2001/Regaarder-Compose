@@ -13,46 +13,34 @@ const ICON_MAP = {
 };
 
 export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [customText, setCustomText] = useState('');
-  const [isInferring, setIsInferring] = useState(false);
 
-  // Toggle multi-select intent (cap at 3 selections)
+  // Single-select toggle: clicking active item deselects it; clicking another selects it exclusively
   const handleToggleIntent = (id) => {
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((item) => item !== id);
-      }
-      if (prev.length >= 3) {
-        return [...prev.slice(1), id]; // keep newest 3 selections
-      }
-      return [...prev, id];
-    });
+    setSelectedId((prev) => (prev === id ? null : id));
   };
 
-  // Handle direct submission (either from clicking Continue or pressing Enter)
+  // Handle direct submission (transitions directly to dedicated preparation screen)
   const handleProceed = (e) => {
     if (e) e.preventDefault();
+
     const query = customText.trim();
 
-    // If free-text was typed, use natural language inference
+    // If free-text was typed, infer natural language intent
     if (query) {
-      setIsInferring(true);
-      setTimeout(() => {
-        const inferredAction = inferWorkflowFromText(query);
-        setIsInferring(false);
-        onSelectIntent('inferred', query, inferredAction);
-      }, 400);
+      const inferredAction = inferWorkflowFromText(query);
+      onSelectIntent('inferred', query, inferredAction);
       return;
     }
 
-    // Otherwise, use the selected intent categories
-    if (selectedIds.length > 0) {
-      onSelectIntent(selectedIds, '');
+    // Otherwise, pass single selected intent
+    if (selectedId) {
+      onSelectIntent(selectedId, '');
     }
   };
 
-  const hasValidSelection = selectedIds.length > 0 || customText.trim().length > 0;
+  const hasValidSelection = Boolean(selectedId) || customText.trim().length > 0;
 
   return (
     <div className="relative w-full h-full min-h-[560px] flex flex-col justify-between p-6 sm:p-9 lg:p-11 select-none animate-in fade-in duration-300">
@@ -61,7 +49,7 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
         <div className="flex items-center gap-2.5">
           <RegaarderBrandIcon size={22} className="text-slate-900 dark:text-zinc-100" />
           <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 font-sans">
-            Regaarder
+            Regaarder Workspace
           </span>
         </div>
 
@@ -85,10 +73,10 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
           </span>
         </div>
 
-        {/* Stripe-style 2-Column Responsive Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full mb-6">
+        {/* Apple-style 2-Column Responsive Card Grid with clean whitespace & hover micro-zoom */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 w-full mb-5">
           {OUTCOME_PATHS.map((item) => {
-            const isChecked = selectedIds.includes(item.id);
+            const isChecked = selectedId === item.id;
             const IconComponent = ICON_MAP[item.iconName] || ComposeIcon;
 
             return (
@@ -96,20 +84,20 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
                 key={item.id}
                 type="button"
                 onClick={() => handleToggleIntent(item.id)}
-                className={`relative flex items-center justify-between p-3.5 sm:p-4 rounded-xl text-left transition-all duration-150 cursor-pointer border group ${
+                className={`relative flex items-center justify-between p-3.5 sm:p-4 rounded-xl text-left transition-all duration-200 ease-out cursor-pointer border group hover:scale-[1.018] hover:shadow-md hover:z-10 ${
                   isChecked
-                    ? 'border-violet-600 dark:border-violet-500 bg-violet-50/50 dark:bg-violet-950/30 ring-1 ring-violet-600/30 shadow-xs'
-                    : 'border-slate-200/90 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-850/50 hover:bg-slate-100/70 dark:hover:bg-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-700'
+                    ? 'border-violet-600 dark:border-violet-500 bg-violet-50/70 dark:bg-violet-950/40 ring-1 ring-violet-600/35 shadow-xs'
+                    : 'border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850/40 hover:bg-white dark:hover:bg-zinc-800/90 hover:border-slate-300 dark:hover:border-zinc-700'
                 }`}
               >
                 {/* Left side: Checkbox + Icon + Label & Subtitle */}
                 <div className="flex items-center gap-3 min-w-0 pr-2">
-                  {/* Stripe-style rounded checkbox */}
+                  {/* Apple-style clean selection checkbox */}
                   <div
                     className={`w-4.5 h-4.5 rounded-[5px] flex items-center justify-center shrink-0 transition-all ${
                       isChecked
                         ? 'bg-violet-600 border border-violet-600 text-white shadow-2xs'
-                        : 'border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 group-hover:border-slate-400 dark:group-hover:border-zinc-500'
+                        : 'border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-850 group-hover:border-slate-400 dark:group-hover:border-zinc-500'
                     }`}
                   >
                     {isChecked && <Check size={11} strokeWidth={3.2} />}
@@ -119,17 +107,17 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
                   <div
                     className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                       isChecked
-                        ? 'text-violet-600 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/50'
-                        : 'text-slate-500 dark:text-zinc-400 bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 group-hover:text-slate-700 dark:group-hover:text-zinc-200'
+                        ? 'text-violet-600 dark:text-violet-300 bg-violet-100/80 dark:bg-violet-900/50'
+                        : 'text-slate-500 dark:text-zinc-400 bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-750 group-hover:text-slate-700 dark:group-hover:text-zinc-200'
                     }`}
                   >
                     <IconComponent size={14} strokeWidth={1.75} />
                   </div>
 
-                  {/* Content title and brief helper */}
+                  {/* Content title and helper with hover full-text un-truncate animation */}
                   <div className="min-w-0 flex flex-col">
                     <span
-                      className={`text-[13.5px] font-semibold tracking-tight transition-colors truncate ${
+                      className={`text-[13px] sm:text-[13.5px] font-semibold tracking-tight transition-colors ${
                         isChecked
                           ? 'text-violet-950 dark:text-violet-100'
                           : 'text-slate-800 dark:text-zinc-200'
@@ -137,7 +125,7 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
                     >
                       {item.title}
                     </span>
-                    <span className="text-[11.5px] text-slate-500 dark:text-zinc-400 line-clamp-1">
+                    <span className="text-[11px] sm:text-[11.5px] text-slate-500 dark:text-zinc-400 line-clamp-1 group-hover:line-clamp-none transition-all duration-200">
                       {item.description}
                     </span>
                   </div>
@@ -146,10 +134,10 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
                 {/* Right side: Subtle micro category pill */}
                 <div className="shrink-0 hidden md:block">
                   <span
-                    className={`text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border transition-colors ${
+                    className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border transition-colors ${
                       isChecked
                         ? 'bg-violet-100/90 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800/60'
-                        : 'bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-zinc-700/70'
+                        : 'bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200/60 dark:border-zinc-700/60'
                     }`}
                   >
                     {item.badge}
@@ -189,9 +177,9 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
 
         <div className="flex items-center gap-3">
           <span className="text-[12px] text-slate-400 dark:text-zinc-500 hidden sm:inline">
-            {selectedIds.length > 0
-              ? `${selectedIds.length} of 3 selected`
-              : 'Select 1–3 options'}
+            {selectedId
+              ? '1 intent selected'
+              : 'Select an option to get started'}
           </span>
 
           <button
@@ -205,24 +193,15 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
           <button
             type="button"
             onClick={handleProceed}
-            disabled={!hasValidSelection || isInferring}
-            className={`px-5 py-2 rounded-xl text-[13px] font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
+            disabled={!hasValidSelection}
+            className={`px-5 py-2 rounded-xl text-[13px] font-semibold transition-all flex items-center gap-1.5 shadow-sm min-w-[108px] justify-center ${
               hasValidSelection
                 ? 'bg-violet-600 hover:bg-violet-700 text-white active:scale-[0.98] cursor-pointer'
                 : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 cursor-not-allowed opacity-60'
             }`}
           >
-            {isInferring ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                <span>Preparing...</span>
-              </>
-            ) : (
-              <>
-                <span>Continue</span>
-                <ArrowRight size={13} strokeWidth={2.5} />
-              </>
-            )}
+            <span>Continue</span>
+            <ArrowRight size={13} strokeWidth={2.5} />
           </button>
         </div>
       </div>

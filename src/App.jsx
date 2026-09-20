@@ -82957,7 +82957,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {...editorDragHandlers}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
-                  className={`mb-4 min-h-[70vh] cursor-text outline-none text-sm leading-relaxed transition-colors ${isDarkMode ? 'text-zinc-100' : 'text-slate-800'}`}
+                  data-placeholder="Start writing, or press / for commands"
+                  className={`mb-4 min-h-[70vh] cursor-text outline-none text-sm leading-relaxed transition-colors compose-body-editable ${isDarkMode ? 'text-zinc-100' : 'text-slate-800'}`}
                   style={{ fontFamily: resolveFontFamily(editorFont), textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                 />
                 {canShowComposeActions && (
