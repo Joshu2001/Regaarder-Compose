@@ -1,60 +1,81 @@
-import React, { useState } from 'react';
-import { ArrowRight, FolderGit2, Search, CheckSquare, Edit3 } from 'lucide-react';
-import { RegaarderAiIcon } from '../../RegaarderProductIcons';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowRight, FolderGit2, Search, CheckSquare, ChevronDown, Check } from 'lucide-react';
+import { RegaarderAiIcon, RoomIcon, ComposeIcon } from '../../RegaarderProductIcons';
 import RegaarderBrandIcon from '../../RegaarderBrandIcon';
 
-const INTENT_CARDS = [
-  {
-    id: 'new',
-    title: 'Start something new',
-    description: 'Create a doc, sheet, or presentation canvas from scratch.',
-    icon: RegaarderAiIcon,
-    badgeColor: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50'
-  },
+export const WORKFLOW_CARDS = [
   {
     id: 'organize',
-    title: 'Organize existing work',
-    description: 'Ingest and index your docs, files, and project context.',
+    title: 'Ingest Files & Memory Bank',
+    description: 'Drop PDFs, sheets, or docs. Search & query across all of them using AI memory.',
+    badge: 'Universal Memory',
     icon: FolderGit2,
-    badgeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50'
+    badgeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/60 dark:border-emerald-800/40',
+    accentColor: 'border-emerald-500/80 bg-emerald-50/40 dark:bg-emerald-950/20 ring-emerald-500/30'
   },
   {
     id: 'analyze',
-    title: 'Research or analyze',
-    description: 'Uncover insights, search memory, and analyze data with Orb.',
+    title: 'Deep Research with Orb AI',
+    description: 'Synthesize market trends, competitive intelligence, and facts across live web & memory.',
+    badge: 'Orb Intelligence',
     icon: Search,
-    badgeColor: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50'
+    badgeColor: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 border-sky-200/60 dark:border-sky-800/40',
+    accentColor: 'border-sky-500/80 bg-sky-50/40 dark:bg-sky-950/20 ring-sky-500/30'
+  },
+  {
+    id: 'new',
+    title: 'Create Doc, Sheet, Deck or Canvas',
+    description: 'Start executive writing, data matrix formulas, or presentation slides from scratch.',
+    badge: 'Creation Studio',
+    icon: ComposeIcon,
+    badgeColor: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border-violet-200/60 dark:border-violet-800/40',
+    accentColor: 'border-violet-500/80 bg-violet-50/40 dark:bg-violet-950/20 ring-violet-500/30'
   },
   {
     id: 'plan',
-    title: 'Plan and execute',
-    description: 'Track deliverables, manage sprint tasks, and align schedules.',
+    title: 'Manage Tasks & Milestones',
+    description: 'Track key deliverables, coordinate sprints, and synchronize project schedules.',
+    badge: 'Execution & Schedule',
     icon: CheckSquare,
-    badgeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50'
+    badgeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200/60 dark:border-indigo-800/40',
+    accentColor: 'border-indigo-500/80 bg-indigo-50/40 dark:bg-indigo-950/20 ring-indigo-500/30'
+  },
+  {
+    id: 'room',
+    title: 'Collaborative Video Room',
+    description: 'Meet with spatial video presence, interactive shared stage, and live AI meeting notes.',
+    badge: 'Spatial Room',
+    icon: RoomIcon,
+    badgeColor: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-200/60 dark:border-rose-800/40',
+    accentColor: 'border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-rose-500/30'
   }
 ];
 
 export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
-  const [selectedId, setSelectedId] = useState('new');
-  const [customText, setCustomText] = useState('');
+  const [selectedId, setSelectedId] = useState('organize');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const handleSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (customText.trim()) {
-      onSelectIntent('custom', customText.trim());
-    } else {
-      onSelectIntent(selectedId, '');
-    }
-  };
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, []);
 
   const handleCardClick = (id) => {
     setSelectedId(id);
-    setCustomText('');
     onSelectIntent(id, '');
   };
 
+  const selectedWorkflow = WORKFLOW_CARDS.find(w => w.id === selectedId) || WORKFLOW_CARDS[0];
+
   return (
-    <div className="relative w-full h-full min-h-[580px] flex flex-col justify-between p-8 sm:p-12 select-none animate-in fade-in duration-300">
+    <div className="relative w-full h-full min-h-[580px] flex flex-col justify-between p-8 sm:p-10 select-none animate-in fade-in duration-300">
       {/* Header with Regaarder Mark */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2.5">
@@ -63,82 +84,123 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
             Regaarder
           </span>
         </div>
+
+        {/* Quick Workflow Dropdown Switcher */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(prev => !prev)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-white/80 dark:bg-zinc-900/80 text-[12px] font-medium text-slate-700 dark:text-zinc-300 transition-all cursor-pointer shadow-2xs"
+          >
+            <span>Jump to: <strong className="font-semibold text-slate-900 dark:text-zinc-100">{selectedWorkflow.badge}</strong></span>
+            <ChevronDown size={13} className={`text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-1.5 w-64 rounded-2xl bg-white dark:bg-[#1c1c20] border border-slate-200/90 dark:border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.18)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2.5 py-1">
+                All Platform Workflows
+              </div>
+              {WORKFLOW_CARDS.map((item) => {
+                const ItemIcon = item.icon;
+                const isCur = item.id === selectedId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      handleCardClick(item.id);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left text-[12px] transition-colors cursor-pointer ${
+                      isCur
+                        ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
+                        : 'hover:bg-slate-50 dark:hover:bg-zinc-800/60 text-slate-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ItemIcon size={14} className="shrink-0" />
+                      <span className="truncate">{item.badge}</span>
+                    </div>
+                    {isCur && <Check size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Main Intent Form */}
-      <div className="max-w-2xl w-full mx-auto my-auto py-4">
-        <div className="text-center mb-8">
-          <h1 className="text-[28px] sm:text-[32px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-tight mb-2.5">
-            What are you working on?
+      {/* Main Outcome Selection Stage */}
+      <div className="max-w-3xl w-full mx-auto my-auto py-2">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-white/5 text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-3">
+            <RegaarderAiIcon size={12} className="text-violet-600 dark:text-violet-400" />
+            <span>AI-Native Executive Workspace</span>
+          </div>
+          <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-tight mb-2">
+            What would you like to achieve today?
           </h1>
-          <p className="text-[14px] text-slate-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-            Choose how you'd like to begin. Regaarder will activate the exact tools, memory, and workspace you need.
+          <p className="text-[13.5px] text-slate-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+            Choose your primary workflow. Regaarder will activate the exact tools, memory, and interface you need.
           </p>
         </div>
 
-        {/* 2x2 Grid of Intent Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
-          {INTENT_CARDS.map((card) => {
+        {/* Dynamic Grid: 2 Top Main Cards + 3 Supporting Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {WORKFLOW_CARDS.map((card, index) => {
             const Icon = card.icon;
-            const isSelected = selectedId === card.id && !customText.trim();
+            const isSelected = selectedId === card.id;
+            const isWide = index === 0 || index === 1; // Top 2 key differentiators get prominent styling
             return (
               <button
                 key={card.id}
                 type="button"
                 onClick={() => handleCardClick(card.id)}
-                className={`flex items-start gap-4 p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer group ${
+                className={`flex flex-col justify-between p-4.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer group relative ${
+                  isWide ? 'sm:col-span-1' : ''
+                } ${
                   isSelected
-                    ? 'border-violet-500/80 bg-violet-50/50 dark:bg-violet-950/20 shadow-[0_2px_12px_rgba(139,92,246,0.12)] ring-1 ring-violet-500/30'
-                    : 'border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-white/70 dark:bg-zinc-900/50 hover:bg-slate-50/50 dark:hover:bg-zinc-800/30'
+                    ? `${card.accentColor} shadow-xs ring-1`
+                    : 'border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-white/75 dark:bg-zinc-900/50 hover:bg-slate-50/60 dark:hover:bg-zinc-800/40'
                 }`}
               >
-                <div className={`p-2.5 rounded-xl shrink-0 transition-transform group-hover:scale-105 ${card.badgeColor}`}>
-                  <Icon size={18} strokeWidth={1.8} />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-[14px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className={`p-2 rounded-xl shrink-0 transition-transform group-hover:scale-105 ${card.badgeColor}`}>
+                      <Icon size={17} strokeWidth={1.8} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 text-slate-500 dark:text-zinc-400">
+                      {card.badge}
+                    </span>
+                  </div>
+
+                  <h2 className="text-[13.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight mb-1">
                     {card.title}
                   </h2>
-                  <p className="text-[12px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+                  <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
                     {card.description}
                   </p>
+                </div>
+
+                <div className="pt-3 mt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 transition-colors">
+                    Configure & Launch
+                  </span>
+                  <ArrowRight size={13} className="text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                 </div>
               </button>
             );
           })}
         </div>
-
-        {/* Free-text input row */}
-        <form onSubmit={handleSubmit} className="relative w-full">
-          <div className="relative flex items-center">
-            <div className="absolute left-4 text-slate-400 dark:text-zinc-500">
-              <Edit3 size={15} />
-            </div>
-            <input
-              type="text"
-              value={customText}
-              onChange={(e) => setCustomText(e.target.value)}
-              placeholder="Or describe your project in your own words..."
-              className="w-full h-12 pl-11 pr-12 text-[13.5px] rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-1 focus:ring-violet-500/30 transition-all shadow-2xs"
-            />
-            <button
-              type="submit"
-              disabled={!customText.trim() && !selectedId}
-              className={`absolute right-2.5 p-2 rounded-xl text-white transition-all cursor-pointer ${
-                customText.trim()
-                  ? 'bg-violet-600 hover:bg-violet-700 shadow-xs active:scale-95'
-                  : 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 hover:bg-violet-600 hover:text-white'
-              }`}
-              title="Continue"
-            >
-              <ArrowRight size={15} strokeWidth={2} />
-            </button>
-          </div>
-        </form>
       </div>
 
       {/* Footer Link */}
-      <div className="flex items-center justify-between w-full pt-4">
+      <div className="flex items-center justify-between w-full pt-3 border-t border-slate-100 dark:border-white/5">
+        <span className="text-[11.5px] text-slate-400 dark:text-zinc-500">
+          All workflows share the same unified memory, models, and real-time synchronization.
+        </span>
         <button
           type="button"
           onClick={onSkip}
