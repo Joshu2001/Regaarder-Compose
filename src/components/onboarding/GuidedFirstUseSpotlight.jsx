@@ -148,35 +148,18 @@ export default function GuidedFirstUseSpotlight({
 
   return createPortal(
     <div className="fixed inset-0 z-[299999] pointer-events-none select-none animate-in fade-in duration-200">
-      {/* 1. Subtle 12% neutral background dim with crisp cutout for the real target */}
-      <svg
-        className="fixed inset-0 w-full h-full pointer-events-none"
-        aria-hidden="true"
-      >
-        <defs>
-          <mask id="onboarding-spotlight-mask">
-            {/* Fill entire canvas with white (dimmed area) */}
-            <rect width="100%" height="100%" fill="white" />
-            {/* Cut out the target element so it remains 100% undimmed and vibrant */}
-            <rect
-              x={targetX}
-              y={targetY}
-              width={targetW}
-              height={targetH}
-              rx={targetRadius}
-              ry={targetRadius}
-              fill="black"
-            />
-          </mask>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          fill="currentColor"
-          className="text-slate-950/12 dark:text-black/35"
-          mask="url(#onboarding-spotlight-mask)"
-        />
-      </svg>
+      {/* 1. Subtle 10-12% neutral dim overlay with target cutout via large box-shadow */}
+      <div
+        style={{
+          top: `${targetY}px`,
+          left: `${targetX}px`,
+          width: `${targetW}px`,
+          height: `${targetH}px`,
+          borderRadius: `${targetRadius}px`,
+          boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.10)'
+        }}
+        className="fixed pointer-events-none transition-all duration-200"
+      />
 
       {/* 2. Target Element Outline & Apple-style Glow Ring */}
       <div
