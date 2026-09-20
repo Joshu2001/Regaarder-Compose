@@ -89441,12 +89441,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }
 
               if (payload.destination === 'projects') {
+                try {
+                  sessionStorage.setItem("regaarder_landing_target", JSON.stringify({ tab: 'projects', projectTab: 'overview' }));
+                } catch (_) {}
                 setActivePrimaryNav('home');
                 setProductMode('landing');
-                setActiveRailTab('projects');
                 window.dispatchEvent(new CustomEvent('regaarder:set-landing-tab', {
                   detail: { tab: 'projects', projectTab: 'overview' }
                 }));
+                // Ensure mounting component receives the event if mounting asynchronously
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('regaarder:set-landing-tab', {
+                    detail: { tab: 'projects', projectTab: 'overview' }
+                  }));
+                }, 50);
                 if (payload.toast) showToast(payload.toast);
                 return;
               }
@@ -89534,6 +89542,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }
 
               // Route directly to the prepared project in Landing Projects Workspace
+              try {
+                sessionStorage.setItem("regaarder_landing_target", JSON.stringify({
+                  tab: 'projects',
+                  projectId: payload.projectId,
+                  projectTab: 'overview'
+                }));
+              } catch (_) {}
               setProductMode('landing');
               window.dispatchEvent(new CustomEvent('regaarder:set-landing-tab', {
                 detail: {
@@ -89542,6 +89557,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   projectTab: 'overview'
                 }
               }));
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('regaarder:set-landing-tab', {
+                  detail: {
+                    tab: 'projects',
+                    projectId: payload.projectId,
+                    projectTab: 'overview'
+                  }
+                }));
+              }, 50);
               if (payload.toast) showToast(payload.toast);
               return;
             }
