@@ -67,7 +67,32 @@ export function inferWorkflowFromText(text = '') {
   const rawTitle = text.trim();
   const capitalizedTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
 
-  // 1. Presentation / Slides / Pitch Deck
+  // 1. Research competitors and prepare a presentation / Deck + Research (e.g. "I need to research competitors and prepare a presentation.")
+  if (
+    (query.includes('research') || query.includes('competitor') || query.includes('market') || query.includes('analysis')) &&
+    (query.includes('presentation') || query.includes('deck') || query.includes('slides') || query.includes('pitch') || query.includes('prepare a presentation'))
+  ) {
+    return {
+      type: 'create_canvas',
+      mode: 'deck',
+      title: capitalizedTitle || 'Competitor Research & Executive Presentation',
+      toast: 'Prepared presentation canvas with research synthesis context'
+    };
+  }
+
+  // 2. 30 documents / Bring work together + Research / Ingestion (e.g. "I have 30 documents and need to understand them.")
+  if (
+    (query.includes('document') || query.includes('documents') || query.includes('files') || query.includes('notes') || query.includes('import')) &&
+    (query.includes('understand') || query.includes('make sense') || query.includes('summarize') || query.includes('analyze') || query.includes('bring together') || query.includes('connect'))
+  ) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Document Understanding activated'
+    };
+  }
+
+  // 3. Presentation / Slides / Pitch Deck alone
   if (
     query.includes('presentation') ||
     query.includes('pitch deck') ||
@@ -83,7 +108,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 2. Spreadsheet / Data Analysis / Financial Model / Metrics
+  // 4. Spreadsheet / Data Analysis / Financial Model / Metrics
   if (
     query.includes('dataset') ||
     query.includes('spreadsheet') ||
@@ -103,7 +128,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 3. Document / Writing / Proposal / Memo / Draft
+  // 5. Document / Writing / Proposal / Memo / Draft
   if (
     query.includes('write') ||
     query.includes('proposal') ||
@@ -123,7 +148,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 4. Whiteboard / Diagram / Brainstorm / Canvas
+  // 6. Whiteboard / Diagram / Brainstorm / Canvas
   if (
     query.includes('whiteboard') ||
     query.includes('brainstorm') ||
@@ -139,7 +164,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 5. Research / Competitors / Market / Audit / Investigate
+  // 7. Research / Competitors / Market / Audit / Investigate
   if (
     query.includes('research') ||
     query.includes('competitor') ||
@@ -157,7 +182,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 6. Meeting / Team Call / Video / Standup
+  // 8. Meeting / Team Call / Video / Standup
   if (
     query.includes('meet') ||
     query.includes('call') ||
@@ -175,7 +200,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 7. Organize Files / Ingest / 30 documents / Connect notes
+  // 9. Organize Files / Ingest / 30 documents / Connect notes
   if (
     query.includes('document') ||
     query.includes('file') ||
@@ -193,7 +218,7 @@ export function inferWorkflowFromText(text = '') {
     };
   }
 
-  // 8. Complex Project / Startup Launch / Sprint / Milestones (e.g. "I need to launch my startup")
+  // 10. Complex Project / Startup Launch / Sprint / Milestones (e.g. "I need to launch my startup")
   // Automatically prepare a cohesive project workspace with real milestones, tasks, and brief
   const projectPhases = [
     {
@@ -290,18 +315,27 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
         type: 'action',
         destination: 'browser',
         query: prompt || 'Market research & competitive analysis',
-        toast: 'Research engine, creation tools, and team sync prepared'
+        toast: 'Research engine, creation studio, and team sync prepared'
       };
     }
     return {
       type: 'create_canvas',
       mode: 'deck',
-      title: prompt || 'Research Synthesis & Presentation',
-      toast: 'Research and creation studio configured'
+      title: rawTitle !== 'Initiative Workspace' ? rawTitle : 'Research Synthesis & Presentation',
+      toast: 'Presentation canvas with research context prepared'
     };
   }
 
-  // 2. Bring work together + Project (Memora / Import + Projects / Tasks)
+  // 2. Bring work together + Research (Universal Memory + Document Understanding / Search)
+  if (set.has('organize') && set.has('research')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Research Hub activated'
+    };
+  }
+
+  // 3. Bring work together + Project (Memora / Import + Projects / Tasks)
   if (set.has('organize') && set.has('plan')) {
     return {
       type: 'action',
@@ -310,7 +344,7 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     };
   }
 
-  // 3. Project + Work with others (Projects + Tasks + Room)
+  // 4. Project + Work with others (Projects + Tasks + Room)
   if (set.has('plan') && set.has('collaborate')) {
     return {
       type: 'action',
@@ -321,7 +355,27 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     };
   }
 
-  // 4. Research + Work with others
+  // 5. Plan (Project) + Create (Drafting deliverables & Project tasks)
+  if (set.has('plan') && set.has('create')) {
+    return {
+      type: 'create_canvas',
+      mode: 'compose',
+      title: rawTitle !== 'Initiative Workspace' ? rawTitle : 'Project Roadmap & Execution Plan',
+      bodyHtml: `<h1>${rawTitle !== 'Initiative Workspace' ? rawTitle : 'Project Roadmap'}</h1><p>Integrated planning and creation document.</p><h2>1. Deliverables & Milestones</h2><p>Track core outputs and collaborate across workstreams.</p>`,
+      toast: 'Project planning and deliverables document prepared'
+    };
+  }
+
+  // 6. Bring work together + Create (Synthesizing knowledge into drafts)
+  if (set.has('organize') && set.has('create')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory connected to document creation'
+    };
+  }
+
+  // 7. Research + Work with others
   if (set.has('research') && set.has('collaborate')) {
     return {
       type: 'action',
@@ -331,12 +385,22 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     };
   }
 
-  // 5. Single selections
+  // 5. Single selections mapped directly to real workspaces
+  if (set.has('create')) {
+    return {
+      type: 'navigate_workspace',
+      destination: 'landing',
+      guidedIntent: 'create',
+      toast: 'Welcome to your workspace. Start by creating a document.'
+    };
+  }
+
   if (set.has('plan')) {
     return {
-      type: 'action',
-      destination: 'tasks',
-      toast: 'Milestones & Tasks workspace ready'
+      type: 'navigate_workspace',
+      destination: 'projects',
+      guidedIntent: 'plan',
+      toast: 'Projects workspace activated'
     };
   }
 
@@ -344,6 +408,7 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     return {
       type: 'action',
       destination: 'omni-portal',
+      guidedIntent: 'organize',
       toast: 'Universal Memory & Knowledge Hub activated'
     };
   }
@@ -352,6 +417,7 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     return {
       type: 'action',
       destination: 'browser',
+      guidedIntent: 'research',
       query: prompt || '',
       toast: 'Deep Research & Browser activated'
     };
@@ -361,6 +427,7 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
     return {
       type: 'action',
       destination: 'room',
+      guidedIntent: 'collaborate',
       meetingTopic: prompt || 'Team Strategy Room',
       toast: 'Collaborative Room ready'
     };
@@ -368,9 +435,9 @@ export function composeCombinedIntents(intentIds = [], customPrompt = '') {
 
   // Default: Create canvas
   return {
-    type: 'create_canvas',
-    mode: 'compose',
-    title: prompt || 'Executive Document',
+    type: 'navigate_workspace',
+    destination: 'landing',
+    guidedIntent: 'create',
     toast: 'Workspace configured and ready'
   };
 }

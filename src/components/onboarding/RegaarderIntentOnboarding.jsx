@@ -33,14 +33,15 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
 
       setSelectedOutcomeId(selectedList.join('+'));
 
-      // If single selection in array, route to its dedicated setup step if appropriate
+      // If single selection in array, route directly into the REAL product UI with guided guidance!
       if (selectedList.length === 1) {
         const single = selectedList[0];
-        if (single === 'organize') setCurrentStep('organize');
-        else if (single === 'research') setCurrentStep('research');
-        else if (single === 'plan') setCurrentStep('plan');
-        else if (single === 'collaborate') setCurrentStep('collaborate');
-        else setCurrentStep('create');
+        const combinedPayload = composeCombinedIntents([single], freeText || '');
+        handlePathComplete({
+          ...combinedPayload,
+          guidedIntent: single,
+          isSingleGuidedIntent: true
+        });
         return;
       }
 
@@ -51,22 +52,14 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
     }
 
     // Legacy single string fallback
-    const outcomeId = outcomeIdOrIds;
+    const outcomeId = outcomeIdOrIds || 'create';
     setSelectedOutcomeId(outcomeId);
-
-    if (outcomeId === 'organize') {
-      setCurrentStep('organize');
-    } else if (outcomeId === 'research') {
-      setCurrentStep('research');
-    } else if (outcomeId === 'plan') {
-      setCurrentStep('plan');
-    } else if (outcomeId === 'collaborate') {
-      setCurrentStep('collaborate');
-    } else if (outcomeId === 'create' || outcomeId === 'new') {
-      setCurrentStep('create');
-    } else {
-      setCurrentStep('create');
-    }
+    const combinedPayload = composeCombinedIntents([outcomeId], freeText || '');
+    handlePathComplete({
+      ...combinedPayload,
+      guidedIntent: outcomeId,
+      isSingleGuidedIntent: true
+    });
   };
 
   // Final Action dispatcher to parent App shell

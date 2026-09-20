@@ -165,6 +165,7 @@ import ScreenShareSourceModal from './components/room/ScreenShareSourceModal';
 import TableDropdownPopover, { createDropdownHTML } from './components/TableDropdownPopover';
 import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
 import RegaarderIntentOnboarding from './components/onboarding/RegaarderIntentOnboarding';
+import GuidedFirstUseSpotlight from './components/onboarding/GuidedFirstUseSpotlight';
 import { ONBOARDING_INTENT_PRESETS } from './components/onboarding/onboardingPresets';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
 import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
@@ -6901,6 +6902,7 @@ function AppCore() {
   const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
 
   const [showIntentOnboarding, setShowIntentOnboarding] = useState(true);
+  const [activeGuidedIntent, setActiveGuidedIntent] = useState(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -89422,6 +89424,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
             setShowIntentOnboarding(false);
             if (!payload) return;
 
+            // Handle Guided First Use Intent
+            if (payload.guidedIntent) {
+              setActiveGuidedIntent(payload.guidedIntent);
+            }
+
+            // Path 0: Direct Real Workspace Navigation (First-value guided route)
+            if (payload.type === 'navigate_workspace') {
+              if (payload.destination === 'landing') {
+                setActivePrimaryNav('home');
+                setProductMode('landing');
+                setActiveRailTab('home');
+                if (payload.toast) showToast(payload.toast);
+                return;
+              }
+
+              if (payload.destination === 'projects') {
+                setActivePrimaryNav('home');
+                setProductMode('landing');
+                setActiveRailTab('projects');
+                window.dispatchEvent(new CustomEvent('regaarder:set-landing-tab', {
+                  detail: { tab: 'projects', projectTab: 'overview' }
+                }));
+                if (payload.toast) showToast(payload.toast);
+                return;
+              }
+
+              openLandingWorkspace(payload.destination);
+              if (payload.toast) showToast(payload.toast);
+              return;
+            }
+
             // Path A & B: Action / Tool Navigation (Omni-Portal, Research Browser, Tasks Workspace)
             if (payload.type === 'action') {
               if (payload.destination === 'omni-portal') {
@@ -89437,6 +89470,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 if (payload.query) {
                   setOrbInitialQuery(payload.query);
                 }
+                if (payload.toast) showToast(payload.toast);
+                return;
+              }
+
+              if (payload.destination === 'room') {
+                setProductMode('room-landing');
                 if (payload.toast) showToast(payload.toast);
                 return;
               }
@@ -89527,6 +89566,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
               setProductMode(newDoc.mode || 'compose');
               showToast(`Workspace prepared: ${newDoc.title}`);
             }
+          }}
+        />
+      )}
+
+      {/* ── Layer 8.5: Real-Product Guided First Use Spotlight ─────────── */}
+      {activeGuidedIntent && !showIntentOnboarding && (
+        <GuidedFirstUseSpotlight
+          intent={activeGuidedIntent}
+          onComplete={() => {
+            setActiveGuidedIntent(null);
+          }}
+          onDismiss={() => {
+            setActiveGuidedIntent(null);
           }}
         />
       )}

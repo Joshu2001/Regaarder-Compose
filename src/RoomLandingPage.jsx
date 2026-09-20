@@ -1676,6 +1676,7 @@ export default function RoomLandingPage({
                     {/* Primary Action: Start now */}
                     <button
                       type="button"
+                      data-onboarding-target="room-start-now"
                       onClick={() => setIsGreenRoomOpen(true)}
                       className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
                     >

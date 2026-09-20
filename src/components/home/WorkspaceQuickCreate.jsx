@@ -130,6 +130,7 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
           <button
             key={item.id}
             type="button"
+            data-onboarding-target={item.id === 'compose' ? 'quick-create-compose' : `quick-create-${item.id}`}
             onClick={() => onLaunch && onLaunch(item.id)}
             className="flex flex-col items-start p-4 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-xs transition-all text-left cursor-pointer group"
           >

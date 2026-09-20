@@ -645,6 +645,7 @@ export default function OmniPortalModal({
           <div className="w-full md:w-[48%] flex flex-col p-5 overflow-y-auto">
             {/* ─── Premium Drop Zone ─── */}
             <div
+              data-onboarding-target="omni-dropzone"
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDrop={handleDrop}

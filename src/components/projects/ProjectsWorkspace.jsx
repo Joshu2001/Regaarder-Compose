@@ -900,6 +900,7 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
 
               <button
                 type="button"
+                data-onboarding-target="new-project-button"
                 onClick={onOpenCreateModal}
                 className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border-none shadow-xs active:scale-98"
               >
@@ -2292,6 +2293,7 @@ Return ONLY a valid JSON array of 4-5 phase objects with these exact keys:
             </p>
             <button
               type="button"
+              data-onboarding-target="new-project-button"
               onClick={onOpenCreateModal}
               className="h-9 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 text-white text-[13px] font-medium transition-all cursor-pointer border-none shadow-xs active:scale-98"
             >

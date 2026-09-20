@@ -289,6 +289,7 @@ export default function OrbSpotlightModal({
                 <input
                   ref={searchInputRef}
                   type="text"
+                  data-onboarding-target="orb-search-input"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t('orb.searchPlaceholder') || "Search across documents, spreadsheets, slides, and tasks..."}

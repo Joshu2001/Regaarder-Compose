@@ -17,11 +17,14 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
   const [customText, setCustomText] = useState('');
   const [isInferring, setIsInferring] = useState(false);
 
-  // Toggle multi-select intent
+  // Toggle multi-select intent (cap at 3 selections)
   const handleToggleIntent = (id) => {
     setSelectedIds((prev) => {
       if (prev.includes(id)) {
         return prev.filter((item) => item !== id);
+      }
+      if (prev.length >= 3) {
+        return [...prev.slice(1), id]; // keep newest 3 selections
       }
       return [...prev, id];
     });
@@ -79,7 +82,7 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
             What would you like Regaarder to help you do?
           </h1>
           <p className="text-[13.5px] text-slate-600 dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
-            Select what you’re trying to accomplish. Regaarder will combine the right tools and context for you.
+            Select what you’re trying to accomplish. Regaarder will set up the right workspace, tools, and context for you.
           </p>
         </div>
 
