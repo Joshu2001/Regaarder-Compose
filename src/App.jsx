@@ -34114,14 +34114,15 @@ Answer the user's question, provide an insightful summary, or explain the contex
     if (targetDoc.whiteboardShapes !== undefined) setWhiteboardShapes(targetDoc.whiteboardShapes || []);
 
     // Always sync productMode to the target document's app context so switching
-    // between Notes tabs and Docs tabs never shows the wrong viewer or toolbar.
-    if (targetDoc.isNotesDoc || targetDoc.mode === 'notes') {
+    // between Notes tabs, Sheets tabs, and Docs tabs never shows the wrong viewer or toolbar.
+    const resolvedMode = getDocMode(targetDoc);
+    if (resolvedMode === 'notes') {
       setProductMode('notes');
-    } else if (targetDoc.mode === 'sheets' || targetDoc.sheetsData) {
+    } else if (resolvedMode === 'sheets') {
       setProductMode('sheets');
-    } else if (targetDoc.mode === 'deck' || targetDoc.deckSlidesData) {
+    } else if (resolvedMode === 'deck') {
       setProductMode('deck');
-    } else if (targetDoc.mode === 'whiteboard') {
+    } else if (resolvedMode === 'whiteboard') {
       setProductMode('whiteboard');
     } else {
       // It is a compose doc: ensure compose mode is fully restored
@@ -37318,9 +37319,9 @@ Respond with a JSON array of slide objects matching the schema.`;
     // Notes docs must be identified before the generic mode fallback
     if (doc.isNotesDoc || doc.mode === 'notes') return 'notes';
     if (doc.mode) return doc.mode;
-    // Structural heuristics — presence of type-specific fields is authoritative
-    if (doc.sheetsData !== undefined || doc.sheetsTitle !== undefined || doc.title?.toLowerCase().includes('sheet')) return 'sheets';
-    if (doc.deckSlidesData !== undefined || doc.deckTitle !== undefined || doc.title?.toLowerCase().includes('deck')) return 'deck';
+    // Structural heuristics only when doc.mode is absent:
+    if (doc.title?.toLowerCase().includes('sheet')) return 'sheets';
+    if (doc.title?.toLowerCase().includes('deck')) return 'deck';
     if (doc.isWhiteboard || doc.title?.toLowerCase().includes('whiteboard')) return 'whiteboard';
     return 'compose';
   }, []);
@@ -76750,16 +76751,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
               </div>
             )}
-            <button
-              type="button"
-              onClick={createItemForCurrentContext}
-              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-              title="Create new item"
-              aria-label="Create new item"
-            >
-              <Plus size={14} strokeWidth={1.5} />
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={createItemForCurrentContext}
+            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200/60 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 transition-colors mx-0.5"
+            title="Create new item"
+            aria-label="Create new item"
+          >
+            <Plus size={14} strokeWidth={1.75} />
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -76767,7 +76768,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 topDocTabsContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
               }
             }}
-            className="shrink-0 p-1 ml-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            className="shrink-0 p-1 ml-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
             title="Scroll tabs right"
           >
             <ChevronRight size={16} />
