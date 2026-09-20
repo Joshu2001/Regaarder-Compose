@@ -16,9 +16,9 @@ const EntitlementContext = createContext(null);
 
 export const EntitlementProvider = ({ children }) => {
   const [currentPlan, setCurrentPlanState] = useState(getActivePlan());
-  // Set to true by default per user request so the paywall appears immediately on landing
-  const [isPaywallOpen, setIsPaywallOpen] = useState(true);
-  const [paywallReason, setPaywallReason] = useState({ source: 'initial_landing' });
+  // The paywall should not appear unprompted on landing / during onboarding
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState(null);
 
   useEffect(() => {
     const handlePlanChange = (e) => {

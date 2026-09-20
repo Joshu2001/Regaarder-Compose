@@ -74348,6 +74348,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setAuthModalOpen(true);
               }
             }}
+            isGuidingOnboarding={showIntentOnboarding || Boolean(activeGuidedIntent)}
           />
         </div>
       ) : productMode === 'room-landing' ? (

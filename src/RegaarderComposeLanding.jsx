@@ -34,7 +34,8 @@ export default function RegaarderComposeLanding({
   onOpenShortcuts,
   onOpenSettings,
   isDocumentImmersive,
-  onToggleImmersive
+  onToggleImmersive,
+  isGuidingOnboarding = false
 }) {
   // Initialize navigation state from session bridge if present
   const [initialNav] = useState(() => {
@@ -297,7 +298,7 @@ export default function RegaarderComposeLanding({
 
       {/* Regaarder Paywall Modal */}
       <RegaarderPaywallModal
-        isOpen={isPaywallOpen}
+        isOpen={isPaywallOpen && !isGuidingOnboarding}
         onClose={closePaywall}
       />
 
