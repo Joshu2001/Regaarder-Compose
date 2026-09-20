@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, Check, X, Sparkles, FolderOpen, Video, Plus, Search, Upload } from 'lucide-react';
+import { X } from 'lucide-react';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 
 /**
@@ -33,10 +33,10 @@ export default function GuidedFirstUseSpotlight({
       title: 'Create something',
       badge: 'Step 1 of 2',
       headline: 'Start with Docs',
-      instruction: 'Click Docs to open your clean composition workspace.',
+      instruction: 'Click Docs to open your composition workspace.',
       targetSelector: '[data-onboarding-target="quick-create-compose"]',
       fallbackSelector: '[data-onboarding-target="quick-create-compose"], button:has(div:contains("Docs"))',
-      nextActionNote: 'Next: Summon AI agents anywhere with / or start writing directly.'
+      nextActionNote: 'Summon AI agents anywhere with / or start writing directly.'
     },
     organize: {
       title: 'Bring my work together',
@@ -111,7 +111,7 @@ export default function GuidedFirstUseSpotlight({
         if (typeof onComplete === 'function') {
           onComplete();
         }
-      }, 400);
+      }, 350);
     };
 
     el.addEventListener('click', handleTargetClick, { once: true });
@@ -139,27 +139,65 @@ export default function GuidedFirstUseSpotlight({
     placement = 'top';
   }
 
+  // Target coordinates for cutout
+  const targetX = Math.max(0, targetRect.left - 2);
+  const targetY = Math.max(0, targetRect.top - 2);
+  const targetW = targetRect.width + 4;
+  const targetH = targetRect.height + 4;
+  const targetRadius = 14;
+
   return createPortal(
-    <div className="fixed inset-0 z-[299999] pointer-events-none select-none animate-in fade-in duration-300">
-      {/* Target Element Outline Ring (Apple-style subtle violet aura) */}
+    <div className="fixed inset-0 z-[299999] pointer-events-none select-none animate-in fade-in duration-200">
+      {/* 1. Subtle 12% neutral background dim with crisp cutout for the real target */}
+      <svg
+        className="fixed inset-0 w-full h-full pointer-events-none"
+        aria-hidden="true"
+      >
+        <defs>
+          <mask id="onboarding-spotlight-mask">
+            {/* Fill entire canvas with white (dimmed area) */}
+            <rect width="100%" height="100%" fill="white" />
+            {/* Cut out the target element so it remains 100% undimmed and vibrant */}
+            <rect
+              x={targetX}
+              y={targetY}
+              width={targetW}
+              height={targetH}
+              rx={targetRadius}
+              ry={targetRadius}
+              fill="black"
+            />
+          </mask>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          fill="currentColor"
+          className="text-slate-950/12 dark:text-black/35"
+          mask="url(#onboarding-spotlight-mask)"
+        />
+      </svg>
+
+      {/* 2. Target Element Outline & Apple-style Glow Ring */}
       <div
         style={{
-          top: `${Math.max(0, targetRect.top - 4)}px`,
-          left: `${Math.max(0, targetRect.left - 4)}px`,
-          width: `${targetRect.width + 8}px`,
-          height: `${targetRect.height + 8}px`,
+          top: `${targetY}px`,
+          left: `${targetX}px`,
+          width: `${targetW}px`,
+          height: `${targetH}px`,
+          borderRadius: `${targetRadius}px`
         }}
-        className="fixed rounded-2xl ring-2 ring-violet-500/80 dark:ring-violet-400 shadow-[0_0_24px_rgba(139,92,246,0.35)] pointer-events-none transition-all duration-200 animate-pulse"
+        className="fixed ring-2 ring-violet-500/85 dark:ring-violet-400/90 shadow-[0_0_0_1px_rgba(255,255,255,0.8),0_0_20px_rgba(139,92,246,0.3)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_0_24px_rgba(167,139,250,0.3)] pointer-events-none transition-all duration-200"
       />
 
-      {/* Floating Guidance Callout */}
+      {/* 3. Floating Instruction Callout (Native Apple-style white card) */}
       <div
         style={{
           top: `${calloutTop}px`,
           left: `${calloutLeft}px`,
           width: `${calloutWidth}px`,
         }}
-        className="pointer-events-auto fixed rounded-2xl bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/15 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)] animate-in fade-in zoom-in-95 duration-200"
+        className="pointer-events-auto fixed rounded-2xl bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-white/12 p-4 shadow-[0_16px_36px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_48px_rgba(0,0,0,0.6)] animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Header: Regaarder Brand Icon + Step Tag + Close button */}
         <div className="flex items-center justify-between mb-2">
@@ -185,33 +223,22 @@ export default function GuidedFirstUseSpotlight({
           </button>
         </div>
 
-        {/* Content */}
+        {/* Headline */}
         <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug mb-1">
           {currentConfig.headline}
         </h4>
-        <p className="text-[12px] text-slate-600 dark:text-zinc-300 leading-relaxed mb-3">
+
+        {/* Instruction */}
+        <p className="text-[12px] text-slate-600 dark:text-zinc-300 leading-relaxed">
           {currentConfig.instruction}
         </p>
 
-        {/* Footer Subtext */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/10 text-[11px] text-slate-400 dark:text-zinc-500">
-          <span className="truncate max-w-[200px]">
+        {/* Contextual subtext without competing Proceed button */}
+        {currentConfig.nextActionNote && (
+          <div className="pt-2 mt-2.5 border-t border-slate-100 dark:border-white/10 text-[11px] text-slate-400 dark:text-zinc-500 truncate">
             {currentConfig.nextActionNote}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              // Trigger target click programmatically if user clicks "Go"
-              const el = document.querySelector(currentConfig.targetSelector);
-              if (el) el.click();
-              if (typeof onComplete === 'function') onComplete();
-            }}
-            className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
-          >
-            <span>Proceed</span>
-            <ArrowRight size={11} strokeWidth={2.5} />
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body
