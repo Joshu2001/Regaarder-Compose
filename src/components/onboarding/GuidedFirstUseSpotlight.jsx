@@ -31,7 +31,7 @@ export default function GuidedFirstUseSpotlight({
   const intentConfig = {
     create: {
       title: 'Create something',
-      badge: 'Step 1 of 2',
+      badge: 'Quick Start',
       headline: 'Start with Docs',
       instruction: 'Click Docs to open your composition workspace.',
       targetSelector: '[data-onboarding-target="quick-create-compose"]',
@@ -40,7 +40,7 @@ export default function GuidedFirstUseSpotlight({
     },
     organize: {
       title: 'Bring my work together',
-      badge: 'Step 1 of 2',
+      badge: 'Quick Start',
       headline: 'Universal Ingestion',
       instruction: 'Drag files here or click to import documents into Universal Memory.',
       targetSelector: '[data-onboarding-target="omni-dropzone"]',
@@ -48,7 +48,7 @@ export default function GuidedFirstUseSpotlight({
     },
     plan: {
       title: 'Plan and execute a project',
-      badge: 'Step 1 of 2',
+      badge: 'Quick Start',
       headline: 'Create your first project',
       instruction: 'Click "New project" to set up deliverables, milestones, and goals.',
       targetSelector: '[data-onboarding-target="new-project-button"]',
@@ -56,7 +56,7 @@ export default function GuidedFirstUseSpotlight({
     },
     research: {
       title: 'Research or understand something',
-      badge: 'Step 1 of 2',
+      badge: 'Quick Start',
       headline: 'Deep Research with Orb',
       instruction: 'Type your research question to investigate sources across web and memory.',
       targetSelector: '[data-onboarding-target="orb-search-input"]',
@@ -64,7 +64,7 @@ export default function GuidedFirstUseSpotlight({
     },
     collaborate: {
       title: 'Work with others',
-      badge: 'Step 1 of 2',
+      badge: 'Quick Start',
       headline: 'Start a collaborative room',
       instruction: 'Click "Start now" to launch an instant room with live AI transcription.',
       targetSelector: '[data-onboarding-target="room-start-now"]',
@@ -82,8 +82,11 @@ export default function GuidedFirstUseSpotlight({
       const rect = el.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         setTargetRect(rect);
+        return;
       }
     }
+    // Clear rect immediately if element is no longer in the DOM (prevents lingering on navigation)
+    setTargetRect(null);
   }, [currentConfig.targetSelector]);
 
   useEffect(() => {
@@ -106,12 +109,12 @@ export default function GuidedFirstUseSpotlight({
     if (!el) return;
 
     const handleTargetClick = () => {
-      // User clicked the real element! Progress after short natural transition
-      setTimeout(() => {
-        if (typeof onComplete === 'function') {
-          onComplete();
-        }
-      }, 350);
+      // User clicked the real element: instantly dismiss overlay so it never lingers during navigation
+      setIsDismissed(true);
+      setTargetRect(null);
+      if (typeof onComplete === 'function') {
+        onComplete();
+      }
     };
 
     el.addEventListener('click', handleTargetClick, { once: true });
@@ -218,7 +221,7 @@ export default function GuidedFirstUseSpotlight({
 
         {/* Contextual subtext without competing Proceed button */}
         {currentConfig.nextActionNote && (
-          <div className="pt-2 mt-2.5 border-t border-slate-100 dark:border-white/10 text-[11px] text-slate-400 dark:text-zinc-500 truncate">
+          <div className="pt-2 mt-2.5 border-t border-slate-100 dark:border-white/10 text-[11px] text-slate-400 dark:text-zinc-500 leading-relaxed">
             {currentConfig.nextActionNote}
           </div>
         )}
