@@ -184,5 +184,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     /** Removes all localSync:file-changed listeners. */
     offFileChanged: () => ipcRenderer.removeAllListeners('localSync:file-changed'),
   },
+
+  // Electron-safe OAuth — avoids popup-blocked errors in the sandboxed renderer.
+  // Opens a dedicated BrowserWindow that completes the OAuth flow and returns
+  // the Firebase credential object back to the renderer via IPC.
+  openOAuthWindow: (provider) => ipcRenderer.invoke('auth:open-oauth-window', { provider })
 });
 

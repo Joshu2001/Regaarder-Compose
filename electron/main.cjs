@@ -289,11 +289,36 @@ $ws.AppActivate('${targetName}')
   browserViewManager = new BrowserViewManager(mainWindow);
   initAutoUpdater(mainWindow);
 
-  // Delegate target="_blank" and external links to the OS default browser
+  // Allow Firebase OAuth popups (Google, Apple) to open as real BrowserWindows so
+  // signInWithPopup works correctly. Firebase seeds sessionStorage in the calling
+  // renderer before opening the popup — blocking it causes the "missing initial state"
+  // error. All other window.open / target="_blank" links go to the OS browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    try {
-      shell.openExternal(url);
-    } catch (_e) {}
+    const isFirebaseAuth = url.includes('firebaseapp.com/__/auth') ||
+                           url.includes('accounts.google.com') ||
+                           url.includes('appleid.apple.com') ||
+                           url.includes('googleapis.com/oauth2');
+
+    if (isFirebaseAuth) {
+      // Let Electron create a real BrowserWindow for the OAuth flow
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 500,
+          height: 680,
+          autoHideMenuBar: true,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: false,
+            sandbox: false,
+            webSecurity: true
+          }
+        }
+      };
+    }
+
+    // All other external links → OS default browser
+    try { shell.openExternal(url); } catch (_e) {}
     return { action: 'deny' };
   });
 
@@ -1350,3 +1375,100 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+// ─── Electron-Safe OAuth via Dedicated Auth BrowserWindow ─────────────────────
+// signInWithPopup is blocked by Electron's sandbox. Instead, the renderer invokes
+// this IPC handler, which opens an isolated BrowserWindow (no sandbox, popups
+// allowed), loads the Firebase OAuth page, intercepts the /__/auth/handler
+// navigation carrying the credential, and resolves the promise back to the
+// renderer. The auth window is destroyed after completion.
+ipcMain.handle('auth:open-oauth-window', async (event, { provider }) => {
+  const FIREBASE_AUTH_DOMAIN = process.env.VITE_FIREBASE_AUTH_DOMAIN || 'projectworkspace-2d7a2.firebaseapp.com';
+  const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || '';
+
+  const providerMap = {
+    google: 'google.com',
+    apple:  'apple.com'
+  };
+  const providerId = providerMap[provider];
+  if (!providerId) {
+    return { success: false, error: `Unknown OAuth provider: ${provider}` };
+  }
+
+  const authPageUrl = `https://${FIREBASE_AUTH_DOMAIN}/__/auth/handler?apiKey=${FIREBASE_API_KEY}&providerId=${providerId}&signInMethod=popup&redirectUrl=https://${FIREBASE_AUTH_DOMAIN}/__/auth/handler`;
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const settle = (result) => {
+      if (settled) return;
+      settled = true;
+      if (authWin && !authWin.isDestroyed()) authWin.destroy();
+      resolve(result);
+    };
+
+    // Cancel after 5 minutes of inactivity
+    const timeout = setTimeout(() => {
+      settle({ success: false, error: 'OAuth sign-in timed out after 5 minutes.' });
+    }, 5 * 60 * 1000);
+
+    const authWin = new BrowserWindow({
+      width: 500,
+      height: 680,
+      title: `Sign in with ${provider.charAt(0).toUpperCase() + provider.slice(1)}`,
+      parent: mainWindow || undefined,
+      modal: false,
+      show: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        // No sandbox: this window only loads the Firebase hosted auth page,
+        // not any Regaarder renderer code.
+        nodeIntegration: false,
+        contextIsolation: false,
+        sandbox: false,
+        webSecurity: true
+      }
+    });
+
+    authWin.removeMenu();
+    authWin.loadURL(authPageUrl);
+
+    // Intercept every navigation — Firebase ends the OAuth flow by redirecting
+    // to /__/auth/handler with the credential in the URL fragment or query string.
+    const interceptRedirect = (url) => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.pathname === '/__/auth/handler') {
+          const hash = parsed.hash;
+
+          if (hash && hash.includes('authResult')) {
+            const encoded = hash.replace('#authResult=', '');
+            try {
+              const decoded = JSON.parse(decodeURIComponent(encoded));
+              clearTimeout(timeout);
+              settle({ success: true, credential: decoded });
+              return true;
+            } catch (_) {}
+          }
+
+          const errorParam = parsed.searchParams.get('error');
+          if (errorParam) {
+            clearTimeout(timeout);
+            settle({ success: false, error: decodeURIComponent(errorParam) });
+            return true;
+          }
+        }
+      } catch (_) {}
+      return false;
+    };
+
+    authWin.webContents.on('will-redirect', (e, url) => { interceptRedirect(url); });
+    authWin.webContents.on('will-navigate', (e, url) => { interceptRedirect(url); });
+
+    // User closed the window manually
+    authWin.on('closed', () => {
+      clearTimeout(timeout);
+      settle({ success: false, error: 'auth/cancelled-by-user' });
+    });
+  });
+});
+

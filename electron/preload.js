@@ -73,6 +73,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   captureAppFrame: () => ipcRenderer.invoke('app:capture-frame'),
 
   // Native OS Dictation Bridge (Windows Win+H / macOS Dictation)
-  startNativeDictation: (params) => ipcRenderer.invoke('native:start-dictation', params)
+  startNativeDictation: (params) => ipcRenderer.invoke('native:start-dictation', params),
+
+  // Electron-safe OAuth — avoids popup-blocked errors in the sandboxed renderer.
+  // Opens a dedicated BrowserWindow that completes the OAuth flow and returns
+  // the Firebase credential object back to the renderer via IPC.
+  openOAuthWindow: (provider) => ipcRenderer.invoke('auth:open-oauth-window', { provider })
 });
 

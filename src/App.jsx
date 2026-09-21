@@ -18576,6 +18576,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  // 'terms' | 'privacy' | null — controls which legal document modal is open
+  const [legalModalDoc, setLegalModalDoc] = useState(null);
 
   // Ensure Electron WebContentsView is hidden whenever navigating away from browser mode
   useEffect(() => {
@@ -48707,6 +48709,161 @@ const renderRoomTopHeader = () => (
   };
 
 
+  // ─── Legal Document Modal ─────────────────────────────────────────────────────
+  // Displays the Terms of Service or Privacy Policy inline within the app so users
+  // never see a 404. Content is production-ready and can be updated here until the
+  // regaarder.com/terms and regaarder.com/privacy pages are live.
+  const renderLegalModal = () => {
+    if (!legalModalDoc) return null;
+
+    const isTerms = legalModalDoc === 'terms';
+    const title = isTerms ? 'Terms of Service' : 'Privacy Policy';
+    const lastUpdated = 'September 2026';
+
+    const termsContent = (
+      <>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">1. Acceptance of Terms</h3>
+          <p>By downloading, installing, or using Regaarder Compose ("the App"), you agree to be bound by these Terms of Service. If you do not agree, uninstall the App and discontinue use immediately.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">2. What Regaarder Compose Is</h3>
+          <p>Regaarder Compose is a local-first, AI-native productivity suite available as a desktop app (Electron) and in the browser. It provides eight integrated workspace modes: Compose (rich text documents), Sheets (spreadsheets), Deck (presentations), Whiteboard, Schedule, Tasks, Room (live meeting workspace), and Memory (knowledge graph), along with an embedded browser agent and the Orb AI assistant. All workspace content is stored locally on your device and synced to your local filesystem. No workspace data is uploaded to Regaarder servers.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">3. User Accounts</h3>
+          <p>Accounts are authenticated via Firebase Authentication (Google LLC) using email + password, Sign in with Google, or Sign in with Apple. Your account identity is managed by Firebase on Google Cloud infrastructure, subject to Google's Terms of Service. Regaarder does not operate its own authentication server. You are responsible for keeping your credentials confidential and for all activity under your account.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">4. AI Features: Bring Your Own Key (BYOK)</h3>
+          <p>AI features are powered by third-party providers you configure: Google Gemini, OpenAI, Anthropic Claude, DeepSeek, and locally hosted models via Ollama or LM Studio. All AI API calls are made directly from your device to the provider using your own API key. Regaarder does not proxy, log, or intercept these requests. By configuring an AI provider, you agree to that provider's terms. Your API keys are encrypted using your OS secure credential store (Windows DPAPI or macOS Keychain) and are never transmitted to Regaarder. On-device speech transcription (Whisper) runs entirely as a WebAssembly model on your machine.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">5. Microphone, Screen Capture, and Device Permissions</h3>
+          <p>The App requests access to your microphone and screen in the following contexts: (a) <strong>Room workspace</strong> - microphone audio is captured for the speech-to-intent pipeline that extracts decisions and action items from live meetings; (b) <strong>Native dictation</strong> - triggers your OS-level speech input (Win+H on Windows, system dictation on macOS); (c) <strong>Screen sharing</strong> - your screen or app window is captured for Room screen share or the Video Agent recording pipeline. None of this media is transmitted to Regaarder servers.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">6. File Handling and Local Storage</h3>
+          <p>The App reads, writes, and imports files on your local device. Supported formats include native Regaarder files (.rgdoc, .rgsht, .rgdck, .rgwbd) and standard formats: PDF, DOCX, XLSX, PPTX, CSV, TXT, and Markdown. All files are parsed on-device. Workspace data is stored in browser localStorage and synced to ~/Documents/Regaarder/ on your filesystem. No file content is uploaded to external servers by the App.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">7. Acceptable Use</h3>
+          <p>You agree not to use the App to: (a) generate, store, or distribute unlawful, harmful, abusive, or deceptive content; (b) circumvent or disable security features; (c) violate the terms of your configured AI provider; (d) reverse-engineer or extract proprietary source code; (e) use the embedded browser agent to access systems you are not authorized to access.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">8. Your Content and Intellectual Property</h3>
+          <p>You retain full ownership of all content you create in Regaarder Compose. Because workspace data is stored locally on your device, Regaarder cannot access your documents. Regaarder's software, UI, and brand assets are the exclusive property of the Meneur Team. You may not reproduce, distribute, or modify the App's code or design without written permission.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">9. Subscription Plans</h3>
+          <p>Regaarder Compose offers Free, Pro, Founder, Team, and Enterprise plans. Full billing and payment terms will be published when subscription management is activated. Until then, plan access is granted at Regaarder's discretion. We reserve the right to adjust plan features and pricing with reasonable advance notice.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">10. Disclaimer and Limitation of Liability</h3>
+          <p>The App is provided "as is." AI-generated content may be inaccurate, so always verify outputs before relying on them for decisions. Regaarder is not liable for data loss due to device failure or local storage issues. To the fullest extent permitted by law, Regaarder and the Meneur Team shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">11. Changes to Terms and Contact</h3>
+          <p>We may update these Terms as the App evolves. Material changes will be communicated via in-app notice. Continued use after notice constitutes acceptance. For legal questions, contact us at <span className="text-violet-600 dark:text-violet-400">legal@regaarder.com</span>.</p>
+        </section>
+      </>
+    );
+
+    const privacyContent = (
+      <>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">1. Overview: Local-First, No Cloud Workspace Data</h3>
+          <p>Regaarder Compose is built local-first. Your documents, sheets, decks, whiteboards, tasks, AI chat history, memory graph, meeting notes, and workspace settings are stored entirely on your own device, in browser localStorage and your local ~/Documents/Regaarder/ directory. Regaarder does not operate a cloud database for workspace content and has no access to what you create or write.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">2. What We Collect and Where It Goes</h3>
+          <p><strong>Account identity (via Firebase Auth, the only data on external servers):</strong> When you register or sign in, Firebase Authentication stores your email address, display name, and profile photo (name and email from Google or Apple if using OAuth). This is managed by Firebase, a Google LLC product, and governed by Google's Privacy Policy. Regaarder does not operate its own user database.<br/><br/><strong>Everything else stays on your device:</strong> Workspace documents, spreadsheet data, presentation slides, whiteboard shapes, task lists, AI conversation history and prompt logs, memory graph entries, writing style profile (Writing DNA), Relay direct messages, meeting notes, theme preferences, language settings, and subscription plan status are all stored locally and are not accessible to Regaarder.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">3. AI Prompts: What Leaves Your Device</h3>
+          <p>When you use AI features (Orb, Relay, Compose AI, Room Observer, Intent Scheduler, Doc AI Studio, etc.), the content of your prompts and any attached document context is sent directly from your device to your configured AI provider using your own API key. Regaarder does not see, log, store, or proxy these requests. The respective AI provider's privacy policy governs how your prompts are handled. Local models (Ollama, LM Studio) and on-device Whisper transcription process everything on your machine with zero external transmission.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">4. API Keys</h3>
+          <p>AI API keys you configure (Gemini, OpenAI, Claude, DeepSeek) are encrypted using your operating system's secure credential store (Windows DPAPI or macOS Keychain) and stored in a local vault file in the Electron app data directory. These keys are never transmitted to Regaarder and never included in any telemetry or error reports.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">5. Microphone and Audio</h3>
+          <p>Microphone access is used in the Room workspace for live audio capture and the speech-to-intent pipeline (extracting meeting decisions and action items). Audio is processed either by your browser's Web Speech API (which may transmit audio to Google's speech recognition servers depending on your browser) or transcribed locally using the on-device Whisper WebAssembly model. Regaarder does not receive or store your audio. The Whisper model is downloaded once from cdn.jsdelivr.net on first use and cached locally thereafter.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">6. Screen Capture</h3>
+          <p>Screen capture access is used for screen sharing within the Room workspace and for the Video Agent pipeline that captures App window frames as JPEG images for recording narrations. All captured frames are processed locally within the App and are not transmitted to Regaarder or any third party by the App itself.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">7. Third-Party Services in Use</h3>
+          <p>The App integrates with: (a) <strong>Firebase Authentication (Google LLC)</strong> for account identity only; (b) <strong>your configured AI provider</strong> (Gemini, OpenAI, Claude, DeepSeek, or local) for prompt processing via your API key; (c) <strong>cdn.jsdelivr.net</strong> for a one-time download of the Whisper on-device transcription model; (d) <strong>Google / Apple OAuth servers</strong> if you use social sign-in. The App does not use advertising networks, behavioral analytics SDKs (e.g., Mixpanel, Amplitude, PostHog), error monitoring services (e.g., Sentry), or data broker integrations.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">8. Cookies and Local Storage</h3>
+          <p>The App uses browser localStorage (not traditional HTTP cookies) to persist workspace state, preferences, and session data. In the desktop (Electron) app, this storage lives in the Electron app's sandboxed renderer process. You can clear this data at any time through browser or OS storage management. Clearing it will reset workspace state but not your Firebase account.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">9. Your Rights and Data Deletion</h3>
+          <p>Because the vast majority of your data lives on your own device, you have full, direct control over it. To delete your account identity from Firebase Auth, contact us at <span className="text-violet-600 dark:text-violet-400">privacy@regaarder.com</span> and we will complete account deletion within 30 days. Workspace data stored locally can be deleted by you at any time without contacting us. Under applicable law (GDPR, CCPA, etc.), you may have additional rights to access, correct, export, or restrict processing of your personal data.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">10. Children's Privacy</h3>
+          <p>Regaarder Compose is not directed to children under 13. We do not knowingly collect personal information from children. If you believe a child has created an account, contact us at <span className="text-violet-600 dark:text-violet-400">privacy@regaarder.com</span> and we will delete it promptly.</p>
+        </section>
+        <section>
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-white mb-1.5">11. Future Changes and Contact</h3>
+          <p>This Privacy Policy will be updated when new data-touching features go live, specifically real-time collaboration (Yjs/WebSocket) and subscription billing. Material changes will be communicated via in-app notice at least 14 days before taking effect. For privacy questions or data deletion requests, contact <span className="text-violet-600 dark:text-violet-400">privacy@regaarder.com</span> or reach our engineering team at <span className="text-violet-600 dark:text-violet-400">engineering@regaarder.com</span>.</p>
+        </section>
+      </>
+    );
+
+    return (
+      <div
+        className="fixed inset-0 bg-slate-950/50 backdrop-blur-md z-[999999] flex items-center justify-center font-sans animate-in fade-in duration-200 p-4"
+        onMouseDown={() => setLegalModalDoc(null)}
+      >
+        <div
+          className="bg-white/95 dark:bg-[#1c1c1e]/98 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.28),0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-full max-w-[600px] max-h-[82vh] flex flex-col animate-in zoom-in-95 duration-200"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 dark:border-zinc-800/60 flex-shrink-0">
+            <div>
+              <h2 className="text-[16px] font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Last updated: {lastUpdated}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLegalModalDoc(null)}
+              aria-label="Close"
+              className="w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none flex-shrink-0"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Scrollable Body */}
+          <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4 text-[12px] text-slate-600 dark:text-zinc-400 leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
+            {isTerms ? termsContent : privacyContent}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-zinc-800/60 flex-shrink-0">
+            <p className="text-[11px] text-slate-400 dark:text-zinc-500">© {new Date().getFullYear()} Regaarder. All rights reserved.</p>
+            <button
+              type="button"
+              onClick={() => setLegalModalDoc(null)}
+              className="h-8 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-[12px] font-medium transition-all duration-150 active:scale-[0.985]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderAuthModal = () => {
     if (!authModalOpen) return null;
     return (
@@ -48715,7 +48872,7 @@ const renderRoomTopHeader = () => (
         onMouseDown={() => setAuthModalOpen(false)}
       >
         <div 
-          className="bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-[400px] p-8 relative flex flex-col gap-6 animate-in zoom-in-95 duration-200"
+          className="bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-[340px] p-4 relative flex flex-col gap-3 animate-in zoom-in-95 duration-200"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -48724,30 +48881,30 @@ const renderRoomTopHeader = () => (
             type="button"
             onClick={() => setAuthModalOpen(false)}
             aria-label="Close authentication modal"
-            className="absolute top-5 right-5 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
+            className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
             title="Close"
           >
             <X size={14} />
           </button>
 
           {/* Integrated Brand Header */}
-          <div className="flex flex-col items-center text-center gap-2">
-            <div className="relative group cursor-pointer mb-1">
-              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-[#27272a] border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-center group-hover:border-violet-300 dark:group-hover:border-violet-500/40 transition-all duration-200">
-                <RegaarderBrandIcon size={22} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
+          <div className="flex flex-col items-center text-center gap-1.5">
+            <div className="relative group cursor-pointer mb-0.5">
+              <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-[#27272a] border border-slate-200/70 dark:border-white/[0.08] shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex items-center justify-center group-hover:border-violet-300 dark:group-hover:border-violet-500/40 transition-all duration-200">
+                <RegaarderBrandIcon size={19} className="text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" />
               </div>
             </div>
-            <h2 className="text-[20px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
-            <p className="text-[12px] text-slate-400 dark:text-zinc-500 font-normal -mt-0.5">One workspace for all your office needs.</p>
+            <h2 className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Regaarder</h2>
+            <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 font-normal -mt-0.5">One workspace for all your office needs.</p>
           </div>
 
           {/* Primary Social Authentication Methods */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             <button
               type="button"
               onClick={() => handleSocialAuth('google')}
               disabled={authLoading}
-              className="w-full h-[44px] flex items-center justify-center gap-3 bg-white hover:bg-slate-50 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/90 dark:border-zinc-750 rounded-xl text-[13px] font-medium text-slate-800 dark:text-zinc-100 transition-all duration-150 active:scale-[0.985] shadow-xs"
+              className="w-full h-9 flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/90 dark:border-zinc-750 rounded-xl text-[12px] font-medium text-slate-800 dark:text-zinc-100 transition-all duration-150 active:scale-[0.985] shadow-xs"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -48761,7 +48918,7 @@ const renderRoomTopHeader = () => (
               type="button"
               onClick={() => handleSocialAuth('apple')}
               disabled={authLoading}
-              className="w-full h-[44px] flex items-center justify-center gap-3 bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-[13px] font-medium transition-all duration-150 active:scale-[0.985] shadow-xs"
+              className="w-full h-9 flex items-center justify-center gap-2.5 bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-[12px] font-medium transition-all duration-150 active:scale-[0.985] shadow-xs"
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.5-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.59 2.94-1.4"/>
@@ -48813,50 +48970,50 @@ const renderRoomTopHeader = () => (
           </div>
 
           {/* Email Form */}
-          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3.5">
+          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3">
             {authError && (
-              <div className="p-2.5 bg-rose-50 border border-rose-200/60 dark:bg-rose-950/30 dark:border-rose-900/40 rounded-xl text-rose-600 dark:text-rose-400 text-[11px] font-medium leading-relaxed">
+              <div className="p-2 bg-rose-50 border border-rose-200/60 dark:bg-rose-950/30 dark:border-rose-900/40 rounded-xl text-rose-600 dark:text-rose-400 text-[10.5px] font-medium leading-relaxed">
                 {authError}
               </div>
             )}
 
             {authTab === 'register' && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Full Name</label>
+                <label className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">Full Name</label>
                 <input
                   type="text"
                   placeholder="Sarah Johnson"
                   value={authName}
                   onChange={(e) => setAuthName(e.target.value)}
                   disabled={authLoading}
-                  className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                  className="h-9 px-3 text-[12px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
                   required
                 />
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Email address</label>
+              <label className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">Email address</label>
               <input
                 type="email"
                 placeholder="you@example.com"
                 value={authEmail}
                 onChange={(e) => setAuthEmail(e.target.value)}
                 disabled={authLoading}
-                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                className="h-9 px-3 text-[12px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-slate-700 dark:text-zinc-300">Password</label>
+              <label className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">Password</label>
               <input
                 type="password"
                 placeholder="••••••••"
                 value={authPassword}
                 onChange={(e) => setAuthPassword(e.target.value)}
                 disabled={authLoading}
-                className="h-10 px-3.5 text-[12.5px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                className="h-9 px-3 text-[12px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
                 required
               />
             </div>
@@ -48864,7 +49021,7 @@ const renderRoomTopHeader = () => (
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full h-10 mt-1 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 dark:bg-white dark:hover:bg-slate-100 dark:disabled:bg-zinc-600 text-white dark:text-slate-900 rounded-xl text-[12.5px] font-medium shadow-xs flex items-center justify-center gap-2 active:scale-[0.985] transition-all duration-150"
+              className="w-full h-9 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 dark:bg-white dark:hover:bg-slate-100 dark:disabled:bg-zinc-600 text-white dark:text-slate-900 rounded-xl text-[12px] font-medium shadow-xs flex items-center justify-center gap-2 active:scale-[0.985] transition-all duration-150"
             >
               {authLoading ? (
                 <>
@@ -48878,9 +49035,15 @@ const renderRoomTopHeader = () => (
           {/* Trust Microcopy */}
           <p className="text-[10.5px] text-slate-400 dark:text-zinc-500 text-center leading-relaxed -mt-2">
             By continuing, you agree to Regaarder's{' '}
-            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Terms of Service</span>
+            <span
+              className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+              onClick={() => setLegalModalDoc('terms')}
+            >Terms of Service</span>
             {' '}and{' '}
-            <span className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors">Privacy Policy</span>.
+            <span
+              className="underline cursor-pointer hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+              onClick={() => setLegalModalDoc('privacy')}
+            >Privacy Policy</span>.
           </p>
         </div>
       </div>
@@ -88861,6 +89024,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderSharedChartPicker()}
       {renderSharedShapePicker()}
       {renderAuthModal()}
+      {renderLegalModal()}
 
       <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
       <SummaryModal 

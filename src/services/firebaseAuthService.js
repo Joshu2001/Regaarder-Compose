@@ -53,6 +53,14 @@ function getFirebaseAuth() {
 }
 
 /**
+ * Returns true when Regaarder is running inside the Electron shell.
+ * Electron's preload exposes `window.electronAPI.isElectron = true`.
+ */
+function isElectron() {
+  return typeof window !== 'undefined' && window.electronAPI?.isElectron === true;
+}
+
+/**
  * Normalizes a Firebase User object into standard Regaarder user schema.
  */
 export function formatFirebaseUser(user) {
@@ -109,7 +117,11 @@ export async function loginWithEmail(email, password) {
 }
 
 /**
- * Sign in using Google OAuth Popup
+ * Sign in using Google OAuth.
+ *
+ * Works in both Electron and web contexts. Electron's setWindowOpenHandler
+ * now allows Firebase's popup to open as a real BrowserWindow, which means
+ * signInWithPopup works natively without any IPC delegation.
  */
 export async function loginWithGoogle() {
   const authInstance = getFirebaseAuth();
@@ -128,7 +140,12 @@ export async function loginWithGoogle() {
 }
 
 /**
- * Sign in using Apple OAuth Popup
+ * Sign in using Apple OAuth.
+ *
+ * Works in both Electron and web contexts via signInWithPopup.
+ * NOTE: Apple Sign-In requires a registered Services ID with a valid Return URL
+ * pointing to a web domain. Until that is configured in the Apple Developer Console,
+ * this button should be hidden or disabled to avoid confusing error states.
  */
 export async function loginWithApple() {
   const authInstance = getFirebaseAuth();

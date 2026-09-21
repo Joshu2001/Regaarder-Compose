@@ -400,3 +400,117 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+// ─── Electron-Safe OAuth via Dedicated Auth BrowserWindow ─────────────────────
+// signInWithPopup is blocked by Electron's sandbox. Instead, the renderer invokes
+// this IPC handler, which opens an isolated BrowserWindow (popups allowed, no
+// sandbox), loads the Firebase OAuth redirect URL directly, intercepts the
+// /__/auth/handler navigation with the returned credential, and resolves the
+// promise back to the renderer. The auth window is destroyed after completion.
+ipcMain.handle('auth:open-oauth-window', async (event, { provider }) => {
+  const FIREBASE_AUTH_DOMAIN = process.env.VITE_FIREBASE_AUTH_DOMAIN || 'projectworkspace-2d7a2.firebaseapp.com';
+  const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || '';
+
+  // Construct the provider-specific sign-in URL that Firebase Auth uses internally.
+  const providerMap = {
+    google: 'google.com',
+    apple:  'apple.com'
+  };
+  const providerId = providerMap[provider];
+  if (!providerId) {
+    return { success: false, error: `Unknown OAuth provider: ${provider}` };
+  }
+
+  // The Firebase hosted auth page handles the provider-specific OAuth flow.
+  // We load this URL inside a BrowserWindow that can open popups and complete
+  // the OAuth handshake, then intercepts the redirect carrying the credential.
+  const authPageUrl = `https://${FIREBASE_AUTH_DOMAIN}/__/auth/handler?apiKey=${FIREBASE_API_KEY}&providerId=${providerId}&signInMethod=popup&redirectUrl=https://${FIREBASE_AUTH_DOMAIN}/__/auth/handler`;
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const settle = (result) => {
+      if (settled) return;
+      settled = true;
+      if (authWin && !authWin.isDestroyed()) authWin.destroy();
+      resolve(result);
+    };
+
+    // Timeout after 5 minutes of inactivity
+    const timeout = setTimeout(() => {
+      settle({ success: false, error: 'OAuth sign-in timed out after 5 minutes.' });
+    }, 5 * 60 * 1000);
+
+    const authWin = new BrowserWindow({
+      width: 500,
+      height: 680,
+      title: `Sign in with ${provider.charAt(0).toUpperCase() + provider.slice(1)}`,
+      parent: mainWindow || undefined,
+      modal: false,
+      show: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        // No sandbox, no contextIsolation: this window only loads the Firebase
+        // hosted auth page — it does not load any Regaarder renderer code.
+        nodeIntegration: false,
+        contextIsolation: false,
+        sandbox: false,
+        webSecurity: true
+      }
+    });
+
+    authWin.removeMenu();
+    authWin.loadURL(authPageUrl);
+
+    // Intercept every navigation inside the OAuth window.
+    // Firebase's sign-in flow ends by navigating to /__/auth/handler with a
+    // result encoded in the URL fragment or query string.
+    const interceptRedirect = (url) => {
+      try {
+        const parsed = new URL(url);
+        // Successful OAuth: Firebase sends the credential back through postMessage
+        // or via this redirect endpoint. The deeplink carries #authResult=<json>.
+        if (parsed.pathname === '/__/auth/handler') {
+          const hash = parsed.hash;      // e.g. #authResult=%7B...%7D
+          const query = parsed.search;   // fallback query params
+
+          // Extract authResult from hash
+          if (hash && hash.includes('authResult')) {
+            const encoded = hash.replace('#authResult=', '');
+            try {
+              const decoded = JSON.parse(decodeURIComponent(encoded));
+              clearTimeout(timeout);
+              settle({ success: true, credential: decoded });
+              return true;
+            } catch (parseErr) {
+              // authResult wasn't parseable — let the page load continue
+            }
+          }
+
+          // Errors come through ?error=... query param
+          const errorParam = parsed.searchParams.get('error');
+          if (errorParam) {
+            clearTimeout(timeout);
+            settle({ success: false, error: decodeURIComponent(errorParam) });
+            return true;
+          }
+        }
+      } catch (_) {}
+      return false;
+    };
+
+    authWin.webContents.on('will-redirect', (e, url) => {
+      interceptRedirect(url);
+    });
+
+    authWin.webContents.on('will-navigate', (e, url) => {
+      interceptRedirect(url);
+    });
+
+    // If the user manually closes the auth window, resolve with a cancellation.
+    authWin.on('closed', () => {
+      clearTimeout(timeout);
+      settle({ success: false, error: 'auth/cancelled-by-user' });
+    });
+  });
+});
+
