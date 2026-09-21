@@ -37482,6 +37482,51 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
   }, [productMode, isDeckPresentationMode, isDocumentImmersive]);
 
+  // Notes: Global capturing double-tap / double-click listener.
+  // The app-shell handlers filter out [contenteditable="true"], which swallows every
+  // double-tap on the ruled paper surface.  We mirror the Deck pattern — attach at the
+  // window capture phase so the event arrives before any child can stop propagation.
+  // Safe guard: if text is currently selected (word-select double-tap), do nothing.
+  useEffect(() => {
+    if (productMode !== 'notes') return;
+
+    const INTERACTIVE = 'button, input, textarea, a, select, [role="button"], [data-notes-selection-toolbar], [data-prevent-doubletap], .rdp, .tippy-box';
+
+    const handleNotesUniversalExit = (e) => {
+      // Never fire on actual interactive controls
+      if (e.target && e.target.closest && e.target.closest(INTERACTIVE)) return;
+      // Never fire while the user has text selected (word-select double-tap)
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) return;
+      toggleDocumentImmersiveMode();
+    };
+
+    let lastNotesTapTime = 0;
+    let lastNotesTapPos = { x: 0, y: 0 };
+
+    const handleNotesPointerDown = (e) => {
+      if (e.target && e.target.closest && e.target.closest(INTERACTIVE)) return;
+      const now = Date.now();
+      const timeDiff = now - lastNotesTapTime;
+      const dist = Math.hypot((e.clientX || 0) - lastNotesTapPos.x, (e.clientY || 0) - lastNotesTapPos.y);
+      if (timeDiff > 40 && timeDiff < 350 && dist < 35) {
+        lastNotesTapTime = 0;
+        // Defer slightly so any browser-native word-selection has time to register
+        requestAnimationFrame(() => handleNotesUniversalExit(e));
+      } else {
+        lastNotesTapTime = now;
+        lastNotesTapPos = { x: e.clientX || 0, y: e.clientY || 0 };
+      }
+    };
+
+    window.addEventListener('dblclick', handleNotesUniversalExit, true);
+    window.addEventListener('pointerdown', handleNotesPointerDown, true);
+    return () => {
+      window.removeEventListener('dblclick', handleNotesUniversalExit, true);
+      window.removeEventListener('pointerdown', handleNotesPointerDown, true);
+    };
+  }, [productMode, isDocumentImmersive]);
+
   // Animated Numeric Odometer Count-Up in Presentation Mode
   useEffect(() => {
     if (!isDeckPresentationMode) {
