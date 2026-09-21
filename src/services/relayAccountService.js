@@ -16,7 +16,7 @@
  *   avatarColor:  string   — deterministic hex color from id
  *   bio:          string   — optional one-liner role / status
  *   createdAt:    number   — epoch ms
- *   provider:     string   — 'email' | 'google' | 'apple'
+ *   provider:     string   — 'email' | 'google' | 'github'
  * }
  */
 
@@ -25,7 +25,7 @@ import {
   registerWithEmail,
   loginWithEmail,
   loginWithGoogle,
-  loginWithApple,
+  loginWithGithub,
   logoutFirebase,
   onAuthChange,
 } from './firebaseAuthService';

@@ -103,15 +103,15 @@ export async function loginWithGoogle() {
 }
 
 /**
- * Sign in using Apple OAuth via Supabase
+ * Sign in using GitHub OAuth via Supabase
  */
-export async function loginWithApple() {
+export async function loginWithGithub() {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase Auth is not configured in environment variables.');
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'apple',
+    provider: 'github',
     options: {
       redirectTo: window.location.origin,
     },

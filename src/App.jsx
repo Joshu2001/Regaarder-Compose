@@ -43,7 +43,7 @@ import {
   loginWithEmail,
   registerWithEmail,
   loginWithGoogle,
-  loginWithApple,
+  loginWithGithub,
   logoutFirebase,
 } from './services/firebaseAuthService';
 import {
@@ -48688,7 +48688,7 @@ const renderRoomTopHeader = () => (
 
       // For Supabase OAuth, signInWithOAuth initiates a redirect.
       // Errors here (e.g. "provider not enabled") are synchronous and catchable.
-      const fn = provider === 'google' ? loginWithGoogle : loginWithApple;
+      const fn = provider === 'google' ? loginWithGoogle : loginWithGithub;
       const result = await fn();
 
       // Supabase OAuth returns { url, provider } — no immediate user/token.
@@ -48696,7 +48696,7 @@ const renderRoomTopHeader = () => (
       // If a URL was returned, Supabase is about to navigate/open a popup.
       // Just close the modal and let the auth state listener handle the session.
       setAuthModalOpen(false);
-      showToast(`Opening ${provider === 'google' ? 'Google' : 'Apple'} sign-in…`);
+      showToast(`Opening ${provider === 'google' ? 'Google' : 'GitHub'} sign-in…`);
     } catch (err) {
       const msg = err?.message || '';
       // Friendly message when provider is not yet enabled in Supabase dashboard
@@ -48706,7 +48706,7 @@ const renderRoomTopHeader = () => (
         msg.toLowerCase().includes('validation_failed')
       ) {
         setAuthError(
-          `${provider === 'google' ? 'Google' : 'Apple'} sign-in is not enabled yet. ` +
+          `${provider === 'google' ? 'Google' : 'GitHub'} sign-in is not enabled yet. ` +
           `Please use email & password, or enable this provider in the Supabase Dashboard → Authentication → Providers.`
         );
       } else {
@@ -48891,25 +48891,14 @@ const renderRoomTopHeader = () => (
     if (!authModalOpen) return null;
     return (
       <div 
-        className="fixed inset-0 bg-slate-950/40 backdrop-blur-md z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-950/45 backdrop-blur-sm z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
         onMouseDown={() => setAuthModalOpen(false)}
       >
         <div 
-          className="bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] border border-white/60 dark:border-white/10 w-[340px] p-4 relative flex flex-col gap-3 animate-in zoom-in-95 duration-200"
+          className="bg-[#f9f9f9] dark:bg-[#161618] backdrop-blur-2xl rounded-2xl shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.07)] border border-black/[0.07] dark:border-white/[0.08] w-[340px] p-4 relative flex flex-col gap-3 animate-in zoom-in-95 duration-200"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* Close button */}
-          <button 
-            type="button"
-            onClick={() => setAuthModalOpen(false)}
-            aria-label="Close authentication modal"
-            className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100/80 hover:bg-slate-200/80 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white transition-all flex items-center justify-center focus:outline-none"
-            title="Close"
-          >
-            <X size={14} />
-          </button>
-
           {/* Integrated Brand Header */}
           <div className="flex flex-col items-center text-center gap-1.5">
             <div className="relative group cursor-pointer mb-0.5">
@@ -48927,9 +48916,9 @@ const renderRoomTopHeader = () => (
               type="button"
               onClick={() => handleSocialAuth('google')}
               disabled={authLoading}
-              className="w-full h-9 flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/90 dark:border-zinc-750 rounded-xl text-[12px] font-medium text-slate-800 dark:text-zinc-100 transition-all duration-150 active:scale-[0.985] shadow-xs"
+              className="w-full h-9 flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800/80 border border-slate-200 dark:border-zinc-800 rounded-[10px] text-[12px] font-medium text-slate-700 dark:text-zinc-200 transition-all duration-150 active:scale-[0.985] shadow-none"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
@@ -48939,14 +48928,14 @@ const renderRoomTopHeader = () => (
             </button>
             <button
               type="button"
-              onClick={() => handleSocialAuth('apple')}
+              onClick={() => handleSocialAuth('github')}
               disabled={authLoading}
-              className="w-full h-9 flex items-center justify-center gap-2.5 bg-slate-950 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 rounded-xl text-[12px] font-medium transition-all duration-150 active:scale-[0.985] shadow-xs"
+              className="w-full h-9 flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800/80 border border-slate-200 dark:border-zinc-800 rounded-[10px] text-[12px] font-medium text-slate-700 dark:text-zinc-200 transition-all duration-150 active:scale-[0.985] shadow-none"
             >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.5-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.59 2.94-1.4"/>
+              <svg className="w-4 h-4 shrink-0 fill-slate-800 dark:fill-zinc-200" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
               </svg>
-              Continue with Apple
+              Continue with GitHub
             </button>
           </div>
 
@@ -48955,7 +48944,7 @@ const renderRoomTopHeader = () => (
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200/80 dark:border-zinc-800" />
             </div>
-            <span className="relative px-3.5 bg-white dark:bg-[#1c1c1e] text-[11px] font-normal text-slate-400 dark:text-zinc-500">
+            <span className="relative px-3.5 bg-[#f9f9f9] dark:bg-[#161618] text-[11px] font-normal text-slate-400 dark:text-zinc-500">
               or continue with email
             </span>
           </div>
