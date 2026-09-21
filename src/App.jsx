@@ -16786,11 +16786,11 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       ? (libraryDropdownAnchorRect?.left ? Math.max(16, libraryDropdownAnchorRect.left) : 48)
       : undefined;
 
-    // Calculate counts for each workspace mode
-    const composeCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'compose' || (!d.mode && !d.data?.sheetsData && !d.data?.deckSlidesData)).length;
-    const sheetsCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'sheets' || Boolean(d.data?.sheetsData)).length;
-    const deckCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length;
-    const whiteboardCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length;
+    // Calculate counts for each workspace mode using getDocMode
+    const composeCount = recentDocumentsList.filter(d => getDocMode(d) === 'compose').length;
+    const sheetsCount = recentDocumentsList.filter(d => getDocMode(d) === 'sheets').length;
+    const deckCount = recentDocumentsList.filter(d => getDocMode(d) === 'deck').length;
+    const whiteboardCount = recentDocumentsList.filter(d => getDocMode(d) === 'whiteboard').length;
 
     const filterTabs = [
       { id: 'all', label: 'All', count: recentDocumentsList.length },
@@ -16801,7 +16801,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     ];
 
     const filteredDocs = recentDocumentsList.filter(d => {
-      const dMode = d.mode || d.data?.mode || (d.data?.sheetsData ? 'sheets' : d.data?.deckSlidesData ? 'deck' : 'compose');
+      const dMode = getDocMode(d);
       if (libraryCategoryFilter !== 'all' && dMode !== libraryCategoryFilter) return false;
       if (!librarySearchQuery.trim()) return true;
       const q = librarySearchQuery.toLowerCase();
@@ -16916,7 +16916,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
               ) : (
                 filteredDocs.map((doc) => {
                   const isActive = String(doc.id) === String(activeDocId);
-                  const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+                  const dMode = getDocMode(doc);
                   const sheetCount = doc.data?.sheetGrids ? Object.keys(doc.data.sheetGrids).length : (doc.data?.sheetsData?.length || 1);
                   const metaText = dMode === 'sheets'
                     ? `Sheets • ${sheetCount} sheet${sheetCount > 1 ? 's' : ''}`
@@ -16944,7 +16944,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <FileTypeIcon file={doc} size="sm" className="shrink-0" />
+                        <AppNativeSvgIcon type={dMode === 'sheets' ? 'sheet' : dMode} size={26} className="shrink-0" />
                         <div className="flex flex-col min-w-0">
                           <span className="text-[12px] font-semibold truncate leading-tight">
                             {doc.title || 'Untitled'}
@@ -74048,7 +74048,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {recentDocumentsModalOpen && (() => {
         const filteredDocs = recentDocumentsList.filter(doc => {
           if (libraryCategoryFilter !== 'all') {
-            const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+            const dMode = getDocMode(doc);
             if (dMode !== libraryCategoryFilter) return false;
           }
           if (libraryModalSearchQuery.trim()) {
@@ -74058,10 +74058,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
           return true;
         });
 
-        const composeCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'compose' || (!d.mode && !d.data?.sheetsData && !d.data?.deckSlidesData)).length;
-        const sheetsCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'sheets' || Boolean(d.data?.sheetsData)).length;
-        const deckCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'deck' || Boolean(d.data?.deckSlidesData)).length;
-        const whiteboardCount = recentDocumentsList.filter(d => (d.mode || d.data?.mode) === 'whiteboard').length;
+        const composeCount = recentDocumentsList.filter(d => getDocMode(d) === 'compose').length;
+        const sheetsCount = recentDocumentsList.filter(d => getDocMode(d) === 'sheets').length;
+        const deckCount = recentDocumentsList.filter(d => getDocMode(d) === 'deck').length;
+        const whiteboardCount = recentDocumentsList.filter(d => getDocMode(d) === 'whiteboard').length;
 
         const filterTabs = [
           { id: 'all', label: 'All', count: recentDocumentsList.length },
@@ -74173,7 +74173,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 ) : (
                   filteredDocs.map(doc => {
-                    const dMode = doc.mode || doc.data?.mode || (doc.data?.sheetsData ? 'sheets' : doc.data?.deckSlidesData ? 'deck' : 'compose');
+                    const dMode = getDocMode(doc);
                     let typeLabel = 'Document';
                     let typeBadgeClass = 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300 border border-violet-200/50 dark:border-violet-800/50';
 
@@ -74203,7 +74203,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       >
                         {/* Name & Icon */}
                         <div className="col-span-7 flex items-center gap-3 min-w-0">
-                          <FileTypeIcon file={doc} size="sm" className="shrink-0" />
+                          <AppNativeSvgIcon type={dMode === 'sheets' ? 'sheet' : dMode} size={26} className="shrink-0" />
                           <div className="min-w-0 pr-2">
                             <div className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                               {doc.title || 'Untitled'}
