@@ -1,4 +1,5 @@
 import React from 'react';
+import { AppNativeSvgIcon } from './home/AppNativeSvgIcon';
 
 /**
  * FileTypeIcon.jsx
@@ -486,6 +487,39 @@ export function FileTypeIcon({
   title = null
 }) {
   const details = getFileTypeDetails(file);
+
+  // Map size prop to numerical pixel size for the dimensional 2D icon
+  const pixelSize = typeof size === 'number'
+    ? size
+    : size === 'lg'
+      ? 36
+      : size === 'md'
+        ? 28
+        : size === 'xs'
+          ? 20
+          : 24;
+
+  // Determine if this file maps directly to one of Regaarder's dimensional 2D product icons
+  const mappedProductType = details.isSpreadsheet
+    ? 'sheet'
+    : details.isPdf
+      ? 'pdf'
+      : details.isPresentation
+        ? 'deck'
+        : details.isWhiteboard
+          ? 'whiteboard'
+          : details.isRegaarderDoc || details.isWord
+            ? 'compose'
+            : null;
+
+  if (mappedProductType && !overrideBgHex) {
+    return (
+      <div className={`inline-flex items-center justify-center shrink-0 ${className}`} title={title || `${details.label || 'Document'}`}>
+        <AppNativeSvgIcon type={mappedProductType} size={pixelSize} />
+      </div>
+    );
+  }
+
   const bgColor = overrideBgHex || details.bgHex;
   const displayLabel = details.label || 'FILE';
   const isLongLabel = displayLabel.length > 4;

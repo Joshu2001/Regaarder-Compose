@@ -108,13 +108,7 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
       </div>
     );
   }
-  if (norm.includes("relay")) {
-    return (
-      <div className={`flex items-center justify-center shrink-0 text-[#4F46E5] ${className}`}>
-        <RelayIcon size={size} strokeWidth={2.1} />
-      </div>
-    );
-  }
+
 
   // ---------------------------------------------------------------------------
   // 1. DOCS: Vertical Document Page with Physical Dog-Ear Fold & Content Lines
@@ -498,7 +492,91 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
   }
 
   // ---------------------------------------------------------------------------
-  // 7. PDF: Document Page with Red Identifier Header & Bold File Stamp
+  // 7. RELAY: Dimensional 2D Interconnected Communication & Contextual Layer
+  // ---------------------------------------------------------------------------
+  if (norm.includes("relay") || norm.includes("dm") || norm === "chat" || norm === "message") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`shrink-0 select-none overflow-visible ${className}`}
+        style={{ width: size, height: size }}
+      >
+        <defs>
+          <linearGradient id="relayBaseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#4338CA" />
+          </linearGradient>
+          <linearGradient id="relayFrontGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#EEF2FF" />
+            <stop offset="100%" stopColor="#E0E7FF" />
+          </linearGradient>
+          <linearGradient id="relayBevelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3730A3" />
+            <stop offset="100%" stopColor="#312E81" />
+          </linearGradient>
+          <linearGradient id="relayNodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#818CF8" />
+            <stop offset="100%" stopColor="#4F46E5" />
+          </linearGradient>
+        </defs>
+
+        {/* Ambient base shadow */}
+        <rect x="2" y="3.5" width="20" height="18" rx="5.5" fill="#0F172A" opacity="0.12" />
+
+        {/* Primary Relay chassis: rounded physical communications module */}
+        <rect x="1.5" y="2" width="21" height="19.5" rx="5.5" fill="url(#relayBaseGrad)" />
+
+        {/* Lateral thickness bevel (Right edge depth) */}
+        <path
+          d="M17.5 2.2C20 2.5 22 4.3 22.3 7V16C22.3 18.7 20.3 20.8 17.6 21.2H19C21 20.7 22.5 19 22.5 16.7V6.5C22.5 4 20.5 2.3 18 2.2H17.5Z"
+          fill="url(#relayBevelGrad)"
+          opacity="0.6"
+        />
+
+        {/* Upper edge specular highlight rim */}
+        <path
+          d="M5 2.7H19C20.5 2.7 21.8 3.7 22 5.1C21.6 4 20.4 3.2 19 3.2H5C3.6 3.2 2.4 4 2 5.1C2.2 3.7 3.5 2.7 5 2.7Z"
+          fill="#FFFFFF"
+          opacity="0.4"
+        />
+
+        {/* Dual Intertwined Communication & Context Surfaces */}
+        {/* Rear Context / AI Transmission Plate */}
+        <rect x="7" y="5.2" width="11" height="8" rx="2.5" fill="#312E81" opacity="0.55" />
+        <rect x="7.8" y="6" width="9.4" height="6.4" rx="2" fill="#818CF8" opacity="0.4" />
+        <circle cx="14.8" cy="8.2" r="1" fill="#FFFFFF" opacity="0.9" />
+
+        {/* Foreground Collaboration & Human Presence Surface */}
+        <rect x="4.8" y="8.8" width="12" height="9" rx="2.8" fill="url(#relayFrontGrad)" />
+
+        {/* Relay Dynamic Bridge & Pulse Tracks (Connecting human, workspace, and AI context) */}
+        <path
+          d="M7.8 12.2H13.8"
+          stroke="#4F46E5"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M7.8 14.8H11.8"
+          stroke="#6366F1"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          opacity="0.85"
+        />
+
+        {/* Active Relay Interconnect / Node Anchor */}
+        <circle cx="14.2" cy="14.8" r="1.5" fill="url(#relayNodeGrad)" />
+        <circle cx="14.2" cy="14.8" r="0.6" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8. PDF: Document Page with Red Identifier Header & Bold File Stamp
   // ---------------------------------------------------------------------------
   if (norm.includes("pdf")) {
     return (

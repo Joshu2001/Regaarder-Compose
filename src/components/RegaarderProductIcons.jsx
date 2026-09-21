@@ -403,15 +403,14 @@ export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
     className={className}
     {...props}
   >
-    {/* Top transfer track: left endpoint to right forward arrow */}
-    <circle cx="5.5" cy="8.5" r="2" />
-    <path d="M7.5 8.5h11" />
-    <polyline points="15.5 5.5 18.5 8.5 15.5 11.5" />
-
-    {/* Bottom reciprocal track: right endpoint to left reverse arrow */}
-    <circle cx="18.5" cy="15.5" r="2" />
-    <path d="M16.5 15.5h-11" />
-    <polyline points="8.5 12.5 5.5 15.5 8.5 18.5" />
+    {/* Intertwined communication presence & relay nexus layer */}
+    {/* Base conversation & context card */}
+    <rect x="3" y="4" width="13" height="11" rx="3.5" />
+    {/* Dynamic relay transmission orbit connecting to focal receiver */}
+    <path d="M16 8.5h2.5a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5H10a2.5 2.5 0 0 1-2.5-2.5V15" />
+    {/* Central Relay transmission pulse node */}
+    <circle cx="9.5" cy="9.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
