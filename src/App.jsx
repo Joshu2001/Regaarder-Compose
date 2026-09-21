@@ -34493,6 +34493,10 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
+    // Reset whiteboard hover/reveal state so the top nav is never stuck in
+    // auto-hide mode when switching from Whiteboard → Notes.
+    setIsWhiteboardTopNavHovered(false);
+    setIsWhiteboardInitialPeek(false);
 
     // Create a fresh notes document and register it in the workspace
     const noteId = `note-${Date.now()}`;
@@ -34516,6 +34520,7 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setDocBodyHtml(options.initialHtml || '');
     showToast('Notes ready');
   };
+
 
   const createDeckExperience = (options = {}) => {
     setCreationPickerOpen(false);
@@ -38148,7 +38153,10 @@ Respond with a JSON array of slide objects matching the schema.`;
     const isNotesWorkspace = productMode === 'notes' || (productMode !== 'compose' && Boolean(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'));
     const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
     const isSpatialWorkspace = isWhiteboardWorkspace || isNotesWorkspace;
-    const isWhiteboardTopNavRevealed = !isSpatialWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
+    // Notes always reveals the top nav — auto-hide is a whiteboard-only behavior.
+    // Without this guard, switching Whiteboard → Notes left the top nav hidden
+    // (the "Frankenstein" state bleed bug) because isWhiteboardTopNavHovered was false.
+    const isWhiteboardTopNavRevealed = isNotesWorkspace || !isSpatialWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
