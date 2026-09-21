@@ -30,9 +30,10 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, MapPin, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive } from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode, Download, Printer, Compass, UserX, Target, Grid, Palette, ZoomIn, ZoomOut, Maximize2, Pin, Copy, Clipboard, Paintbrush, Sliders, SlidersHorizontal, RefreshCw, Share2, RotateCcw, Camera, Hash, ArrowUpDown, ArrowUpRight, Bookmark, Tv, Award, ShieldCheck, BadgeCheck, Lightbulb, Rocket, Flame, HardDrive, LogOut } from 'lucide-react';
 import './thin-scrollbar.css';
 import StorageDataManagement from './components/StorageDataManagement';
+import UserProfileMenuPopover from './components/home/UserProfileMenuPopover';
 import { LocalHardwareOffloadSettings } from './components/settings/LocalHardwareOffloadSettings';
 import RegaarderBrandIcon from './components/RegaarderBrandIcon';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -43,6 +44,7 @@ import {
   registerWithEmail,
   loginWithGoogle,
   loginWithApple,
+  logoutFirebase,
 } from './services/firebaseAuthService';
 import {
   ComposeIcon,
@@ -18576,6 +18578,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [authShowPassword, setAuthShowPassword] = useState(false);
   // 'terms' | 'privacy' | null — controls which legal document modal is open
   const [legalModalDoc, setLegalModalDoc] = useState(null);
 
@@ -48679,33 +48682,53 @@ const renderRoomTopHeader = () => (
     setAuthLoading(true);
 
     try {
-      let token = null;
-      let user = null;
-
-      if (isFirebaseConfigured()) {
-        const result = provider === 'google'
-          ? await loginWithGoogle()
-          : await loginWithApple();
-        token = result.token;
-        user = result.user;
-      } else {
-        throw new Error('Social sign-in is not configured. Please contact support.');
+      if (!isFirebaseConfigured()) {
+        throw new Error('Authentication is not configured. Please contact support.');
       }
 
-      localStorage.setItem('rc.token', token);
-      localStorage.setItem('rc.user', JSON.stringify(user));
-      setCurrentUser(user);
-      setAuthModalOpen(false);
-      showToast(`Connected with ${provider === 'google' ? 'Google' : 'Apple'} ✓`);
+      // For Supabase OAuth, signInWithOAuth initiates a redirect.
+      // Errors here (e.g. "provider not enabled") are synchronous and catchable.
+      const fn = provider === 'google' ? loginWithGoogle : loginWithApple;
+      const result = await fn();
 
-      setAuthEmail('');
-      setAuthPassword('');
-      setAuthName('');
+      // Supabase OAuth returns { url, provider } — no immediate user/token.
+      // The session is resolved after the redirect back to the app.
+      // If a URL was returned, Supabase is about to navigate/open a popup.
+      // Just close the modal and let the auth state listener handle the session.
+      setAuthModalOpen(false);
+      showToast(`Opening ${provider === 'google' ? 'Google' : 'Apple'} sign-in…`);
     } catch (err) {
-      setAuthError(err.message || 'Social sign-in failed.');
+      const msg = err?.message || '';
+      // Friendly message when provider is not yet enabled in Supabase dashboard
+      if (
+        msg.toLowerCase().includes('provider is not enabled') ||
+        msg.toLowerCase().includes('unsupported provider') ||
+        msg.toLowerCase().includes('validation_failed')
+      ) {
+        setAuthError(
+          `${provider === 'google' ? 'Google' : 'Apple'} sign-in is not enabled yet. ` +
+          `Please use email & password, or enable this provider in the Supabase Dashboard → Authentication → Providers.`
+        );
+      } else {
+        setAuthError(msg || 'Social sign-in failed. Please try email & password.');
+      }
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  // ─── Sign Out ────────────────────────────────────────────────────────────────
+  const handleSignOut = async () => {
+    try {
+      await logoutFirebase(); // aliased to logoutSupabase
+    } catch (_) {
+      // best-effort — clear local state regardless
+    }
+    localStorage.removeItem('rc.token');
+    localStorage.removeItem('rc.user');
+    setCurrentUser(null);
+    setComposeProfileMenuOpen(false);
+    showToast('Signed out successfully.');
   };
 
 
@@ -49007,15 +49030,29 @@ const renderRoomTopHeader = () => (
 
             <div className="flex flex-col gap-1.5">
               <label className="text-[11.5px] font-medium text-slate-700 dark:text-zinc-300">Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                disabled={authLoading}
-                className="h-9 px-3 text-[12px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={authShowPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  disabled={authLoading}
+                  className="h-9 w-full px-3 pr-9 text-[12px] bg-slate-50/70 hover:bg-slate-100/60 focus:bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-850 dark:focus:bg-zinc-900 border border-slate-200/90 dark:border-zinc-750 focus:border-slate-400 dark:focus:border-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-slate-400/20 dark:focus:ring-zinc-400/20 transition-all duration-150 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                  required
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onPointerDown={(e) => { e.preventDefault(); setAuthShowPassword((v) => !v); }}
+                  className="absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+                  aria-label={authShowPassword ? 'Hide password' : 'Show password'}
+                >
+                  {authShowPassword
+                    ? <EyeOff size={14} strokeWidth={1.8} />
+                    : <Eye size={14} strokeWidth={1.8} />
+                  }
+                </button>
+              </div>
             </div>
 
             <button
@@ -89025,6 +89062,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderSharedShapePicker()}
       {renderAuthModal()}
       {renderLegalModal()}
+
+      {/* ── Compose Profile Menu ───────────────────────────────────────────── */}
+      {composeProfileMenuOpen && currentUser && (
+        <div
+          ref={composeProfileMenuRef}
+          className="fixed z-[9999] top-14 right-4 w-56 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-750 rounded-2xl shadow-xl overflow-hidden"
+        >
+          {/* User identity */}
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
+            <p className="text-[12.5px] font-semibold text-slate-900 dark:text-white truncate">
+              {currentUser.displayName || currentUser.name || 'User'}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+              {currentUser.email || ''}
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="py-1.5">
+            <button
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setComposeProfileMenuOpen(false);
+                setSettingsTab('account');
+                setSettingsModalOpen(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-4 py-2 text-[12px] text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-left"
+            >
+              <Settings size={13} strokeWidth={1.8} />
+              Account Settings
+            </button>
+
+            <div className="my-1 mx-3 border-t border-slate-100 dark:border-zinc-800" />
+
+            <button
+              onPointerDown={(e) => { e.preventDefault(); handleSignOut(); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2 text-[12px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-left"
+            >
+              <LogOut size={13} strokeWidth={1.8} />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
 
       <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
       <SummaryModal 

@@ -294,23 +294,26 @@ $ws.AppActivate('${targetName}')
   // renderer before opening the popup — blocking it causes the "missing initial state"
   // error. All other window.open / target="_blank" links go to the OS browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const isFirebaseAuth = url.includes('firebaseapp.com/__/auth') ||
-                           url.includes('accounts.google.com') ||
-                           url.includes('appleid.apple.com') ||
-                           url.includes('googleapis.com/oauth2');
+    const isOAuthUrl = url.includes('supabase.co/auth/v1/authorize') ||
+                       url.includes('firebaseapp.com/__/auth') ||
+                       url.includes('accounts.google.com') ||
+                       url.includes('appleid.apple.com') ||
+                       url.includes('googleapis.com/oauth2') ||
+                       url.includes('github.com/login/oauth');
 
-    if (isFirebaseAuth) {
-      // Let Electron create a real BrowserWindow for the OAuth flow
+    if (isOAuthUrl) {
+      // Let Electron create a real BrowserWindow for the OAuth flow with back/forward nav
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
           width: 500,
           height: 680,
+          title: 'Sign In',
           autoHideMenuBar: true,
           webPreferences: {
             nodeIntegration: false,
-            contextIsolation: false,
-            sandbox: false,
+            contextIsolation: true,
+            sandbox: true,
             webSecurity: true
           }
         }
