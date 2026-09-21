@@ -28,73 +28,246 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
   const norm = (type || "").toLowerCase();
 
   // ---------------------------------------------------------------------------
-  // Minimal outline mode: clean native stroke with muted brand accent, no box
+  // Minimal tab mode: simplified crisp dimensional-2D silhouettes (12–16px)
+  // Preserves filled body, distinct silhouette, and restrained dual-tone depth
+  // without visual clutter or uncontained monoline flatness.
   // ---------------------------------------------------------------------------
   if (variant === "minimal") {
+    // 1. SHEETS: Crisp Emerald Ledger Tile with header ribbon & data cells
     if (norm.includes("sheet")) {
       return (
-        <div
-          className={`flex items-center justify-center shrink-0 transition-colors ${className}`}
-          style={{ color: "rgba(5, 150, 105, 0.82)" }}
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
         >
-          <SheetIcon size={size} strokeWidth={1.6} />
-        </div>
+          {/* Base ledger plate */}
+          <rect x="1.5" y="1.5" width="13" height="13" rx="3.2" fill="#10B981" />
+          {/* Subtle bottom bevel shelf */}
+          <path d="M2.5 13.5C3.5 14.2 4.8 14.5 6.5 14.5H10.5C12.2 14.5 13.5 14.2 14.5 13.5V11.5H1.5V13.5H2.5Z" fill="#047857" opacity="0.6" />
+          {/* Inner data matrix surface */}
+          <rect x="3.2" y="3.2" width="9.6" height="9.6" rx="1.6" fill="#FFFFFF" />
+          {/* Header ribbon */}
+          <path d="M3.2 4.8C3.2 3.9 3.9 3.2 4.8 3.2H11.2C12.1 3.2 12.8 3.9 12.8 4.8V6.2H3.2V4.8Z" fill="#A7F3D0" />
+          {/* Crisp grid division */}
+          <line x1="3.2" y1="9.4" x2="12.8" y2="9.4" stroke="#059669" strokeWidth="0.8" opacity="0.4" />
+          <line x1="8" y1="6.2" x2="8" y2="12.8" stroke="#059669" strokeWidth="0.8" opacity="0.4" />
+          {/* Active cell indicator */}
+          <rect x="4.2" y="7.2" width="2.6" height="1.6" rx="0.4" fill="#10B981" />
+        </svg>
       );
     }
+
+    // 2. DECK: 16:9 Widescreen Presentation Plate with stacked slide layer
     if (norm.includes("deck") || norm.includes("present") || norm.includes("slide")) {
       return (
-        <div className={`flex items-center justify-center shrink-0 text-orange-500 dark:text-orange-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 ${className}`}>
-          <DeckIcon size={size} strokeWidth={1.6} />
-        </div>
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          {/* Background layered slide edge */}
+          <rect x="3.5" y="2" width="11" height="8" rx="2" fill="#FED7AA" />
+          {/* Foreground widescreen slide body */}
+          <rect x="1.5" y="3.8" width="13" height="10.2" rx="2.5" fill="#F97316" />
+          {/* Lateral depth facet */}
+          <path d="M12.5 4C13.8 4.2 14.5 5 14.5 6.5V12C14.5 13.2 13.8 13.8 12.5 14H13C14.2 13.7 14.5 12.8 14.5 11.5V6C14.5 4.8 14 4.2 12.5 4Z" fill="#C2410C" opacity="0.65" />
+          {/* Inner slide projection screen */}
+          <rect x="3" y="5.2" width="10" height="7.2" rx="1.4" fill="#FFFFFF" />
+          {/* Ascending metric bars */}
+          <rect x="4.4" y="9.2" width="1.6" height="2.2" rx="0.3" fill="#FDBA74" />
+          <rect x="6.6" y="8" width="1.6" height="3.4" rx="0.3" fill="#FB923C" />
+          <rect x="8.8" y="6.8" width="1.6" height="4.6" rx="0.3" fill="#EA580C" />
+          {/* Header rule */}
+          <line x1="4.4" y1="6.4" x2="7.4" y2="6.4" stroke="#F97316" strokeWidth="0.8" strokeLinecap="round" />
+        </svg>
       );
     }
+
+    // 3. WHITEBOARD: Studio Drafting Canvas with visible easel legs & diagram
     if (norm.includes("whiteboard") || norm.includes("canvas")) {
       return (
-        <div className={`flex items-center justify-center shrink-0 text-blue-500 dark:text-blue-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 ${className}`}>
-          <WhiteboardIcon size={size} strokeWidth={1.6} />
-        </div>
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          {/* Visible easel legs */}
+          <line x1="3.2" y1="10.5" x2="1.5" y2="15" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="12.8" y1="10.5" x2="14.5" y2="15" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="8" y1="11" x2="8" y2="15.2" stroke="#3B82F6" strokeWidth="1" strokeLinecap="round" />
+          {/* Main drafting board frame */}
+          <rect x="1.5" y="1.5" width="13" height="9.8" rx="2.4" fill="#3B82F6" />
+          {/* Board bevel */}
+          <path d="M12 1.6C13.5 1.8 14.5 2.5 14.5 4V9C14.5 10.2 13.5 11 12 11.2H12.5C13.8 11 14.5 10 14.5 8.8V3.8C14.5 2.5 13.8 1.8 12.5 1.6H12Z" fill="#1D4ED8" opacity="0.6" />
+          {/* Top drafting clamp */}
+          <rect x="6" y="0.8" width="4" height="1.4" rx="0.7" fill="#BFDBFE" />
+          {/* Inner drawing surface */}
+          <rect x="2.8" y="2.8" width="10.4" height="7.2" rx="1.4" fill="#FFFFFF" />
+          {/* Diagram sparkline & focal node */}
+          <path d="M4.5 7.8L7 5.2L9.5 6.8L11.5 4.5" stroke="#2563EB" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="11.5" cy="4.5" r="0.9" fill="#1D4ED8" />
+        </svg>
       );
     }
-    if (norm.includes("room") || norm.includes("meet")) {
-      return (
-        <div className={`flex items-center justify-center shrink-0 text-violet-500 dark:text-violet-300 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${className}`}>
-          <RoomIcon size={size} strokeWidth={1.6} />
-        </div>
-      );
-    }
-    if (norm.includes("browser")) {
-      return (
-        <div className={`flex items-center justify-center shrink-0 text-sky-500 dark:text-sky-300 group-hover:text-sky-600 dark:group-hover:text-sky-400 ${className}`}>
-          <BrowserIcon size={size} strokeWidth={1.6} />
-        </div>
-      );
-    }
-    if (norm.includes("relay")) {
-      return (
-        <div className={`flex items-center justify-center shrink-0 text-indigo-500 dark:text-indigo-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 ${className}`}>
-          <RelayIcon size={size} strokeWidth={1.6} />
-        </div>
-      );
-    }
+
+    // 4. NOTES: Spiral Notebook Silhouette with metal wire loops
     if (norm.includes("notes") || norm.includes("notebook")) {
       return (
-        <div className={`flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-500 group-hover:text-amber-700 dark:group-hover:text-amber-400 ${className}`}>
-          <NotesIcon size={size} strokeWidth={1.6} />
-        </div>
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          {/* Main notebook cover */}
+          <rect x="2.2" y="1.5" width="12.5" height="13.2" rx="2.8" fill="#F59E0B" />
+          {/* Darker spine binding */}
+          <path d="M2.2 4.3C2.2 2.8 3.2 1.5 5 1.5V14.7C3.2 14.7 2.2 13.4 2.2 11.9V4.3Z" fill="#B45309" />
+          {/* Inset writing paper */}
+          <rect x="5.8" y="2.8" width="7.8" height="10.5" rx="1.5" fill="#FFFFFF" />
+          {/* Ruled content lines */}
+          <line x1="7.2" y1="5.2" x2="12" y2="5.2" stroke="#D97706" strokeWidth="0.8" strokeLinecap="round" opacity="0.7" />
+          <line x1="7.2" y1="7.8" x2="12" y2="7.8" stroke="#D97706" strokeWidth="0.8" strokeLinecap="round" opacity="0.7" />
+          <line x1="7.2" y1="10.4" x2="10.5" y2="10.4" stroke="#D97706" strokeWidth="0.8" strokeLinecap="round" opacity="0.5" />
+          {/* Exposed spiral wire loops */}
+          {[3.8, 6.8, 9.8, 12.4].map((y) => (
+            <rect key={y} x="1.2" y={y - 0.7} width="2.6" height="1.4" rx="0.7" fill="#FFFFFF" />
+          ))}
+        </svg>
       );
     }
+
+    // 5. ROOM: Studio Video Aperture & Lens
+    if (norm.includes("room") || norm.includes("meet")) {
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          <rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="#7C3AED" />
+          <path d="M11.5 1.6C13.2 1.8 14.5 2.8 14.5 4.5V11.5C14.5 13.2 13.2 14.2 11.5 14.4H12C13.5 14.1 14.5 13 14.5 11.5V4.5C14.5 3 13.5 1.9 12 1.6H11.5Z" fill="#5B21B6" opacity="0.6" />
+          {/* Video chamber display stage */}
+          <rect x="3.2" y="3.5" width="9.6" height="8.8" rx="1.8" fill="#FFFFFF" />
+          {/* Lens core & aperture highlight */}
+          <circle cx="7" cy="7.8" r="2.2" fill="#6D28D9" />
+          <circle cx="6.4" cy="7.2" r="0.7" fill="#FFFFFF" opacity="0.85" />
+          {/* Live meeting tally dot */}
+          <circle cx="10.8" cy="5.4" r="0.9" fill="#10B981" />
+        </svg>
+      );
+    }
+
+    // 6. RELAY: Intertwined Dual Communications Surface & Nexus Node
+    if (norm.includes("relay") || norm.includes("dm") || norm === "chat" || norm === "message") {
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          {/* Primary Relay chassis */}
+          <rect x="1.5" y="1.8" width="13" height="12.4" rx="3.2" fill="#6366F1" />
+          <path d="M11.5 2C13 2.2 14.5 3.2 14.5 4.8V11C14.5 12.5 13 13.8 11.5 14H12C13.5 13.8 14.5 12.6 14.5 11V4.8C14.5 3.2 13.5 2.2 12 2H11.5Z" fill="#4338CA" opacity="0.6" />
+          {/* Rear context plate */}
+          <rect x="5.2" y="3.8" width="7.2" height="5.2" rx="1.6" fill="#312E81" opacity="0.55" />
+          <circle cx="10.4" cy="5.8" r="0.8" fill="#FFFFFF" opacity="0.9" />
+          {/* Foreground collaboration plate */}
+          <rect x="3.4" y="6" width="7.8" height="6" rx="1.8" fill="#FFFFFF" />
+          {/* Pulse track & anchor */}
+          <line x1="5.2" y1="8.2" x2="9.2" y2="8.2" stroke="#4F46E5" strokeWidth="0.9" strokeLinecap="round" />
+          <circle cx="9.2" cy="10" r="1" fill="#6366F1" />
+        </svg>
+      );
+    }
+
+    // 7. BROWSER
+    if (norm.includes("browser")) {
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          <rect x="1.5" y="1.5" width="13" height="13" rx="3.2" fill="#2563EB" />
+          <circle cx="8" cy="8" r="4.2" stroke="#FFFFFF" strokeWidth="1.2" />
+          <ellipse cx="8" cy="8" rx="2" ry="4.2" stroke="#BFDBFE" strokeWidth="0.9" />
+          <line x1="3.8" y1="8" x2="12.2" y2="8" stroke="#BFDBFE" strokeWidth="0.9" />
+        </svg>
+      );
+    }
+
+    // 8. PDF: Red Document Page with Fold
     if (norm.includes("pdf")) {
       return (
-        <div className={`flex items-center justify-center shrink-0 text-red-500 dark:text-red-400 group-hover:text-red-600 ${className}`}>
-          <ComposeIcon size={size} strokeWidth={1.6} />
-        </div>
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`shrink-0 select-none overflow-visible ${className}`}
+        >
+          <path d="M3 1.5H10.5L13.8 4.8V13.5C13.8 14.1 13.2 14.5 12.5 14.5H3C2.4 14.5 2 14.1 2 13.5V2.5C2 1.9 2.4 1.5 3 1.5Z" fill="#EF4444" />
+          <path d="M10.5 1.5V4.2C10.5 4.6 10.9 5 11.3 5H13.8L10.5 1.5Z" fill="#FCA5A5" />
+          <rect x="4.2" y="7" width="6.6" height="2" rx="0.5" fill="#FFFFFF" />
+          <line x1="4.2" y1="10.5" x2="9.8" y2="10.5" stroke="#FFFFFF" strokeWidth="0.9" strokeLinecap="round" opacity="0.8" />
+        </svg>
       );
     }
-    // Default Docs/Compose
+
+    // 9. DEFAULT / DOCS: Portrait Page with Physical Dog-Ear Fold & Content Lines
     return (
-      <div className={`flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 ${className}`}>
-        <ComposeIcon size={size} strokeWidth={1.6} />
-      </div>
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`shrink-0 select-none overflow-visible ${className}`}
+      >
+        {/* Document Page Silhouette */}
+        <path
+          d="M3 1.5H10.5L13.8 4.8V13.5C13.8 14.1 13.2 14.5 12.5 14.5H3C2.4 14.5 2 14.1 2 13.5V2.5C2 1.9 2.4 1.5 3 1.5Z"
+          fill="#8B5CF6"
+        />
+        {/* Lateral thickness facet */}
+        <path
+          d="M13 4.8V13.5C13 13.9 12.6 14.3 12.2 14.4H12.5C13.2 14.2 13.8 13.5 13.8 12.8V4.8H13Z"
+          fill="#5B21B6"
+          opacity="0.6"
+        />
+        {/* Physical 45-degree dog-ear folded corner */}
+        <path
+          d="M10.5 1.5V4.2C10.5 4.6 10.9 5 11.3 5H13.8L10.5 1.5Z"
+          fill="#C4B5FD"
+        />
+        {/* Document Content Rules */}
+        <rect x="4.2" y="7" width="7" height="1.5" rx="0.75" fill="#FFFFFF" />
+        <rect x="4.2" y="9.5" width="5.5" height="1.3" rx="0.65" fill="#DDD6FE" opacity="0.9" />
+        <rect x="4.2" y="11.8" width="4" height="1.1" rx="0.55" fill="#DDD6FE" opacity="0.75" />
+      </svg>
     );
   }
 

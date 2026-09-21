@@ -49469,19 +49469,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </button>
                         </div>
                         <div className="flex flex-col gap-0.5 mt-1">
-                          {windowedTabDocuments.hiddenDocs.map((hDoc) => (
-                            <button
-                              key={hDoc.id}
-                              type="button"
-                              onClick={() => {
-                                switchDocument(hDoc.id);
-                                setOverflowTabMenuOpen(false);
-                              }}
-                              className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
-                            >
-                              <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
-                            </button>
-                          ))}
+                          {windowedTabDocuments.hiddenDocs.map((hDoc) => {
+                            const hDocMode = isSheetsMode ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(hDoc);
+                            return (
+                              <button
+                                key={hDoc.id}
+                                type="button"
+                                onClick={() => {
+                                  switchDocument(hDoc.id);
+                                  setOverflowTabMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate cursor-pointer"
+                              >
+                                <AppNativeSvgIcon variant="minimal" size={13} type={hDocMode} className="shrink-0" />
+                                <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </>
@@ -76732,19 +76736,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                       <div className="flex flex-col gap-0.5 mt-1">
-                        {windowedTabDocuments.hiddenDocs.map((hDoc) => (
-                          <button
-                            key={hDoc.id}
-                            type="button"
-                            onClick={() => {
-                              switchDocument(hDoc.id);
-                              setOverflowTabMenuOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
-                          >
-                            <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
-                          </button>
-                        ))}
+                        {windowedTabDocuments.hiddenDocs.map((hDoc) => {
+                          const hDocMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(hDoc);
+                          return (
+                            <button
+                              key={hDoc.id}
+                              type="button"
+                              onClick={() => {
+                                switchDocument(hDoc.id);
+                                setOverflowTabMenuOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate cursor-pointer"
+                            >
+                              <AppNativeSvgIcon variant="minimal" size={13} type={hDocMode} className="shrink-0" />
+                              <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </>
