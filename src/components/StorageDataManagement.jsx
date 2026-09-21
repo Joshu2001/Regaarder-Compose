@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   HardDrive, FileText, MessageSquare, Brain, User, Key, Layers, 
   Trash2, Download, ShieldCheck, Check, AlertTriangle, RefreshCw, 
-  CheckSquare, Square, Inbox, Folder, FolderOpen, ExternalLink
+  CheckSquare, Square, Inbox, Folder, FolderOpen, ExternalLink,
+  Cloud, CloudUpload, CloudDownload, Database, RotateCcw, Clock, CheckCircle2
 } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { 
@@ -14,6 +15,7 @@ import {
   formatBytes 
 } from '../services/storageManagerService';
 import { getLocalSyncRoot, openLocalRegaarderFolder } from '../services/localSyncService';
+import { cloudBackupService } from '../services/cloudBackupService';
 
 const ICON_MAP = {
   FileText,
@@ -34,13 +36,38 @@ export default function StorageDataManagement({ showToast = () => {} }) {
 
   const [localRoot, setLocalRoot] = useState('');
 
+  // Cloud Backup & Sync State
+  const isCloudConfigured = useMemo(() => cloudBackupService.isConfigured(), []);
+  const [cloudBackups, setCloudBackups] = useState([]);
+  const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [isRestoringBackupId, setIsRestoringBackupId] = useState(null);
+  const [isDeletingBackupId, setIsDeletingBackupId] = useState(null);
+
   const refreshMetrics = () => {
     const updated = getStorageBreakdown();
     setBreakdown(updated);
   };
 
+  const fetchCloudBackups = async () => {
+    if (!isCloudConfigured) return;
+    setIsLoadingBackups(true);
+    try {
+      const list = await cloudBackupService.listBackups();
+      setCloudBackups(list || []);
+    } catch (err) {
+      // Table might not exist yet or offline
+      console.warn('[CloudBackup] Could not fetch backups:', err.message);
+    } finally {
+      setIsLoadingBackups(false);
+    }
+  };
+
   useEffect(() => {
     refreshMetrics();
+    if (isCloudConfigured) {
+      fetchCloudBackups();
+    }
 
     getLocalSyncRoot().then((root) => {
       if (root) setLocalRoot(root);
@@ -52,7 +79,54 @@ export default function StorageDataManagement({ showToast = () => {} }) {
 
     window.addEventListener('regaarder:storage-cleared', handleStorageCleared);
     return () => window.removeEventListener('regaarder:storage-cleared', handleStorageCleared);
-  }, []);
+  }, [isCloudConfigured]);
+
+  const handleCreateCloudBackup = async () => {
+    if (!isCloudConfigured) {
+      showToast('Cloud backend (Supabase) is not configured.');
+      return;
+    }
+    setIsCreatingBackup(true);
+    try {
+      const now = new Date();
+      const timeLabel = `Backup — ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      await cloudBackupService.createFullBackup(timeLabel);
+      showToast('Snapshot saved securely to cloud');
+      await fetchCloudBackups();
+    } catch (err) {
+      showToast('Backup error: ' + (err.message || 'Failed to save snapshot'));
+    } finally {
+      setIsCreatingBackup(false);
+    }
+  };
+
+  const handleRestoreCloudBackup = async (backupId) => {
+    if (!backupId) return;
+    setIsRestoringBackupId(backupId);
+    try {
+      await cloudBackupService.restoreBackup(backupId);
+      showToast('Workspace restored from cloud snapshot');
+      refreshMetrics();
+    } catch (err) {
+      showToast('Restore error: ' + (err.message || 'Failed to restore snapshot'));
+    } finally {
+      setIsRestoringBackupId(null);
+    }
+  };
+
+  const handleDeleteCloudBackup = async (backupId) => {
+    if (!backupId) return;
+    setIsDeletingBackupId(backupId);
+    try {
+      await cloudBackupService.deleteBackup(backupId);
+      showToast('Cloud backup removed');
+      await fetchCloudBackups();
+    } catch (err) {
+      showToast('Delete error: ' + (err.message || 'Failed to delete backup'));
+    } finally {
+      setIsDeletingBackupId(null);
+    }
+  };
 
   const categoriesWithData = useMemo(() => {
     return STORAGE_CATEGORIES.filter(cat => {
@@ -306,6 +380,123 @@ export default function StorageDataManagement({ showToast = () => {} }) {
           <span>Open in Explorer</span>
           <ExternalLink size={11} className="text-slate-400" />
         </button>
+      </div>
+
+      {/* Cloud Backup & PostgreSQL Sync Card */}
+      <div className="mb-6 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+              <Cloud size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-100">Supabase Cloud Sync & Backups</span>
+                <span className={`text-[10px] font-semibold px-2 py-0.2 rounded-md border ${
+                  isCloudConfigured 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60' 
+                    : 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60'
+                }`}>
+                  {isCloudConfigured ? 'Cloud Connected' : 'Local Offline Mode'}
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-500 dark:text-zinc-400 mt-0.5 leading-snug">
+                {isCloudConfigured 
+                  ? 'Backup all workspace documents, sheets, whiteboards, notes, and Memora AI knowledge to PostgreSQL cloud storage.'
+                  : 'Supabase credentials are not configured. Backups are stored locally on your device.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={isCreatingBackup || !isCloudConfigured}
+            onClick={handleCreateCloudBackup}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold transition-all shadow-xs shrink-0 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            title="Create instant point-in-time cloud backup"
+          >
+            {isCreatingBackup ? (
+              <RefreshCw size={13} className="animate-spin" />
+            ) : (
+              <CloudUpload size={13} />
+            )}
+            <span>{isCreatingBackup ? 'Backing up...' : 'Backup to Cloud'}</span>
+          </button>
+        </div>
+
+        {/* Cloud Snapshots History */}
+        {isCloudConfigured && (
+          <div className="pt-2 border-t border-slate-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                Cloud Snapshots ({cloudBackups.length})
+              </span>
+              <button
+                type="button"
+                onClick={fetchCloudBackups}
+                disabled={isLoadingBackups}
+                className="text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <RefreshCw size={11} className={isLoadingBackups ? 'animate-spin' : ''} />
+                Refresh
+              </button>
+            </div>
+
+            {cloudBackups.length > 0 ? (
+              <div className="space-y-1.5 max-h-[140px] overflow-y-auto thin-scrollbar">
+                {cloudBackups.slice(0, 5).map((snap) => (
+                  <div
+                    key={snap.id}
+                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/60 dark:border-zinc-800 flex items-center justify-between gap-2"
+                  >
+                    <div className="min-w-0 flex items-center gap-2">
+                      <Clock size={13} className="text-slate-400 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                          {snap.label || 'Cloud Snapshot'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 flex items-center gap-1.5">
+                          <span>{new Date(snap.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                          {snap.byte_size ? (
+                            <>
+                              <span>•</span>
+                              <span>{formatBytes(snap.byte_size)}</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        disabled={isRestoringBackupId === snap.id}
+                        onClick={() => handleRestoreCloudBackup(snap.id)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-[11px] font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Restore workspace from this backup"
+                      >
+                        {isRestoringBackupId === snap.id ? 'Restoring...' : 'Restore'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isDeletingBackupId === snap.id}
+                        onClick={() => handleDeleteCloudBackup(snap.id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Delete cloud backup"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-3 text-center text-[11.5px] text-slate-400 dark:text-zinc-500">
+                {isLoadingBackups ? 'Loading snapshots...' : 'No cloud snapshots yet. Click "Backup to Cloud" to create your first.'}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Selection Toolbar */}

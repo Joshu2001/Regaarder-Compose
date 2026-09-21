@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured } from './supabaseAuthService';
 
 /**
  * Universal Cloud Backup Service for Regaarder Workspace.
@@ -7,6 +8,13 @@ import { supabase } from '../lib/supabaseClient';
  * and pushes point-in-time snapshots or granular items to Supabase PostgreSQL.
  */
 export const cloudBackupService = {
+  /**
+   * Returns whether Supabase cloud storage is configured
+   */
+  isConfigured() {
+    return isSupabaseConfigured();
+  },
+
   /**
    * Harvests all local data from localStorage into a structured snapshot
    */
@@ -196,6 +204,19 @@ export const cloudBackupService = {
     if (snap.brand?.personas) localStorage.setItem('regaarder_personas_list_v2', JSON.stringify(snap.brand.personas));
 
     window.dispatchEvent(new CustomEvent('regaarder:storage-restored', { detail: { backupId } }));
+    return true;
+  },
+
+  /**
+   * Delete a cloud backup from Supabase
+   */
+  async deleteBackup(backupId) {
+    const { error } = await supabase
+      .from('workspace_backups')
+      .delete()
+      .eq('id', backupId);
+
+    if (error) throw error;
     return true;
   }
 };

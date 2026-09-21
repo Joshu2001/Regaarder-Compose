@@ -89083,6 +89083,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
               Account Settings
             </button>
 
+            <button
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setComposeProfileMenuOpen(false);
+                setSettingsTab('storage');
+                setSettingsModalOpen(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-4 py-2 text-[12px] text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-left"
+            >
+              <Cloud size={13} strokeWidth={1.8} className="text-blue-500" />
+              Cloud Backups & Sync
+            </button>
+
             <div className="my-1 mx-3 border-t border-slate-100 dark:border-zinc-800" />
 
             <button
