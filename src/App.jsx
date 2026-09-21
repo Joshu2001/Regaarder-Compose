@@ -82569,6 +82569,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 documents={documents}
                 onSelectDoc={(id) => switchDocument(id)}
                 onNewNote={createNotesExperience}
+                onToggleImmersive={toggleDocumentImmersiveMode}
                 isDarkMode={isDarkMode}
               />
             ) : (

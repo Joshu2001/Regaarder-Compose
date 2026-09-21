@@ -388,3 +388,23 @@ button.bg-violet-600,
 .halo-card-hover:active {
   transform: scale(0.96);
 }
+
+/* ── Regaarder Notes Placeholder Styles ── */
+#regaarder-notebook-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #cbd5e1;
+  pointer-events: none;
+  display: block;
+}
+
+.dark #regaarder-notebook-editor:empty::before {
+  color: #52525b;
+}
+
+/* Ensure paragraph, div, and list elements in Notes editor inherit exact baseline height without distorting ruling rhythm */
+#regaarder-notebook-editor p,
+#regaarder-notebook-editor div:not(.note-todo-item):not(.regaarder-media-embed):not(.regaarder-link-preview) {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+}

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { RegaarderAiIcon, NotesIcon } from "./RegaarderProductIcons";
 import { executeAiTurn } from "../services/llmProviderService";
+import NotesSelectionToolbar from "./NotesSelectionToolbar";
 
 // ─── Constants & Ruling Presets ────────────────────────────────────────────────
 
@@ -1601,19 +1602,98 @@ function RuledNotebookCanvas({
   isHandwriting = false,
   isDarkMode = false,
   onOpenSidebar,
+  onToggleImmersive,
 }) {
   const editorRef = useRef(null);
   const titleRef = useRef(null);
   const drawingSvgRef = useRef(null);
+  const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
 
   const [enteredPin, setEnteredPin] = useState("");
   const [pinError, setPinError] = useState(false);
   const [isUnlockedLocally, setIsUnlockedLocally] = useState(false);
   const [isDrawingNow, setIsDrawingNow] = useState(false);
   const [currentStroke, setCurrentStroke] = useState(null);
+  const [selectionToolbarState, setSelectionToolbarState] = useState(null); // { text, range, rect }
 
   const isLocked = Boolean(activeDoc?.isLocked) && !isUnlockedLocally;
   const drawings = activeDoc?.drawings || [];
+
+  // Universal double-click / double-tap to toggle or exit immersive mode
+  const handleCanvasDoubleClick = useCallback((e) => {
+    if (isHandwriting) return;
+    if (e.target.closest("button, input, textarea, a, select, [contenteditable='true'], [role='button'], [data-notes-selection-toolbar]")) {
+      return;
+    }
+    onToggleImmersive?.();
+  }, [isHandwriting, onToggleImmersive]);
+
+  const handleCanvasPointerDown = useCallback((e) => {
+    if (isHandwriting) return;
+    if (e.target.closest("button, input, textarea, a, select, [contenteditable='true'], [role='button'], [data-notes-selection-toolbar]")) {
+      return;
+    }
+    const now = Date.now();
+    const prev = lastTapRef.current;
+    const timeDiff = now - prev.time;
+    const dist = Math.hypot((e.clientX || 0) - prev.x, (e.clientY || 0) - prev.y);
+
+    if (timeDiff > 0 && timeDiff < 350 && dist < 30) {
+      onToggleImmersive?.();
+      lastTapRef.current = { time: 0, x: 0, y: 0 };
+    } else {
+      lastTapRef.current = { time: now, x: e.clientX || 0, y: e.clientY || 0 };
+    }
+  }, [isHandwriting, onToggleImmersive]);
+
+  // Track text selection in notebook editor for floating toolbar
+  const checkSelection = useCallback(() => {
+    if (isHandwriting) {
+      setSelectionToolbarState(null);
+      return;
+    }
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      setSelectionToolbarState(null);
+      return;
+    }
+    const text = sel.toString().trim();
+    if (!text) {
+      setSelectionToolbarState(null);
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    const editor = editorRef.current;
+    if (!editor || !editor.contains(range.commonAncestorContainer)) {
+      setSelectionToolbarState(null);
+      return;
+    }
+
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      setSelectionToolbarState(null);
+      return;
+    }
+
+    setSelectionToolbarState({
+      text,
+      range: range.cloneRange(),
+      rect,
+    });
+  }, [isHandwriting]);
+
+  useEffect(() => {
+    const handleDocSelectionChange = () => {
+      // Delay slightly so mouseup or keyup completes range establishment
+      requestAnimationFrame(() => {
+        checkSelection();
+      });
+    };
+
+    document.addEventListener("selectionchange", handleDocSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleDocSelectionChange);
+  }, [checkSelection]);
 
   const activePreset = RULING_PRESETS[rulingType] || RULING_PRESETS.ruled;
   const config = activePreset[rulingThickness] || activePreset.normal;
@@ -1874,7 +1954,13 @@ function RuledNotebookCanvas({
   }, [rulingType, baselinePx, isDarkMode]);
 
   const baselineTopOffset = useMemo(() => {
-    return Math.max(0, Math.round(baselinePx - 16.5));
+    // In typographic rendering with a 15px font inside a baselinePx line-box:
+    // Font glyphs sit at baseline = (lineHeight - fontSize)/2 + fontAscent ≈ (baselinePx - 15)/2 + 12 = baselinePx/2 + 4.5.
+    // The horizontal ruled line is located at 0px of each background tile.
+    // To make the font baseline rest squarely ON TOP of the ruled line at baselinePx,
+    // we apply a vertical offset equal to (baselinePx - 7) px so that:
+    // (baselinePx - 7) + (baselinePx / 2 + 4.5) aligns the bottom of x-height characters right on the rule.
+    return Math.max(0, baselinePx - 7);
   }, [baselinePx]);
 
   // Convert points array to SVG path 'd' string with midpoint quadratic bezier curve smoothing
@@ -1925,11 +2011,61 @@ function RuledNotebookCanvas({
     }
   };
 
+  // Formatting commands for selection toolbar
+  const handleApplyFormat = useCallback((cmd, value = null) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    if (cmd === "checklist") {
+      const checkboxHtml = `<div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#D97706;cursor:pointer;" onchange="this.nextElementSibling.style.textDecoration=this.checked?'line-through':'none';this.nextElementSibling.style.opacity=this.checked?'0.6':'1';" /><span>New action item</span></div><br/>`;
+      document.execCommand("insertHTML", false, checkboxHtml);
+    } else {
+      document.execCommand(cmd, false, value);
+    }
+    flushUpdates();
+    checkSelection();
+  }, [flushUpdates, checkSelection]);
+
+  // Replace selection with AI generated text
+  const handleReplaceSelection = useCallback((replacementText) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    // Clean replacement and format paragraphs if multiline
+    let clean = (replacementText || "").trim();
+    if (clean.includes("\n")) {
+      clean = clean
+        .split("\n")
+        .map((l) => (l.trim() ? `<p>${l.trim()}</p>` : "<p><br/></p>"))
+        .join("");
+      document.execCommand("insertHTML", false, clean);
+    } else {
+      document.execCommand("insertText", false, clean);
+    }
+    flushUpdates();
+    setSelectionToolbarState(null);
+  }, [flushUpdates]);
+
+  const displayTitle = title && !/^untitled\s*note(?:\s+\d+)?$/i.test(title.trim()) ? title : "";
+
   return (
     <div
       ref={canvasContainerRef}
+      onDoubleClick={handleCanvasDoubleClick}
+      onPointerDown={handleCanvasPointerDown}
       className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text notes-canvas-scrollbar"
     >
+      {/* Floating Contextual Selection Toolbar */}
+      {selectionToolbarState && !isHandwriting && (
+        <NotesSelectionToolbar
+          selectionState={selectionToolbarState}
+          onClose={() => setSelectionToolbarState(null)}
+          onApplyFormat={handleApplyFormat}
+          onReplaceSelection={handleReplaceSelection}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
       {/* Top right notebook header: Date + Page indicator + Collab / Lock badges */}
       <div className="absolute right-8 top-3 z-10 flex items-center gap-3 text-[11.5px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
         {activeDoc?.isCollab && (
@@ -2052,7 +2188,27 @@ function RuledNotebookCanvas({
             )}
           </svg>
 
-          {/* Note Body Editor - starts immediately at top-left ruled baseline like Image 1 */}
+          {/* Dedicated Note Title Header with Elegant Placeholder */}
+          <div className="relative z-15 w-full mb-1">
+            <input
+              ref={titleRef}
+              type="text"
+              value={displayTitle}
+              onChange={(e) => onUpdateTitle?.(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              placeholder="Title"
+              className="w-full bg-transparent outline-none font-bold text-slate-900 dark:text-zinc-100 placeholder:text-slate-300 dark:placeholder:text-zinc-600 transition-colors border-none p-0 tracking-tight"
+              style={{
+                fontSize: "22px",
+                lineHeight: `${baselinePx}px`,
+                fontFamily: isHandwriting
+                  ? "'Caveat', 'Segoe Script', cursive, serif"
+                  : "'Newsreader', 'Georgia', -apple-system, serif",
+              }}
+            />
+          </div>
+
+          {/* Note Body Editor - starts immediately below title at ruled baseline */}
           <div
             id="regaarder-notebook-editor"
             ref={editorRef}
@@ -2061,7 +2217,7 @@ function RuledNotebookCanvas({
             onInput={handleEditorInput}
             onPaste={handleEditorPaste}
             onBlur={flushUpdates}
-            className="outline-none w-full min-h-[600px] text-slate-800 dark:text-zinc-200 relative z-15"
+            className="outline-none w-full min-h-[600px] text-slate-800 dark:text-zinc-200 relative z-15 regaarder-notebook-content-body"
             style={{
               fontSize: "15px",
               lineHeight: `${baselinePx}px`,
@@ -2101,6 +2257,7 @@ export default function RegaarderNotebookViewer({
   documents,
   onSelectDoc,
   onNewNote,
+  onToggleImmersive,
   isDarkMode,
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -2216,6 +2373,7 @@ export default function RegaarderNotebookViewer({
         isHandwriting={isHandwriting}
         isDarkMode={isDarkMode}
         onOpenSidebar={() => setIsSidebarOpen(true)}
+        onToggleImmersive={onToggleImmersive}
       />
 
       {/* 5. Floating Bottom Dock (Whiteboard-Inspired Capsule Dock) */}
