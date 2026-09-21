@@ -15,16 +15,14 @@ import {
  * Supports variant="tile" (default for Home/Recents/Library: rich dimensional 2D product/file identity)
  * and variant="minimal" (for document tabs: clean ~14-16px outline glyph without background box).
  *
- * "Recognizable Product Object -> Dimensional 2D -> Regaarder-Specific"
- *
- * Distinctive Object Geometries:
- * - Docs: Taller document card with crisp asymmetric dog-ear page fold & embossed content lines.
- * - Sheets: Ledger/grid matrix block with distinctive top header rule, column bands, and data cell.
- * - Deck: Actual 16:9 presentation slide plate stacked over a background slide deck.
- * - Whiteboard / Canvas: Studio drafting easel board with tripod legs, top title clamp, and canvas graph.
- * - Notes: Vertical spiral/margin notebook spine with lined page body.
- * - Room: Optical studio iris & camera body with lens highlights and tally light.
- * - PDF: Document card with folded corner and signature red identifier badge plate.
+ * Distinctive Product Shapes & Silhouettes:
+ * - Docs: Taller portrait page ratio with a physical 45° dog-ear corner fold and text rules.
+ * - Notes: Distinct notebook silhouette with an exposed spiral binder spine (metal wire loops) and margin rule.
+ * - Sheets: Grid matrix ledger tile with emerald ribbon, column dividers, and data cell highlight.
+ * - Deck: True 16:9 widescreen presentation display canvas with layered background slide plate.
+ * - Whiteboard: Studio drafting board on a visible wooden/aluminum tripod easel stand with top clamp.
+ * - Room: Optical studio camera horizon with dual-ring aperture glass and tally status light.
+ * - PDF: Document page silhouette with folded corner and signature red identity block.
  */
 export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "tile" }) {
   const norm = (type || "").toLowerCase();
@@ -119,7 +117,7 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
   }
 
   // ---------------------------------------------------------------------------
-  // 1. DOCS: Vertical Document Page with Physical Corner Fold & Text Hierarchy
+  // 1. DOCS: Vertical Document Page with Physical Dog-Ear Fold & Content Lines
   // ---------------------------------------------------------------------------
   if (norm.includes("doc") || norm === "compose") {
     return (
@@ -183,7 +181,71 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
   }
 
   // ---------------------------------------------------------------------------
-  // 2. SHEETS: Rounded Spreadsheet Ledger with Distinct Header & Cell Matrix
+  // 2. NOTES: Distinct Spiral Notebook with Exposed Wire Loops & Margin Strip
+  // ---------------------------------------------------------------------------
+  if (norm.includes("notes") || norm.includes("notebook")) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`shrink-0 select-none overflow-visible ${className}`}
+        style={{ width: size, height: size }}
+      >
+        <defs>
+          <linearGradient id="notesBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F59E0B" />
+            <stop offset="100%" stopColor="#D97706" />
+          </linearGradient>
+          <linearGradient id="notesSpineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#B45309" />
+            <stop offset="100%" stopColor="#78350F" />
+          </linearGradient>
+          <linearGradient id="notesWireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#FDE68A" />
+          </linearGradient>
+        </defs>
+
+        {/* Ground shadow */}
+        <rect x="3.5" y="3" width="18" height="19" rx="4.5" fill="#0F172A" opacity="0.12" />
+
+        {/* Main Notebook Cover (offset to the right of the spiral edge) */}
+        <rect x="3" y="1.5" width="19" height="20.5" rx="4.5" fill="url(#notesBodyGrad)" />
+
+        {/* Darker spine foundation strip */}
+        <path d="M3 6C3 3.5 4.5 1.5 7.5 1.5V22C4.5 22 3 20 3 17.5V6Z" fill="url(#notesSpineGrad)" />
+
+        {/* Inset Writing Card */}
+        <rect x="8.5" y="3.5" width="12" height="16.5" rx="2.5" fill="#FFFFFF" />
+
+        {/* Margin Guide Line */}
+        <line x1="11.5" y1="3.5" x2="11.5" y2="20" stroke="#FDE68A" strokeWidth="1" />
+
+        {/* Ruled content lines */}
+        <line x1="13" y1="7" x2="18.5" y2="7" stroke="#D97706" strokeWidth="1.2" strokeLinecap="round" opacity="0.65" />
+        <line x1="13" y1="10.5" x2="18.5" y2="10.5" stroke="#D97706" strokeWidth="1.2" strokeLinecap="round" opacity="0.65" />
+        <line x1="13" y1="14" x2="17" y2="14" stroke="#D97706" strokeWidth="1.2" strokeLinecap="round" opacity="0.65" />
+        <line x1="13" y1="17.2" x2="16" y2="17.2" stroke="#D97706" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+
+        {/* Distinct Exposed Metal Spiral Loops (Cuts into left spine edge) */}
+        {[5, 9, 13, 17].map((y) => (
+          <g key={y}>
+            <rect x="1.5" y={y - 1.2} width="4.2" height="2.4" rx="1.2" fill="url(#notesWireGrad)" />
+            <rect x="2" y={y - 0.7} width="3" height="1.4" rx="0.7" fill="#78350F" opacity="0.6" />
+          </g>
+        ))}
+
+        {/* Top ambient highlight line */}
+        <path d="M7.5 2.2H18C19.5 2.2 20.8 3.2 21 4.6C20.6 3.5 19.4 2.7 18 2.7H7.5V2.2Z" fill="#FFFFFF" opacity="0.4" />
+      </svg>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 3. SHEETS: Rounded Spreadsheet Ledger with Distinct Header & Cell Matrix
   // ---------------------------------------------------------------------------
   if (norm.includes("sheet")) {
     return (
@@ -201,37 +263,26 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
             <stop offset="0%" stopColor="#10B981" />
             <stop offset="100%" stopColor="#047857" />
           </linearGradient>
-          <linearGradient id="sheetHeaderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#059669" />
-            <stop offset="100%" stopColor="#047857" />
-          </linearGradient>
           <linearGradient id="sheetBevelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#065F46" />
             <stop offset="100%" stopColor="#064E3B" />
           </linearGradient>
         </defs>
 
-        {/* Soft ground contact shadow */}
         <rect x="2.5" y="3" width="19" height="19" rx="5" fill="#0F172A" opacity="0.12" />
-
-        {/* Workbook Main Ledger Plate */}
         <rect x="1.5" y="1.5" width="21" height="20.5" rx="5" fill="url(#sheetBodyGrad)" />
 
-        {/* Right lateral thickness facet */}
         <path
           d="M17.5 1.7C20 2 22 3.8 22.3 6.5V16.8C22.3 19.5 20.3 21.6 17.6 22H19C21 21.5 22.5 19.8 22.5 17.5V6C22.5 3.5 20.5 1.8 18 1.7H17.5Z"
           fill="url(#sheetBevelGrad)"
           opacity="0.55"
         />
 
-        {/* Top ambient highlight */}
         <path d="M5 2.2H19C20.5 2.2 21.8 3.2 22 4.6C21.6 3.5 20.4 2.7 19 2.7H5C3.6 2.7 2.4 3.5 2 4.6C2.2 3.2 3.5 2.2 5 2.2Z" fill="#FFFFFF" opacity="0.4" />
 
         {/* Physical Grid Inset Card */}
         <g transform="translate(5, 5)">
-          {/* Card shadow */}
           <rect x="0.5" y="1" width="13.5" height="13.5" rx="2.5" fill="#064E3B" opacity="0.45" />
-          {/* White grid card */}
           <rect x="0" y="0" width="14" height="14" rx="2.5" fill="#FFFFFF" />
 
           {/* Accent Header Ribbon */}
@@ -253,7 +304,7 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
   }
 
   // ---------------------------------------------------------------------------
-  // 3. DECK: Stacked 16:9 Presentation Canvas Slide Plates
+  // 4. DECK: Authentic 16:9 Widescreen Presentation Display Plate
   // ---------------------------------------------------------------------------
   if (norm.includes("deck") || norm.includes("present") || norm.includes("slide")) {
     return (
@@ -282,41 +333,48 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
         </defs>
 
         {/* Soft ground shadow */}
-        <rect x="2.5" y="3" width="19" height="19" rx="5.5" fill="#0F172A" opacity="0.12" />
+        <rect x="2" y="4" width="20" height="17" rx="4" fill="#0F172A" opacity="0.12" />
 
-        {/* Main Presentation Tile Body */}
-        <rect x="1.5" y="1.5" width="21" height="20.5" rx="5.5" fill="url(#deckBodyGrad)" />
+        {/* Back Stacked Slide Plate (signals multiple presentation slides) */}
+        <rect x="4.5" y="2" width="17" height="12" rx="3" fill="url(#deckBackSlideGrad)" />
+        <rect x="4.5" y="2" width="17" height="12" rx="3" stroke="#EA580C" strokeWidth="0.5" opacity="0.5" />
 
-        {/* Right lateral bevel facet */}
+        {/* Foreground Primary 16:9 Widescreen Slide Bezel */}
+        <rect x="1.5" y="4.5" width="21" height="15.5" rx="3.5" fill="url(#deckBodyGrad)" />
+
+        {/* Right lateral thickness facet */}
         <path
-          d="M17.5 1.7C20 2 22 3.8 22.3 6.5V16.8C22.3 19.5 20.3 21.6 17.6 22H19C21 21.5 22.5 19.8 22.5 17.5V6C22.5 3.5 20.5 1.8 18 1.7H17.5Z"
+          d="M18 4.7C20.5 5 22 6.5 22.3 8.5V17C22.3 19 20.5 20 18.5 20H19.5C21.5 19.5 22.5 18 22.5 16V8C22.5 6 21 4.8 18.5 4.7H18Z"
           fill="url(#deckBevelGrad)"
           opacity="0.55"
         />
 
         {/* Top ambient highlight */}
-        <path d="M5 2.2H19C20.5 2.2 21.8 3.2 22 4.6C21.6 3.5 20.4 2.7 19 2.7H5C3.6 2.7 2.4 3.5 2 4.6C2.2 3.2 3.5 2.2 5 2.2Z" fill="#FFFFFF" opacity="0.4" />
+        <path d="M4 5.2H20C21.2 5.2 22 5.9 22.2 7C21.8 6.1 20.8 5.6 19.5 5.6H4C2.7 5.6 1.7 6.1 1.3 7C1.5 5.9 2.5 5.2 4 5.2Z" fill="#FFFFFF" opacity="0.4" />
 
-        {/* Presentation Stack: Background Slide Plate */}
-        <g transform="translate(5, 5)">
-          {/* Shadow behind front slide */}
-          <rect x="3.5" y="1" width="11" height="8.5" rx="2" fill="#7C2D12" opacity="0.4" />
-          {/* Stacked background slide plate */}
-          <rect x="3.5" y="0.5" width="11" height="8.5" rx="2" fill="url(#deckBackSlideGrad)" />
+        {/* Inner Presentation Screen Surface */}
+        <g transform="translate(4, 7)">
+          <rect x="0" y="0" width="16" height="10.5" rx="1.8" fill="#FFFFFF" />
 
-          {/* Foreground Primary Slide Canvas (16:9 aspect) */}
-          <rect x="0" y="3.5" width="12" height="9.5" rx="2" fill="#FFFFFF" />
-          {/* Chart Graphic Visuals */}
-          <rect x="2" y="8.5" width="2" height="3" rx="0.5" fill="#F97316" />
-          <rect x="5" y="6" width="2" height="5.5" rx="0.5" fill="#EA580C" />
-          <rect x="8" y="4.5" width="2" height="7" rx="0.5" fill="#C2410C" />
+          {/* Presentation Header Title Bar */}
+          <rect x="1.5" y="1.5" width="5.5" height="1.4" rx="0.7" fill="#F97316" />
+
+          {/* Ascending Metric Bar Chart */}
+          <rect x="2" y="5.5" width="2.2" height="3.5" rx="0.5" fill="#FED7AA" />
+          <rect x="5.2" y="4" width="2.2" height="5" rx="0.5" fill="#FB923C" />
+          <rect x="8.4" y="2.5" width="2.2" height="6.5" rx="0.5" fill="#EA580C" />
+
+          {/* Keynote Projection Bullet Line */}
+          <line x1="11.8" y1="4" x2="14.5" y2="4" stroke="#F97316" strokeWidth="0.8" strokeLinecap="round" opacity="0.8" />
+          <line x1="11.8" y1="6" x2="14.5" y2="6" stroke="#C2410C" strokeWidth="0.8" strokeLinecap="round" opacity="0.5" />
+          <line x1="11.8" y1="8" x2="13.8" y2="8" stroke="#C2410C" strokeWidth="0.8" strokeLinecap="round" opacity="0.5" />
         </g>
       </svg>
     );
   }
 
   // ---------------------------------------------------------------------------
-  // 4. WHITEBOARD: Studio Drafting Canvas with Easel Stand & Creative Graph
+  // 5. WHITEBOARD: Studio Drafting Canvas on Visible Tripod Easel Stand
   // ---------------------------------------------------------------------------
   if (norm.includes("whiteboard") || norm.includes("canvas")) {
     return (
@@ -340,97 +398,43 @@ export function AppNativeSvgIcon({ type, size = 24, className = "", variant = "t
           </linearGradient>
         </defs>
 
-        {/* Soft ground shadow */}
-        <rect x="2.5" y="3" width="19" height="19" rx="5.5" fill="#0F172A" opacity="0.12" />
+        {/* Tripod Easel Legs (Clearly visible structural silhouette extending to the bottom) */}
+        <path d="M4 15L1.5 22.5M20 15L22.5 22.5" stroke="#93C5FD" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="12" y1="16" x2="12" y2="23" stroke="#60A5FA" strokeWidth="1.4" strokeLinecap="round" />
 
-        {/* Main Whiteboard Tile */}
-        <rect x="1.5" y="1.5" width="21" height="20.5" rx="5.5" fill="url(#boardBodyGrad)" />
+        {/* Soft ground shadow for canvas frame */}
+        <rect x="2.5" y="3" width="19" height="14" rx="3.5" fill="#0F172A" opacity="0.12" />
+
+        {/* Main Canvas Board Frame */}
+        <rect x="1.5" y="1.5" width="21" height="15" rx="3.5" fill="url(#boardBodyGrad)" />
 
         {/* Right lateral facet */}
         <path
-          d="M17.5 1.7C20 2 22 3.8 22.3 6.5V16.8C22.3 19.5 20.3 21.6 17.6 22H19C21 21.5 22.5 19.8 22.5 17.5V6C22.5 3.5 20.5 1.8 18 1.7H17.5Z"
+          d="M17.5 1.7C20 2 22 3.2 22.3 5V13C22.3 14.8 20.5 16 18.5 16.5H19C21 16 22.5 14.8 22.5 13V5C22.5 3.2 21 2 18 1.7H17.5Z"
           fill="url(#boardBevelGrad)"
           opacity="0.55"
         />
 
+        {/* Top drafting clamp / title bar */}
+        <rect x="8.5" y="0.5" width="7" height="2.2" rx="1.1" fill="#BFDBFE" />
+        <rect x="9" y="1" width="6" height="1" rx="0.5" fill="#1D4ED8" opacity="0.4" />
+
         {/* Top ambient highlight */}
-        <path d="M5 2.2H19C20.5 2.2 21.8 3.2 22 4.6C21.6 3.5 20.4 2.7 19 2.7H5C3.6 2.7 2.4 3.5 2 4.6C2.2 3.2 3.5 2.2 5 2.2Z" fill="#FFFFFF" opacity="0.4" />
+        <path d="M4 2.2H19C20.5 2.2 21.8 2.8 22 3.8C21.6 3 20.4 2.5 19 2.5H4C2.6 2.5 1.4 3 1 3.8C1.2 2.8 2.5 2.2 4 2.2Z" fill="#FFFFFF" opacity="0.4" />
 
-        {/* Easel Frame & Freestanding Canvas Surface */}
-        <g transform="translate(4.5, 4.5)">
-          {/* Tripod Stand Feet */}
-          <path d="M3.5 11.5L1.5 14.5M11.5 11.5L13.5 14.5" stroke="#BFDBFE" strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="7.5" y1="12" x2="7.5" y2="14.5" stroke="#93C5FD" strokeWidth="1.2" strokeLinecap="round" />
+        {/* Inner Whiteboard Drawing Plane */}
+        <g transform="translate(3.5, 3.5)">
+          <rect x="0" y="0" width="17" height="11" rx="2" fill="#FFFFFF" />
 
-          {/* Whiteboard Canvas Plane */}
-          <rect x="0.5" y="1.5" width="14" height="10" rx="2" fill="#172554" opacity="0.45" />
-          <rect x="0" y="1" width="14" height="10" rx="2" fill="#FFFFFF" />
+          {/* Grid pattern / creative workspace nodes */}
+          <path d="M2.5 8L6.5 4L11 6.5L14.5 3" stroke="#2563EB" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="2.5" cy="8" r="1.1" fill="#3B82F6" />
+          <circle cx="6.5" cy="4" r="1.3" fill="#1D4ED8" />
+          <circle cx="11" cy="6.5" r="1.1" fill="#60A5FA" />
+          <circle cx="14.5" cy="3" r="1.3" fill="#1D4ED8" />
 
-          {/* Top Marker Tray / Clamp Bar */}
-          <rect x="4.5" y="0" width="5" height="1.8" rx="0.8" fill="#DBEAFE" />
-
-          {/* Connected Creative Graph Primitives */}
-          <path d="M3 7.5L6.5 4.5L10.5 6.5" stroke="#2563EB" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="3" cy="7.5" r="1.1" fill="#3B82F6" />
-          <circle cx="6.5" cy="4.5" r="1.3" fill="#1D4ED8" />
-          <circle cx="10.5" cy="6.5" r="1.1" fill="#60A5FA" />
-        </g>
-      </svg>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 5. NOTES: Vertical Spiral Margin Notebook
-  // ---------------------------------------------------------------------------
-  if (norm.includes("notes") || norm.includes("notebook")) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className={`shrink-0 select-none overflow-visible ${className}`}
-        style={{ width: size, height: size }}
-      >
-        <defs>
-          <linearGradient id="notesBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#F59E0B" />
-            <stop offset="100%" stopColor="#B45309" />
-          </linearGradient>
-          <linearGradient id="notesBevelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#92400E" />
-            <stop offset="100%" stopColor="#78350F" />
-          </linearGradient>
-        </defs>
-
-        <rect x="2.5" y="3" width="19" height="19" rx="5.5" fill="#0F172A" opacity="0.12" />
-        <rect x="1.5" y="1.5" width="21" height="20.5" rx="5.5" fill="url(#notesBodyGrad)" />
-        <path
-          d="M17.5 1.7C20 2 22 3.8 22.3 6.5V16.8C22.3 19.5 20.3 21.6 17.6 22H19C21 21.5 22.5 19.8 22.5 17.5V6C22.5 3.5 20.5 1.8 18 1.7H17.5Z"
-          fill="url(#notesBevelGrad)"
-          opacity="0.55"
-        />
-        <path d="M5 2.2H19C20.5 2.2 21.8 3.2 22 4.6C21.6 3.5 20.4 2.7 19 2.7H5C3.6 2.7 2.4 3.5 2 4.6C2.2 3.2 3.5 2.2 5 2.2Z" fill="#FFFFFF" opacity="0.4" />
-
-        {/* Notebook Body with Perforated Spine */}
-        <g transform="translate(5.5, 5)">
-          <rect x="0.5" y="1" width="13" height="14" rx="2" fill="#78350F" opacity="0.45" />
-          <rect x="0" y="0" width="13" height="14" rx="2" fill="#FFFFFF" />
-
-          {/* Left Bookmark / Margin Strip */}
-          <rect x="0" y="0" width="3.5" height="14" rx="1.8" fill="#FEF3C7" />
-          <line x1="3.5" y1="0" x2="3.5" y2="14" stroke="#D97706" strokeWidth="0.8" opacity="0.4" />
-
-          {/* Spiral binding ticks on left spine */}
-          <circle cx="1.6" cy="3.5" r="0.75" fill="#92400E" />
-          <circle cx="1.6" cy="7" r="0.75" fill="#92400E" />
-          <circle cx="1.6" cy="10.5" r="0.75" fill="#92400E" />
-
-          {/* Lined writing rules */}
-          <line x1="5.5" y1="4" x2="11" y2="4" stroke="#B45309" strokeWidth="1.1" strokeLinecap="round" opacity="0.7" />
-          <line x1="5.5" y1="7.2" x2="11" y2="7.2" stroke="#B45309" strokeWidth="1.1" strokeLinecap="round" opacity="0.7" />
-          <line x1="5.5" y1="10.5" x2="9" y2="10.5" stroke="#B45309" strokeWidth="1.1" strokeLinecap="round" opacity="0.7" />
+          {/* Bottom marker shelf */}
+          <rect x="4" y="9.5" width="9" height="1" rx="0.5" fill="#DBEAFE" />
         </g>
       </svg>
     );
