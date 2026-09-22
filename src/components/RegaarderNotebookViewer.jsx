@@ -58,26 +58,59 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 220 }) {
   const popRef = useRef(null);
 
   useEffect(() => {
-    const anchor = anchorRef.current;
-    const pop = popRef.current;
-    if (!anchor || !pop) return;
+    const updatePosition = () => {
+      const anchor = anchorRef?.current;
+      const pop = popRef?.current;
+      if (!anchor || !pop) return;
 
-    const rect = anchor.getBoundingClientRect();
-    // Default open upward above the floating dock
-    pop.style.bottom = `${window.innerHeight - rect.top + 10}px`;
-    pop.style.left = `${Math.max(12, Math.min(window.innerWidth - width - 16, rect.left + rect.width / 2 - width / 2))}px`;
+      const rect = anchor.getBoundingClientRect();
+      const popRect = pop.getBoundingClientRect();
+      const actualWidth = popRect.width || width;
+      const actualHeight = popRect.height || 260;
+
+      // Vertical positioning: default open upward above the floating dock, with safe top margin
+      const spaceAbove = rect.top - 12;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+
+      if (spaceAbove >= actualHeight || spaceAbove >= spaceBelow) {
+        pop.style.bottom = `${Math.max(12, window.innerHeight - rect.top + 10)}px`;
+        pop.style.top = "auto";
+        pop.style.maxHeight = `${Math.max(160, rect.top - 24)}px`;
+      } else {
+        pop.style.top = `${Math.max(12, rect.bottom + 10)}px`;
+        pop.style.bottom = "auto";
+        pop.style.maxHeight = `${Math.max(160, window.innerHeight - rect.bottom - 24)}px`;
+      }
+
+      // Horizontal positioning: center on anchor, clamped within screen margins
+      const targetLeft = rect.left + rect.width / 2 - actualWidth / 2;
+      const clampedLeft = Math.max(12, Math.min(window.innerWidth - actualWidth - 16, targetLeft));
+      pop.style.left = `${clampedLeft}px`;
+    };
+
+    updatePosition();
+    const handleResize = () => updatePosition();
+    window.addEventListener("resize", handleResize);
 
     const handleOutside = (e) => {
-      if (!pop.contains(e.target) && !anchor.contains(e.target)) onClose();
+      const anchor = anchorRef?.current;
+      const pop = popRef?.current;
+      if (pop && anchor && !pop.contains(e.target) && !anchor.contains(e.target)) {
+        onClose();
+      }
     };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
+    document.addEventListener("pointerdown", handleOutside);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("pointerdown", handleOutside);
+    };
   }, [anchorRef, onClose, width]);
 
   return (
     <div
       ref={popRef}
-      className="fixed z-50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-zinc-700/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl"
+      className="fixed z-50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-zinc-700/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl overflow-y-auto"
       style={{ width }}
     >
       {children}
@@ -1186,8 +1219,16 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
     year: "numeric"
   }) : "Today";
 
-  const top = Math.max(16, Math.min(window.innerHeight - 250, anchorRect.top - 20));
-  const left = anchorRect.right + 12;
+  const cardWidth = 270;
+  const estimatedCardHeight = 220;
+
+  // Auto-flip to the left of the anchor if not enough room on the right
+  const roomOnRight = window.innerWidth - (anchorRect.right + 12);
+  const left = roomOnRight >= cardWidth 
+    ? anchorRect.right + 12 
+    : Math.max(12, anchorRect.left - cardWidth - 12);
+
+  const top = Math.max(16, Math.min(window.innerHeight - estimatedCardHeight - 16, anchorRect.top - 20));
   const rulingType = note.rulingType || "ruled";
 
   return (
@@ -1196,6 +1237,7 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
       style={{
         top: `${top}px`,
         left: `${left}px`,
+        maxHeight: `${Math.max(180, window.innerHeight - top - 24)}px`,
       }}
     >
       {/* Background ruling representation */}
