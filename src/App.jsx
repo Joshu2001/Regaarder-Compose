@@ -26352,7 +26352,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           <span class="ai-preview-banner-label">AI Preview</span>
         </div>
         <div class="ai-preview-banner-actions">
-          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')">{t('room.accept') || 'Accept'}</button>
+          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')">${typeof t === 'function' ? (t('room.accept') || 'Accept') : 'Accept'}</button>
           <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="runImmediateRetry('${previewId}')">Retry</button>
           <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="showEditPromptInput('${previewId}')">Edit</button>
           <button type="button" class="ai-preview-btn-delete" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="deleteAiPreview('${previewId}')">Delete</button>
@@ -26815,7 +26815,15 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       } else {
         finalHtml = rawOutput.trim();
         if (finalHtml.startsWith('```')) {
-          finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+          finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+        }
+        // Strip escaped newlines or literal backslash sequences at the start/end of HTML (e.g. \\n, \n)
+        finalHtml = finalHtml.replace(/^(\\n|\/n|\s|\\)+/g, '').replace(/(\\n|\/n|\s|\\)+$/g, '').trim();
+        if (type === 'table') {
+          const tableMatch = finalHtml.match(/<table[\s\S]*<\/table>/i);
+          if (tableMatch) {
+            finalHtml = tableMatch[0];
+          }
         }
       }
       
@@ -27059,7 +27067,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
         if (type === 'bullets' || type === 'numbered_list') {
           newHtml = ensureHtmlList(rawOutput, type);
         } else if (newHtml.startsWith('```')) {
-          newHtml = newHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+          newHtml = newHtml.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+        }
+        newHtml = newHtml.replace(/^(\\n|\/n|\s|\\)+/g, '').replace(/(\\n|\/n|\s|\\)+$/g, '').trim();
+        if (type === 'table') {
+          const tableMatch = newHtml.match(/<table[\s\S]*<\/table>/i);
+          if (tableMatch) {
+            newHtml = tableMatch[0];
+          }
         }
       }
       
@@ -29083,9 +29098,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
           }
           container.remove();
         } else {
+          const contentEl = container.querySelector('.ai-preview-content');
           const parent = container.parentNode;
-          while (container.firstChild) {
-            parent.insertBefore(container.firstChild, container);
+          if (contentEl) {
+            while (contentEl.firstChild) {
+              parent.insertBefore(contentEl.firstChild, container);
+            }
+          } else {
+            while (container.firstChild) {
+              parent.insertBefore(container.firstChild, container);
+            }
           }
           container.remove();
         }
