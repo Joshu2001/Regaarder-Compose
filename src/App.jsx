@@ -1268,7 +1268,7 @@ const getFilteredSheetSlashOptions = (filterText = '', copiedStyle = null) => {
 };
 
 const SLASH_OPTIONS = [
-  { key: 'orb', label: 'Orb Intelligence', desc: 'Cross-workspace RAG: cite Sheets, Decks & Tasks', category: 'AI', icon: Sparkles, tag: '/orb' },
+  { key: 'orb', label: 'Orb Intelligence', desc: 'Cross-workspace RAG: cite Sheets, Decks & Tasks', category: 'AI', icon: RegaarderAiIcon, tag: '/orb' },
   // AI
   { key: 'table', label: 'Table (AI)', desc: 'Generate an AI table from context', category: 'AI', icon: Table, tag: '/table' },
   { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style', category: 'AI', icon: CheckCircle2, tag: '/proofread' },
@@ -26071,7 +26071,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     tempDiv.innerHTML = htmlString;
     
     // Remove banners
-    tempDiv.querySelectorAll('.ai-preview-action-banner').forEach(el => el.remove());
+    tempDiv.querySelectorAll('.ai-preview-header-bar, .ai-preview-action-banner').forEach(el => el.remove());
     
     // Replace preview blocks with content
     tempDiv.querySelectorAll('.ai-preview-block').forEach(el => {
@@ -26342,21 +26342,84 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       ? `data-original-html="${container.getAttribute('data-original-html').replace(/"/g, '&quot;')}"` 
       : '';
     
+    // Calculate context-aware detected changes count
+    let changesCount = 1;
+    if (type === 'table') {
+      const rows = (contentHtml.match(/<tr/gi) || []).length;
+      changesCount = Math.max(1, rows > 1 ? rows - 1 : 4);
+    } else if (type === 'bullets' || type === 'numbered_list') {
+      const items = (contentHtml.match(/<li/gi) || []).length;
+      changesCount = Math.max(1, items || 3);
+    } else if (type === 'graph') {
+      changesCount = 3;
+    } else if (type === 'schedule') {
+      changesCount = 2;
+    } else {
+      changesCount = 1;
+    }
+
+    // Context-appropriate subtitle
+    let subtitleText = 'Review the proposed AI-generated changes below before applying them.';
+    if (type === 'table') {
+      subtitleText = 'We found and generated structured data for your request. Review the changes below before applying them.';
+    } else if (type === 'graph') {
+      subtitleText = 'We prepared a data visualization based on your prompt. Review the chart below before applying it.';
+    } else if (type === 'schedule') {
+      subtitleText = 'We identified calendar event details from your notes. Review before scheduling.';
+    } else if (type === 'proofread' || type === 'translate') {
+      subtitleText = 'We generated an updated version of your text. Review the suggestions below before applying.';
+    }
+
+    const acceptText = typeof t === 'function' ? (t('room.acceptChanges') || t('room.accept') || 'Accept changes') : 'Accept changes';
+
+    // Regaarder AI signature circular icon SVG
+    const aiIconSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.75C7.44 3.75 3.75 7.44 3.75 12C3.75 16.56 7.44 20.25 12 20.25C16.56 20.25 20.25 16.56 20.25 12C20.25 9.1 18.75 6.55 16.4 5.2C14.05 3.85 11.15 3.9 8.85 5.3C6.55 6.7 5.25 9.25 5.35 12C5.5 15.65 8.45 18.55 12.1 18.55C14.55 18.55 16.75 17.15 17.85 15"/></svg>`;
+    const checkIconSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const editIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`;
+    const retryIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`;
+    const moreIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`;
+    const exportIconSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const deleteIconSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+
     container.className = 'ai-preview-block';
     container.setAttribute('contenteditable', 'false');
     container.innerHTML = `
-      <div class="ai-preview-content">${contentHtml}</div>
-      <div class="ai-preview-action-banner" contenteditable="false">
-        <div class="ai-preview-banner-left">
-          <span class="ai-preview-banner-badge">AI</span>
-          <span class="ai-preview-banner-label">AI Preview</span>
+      <div class="ai-preview-header-bar" contenteditable="false">
+        <div class="ai-preview-header-left">
+          <div class="ai-preview-title-row">
+            <span class="ai-preview-tag-badge">${aiIconSvg}</span>
+            <span class="ai-preview-title-text">AI Preview</span>
+            <span class="ai-preview-dot-separator">·</span>
+            <span class="ai-preview-changes-count">${changesCount} change${changesCount === 1 ? '' : 's'} detected</span>
+          </div>
+          <p class="ai-preview-subtitle">${subtitleText}</p>
         </div>
-        <div class="ai-preview-banner-actions">
-          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')">${typeof t === 'function' ? (t('room.accept') || 'Accept') : 'Accept'}</button>
-          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="runImmediateRetry('${previewId}')">Retry</button>
-          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="showEditPromptInput('${previewId}')">Edit</button>
-          <button type="button" class="ai-preview-btn-delete" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="deleteAiPreview('${previewId}')">Delete</button>
-          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="exportAiBlock('${previewId}')">Export</button>
+        <div class="ai-preview-header-actions">
+          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="showEditPromptInput('${previewId}')" title="Refine with instructions">
+            ${editIconSvg}
+            <span>Edit</span>
+          </button>
+          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="runImmediateRetry('${previewId}')" title="Regenerate this suggestion">
+            ${retryIconSvg}
+            <span>Retry</span>
+          </button>
+          <button type="button" class="ai-preview-btn-more" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="toggleAiPreviewOverflow('${previewId}')" title="More actions">
+            ${moreIconSvg}
+          </button>
+          <div class="ai-preview-overflow-menu hidden" id="overflow_menu_${previewId}">
+            <button type="button" class="ai-preview-overflow-item" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="exportAiBlock('${previewId}')">
+              ${exportIconSvg}
+              <span>Export block</span>
+            </button>
+            <button type="button" class="ai-preview-overflow-item destructive" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="deleteAiPreview('${previewId}')">
+              ${deleteIconSvg}
+              <span>Delete preview</span>
+            </button>
+          </div>
+          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')" title="Apply all proposed changes">
+            ${checkIconSvg}
+            <span>${acceptText}</span>
+          </button>
         </div>
         <div class="ai-preview-retry-container hidden" id="retry_input_container_${previewId}">
           <div class="ai-preview-retry-row">
@@ -26365,6 +26428,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           </div>
         </div>
       </div>
+      <div class="ai-preview-content">${contentHtml}</div>
     `;
     
     if (blankBodyRef.current) {
@@ -26645,12 +26709,65 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       return;
     }
     
-    container.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
-        <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
-        <span style="font-size:12px;font-weight:600;color:#6d28d9;">${composingText || `AI is composing your ${type}...`}</span>
-      </div>
-    `;
+    if (type === 'table') {
+      // Table skeleton — reserves the expected footprint so the layout does not jump when the
+      // real table arrives. 3-column structure, header + 5 rows of neutral shimmer placeholders.
+      container.innerHTML = `
+        <div class="ai-table-skeleton-wrapper" style="width:100%;padding:0;">
+          <div class="ai-table-skeleton-header" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;">
+            <div class="ai-table-skeleton-icon" style="width:28px;height:28px;border-radius:50%;background:rgba(109,40,217,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:#7c3aed;">
+                <path d="M12 3.75C7.44 3.75 3.75 7.44 3.75 12C3.75 16.56 7.44 20.25 12 20.25C16.56 20.25 20.25 16.56 20.25 12C20.25 9.1 18.75 6.55 16.4 5.2C14.05 3.85 11.15 3.9 8.85 5.3C6.55 6.7 5.25 9.25 5.35 12C5.5 15.65 8.45 18.55 12.1 18.55C14.55 18.55 16.75 17.15 17.85 15" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="1.8" fill="#7c3aed" stroke="none"/>
+              </svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:600;color:#6d28d9;letter-spacing:-0.01em;line-height:1.4;">AI is composing…</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;font-weight:400;">Building your table from the data</div>
+            </div>
+          </div>
+          <div class="ai-table-skeleton-grid" style="border-radius:10px;overflow:hidden;border:1px solid rgba(226,232,240,0.8);">
+            <div class="ai-table-skeleton-row ai-table-skeleton-row--head" style="display:grid;grid-template-columns:2fr 1.5fr 1fr;background:rgba(248,250,252,0.9);">
+              <div class="ai-table-skeleton-cell" style="padding:11px 14px;border-right:1px solid rgba(226,232,240,0.6);"><div class="ai-skeleton-shimmer" style="height:10px;border-radius:5px;width:60%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:11px 14px;border-right:1px solid rgba(226,232,240,0.6);"><div class="ai-skeleton-shimmer" style="height:10px;border-radius:5px;width:55%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:11px 14px;"><div class="ai-skeleton-shimmer" style="height:10px;border-radius:5px;width:45%;"></div></div>
+            </div>
+            <div class="ai-table-skeleton-row" style="display:grid;grid-template-columns:2fr 1.5fr 1fr;border-top:1px solid rgba(226,232,240,0.5);">
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:72%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:40%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:50%;"></div></div>
+            </div>
+            <div class="ai-table-skeleton-row" style="display:grid;grid-template-columns:2fr 1.5fr 1fr;border-top:1px solid rgba(226,232,240,0.5);background:rgba(248,250,252,0.35);">
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:58%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:35%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:55%;"></div></div>
+            </div>
+            <div class="ai-table-skeleton-row" style="display:grid;grid-template-columns:2fr 1.5fr 1fr;border-top:1px solid rgba(226,232,240,0.5);">
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:65%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:42%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:48%;"></div></div>
+            </div>
+            <div class="ai-table-skeleton-row" style="display:grid;grid-template-columns:2fr 1.5fr 1fr;border-top:1px solid rgba(226,232,240,0.5);background:rgba(248,250,252,0.35);">
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:80%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:38%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:52%;"></div></div>
+            </div>
+            <div class="ai-table-skeleton-row" style="display:grid;grid-template-columns:2fr 1.5fr 1fr;border-top:1px solid rgba(226,232,240,0.5);">
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:50%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;border-right:1px solid rgba(226,232,240,0.4);"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:44%;"></div></div>
+              <div class="ai-table-skeleton-cell" style="padding:10px 14px;"><div class="ai-skeleton-shimmer" style="height:9px;border-radius:5px;width:60%;"></div></div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
+          <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
+          <span style="font-size:12px;font-weight:600;color:#6d28d9;">${composingText || `AI is composing your ${type}...`}</span>
+        </div>
+      `;
+    }
     
     if (blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
@@ -26906,10 +27023,19 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       currentScheduleData = container.getAttribute('data-schedule-data') || '';
     } else {
       const clone = container.cloneNode(true);
+      clone.querySelector('.ai-preview-header-bar')?.remove();
       clone.querySelector('.ai-preview-action-banner')?.remove();
       currentContent = clone.innerHTML;
     }
     
+    const countEl = container.querySelector('.ai-preview-changes-count');
+    if (countEl) {
+      countEl.textContent = 'Regenerating...';
+    }
+    const subtitleEl = container.querySelector('.ai-preview-subtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = 'Generating updated preview according to your instructions...';
+    }
     const banner = container.querySelector('.ai-preview-action-banner');
     if (banner) {
       banner.innerHTML = `
@@ -28693,6 +28819,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           target.tagName === 'BUTTON' ||
           target.isContentEditable ||
           target.closest('.inline-ai-prompt-box') ||
+          target.closest('.ai-preview-header-bar') ||
           target.closest('.ai-preview-action-banner')
         )) {
           return;
@@ -28859,6 +28986,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       target.tagName === 'TEXTAREA' || 
       target.tagName === 'BUTTON' ||
       target.closest('.inline-ai-prompt-box') ||
+      target.closest('.ai-preview-header-bar') ||
       target.closest('.ai-preview-action-banner')
     )) {
       return;
@@ -29037,7 +29165,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.acceptAiPreview = (previewId) => {
       const container = document.getElementById(previewId);
       if (container) {
-        const banner = container.querySelector('.ai-preview-action-banner');
+        const banner = container.querySelector('.ai-preview-header-bar') || container.querySelector('.ai-preview-action-banner');
         if (banner) banner.remove();
         
         const blockType = container.getAttribute('data-block-type');
@@ -29198,6 +29326,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
     };
 
+    window.toggleAiPreviewOverflow = (previewId) => {
+      const menu = document.getElementById(`overflow_menu_${previewId}`);
+      if (!menu) return;
+      const isHidden = menu.classList.contains('hidden');
+      document.querySelectorAll('.ai-preview-overflow-menu').forEach(m => m.classList.add('hidden'));
+      if (isHidden) {
+        menu.classList.remove('hidden');
+      }
+    };
+
     window.selectImageBlock = (node) => {
       if (!node) return;
       const rect = node.getBoundingClientRect();
@@ -29208,6 +29346,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     
     const handleDocumentClick = (e) => {
+      if (!e.target.closest('.ai-preview-overflow-menu') && !e.target.closest('.ai-preview-btn-more')) {
+        document.querySelectorAll('.ai-preview-overflow-menu').forEach(m => m.classList.add('hidden'));
+      }
       if (!e.target.closest('.custom-doc-dropdown')) {
         document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
       }
@@ -30443,6 +30584,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.submitRetry;
       delete window.runImmediateRetry;
       delete window.showEditPromptInput;
+      delete window.toggleAiPreviewOverflow;
       delete window.selectImageBlock;
       delete window.arrangeImageBlock;
       delete window.exportAiBlock;
@@ -35842,7 +35984,7 @@ Respond with valid JSON formatted like this:
       const clonedCard = documentCardRef.current.cloneNode(true);
       
       // Clean up preview banners from export
-      clonedCard.querySelectorAll('.ai-preview-action-banner').forEach(el => el.remove());
+      clonedCard.querySelectorAll('.ai-preview-header-bar, .ai-preview-action-banner').forEach(el => el.remove());
       clonedCard.querySelectorAll('.ai-preview-block').forEach(el => {
         const contentEl = el.querySelector('.ai-preview-content');
         if (contentEl) {
@@ -81447,6 +81589,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 target.tagName === 'TEXTAREA' || 
                 target.tagName === 'BUTTON' ||
                 target.closest('.inline-ai-prompt-box') ||
+                target.closest('.ai-preview-header-bar') ||
                 target.closest('.ai-preview-action-banner')
               )) {
                 return;
