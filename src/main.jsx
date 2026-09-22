@@ -70,6 +70,10 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 const hash = typeof window !== 'undefined' ? window.location.hash : '';
 
+import PricingPage from './components/pricing/PricingPage.jsx';
+import WelcomePage from './components/pricing/WelcomePage.jsx';
+import CheckoutPage from './components/pricing/CheckoutPage.jsx';
+
 if (hash.includes('floating-pip-widget')) {
   if (typeof document !== 'undefined') {
     document.documentElement.style.background = 'transparent';
@@ -84,6 +88,24 @@ if (hash.includes('floating-pip-widget')) {
   root.render(
     <ErrorBoundary>
       <Analytics />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/pricing' || hash === '#/pricing') {
+  root.render(
+    <ErrorBoundary>
+      <PricingPage />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/checkout' || hash === '#/checkout') {
+  root.render(
+    <ErrorBoundary>
+      <CheckoutPage />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/welcome' || hash === '#/welcome') {
+  root.render(
+    <ErrorBoundary>
+      <WelcomePage />
     </ErrorBoundary>
   );
 } else {

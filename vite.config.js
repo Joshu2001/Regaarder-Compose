@@ -16,6 +16,7 @@ function apiDevMiddlewarePlugin() {
           '/api/gemini': './api/gemini.js',
           '/api/claude': './api/claude.js',
           '/api/math': './api/math.js',
+          '/api/geo': './api/geo.js',
         };
 
         const targetRelPath = routeMap[pathname];

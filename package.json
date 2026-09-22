@@ -32,6 +32,7 @@
     "type": "module",
     "dependencies": {
         "@babel/parser": "^8.0.4",
+        "@paddle/paddle-js": "^1.6.5",
         "@regaarder/ui": "file:./packages/ui",
         "@supabase/supabase-js": "^2.116.0",
         "diff-match-patch": "^1.0.5",

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { X, FileText, ShieldCheck, Scale } from "lucide-react";
+import { X, FileText, ShieldCheck, Scale, RefreshCw } from "lucide-react";
 
 export default function LegalPolicyModal({ isOpen, initialTab = "terms", onClose }) {
   const [activeTab, setActiveTab] = React.useState(initialTab);
@@ -28,6 +28,7 @@ export default function LegalPolicyModal({ isOpen, initialTab = "terms", onClose
   const tabs = [
     { id: "terms", label: "Terms of Service", icon: FileText },
     { id: "privacy", label: "Privacy Policy", icon: ShieldCheck },
+    { id: "refund", label: "Refund Policy", icon: RefreshCw },
     { id: "legal", label: "Legal Notices", icon: Scale },
   ];
 
@@ -90,6 +91,7 @@ export default function LegalPolicyModal({ isOpen, initialTab = "terms", onClose
         <div className="flex-1 overflow-y-auto thin-scrollbar px-6 py-6 text-sm leading-relaxed text-slate-600 space-y-6">
           {activeTab === "terms" && <TermsOfServiceContent />}
           {activeTab === "privacy" && <PrivacyPolicyContent />}
+          {activeTab === "refund" && <RefundPolicyContent />}
           {activeTab === "legal" && <LegalNoticesContent />}
         </div>
 
@@ -325,3 +327,47 @@ function LegalNoticesContent() {
     </div>
   );
 }
+
+function RefundPolicyContent() {
+  return (
+    <div className="space-y-6">
+      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900 mb-1">
+          Refund & Cancellation Commitment
+        </h3>
+        <p className="text-xs text-slate-600">
+          We want you to be completely satisfied with Regaarder. All subscriptions and licenses processed via our Merchant of Record, Paddle, are backed by a transparent 14-day refund guarantee.
+        </p>
+      </div>
+
+      <section className="space-y-2">
+        <h4 className="font-semibold text-slate-900 text-sm">1. 14-Day Money-Back Guarantee</h4>
+        <p>
+          If you are unsatisfied with your Regaarder Workspace subscription (Monthly or Annual) or one-time license purchase, you may request a full refund within 14 days of your initial transaction date.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="font-semibold text-slate-900 text-sm">2. Free Trial Periods</h4>
+        <p>
+          Certain plans (such as Regaarder Workspace Pro) include a 7-day free trial. If you cancel your trial before the 7-day period concludes, your payment method will not be charged.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="font-semibold text-slate-900 text-sm">3. Cancellation Process</h4>
+        <p>
+          You can cancel your subscription at any time directly through your account dashboard under Workspace Settings &gt; Billing, or by using the Paddle customer portal. Upon cancellation, your access remains fully active until the conclusion of your current prepaid billing cycle, after which no further recurring charges will be processed.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="font-semibold text-slate-900 text-sm">4. How to Request a Refund</h4>
+        <p>
+          To request a refund, please contact our support desk at <span className="font-medium text-slate-900">billing@regaarder.com</span> or <span className="font-medium text-slate-900">support@regaarder.com</span> with your account email and Paddle transaction receipt number. Eligible refunds are processed promptly to the original payment method within 3–5 business days.
+        </p>
+      </section>
+    </div>
+  );
+}
+
