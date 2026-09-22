@@ -75085,7 +75085,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {!isWhiteboardTopNavRevealed && (
               <div 
                 onMouseEnter={handleWhiteboardTopNavEnter} 
-                className="absolute top-0 left-0 right-0 h-10 z-[380] pointer-events-auto" 
+                className="absolute top-0 left-0 right-0 h-3 z-[380] pointer-events-auto" 
               />
             )}
 
