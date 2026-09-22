@@ -25665,7 +25665,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
     if (localTargetModel?.isLocal || localTargetModel?.endpoint) {
       const localAbortController = new AbortController();
-      const localTimeout = setTimeout(() => localAbortController.abort(), 240000);
+      const localTimeout = setTimeout(() => localAbortController.abort(), 60000);
       if (aiAbortControllerRef.current?.signal) {
         aiAbortControllerRef.current.signal.addEventListener('abort', () => {
           try { localAbortController.abort(); } catch (e) {}
@@ -31467,7 +31467,10 @@ Return ONLY valid JSON matching the schema.`;
       }
     }
 
-    if (source === 'compose' && !options.skipCommandEngine && !isQueryOrSummary) {
+    const lowerPromptCheck = promptText.toLowerCase();
+    const isDirectBlockCommand = lowerPromptCheck.includes('table') || lowerPromptCheck.includes('chart') || lowerPromptCheck.includes('graph') || lowerPromptCheck.includes('plot') || lowerPromptCheck.includes('schedule') || lowerPromptCheck.includes('timeline') || lowerPromptCheck.includes('checklist') || lowerPromptCheck.includes('shapes') || lowerPromptCheck.includes('icon');
+
+    if (source === 'compose' && !options.skipCommandEngine && !isQueryOrSummary && !isDirectBlockCommand) {
       const selectionText = savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '';
       const tables = extractTablesFromEditor();
       
