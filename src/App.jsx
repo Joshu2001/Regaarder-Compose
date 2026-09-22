@@ -26809,11 +26809,41 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     try {
       const systemPrompt = getSystemPromptForType(type);
 
-      // Only inject user-selected text as context — the full document body was polluting row selection
+      // ── Table: client-side item extraction ───────────────────────────────
+      // Detect whether the prompt is an explicit item list (e.g. "Apple tomato Newspaper diaries").
+      // If so, extract every token as a canonical item and inject a numbered manifest so the model
+      // cannot drop or misspell any item. The model's only job becomes choosing columns + filling data.
       const selectionText = savedSelectionRef?.current ? savedSelectionRef.current.toString().trim() : '';
-      const userPrompt = type === 'table' && selectionText
-        ? `${prompt}\n\nSelected text for context (use only to infer columns, not rows): "${selectionText}"`
-        : prompt;
+
+      let extractedItems = []; // populated only for table type with explicit item lists
+      let userPrompt = prompt;
+
+      if (type === 'table') {
+        // Heuristic: treat the prompt as an item list when it contains no sentence-forming verbs
+        // (no "create", "make", "generate", "show", "give") and has ≥ 2 tokens.
+        const sentenceVerbs = /\b(create|make|generate|show|give|build|produce|table\s+of|list\s+of)\b/i;
+        const tokens = prompt.trim().split(/[\s,;|/\\]+/).filter(t => t.length > 0);
+
+        if (!sentenceVerbs.test(prompt) && tokens.length >= 2) {
+          // Preserve exact casing from the user's input
+          extractedItems = tokens;
+        }
+
+        if (extractedItems.length > 0) {
+          const manifest = extractedItems.map((item, i) => `${i + 1}. ${item}`).join('\n');
+          userPrompt = [
+            `Generate a table with EXACTLY ${extractedItems.length} data rows — one row per item in the list below.`,
+            `You MUST use each item VERBATIM as spelled. Do NOT omit, reorder, combine, or alter any item.`,
+            ``,
+            `ITEMS (${extractedItems.length} total):`,
+            manifest,
+            selectionText ? `\nColumn context (use only to pick column names): "${selectionText}"` : ''
+          ].join('\n').trim();
+        } else if (selectionText) {
+          userPrompt = `${prompt}\n\nSelected text for context (use only to infer columns, not rows): "${selectionText}"`;
+        }
+      }
+
 
       const schema = type === 'graph' ? {
         type: 'object',
@@ -26964,8 +26994,42 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         // Structured JSON path — guaranteed column alignment
         try {
           const parsed = res.parsed || JSON.parse(rawOutput.trim().replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, ''));
-          const { headers, rows, isEmpty } = parsed;
+          let { headers, rows, isEmpty } = parsed;
           if (!Array.isArray(headers) || headers.length === 0) throw new Error('No headers in table response');
+
+          // Deterministic post-parse reconciliation:
+          // If explicit items were extracted, guarantee every single item is present verbatim in cell 0
+          if (extractedItems.length > 0 && Array.isArray(rows) && !isEmpty) {
+            const matchedRows = [];
+            const remainingItems = [...extractedItems];
+
+            // 1. Match rows to extracted items (exact or fuzzy case-insensitive substring)
+            rows.forEach(row => {
+              if (!Array.isArray(row) || row.length === 0) return;
+              const cell0 = String(row[0] || '').trim().toLowerCase();
+              const matchIdx = remainingItems.findIndex(item => {
+                const it = item.toLowerCase();
+                return cell0 === it || cell0.includes(it) || it.includes(cell0);
+              });
+              if (matchIdx !== -1) {
+                const canonical = remainingItems.splice(matchIdx, 1)[0];
+                const fixedRow = [...row];
+                fixedRow[0] = canonical; // restore exact verbatim casing & spelling
+                matchedRows.push(fixedRow);
+              } else {
+                matchedRows.push(row);
+              }
+            });
+
+            // 2. Append empty placeholder rows for any extracted items dropped by the model
+            remainingItems.forEach(missingItem => {
+              const newRow = [missingItem, ...Array(Math.max(0, headers.length - 1)).fill('')];
+              matchedRows.push(newRow);
+            });
+
+            rows = matchedRows;
+          }
+
           const thStyle = `border:1px solid #e2e8f0;padding:10px 14px;text-align:left;font-weight:600;font-size:13px;`;
           const tdStyle = `border:1px solid #e2e8f0;padding:10px 14px;font-size:13px;min-width:80px;height:35px;`;
           const headerRow = `<tr style="background:#f1f5f9;color:#334155;border-bottom:2px solid #cbd5e1;">${headers.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
