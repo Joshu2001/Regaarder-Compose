@@ -1241,9 +1241,8 @@ function HoverNoteSnapshotCard({ note, anchorRect, isDarkMode }) {
       )}
 
       <div className="relative pl-5">
-        <div className="flex items-center justify-between text-[9.5px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
-          <span>{dateStr}</span>
-          <span className="text-amber-600 dark:text-amber-400 font-bold">Snapshot</span>
+        <div className="text-[9.5px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+          {dateStr}
         </div>
 
         <div
