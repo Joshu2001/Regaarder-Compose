@@ -54,7 +54,7 @@ export const RULING_PRESETS = {
 
 // ─── Floating Toolbar Popover Shell ─────────────────────────────────────────────
 
-function ToolbarPopover({ anchorRef, onClose, children, width = 220 }) {
+function ToolbarPopover({ anchorRef, onClose, children, width = 220, anchorAlign = "center" }) {
   const popRef = useRef(null);
 
   useEffect(() => {
@@ -82,9 +82,21 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 220 }) {
         pop.style.maxHeight = `${Math.max(160, window.innerHeight - rect.bottom - 24)}px`;
       }
 
-      // Horizontal positioning: center on anchor, clamped within screen margins
-      const targetLeft = rect.left + rect.width / 2 - actualWidth / 2;
-      const clampedLeft = Math.max(12, Math.min(window.innerWidth - actualWidth - 16, targetLeft));
+      // Horizontal positioning
+      let targetLeft;
+      if (anchorAlign === "right") {
+        // Align right edge of popover with right edge of anchor button
+        targetLeft = rect.right - actualWidth;
+      } else if (anchorAlign === "left") {
+        // Align left edge of popover with left edge of anchor button
+        targetLeft = rect.left;
+      } else {
+        // Center on anchor
+        targetLeft = rect.left + rect.width / 2 - actualWidth / 2;
+      }
+
+      // Strictly clamp within viewport
+      const clampedLeft = Math.max(16, Math.min(window.innerWidth - actualWidth - 16, targetLeft));
       pop.style.left = `${clampedLeft}px`;
     };
 
@@ -105,7 +117,7 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 220 }) {
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("pointerdown", handleOutside);
     };
-  }, [anchorRef, onClose, width]);
+  }, [anchorRef, onClose, width, anchorAlign]);
 
   return (
     <div
@@ -794,7 +806,7 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "ai" && (
-            <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={230}>
+            <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={230} anchorAlign="right">
               <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
                 Regaarder AI Note Assistant
               </div>
@@ -848,7 +860,7 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "more" && (
-            <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={230}>
+            <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={230} anchorAlign="right">
               <div className="px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
                 Note Actions
               </div>
