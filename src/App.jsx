@@ -38159,10 +38159,10 @@ Respond with a JSON array of slide objects matching the schema.`;
     const isNotesWorkspace = productMode === 'notes' || (productMode !== 'compose' && Boolean(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'));
     const isWhiteboardWorkspace = productMode === 'whiteboard' || activeRightTab === 'whiteboard';
     const isSpatialWorkspace = isWhiteboardWorkspace || isNotesWorkspace;
-    // Notes always reveals the top nav — auto-hide is a whiteboard-only behavior.
-    // Without this guard, switching Whiteboard → Notes left the top nav hidden
-    // (the "Frankenstein" state bleed bug) because isWhiteboardTopNavHovered was false.
-    const isWhiteboardTopNavRevealed = isNotesWorkspace || !isSpatialWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
+    // Both Notes and Whiteboard use the same cursor-proximity auto-hide reveal system.
+    // The nav slides in when hovering near the top edge (handleWhiteboardTopNavEnter),
+    // and the HUD pill shows the current doc title when hidden.
+    const isWhiteboardTopNavRevealed = !isSpatialWorkspace || isWhiteboardInitialPeek || isWhiteboardTopNavHovered || workspaceSwitcherOpen || composeExportMenuOpen || whiteboardExportMenuOpen || shareModalOpen || openDocMenuId !== null || renamingDocId !== null;
   const updateDeckSlideField = (slideId, field, value) => {
     markUserHasEdited();
     setDeckSlidesData((prev) => prev.map((slide) => {
