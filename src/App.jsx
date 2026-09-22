@@ -26183,9 +26183,15 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     if (type === 'table') {
       return `You are an expert data-table AI. Based on the user's prompt, produce a structured table as JSON.
 
+ITEM PRIORITY RULE (HIGHEST PRIORITY — NEVER OVERRIDE):
+- If the user's prompt contains a list of explicit items (e.g. "Apple, Tomato, Newspaper, Diaries"), EVERY single item in that list MUST appear as its own row in the output. Do NOT omit, replace, or substitute any item. Do NOT add items that are not in the list. The user's listed items are absolute — document context may only inform what columns to use, never what rows to include.
+
 POPULATION RULE:
 - If the user specifies a topic or highlights text (e.g. "fruit price table", "product sales"), populate rows with realistic sample data for that topic.
 - If the prompt is generic (e.g. "table", "3x3 table", "empty table"), generate appropriate column headers but set isEmpty to true so the rows remain blank for the user to fill.
+
+CONTEXT RULE:
+- If document context or selected text is provided, use it ONLY to infer appropriate column headers. Never use it to decide which rows to include or exclude.
 
 OUTPUT FORMAT — respond ONLY with valid JSON, no markdown fences, no extra text:
 {
@@ -26195,7 +26201,7 @@ OUTPUT FORMAT — respond ONLY with valid JSON, no markdown fences, no extra tex
 }
 
 RULES:
-- headers: array of column name strings.
+- headers: array of column name strings that fit ALL items in the list (not just some).
 - rows: 2D array — EVERY inner array MUST have exactly the same length as headers. Never omit a cell.
 - isEmpty: true only when the prompt is fully generic and cells should be blank.
 - If the user specifies row/column counts, honour them exactly. Default: 5 rows, 3 columns.
@@ -26803,11 +26809,10 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     try {
       const systemPrompt = getSystemPromptForType(type);
 
-      // Enrich table prompts with document context and active selection so the model has data to populate cells
-      const docSnippet = blankBodyRef?.current ? blankBodyRef.current.innerText.slice(0, 800) : '';
+      // Only inject user-selected text as context — the full document body was polluting row selection
       const selectionText = savedSelectionRef?.current ? savedSelectionRef.current.toString().trim() : '';
-      const userPrompt = type === 'table' && (docSnippet || selectionText)
-        ? `${prompt}\n\nActive selection: "${selectionText}"\nDocument context:\n${docSnippet}`
+      const userPrompt = type === 'table' && selectionText
+        ? `${prompt}\n\nSelected text for context (use only to infer columns, not rows): "${selectionText}"`
         : prompt;
 
       const schema = type === 'graph' ? {
