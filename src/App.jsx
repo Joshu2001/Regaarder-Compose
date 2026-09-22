@@ -34493,6 +34493,12 @@ Answer the user's question, provide an insightful summary, or explain the contex
     setRoomPanelMode('docked');
     setLeftSidebarOpen(false);
     setActiveDocView('document');
+    // Clear activeRightTab so the whiteboard canvas render guard
+    // (productMode === 'whiteboard' || activeRightTab === 'whiteboard') deactivates.
+    // Without this, the whiteboard canvas remains mounted after switching Whiteboard → Notes
+    // because activeRightTab was set to 'whiteboard' by createWhiteboardExperience and
+    // never cleared — causing the "Frankenstein" hybrid rendering bug.
+    setActiveRightTab('room');
     // Reset whiteboard hover/reveal state so the top nav is never stuck in
     // auto-hide mode when switching from Whiteboard → Notes.
     setIsWhiteboardTopNavHovered(false);
