@@ -82819,6 +82819,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 documents={documents}
                 onSelectDoc={(id) => switchDocument(id)}
                 onNewNote={createNotesExperience}
+                onDeleteNote={(id) => {
+                  setDocuments(prev => prev.filter(d => d.id !== id));
+                  if (activeDoc?.id === id) createNotesExperience();
+                }}
                 onToggleImmersive={toggleDocumentImmersiveMode}
                 isDarkMode={isDarkMode}
               />

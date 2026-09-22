@@ -1273,6 +1273,7 @@ function HoverRevealNotesSidebar({
   activeDoc,
   onSelectDoc,
   onNewNote,
+  onDeleteNote,
   isOpen,
   isPinned,
   onTogglePin,
@@ -1547,6 +1548,19 @@ function HoverRevealNotesSidebar({
                     {note.pinned && (
                       <Pin size={11} className="text-amber-600 dark:text-amber-400 fill-current shrink-0" />
                     )}
+
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        onDeleteNote?.(note.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all shrink-0"
+                      title="Delete note"
+                    >
+                      <Trash2 size={12} strokeWidth={2} />
+                    </button>
                   </div>
 
                   {dateText && (
@@ -2261,6 +2275,7 @@ export default function RegaarderNotebookViewer({
   documents,
   onSelectDoc,
   onNewNote,
+  onDeleteNote,
   onToggleImmersive,
   isDarkMode,
 }) {
@@ -2350,6 +2365,7 @@ export default function RegaarderNotebookViewer({
         activeDoc={activeDoc}
         onSelectDoc={onSelectDoc}
         onNewNote={onNewNote}
+        onDeleteNote={onDeleteNote}
         isOpen={isSidebarOpen}
         isPinned={isSidebarPinned}
         onTogglePin={() => setIsSidebarPinned((prev) => !prev)}
