@@ -1285,7 +1285,9 @@ function HoverRevealNotesSidebar({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredNoteInfo, setHoveredNoteInfo] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const hoverTimeoutRef = useRef(null);
+  const deleteConfirmTimerRef = useRef(null);
   const notesListRef = useRef(null);
 
   // Reveal scrollbar only when nearing the end of the scroll content
@@ -1553,12 +1555,35 @@ function HoverRevealNotesSidebar({
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        onDeleteNote?.(note.id);
+
+                        if (pendingDeleteId === note.id) {
+                          // Second tap — confirmed: fire deletion and clear all preview state immediately
+                          clearTimeout(deleteConfirmTimerRef.current);
+                          clearTimeout(hoverTimeoutRef.current);
+                          setPendingDeleteId(null);
+                          setHoveredNoteInfo(null);
+                          onDeleteNote?.(note.id);
+                        } else {
+                          // First tap — arm the confirm state, auto-reset after 2.5s
+                          clearTimeout(deleteConfirmTimerRef.current);
+                          setPendingDeleteId(note.id);
+                          deleteConfirmTimerRef.current = setTimeout(() => {
+                            setPendingDeleteId(null);
+                          }, 2500);
+                        }
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all shrink-0"
-                      title="Delete note"
+                      className={`opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all shrink-0 ${
+                        pendingDeleteId === note.id
+                          ? "opacity-100 text-rose-500 bg-rose-50 dark:bg-rose-950/40 ring-1 ring-rose-300 dark:ring-rose-800"
+                          : "text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                      }`}
+                      title={pendingDeleteId === note.id ? "Tap again to confirm delete" : "Delete note"}
                     >
-                      <Trash2 size={12} strokeWidth={2} />
+                      {pendingDeleteId === note.id ? (
+                        <X size={12} strokeWidth={2.5} />
+                      ) : (
+                        <Trash2 size={12} strokeWidth={2} />
+                      )}
                     </button>
                   </div>
 
