@@ -47,6 +47,7 @@ export default function PricingPage() {
 
   // 3. Initialize Paddle.js with strict environment checking
   useEffect(() => {
+    const paddleEnv = import.meta.env.VITE_PADDLE_ENV || 'sandbox';
     const clientToken =
       import.meta.env.VITE_PADDLE_CLIENT_TOKEN ||
       (paddleEnv === 'production'
