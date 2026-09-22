@@ -9,16 +9,14 @@
       "CI": ""
     }
   },
-  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
-      "source": "/((?!assets/|favicon.ico|.*\\..*$).*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]
 }
-
