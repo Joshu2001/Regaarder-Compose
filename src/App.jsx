@@ -26181,20 +26181,25 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
 
   const getSystemPromptForType = (type) => {
     if (type === 'table') {
-      return `You are an expert AI editor. Create an HTML table.
-IMPORTANT POPULATION RULE:
-- If the user highlighted a text, or specified precisely what data/topics should be in the table (e.g. "product sales", "grade tracking table for class A"), populate the table with realistic sample data relevant to that description.
-- Otherwise, if the prompt is generic (e.g., just "table", "create a table", "table 3x3", "empty table"), the table columns MUST have headers (like Column 1, Column 2, etc.), but the data cells (tbody cells) MUST be empty (i.e. empty td tags like <td></td> or containing only a single space for typing) so the user can fill them in manually.
+      return `You are an expert data-table AI. Based on the user's prompt, produce a structured table as JSON.
 
-STRUCTURAL REQUIREMENTS:
-- ALWAYS include a <thead> with <th> column headers.
-- ALWAYS include a <tbody>. If the user specifies the number of rows or columns, follow that exactly. If not specified, create 5 rows and 3 columns.
-- Use <table>, <thead>, <tbody>, <tr>, <th>, <td> tags.
-- Style the table with inline styles: border-collapse: collapse; width: 100%; border: 1px solid #e2e8f0; margin: 16px 0;
-- Cells style: border: 1px solid #e2e8f0; padding: 10px 14px; font-size: 13px; min-width: 80px; height: 35px;
-- Alternating row backgrounds (#ffffff and #f8fafc).
-- Header row: background #f1f5f9; font-weight: 600; color: #334155; border-bottom: 2px solid #cbd5e1;
-- Return only the raw HTML code without markdown code blocks or fences.`;
+POPULATION RULE:
+- If the user specifies a topic or highlights text (e.g. "fruit price table", "product sales"), populate rows with realistic sample data for that topic.
+- If the prompt is generic (e.g. "table", "3x3 table", "empty table"), generate appropriate column headers but set isEmpty to true so the rows remain blank for the user to fill.
+
+OUTPUT FORMAT — respond ONLY with valid JSON, no markdown fences, no extra text:
+{
+  "headers": ["Column A", "Column B"],
+  "rows": [["row1col1", "row1col2"], ["row2col1", "row2col2"]],
+  "isEmpty": false
+}
+
+RULES:
+- headers: array of column name strings.
+- rows: 2D array — EVERY inner array MUST have exactly the same length as headers. Never omit a cell.
+- isEmpty: true only when the prompt is fully generic and cells should be blank.
+- If the user specifies row/column counts, honour them exactly. Default: 5 rows, 3 columns.
+- Do NOT include any explanation or commentary outside the JSON object.`;
     }
     if (type === 'graph' || type === 'chart') {
       return `You are a chart data extraction AI. Based on the user's prompt, extract the data and title, and select the best chart type.
@@ -26797,8 +26802,14 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     
     try {
       const systemPrompt = getSystemPromptForType(type);
-      const userPrompt = prompt;
-      
+
+      // Enrich table prompts with document context and active selection so the model has data to populate cells
+      const docSnippet = blankBodyRef?.current ? blankBodyRef.current.innerText.slice(0, 800) : '';
+      const selectionText = savedSelectionRef?.current ? savedSelectionRef.current.toString().trim() : '';
+      const userPrompt = type === 'table' && (docSnippet || selectionText)
+        ? `${prompt}\n\nActive selection: "${selectionText}"\nDocument context:\n${docSnippet}`
+        : prompt;
+
       const schema = type === 'graph' ? {
         type: 'object',
         properties: {
@@ -26815,6 +26826,21 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           }
         },
         required: ['type', 'title', 'headers', 'data']
+      } : type === 'table' ? {
+        type: 'object',
+        properties: {
+          headers: { type: 'array', items: { type: 'string' }, description: 'Column header names' },
+          rows: {
+            type: 'array',
+            items: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            description: '2D array — every inner array MUST have the same length as headers'
+          },
+          isEmpty: { type: 'boolean', description: 'true if the table should be blank for the user to fill in' }
+        },
+        required: ['headers', 'rows', 'isEmpty']
       } : type === 'shapes' ? {
         type: 'object',
         properties: {
@@ -26929,6 +26955,30 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           scheduleState = { title: prompt, startDate: new Date().toISOString().split('T')[0], startTime: '10:00', durationMinutes: 60, category: 'Meeting' };
           finalHtml = `<div style="padding:12px; color:#dc2626;">Error parsing schedule JSON. Click Retry / Edit to refine.</div>`;
         }
+      } else if (type === 'table') {
+        // Structured JSON path — guaranteed column alignment
+        try {
+          const parsed = res.parsed || JSON.parse(rawOutput.trim().replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, ''));
+          const { headers, rows, isEmpty } = parsed;
+          if (!Array.isArray(headers) || headers.length === 0) throw new Error('No headers in table response');
+          const thStyle = `border:1px solid #e2e8f0;padding:10px 14px;text-align:left;font-weight:600;font-size:13px;`;
+          const tdStyle = `border:1px solid #e2e8f0;padding:10px 14px;font-size:13px;min-width:80px;height:35px;`;
+          const headerRow = `<tr style="background:#f1f5f9;color:#334155;border-bottom:2px solid #cbd5e1;">${headers.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
+          const dataRows = isEmpty
+            ? Array.from({ length: 5 }, (_, i) => `<tr style="background:${i % 2 === 0 ? '#ffffff' : '#f8fafc'};">${headers.map(() => `<td style="${tdStyle}"> </td>`).join('')}</tr>`).join('')
+            : (Array.isArray(rows) ? rows : []).map((row, i) => {
+                // Pad or trim each row to exactly headers.length cells — eliminates column drift
+                const cells = headers.map((_, ci) => (Array.isArray(row) ? row[ci] ?? '' : ''));
+                return `<tr style="background:${i % 2 === 0 ? '#ffffff' : '#f8fafc'};">${cells.map(c => `<td style="${tdStyle}">${c}</td>`).join('')}</tr>`;
+              }).join('');
+          finalHtml = `<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead>${headerRow}</thead><tbody>${dataRows}</tbody></table>`;
+        } catch (e) {
+          console.error('Failed to parse Gemini table JSON, falling back to raw HTML extraction:', e);
+          // Raw HTML fallback — strip fences and extract <table> tag
+          let raw = rawOutput.trim().replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+          const tableMatch = raw.match(/<table[\s\S]*<\/table>/i);
+          finalHtml = tableMatch ? tableMatch[0] : raw;
+        }
       } else {
         finalHtml = rawOutput.trim();
         if (finalHtml.startsWith('```')) {
@@ -26936,12 +26986,6 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         }
         // Strip escaped newlines or literal backslash sequences at the start/end of HTML (e.g. \\n, \n)
         finalHtml = finalHtml.replace(/^(\\n|\/n|\s|\\)+/g, '').replace(/(\\n|\/n|\s|\\)+$/g, '').trim();
-        if (type === 'table') {
-          const tableMatch = finalHtml.match(/<table[\s\S]*<\/table>/i);
-          if (tableMatch) {
-            finalHtml = tableMatch[0];
-          }
-        }
       }
       
       const originalHtml = liveContainer.getAttribute('data-original-html') || '';
