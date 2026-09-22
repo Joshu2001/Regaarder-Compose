@@ -1303,7 +1303,6 @@ function HoverRevealNotesSidebar({
   // Check if a note document contains actual user-created content (real data)
   const hasRealNoteData = (doc) => {
     if (!doc) return false;
-    if (doc.isBlank) return false;
 
     // Check for actual typed or formatted text
     const plainText = (doc.bodyHtml || "")
@@ -1319,8 +1318,13 @@ function HoverRevealNotesSidebar({
     const isGenericTitle = !trimmedTitle || /^(?:untitled\s*(?:note|document|sheet|deck|whiteboard|entry)?(?:\s+\d+)?|new\s*action\s*item)$/i.test(trimmedTitle);
     const hasCustomTitle = !isGenericTitle;
 
-    // A note is real only if it has typed text, drawing strokes, or a deliberate non-generic title with text
-    return plainText.length > 0 || hasStrokes || (hasCustomTitle && plainText.length > 0);
+    // If there is real user data, treat it as real regardless of stale isBlank flag
+    if (plainText.length > 0 || hasStrokes || (hasCustomTitle && trimmedTitle.length > 0)) {
+      return true;
+    }
+
+    if (doc.isBlank) return false;
+    return false;
   };
 
   const notes = useMemo(() => {

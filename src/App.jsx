@@ -82800,11 +82800,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 activeDoc={activeDoc}
                 onUpdateTitle={(title) => {
                   setDocTitle(title);
-                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, title } : d));
+                  setIsBlankDocument(false);
+                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, title, isBlank: false } : d));
                 }}
                 onUpdateBodyHtml={(html) => {
                   setDocBodyHtml(html);
-                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, bodyHtml: html } : d));
+                  setIsBlankDocument(false);
+                  setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, bodyHtml: html, isBlank: false } : d));
                 }}
                 onUpdateDoc={(patch) => {
                   setDocuments(prev => prev.map(d => d.id === activeDoc.id ? { ...d, ...patch } : d));
