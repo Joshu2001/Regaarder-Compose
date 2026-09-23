@@ -44,6 +44,12 @@ const PRIMARY_CREATE_ACTIONS = [
 
 const SECONDARY_WORKSPACE_TOOLS = [
   {
+    id: "ledger",
+    title: "Ledger",
+    subtitle: "Autonomous accounting",
+    type: "ledger"
+  },
+  {
     id: "relay",
     title: "Relay",
     subtitle: "Connect tools & context",

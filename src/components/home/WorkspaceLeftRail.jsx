@@ -14,6 +14,7 @@ const WORKSPACE_APPS = [
   { id: "sheet", label: "Sheets", type: "sheet" },
   { id: "deck", label: "Deck", type: "deck" },
   { id: "whiteboard", label: "Whiteboard", type: "whiteboard" },
+  { id: "ledger", label: "Ledger", type: "ledger" },
   { id: "room", label: "Room", type: "room" },
   { id: "relay", label: "Relay", type: "relay" },
   { id: "browser", label: "Browser", type: "browser" }

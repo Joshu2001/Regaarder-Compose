@@ -90,6 +90,7 @@ import OmniPortalModal from './components/OmniPortalModal';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 import RegaarderNotebookViewer, { NotesWriteToolbarControls } from './components/RegaarderNotebookViewer';
 import { convertPdfToEditableHtml } from './utils/pdfToHtmlConverter';
+import LedgerWorkspace from './components/ledger/LedgerWorkspace';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -35773,6 +35774,13 @@ Respond with valid JSON formatted like this:
       return;
     }
 
+    if (target === 'ledger') {
+      setActivePrimaryNav('home');
+      setProductMode('ledger');
+      showToast('Switched to Ledger');
+      return;
+    }
+
     if (target === 'memory') {
       setOrbInitialMode('search');
       setOrbInitialQuery('');
@@ -37668,7 +37676,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [orderedDocuments, activeDocId]);
 
   useEffect(() => {
-    if (productMode === 'landing' || productMode === 'room' || productMode === 'dm') return;
+    if (productMode === 'landing' || productMode === 'room' || productMode === 'dm' || productMode === 'ledger') return;
     const modeDocs = documents.filter((doc) => getDocMode(doc) === activeWorkspaceMode);
     if (modeDocs.length > 0) {
       const isCurrentActiveInMode = modeDocs.some((d) => d.id === activeDocId);
@@ -74926,6 +74934,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 }
               }
             }} 
+          />
+        </div>
+      ) : productMode === 'ledger' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative overflow-hidden">
+          <LedgerWorkspace
+            onBackToHome={() => {
+              setProductMode('landing');
+              showToast?.('Returned to Home Workspace');
+            }}
+            onOpenWorkspaceSwitcher={(rect) => {
+              if (rect) setWorkspaceSwitcherAnchorRect(rect);
+              setWorkspaceSwitcherOpen((prev) => !prev);
+            }}
+            onOpenMemorySearch={() => {
+              setIsMemorySearchOpen(true);
+            }}
+            showToast={showToast}
           />
         </div>
       ) : productMode === 'browser' ? (
