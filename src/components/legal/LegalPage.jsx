@@ -6,7 +6,7 @@ import { FileText, ShieldCheck, RefreshCw, Scale, ArrowLeft } from 'lucide-react
 function LegalPageShell({ icon: Icon, title, subtitle, children }) {
   return (
     <div
-      className="min-h-screen bg-slate-50"
+      className="fixed inset-0 overflow-y-auto z-50 bg-slate-50"
       style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}
     >
       {/* Top bar */}
