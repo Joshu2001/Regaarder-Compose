@@ -73,6 +73,7 @@ const hash = typeof window !== 'undefined' ? window.location.hash : '';
 import PricingPage from './components/pricing/PricingPage.jsx';
 import WelcomePage from './components/pricing/WelcomePage.jsx';
 import CheckoutPage from './components/pricing/CheckoutPage.jsx';
+import { TermsPage, PrivacyPage, RefundPage } from './components/legal/LegalPage.jsx';
 
 if (hash.includes('floating-pip-widget')) {
   if (typeof document !== 'undefined') {
@@ -106,6 +107,24 @@ if (hash.includes('floating-pip-widget')) {
   root.render(
     <ErrorBoundary>
       <WelcomePage />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/terms' || hash === '#/terms') {
+  root.render(
+    <ErrorBoundary>
+      <TermsPage />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/privacy' || hash === '#/privacy') {
+  root.render(
+    <ErrorBoundary>
+      <PrivacyPage />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/refund' || hash === '#/refund') {
+  root.render(
+    <ErrorBoundary>
+      <RefundPage />
     </ErrorBoundary>
   );
 } else {
