@@ -41880,14 +41880,14 @@ Respond with a JSON array of slide objects matching the schema.`;
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-13 flex items-center border-b border-slate-100/60 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3.5 shrink-0">
+        <div className="h-11 flex items-center border-b border-slate-200/70 dark:border-zinc-800/80 text-xs font-semibold select-none bg-slate-50/60 dark:bg-zinc-900/60 px-3 shrink-0">
           <div
-            className="w-full min-w-0 py-1.5"
+            className="w-full min-w-0"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="flex items-center w-full p-1 bg-slate-100/70 dark:bg-zinc-800/70 rounded-xl border border-slate-200/40 dark:border-zinc-700/40 gap-1">
+            <div className="flex items-center w-full p-0.5 bg-slate-200/60 dark:bg-zinc-800/80 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 gap-0.5">
               {[
                 { key: 'assistant', label: t('sidebar.assistant') || 'Assistant' },
                 { key: 'history', label: t('sidebar.history') || 'History' },
@@ -41898,10 +41898,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     key={tab.key}
                     type="button"
-                    className={`flex-1 min-w-0 px-3 py-1.5 rounded-lg transition-all text-[12px] text-center justify-center flex items-center cursor-pointer ${
+                    className={`flex-1 min-w-0 px-2.5 py-1 rounded-[6px] transition-all text-[11.5px] text-center justify-center flex items-center cursor-pointer ${
                       isActive 
-                        ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/60 dark:border-zinc-700/60' 
-                        : 'text-slate-400 dark:text-zinc-500 font-medium hover:text-slate-700 dark:hover:text-zinc-300'
+                        ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/70 dark:border-zinc-700/60' 
+                        : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/40 border border-transparent'
                     }`}
                     onClick={() => {
                       if (tab.key === 'manageen') {
@@ -42506,11 +42506,11 @@ Respond with a JSON array of slide objects matching the schema.`;
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
               {/* Persistent Multi-Tab Concurrent Header */}
-              <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm z-10">
+              <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-10">
                 <div className="flex items-center justify-between w-full px-3.5 py-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/50 dark:border-zinc-700/50 flex items-center justify-center shrink-0">
-                      <Bot size={12} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+                    <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/50 flex items-center justify-center shrink-0 text-violet-600 dark:text-violet-400">
+                      <RegaarderAiIcon size={14} />
                     </div>
                     <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-100 tracking-tight truncate">
                       {productMode === 'compose' ? (t('sidebar.composeAssistant') || 'Compose Assistant') : productMode === 'sheets' ? (t('sidebar.sheetsAssistant') || 'Sheets Assistant') : (t('sidebar.deckAssistant') || 'Deck Assistant')}
@@ -42520,7 +42520,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <button
                       type="button"
                       title="Add New Independent Chat Tab (+)"
-                      className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-600 dark:hover:text-violet-400 transition-all cursor-pointer flex items-center justify-center"
+                      className="p-1 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
                       onClick={handleCreateNewChatTab}
                     >
                       <Plus size={13} strokeWidth={2} />
@@ -42529,20 +42529,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </div>
 
                 {/* Multi-Tab Switcher Bar */}
-                <div className="flex items-center gap-1 px-2.5 pb-1.5 overflow-x-auto thin-scrollbar">
+                <div className="flex items-center gap-1 px-3 pb-2 overflow-x-auto thin-scrollbar">
                   {chatTabs.map((tab) => {
                     const isActive = tab.id === activeChatTabId;
                     return (
                       <div
                         key={tab.id}
                         onClick={() => handleSwitchChatTab(tab.id)}
-                        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
+                        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
                           isActive
-                            ? 'bg-violet-50 dark:bg-violet-950/60 text-[#7C5ACF] dark:text-[#a78bfa] border-violet-200/80 dark:border-violet-800/80 shadow-2xs font-semibold'
-                            : 'bg-slate-50 dark:bg-zinc-800/50 text-slate-600 dark:text-zinc-400 border-slate-200/50 dark:border-zinc-700/40 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                            ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 border-slate-200/90 dark:border-zinc-700/80 shadow-2xs font-semibold'
+                            : 'bg-transparent text-slate-500 dark:text-zinc-400 border-transparent hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-300'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-[#7C5ACF]' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
                         <span className="truncate max-w-[85px]">{tab.title || 'Chat'}</span>
                         <button
                           type="button"
@@ -42557,7 +42557,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     type="button"
                     onClick={handleCreateNewChatTab}
-                    className="p-1 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer"
                     title="New Chat Tab"
                   >
                     <Plus size={11} />
@@ -42983,10 +42983,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                     key={msg.id} 
                     className={`group flex flex-col max-w-[88%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                   >
-                    {/* Speaker Header */}
+                    {/* Speaker Header with Official AI Icon */}
                     <div className="flex items-center gap-1.5 mb-1 px-1">
+                      {msg.sender !== 'user' && (
+                        <div className="w-3.5 h-3.5 rounded-full bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                          <RegaarderAiIcon size={10} />
+                        </div>
+                      )}
                       <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
-                        {msg.sender === 'user' ? 'You' : msg.isBrowserResearch ? '🌐 Browser Agent' : 'Compose AI'}
+                        {msg.sender === 'user' ? 'You' : msg.isBrowserResearch ? 'Browser Agent' : 'Compose AI'}
                       </span>
                       {msg.isBrowserResearch && (
                         <span className="text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
@@ -42996,12 +43001,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
 
                     {/* Chat Bubble / Cards */}
-                    <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                    <div className={`p-3.5 rounded-2xl text-[13px] leading-relaxed transition-all ${
                       msg.sender === 'user' 
-                        ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-xs shadow-2xs font-medium' 
+                        ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-md shadow-[0_2px_8px_rgba(0,0,0,0.06)] font-normal' 
                         : msg.isBrowserResearch
-                          ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-indigo-200/70 dark:border-indigo-900/60 rounded-tl-xs shadow-sm w-full'
-                          : 'bg-slate-100/80 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-700/50 rounded-tl-xs shadow-[0_4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.25)]'
+                          ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 rounded-tl-md shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] w-full'
+                          : 'bg-white dark:bg-zinc-900/90 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 rounded-tl-md shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
                     }`}>
                       {/* Live Sources Bar if Browser Research */}
                       {msg.isBrowserResearch && Array.isArray(msg.sources) && msg.sources.length > 0 && (
@@ -43204,10 +43209,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   showToast('Unable to extract deck slides from response');
                                 }
                               }}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
                               title="Apply generated slides and layout to presentation deck"
                             >
-                              <Plus size={12} />
+                              <Plus size={12} strokeWidth={2} />
                               <span>Apply to Deck</span>
                             </button>
                           ) : productMode === 'sheets' ? (
@@ -43216,10 +43221,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                               onClick={() => {
                                 showToast('Inserted into sheet');
                               }}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
                               title="Insert table data into spreadsheet"
                             >
-                              <Plus size={12} />
+                              <Plus size={12} strokeWidth={2} />
                               <span>Insert into Sheet</span>
                             </button>
                           ) : (
@@ -43245,10 +43250,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 }
                                 showToast('Injected into document');
                               }}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 text-[11.5px] font-medium bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
                               title="Inject AI text into the active document"
                             >
-                              <Plus size={12} />
+                              <Plus size={12} strokeWidth={2} />
                               <span>Insert into Document</span>
                             </button>
                           )}
@@ -43258,7 +43263,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               navigator.clipboard.writeText(msg.text || '');
                               showToast('Copied to clipboard');
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent hover:border-slate-200/60 dark:hover:border-zinc-700/60 transition-all cursor-pointer"
                             title="Copy response to clipboard"
                           >
                             <Copy size={11} />
@@ -43698,7 +43703,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <Plus size={16} strokeWidth={1.75} />
                         </button>
 
-                        {/* Universal LLM Model Selector Pill */}
+                        {/* Universal LLM Model Selector Squarcle */}
                         <button
                           type="button"
                           onPointerDown={(e) => {
@@ -43710,7 +43715,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                             e.preventDefault();
                             e.stopPropagation();
                           }}
-                          className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
+                          className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-lg bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200/90 dark:hover:bg-zinc-700/90 text-slate-700 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1.5 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:shadow-xs active:scale-[0.98] transition-all cursor-pointer select-none"
                           title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                         >
                           <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
@@ -43753,7 +43758,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                             e.stopPropagation();
                             handleStopAiGeneration();
                           }}
-                          className="w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer bg-rose-500 hover:bg-rose-600 active:scale-95 text-white shadow-xs animate-pulse shrink-0"
+                          className="w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer bg-rose-500 hover:bg-rose-600 active:scale-95 text-white shadow-2xs shrink-0"
                           title="Stop generating"
                         >
                           <Square size={11} className="fill-current" />
@@ -43762,14 +43767,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                         <button 
                           type="submit" 
                           disabled={!chatInput.trim() && !chatAttachments.length && !isDocContextActive}
-                          className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                          className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 ${
                             chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive
-                              ? 'bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
-                              : 'opacity-50 cursor-not-allowed bg-slate-100/60 dark:bg-zinc-800/40 text-slate-300 dark:text-zinc-600 border border-slate-200/40 dark:border-zinc-800'
+                              ? 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 shadow-2xs active:scale-95' 
+                              : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600 border border-slate-200/50 dark:border-zinc-800'
                           }`}
                           title="Send message"
                         >
-                          <Send size={13} strokeWidth={1.75} className={chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive ? "text-violet-600 dark:text-violet-300" : "text-slate-300 dark:text-zinc-600"} />
+                          <Send size={13} strokeWidth={2} className={chatInput.trim().length > 0 || chatAttachments.length > 0 || isDocContextActive ? "text-white dark:text-zinc-900" : "text-slate-400 dark:text-zinc-600"} />
                         </button>
                       )}
                     </div>
