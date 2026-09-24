@@ -41853,12 +41853,12 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`no-fullscreen-toggle flex flex-col bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
+        className={`no-fullscreen-toggle flex flex-col bg-white/70 dark:bg-zinc-900/75 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
-            ? 'fixed z-[400] rounded-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-right-4'
+            ? 'fixed z-[400] rounded-2xl border border-white/80 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] animate-in fade-in slide-in-from-right-4 ring-1 ring-black/[0.04] dark:ring-white/[0.05]'
             : 'w-0 h-0 hidden overflow-hidden border-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '12px', right: '12px', bottom: '12px', height: 'calc(100vh - 24px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '12px', right: '12px', bottom: '12px', height: 'calc(100vh - 24px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '44px', right: '12px', bottom: '12px', height: 'calc(100vh - 56px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '44px', right: '12px', bottom: '12px', height: 'calc(100vh - 56px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
@@ -42845,7 +42845,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               <Plus size={15} strokeWidth={1.5} />
                             </button>
 
-                            {/* Model Selector Pill in Empty State */}
+                            {/* Model Selector Squarcle in Empty State */}
                             <button
                               type="button"
                               onPointerDown={(e) => {
@@ -42857,7 +42857,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 e.preventDefault();
                                 e.stopPropagation();
                               }}
-                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
+                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
                               title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                             >
                               <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
@@ -42985,11 +42985,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                     {/* Speaker Header with Official AI Icon */}
                     <div className="flex items-center gap-1.5 mb-1 px-1">
                       {msg.sender !== 'user' && (
-                        <div className="w-3.5 h-3.5 rounded-full bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                        <div className="w-4 h-4 rounded-md bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
                           <RegaarderAiIcon size={10} />
                         </div>
                       )}
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
+                      <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-medium">
                         {msg.sender === 'user' ? 'You' : msg.isBrowserResearch ? 'Browser Agent' : 'Compose AI'}
                       </span>
                       {msg.isBrowserResearch && (
@@ -43000,12 +43000,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
 
                     {/* Chat Bubble / Cards */}
-                    <div className={`p-3.5 rounded-2xl text-[13px] leading-relaxed transition-all ${
+                    <div className={`p-3.5 rounded-xl text-[13px] leading-relaxed transition-all ${
                       msg.sender === 'user' 
-                        ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-tr-md shadow-[0_2px_8px_rgba(0,0,0,0.06)] font-normal' 
+                        ? 'bg-violet-600 dark:bg-violet-600 text-white rounded-tr-sm shadow-[0_2px_10px_rgba(124,90,207,0.25)] font-normal selection:bg-violet-700' 
                         : msg.isBrowserResearch
-                          ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 rounded-tl-md shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] w-full'
-                          : 'bg-white dark:bg-zinc-900/90 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 rounded-tl-md shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
+                          ? 'bg-white/90 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-tl-sm shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] w-full'
+                          : 'bg-white/90 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-tl-sm shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
                     }`}>
                       {/* Live Sources Bar if Browser Research */}
                       {msg.isBrowserResearch && Array.isArray(msg.sources) && msg.sources.length > 0 && (
@@ -43580,7 +43580,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                   )}
 
-                  <div className="flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl focus-within:border-slate-400 dark:focus-within:border-zinc-600 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden">
+                  <div className="flex flex-col bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/70 dark:border-zinc-700/60 rounded-xl focus-within:border-violet-400 dark:focus-within:border-violet-500 transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] overflow-hidden">
                     {(isDocContextActive || activeAgentTag || chatAttachments.length > 0 || Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim())) && (
                       <div className="px-2.5 pt-2 flex flex-wrap gap-1.5 items-center border-b border-slate-100/60 dark:border-zinc-800/60 pb-2">
                         {Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) && (
