@@ -77048,8 +77048,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        {/* Document Tab Strip - always visible with scroll arrows */}
-        <div className="h-10 border-b border-slate-200/50 px-2 flex items-center bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 group">
+        {/* Document Tab Strip - executive Apple-style with progressive overflow scroll */}
+        <div className="h-10 border-b border-slate-200/60 dark:border-zinc-800/80 px-2 flex items-center bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 group/tabstrip">
           <button
             type="button"
             onClick={() => {
@@ -77057,10 +77057,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 topDocTabsContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
               }
             }}
-            className="shrink-0 p-1 mr-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            className="shrink-0 p-1 mr-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg transition-all opacity-0 pointer-events-none group-hover/tabstrip:opacity-100 group-hover/tabstrip:pointer-events-auto"
             title="Scroll tabs left"
+            aria-label="Scroll tabs left"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
           </button>
           <div
             ref={topDocTabsContainerRef}
@@ -77349,11 +77350,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <button
             type="button"
             onClick={createItemForCurrentContext}
-            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200/60 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 transition-colors mx-0.5"
-            title="Create new item"
-            aria-label="Create new item"
+            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-all mx-0.5 active:scale-95 cursor-pointer"
+            title="Create new document"
+            aria-label="Create new document"
           >
-            <Plus size={14} strokeWidth={1.75} />
+            <Plus size={15} strokeWidth={2} />
           </button>
           <button
             type="button"
@@ -77362,10 +77363,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 topDocTabsContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
               }
             }}
-            className="shrink-0 p-1 ml-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded transition-colors"
+            className="shrink-0 p-1 ml-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg transition-all opacity-0 pointer-events-none group-hover/tabstrip:opacity-100 group-hover/tabstrip:pointer-events-auto"
             title="Scroll tabs right"
+            aria-label="Scroll tabs right"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} />
           </button>
         </div>
         </div>
@@ -77378,14 +77380,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`mx-4 mt-1 mb-1 w-[calc(100%-2rem)] p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-1.5 z-20 shrink-0 transition-all duration-200 ${
+          className={`mx-4 mt-1.5 mb-1.5 w-[calc(100%-2rem)] p-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5),0_1px_3px_rgba(0,0,0,0.3)] flex flex-col gap-1.5 z-20 shrink-0 transition-all duration-200 ${
             productMode === 'whiteboard' || (activeRightTab === 'whiteboard' && isWhiteboardImmersive) || isNotesWorkspace ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           {/* Top Row: Navigation Tabs & Collapse/Expand Toggle */}
           <div className="flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
             {/* Apple Segmented Control Track */}
-            <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
+            <div className="inline-flex items-center p-1 gap-1 bg-slate-100/80 dark:bg-zinc-800/80 rounded-xl border border-slate-200/70 dark:border-zinc-700/60 shadow-2xs">
               {activeDoc?.isPdfDoc ? (
                 ['View', 'Annotate', 'Convert'].map((tab) => {
                   const isPdfActive = (tab === 'Annotate' && pdfMarkupActive) || (tab === 'View' && !pdfMarkupActive);
@@ -83322,7 +83324,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             })()}
             {true && (
               <div 
-                className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none doc-header-chrome print-no-border"
+                className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800/80 pb-1.5 flex justify-between items-center select-none doc-header-chrome print-no-border opacity-40 hover:opacity-100 transition-opacity duration-200 group/header"
                 style={{ 
                   left: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px', 
                   right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px' 
@@ -83340,7 +83342,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }
                     }}
                     autoFocus
-                    className="bg-transparent border-none outline-none focus:ring-0 p-0 text-[10px] font-semibold uppercase tracking-wider text-gray-700 w-48"
+                    className="bg-transparent border-none outline-none focus:ring-0 p-0 text-[10px] font-semibold uppercase tracking-wider text-slate-700 dark:text-zinc-300 w-48"
                   />
                 ) : (
                   <span 
@@ -83349,7 +83351,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setHeaderTextEditing(true);
                       }
                     }}
-                    className={`border-b border-transparent transition-all ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'cursor-default' : 'hover:text-slate-600 cursor-pointer hover:border-slate-300'}`}
+                    className={`border-b border-transparent transition-all ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'cursor-default' : 'hover:text-slate-700 dark:hover:text-zinc-200 cursor-pointer hover:border-slate-300 dark:hover:border-zinc-600'}`}
                   >
                     {docHeaderText}
                   </span>
@@ -83366,7 +83368,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocStateDropdownOpen((prev) => !prev);
                       }
                     }}
-                    className={`text-[11px] font-semibold rounded-md px-2 py-0.5 cursor-pointer select-none transition-all duration-150 capitalize flex items-center gap-1.5 bg-slate-50/80 dark:bg-zinc-800/80 hover:bg-slate-100 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-zinc-300 border border-slate-200/90 dark:border-zinc-700/80 shadow-2xs hover:border-slate-300 ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
+                    className={`text-[11px] font-medium rounded-lg px-2.5 py-0.5 cursor-pointer select-none transition-all duration-150 capitalize flex items-center gap-1.5 bg-slate-50/90 dark:bg-zinc-800/90 hover:bg-slate-100 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-600 ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                   >
                     {docState === 'draft' && <FileEdit size={12} className="stroke-[2] text-violet-500 dark:text-violet-400" />}
                     {docState === 'ready' && <CheckCircle2 size={12} className="stroke-[2] text-emerald-500 dark:text-emerald-400" />}
@@ -83380,7 +83382,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {(docFooterText || (showPageNumbers && showPageNumberOnFirstPage)) && (
               <div 
-                className="absolute bottom-6 text-[10px] font-semibold text-gray-400 border-t border-gray-100 pt-1.5 select-none"
+                className="absolute bottom-6 text-[10px] font-semibold text-slate-400 dark:text-zinc-500 border-t border-slate-100 dark:border-zinc-800/80 pt-1.5 select-none opacity-40 hover:opacity-100 transition-opacity duration-200 group/footer"
                 style={{ 
                   left: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px', 
                   right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
