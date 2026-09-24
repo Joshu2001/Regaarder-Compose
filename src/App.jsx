@@ -83178,10 +83178,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {/* Page 1 Sheet Wrapper */}
                 <div
               data-enterprise-page="true"
-              className={`w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border transition-all relative ${
+              className={`w-full mx-auto rounded-[20px] shadow-[0_1px_3px_rgba(0,0,0,0.02),0_8px_32px_-4px_rgba(15,23,42,0.06),0_20px_48px_-12px_rgba(15,23,42,0.04)] border transition-all relative ${
                 isDarkMode 
-                  ? 'bg-zinc-900 border-zinc-800 text-zinc-100' 
-                  : 'bg-white border-slate-200/50 text-slate-900'
+                  ? 'bg-zinc-900 border-zinc-800/80 text-zinc-100' 
+                  : 'bg-white border-slate-200/70 text-slate-900'
               }`}
               style={{
                 maxWidth: pageOrientation === 'landscape'
@@ -83366,12 +83366,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocStateDropdownOpen((prev) => !prev);
                       }
                     }}
-                    className={`text-xs font-semibold rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
+                    className={`text-[11px] font-semibold rounded-md px-2 py-0.5 cursor-pointer select-none transition-all duration-150 capitalize flex items-center gap-1.5 bg-slate-50/80 dark:bg-zinc-800/80 hover:bg-slate-100 dark:hover:bg-zinc-700/80 text-slate-600 dark:text-zinc-300 border border-slate-200/90 dark:border-zinc-700/80 shadow-2xs hover:border-slate-300 ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                   >
-                    {docState === 'draft' && <FileEdit size={13} className="stroke-[2] text-violet-600 dark:text-violet-400" />}
-                    {docState === 'ready' && <CheckCircle2 size={13} className="stroke-[2] text-emerald-600 dark:text-emerald-400" />}
-                    {docState === 'review' && <Users2 size={13} className="stroke-[2] text-blue-600 dark:text-blue-400" />}
-                    {docState === 'archived' && <Archive size={13} className="stroke-[2] text-slate-500 dark:text-zinc-400" />}
+                    {docState === 'draft' && <FileEdit size={12} className="stroke-[2] text-violet-500 dark:text-violet-400" />}
+                    {docState === 'ready' && <CheckCircle2 size={12} className="stroke-[2] text-emerald-500 dark:text-emerald-400" />}
+                    {docState === 'review' && <Users2 size={12} className="stroke-[2] text-blue-500 dark:text-blue-400" />}
+                    {docState === 'archived' && <Archive size={12} className="stroke-[2] text-slate-400 dark:text-zinc-400" />}
                     <span>{t('status.' + docState) || (docState.charAt(0).toUpperCase() + docState.slice(1))}</span>
                   </button>
                 </div>
@@ -84356,14 +84356,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-2xl ${
                 isVoiceActive && voiceTarget === 'document' 
                   ? 'rounded-2xl bg-white/95 dark:bg-[#1a1926]/95 border-violet-400/80 dark:border-violet-500/80 px-4 py-3 gap-3.5 shadow-[0_12px_40px_-8px_rgba(147,51,234,0.3)] ring-1 ring-violet-500/20 min-w-[270px] max-w-[340px]' 
-                  : 'rounded-full bg-white/80 dark:bg-zinc-900/80 border-slate-200/80 dark:border-zinc-700/80 p-1 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12)] hover:border-violet-300/80'
+                  : 'rounded-xl bg-white/90 dark:bg-zinc-900/90 border-slate-200/90 dark:border-zinc-700/80 p-1 shadow-[0_4px_18px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] hover:border-slate-300 dark:hover:border-zinc-600'
               }`}
             >
               <div className="relative flex items-center justify-center shrink-0">
                 {isVoiceActive && voiceTarget === 'document' && (
                   <>
-                    <div className="absolute -inset-2 rounded-full bg-violet-500/20 dark:bg-violet-400/20 blur-md animate-pulse pointer-events-none" />
-                    <div className="absolute -inset-1 rounded-full border-2 border-violet-400/40 dark:border-violet-500/40 animate-ping opacity-75 pointer-events-none" style={{ animationDuration: '2s' }} />
+                    <div className="absolute -inset-2 rounded-2xl bg-violet-500/20 dark:bg-violet-400/20 blur-md animate-pulse pointer-events-none" />
+                    <div className="absolute -inset-1 rounded-2xl border-2 border-violet-400/40 dark:border-violet-500/40 animate-ping opacity-75 pointer-events-none" style={{ animationDuration: '2s' }} />
                   </>
                 )}
                 <button
@@ -84372,10 +84372,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={async () => {
                     await toggleVoiceRecording('document');
                   }}
-                  className={`flex items-center justify-center rounded-full transition-all duration-300 relative z-10 ${
+                  className={`flex items-center justify-center transition-all duration-300 relative z-10 ${
                     isVoiceActive && voiceTarget === 'document'
-                      ? 'w-11 h-11 bg-violet-100/90 dark:bg-violet-950/70 text-violet-600 dark:text-violet-300 border-2 border-violet-500 dark:border-violet-400 shadow-[0_0_25px_rgba(168,85,247,0.55),inset_0_0_15px_rgba(168,85,247,0.25)] ring-4 ring-violet-400/30'
-                      : 'w-10 h-10 bg-slate-50 dark:bg-zinc-800 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-slate-500 hover:text-violet-600 dark:text-zinc-400 dark:hover:text-violet-400 border border-slate-200/60 dark:border-zinc-700/60'
+                      ? 'w-11 h-11 rounded-xl bg-violet-100/90 dark:bg-violet-950/70 text-violet-600 dark:text-violet-300 border-2 border-violet-500 dark:border-violet-400 shadow-[0_0_25px_rgba(168,85,247,0.55),inset_0_0_15px_rgba(168,85,247,0.25)] ring-4 ring-violet-400/30'
+                      : 'w-10 h-10 rounded-lg bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700/70 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
                   }`}
                   title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
                 >
@@ -84489,14 +84489,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   window.addEventListener('pointermove', handleMove);
                   window.addEventListener('pointerup', handleUp);
                 }}
-                className={`h-11 w-11 rounded-full flex items-center justify-center transition-all duration-200 ease-out cursor-move touch-none select-none ${
+                className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200 ease-out cursor-move touch-none select-none backdrop-blur-xl ${
                   (aiPulseState === 'pulse1' || aiPulseState === 'pulse2')
-                    ? 'scale-[1.06] ring-4 ring-violet-400/25 shadow-md'
-                    : 'hover:scale-[1.03]'
+                    ? 'scale-[1.06] ring-2 ring-violet-400/40 shadow-md'
+                    : 'hover:scale-[1.02]'
                 } ${
                   isDarkMode 
-                    ? 'bg-violet-950/90 text-violet-300 border border-violet-800/60 shadow-[0_4px_14px_rgba(0,0,0,0.3)] hover:bg-violet-900/90 hover:border-violet-700 hover:shadow-[0_6px_20px_rgba(0,0,0,0.4)]' 
-                    : 'bg-violet-50/95 text-violet-700 border border-violet-200/80 shadow-[0_4px_14px_rgba(124,58,237,0.1)] hover:bg-violet-100 hover:border-violet-300 hover:text-violet-800 hover:shadow-[0_6px_20px_rgba(124,58,237,0.16)]'
+                    ? 'bg-zinc-900/90 text-violet-300 border border-zinc-700/80 shadow-[0_4px_16px_rgba(0,0,0,0.3)] hover:bg-zinc-800 hover:border-violet-500/50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.4)]' 
+                    : 'bg-white/90 text-violet-600 border border-slate-200/90 shadow-[0_4px_18px_-4px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] hover:bg-slate-50 hover:border-slate-300 hover:text-violet-700 hover:shadow-[0_6px_20px_rgba(15,23,42,0.1)]'
                 } active:scale-95`}
                 title="Open AI Assistant or drag to move"
                 aria-label="Open AI Assistant"
