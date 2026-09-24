@@ -7494,8 +7494,8 @@ function AppCore() {
       const currentHeightStr = getComputedStyle(root).getPropertyValue(`--row-${rowIndex}-height`).trim();
       
       const startSize = isCol 
-        ? parseFloat(currentWidthStr) || 100 
-        : parseFloat(currentHeightStr) || 36;
+        ? parseFloat(currentWidthStr) || 82 
+        : parseFloat(currentHeightStr) || 26;
 
       const handleMouseMove = (moveEvent) => {
         if (isCol) {
@@ -16239,6 +16239,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [docCharCount, setDocCharCount] = useState(8950);
   const [templateCategory, setTemplateCategory] = useState('all');
   const [isSheetToolbarCollapsed, setIsSheetToolbarCollapsed] = useState(false);
+  const [isSheetInspectorOpen, setIsSheetInspectorOpen] = useState(false);
+  const [sheetInspectorTab, setSheetInspectorTab] = useState('format'); // 'format' | 'cell' | 'table'
   const [hasImportedData, setHasImportedData] = useState(false);
   const [importedFileInfo, setImportedFileInfo] = useState(null);
   const [importedFilesList, setImportedFilesList] = useState([]);
@@ -16904,15 +16906,19 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="w-[360px] rounded-2xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-2xl p-2.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out flex flex-col">
+          <div className="w-[375px] rounded-2xl border border-black/[0.08] dark:border-white/[0.12] ring-1 ring-black/[0.04] dark:ring-white/[0.06] bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12),0_12px_48px_-8px_rgba(0,0,0,0.18)] p-2 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out flex flex-col">
             {/* Header: Library Title and Item Count Badge */}
-            <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-100 dark:border-zinc-800/80">
-              <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
-                <BookOpen size={13} className="text-violet-600 dark:text-violet-400" />
-                <span>Library</span>
-              </span>
-              <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full">
-                {recentDocumentsList.length} saved
+            <div className="flex items-center justify-between px-1.5 py-1 mb-1.5 border-b border-black/[0.05] dark:border-white/[0.07]">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md bg-violet-500/10 dark:bg-violet-400/15 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                  <BookOpen size={12} strokeWidth={2.2} />
+                </div>
+                <span className="text-[12px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                  Library
+                </span>
+              </div>
+              <span className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200/60 dark:border-zinc-700/60 px-2 py-0.5 rounded-md">
+                {recentDocumentsList.length} files
               </span>
             </div>
 
@@ -16925,24 +16931,30 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                 onChange={(e) => setLibrarySearchQuery(e.target.value)}
                 onPointerDown={(e) => e.stopPropagation()}
                 placeholder="Search saved files..."
-                className="w-full pl-8 pr-7 py-1.5 rounded-xl text-xs bg-slate-100/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border border-slate-200/60 dark:border-zinc-700/60 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+                className="w-full pl-8 pr-12 py-1.5 rounded-lg text-xs bg-black/[0.03] dark:bg-white/[0.05] text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 border border-black/[0.07] dark:border-white/[0.08] focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/15 transition-all"
               />
-              {librarySearchQuery && (
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setLibrarySearchQuery('');
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
-                >
-                  <X size={12} />
-                </button>
-              )}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {librarySearchQuery ? (
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setLibrarySearchQuery('');
+                    }}
+                    className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                  >
+                    <X size={12} />
+                  </button>
+                ) : (
+                  <kbd className="text-[9.5px] font-mono text-slate-400 dark:text-zinc-500 px-1 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/[0.06] select-none">
+                    ⌘K
+                  </kbd>
+                )}
+              </div>
             </div>
 
-            {/* Category Filter Tabs (Slightly rounded rectangles per architectural directive) */}
+            {/* Category Filter Tabs (Slightly rounded rectangles per architectural directive, no pills) */}
             <div className="flex items-center gap-1 mb-2 pb-1 overflow-x-auto no-scrollbar">
               {filterTabs.map(tab => {
                 const isActive = libraryCategoryFilter === tab.id;
@@ -16955,15 +16967,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                       e.stopPropagation();
                       setLibraryCategoryFilter(tab.id);
                     }}
-                    className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all flex items-center gap-1 shrink-0 cursor-pointer select-none ${
+                    className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5 shrink-0 cursor-pointer select-none border ${
                       isActive
-                        ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
-                        : 'bg-slate-100/80 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/70 dark:hover:bg-zinc-700/60'
+                        ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-slate-900 dark:border-zinc-100 shadow-xs'
+                        : 'bg-black/[0.02] dark:bg-white/[0.03] text-slate-600 dark:text-zinc-400 border-black/[0.05] dark:border-white/[0.06] hover:bg-black/[0.05] dark:hover:bg-white/[0.07] hover:text-slate-900 dark:hover:text-zinc-200'
                     }`}
                   >
                     <span>{tab.label}</span>
-                    <span className={`text-[9px] px-1 py-0.2 rounded-sm ${
-                      isActive ? 'bg-white/20 text-white dark:bg-black/15 dark:text-zinc-900 font-semibold' : 'text-slate-400 dark:text-zinc-500'
+                    <span className={`text-[9.5px] px-1 py-0.2 rounded ${
+                      isActive 
+                        ? 'bg-white/20 text-white dark:bg-black/15 dark:text-zinc-900 font-semibold' 
+                        : 'text-slate-400 dark:text-zinc-500'
                     }`}>
                       {tab.count}
                     </span>
@@ -16973,11 +16987,17 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
             </div>
 
             {/* Scrollable list of items with Native Colored SVG Badges */}
-            <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto thin-scrollbar pr-1 py-0.5">
+            <div className="flex flex-col gap-0.5 max-h-[235px] overflow-y-auto thin-scrollbar pr-0.5 py-0.5">
               {filteredDocs.length === 0 ? (
-                <div className="text-center py-6 px-3">
-                  <p className="text-xs text-slate-400 dark:text-zinc-500">
+                <div className="text-center py-8 px-3 flex flex-col items-center justify-center gap-1.5">
+                  <div className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] text-slate-400 dark:text-zinc-500 flex items-center justify-center">
+                    <BookOpen size={14} />
+                  </div>
+                  <p className="text-xs font-medium text-slate-600 dark:text-zinc-300">
                     {librarySearchQuery ? 'No matching items' : 'No saved files found'}
+                  </p>
+                  <p className="text-[10.5px] text-slate-400 dark:text-zinc-500">
+                    {librarySearchQuery ? 'Try searching by a different name' : 'Your saved workspace files will appear here'}
                   </p>
                 </div>
               ) : (
@@ -17004,26 +17024,36 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                         setLibrarySearchQuery('');
                         openSavedLibraryItem(doc);
                       }}
-                      className={`group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left select-none transition-colors duration-100 w-full cursor-pointer ${
+                      className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left select-none transition-colors duration-100 w-full cursor-pointer border ${
                         isActive
-                          ? 'bg-violet-50/80 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200'
-                          : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 text-slate-800 dark:text-zinc-200'
+                          ? 'bg-violet-500/[0.08] dark:bg-violet-500/[0.14] border-violet-500/25 dark:border-violet-500/30 text-violet-950 dark:text-violet-100'
+                          : 'bg-transparent border-transparent hover:bg-black/[0.035] dark:hover:bg-white/[0.05] text-slate-800 dark:text-zinc-200'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <AppNativeSvgIcon type={dMode === 'sheets' ? 'sheet' : dMode} size={26} className="shrink-0" />
+                        <div className="w-[30px] h-[30px] rounded-lg bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-center shrink-0">
+                          <AppNativeSvgIcon type={dMode === 'sheets' ? 'sheet' : dMode} size={22} className="shrink-0" />
+                        </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[12px] font-semibold truncate leading-tight">
+                          <span className={`text-[12px] leading-tight truncate ${isActive ? 'font-bold text-violet-950 dark:text-violet-100' : 'font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-zinc-100'}`}>
                             {doc.title || 'Untitled'}
                           </span>
-                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 truncate mt-0.5">
                             {metaText}
                           </span>
                         </div>
                       </div>
-                      {isActive ? (
-                        <Check size={13} className="text-violet-600 dark:text-violet-400 shrink-0 ml-1.5" />
-                      ) : null}
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {isActive ? (
+                          <div className="w-5 h-5 rounded-md bg-violet-600/10 dark:bg-violet-400/15 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                            <Check size={12} strokeWidth={2.4} />
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                            Open <ArrowRight size={10} />
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })
@@ -17031,7 +17061,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
             </div>
 
             {/* Bottom Actions: New Item & Browse All in Library */}
-            <div className="pt-2 mt-1 border-t border-slate-100 dark:border-zinc-800/80 flex flex-col gap-0.5">
+            <div className="pt-2 mt-1 border-t border-black/[0.05] dark:border-white/[0.07] flex flex-col gap-1">
               <button
                 type="button"
                 onPointerDown={(e) => {
@@ -17039,10 +17069,13 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   e.stopPropagation();
                   handleCreateNewCategoryItem(libraryCategoryFilter === 'all' ? 'compose' : libraryCategoryFilter);
                 }}
-                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl text-left text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-50/80 dark:hover:bg-violet-950/40 transition-colors cursor-pointer"
+                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left text-xs font-semibold text-violet-700 dark:text-violet-300 bg-violet-500/[0.06] dark:bg-violet-500/[0.12] hover:bg-violet-500/[0.12] dark:hover:bg-violet-500/[0.18] border border-violet-500/20 transition-all cursor-pointer"
               >
-                <Plus size={14} className="shrink-0" />
-                <span>New {activeCatLabel}</span>
+                <span className="flex items-center gap-1.5">
+                  <Plus size={13} strokeWidth={2.2} className="shrink-0" />
+                  <span>New {activeCatLabel}</span>
+                </span>
+                <span className="text-[9.5px] font-normal text-violet-600/70 dark:text-violet-400/70">Create</span>
               </button>
               <button
                 type="button"
@@ -17053,10 +17086,10 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   setLibrarySearchQuery('');
                   setRecentDocumentsModalOpen(true);
                 }}
-                className="flex items-center justify-between w-full px-2.5 py-1 text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
               >
                 <span>Browse all in Library</span>
-                <ArrowRight size={11} />
+                <ArrowRight size={11} className="text-slate-400 dark:text-zinc-500" />
               </button>
             </div>
           </div>
@@ -40137,7 +40170,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       const startCol = selectedSheetRange ? Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
       const endCol = selectedSheetRange ? Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
 
-      const isStylingFormat = ['bold', 'italic', 'underline', 'strikeThrough', 'color', 'highlight', 'fontSize', 'fontFamily', 'capitalization'].includes(formatType);
+      const isStylingFormat = ['bold', 'italic', 'underline', 'strikeThrough', 'color', 'highlight', 'fontSize', 'fontFamily', 'capitalization', 'align', 'format'].includes(formatType);
 
       let cellsToFormat = [];
       if (multiSelectedCells && multiSelectedCells.length > 0) {
@@ -51081,7 +51114,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {/* Top Row: Navigation Tabs & View Controls + Collapse Toggle */}
                       <div className="flex items-center justify-between gap-3 text-[13px] font-medium tracking-wide text-[#374151]">
                         {/* Apple Segmented Control Track */}
-                        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-zinc-800/70 rounded-xl border border-slate-200/60 dark:border-zinc-700/50 shadow-inner">
+                        <div className="inline-flex items-center p-0.5 gap-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-lg border border-black/[0.06] dark:border-white/[0.07] select-none">
                           {['Data', 'Templates', 'Analyze', 'Visualize', 'View'].map((tab) => (
                             <button
                               key={tab}
@@ -51107,10 +51140,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   showToast(`${tab} tools ready`);
                                 }
                               }}
-                              className={`relative px-3.5 py-1 text-[12.5px] font-medium rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.97] cursor-pointer ${
+                              className={`relative px-3 py-1 text-[12px] rounded-md transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.98] cursor-pointer ${
                                 sheetToolbarTab === tab
-                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/80 dark:border-zinc-700/80'
-                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
+                                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/[0.08] dark:border-white/[0.12]'
+                                  : 'text-slate-600 dark:text-zinc-400 font-medium hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
                               }`}
                             >
                               {t('sheets.tabs.' + tab.toLowerCase()) || tab}
@@ -52184,88 +52217,112 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ) : (
                     <div className={`flex-1 min-h-0 flex flex-col bg-white dark:bg-[#121214] relative z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm'}`}>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
-                        <div className="px-3.5 py-1.5 border-b border-slate-200/80 dark:border-zinc-800 bg-[#FAFAFC] dark:bg-[#161618] flex items-center gap-2.5 text-[13px] font-medium text-[#374151] dark:text-zinc-200 shrink-0">
-                      <input
-                        type="text"
-                        className="min-w-[68px] max-w-[110px] text-center border border-slate-200/80 dark:border-zinc-700/80 rounded-lg bg-slate-100/90 dark:bg-zinc-800/80 py-1 px-2 text-[11px] font-mono font-bold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-inner"
-                        value={
-                          addressTemp !== null
-                            ? addressTemp
-                            : sheetSelectionMode === 'all'
-                            ? 'ALL'
-                            : sheetSelectionMode === 'col' && selectedSheetRange
-                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}`
-                            : sheetSelectionMode === 'row' && selectedSheetRange
-                            ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
-                            : selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol)
-                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
-                            : `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`
-                        }
-                        onChange={(e) => setAddressTemp(e.target.value)}
-                        onFocus={() => {
-                          const currentVal = sheetSelectionMode === 'all'
-                            ? 'ALL'
-                            : sheetSelectionMode === 'col' && selectedSheetRange
-                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}`
-                            : sheetSelectionMode === 'row' && selectedSheetRange
-                            ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
-                            : selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol)
-                            ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
-                            : `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`;
-                          setAddressTemp(currentVal);
-                        }}
-                        onBlur={() => {
-                          if (addressTemp !== null) {
-                            handleCellAddressInput(addressTemp);
-                            setAddressTemp(null);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleCellAddressInput(e.target.value);
-                            setAddressTemp(null);
-                            e.target.blur();
-                          } else if (e.key === 'Escape') {
-                            setAddressTemp(null);
-                            e.target.blur();
-                          }
-                        }}
-                      />
-                      <button 
-                        type="button"
-                        className="px-2 py-0.5 rounded-lg text-xs font-mono font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 cursor-pointer select-none transition-colors active:scale-95"
-                        title="Tap to insert formula (=)"
-                        onClick={() => {
-                          const currentVal = activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || '';
-                          const valStr = String(currentVal);
-                          if (!valStr.startsWith('=')) {
-                            updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, '=' + valStr);
-                          }
-                        }}
-                      >
-                        fx
-                      </button>
-                      <input
-                        type="text"
-                        value={activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
-                        onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === '/' && e.target.tagName === 'INPUT') {
-                            e.preventDefault();
-                            setSheetSlashMenu({
-                              open: true,
-                              x: window.innerWidth / 2,
-                              y: window.innerHeight / 2,
-                              filterText: '',
-                              activeIndex: 0,
-                              anchorCell: selectedSheetCell,
-                            });
-                          }
-                        }}
-                        className="flex-1 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-2xs placeholder:text-slate-400"
-                        placeholder={t('sheets.formulaPlaceholder') || "Enter value or formula"}
-                      />
-                    </div>
+                        <div className="px-3 py-1.5 border-b border-black/[0.06] dark:border-white/[0.07] bg-[#FAFAFC]/90 dark:bg-[#161618]/90 backdrop-blur-md flex items-center gap-2 text-[12px] font-medium text-slate-700 dark:text-zinc-200 shrink-0">
+                          {/* Cell Coordinate / Address Chip */}
+                          <div className="relative flex items-center">
+                            <input
+                              type="text"
+                              className="min-w-[64px] max-w-[100px] text-center border border-black/[0.08] dark:border-white/[0.10] rounded-md bg-white dark:bg-zinc-800/90 py-1 px-2 text-[11px] font-mono font-bold tracking-tight text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500/60 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                              value={
+                                addressTemp !== null
+                                  ? addressTemp
+                                  : sheetSelectionMode === 'all'
+                                  ? 'ALL'
+                                  : sheetSelectionMode === 'col' && selectedSheetRange
+                                  ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}`
+                                  : sheetSelectionMode === 'row' && selectedSheetRange
+                                  ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                                  : selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol)
+                                  ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                                  : `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`
+                              }
+                              onChange={(e) => setAddressTemp(e.target.value)}
+                              onFocus={() => {
+                                const currentVal = sheetSelectionMode === 'all'
+                                  ? 'ALL'
+                                  : sheetSelectionMode === 'col' && selectedSheetRange
+                                  ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}`
+                                  : sheetSelectionMode === 'row' && selectedSheetRange
+                                  ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                                  : selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol)
+                                  ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}`
+                                  : `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`;
+                                setAddressTemp(currentVal);
+                              }}
+                              onBlur={() => {
+                                if (addressTemp !== null) {
+                                  handleCellAddressInput(addressTemp);
+                                  setAddressTemp(null);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleCellAddressInput(e.target.value);
+                                  setAddressTemp(null);
+                                  e.target.blur();
+                                } else if (e.key === 'Escape') {
+                                  setAddressTemp(null);
+                                  e.target.blur();
+                                }
+                              }}
+                            />
+                          </div>
+
+                          {/* Function Icon Button */}
+                          <button 
+                            type="button"
+                            className="px-2 py-1 rounded-md text-[11.5px] font-mono font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 dark:bg-violet-400/15 hover:bg-violet-500/15 border border-violet-500/20 cursor-pointer select-none transition-all active:scale-95 flex items-center justify-center"
+                            title="Tap to insert formula (=)"
+                            onClick={() => {
+                              const currentVal = activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || '';
+                              const valStr = String(currentVal);
+                              if (!valStr.startsWith('=')) {
+                                updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, '=' + valStr);
+                              }
+                            }}
+                          >
+                            fx
+                          </button>
+
+                          {/* Formula / Cell Value Input */}
+                          <div className="flex-1 relative flex items-center">
+                            <input
+                              type="text"
+                              value={activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
+                              onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === '/' && e.target.tagName === 'INPUT') {
+                                  e.preventDefault();
+                                  setSheetSlashMenu({
+                                    open: true,
+                                    x: window.innerWidth / 2,
+                                    y: window.innerHeight / 2,
+                                    filterText: '',
+                                    activeIndex: 0,
+                                    anchorCell: selectedSheetCell,
+                                  });
+                                }
+                              }}
+                              className="w-full border border-black/[0.08] dark:border-white/[0.10] rounded-md bg-white dark:bg-zinc-900/90 px-3 py-1 text-xs text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500/60 dark:focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)] placeholder:text-slate-400 dark:placeholder:text-zinc-500 font-mono"
+                              placeholder={t('sheets.formulaPlaceholder') || "Enter value or formula"}
+                            />
+                          </div>
+
+                          {/* Apple Numbers Style Inspector Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setIsSheetInspectorOpen((prev) => !prev)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-all duration-150 active:scale-95 cursor-pointer shrink-0 ${
+                              isSheetInspectorOpen
+                                ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-300/80 dark:border-violet-500/40 shadow-xs'
+                                : 'bg-white dark:bg-zinc-800/80 text-slate-600 dark:text-zinc-300 border-black/[0.08] dark:border-white/[0.10] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-700/60'
+                            }`}
+                            title={isSheetInspectorOpen ? "Close Inspector (Format & Cell styles)" : "Open Inspector (Format & Cell styles)"}
+                          >
+                            <SlidersHorizontal size={13} className={isSheetInspectorOpen ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'} />
+                            <span className="hidden sm:inline">Format</span>
+                          </button>
+                        </div>
                       )}
                     <div className="flex-1 flex flex-row overflow-hidden relative">
                       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
@@ -52275,11 +52332,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     >
                       <div
                         className="grid text-[11px] font-semibold text-slate-700"
-                        style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`, minWidth: 'max-content' }}
+                        style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 82px)`).join(' ')}`, minWidth: 'max-content' }}
                       >
                           {/* ── Corner Select-All Button ── */}
                           <div
-                            className="h-8 border-r border-b border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 dark:hover:bg-[#1f1d2e] transition-colors"
+                            className="h-[26px] border-r border-b border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 dark:hover:bg-[#1f1d2e] transition-colors"
                             onClick={() => {
                               setSheetSelectionMode('all');
                               setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
@@ -52288,7 +52345,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                             title="Select all"
                           >
-                            <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-500 bg-violet-500/30' : 'border-slate-300 dark:border-zinc-600'}`} />
+                            <div className={`w-3 h-3 rounded-xs border transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-500 bg-violet-500/30' : 'border-slate-300 dark:border-zinc-600'}`} />
                           </div>
                         {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
                             const isColSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'col'
@@ -52301,11 +52358,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             return (
                               <div
                                 key={col}
-                                className={`h-8 relative flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
+                                className={`h-[26px] relative flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
                                   ${(isColSelected || isColActive) 
                                     ? (isDarkMode 
-                                        ? 'bg-[#252338] text-white font-bold border-r border-r-transparent border-b-2 border-violet-500' 
-                                        : `${themeAccentStyles.bgSoft} ${themeAccentStyles.text} font-bold border-r border-r-transparent border-b-2 ${themeAccentStyles.border}`) 
+                                        ? 'bg-violet-500/20 text-violet-200 font-bold border-r border-r-transparent border-b-2 border-violet-500' 
+                                        : 'bg-violet-500/[0.12] text-violet-950 font-bold border-r border-r-transparent border-b-2 border-violet-600') 
                                     : 'border-r border-gray-200 dark:border-[#252333] last:border-r-0 bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
                                 style={{ overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
@@ -53802,7 +53859,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div
                           className="grid"
                           style={{
-                            gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`,
+                            gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 82px)`).join(' ')}`,
                             minWidth: 'max-content',
                           }}
                         >
@@ -53821,7 +53878,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             });
                             if (isFilteredOut) return [];
 
-                            const rowHeight = `var(--row-${rowIndex}-height, 36px)`;
+                            const rowHeight = `var(--row-${rowIndex}-height, 26px)`;
                             const isRowSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'row'
                               ? num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)
                               : sheetSelectionMode === 'all';
@@ -53835,8 +53892,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 className={`relative text-[11px] font-semibold flex items-center justify-center select-none sheet-row-select-cursor transition-colors
                                   ${(isRowSelected || isRowActive) 
                                     ? (isDarkMode 
-                                        ? 'bg-[#252338] text-white font-bold border-b border-r border-b-transparent border-r-2 border-violet-500' 
-                                        : `${themeAccentStyles.bgSoft} ${themeAccentStyles.text} font-bold border-b border-r border-b-transparent border-r-2 ${themeAccentStyles.border}`) 
+                                        ? 'bg-violet-500/20 text-violet-200 font-bold border-b border-r border-b-transparent border-r-2 border-violet-500' 
+                                        : 'bg-violet-500/[0.12] text-violet-950 font-bold border-b border-r border-b-transparent border-r-2 border-violet-600') 
                                     : 'border-b border-r border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
                                 style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
@@ -53908,7 +53965,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 let shadows = [];
                                 const isSingleCellSelected = isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange;
                                 if (isSingleCellSelected) {
-                                  shadows.push(`0 0 0 2px ${selectionBorderColor}`);
+                                  shadows.push(`inset 0 0 0 2px ${selectionBorderColor}`);
                                 } else if (selectedSheetRange) {
                                   if (isTopEdge) shadows.push(`inset 0 2px 0 0 ${selectionBorderColor}`);
                                   if (isBottomEdge) shadows.push(`inset 0 -2px 0 0 ${selectionBorderColor}`);
@@ -53917,7 +53974,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }
                                 const isCellSelectedAnchor = isExplicitAnchor && sheetSelectionMode === 'cell';
                                 const shadowStyle = (shadows.length > 0 || isCellSelectedAnchor) && !isShapeInteracting 
-                                  ? { boxShadow: shadows.length > 0 ? shadows.join(', ') : `0 0 0 2px ${selectionBorderColor}`, zIndex: isCellSelectedAnchor ? 35 : 25 } 
+                                  ? { boxShadow: shadows.length > 0 ? shadows.join(', ') : `inset 0 0 0 2px ${selectionBorderColor}`, zIndex: isCellSelectedAnchor ? 35 : 25 } 
                                   : {};
                                 const isBottomRightCorner = (isSingleCellSelected || (selectedSheetRange && isBottomEdge && isRightEdge)) && sheetSelectionMode === 'cell';
 
@@ -53968,7 +54025,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
                                   const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
                                  const cellBg = (selectedSheetRange && num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)) 
-                                  ? (isDarkMode ? 'bg-purple-950/30' : 'bg-[#ebf0fc]/50') 
+                                  ? (isDarkMode ? 'bg-violet-950/25' : 'bg-violet-500/[0.08]') 
                                   : (isInColBand || isInRowBand || isAllSelected ? (isDarkMode ? 'bg-zinc-900/40' : 'bg-slate-50/50') : '');
 
                                  const cellKey = `${rowIndex}-${colIndex}`;
@@ -54707,6 +54764,463 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         />
                         </div>
                       )}
+
+                      {/* Apple Numbers Style Inspector Sidebar */}
+                      {isSheetInspectorOpen && (
+                        <div className="w-[280px] h-full shrink-0 border-l border-black/[0.08] dark:border-white/[0.08] bg-[#fbfbfd] dark:bg-[#141416] flex flex-col z-30 select-none animate-in slide-in-from-right-4 fade-in duration-200">
+                          {/* Inspector Header */}
+                          <div className="h-10 px-3.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between shrink-0">
+                            <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 tracking-tight">Format</span>
+                            <button
+                              type="button"
+                              onClick={() => setIsSheetInspectorOpen(false)}
+                              className="w-5 h-5 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                              title="Close Inspector"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+
+                          {/* Segmented Control Tabs (Rounded rectangles, non-pill) */}
+                          <div className="p-2.5 pb-2 shrink-0">
+                            <div className="grid grid-cols-3 gap-1 p-0.5 bg-slate-200/60 dark:bg-zinc-800/60 rounded-md text-[11px] font-medium">
+                              {[
+                                { id: 'cell', label: 'Cell' },
+                                { id: 'text', label: 'Text' },
+                                { id: 'table', label: 'Table' },
+                              ].map((tab) => {
+                                const isActive = sheetInspectorTab === tab.id;
+                                return (
+                                  <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setSheetInspectorTab(tab.id)}
+                                    className={`py-1 text-center font-medium rounded transition-all duration-150 cursor-pointer ${
+                                      isActive
+                                        ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]'
+                                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                                    }`}
+                                  >
+                                    {tab.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Inspector Tab Content Area */}
+                          <div className="flex-1 overflow-y-auto px-3.5 py-2 space-y-4 thin-scrollbar text-xs">
+                            {(() => {
+                              const fmt = getSelectedCellFormat() || {};
+                              const activeColor = fmt.color || '#000000';
+                              const activeFill = fmt.fill || fmt.highlight || null;
+
+                              if (sheetInspectorTab === 'text') {
+                                return (
+                                  <div className="space-y-4">
+                                    {/* Font Family */}
+                                    <div className="space-y-1.5">
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Font</label>
+                                      <div className="relative">
+                                        <select
+                                          value={fmt.fontFamily || sheetToolbarFont || 'Inter'}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setSheetToolbarFont(val);
+                                            updateSheetCellFormat(activeSheetId, 'fontFamily', val);
+                                          }}
+                                          className="w-full h-7 px-2 text-xs bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.10] rounded-md text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500 cursor-pointer"
+                                        >
+                                          {fontOptions.map((f) => (
+                                            <option key={f} value={f}>{f}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+
+                                    {/* Font Size & Stepper */}
+                                    <div className="space-y-1.5">
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Size</label>
+                                      <div className="flex items-center gap-1.5">
+                                        <input
+                                          type="number"
+                                          min="8"
+                                          max="72"
+                                          value={fmt.fontSize || sheetToolbarSize || 13}
+                                          onChange={(e) => {
+                                            const val = Number(e.target.value);
+                                            if (val > 0) {
+                                              setSheetToolbarSize(val);
+                                              updateSheetCellFormat(activeSheetId, 'fontSize', val);
+                                            }
+                                          }}
+                                          className="flex-1 h-7 px-2 text-xs font-mono bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.10] rounded-md text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-violet-500"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const cur = Number(fmt.fontSize || sheetToolbarSize || 13);
+                                            const next = Math.max(8, cur - 1);
+                                            setSheetToolbarSize(next);
+                                            updateSheetCellFormat(activeSheetId, 'fontSize', next);
+                                          }}
+                                          className="w-7 h-7 flex items-center justify-center bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.10] rounded-md text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 active:scale-95 cursor-pointer font-bold"
+                                        >
+                                          -
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const cur = Number(fmt.fontSize || sheetToolbarSize || 13);
+                                            const next = Math.min(72, cur + 1);
+                                            setSheetToolbarSize(next);
+                                            updateSheetCellFormat(activeSheetId, 'fontSize', next);
+                                          }}
+                                          className="w-7 h-7 flex items-center justify-center bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.10] rounded-md text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 active:scale-95 cursor-pointer font-bold"
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Text Styles (B / I / U / S) */}
+                                    <div className="space-y-1.5">
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Style</label>
+                                      <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-200/50 dark:bg-zinc-800/50 rounded-md">
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }}
+                                          className={`h-7 flex items-center justify-center rounded text-xs font-bold transition-all cursor-pointer ${
+                                            fmt.bold ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
+                                          }`}
+                                        >
+                                          B
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }}
+                                          className={`h-7 flex items-center justify-center rounded text-xs italic font-serif transition-all cursor-pointer ${
+                                            fmt.italic ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
+                                          }`}
+                                        >
+                                          I
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }}
+                                          className={`h-7 flex items-center justify-center rounded text-xs underline transition-all cursor-pointer ${
+                                            fmt.underline ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
+                                          }`}
+                                        >
+                                          U
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }}
+                                          className={`h-7 flex items-center justify-center rounded text-xs line-through transition-all cursor-pointer ${
+                                            fmt.strikeThrough ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
+                                          }`}
+                                        >
+                                          S
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Alignment */}
+                                    <div className="space-y-1.5">
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Alignment</label>
+                                      <div className="grid grid-cols-3 gap-1 p-0.5 bg-slate-200/50 dark:bg-zinc-800/50 rounded-md">
+                                        {[
+                                          { id: 'left', icon: <AlignLeft size={13} /> },
+                                          { id: 'center', icon: <AlignCenter size={13} /> },
+                                          { id: 'right', icon: <AlignRight size={13} /> },
+                                        ].map((al) => (
+                                          <button
+                                            key={al.id}
+                                            type="button"
+                                            onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'align', al.id); }}
+                                            className={`h-7 flex items-center justify-center rounded transition-all cursor-pointer ${
+                                              (fmt.align || 'left') === al.id
+                                                ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]'
+                                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
+                                            }`}
+                                          >
+                                            {al.icon}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Text Color Swatches */}
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Text Color</label>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', null); }}
+                                          className="text-[10px] font-medium text-slate-400 hover:text-violet-600 transition-colors"
+                                        >
+                                          Reset
+                                        </button>
+                                      </div>
+                                      <div className="grid grid-cols-6 gap-1.5">
+                                        {['#000000', '#1e293b', '#475569', '#64748b', '#94a3b8', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'].map((c) => (
+                                          <button
+                                            key={c}
+                                            type="button"
+                                            onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); }}
+                                            className={`w-full aspect-square rounded-md border transition-transform hover:scale-110 active:scale-95 cursor-pointer ${
+                                              activeColor === c ? 'ring-2 ring-violet-500 ring-offset-1 border-transparent' : 'border-black/[0.08] dark:border-white/[0.10]'
+                                            }`}
+                                            style={{ backgroundColor: c }}
+                                            title={c}
+                                          />
+                                        ))}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 pt-1">
+                                        <input
+                                          type="color"
+                                          value={activeColor.startsWith('#') ? activeColor : '#000000'}
+                                          onChange={(e) => updateSheetCellFormat(activeSheetId, 'color', e.target.value)}
+                                          className="w-6 h-6 rounded-md border border-black/[0.08] dark:border-white/[0.10] cursor-pointer bg-transparent p-0 overflow-hidden"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={activeColor}
+                                          onChange={(e) => updateSheetCellFormat(activeSheetId, 'color', e.target.value)}
+                                          placeholder="#000000"
+                                          className="flex-1 h-6 px-1.5 text-[10px] font-mono border border-black/[0.08] dark:border-white/[0.10] rounded-md bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              if (sheetInspectorTab === 'cell') {
+                                return (
+                                  <div className="space-y-4">
+                                    {/* Number Format Selector */}
+                                    <div className="space-y-1.5">
+                                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Data Format</label>
+                                      <div className="grid grid-cols-2 gap-1 p-0.5 bg-slate-200/50 dark:bg-zinc-800/50 rounded-md text-[11px]">
+                                        {[
+                                          { id: null, label: 'Automatic' },
+                                          { id: 'currency', label: 'Currency ($)' },
+                                          { id: 'percent', label: 'Percent (%)' },
+                                          { id: 'decimal', label: 'Decimal (0.00)' },
+                                        ].map((nFmt) => {
+                                          const isSelected = (fmt.format || fmt.type) === nFmt.id || (!fmt.format && !fmt.type && nFmt.id === null);
+                                          return (
+                                            <button
+                                              key={nFmt.label}
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                updateSheetCellFormat(activeSheetId, 'format', nFmt.id);
+                                              }}
+                                              className={`py-1.5 px-2 text-center rounded transition-all cursor-pointer font-medium ${
+                                                isSelected
+                                                  ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs border border-black/[0.06] dark:border-white/[0.08]'
+                                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
+                                              }`}
+                                            >
+                                              {nFmt.label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Cell Fill Swatches */}
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Cell Fill</label>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); }}
+                                          className="text-[10px] font-medium text-slate-400 hover:text-violet-600 transition-colors"
+                                        >
+                                          Clear Fill
+                                        </button>
+                                      </div>
+                                      <div className="grid grid-cols-6 gap-1.5">
+                                        {['#ffffff', '#f8fafc', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff', '#f3e8ff'].map((c) => (
+                                          <button
+                                            key={c}
+                                            type="button"
+                                            onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); }}
+                                            className={`w-full aspect-square rounded-md border transition-transform hover:scale-110 active:scale-95 cursor-pointer ${
+                                              activeFill === c ? 'ring-2 ring-violet-500 ring-offset-1 border-transparent' : 'border-black/[0.08] dark:border-white/[0.10]'
+                                            }`}
+                                            style={{ backgroundColor: c }}
+                                            title={c}
+                                          />
+                                        ))}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 pt-1">
+                                        <input
+                                          type="color"
+                                          value={activeFill && activeFill.startsWith('#') ? activeFill : '#ffffff'}
+                                          onChange={(e) => updateSheetCellFormat(activeSheetId, 'highlight', e.target.value)}
+                                          className="w-6 h-6 rounded-md border border-black/[0.08] dark:border-white/[0.10] cursor-pointer bg-transparent p-0 overflow-hidden"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={activeFill || ''}
+                                          onChange={(e) => updateSheetCellFormat(activeSheetId, 'highlight', e.target.value)}
+                                          placeholder="#ffffff"
+                                          className="flex-1 h-6 px-1.5 text-[10px] font-mono border border-black/[0.08] dark:border-white/[0.10] rounded-md bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 outline-none focus:border-violet-500"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Cell Borders */}
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Border Color</label>
+                                        <button
+                                          type="button"
+                                          onPointerDown={(e) => { e.preventDefault(); applyGridlineColorToRange(null); }}
+                                          className="text-[10px] font-medium text-slate-400 hover:text-violet-600 transition-colors"
+                                        >
+                                          Default
+                                        </button>
+                                      </div>
+                                      <div className="grid grid-cols-6 gap-1.5">
+                                        {['#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#3b82f6', '#8b5cf6'].map((bc) => (
+                                          <button
+                                            key={bc}
+                                            type="button"
+                                            onPointerDown={(e) => { e.preventDefault(); applyGridlineColorToRange(bc); }}
+                                            className="w-full aspect-square rounded-md border border-black/[0.08] dark:border-white/[0.10] hover:scale-110 active:scale-95 cursor-pointer shadow-2xs"
+                                            style={{ backgroundColor: bc }}
+                                            title={bc}
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Table Tab
+                              return (
+                                <div className="space-y-4">
+                                  {/* Table Dimensions */}
+                                  <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Dimensions</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="p-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-black/[0.06] dark:border-white/[0.08]">
+                                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">Rows</span>
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-sm font-semibold font-mono text-slate-800 dark:text-zinc-200">{activeSheetGrid?.rows || 30}</span>
+                                          <div className="flex items-center gap-1">
+                                            <button
+                                              type="button"
+                                              onClick={removeSheetRow}
+                                              className="w-5 h-5 flex items-center justify-center rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-bold cursor-pointer"
+                                            >
+                                              -
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={addSheetRow}
+                                              className="w-5 h-5 flex items-center justify-center rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-bold cursor-pointer"
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="p-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-black/[0.06] dark:border-white/[0.08]">
+                                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">Columns</span>
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-sm font-semibold font-mono text-slate-800 dark:text-zinc-200">{activeSheetGrid?.cols || 26}</span>
+                                          <div className="flex items-center gap-1">
+                                            <button
+                                              type="button"
+                                              onClick={removeSheetColumn}
+                                              className="w-5 h-5 flex items-center justify-center rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-bold cursor-pointer"
+                                            >
+                                              -
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={addSheetColumn}
+                                              className="w-5 h-5 flex items-center justify-center rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-bold cursor-pointer"
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Table Styles / Alternating Rows */}
+                                  <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Alternating Row Colors</label>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      {[
+                                        { name: 'Classic Slate', headerBg: '#f8fafc', oddBg: '#f1f5f9', evenBg: '#ffffff' },
+                                        { name: 'Soft Indigo', headerBg: '#ede9fe', oddBg: '#f5f3ff', evenBg: '#ffffff' },
+                                        { name: 'Mint Green', headerBg: '#dcfce7', oddBg: '#f0fdf4', evenBg: '#ffffff' },
+                                      ].map((preset) => (
+                                        <button
+                                          key={preset.name}
+                                          type="button"
+                                          onClick={() => {
+                                            if (!activeSheetId) return;
+                                            const totalRows = activeSheetGrid?.rows || 30;
+                                            const totalCols = activeSheetGrid?.cols || 26;
+                                            setSheetGrids((prev) => {
+                                              const target = prev[activeSheetId];
+                                              if (!target) return prev;
+                                              const nextFormats = cloneFormats(target.formats);
+                                              for (let r = 0; r < totalRows; r++) {
+                                                if (!nextFormats[r]) nextFormats[r] = [];
+                                                const bg = r === 0 ? preset.headerBg : (r % 2 === 1 ? preset.oddBg : preset.evenBg);
+                                                for (let c = 0; c < totalCols; c++) {
+                                                  const existing = nextFormats[r][c] || {};
+                                                  nextFormats[r][c] = { ...existing, fill: bg };
+                                                }
+                                              }
+                                              return { ...prev, [activeSheetId]: { ...target, formats: nextFormats } };
+                                            });
+                                            showToast(`Applied ${preset.name} table theme`);
+                                          }}
+                                          className="p-2 bg-white dark:bg-zinc-900 border border-black/[0.08] dark:border-white/[0.10] rounded-md hover:border-violet-400 transition-all text-left group cursor-pointer"
+                                        >
+                                          <div className="w-full h-2 rounded-xs mb-1" style={{ backgroundColor: preset.headerBg }} />
+                                          <div className="w-full h-1.5 rounded-xs mb-0.5" style={{ backgroundColor: preset.oddBg }} />
+                                          <div className="w-full h-1.5 rounded-xs" style={{ backgroundColor: preset.evenBg }} />
+                                          <span className="block text-[9px] font-medium text-slate-600 dark:text-zinc-400 mt-1 truncate group-hover:text-slate-900 dark:group-hover:text-white">
+                                            {preset.name}
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Table Actions */}
+                                  <div className="space-y-1.5 pt-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowTemplateChart(true)}
+                                      className="w-full py-1.5 px-3 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60 rounded-md font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors cursor-pointer"
+                                    >
+                                      <BarChart3 size={13} />
+                                      <span>Create Chart from Table</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     </div>)}
 
@@ -54717,8 +55231,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t' 
                         : 'relative z-[60]'
                     }`}>
-                      <div className={`inline-flex items-center p-1 gap-1 rounded-full border shadow-xs select-none ${
-                        isDarkMode ? 'bg-[#13131a] border-zinc-800/90' : 'bg-slate-100/90 border-slate-200/80'
+                      <div className={`inline-flex items-center p-0.5 gap-1 rounded-lg border shadow-xs select-none ${
+                        isDarkMode ? 'bg-[#121218]/90 border-white/[0.08]' : 'bg-slate-100/90 border-black/[0.06]'
                       }`}>
                         {sheetsData.map((sheet) => {
                           const isActive = activeSheetId === sheet.id;
@@ -54730,13 +55244,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setActiveSheetId(sheet.id);
                                 setSheetsTitle(sheet.title);
                               }}
-                              className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-full transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.97] ${
+                              className={`relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 text-[12px] font-semibold rounded-md transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.98] ${
                                 isActive
-                                  ? (isDarkMode ? 'bg-[#20202c] text-white shadow-xs font-bold border border-zinc-700/60' : 'bg-white text-slate-900 shadow-xs font-bold border border-slate-200/80')
-                                  : (isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60')
+                                  ? (isDarkMode 
+                                      ? 'bg-zinc-800 text-white shadow-xs font-bold border border-white/[0.12]' 
+                                      : 'bg-white text-slate-900 shadow-xs font-bold border border-black/[0.08]')
+                                  : (isDarkMode 
+                                      ? 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]' 
+                                      : 'text-slate-600 hover:text-slate-900 hover:bg-black/[0.04]')
                               }`}
                             >
-                              {isActive && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDarkMode ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]' : 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.6)]'}`} />}
+                              {isActive && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDarkMode ? 'bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]' : 'bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.5)]'}`} />}
                               <span>{(sheet.title === 'Sheet 1' || sheet.title === 'Sheet' || sheet.title === 'Untitled Sheet' || !sheet.title?.trim()) ? (t('sheets.sheetTab') || 'Sheet') : sheet.title.split(' ')[0]}</span>
                             </button>
                           );
@@ -54744,8 +55262,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button
                           type="button"
                           onClick={addWorksheet}
-                          className={`w-6 h-6 flex items-center justify-center rounded-full transition-all duration-150 active:scale-95 text-xs font-bold cursor-pointer ${
-                            isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/60' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/70'
+                          className={`w-6 h-6 flex items-center justify-center rounded-md transition-all duration-150 active:scale-95 text-xs font-bold cursor-pointer ${
+                            isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]' : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.05]'
                           }`}
                           title="Add new sheet"
                         >
@@ -54783,24 +55301,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           })()}
                       </div>
                       <div className={`flex items-center gap-2 text-[13px] font-medium shrink-0 ${isDarkMode ? 'text-zinc-400' : 'text-slate-600'}`}>
-                          <div className={`inline-flex items-center p-1 gap-1.5 rounded-full border shadow-xs select-none ${
-                            isDarkMode ? 'bg-[#13131a] border-zinc-800/90' : 'bg-slate-100/90 border-slate-200/80'
+                          <div className={`inline-flex items-center p-0.5 gap-1.5 rounded-lg border shadow-xs select-none ${
+                            isDarkMode ? 'bg-[#121218]/90 border-white/[0.08]' : 'bg-slate-100/90 border-black/[0.06]'
                           }`}>
                             <button 
                               onClick={handleTtsToggle} 
                               aria-label="Read sheet out loud (Text to speech)"
-                              className={`px-2.5 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                              className={`px-2.5 py-1 rounded-md transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
                                 isReadingAloud 
-                                  ? (isDarkMode ? 'text-purple-300 bg-[#20202c] shadow-xs font-semibold' : 'text-purple-700 bg-white shadow-xs font-semibold border border-purple-200')
-                                  : (isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60')
+                                  ? (isDarkMode ? 'text-violet-300 bg-violet-950/40 shadow-xs font-semibold border border-violet-500/30' : 'text-violet-700 bg-white shadow-xs font-semibold border border-violet-200')
+                                  : (isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-black/[0.04]')
                               }`} 
                               title={isReadingAloud ? "Stop audio playback" : "Read sheet out loud (Text-to-speech)"}
                             >
                               {isReadingAloud ? (
                                 <div className="flex items-center gap-0.5 h-3.5 px-0.5">
-                                  <span className="w-0.5 h-2 bg-purple-400 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
-                                  <span className="w-0.5 h-3 bg-purple-400 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
-                                  <span className="w-0.5 h-1.5 bg-purple-400 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
+                                  <span className="w-0.5 h-2 bg-violet-400 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
+                                  <span className="w-0.5 h-3 bg-violet-400 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                                  <span className="w-0.5 h-1.5 bg-violet-400 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
                                 </div>
                               ) : (
                                 <Volume2 size={14} />
@@ -54808,15 +55326,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <span className="text-[11px] font-medium hidden sm:inline">{isReadingAloud ? 'Reading...' : 'Audio'}</span>
                             </button>
 
-                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-zinc-800' : 'bg-slate-300'}`} />
+                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}`} />
 
                             {/* Fullscreen Zen View Toggle */}
                             <button
                               type="button"
                               onClick={() => setIsSheetZenMode(!isSheetZenMode)}
                               aria-label={isSheetZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
-                              className={`px-2 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
-                                isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                              className={`px-2 py-1 rounded-md transition-all duration-150 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                isDarkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]' : 'text-slate-600 hover:text-slate-900 hover:bg-black/[0.04]'
                               }`}
                               title="Enter Fullscreen Zen Mode (Hide toolbars & headers)"
                             >
@@ -54824,7 +55342,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <span className="text-[11px] font-medium hidden sm:inline">Zen View</span>
                             </button>
 
-                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-zinc-800' : 'bg-slate-300'}`} />
+                            <div className={`h-3.5 w-px my-0.5 ${isDarkMode ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}`} />
 
                             {/* Zoom Controls */}
                             <div className="relative flex items-center gap-1 px-1" ref={sheetZoomControlRef}>
@@ -54835,7 +55353,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setSheetZoomLevel(prev => Math.max(50, prev - 10));
                                 }}
                                 className={`px-1 py-0.5 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all ${
-                                  isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                  isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-black/[0.05]'
                                 }`}
                                 title="Zoom out"
                               >
@@ -54860,7 +55378,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setSheetZoomLevel(prev => Math.min(200, prev + 10));
                                 }}
                                 className={`px-1 py-0.5 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all ${
-                                  isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                  isDarkMode ? 'text-zinc-400 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-black/[0.05]'
                                 }`}
                                 title="Zoom in"
                               >
@@ -74826,7 +75344,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }`}
                     >
                       <span>{tab.label}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
                         isActive ? 'bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold' : 'text-slate-400 dark:text-zinc-500'
                       }`}>
                         {tab.count}
