@@ -41842,47 +41842,29 @@ Respond with a JSON array of slide objects matching the schema.`;
 
 
 
-      {/* Floating Exit Button for Right Sidebar (Apple-style floating drawer tab) */}
-      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
-        <button
-          type="button"
-          onClick={() => {
-            setRightSidebarOpen(false);
-            setRightPanelMaximized(false);
-          }}
-          className="fixed z-[450] group flex items-center justify-center w-8 h-8 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-700/80 shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600 transition-all duration-200 active:scale-95 cursor-pointer apple-floating-exit-btn"
-          style={{
-            top: '88px',
-            right: `${(rightPanelMaximized ? 16 : ((rightSidebarWidth || 380) + 12))}px`
-          }}
-          title="Exit sidebar (Esc)"
-          aria-label="Exit sidebar"
-        >
-          <X size={15} strokeWidth={2.2} className="transition-transform group-hover:rotate-90 duration-200" />
-        </button>
-      )}
+      {/* Floating Exit Button for Right Sidebar (Legacy external button removed in favor of integrated island close button) */}
 
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
-          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors opacity-0 hover:opacity-100 z-[401] fixed right-0 top-0 bottom-0"
+          className="w-1.5 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-400/40 active:bg-violet-500/50 transition-colors opacity-0 hover:opacity-100 z-[401] fixed right-0 top-3 bottom-3 rounded-full"
           aria-label="Resize right sidebar"
         />
       )}
 
       <div 
-        className={`no-fullscreen-toggle border-l border-slate-200/60 dark:border-zinc-800/80 flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 shadow-[-16px_0_40px_rgba(0,0,0,0.06),-4px_0_12px_rgba(0,0,0,0.03)] dark:shadow-[-16px_0_40px_rgba(0,0,0,0.35)] select-none overflow-hidden ${
+        className={`no-fullscreen-toggle flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
-            ? 'fixed top-0 right-0 bottom-0 animate-in fade-in slide-in-from-right-4'
-            : 'w-0 h-0 hidden overflow-hidden border-l-0 pointer-events-none opacity-0'
+            ? 'fixed z-[400] rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.14)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-right-4'
+            : 'w-0 h-0 hidden overflow-hidden border-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: 0, right: 0, bottom: 0, height: '100vh', minHeight: '100vh', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '12px', right: '12px', bottom: '12px', height: 'calc(100vh - 24px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '12px', right: '12px', bottom: '12px', height: 'calc(100vh - 24px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-11 flex items-center border-b border-slate-200/70 dark:border-zinc-800/80 text-xs font-semibold select-none bg-slate-50/60 dark:bg-zinc-900/60 px-3 shrink-0">
+        <div className="h-11 flex items-center border-b border-slate-200/70 dark:border-zinc-800/80 text-xs font-semibold select-none bg-slate-50/60 dark:bg-zinc-900/60 px-3 gap-2 shrink-0">
           <div
-            className="w-full min-w-0"
+            className="flex-1 min-w-0"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
@@ -41917,6 +41899,18 @@ Respond with a JSON array of slide objects matching the schema.`;
               })}
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setRightSidebarOpen(false);
+              setRightPanelMaximized(false);
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+            title="Close sidebar (Esc)"
+            aria-label="Close sidebar"
+          >
+            <X size={14} strokeWidth={2} />
+          </button>
         </div>
         )}
 
@@ -42529,27 +42523,32 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </div>
 
                 {/* Multi-Tab Switcher Bar */}
-                <div className="flex items-center gap-1 px-3 pb-2 overflow-x-auto thin-scrollbar">
+                <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto thin-scrollbar">
                   {chatTabs.map((tab) => {
                     const isActive = tab.id === activeChatTabId;
                     return (
                       <div
                         key={tab.id}
                         onClick={() => handleSwitchChatTab(tab.id)}
-                        className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
+                        className={`group relative flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
                           isActive
                             ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 border-slate-200/90 dark:border-zinc-700/80 shadow-2xs font-semibold'
                             : 'bg-transparent text-slate-500 dark:text-zinc-400 border-transparent hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-300'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
                         <span className="truncate max-w-[85px]">{tab.title || 'Chat'}</span>
                         <button
                           type="button"
                           onClick={(e) => handleCloseChatTab(tab.id, e)}
-                          className="w-3.5 h-3.5 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10"
+                          className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 transition-opacity duration-150 ${
+                            chatTabs.length > 1
+                              ? 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10'
+                              : 'hidden'
+                          }`}
+                          title="Close chat tab"
                         >
-                          <X size={9} />
+                          <X size={9} strokeWidth={2} />
                         </button>
                       </div>
                     );
@@ -42557,10 +42556,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     type="button"
                     onClick={handleCreateNewChatTab}
-                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer transition-colors"
                     title="New Chat Tab"
                   >
-                    <Plus size={11} />
+                    <Plus size={11} strokeWidth={2} />
                   </button>
                 </div>
               </div>
