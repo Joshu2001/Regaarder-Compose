@@ -41853,23 +41853,23 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`no-fullscreen-toggle flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
+        className={`no-fullscreen-toggle flex flex-col bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
-            ? 'fixed z-[400] rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.14)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-right-4'
+            ? 'fixed z-[400] rounded-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-0 pointer-events-none opacity-0'
         }`}
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '12px', right: '12px', bottom: '12px', height: 'calc(100vh - 24px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '12px', right: '12px', bottom: '12px', height: 'calc(100vh - 24px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-11 flex items-center border-b border-slate-200/70 dark:border-zinc-800/80 text-xs font-semibold select-none bg-slate-50/60 dark:bg-zinc-900/60 px-3 gap-2 shrink-0">
+        <div className="h-11 flex items-center border-b border-slate-200/50 dark:border-zinc-800/60 text-xs font-semibold select-none bg-slate-50/40 dark:bg-zinc-900/40 px-3 gap-2 shrink-0">
           <div
             className="flex-1 min-w-0"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="flex items-center w-full p-0.5 bg-slate-200/60 dark:bg-zinc-800/80 rounded-lg border border-slate-200/80 dark:border-zinc-700/60 gap-0.5">
+            <div className="flex items-center w-full p-0.5 bg-slate-200/50 dark:bg-zinc-800/60 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 gap-0.5">
               {[
                 { key: 'assistant', label: t('sidebar.assistant') || 'Assistant' },
                 { key: 'history', label: t('sidebar.history') || 'History' },
@@ -41882,7 +41882,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     type="button"
                     className={`flex-1 min-w-0 px-2.5 py-1 rounded-[6px] transition-all text-[11.5px] text-center justify-center flex items-center cursor-pointer ${
                       isActive 
-                        ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-slate-200/70 dark:border-zinc-700/60' 
+                        ? 'bg-white/90 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-white/60 dark:border-zinc-700/60' 
                         : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/40 border border-transparent'
                     }`}
                     onClick={() => {
@@ -41915,7 +41915,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         )}
 
         {/* Dynamic Sidebar Content */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
+        <div className="flex-1 flex flex-col min-h-0 bg-transparent">
           
           {/* ACTIVE TAB: HISTORY */}
           {activeRightTab === 'history' && (
@@ -42498,9 +42498,9 @@ Respond with a JSON array of slide objects matching the schema.`;
 
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
-            <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#18181b]">
+            <div className="flex-1 flex flex-col min-h-0 bg-transparent">
               {/* Persistent Multi-Tab Concurrent Header */}
-              <div className="flex flex-col w-full shrink-0 border-b border-slate-100 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-10">
+              <div className="flex flex-col w-full shrink-0 border-b border-slate-100/60 dark:border-zinc-800/60 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md z-10">
                 <div className="flex items-center justify-between w-full px-3.5 py-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/50 flex items-center justify-center shrink-0 text-violet-600 dark:text-violet-400">
