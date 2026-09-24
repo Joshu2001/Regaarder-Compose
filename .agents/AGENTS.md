@@ -98,4 +98,8 @@ Avoid monolithic blocks, band-aid fixes, or summarized placeholders. Treat this 
 - **Zero Generic Sparkles:** NEVER use generic star or sparkle icons (`Sparkles`, `Sparkle`, or similar) from Lucide or any icon library to represent AI features. The Regaarder signature circular AI icon is the single, unified brand identity for all AI capabilities across the entire system.
 
 
+## 11. Beauty First, Then Remarkable Mandate
 
+### The Sequence of Craftsmanship
+- **Mandatory Briefing:** Adhere strictly to the philosophy detailed in [BEAUTIFUL_VS_REMARKABLE.md](file:///c:/Users/user/Downloads/Project%20MOAT/.agents/BEAUTIFUL_VS_REMARKABLE.md).
+- **Enforce the Sequence:** Always achieve **Beauty** first (geometry consistency, radius synchrony, diffused layered shadows, restrained single-accent hierarchy, crisp outlines over pills). Only once an interface is undeniably beautiful do you push for **Remarkability** (progressive disclosure, fluid intelligence, paradigm interruption). Never ship ugly-and-remarkable nor remarkable-but-ugly.
