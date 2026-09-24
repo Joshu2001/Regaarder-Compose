@@ -58,7 +58,7 @@ export function getActiveAiConfig(explicitOverrides = {}) {
   return {
     provider: explicitOverrides.provider || saved.provider || env.REGAARDER_AI_PROVIDER || 'gemini',
     activeModel: explicitOverrides.model || saved.activeModel || env.REGAARDER_AI_MODEL || 'gemini-2.0-flash',
-    geminiApiKey: explicitOverrides.apiKey || saved.geminiApiKey || env.GEMINI_API_KEY || '',
+    geminiApiKey: explicitOverrides.apiKey || saved.geminiApiKey || env.GEMINI_API_KEY || (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_GEMINI_DEMO_API_KEY || import.meta.env?.GEMINI_API_KEY)) || '',
     openaiApiKey: explicitOverrides.apiKey || saved.openaiApiKey || env.OPENAI_API_KEY || '',
     claudeApiKey: explicitOverrides.apiKey || saved.claudeApiKey || env.ANTHROPIC_API_KEY || '',
     deepseekApiKey: explicitOverrides.apiKey || saved.deepseekApiKey || env.DEEPSEEK_API_KEY || '',

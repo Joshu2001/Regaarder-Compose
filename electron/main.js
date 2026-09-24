@@ -59,7 +59,13 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 700,
     title: 'Regaarder Workspace',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#ffffff',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#ffffff',
+      symbolColor: '#475569',
+      height: 38
+    },
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

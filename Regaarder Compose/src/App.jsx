@@ -8248,36 +8248,59 @@ function AppCore() {
   const [composeModelPickerCoords, setComposeModelPickerCoords] = useState(null);
 
   const toggleComposeModelPicker = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
     if (composeModelPickerOpen) {
       setComposeModelPickerOpen(false);
-    } else {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const popupWidth = 320;
-      let targetLeft = rect.left;
-      if (targetLeft + popupWidth > window.innerWidth - 16) {
-        targetLeft = window.innerWidth - popupWidth - 16;
-      }
-      if (targetLeft < 16) targetLeft = 16;
-
-      setComposeModelPickerCoords({
-        left: targetLeft,
-        bottom: window.innerHeight - rect.top + 8
-      });
-      setComposeModelPickerOpen(true);
+      return;
     }
+
+    const triggerEl = e?.currentTarget || (e?.target ? e.target.closest?.('.compose-model-picker-trigger') : null);
+    if (!triggerEl) return;
+
+    const rect = triggerEl.getBoundingClientRect();
+    const popupWidth = 320;
+    let targetLeft = rect.left;
+    if (targetLeft + popupWidth > window.innerWidth - 16) {
+      targetLeft = window.innerWidth - popupWidth - 16;
+    }
+    if (targetLeft < 16) targetLeft = 16;
+
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openDownwards = spaceAbove < 320 && spaceBelow >= spaceAbove;
+
+    setComposeModelPickerCoords({
+      left: targetLeft,
+      top: openDownwards ? Math.max(16, rect.bottom + 8) : null,
+      bottom: !openDownwards ? Math.max(16, window.innerHeight - rect.top + 8) : null,
+      maxHeight: openDownwards ? Math.min(spaceBelow - 24, window.innerHeight * 0.75) : Math.min(spaceAbove - 24, window.innerHeight * 0.75)
+    });
+    setComposeModelPickerOpen(true);
   };
 
   useEffect(() => {
     if (!composeModelPickerOpen) return;
     const handleOutsideClick = (e) => {
-      if (!e.target.closest?.('#compose-model-picker-portal') && !e.target.closest?.('.compose-model-picker-trigger')) {
-        setComposeModelPickerOpen(false);
+      const portalEl = document.getElementById('compose-model-picker-portal');
+      if (portalEl && (portalEl === e.target || portalEl.contains(e.target))) {
+        return;
       }
+      if (e.target?.closest?.('.compose-model-picker-trigger')) {
+        return;
+      }
+      setComposeModelPickerOpen(false);
     };
-    window.addEventListener('pointerdown', handleOutsideClick, true);
-    return () => window.removeEventListener('pointerdown', handleOutsideClick, true);
+
+    const timer = setTimeout(() => {
+      window.addEventListener('pointerdown', handleOutsideClick);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', handleOutsideClick);
+    };
   }, [composeModelPickerOpen]);
 
   // Universal Local Model Scanner for Compose AI (Docs, Sheets, Decks)
@@ -41854,12 +41877,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                             <button
                               type="button"
                               onClick={toggleComposeModelPicker}
-                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                              }}
+                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
                               title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                              <span className="max-w-[120px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                              <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                              <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                              <span className="max-w-[120px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                              <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
                             </button>
                             <button
                               type="button"
@@ -42642,12 +42668,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <button
                             type="button"
                             onClick={toggleComposeModelPicker}
-                            className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                            className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
                             title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                            <span className="max-w-[130px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                            <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                            <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                            <span className="max-w-[130px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                            <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
                           </button>
 
                           {composeModelPickerOpen && composeModelPickerCoords && createPortal(

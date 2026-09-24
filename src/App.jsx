@@ -7593,7 +7593,7 @@ function AppCore() {
         const parsed = JSON.parse(saved);
         return {
           provider: parsed.provider || 'gemini',
-          geminiApiKey: '', // Kept in secure hardware store, never in plain-text localStorage
+          geminiApiKey: parsed.geminiApiKey || (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_GEMINI_DEMO_API_KEY || import.meta.env?.GEMINI_API_KEY)) || '',
           claudeApiKey: '',
           geminiModel: parsed.geminiModel || 'gemini-2.5-flash',
           claudeModel: parsed.claudeModel || 'claude-3-7-sonnet-20250219',
@@ -7602,7 +7602,7 @@ function AppCore() {
     } catch (_) {}
     return {
       provider: 'gemini',
-      geminiApiKey: '',
+      geminiApiKey: (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_GEMINI_DEMO_API_KEY || import.meta.env?.GEMINI_API_KEY)) || '',
       claudeApiKey: '',
       geminiModel: 'gemini-2.5-flash',
       claudeModel: 'claude-3-7-sonnet-20250219',
@@ -7658,10 +7658,11 @@ function AppCore() {
         }
       } catch (_e) {}
 
-      if (isMounted && (loadedGeminiKey || loadedClaudeKey)) {
+      const defaultGeminiKey = loadedGeminiKey || (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_GEMINI_DEMO_API_KEY || import.meta.env?.GEMINI_API_KEY)) || '';
+      if (isMounted) {
         setAiProviderConfig((prev) => ({
           ...prev,
-          geminiApiKey: loadedGeminiKey || prev.geminiApiKey,
+          geminiApiKey: defaultGeminiKey || prev.geminiApiKey,
           claudeApiKey: loadedClaudeKey || prev.claudeApiKey,
         }));
       }
@@ -8297,39 +8298,82 @@ function AppCore() {
   const [composeIsScanning, setComposeIsScanning] = useState(false);
   const [composeModelPickerOpen, setComposeModelPickerOpen] = useState(false);
   const [composeModelPickerCoords, setComposeModelPickerCoords] = useState(null);
+  const lastComposeModelPickerToggleRef = useRef(0);
 
   const toggleComposeModelPicker = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    const now = Date.now();
+    if (now - lastComposeModelPickerToggleRef.current < 250) {
+      return;
+    }
+    lastComposeModelPickerToggleRef.current = now;
+
     if (composeModelPickerOpen) {
       setComposeModelPickerOpen(false);
-    } else {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const popupWidth = 320;
-      let targetLeft = rect.left;
-      if (targetLeft + popupWidth > window.innerWidth - 16) {
-        targetLeft = window.innerWidth - popupWidth - 16;
-      }
-      if (targetLeft < 16) targetLeft = 16;
-
-      setComposeModelPickerCoords({
-        left: targetLeft,
-        bottom: window.innerHeight - rect.top + 8
-      });
-      setComposeModelPickerOpen(true);
+      return;
     }
+
+    const triggerEl = e?.currentTarget || (e?.target ? e.target.closest?.('.compose-model-picker-trigger') : null);
+    if (!triggerEl) return;
+
+    const rect = triggerEl.getBoundingClientRect();
+    const popupWidth = 310;
+    
+    // Position clamped cleanly within viewport with 14px outer margin
+    let targetLeft = rect.left;
+    if (targetLeft + popupWidth > window.innerWidth - 14) {
+      targetLeft = Math.max(14, window.innerWidth - popupWidth - 14);
+    }
+    if (targetLeft < 14) targetLeft = 14;
+
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openDownwards = spaceAbove < 300 && spaceBelow >= spaceAbove;
+
+    // Anchor precisely above (or below) the trigger with 8px clearance, clamped to max 420px
+    const computedMaxHeight = Math.min(
+      420,
+      openDownwards ? Math.max(220, spaceBelow - 20) : Math.max(220, spaceAbove - 20)
+    );
+
+    setComposeModelPickerCoords({
+      left: targetLeft,
+      top: openDownwards ? Math.round(rect.bottom + 8) : null,
+      bottom: !openDownwards ? Math.round(window.innerHeight - rect.top + 8) : null,
+      maxHeight: computedMaxHeight
+    });
+    setComposeModelPickerOpen(true);
   };
 
   useEffect(() => {
     if (!composeModelPickerOpen) return;
     const handleOutsideClick = (e) => {
-      if (!e.target.closest?.('#compose-model-picker-portal') && !e.target.closest?.('.compose-model-picker-trigger')) {
-        setComposeModelPickerOpen(false);
+      if (Date.now() - lastComposeModelPickerToggleRef.current < 200) {
+        return;
       }
+      const portalEl = document.getElementById('compose-model-picker-portal');
+      if (portalEl && (portalEl === e.target || portalEl.contains(e.target))) {
+        return;
+      }
+      if (e.target?.closest?.('.compose-model-picker-trigger')) {
+        return;
+      }
+      setComposeModelPickerOpen(false);
     };
-    window.addEventListener('pointerdown', handleOutsideClick, true);
-    return () => window.removeEventListener('pointerdown', handleOutsideClick, true);
+
+    const timer = setTimeout(() => {
+      window.addEventListener('pointerdown', handleOutsideClick);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', handleOutsideClick);
+    };
   }, [composeModelPickerOpen]);
+
+  const [composeModelPickerSearch, setComposeModelPickerSearch] = useState('');
 
   // Universal Local Model Scanner for Compose AI (Docs, Sheets, Decks)
   const scanComposeLocalModels = useCallback(async () => {
@@ -8382,13 +8426,13 @@ function AppCore() {
     setComposeDetectedModels(found);
     setComposeIsScanning(false);
     if (found.length > 0) {
-      if (!composeSelectedModel?.isLocal) {
-        updateSelectedModelGlobally(found[0]);
+      // If user had a local model selected that is still online, or no model selected, update status
+      if (composeSelectedModel?.isLocal) {
+        setAiBackendStatus({ state: 'ok', message: `Connected to local model (${composeSelectedModel.name})` });
+        setAiKeyStatus({ testing: false, message: `Local model ${composeSelectedModel.name} is active`, usable: true });
       }
-      setAiBackendStatus({ state: 'ok', message: `Connected to local model (${found[0].name})` });
-      setAiKeyStatus({ testing: false, message: `Local model ${found[0].name} is active`, usable: true });
     }
-  }, [composeSelectedModel?.isLocal]);
+  }, [composeSelectedModel]);
 
   useEffect(() => {
     scanComposeLocalModels();
@@ -25948,15 +25992,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       if (payload.configured && payload.usable) {
         setAiBackendStatus({ state: 'ok', message: payload.reason || 'AI engine is connected and ready.' });
         setAiKeyStatus({ testing: false, message: payload.reason || 'Connected successfully!', usable: true });
-        if (payload.isLocal && payload.activeModel && !composeSelectedModel?.isLocal) {
-          updateSelectedModelGlobally({
-            id: payload.activeModel,
-            name: payload.activeModel,
-            provider: 'Ollama',
-            endpoint: 'http://127.0.0.1:11434',
-            isLocal: true
-          });
-        }
       } else if (payload.configured) {
         setAiBackendStatus({ state: 'error', message: payload.reason || 'AI key is present but not usable.' });
         setAiKeyStatus({ testing: false, message: payload.reason || 'Invalid API key or model access restricted.', usable: false });
@@ -31706,6 +31741,8 @@ Return ONLY valid JSON matching the schema.`;
     let usedLiveModel = false;
     let liveModelError = '';
     let didGenerateDeckSlides = false;
+    let generatedDeckSlidesPayload = null;
+    let generatedDeckTitlePayload = '';
 
     const actionSchema = {
       type: 'object',
@@ -31917,46 +31954,99 @@ Answer the user's question, provide an insightful summary, or explain the contex
         const cleanTitle = cleanExtracted.title;
         const cleanContent = cleanExtracted.content;
 
+        // Robust Deck Slide extraction (supporting nested action schema, flat schema, or JSON codeblock)
+        let candidateDeckSlides = null;
+        let candidateDeckTitle = '';
+        if (parsedData && typeof parsedData === 'object') {
+          if (Array.isArray(parsedData.docAction?.deckSlides) && parsedData.docAction.deckSlides.length) {
+            candidateDeckSlides = parsedData.docAction.deckSlides;
+            candidateDeckTitle = parsedData.docAction.title || parsedData.title || '';
+          } else if (Array.isArray(parsedData.deckSlides) && parsedData.deckSlides.length) {
+            candidateDeckSlides = parsedData.deckSlides;
+            candidateDeckTitle = parsedData.title || '';
+          } else if (Array.isArray(parsedData.slides) && parsedData.slides.length) {
+            candidateDeckSlides = parsedData.slides;
+            candidateDeckTitle = parsedData.title || '';
+          } else if (Array.isArray(parsedData) && parsedData.length && (parsedData[0]?.title || parsedData[0]?.headline)) {
+            candidateDeckSlides = parsedData;
+          }
+        }
+
+        if (!candidateDeckSlides && (isDeckGeneration || productMode === 'deck')) {
+          try {
+            const jsonMatch = rawModelText.match(/\{[\s\S]*"deckSlides"\s*:\s*\[[\s\S]*\][\s\S]*\}/)
+              || rawModelText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+            if (jsonMatch) {
+              const matchedJson = parseJsonSafely(jsonMatch[1] || jsonMatch[0]);
+              if (matchedJson) {
+                if (Array.isArray(matchedJson.deckSlides)) {
+                  candidateDeckSlides = matchedJson.deckSlides;
+                  candidateDeckTitle = matchedJson.title || '';
+                } else if (Array.isArray(matchedJson.docAction?.deckSlides)) {
+                  candidateDeckSlides = matchedJson.docAction.deckSlides;
+                  candidateDeckTitle = matchedJson.docAction.title || matchedJson.title || '';
+                } else if (Array.isArray(matchedJson.slides)) {
+                  candidateDeckSlides = matchedJson.slides;
+                  candidateDeckTitle = matchedJson.title || '';
+                }
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (candidateDeckSlides && candidateDeckSlides.length) {
+          const generatedSlides = candidateDeckSlides.map((slide, index) => {
+            const nextId = index + 1;
+            const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+            return {
+              id: nextId,
+              title: String(slide?.title || `Slide ${nextId}`),
+              subtitle: String(slide?.subtitle || ''),
+              accent: 'from-violet-500 to-indigo-600',
+              designPresetKey: preset.key,
+              headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
+              blurb: String(slide?.blurb || slide?.subtitle || ''),
+              visualType: String(slide?.visualType || 'hero statement'),
+              layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
+              motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
+              keyMetric: String(slide?.keyMetric || ''),
+              speakerNotes: String(slide?.speakerNotes || ''),
+              section: String(slide?.section || ''),
+              footer: 'Original design • Editable',
+            };
+          }).slice(0, 20);
+
+          const normalizedSlides = buildDeckSlidesFallback({
+            promptText,
+            aiText: (parsedData && parsedData.aiResponseText) || '',
+            sourceSlides: generatedSlides,
+          });
+
+          if (normalizedSlides.length) {
+            setDeckSlidesData(normalizedSlides);
+            setActiveDeckSlideId(normalizedSlides[0].id);
+            if (candidateDeckTitle && candidateDeckTitle !== 'Untitled Deck' && (!deckTitle || deckTitle === 'Untitled Deck' || deckTitle === 'New Presentation')) {
+              setDeckTitle(candidateDeckTitle);
+            }
+            didGenerateDeckSlides = true;
+            generatedDeckSlidesPayload = normalizedSlides;
+            generatedDeckTitlePayload = candidateDeckTitle;
+            aiResponseText = (parsedData && parsedData.aiResponseText && !parsedData.aiResponseText.startsWith('{'))
+              ? parsedData.aiResponseText.trim()
+              : `Created ${normalizedSlides.length} designed slides for "${candidateDeckTitle || 'Presentation'}" aligned with executive presentation standards.`;
+            showToast(`Generated and applied ${normalizedSlides.length} slides to Deck`);
+          }
+        }
+
         if (parsedData && typeof parsedData === 'object' && parsedData.hasAction && parsedData.docAction) {
           const result = parsedData;
-          aiResponseText = result.aiResponseText?.trim() || cleanContent;
+          if (!didGenerateDeckSlides) {
+            aiResponseText = result.aiResponseText?.trim() || cleanContent;
+          }
 
           const rawType = String(result.docAction.type || '').toLowerCase();
-          if (rawType === 'deck' && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
-            const generatedSlides = result.docAction.deckSlides.map((slide, index) => {
-              const nextId = index + 1;
-              const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
-              return {
-                id: nextId,
-                title: String(slide?.title || `Slide ${nextId}`),
-                subtitle: String(slide?.subtitle || ''),
-                accent: 'from-violet-500 to-indigo-600',
-                designPresetKey: preset.key,
-                headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
-                blurb: String(slide?.blurb || slide?.subtitle || ''),
-                visualType: String(slide?.visualType || 'hero statement'),
-                layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
-                motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
-                keyMetric: String(slide?.keyMetric || ''),
-                speakerNotes: String(slide?.speakerNotes || ''),
-                section: String(slide?.section || ''),
-                footer: 'Original design 繚 Editable',
-              };
-            }).slice(0, 20);
-
-            const normalizedSlides = buildDeckSlidesFallback({
-              promptText,
-              aiText: result.aiResponseText || '',
-              sourceSlides: generatedSlides,
-            });
-
-            if (normalizedSlides.length) {
-              setDeckSlidesData(normalizedSlides);
-              setActiveDeckSlideId(normalizedSlides[0].id);
-              didGenerateDeckSlides = true;
-              aiResponseText = result.aiResponseText?.trim() || `Created ${normalizedSlides.length} slides from your request.`;
-              showToast(`Generated ${normalizedSlides.length} slides`);
-            }
+          if (rawType === 'deck' && !didGenerateDeckSlides && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
+            // Already handled by candidateDeckSlides above
           } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
               title: result.docAction.title || cleanTitle || 'AI Timeline',
@@ -32115,9 +32205,11 @@ Answer the user's question, provide an insightful summary, or explain the contex
         id: Date.now() + 1,
         sender: 'ai',
         text: aiResponseText,
-        type: docAction ? 'action_completed' : 'standard',
-        actionTitle: docAction?.title,
+        type: (didGenerateDeckSlides || docAction) ? 'action_completed' : 'standard',
+        actionTitle: docAction?.title || generatedDeckTitlePayload,
         actionSectionId,
+        deckSlides: didGenerateDeckSlides ? generatedDeckSlidesPayload : undefined,
+        deckTitle: generatedDeckTitlePayload,
       }]);
     }
 
@@ -42757,13 +42849,21 @@ Respond with a JSON array of slide objects matching the schema.`;
                             {/* Model Selector Pill in Empty State */}
                             <button
                               type="button"
-                              onClick={toggleComposeModelPicker}
-                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleComposeModelPicker(e);
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
                               title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                              <span className="max-w-[120px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                              <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                              <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                              <span className="max-w-[120px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                              <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
                             </button>
                             <button
                               type="button"
@@ -43067,34 +43167,91 @@ Respond with a JSON array of slide objects matching the schema.`;
                       {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
                       {msg.sender !== 'user' && !msg.isError && !msg.text?.startsWith('??') && !msg.text?.includes('Unable to reach local inference model') && !msg.text?.includes('requires Ollama or LM Studio') && (
                         <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const formattedHtml = toParagraphHtml(msg.text || '');
-                              if (window.__composeInsertHTML) {
-                                window.__composeInsertHTML(formattedHtml);
-                              } else if (blankBodyRef.current) {
-                                const isDocEmpty = !blankBodyRef.current.innerText || blankBodyRef.current.innerText.trim().length <= 30;
-                                if (isDocEmpty) {
-                                  blankBodyRef.current.innerHTML = formattedHtml;
+                          {productMode === 'deck' || msg.deckSlides ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                let slidesToApply = null;
+                                if (Array.isArray(msg.deckSlides) && msg.deckSlides.length > 0) {
+                                  slidesToApply = msg.deckSlides;
                                 } else {
-                                  blankBodyRef.current.innerHTML += `<div style="margin-top: 24px;"></div>` + formattedHtml;
+                                  try {
+                                    const jsonMatch = (msg.text || '').match(/\{[\s\S]*\}/);
+                                    if (jsonMatch) {
+                                      const parsed = JSON.parse(jsonMatch[0]);
+                                      const extracted = parsed.deckSlides || (parsed.docAction && parsed.docAction.deckSlides) || parsed.slides;
+                                      if (Array.isArray(extracted) && extracted.length > 0) {
+                                        slidesToApply = extracted;
+                                      }
+                                    }
+                                  } catch (e) {
+                                    console.warn('Manual deck parse error:', e);
+                                  }
                                 }
-                                setDocBodyHtml(blankBodyRef.current.innerHTML);
-                              }
-                              // Auto-update document title if empty or Untitled Document
-                              const matchTitle = (msg.text || '').match(/^(?:#\s*|Title:\s*)([^\n]+)/i);
-                              if (matchTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
-                                setDocTitle(matchTitle[1].trim());
-                              }
-                              showToast('Injected into document');
-                            }}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
-                            title="Inject AI text into the active document"
-                          >
-                            <Plus size={12} />
-                            <span>Insert into Document</span>
-                          </button>
+                                if (!slidesToApply && msg.text) {
+                                  slidesToApply = buildDeckSlidesFallback(msg.text, msg.deckTitle || docTitle || 'AI Presentation');
+                                }
+                                if (slidesToApply && slidesToApply.length > 0) {
+                                  setDeckSlidesData(slidesToApply);
+                                  if (slidesToApply[0]?.id) {
+                                    setActiveDeckSlideId(slidesToApply[0].id);
+                                  }
+                                  if (msg.deckTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
+                                    setDocTitle(msg.deckTitle);
+                                  }
+                                  showToast('Applied to Deck successfully');
+                                } else {
+                                  showToast('Unable to extract deck slides from response');
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                              title="Apply generated slides and layout to presentation deck"
+                            >
+                              <Plus size={12} />
+                              <span>Apply to Deck</span>
+                            </button>
+                          ) : productMode === 'sheets' ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                showToast('Inserted into sheet');
+                              }}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                              title="Insert table data into spreadsheet"
+                            >
+                              <Plus size={12} />
+                              <span>Insert into Sheet</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const formattedHtml = toParagraphHtml(msg.text || '');
+                                if (window.__composeInsertHTML) {
+                                  window.__composeInsertHTML(formattedHtml);
+                                } else if (blankBodyRef.current) {
+                                  const isDocEmpty = !blankBodyRef.current.innerText || blankBodyRef.current.innerText.trim().length <= 30;
+                                  if (isDocEmpty) {
+                                    blankBodyRef.current.innerHTML = formattedHtml;
+                                  } else {
+                                    blankBodyRef.current.innerHTML += `<div style="margin-top: 24px;"></div>` + formattedHtml;
+                                  }
+                                  setDocBodyHtml(blankBodyRef.current.innerHTML);
+                                }
+                                // Auto-update document title if empty or Untitled Document
+                                const matchTitle = (msg.text || '').match(/^(?:#\s*|Title:\s*)([^\n]+)/i);
+                                if (matchTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
+                                  setDocTitle(matchTitle[1].trim());
+                                }
+                                showToast('Injected into document');
+                              }}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-[#7C5ACF] hover:bg-[#6c48c5] text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                              title="Inject AI text into the active document"
+                            >
+                              <Plus size={12} />
+                              <span>Insert into Document</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -43541,149 +43698,25 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <Plus size={16} strokeWidth={1.75} />
                         </button>
 
-                        {/* Universal LLM Model Selector Pill (Portal-Mounted, 0% Clipping) */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={toggleComposeModelPicker}
-                            className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer"
-                            title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                            <span className="max-w-[130px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                            <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
-                          </button>
-
-                          {composeModelPickerOpen && composeModelPickerCoords && createPortal(
-                            <div
-                              id="compose-model-picker-portal"
-                              style={{
-                                position: 'fixed',
-                                left: `${composeModelPickerCoords.left}px`,
-                                bottom: `${composeModelPickerCoords.bottom}px`,
-                                zIndex: 99999999
-                              }}
-                              className="w-80 max-h-[75vh] overflow-y-auto thin-scrollbar p-3 bg-white/98 dark:bg-zinc-900/98 text-slate-800 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-2xl backdrop-blur-2xl font-sans text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-150"
-                            >
-                              {/* Header: Title + Rescan Button */}
-                              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-zinc-800">
-                                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-zinc-500">
-                                  Inference Engine
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); scanComposeLocalModels(); }}
-                                  disabled={composeIsScanning}
-                                  className="text-[10px] text-violet-600 dark:text-cyan-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                                >
-                                  <RotateCcw size={10} className={composeIsScanning ? 'animate-spin' : ''} />
-                                  <span>{composeIsScanning ? 'Scanning...' : 'Rescan All (Ollama & LM Studio)'}</span>
-                                </button>
-                              </div>
-
-                              {/* Local Detected Models */}
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between px-1">
-                                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-                                    ⚡ Local Daemons ({composeDetectedModels.length})
-                                  </span>
-                                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">
-                                    {composeDetectedModels.length > 0 ? '● Active' : '● Probing Ports 11434 / 1234 / 8080'}
-                                  </span>
-                                </div>
-
-                                {composeDetectedModels.length > 0 ? (
-                                  <div className="max-h-36 overflow-y-auto space-y-1 thin-scrollbar">
-                                    {composeDetectedModels.map((m, idx) => (
-                                      <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() => { updateSelectedModelGlobally(m); setComposeModelPickerOpen(false); showToast(`Switched to local ${m.name}`); }}
-                                        className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel?.id === m.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
-                                      >
-                                        <div className="min-w-0 pr-1 space-y-0.5">
-                                          <div className="flex items-center gap-1.5">
-                                            <span className="truncate font-semibold">{m.name}</span>
-                                            <span className="text-[8.5px] px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 font-mono border border-emerald-500/30">
-                                              {m.provider}
-                                            </span>
-                                          </div>
-                                          {m.sizeGB && <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-normal">{m.sizeGB} GB active</span>}
-                                        </div>
-                                        {composeSelectedModel?.id === m.id && <Check size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />}
-                                      </button>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-800 text-[10px] text-slate-500 dark:text-zinc-400">
-                                    No local daemon responding on ports 11434 (Ollama) or 1234 (LM Studio).
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Load GGUF Model from Device Button */}
-                              <div className="pt-0.5">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    showToast('Browse to your local .gguf weights file');
-                                    chatFileInputRef.current?.click();
-                                  }}
-                                  className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 border border-dashed border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 transition-all text-left cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <FolderOpen size={13} className="text-violet-500 dark:text-violet-400" />
-                                    <span className="text-[11px] font-semibold">Load Local GGUF Weights from Device</span>
-                                  </div>
-                                  <span className="text-[9px] font-mono text-slate-400">.gguf</span>
-                                </button>
-                              </div>
-
-                              {/* Configure External API Keys Button */}
-                              <div className="pt-0.5">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setComposeModelPickerOpen(false);
-                                    setSettingsTab('ai_models');
-                                    setIsSettingsOpen(true);
-                                  }}
-                                  className="w-full flex items-center justify-between p-2 rounded-lg bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/30 dark:hover:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 text-violet-700 dark:text-violet-300 transition-all text-left cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <Key size={13} className="text-violet-600 dark:text-violet-400" />
-                                    <span className="text-[11px] font-semibold">Configure Gemini, Claude & OpenAI API Keys</span>
-                                  </div>
-                                  <ChevronRight size={12} className="text-violet-500" />
-                                </button>
-                              </div>
-
-                              {/* Cloud Models Section */}
-                              <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-zinc-800">
-                                <span className="text-[9px] font-bold text-violet-600 dark:text-cyan-400 uppercase tracking-widest px-1 block mb-1">
-                                  ☁️ Cloud LLM Engines
-                                </span>
-                                {[
-                                  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google Cloud', isLocal: false },
-                                  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google Cloud', isLocal: false },
-                                  { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isLocal: false },
-                                  { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', isLocal: false }
-                                ].map((cM, cIdx) => (
-                                  <button
-                                    key={cIdx}
-                                    type="button"
-                                    onClick={() => { updateSelectedModelGlobally(cM); setComposeModelPickerOpen(false); showToast(`Active model: ${cM.name}`); }}
-                                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${composeSelectedModel?.id === cM.id ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200 border border-violet-200 dark:border-violet-800 font-bold' : 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'}`}
-                                  >
-                                    <span className="font-semibold">{cM.name}</span>
-                                    <span className="text-[9px] text-violet-600 dark:text-cyan-400 font-mono">{cM.provider}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>,
-                            document.body
-                          )}
-                        </div>
+                        {/* Universal LLM Model Selector Pill */}
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleComposeModelPicker(e);
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer select-none"
+                          title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                          <span className="max-w-[130px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                          <ChevronDown size={11} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -81122,13 +81155,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
                               <button
                                 type="button"
-                                onClick={toggleComposeModelPicker}
-                                className="compose-model-picker-trigger h-5 px-2 rounded-full bg-white dark:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-[9.5px] font-semibold flex items-center gap-1 border border-slate-200 dark:border-zinc-700 shadow-2xs hover:border-violet-300 cursor-pointer"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleComposeModelPicker(e);
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                className="compose-model-picker-trigger h-5 px-2 rounded-full bg-white dark:bg-zinc-750 text-slate-700 dark:text-zinc-200 text-[9.5px] font-semibold flex items-center gap-1 border border-slate-200 dark:border-zinc-700 shadow-2xs hover:border-violet-300 cursor-pointer select-none"
                                 title="Select AI Model"
                               >
-                                <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                                <span className="max-w-[70px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                                <ChevronDown size={8} className="text-slate-400 shrink-0" />
+                                <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                                <span className="max-w-[70px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                                <ChevronDown size={8} className="text-slate-400 shrink-0 pointer-events-none" />
                               </button>
                             </div>
                             <textarea
@@ -84231,13 +84272,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     })()}
                     <button
                       type="button"
-                      onClick={toggleComposeModelPicker}
-                      className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer shrink-0 mt-1"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleComposeModelPicker(e);
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer shrink-0 mt-1 select-none"
                       title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                      <span className="max-w-[110px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                      <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                      <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                      <span className="max-w-[110px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                      <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
                     </button>
                     {activeAgentTag && (
                       <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 mt-1">
@@ -90237,6 +90286,231 @@ if (productMode === 'deck' || productMode === 'sheets') {
             setActiveGuidedIntent(null);
           }}
         />
+      )}
+
+      {/* ── Universal Compose Model Picker Portal (Globally Accessible) ── */}
+      {composeModelPickerOpen && composeModelPickerCoords && typeof document !== 'undefined' && createPortal(
+        <>
+          {/* Subtle click-outside backdrop to guarantee clean focus & separation */}
+          <div
+            className="fixed inset-0 z-[99999990] bg-black/10 dark:bg-black/30 backdrop-blur-[1px] transition-opacity animate-in fade-in duration-100"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setComposeModelPickerOpen(false);
+              setComposeModelPickerSearch('');
+            }}
+          />
+          <div
+            id="compose-model-picker-portal"
+            style={{
+              position: 'fixed',
+              left: `${composeModelPickerCoords.left}px`,
+              ...(composeModelPickerCoords.top != null ? { top: `${composeModelPickerCoords.top}px` } : {}),
+              ...(composeModelPickerCoords.bottom != null ? { bottom: `${composeModelPickerCoords.bottom}px` } : {}),
+              maxHeight: composeModelPickerCoords.maxHeight ? `${composeModelPickerCoords.maxHeight}px` : '420px',
+              zIndex: 99999999
+            }}
+            className="w-[300px] overflow-y-auto thin-scrollbar p-2.5 bg-white/95 dark:bg-[#1c1c1e]/95 text-slate-800 dark:text-zinc-100 border border-slate-200/80 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 rounded-2xl shadow-2xl backdrop-blur-2xl font-sans text-xs space-y-2 select-none animate-in fade-in zoom-in-95 duration-150"
+          >
+            {/* Header: Title + Rescan Button */}
+            <div className="flex items-center justify-between px-1.5 pt-0.5 pb-1 border-b border-slate-100 dark:border-zinc-800/80">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-zinc-500">
+                Inference Engine
+              </span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); scanComposeLocalModels(); }}
+                disabled={composeIsScanning}
+                className="text-[10px] text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                title="Rescan local Ollama or LM Studio daemons"
+              >
+                <RotateCcw size={10} className={composeIsScanning ? 'animate-spin' : ''} />
+                <span>{composeIsScanning ? 'Scanning...' : 'Rescan'}</span>
+              </button>
+            </div>
+
+            {/* Apple-style Instant Search Bar */}
+            <div className="relative px-1 pt-0.5">
+              <div className="relative flex items-center">
+                <Search size={12} className="absolute left-2.5 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={composeModelPickerSearch}
+                  onChange={(e) => setComposeModelPickerSearch(e.target.value)}
+                  placeholder="Search cloud & local models..."
+                  className="w-full bg-slate-100/90 dark:bg-zinc-800/80 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 focus:bg-white dark:focus:bg-zinc-900 text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 text-[11px] pl-7 pr-7 py-1.5 rounded-xl border border-transparent focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
+                  autoFocus
+                />
+                {composeModelPickerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setComposeModelPickerSearch('')}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-0.5 rounded-md transition-colors"
+                    title="Clear search"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Cloud Models Section */}
+            {(() => {
+              const q = (composeModelPickerSearch || '').toLowerCase().trim();
+              const cloudList = [
+                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', isLocal: false },
+                { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', isLocal: false },
+                { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isLocal: false },
+                { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', isLocal: false }
+              ].filter(c => !q || c.name.toLowerCase().includes(q) || c.provider.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
+
+              if (cloudList.length === 0 && q) return null;
+
+              return (
+                <div className="space-y-0.5">
+                  <span className="text-[9.5px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2 block mb-1">
+                    Cloud Models
+                  </span>
+                  {cloudList.map((cM, cIdx) => {
+                    const isSelected = composeSelectedModel?.id === cM.id;
+                    return (
+                      <button
+                        key={cIdx}
+                        type="button"
+                        onClick={() => {
+                          updateSelectedModelGlobally(cM);
+                          setComposeModelPickerOpen(false);
+                          setComposeModelPickerSearch('');
+                          showToast(`Active model: ${cM.name}`);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition-all duration-150 cursor-pointer ${
+                          isSelected
+                            ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold'
+                            : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-zinc-300 font-normal'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                          <span className="truncate">{cM.name}</span>
+                        </div>
+                        <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 font-normal shrink-0">{cM.provider}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Local Detected Models Section */}
+            {(() => {
+              const q = (composeModelPickerSearch || '').toLowerCase().trim();
+              const filteredLocals = composeDetectedModels.filter(m =>
+                !q || (m.name && m.name.toLowerCase().includes(q)) || (m.id && m.id.toLowerCase().includes(q)) || (m.provider && m.provider.toLowerCase().includes(q))
+              );
+
+              if (filteredLocals.length === 0 && q && [
+                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', isLocal: false },
+                { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', isLocal: false },
+                { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', isLocal: false },
+                { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', isLocal: false }
+              ].filter(c => c.name.toLowerCase().includes(q) || c.provider.toLowerCase().includes(q)).length === 0) {
+                return (
+                  <div className="px-3 py-4 text-center text-slate-400 dark:text-zinc-500 text-[11px] space-y-1">
+                    <p>No models matching &ldquo;{composeModelPickerSearch}&rdquo;</p>
+                    <p className="text-[9.5px] opacity-70">Check spelling or load weights via GGUF below.</p>
+                  </div>
+                );
+              }
+
+              if (filteredLocals.length === 0 && q) return null;
+
+              return (
+                <div className="space-y-0.5 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
+                  <div className="flex items-center justify-between px-2 mb-1">
+                    <span className="text-[9.5px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Local Engines ({filteredLocals.length})
+                    </span>
+                    <span className="flex items-center gap-1 text-[9.5px] text-slate-400 dark:text-zinc-500">
+                      <span className={`w-1.5 h-1.5 rounded-full ${composeDetectedModels.length > 0 ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                      {composeDetectedModels.length > 0 ? 'Connected' : 'Offline'}
+                    </span>
+                  </div>
+
+                  {filteredLocals.length > 0 ? (
+                    <div className="max-h-36 overflow-y-auto space-y-0.5 thin-scrollbar">
+                      {filteredLocals.map((m, idx) => {
+                        const isSelected = composeSelectedModel?.id === m.id;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              updateSelectedModelGlobally(m);
+                              setComposeModelPickerOpen(false);
+                              setComposeModelPickerSearch('');
+                              showToast(`Switched to local ${m.name}`);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition-all duration-150 cursor-pointer ${
+                              isSelected
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
+                                : 'hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 text-slate-700 dark:text-zinc-300 font-normal'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                              <span className="truncate">{m.name}</span>
+                            </div>
+                            {m.sizeGB && <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-normal shrink-0">{m.sizeGB}GB</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="px-2.5 py-1.5 rounded-xl bg-slate-50/70 dark:bg-zinc-800/30 text-[10px] text-slate-400 dark:text-zinc-500">
+                      No local daemon (Ollama / LM Studio) detected.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Bottom Actions: Apple-style subdued secondary triggers */}
+            <div className="pt-1 border-t border-slate-100 dark:border-zinc-800/80 space-y-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  showToast('Browse to your local .gguf weights file');
+                  chatFileInputRef.current?.click();
+                }}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60 transition-colors text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <FolderOpen size={12} className="text-slate-400 dark:text-zinc-500" />
+                  <span>Load GGUF Weights</span>
+                </div>
+                <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-mono">.gguf</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setComposeModelPickerOpen(false);
+                  setSettingsTab('ai_models');
+                  setIsSettingsOpen(true);
+                }}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] text-violet-600 dark:text-violet-400 hover:bg-violet-50/70 dark:hover:bg-violet-950/40 transition-colors text-left cursor-pointer font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <Key size={12} />
+                  <span>Manage API Keys & Engines</span>
+                </div>
+                <ChevronRight size={11} className="opacity-60" />
+              </button>
+            </div>
+          </div>
+        </>,
+        document.fullscreenElement ?? document.body
       )}
     </div>
   );

@@ -13,7 +13,7 @@ import { synthesizeStrategicDecision } from './orbKnowledgeGraphService';
 export const DEFAULT_AI_CONFIG = {
   provider: 'gemini', // 'gemini' | 'claude' | 'openai' | 'deepseek' | 'ollama' | 'lmstudio' | 'custom'
   activeModel: 'gemini-1.5-pro',
-  geminiApiKey: '',
+  geminiApiKey: (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_GEMINI_DEMO_API_KEY || import.meta.env?.GEMINI_API_KEY)) || '',
   claudeApiKey: '',
   openaiApiKey: '',
   deepseekApiKey: '',
