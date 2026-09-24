@@ -14419,6 +14419,26 @@ const DEFAULT_DECK_SLIDES = [
   const [showTemplateChart, setShowTemplateChart] = useState(false);
   const [sheetsInsertMenuOpen, setSheetsInsertMenuOpen] = useState(false);
   const [templateChartType, setTemplateChartType] = useState('column');
+  const [mouseSparklesEnabled, setMouseSparklesEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('regaarder_mouse_sparkles') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [mouseSparkles, setMouseSparkles] = useState([]);
+
+  const toggleMouseSparkles = (nextVal) => {
+    const value = typeof nextVal === 'boolean' ? nextVal : !mouseSparklesEnabled;
+    setMouseSparklesEnabled(value);
+    try {
+      localStorage.setItem('regaarder_mouse_sparkles', String(value));
+    } catch (_e) {}
+    if (!value) {
+      setMouseSparkles([]);
+    }
+    showToast(value ? 'Ambient cursor sparkles enabled' : 'Ambient cursor sparkles disabled');
+  };
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetDocId, setShareTargetDocId] = useState(null);
   const [shareTargetDocTitle, setShareTargetDocTitle] = useState('');
@@ -23651,6 +23671,12 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     };
 
     recognition.onend = () => {
+      // If voice dictation was already stopped by user, discard pending interim and do not restart
+      if (!isVoiceActiveRef.current) {
+        pendingInterimTranscriptRef.current = '';
+        return;
+      }
+
       const buffered = pendingInterimTranscriptRef.current.trim();
       if (buffered) {
         if (voiceTargetRef.current === 'schedule') {
@@ -23668,7 +23694,6 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       }
 
       // Allow recognition to restart continuously in both normal and command modes
-
       if (isVoiceActiveRef.current && !isMicMutedRef.current && !mockIntervalRef.current) {
         try {
           recognition.start();
@@ -28785,6 +28810,44 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  // Subtle purple star sparkles on mouse move
+  useEffect(() => {
+    if (!mouseSparklesEnabled) {
+      setMouseSparkles([]);
+      return;
+    }
+
+    let lastTime = 0;
+    let lastX = 0;
+    let lastY = 0;
+    const handleMouseMove = (e) => {
+      const now = Date.now();
+      if (now - lastTime < 45) return; // throttle emission
+      const dist = Math.hypot(e.clientX - lastX, e.clientY - lastY);
+      if (dist < 8) return; // only emit on noticeable cursor motion
+      lastTime = now;
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      const newSparkle = {
+        id: `spk_${now}_${Math.random().toString(36).substring(2, 6)}`,
+        x: e.clientX,
+        y: e.clientY,
+        size: Math.floor(Math.random() * 8 + 12), // 12px - 20px
+        rotation: Math.floor(Math.random() * 60 - 30),
+      };
+
+      setMouseSparkles((prev) => [...prev.slice(-20), newSparkle]);
+
+      setTimeout(() => {
+        setMouseSparkles((prev) => prev.filter((s) => s.id !== newSparkle.id));
+      }, 700);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseSparklesEnabled]);
+
   useEffect(() => {
     const handleGlobalSlashMenu = (event) => {
       const activeSlashMenu = slashMenuRef.current;
@@ -33327,9 +33390,73 @@ Answer the user's question, provide an insightful summary, or explain the contex
     }
   };
 
+  const stopVoiceRecording = () => {
+    isVoiceActiveRef.current = false;
+    setIsVoiceActive(false);
+
+    // Cancel silence and chunk intervals immediately
+    if (voiceSilenceTimerRef.current) {
+      clearTimeout(voiceSilenceTimerRef.current);
+      voiceSilenceTimerRef.current = null;
+    }
+    if (chunkIntervalRef.current) {
+      clearTimeout(chunkIntervalRef.current);
+      chunkIntervalRef.current = null;
+    }
+
+    // Immediately stop & detach speech recognition
+    try {
+      const recognition = speechRecognitionRef.current;
+      if (recognition) {
+        recognition.onend = null; // Prevent onend restart loop
+        recognition.stop();
+      }
+    } catch (_error) {
+      // noop
+    }
+
+    // Immediately stop mediaRecorder without firing post-stop processing loops
+    if (mediaRecorderRef.current) {
+      try {
+        mediaRecorderRef.current.onstop = null;
+        mediaRecorderRef.current.ondataavailable = null;
+        if (mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+      } catch (_e) { /* noop */ }
+      mediaRecorderRef.current = null;
+    }
+
+    // Flush and discard uncommitted audio chunks
+    audioChunksRef.current = [];
+
+    // Stop all microphone tracks immediately
+    const tracks = audioStreamRef.current?.getTracks();
+    if (tracks) {
+      tracks.forEach(track => {
+        try { track.stop(); } catch (_e) {}
+      });
+    }
+    audioStreamRef.current = null;
+
+    if (blankBodyRef.current && voiceTargetRef.current === 'document') {
+      commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
+    }
+
+    interimTranscriptRef.current = '';
+    setLiveSpeechInterimText('');
+    showToast('Voice transcription stopped');
+  };
+
   const toggleVoiceRecording = async (targetMode = voiceTarget) => {
     if (!speechSupported) {
       showToast('Speech recognition is not supported in this browser');
+      return;
+    }
+
+    // If voice is currently active, stop immediately regardless of targets
+    if (isVoiceActive || isVoiceActiveRef.current) {
+      stopVoiceRecording();
       return;
     }
 
@@ -33341,57 +33468,6 @@ Answer the user's question, provide an insightful summary, or explain the contex
       setIsPromptDismissed(false);
       setIsPromptExpanded(true);
       setIsPromptAutoVisible(true);
-    }
-
-    if (isVoiceActive) {
-      if (voiceSilenceTimerRef.current) {
-        clearTimeout(voiceSilenceTimerRef.current);
-        voiceSilenceTimerRef.current = null;
-      }
-      // If a different voice surface is requested, restart with the new target.
-      if (voiceTarget !== nextTarget) {
-        try {
-          speechRecognitionRef.current?.stop();
-        } catch (_error) {
-          // noop
-        }
-        if (chunkIntervalRef.current) {
-          clearTimeout(chunkIntervalRef.current);
-          chunkIntervalRef.current = null;
-        }
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-          mediaRecorderRef.current.stop();
-          const tracks = audioStreamRef.current?.getTracks();
-          if (tracks) tracks.forEach(track => track.stop());
-        }
-        setIsVoiceActive(false);
-      } else {
-        // Stop everything
-        isVoiceActiveRef.current = false;
-        try {
-          speechRecognitionRef.current?.stop();
-        } catch (_error) {
-          // noop
-        }
-        if (chunkIntervalRef.current) {
-          clearTimeout(chunkIntervalRef.current);
-          chunkIntervalRef.current = null;
-        }
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-          try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ }
-        }
-        const tracks = audioStreamRef.current?.getTracks();
-        if (tracks) tracks.forEach(track => track.stop());
-        audioStreamRef.current = null;
-        if (blankBodyRef.current && voiceTarget === 'document') {
-          commitEditableHtmlForActiveDoc(blankBodyRef.current, setDocBodyHtml);
-        }
-        interimTranscriptRef.current = '';
-        setLiveSpeechInterimText('');
-        setIsVoiceActive(false);
-        showToast('Voice transcription stopped');
-        return;
-      }
     }
 
     if (isMicMuted) {
@@ -41899,17 +41975,27 @@ Respond with a JSON array of slide objects matching the schema.`;
               })}
             </div>
           </div>
+          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
+            <button
+              type="button"
+              onClick={startNewChatSession}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+              title="New Chat (Clear thread)"
+            >
+              <Plus size={13} strokeWidth={2} />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
               setRightSidebarOpen(false);
               setRightPanelMaximized(false);
             }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
             title="Close sidebar (Esc)"
             aria-label="Close sidebar"
           >
-            <X size={14} strokeWidth={2} />
+            <X size={13} strokeWidth={2} />
           </button>
         </div>
         )}
@@ -42499,41 +42585,19 @@ Respond with a JSON array of slide objects matching the schema.`;
           {/* A. ACTIVE TAB: AI ASSISTANT / CHAT */}
           {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
             <div className="flex-1 flex flex-col min-h-0 bg-transparent">
-              {/* Persistent Multi-Tab Concurrent Header */}
-              <div className="flex flex-col w-full shrink-0 border-b border-slate-100/60 dark:border-zinc-800/60 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md z-10">
-                <div className="flex items-center justify-between w-full px-3.5 py-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/50 flex items-center justify-center shrink-0 text-violet-600 dark:text-violet-400">
-                      <RegaarderAiIcon size={14} />
-                    </div>
-                    <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-100 tracking-tight truncate">
-                      {productMode === 'compose' ? (t('sidebar.composeAssistant') || 'Compose Assistant') : productMode === 'sheets' ? (t('sidebar.sheetsAssistant') || 'Sheets Assistant') : (t('sidebar.deckAssistant') || 'Deck Assistant')}
-                    </h3>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-1">
-                    <button
-                      type="button"
-                      title="Add New Independent Chat Tab (+)"
-                      className="p-1 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-800 dark:hover:text-zinc-200 transition-all cursor-pointer flex items-center justify-center"
-                      onClick={handleCreateNewChatTab}
-                    >
-                      <Plus size={13} strokeWidth={2} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Multi-Tab Switcher Bar */}
-                <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto thin-scrollbar">
+              {/* Refined Context & Chat Sessions Header */}
+              {chatTabs.length > 1 && (
+                <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-100/60 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md overflow-x-auto thin-scrollbar shrink-0 select-none">
                   {chatTabs.map((tab) => {
                     const isActive = tab.id === activeChatTabId;
                     return (
                       <div
                         key={tab.id}
                         onClick={() => handleSwitchChatTab(tab.id)}
-                        className={`group relative flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
+                        className={`group relative flex items-center gap-1.5 pl-2 pr-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
                           isActive
-                            ? 'bg-slate-100/90 dark:bg-zinc-800/90 text-slate-900 dark:text-zinc-100 border-slate-200/90 dark:border-zinc-700/80 shadow-2xs font-semibold'
-                            : 'bg-transparent text-slate-500 dark:text-zinc-400 border-transparent hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-300'
+                            ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border-slate-200/80 dark:border-zinc-700/80 shadow-2xs font-semibold'
+                            : 'bg-transparent text-slate-500 dark:text-zinc-400 border-transparent hover:bg-white/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-300'
                         }`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
@@ -42556,13 +42620,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     type="button"
                     onClick={handleCreateNewChatTab}
-                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer transition-colors"
-                    title="New Chat Tab"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer transition-colors"
+                    title="New Chat Session"
                   >
                     <Plus size={11} strokeWidth={2} />
                   </button>
                 </div>
-              </div>
+              )}
+
 
               {/* Chat Stream & Focal Layout */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-3.5">
@@ -43170,99 +43235,115 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                       {/* Action Bar for AI Responses (Browser Research & Assistant Messages) */}
                       {msg.sender !== 'user' && !msg.isError && !msg.text?.startsWith('??') && !msg.text?.includes('Unable to reach local inference model') && !msg.text?.includes('requires Ollama or LM Studio') && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-zinc-700/60 flex items-center justify-between gap-2">
-                          {productMode === 'deck' || msg.deckSlides ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                let slidesToApply = null;
-                                if (Array.isArray(msg.deckSlides) && msg.deckSlides.length > 0) {
-                                  slidesToApply = msg.deckSlides;
-                                } else {
-                                  try {
-                                    const jsonMatch = (msg.text || '').match(/\{[\s\S]*\}/);
-                                    if (jsonMatch) {
-                                      const parsed = JSON.parse(jsonMatch[0]);
-                                      const extracted = parsed.deckSlides || (parsed.docAction && parsed.docAction.deckSlides) || parsed.slides;
-                                      if (Array.isArray(extracted) && extracted.length > 0) {
-                                        slidesToApply = extracted;
-                                      }
-                                    }
-                                  } catch (e) {
-                                    console.warn('Manual deck parse error:', e);
-                                  }
-                                }
-                                if (!slidesToApply && msg.text) {
-                                  slidesToApply = buildDeckSlidesFallback(msg.text, msg.deckTitle || docTitle || 'AI Presentation');
-                                }
-                                if (slidesToApply && slidesToApply.length > 0) {
-                                  setDeckSlidesData(slidesToApply);
-                                  if (slidesToApply[0]?.id) {
-                                    setActiveDeckSlideId(slidesToApply[0].id);
-                                  }
-                                  if (msg.deckTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
-                                    setDocTitle(msg.deckTitle);
-                                  }
-                                  showToast('Applied to Deck successfully');
-                                } else {
-                                  showToast('Unable to extract deck slides from response');
-                                }
-                              }}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
-                              title="Apply generated slides and layout to presentation deck"
-                            >
-                              <Plus size={12} strokeWidth={2} />
-                              <span>Apply to Deck</span>
-                            </button>
-                          ) : productMode === 'sheets' ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                showToast('Inserted into sheet');
-                              }}
-                              className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
-                              title="Insert table data into spreadsheet"
-                            >
-                              <Plus size={12} strokeWidth={2} />
-                              <span>Insert into Sheet</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const formattedHtml = toParagraphHtml(msg.text || '');
-                                if (window.__composeInsertHTML) {
-                                  window.__composeInsertHTML(formattedHtml);
-                                } else if (blankBodyRef.current) {
-                                  const isDocEmpty = !blankBodyRef.current.innerText || blankBodyRef.current.innerText.trim().length <= 30;
-                                  if (isDocEmpty) {
-                                    blankBodyRef.current.innerHTML = formattedHtml;
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/50 dark:border-zinc-700/50 flex flex-wrap items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            {productMode === 'deck' || msg.deckSlides ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  let slidesToApply = null;
+                                  if (Array.isArray(msg.deckSlides) && msg.deckSlides.length > 0) {
+                                    slidesToApply = msg.deckSlides;
                                   } else {
-                                    blankBodyRef.current.innerHTML += `<div style="margin-top: 24px;"></div>` + formattedHtml;
+                                    try {
+                                      const jsonMatch = (msg.text || '').match(/\{[\s\S]*\}/);
+                                      if (jsonMatch) {
+                                        const parsed = JSON.parse(jsonMatch[0]);
+                                        const extracted = parsed.deckSlides || (parsed.docAction && parsed.docAction.deckSlides) || parsed.slides;
+                                        if (Array.isArray(extracted) && extracted.length > 0) {
+                                          slidesToApply = extracted;
+                                        }
+                                      }
+                                    } catch (e) {
+                                      console.warn('Manual deck parse error:', e);
+                                    }
                                   }
-                                  setDocBodyHtml(blankBodyRef.current.innerHTML);
-                                }
-                                // Auto-update document title if empty or Untitled Document
-                                const matchTitle = (msg.text || '').match(/^(?:#\s*|Title:\s*)([^\n]+)/i);
-                                if (matchTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
-                                  setDocTitle(matchTitle[1].trim());
-                                }
-                                showToast('Injected into document');
-                              }}
-                              className="inline-flex items-center gap-1.5 text-[11.5px] font-medium bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
-                              title="Inject AI text into the active document"
-                            >
-                              <Plus size={12} strokeWidth={2} />
-                              <span>Insert into Document</span>
-                            </button>
-                          )}
+                                  if (!slidesToApply && msg.text) {
+                                    slidesToApply = buildDeckSlidesFallback(msg.text, msg.deckTitle || docTitle || 'AI Presentation');
+                                  }
+                                  if (slidesToApply && slidesToApply.length > 0) {
+                                    setDeckSlidesData(slidesToApply);
+                                    if (slidesToApply[0]?.id) {
+                                      setActiveDeckSlideId(slidesToApply[0].id);
+                                    }
+                                    if (msg.deckTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
+                                      setDocTitle(msg.deckTitle);
+                                    }
+                                    showToast('Applied to Deck successfully');
+                                  } else {
+                                    showToast('Unable to extract deck slides from response');
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-md shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title="Apply generated slides and layout to presentation deck"
+                              >
+                                <Plus size={11} strokeWidth={2.2} />
+                                <span>Apply to Deck</span>
+                              </button>
+                            ) : productMode === 'sheets' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  showToast('Inserted into sheet');
+                                }}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-md shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title="Insert table data into spreadsheet"
+                              >
+                                <Plus size={11} strokeWidth={2.2} />
+                                <span>Insert into Sheet</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const formattedHtml = toParagraphHtml(msg.text || '');
+                                  if (window.__composeInsertHTML) {
+                                    window.__composeInsertHTML(formattedHtml);
+                                  } else if (blankBodyRef.current) {
+                                    const isDocEmpty = !blankBodyRef.current.innerText || blankBodyRef.current.innerText.trim().length <= 30;
+                                    if (isDocEmpty) {
+                                      blankBodyRef.current.innerHTML = formattedHtml;
+                                    } else {
+                                      blankBodyRef.current.innerHTML += `<div style="margin-top: 24px;"></div>` + formattedHtml;
+                                    }
+                                    setDocBodyHtml(blankBodyRef.current.innerHTML);
+                                  }
+                                  // Auto-update document title if empty or Untitled Document
+                                  const matchTitle = (msg.text || '').match(/^(?:#\s*|Title:\s*)([^\n]+)/i);
+                                  if (matchTitle && (!docTitle || docTitle === 'Untitled Document' || docTitle === 'Compose Draft')) {
+                                    setDocTitle(matchTitle[1].trim());
+                                  }
+                                  showToast('Injected into document');
+                                }}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-md shadow-[0_2px_8px_rgba(124,90,207,0.25)] transition-all active:scale-95 cursor-pointer"
+                                title="Inject AI text into the active document"
+                              >
+                                <Plus size={11} strokeWidth={2.2} />
+                                <span>Insert into Document</span>
+                              </button>
+                            )}
+                            {productMode === 'compose' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const plainText = (msg.text || '').replace(/<[^>]+>/g, '').trim();
+                                  setChatInput(`Refine and sharpen: "${plainText.slice(0, 100)}..."`);
+                                }}
+                                className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                                title="Iterate on this draft"
+                              >
+                                <Pen size={10} />
+                                <span>Refine</span>
+                              </button>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
                               navigator.clipboard.writeText(msg.text || '');
                               showToast('Copied to clipboard');
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent hover:border-slate-200/60 dark:hover:border-zinc-700/60 transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer ml-auto"
                             title="Copy response to clipboard"
                           >
                             <Copy size={11} />
@@ -43777,9 +43858,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </button>
                       )}
                     </div>
-                  </div>
-                  <div className="text-center mt-2 pb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">AI can make mistakes. Check important info.</span>
                   </div>
                 </form>
               )}
@@ -73257,6 +73335,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>
+
+                    {/* Ambient Cursor Sparkles */}
+                    <div className="pt-4 border-t border-slate-200/60 dark:border-zinc-800 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Ambient Cursor Sparkles</h3>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60">
+                            Visual Effects
+                          </span>
+                        </div>
+                        <p className="text-[12px] text-slate-500 dark:text-zinc-400">
+                          Display subtle starlight particles trailing behind your mouse cursor across the workspace.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={mouseSparklesEnabled}
+                        onClick={() => toggleMouseSparkles(!mouseSparklesEnabled)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          mouseSparklesEnabled ? 'bg-violet-600' : 'bg-slate-200 dark:bg-zinc-700'
+                        }`}
+                        title={mouseSparklesEnabled ? 'Disable cursor sparkles' : 'Enable cursor sparkles'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                            mouseSparklesEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -78800,13 +78909,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {(t('toolbar.outline') || 'Outline')}: {docOutlineEnabled ? (t('common.on') || 'On') : (t('common.off') || 'Off')}
                 </button>
 
-                {/* Dark Mode Toggle */}
+                {/* Hide Toolbar / Focus View Toggle */}
                 <button
                   type="button"
-                  onClick={() => setIsDarkMode((prev) => !prev)}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                  onClick={() => setIsDocumentSubToolbarCollapsed(true)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                  title="Hide toolbar to maximize writing space"
                 >
-                  {isDarkMode ? <Sun size={13} /> : <Moon size={13} />} {isDarkMode ? (t('settings.light') || 'Light Mode') : (t('settings.dark') || 'Dark Mode')}
+                  <EyeOff size={13} />
+                  <span>Hide Toolbar</span>
                 </button>
               </div>
 
@@ -84190,36 +84301,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                   )}
-                  <div className={`relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 ${isPromptSlashMenuOpen ? 'ring-1 ring-violet-500/30 dark:ring-violet-400/40 shadow-[0_16px_40px_rgba(0,0,0,0.18)]' : 'shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]'} rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300`}>
+                  <div className={`relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 hover:border-violet-300/80 dark:hover:border-violet-700/80 focus-within:border-violet-500/80 focus-within:ring-2 focus-within:ring-violet-500/15 ${isPromptSlashMenuOpen ? 'ring-1 ring-violet-500/30 dark:ring-violet-400/40 shadow-[0_16px_40px_rgba(0,0,0,0.18)]' : 'shadow-[0_8px_30px_rgb(0_0_0/0.08),0_1px_3px_rgb(0_0_0/0.04)] dark:shadow-[0_8px_30px_rgb(0_0_0/0.4)]'} rounded-xl px-2.5 py-1.5 flex items-center gap-2 w-full transition-all duration-200`}>
                     <button
                       type="button"
                       onClick={() => {
                         setIsPromptMinimized(true);
                         setIsPromptExpanded(false);
                       }}
-                      className="p-1.5 rounded-lg bg-violet-50/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 hover:bg-violet-100 hover:text-violet-700 shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center border border-violet-200/50 dark:border-violet-800/50 shadow-2xs"
+                      className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 hover:bg-violet-100 hover:text-violet-700 shrink-0 transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center border border-violet-200/60 dark:border-violet-800/50 shadow-2xs"
                       title="Minimize to floating icon"
                     >
-                      <RegaarderAiIcon size={17} />
+                      <RegaarderAiIcon size={15} />
                     </button>
-                    <div className="relative">
+                    <div className="relative flex items-center">
                       <button
                         type="button"
                         onClick={() => setAiAttachmentMenuOpen(!aiAttachmentMenuOpen)}
-                        className="p-1.5 rounded-full text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                        className="w-7 h-7 rounded-lg text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors flex items-center justify-center shrink-0"
                         title="Add attachments"
                       >
-                        <Plus size={18} />
+                        <Plus size={15} strokeWidth={2} />
                       </button>
                       {aiAttachmentMenuOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-200 dark:border-zinc-800 py-1 z-50">
                           <button
                             type="button"
                             onClick={() => {
                               setAiAttachmentMenuOpen(false);
                               triggerAttachmentUpload('image');
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-2"
                           >
                             <ImageIcon size={14} /> Image
                           </button>
@@ -84229,7 +84340,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setAiAttachmentMenuOpen(false);
                               triggerAttachmentUpload('document');
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-2"
                           >
                             <FileText size={14} /> Document
                           </button>
@@ -84239,7 +84350,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setAiAttachmentMenuOpen(false);
                               promptAudioInputRef.current?.click();
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-2"
                           >
                             <Mic size={14} /> Audio
                           </button>
@@ -84249,7 +84360,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setAiAttachmentMenuOpen(false);
                               triggerAttachmentUpload('file');
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-2"
                           >
                             <File size={14} /> File
                           </button>
@@ -84287,7 +84398,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         e.preventDefault();
                         e.stopPropagation();
                       }}
-                      className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer shrink-0 mt-1 select-none"
+                      className="compose-model-picker-trigger h-6 px-2 py-0.5 rounded-md bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs transition-all cursor-pointer shrink-0 select-none"
                       title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                     >
                       <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
@@ -84295,7 +84406,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
                     </button>
                     {activeAgentTag && (
-                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 mt-1">
+                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 border border-blue-200/60 dark:border-blue-800/60">
                         <span className="font-mono text-[11px] font-semibold leading-tight">
                           {activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`}
                         </span>
@@ -84321,14 +84432,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       placeholder={Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) ? (t('orb.askAboutSelection') || "Ask anything about this selection...") : (t('orb.describeWrite') || "Describe what you'd like to write...")}
                       rows={1}
                       style={{ textAlign: 'left' }}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-zinc-100 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal text-left"
+                      className="flex-1 bg-transparent border-none focus:outline-none text-[13px] text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 py-1 resize-none overflow-hidden min-h-[26px] max-h-[120px] font-normal tracking-normal text-left leading-normal"
                     />
                     <button
                       type="submit"
                       disabled={isComposing || !floatingPrompt.trim()}
-                      className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
+                      className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center shrink-0 transition-all duration-200 ease-out cursor-pointer ${
                         floatingPrompt.trim() || isComposing
-                          ? 'opacity-100 bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
+                          ? 'opacity-100 bg-violet-600 text-white hover:bg-violet-700 shadow-2xs active:scale-95' 
                           : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
                       }`}
                     >
@@ -84359,54 +84470,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   beginPanelResize('dictation', event);
                 }
               }}
-              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-2xl ${
+              className={`pointer-events-auto flex items-center transition-all duration-300 ease-out select-none border backdrop-blur-2xl ${
                 isVoiceActive && voiceTarget === 'document' 
-                  ? 'rounded-2xl bg-white/95 dark:bg-[#1a1926]/95 border-violet-400/80 dark:border-violet-500/80 px-4 py-3 gap-3.5 shadow-[0_12px_40px_-8px_rgba(147,51,234,0.3)] ring-1 ring-violet-500/20 min-w-[270px] max-w-[340px]' 
+                  ? 'rounded-2xl bg-white/95 dark:bg-zinc-900/95 border-violet-500/25 dark:border-violet-400/25 p-2 pl-2.5 pr-2 gap-3 shadow-[0_12px_36px_-6px_rgba(124,58,237,0.18),0_4px_12px_-2px_rgba(0,0,0,0.08)] min-w-[280px] max-w-[340px]' 
                   : 'rounded-xl bg-white/90 dark:bg-zinc-900/90 border-slate-200/90 dark:border-zinc-700/80 p-1 shadow-[0_4px_18px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] hover:border-slate-300 dark:hover:border-zinc-600'
               }`}
             >
               <div className="relative flex items-center justify-center shrink-0">
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <>
-                    <div className="absolute -inset-2 rounded-2xl bg-violet-500/20 dark:bg-violet-400/20 blur-md animate-pulse pointer-events-none" />
-                    <div className="absolute -inset-1 rounded-2xl border-2 border-violet-400/40 dark:border-violet-500/40 animate-ping opacity-75 pointer-events-none" style={{ animationDuration: '2s' }} />
-                  </>
-                )}
                 <button
                   type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={async () => {
-                    await toggleVoiceRecording('document');
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (isVoiceActive && voiceTarget === 'document') {
+                      stopVoiceRecording();
+                    } else {
+                      toggleVoiceRecording('document');
+                    }
                   }}
-                  className={`flex items-center justify-center transition-all duration-300 relative z-10 ${
+                  className={`flex items-center justify-center transition-all duration-200 relative cursor-pointer ${
                     isVoiceActive && voiceTarget === 'document'
-                      ? 'w-11 h-11 rounded-xl bg-violet-100/90 dark:bg-violet-950/70 text-violet-600 dark:text-violet-300 border-2 border-violet-500 dark:border-violet-400 shadow-[0_0_25px_rgba(168,85,247,0.55),inset_0_0_15px_rgba(168,85,247,0.25)] ring-4 ring-violet-400/30'
+                      ? 'w-8 h-8 rounded-xl bg-violet-600 text-white shadow-xs hover:bg-violet-700 active:scale-95'
                       : 'w-10 h-10 rounded-lg bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700/70 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
                   }`}
-                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
+                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice dictation' : 'Start voice dictation'}
                 >
-                  <Mic size={19} className={isVoiceActive && voiceTarget === 'document' ? 'animate-pulse text-violet-600 dark:text-violet-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]' : ''} />
+                  <Mic size={isVoiceActive && voiceTarget === 'document' ? 14 : 18} />
                 </button>
               </div>
 
               {isVoiceActive && voiceTarget === 'document' ? (
-                <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
-                  <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                    <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 tracking-wider uppercase opacity-95">Dictation Active</span>
-                    <span className="w-2 h-2 rounded-full bg-violet-500 animate-ping shrink-0" />
-                  </div>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex items-center gap-0.5 shrink-0 h-3 py-0.5">
-                      <span className="w-0.5 h-2.5 bg-violet-500 rounded-full animate-pulse" />
-                      <span className="w-0.5 h-4 bg-violet-600 dark:bg-violet-400 rounded-full animate-pulse [animation-delay:150ms]" />
-                      <span className="w-0.5 h-3 bg-violet-500 rounded-full animate-pulse [animation-delay:300ms]" />
-                      <span className="w-0.5 h-4.5 bg-violet-600 dark:bg-violet-300 rounded-full animate-pulse [animation-delay:75ms]" />
-                      <span className="w-0.5 h-2 bg-violet-400 rounded-full animate-pulse [animation-delay:225ms]" />
+                <div className="flex-1 flex items-center justify-between gap-3 min-w-0 pr-0.5">
+                  <div className="flex flex-col justify-center min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <div className="flex items-center gap-0.5 h-3 py-0.5">
+                        <span className="w-0.5 h-2 bg-violet-500 rounded-full animate-pulse" />
+                        <span className="w-0.5 h-3.5 bg-violet-600 dark:bg-violet-400 rounded-full animate-pulse [animation-delay:150ms]" />
+                        <span className="w-0.5 h-2 bg-violet-500 rounded-full animate-pulse [animation-delay:300ms]" />
+                        <span className="w-0.5 h-3 bg-violet-600 dark:bg-violet-300 rounded-full animate-pulse [animation-delay:75ms]" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 tracking-tight">Listening</span>
                     </div>
-                    <div className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100 truncate leading-relaxed">
-                      {liveSpeechInterimText || 'Listening live...'}
+                    <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200 truncate leading-snug">
+                      {liveSpeechInterimText || 'Speak now...'}
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      stopVoiceRecording();
+                    }}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-[11px] font-semibold tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer border border-transparent hover:border-slate-700 dark:hover:border-zinc-300"
+                    title="Stop dictation immediately"
+                  >
+                    <Square size={9} className="fill-current" />
+                    <span>Stop</span>
+                  </button>
                 </div>
               ) : (
                 <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-400 px-3 pr-4 pointer-events-none">{t('toolbar.dictate') || 'Dictate'}</span>
@@ -88936,6 +89058,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>
+
+                    {/* Ambient Cursor Sparkles */}
+                    <div className="pt-4 border-t border-slate-200/60 dark:border-zinc-800 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-[13px] font-bold text-slate-800 dark:text-zinc-200">Ambient Cursor Sparkles</h3>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60">
+                            Visual Effects
+                          </span>
+                        </div>
+                        <p className="text-[12px] text-slate-500 dark:text-zinc-400">
+                          Display subtle starlight particles trailing behind your mouse cursor across the workspace.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={mouseSparklesEnabled}
+                        onClick={() => toggleMouseSparkles(!mouseSparklesEnabled)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          mouseSparklesEnabled ? 'bg-violet-600' : 'bg-slate-200 dark:bg-zinc-700'
+                        }`}
+                        title={mouseSparklesEnabled ? 'Disable cursor sparkles' : 'Enable cursor sparkles'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                            mouseSparklesEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -90516,6 +90669,47 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
         </>,
+        document.fullscreenElement ?? document.body
+      )}
+
+      {/* Ambient Purple Star Sparkles Trail */}
+      {typeof document !== 'undefined' && mouseSparklesEnabled && mouseSparkles.length > 0 && createPortal(
+        <div className="fixed inset-0 pointer-events-none z-[9999999] overflow-hidden select-none" aria-hidden="true">
+          {mouseSparkles.map((spk) => (
+            <div
+              key={spk.id}
+              className="absolute pointer-events-none animate-mouse-sparkle"
+              style={{
+                left: `${spk.x}px`,
+                top: `${spk.y}px`,
+              }}
+            >
+              <svg
+                width={spk.size}
+                height={spk.size}
+                viewBox="0 0 24 24"
+                fill="none"
+                className="drop-shadow-[0_0_8px_rgba(168,85,247,0.9)]"
+                style={{
+                  transform: `rotate(${spk.rotation}deg)`,
+                }}
+              >
+                <path
+                  d="M12 0C12 7 17 12 24 12C17 12 12 17 12 24C12 17 7 12 0 12C7 12 12 7 12 0Z"
+                  fill="url(#ambient-purple-sparkle-grad)"
+                />
+                <circle cx="12" cy="12" r="2.2" fill="#ffffff" opacity="0.9" />
+                <defs>
+                  <linearGradient id="ambient-purple-sparkle-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#e9d5ff" />
+                    <stop offset="0.45" stopColor="#a855f7" />
+                    <stop offset="1" stopColor="#7e22ce" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          ))}
+        </div>,
         document.fullscreenElement ?? document.body
       )}
     </div>

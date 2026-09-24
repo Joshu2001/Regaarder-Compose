@@ -11,7 +11,8 @@
  *   • "Build My Profile" CTA when no profile exists
  */
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { RegaarderAiIcon } from '../components/RegaarderProductIcons';
 
 const DNA_MODES = [
   {
@@ -211,7 +212,7 @@ export const WritingDNAPanel = ({ dnaProfile, isLoading, onBuildProfile, onSetMo
         /* Empty state */
         <div className="flex flex-col items-center gap-4 py-6 text-center">
           <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
-            <Sparkles size={24} className="text-indigo-500" />
+            <RegaarderAiIcon size={24} className="text-indigo-500" />
           </div>
           <div>
             <p className="text-[14px] font-semibold text-slate-800 dark:text-zinc-100 mb-1.5">No DNA Profile Yet</p>
@@ -221,7 +222,7 @@ export const WritingDNAPanel = ({ dnaProfile, isLoading, onBuildProfile, onSetMo
           </div>
           <button type="button" onClick={onBuildProfile}
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-semibold rounded-xl transition-all hover:-translate-y-0.5 active:scale-95 shadow-sm">
-            <Sparkles size={14} /> Build My Writing DNA
+            <RegaarderAiIcon size={14} /> Build My Writing DNA
           </button>
         </div>
       )}

@@ -25,6 +25,17 @@ export function cleanAndSanitizeTranscription(rawText) {
   // Strip repetitive Whisper video subtitle tokens
   text = text.replace(/\b(you|thank you|thanks for watching|subscribe|subtitles by|subtitled by)\b/gi, '');
 
+  // Strip LLM conversational filler / assistant hallucination prompts
+  const llmFillerPatterns = [
+    /^(?:okay,?\s*)?(?:i understand,?\s*)?please provide (?:the )?(?:audio|transcript|file).*$/i,
+    /^(?:once you provide that,?\s*)?i'?ll (?:accurately )?transcribe (?:it|the audio).*$/i,
+    /^(?:i'?m ready when you are\.?|ready when you are\.?|as an ai language model.*)$/i,
+    /^(?:sure,?\s*)?(?:what would you like me to transcribe\??|how can i help you today\??)$/i
+  ];
+  for (const pattern of llmFillerPatterns) {
+    text = text.replace(pattern, '').trim();
+  }
+
   // Normalize spacing
   text = text.replace(/\s{2,}/g, ' ').trim();
 
