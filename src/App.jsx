@@ -52336,7 +52336,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       >
                           {/* ── Corner Select-All Button ── */}
                           <div
-                            className="h-[26px] border-r border-b border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 dark:hover:bg-[#1f1d2e] transition-colors"
+                            className={`h-[26px] border-r border-b border-gray-200 dark:border-[#252333] relative group flex items-center justify-center cursor-pointer transition-colors ${sheetSelectionMode === 'all' ? (isDarkMode ? 'bg-zinc-800' : 'bg-slate-200/70') : (isDarkMode ? 'bg-[#181724] hover:bg-[#1f1d2e]' : 'bg-slate-100 hover:bg-slate-200')}`}
                             onClick={() => {
                               setSheetSelectionMode('all');
                               setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
@@ -52345,7 +52345,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                             title="Select all"
                           >
-                            <div className={`w-3 h-3 rounded-xs border transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-500 bg-violet-500/30' : 'border-slate-300 dark:border-zinc-600'}`} />
+                            <div className={`w-3 h-3 rounded-xs border transition-colors ${sheetSelectionMode === 'all' ? (isDarkMode ? 'border-zinc-400 bg-zinc-600/40' : 'border-slate-500 bg-slate-400/30') : 'border-slate-300 dark:border-zinc-600'}`} />
                           </div>
                         {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
                             const isColSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'col'
@@ -52359,11 +52359,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div
                                 key={col}
                                 className={`h-[26px] relative flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
-                                  ${(isColSelected || isColActive) 
+                                  ${isColSelected
                                     ? (isDarkMode 
                                         ? 'bg-violet-500/20 text-violet-200 font-bold border-r border-r-transparent border-b-2 border-violet-500' 
-                                        : 'bg-violet-500/[0.12] text-violet-950 font-bold border-r border-r-transparent border-b-2 border-violet-600') 
-                                    : 'border-r border-gray-200 dark:border-[#252333] last:border-r-0 bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
+                                        : 'bg-violet-500/[0.12] text-violet-950 font-bold border-r border-r-transparent border-b-2 border-violet-600')
+                                    : isColActive
+                                      ? (isDarkMode
+                                          ? 'bg-violet-500/10 text-violet-300 font-semibold border-r border-gray-200 dark:border-[#252333]'
+                                          : 'bg-violet-50 text-violet-900 font-semibold border-r border-gray-200 dark:border-[#252333]')
+                                      : 'border-r border-gray-200 dark:border-[#252333] last:border-r-0 bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
                                 style={{ overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -53890,11 +53894,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div
                                 key={`rh-${rowIndex}`}
                                 className={`relative text-[11px] font-semibold flex items-center justify-center select-none sheet-row-select-cursor transition-colors
-                                  ${(isRowSelected || isRowActive) 
+                                  ${isRowSelected 
                                     ? (isDarkMode 
                                         ? 'bg-violet-500/20 text-violet-200 font-bold border-b border-r border-b-transparent border-r-2 border-violet-500' 
-                                        : 'bg-violet-500/[0.12] text-violet-950 font-bold border-b border-r border-b-transparent border-r-2 border-violet-600') 
-                                    : 'border-b border-r border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
+                                        : 'bg-violet-500/[0.12] text-violet-950 font-bold border-b border-r border-b-transparent border-r-2 border-violet-600')
+                                    : isRowActive
+                                      ? (isDarkMode
+                                          ? 'bg-violet-500/10 text-violet-300 font-semibold border-b border-r border-gray-200 dark:border-[#252333]'
+                                          : 'bg-violet-50 text-violet-900 font-semibold border-b border-r border-gray-200 dark:border-[#252333]')
+                                      : 'border-b border-r border-gray-200 dark:border-[#252333] bg-slate-100 dark:bg-[#181724] text-slate-700 dark:text-[#94a3b8] hover:bg-slate-200 dark:hover:bg-[#1f1d2e]'}`}
                                 style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
@@ -54024,7 +54032,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                  const customBgStyle = computedFormat.fill ? { background: computedFormat.fill } : {};
                                   const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
-                                 const cellBg = (selectedSheetRange && num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)) 
+                                 const isMultiCellRange = selectedSheetRange && (selectedSheetRange.startRow !== selectedSheetRange.endRow || selectedSheetRange.startCol !== selectedSheetRange.endCol);
+                                 const cellBg = (isMultiCellRange && num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)) 
                                   ? (isDarkMode ? 'bg-violet-950/25' : 'bg-violet-500/[0.08]') 
                                   : (isInColBand || isInRowBand || isAllSelected ? (isDarkMode ? 'bg-zinc-900/40' : 'bg-slate-50/50') : '');
 
