@@ -41656,26 +41656,26 @@ Respond with a JSON array of slide objects matching the schema.`;
       const visibleRight = rect.right;
 
       const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
-      let rightX = (visibleRight + rightSidebarEdge) / 2 - 10;
-      
-      // When listening, the widget expands up to ~320px wide (160px half-width).
-      // Ensure the left edge of the widget never awkwardly clips or bisects the document paper edge.
-      const widgetHalfWidth = (isVoiceActive && voiceTarget === 'document') ? 165 : 65;
-      const minSafeX = visibleRight + widgetHalfWidth + 12;
-      if (rightX < minSafeX && minSafeX <= rightSidebarEdge - 70) {
-        rightX = minSafeX;
-      }
+      const isListening = isVoiceActive && voiceTarget === 'document';
+      const widgetHalfWidth = isListening ? 155 : 55;
+      const minSafeX = visibleRight + widgetHalfWidth + 16;
+      const maxSafeX = rightSidebarEdge - widgetHalfWidth - 16;
 
-      const maxAllowedX = rightSidebarEdge - 70;
-      if (rightX > maxAllowedX) {
-        rightX = maxAllowedX;
+      let rightX = (visibleRight + rightSidebarEdge) / 2;
+
+      // If there is enough room between the document and sidebar/screen edge:
+      if (maxSafeX >= minSafeX) {
+        rightX = Math.max(minSafeX, Math.min(maxSafeX, rightX));
+      } else {
+        // Narrow gap: prioritize keeping the widget completely on-screen inside maxSafeX
+        rightX = Math.max(widgetHalfWidth + 16, maxSafeX);
       }
       
       // Exact vertical midpoint between the top of the document card and the bottom status bar
       const targetY = (rect.top + bottomBarTop) / 2;
       const topY = Math.max(136, Math.min(bottomBarTop - 40, targetY));
 
-      setDictationAnchor({ left: rightX, top: topY });
+      setDictationAnchor({ left: Math.round(rightX), top: Math.round(topY) });
     };
 
     updateDictationAnchor();
@@ -85078,12 +85078,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       e.stopPropagation();
                       stopVoiceRecording();
                     }}
-                    className="shrink-0 flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] bg-red-50 hover:bg-red-100 active:bg-red-200 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 text-[11px] font-medium tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer border border-red-200/70 dark:border-red-800/60"
-                    title="Stop dictation (Esc)"
+                    className="shrink-0 flex items-center gap-1.5 h-7 px-3 rounded-[8px] bg-red-50 hover:bg-red-100 active:bg-red-200 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 text-[11px] font-medium tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer border border-red-200/70 dark:border-red-800/60"
+                    title="Stop dictation"
                   >
                     <Square size={8} className="fill-current" />
                     <span>Stop</span>
-                    <span className="text-[9px] font-semibold px-1 py-0.2 rounded-[4px] bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300 border border-red-200/60 dark:border-red-800/50">Esc</span>
                   </button>
                 </div>
               ) : (
