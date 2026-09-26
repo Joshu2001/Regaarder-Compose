@@ -76036,7 +76036,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-1"
           >
             {/* 1. System Navigation Group (Home & Library) */}
-            <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 rounded-[8px] border border-slate-200/60 dark:border-zinc-700/50 shrink-0">
+            <div className="flex items-center gap-0.5 bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 rounded-[7px] border border-slate-200/60 dark:border-zinc-700/50 shrink-0 h-7">
               {/* Dedicated Home Tab */}
               <button
                 type="button"
@@ -76044,14 +76044,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   closeTransientMenus();
                   setProductMode('landing');
                 }}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                className={`relative shrink-0 h-6 px-2.5 rounded-[5px] text-[11.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer select-none ${
                   productMode === 'landing'
-                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60'
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-700/50'
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/80 dark:border-zinc-700 font-semibold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                 }`}
                 title="Go to Home Dashboard"
               >
-                <RegaarderBrandIcon size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                <RegaarderBrandIcon size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />
                 <span>Home</span>
               </button>
 
@@ -76065,21 +76065,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setLibraryDropdownAnchorRect(rect);
                   setLibraryDropdownOpen(prev => !prev);
                 }}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer select-none ${
+                className={`relative shrink-0 h-6 px-2.5 rounded-[5px] text-[11.5px] font-medium transition-all flex items-center gap-1 cursor-pointer select-none ${
                   libraryDropdownOpen
-                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60'
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-700/50'
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/80 dark:border-zinc-700 font-semibold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                 }`}
                 title="Open Library & Saved Documents"
               >
-                <BookOpen size={12} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                <BookOpen size={11.5} className="text-slate-500 dark:text-zinc-400 shrink-0" />
                 <span>Library</span>
                 <ChevronDown size={10} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
             {/* Quiet Vertical Separator Between System Navigation and Document Tabs */}
-            <div className="h-4 w-px bg-slate-200/90 dark:bg-zinc-800 shrink-0 mx-0.5" />
+            <div className="h-3.5 w-px bg-slate-200/80 dark:bg-zinc-800 shrink-0 mx-1" />
 
             {/* 2. User Open Document Tabs */}
             {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
@@ -76099,15 +76099,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`group/tab relative shrink-0 px-3 py-1 rounded-[8px] text-[12px] transition-all duration-150 flex items-center gap-1.5 cursor-pointer select-none ${
+                  className={`group/tab relative shrink-0 h-7 px-2.5 rounded-[7px] text-[12px] transition-all duration-150 flex items-center gap-1.5 cursor-pointer select-none max-w-[210px] ${
                     isActive 
-                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/90 dark:border-zinc-700/80 ring-1 ring-black/[0.02]' 
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_1px_rgba(0,0,0,0.03)] border border-slate-200/90 dark:border-zinc-700/80 ring-1 ring-black/[0.02]' 
                       : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-800 dark:hover:text-zinc-200 font-medium'
                   }`}
                 >
                   <AppNativeSvgIcon
                     variant="minimal"
-                    size={13}
+                    size={12.5}
                     type={docMode}
                     className={`shrink-0 transition-opacity ${isActive ? 'text-violet-600 dark:text-violet-400 opacity-100' : 'text-slate-400 dark:text-zinc-500 opacity-60 group-hover/tab:opacity-90'}`}
                   />
@@ -76128,35 +76128,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         }
                       }}
                       onBlur={() => commitRenameDocument(doc.id)}
-                      className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
+                      className="w-[140px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded px-1 py-0.5 text-xs outline-none"
                     />
                   ) : (
-                    <span className="max-w-[180px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                    <span className="truncate flex-1 min-w-0">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
                   )}
-                  <button
-                    data-doc-menu-root
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      closeTransientMenus();
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
-                      setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
-                    }}
-                    className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-700 shrink-0"
-                    title="Document actions"
-                  >
-                    <MoreHorizontal size={12} />
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      requestCloseDocument(doc.id);
-                    }}
-                    className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 text-gray-400 hover:text-rose-600 shrink-0"
-                    title="Close document"
-                  >
-                    <X size={12} />
-                  </button>
+                  <div className="flex items-center shrink-0 ml-0.5">
+                    <button
+                      data-doc-menu-root
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeTransientMenus();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
+                        setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                      }}
+                      className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 shrink-0"
+                      title="Document actions"
+                    >
+                      <MoreHorizontal size={11} />
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        requestCloseDocument(doc.id);
+                      }}
+                      className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 shrink-0"
+                      title="Close document"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
                   {openDocMenuId === doc.id && (
                     <>
                       <div
@@ -76258,7 +76260,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={() => setOverflowTabMenuOpen((prev) => !prev)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
+                  className="flex items-center gap-1 h-7 px-2.5 rounded-[7px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
                   title={`${windowedTabDocuments.hiddenCount} more open documents`}
                 >
                   <span>+{windowedTabDocuments.hiddenCount} more</span>
@@ -76287,19 +76289,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       </div>
                       <div className="flex flex-col gap-0.5 mt-1">
-                        {windowedTabDocuments.hiddenDocs.map((hDoc) => (
-                          <button
-                            key={hDoc.id}
-                            type="button"
-                            onClick={() => {
-                              switchDocument(hDoc.id);
-                              setOverflowTabMenuOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate"
-                          >
-                            <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
-                          </button>
-                        ))}
+                        {windowedTabDocuments.hiddenDocs.map((hDoc) => {
+                          const hDocMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(hDoc);
+                          return (
+                            <button
+                              key={hDoc.id}
+                              type="button"
+                              onClick={() => {
+                                switchDocument(hDoc.id);
+                                setOverflowTabMenuOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate cursor-pointer"
+                            >
+                              <AppNativeSvgIcon variant="minimal" size={13} type={hDocMode} className="shrink-0" />
+                              <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </>
@@ -76309,11 +76315,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               type="button"
               onClick={createItemForCurrentContext}
-              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-[7px] text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-all mx-0.5 active:scale-95 cursor-pointer"
               title="Create new item"
               aria-label="Create new item"
             >
-              <Plus size={14} strokeWidth={1.5} />
+              <Plus size={14} strokeWidth={2} />
             </button>
           </div>
           <button
