@@ -25590,34 +25590,22 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       ];
     };
 
+    // Mode-specific visibility behavior:
+    // Option B for sheets: subtle "ghost" resting state (opacity-30) that fades into full opacity on hover.
+    // Option A for all other modes (compose, whiteboard, deck): completely invisible (opacity-0 pointer-events-none) until hovered/active (hover:opacity-100 hover:pointer-events-auto).
+    const isSheets = productMode === 'sheets' || isSheetsMode;
+    const visibilityClass = isSheets
+      ? 'opacity-30 hover:opacity-100 pointer-events-auto'
+      : 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto';
+
     return (
       <div 
         ref={bottomActionCapsuleRef}
-        className={`fixed ${bottomClass} right-5 z-[500] flex items-center gap-1.5 p-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800/90 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] select-none transition-all duration-200 opacity-40 hover:opacity-100 ${
-          bottomActionExportOpen || shareModalOpen ? 'opacity-100' : ''
+        className={`fixed ${bottomClass} right-5 z-[500] flex items-center gap-1.5 p-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800/90 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] select-none transition-all duration-300 ease-out ${visibilityClass} ${
+          bottomActionExportOpen || shareModalOpen ? '!opacity-100 !pointer-events-auto shadow-2xl' : ''
         }`}
       >
-        {/* 1. Library Button */}
-        <button
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const targetFilter = isSheetsMode ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
-            setOrbInitialFilter(targetFilter);
-            setOrbInitialQuery('');
-            setIsMemorySearchOpen(true);
-          }}
-          className="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] cursor-pointer text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/90 dark:hover:bg-zinc-800"
-          title={`Browse ${isSheetsMode ? 'Sheets' : productMode === 'deck' ? 'Decks' : 'Documents'} Library`}
-        >
-          <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
-          <span>Library</span>
-        </button>
-
-        <div className="h-3.5 w-px bg-slate-200 dark:bg-zinc-800" />
-
-        {/* 2. Export Button & Upward Menu */}
+        {/* 1. Export Button & Upward Menu */}
         <div className="relative">
           <button
             type="button"
