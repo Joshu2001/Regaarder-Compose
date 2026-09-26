@@ -25,16 +25,37 @@ export function cleanAndSanitizeTranscription(rawText) {
   // Strip repetitive Whisper video subtitle tokens
   text = text.replace(/\b(you|thank you|thanks for watching|subscribe|subtitles by|subtitled by)\b/gi, '');
 
-  // Strip LLM conversational filler / assistant hallucination prompts
+  // Strip LLM conversational filler, assistant hallucination prompts, and conversational promises
   const llmFillerPatterns = [
+    /^(?:okay,?\s*)?(?:i will\.?\s*)?(?:please provide (?:the )?(?:audio|transcript|file).*)$/i,
     /^(?:okay,?\s*)?(?:i understand,?\s*)?please provide (?:the )?(?:audio|transcript|file).*$/i,
-    /^(?:once you provide that,?\s*)?i'?ll (?:accurately )?transcribe (?:it|the audio).*$/i,
-    /^(?:i'?m ready when you are\.?|ready when you are\.?|as an ai language model.*)$/i,
+    /^(?:okay,?\s*)?(?:i'?m here to help with your (?:audio )?transcription.*)$/i,
+    /^(?:okay,?\s*)?(?:i'?m ready(?:\s+to\s+transcribe|\s+when\s+you\s+are)?\.?.*)$/i,
+    /^(?:just type or paste it here.*)$/i,
+    /^(?:once (?:you )?(?:provide|share|upload) (?:the )?(?:audio|file).*)$/i,
+    /^(?:i'?ll (?:do my absolute best to )?(?:accurately )?transcribe (?:it|the audio|the spoken word).*)$/i,
+    /^(?:i'?ll output the transcribed text.*)$/i,
+    /^(?:if the audio is silent,?\s*respond with.*)$/i,
+    /^(?:i will fulfill your task.*)$/i,
+    /^(?:i'?ll respond as quickly as i can.*)$/i,
+    /^(?:as an ai language model.*)$/i,
     /^(?:sure,?\s*)?(?:what would you like me to transcribe\??|how can i help you today\??)$/i
   ];
+
+  // If the entire text chunk matches conversational meta-chatter, discard it entirely
+  for (const pattern of llmFillerPatterns) {
+    if (pattern.test(text)) {
+      return '';
+    }
+  }
+
+  // Also strip any matching sentences inside a chunk
   for (const pattern of llmFillerPatterns) {
     text = text.replace(pattern, '').trim();
   }
+
+  // Remove standalone conversational emojis that LLMs inject into filler chatter
+  text = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
   // Normalize spacing
   text = text.replace(/\s{2,}/g, ' ').trim();

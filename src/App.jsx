@@ -33651,8 +33651,8 @@ Answer the user's question, provide an insightful summary, or explain the contex
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               task: 'transcription',
-              userPrompt: 'Transcribe this audio accurately. If the audio is silent, respond with: [SILENCE]',
-              systemPrompt: 'You are an expert audio transcription tool. Output clean text.',
+              userPrompt: 'Transcribe ONLY the words spoken in this audio verbatim. If the audio is silent or contains no intelligible words, respond strictly with: [SILENCE]. Never converse, acknowledge, or reply to the user.',
+              systemPrompt: 'You are a strict, verbatim speech-to-text engine. You ONLY output the exact spoken words transcribed from the audio. NEVER say "Okay", "I can help", "Please provide", or any conversational responses. Output ONLY the transcribed words or [SILENCE].',
               attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
             })
           });
