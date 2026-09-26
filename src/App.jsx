@@ -33939,7 +33939,9 @@ Answer the user's question, provide an insightful summary, or explain the contex
         }
       }
 
-      showToast('Voice transcription started');
+      if (target !== 'document') {
+        showToast('Voice transcription started');
+      }
 
       // Start continuous MediaRecorder chunking for Gemini transcription
       if (audioStreamRef.current) {
@@ -41655,6 +41657,15 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
       let rightX = (visibleRight + rightSidebarEdge) / 2 - 10;
+      
+      // When listening, the widget expands up to ~320px wide (160px half-width).
+      // Ensure the left edge of the widget never awkwardly clips or bisects the document paper edge.
+      const widgetHalfWidth = (isVoiceActive && voiceTarget === 'document') ? 165 : 65;
+      const minSafeX = visibleRight + widgetHalfWidth + 12;
+      if (rightX < minSafeX && minSafeX <= rightSidebarEdge - 70) {
+        rightX = minSafeX;
+      }
+
       const maxAllowedX = rightSidebarEdge - 70;
       if (rightX > maxAllowedX) {
         rightX = maxAllowedX;
@@ -41687,6 +41698,8 @@ Respond with a JSON array of slide objects matching the schema.`;
     rightSidebarOpen,
     leftSidebarWidth,
     rightSidebarWidth,
+    isVoiceActive,
+    voiceTarget,
   ]);
 
   useEffect(() => {
@@ -41699,6 +41712,24 @@ Respond with a JSON array of slide objects matching the schema.`;
     productMode,
     activeDocId,
   ]);
+
+  // Global Escape key listener to stop voice dictation cleanly
+  useEffect(() => {
+    if (!isVoiceActive || voiceTarget !== 'document') {
+      return undefined;
+    }
+    const handleGlobalEsc = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        stopVoiceRecording();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalEsc, true);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalEsc, true);
+    };
+  }, [isVoiceActive, voiceTarget]);
 
   const updateFigureMenuPosition = useCallback(() => {
     if (!figureMenuTarget) return;
@@ -84995,8 +85026,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
               className={`pointer-events-auto flex items-center transition-all duration-300 ease-out select-none border backdrop-blur-2xl ${
                 isVoiceActive && voiceTarget === 'document' 
-                  ? 'rounded-2xl bg-white/95 dark:bg-zinc-900/95 border-violet-500/25 dark:border-violet-400/25 p-2 pl-2.5 pr-2 gap-3 shadow-[0_12px_36px_-6px_rgba(124,58,237,0.18),0_4px_12px_-2px_rgba(0,0,0,0.08)] min-w-[280px] max-w-[340px]' 
-                  : 'rounded-xl bg-white/90 dark:bg-zinc-900/90 border-slate-200/90 dark:border-zinc-700/80 p-1 shadow-[0_4px_18px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] hover:border-slate-300 dark:hover:border-zinc-600'
+                  ? 'rounded-[14px] bg-white/95 dark:bg-zinc-900/95 border-violet-500/30 dark:border-violet-400/30 p-2 pl-2.5 pr-2 gap-3 shadow-[0_12px_36px_-6px_rgba(124,58,237,0.18),0_2px_8px_rgba(0,0,0,0.06)] min-w-[285px] max-w-[340px]' 
+                  : 'rounded-[12px] bg-white/90 dark:bg-zinc-900/90 border-slate-200/90 dark:border-zinc-700/80 p-1 shadow-[0_4px_18px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] hover:border-slate-300 dark:hover:border-zinc-600'
               }`}
             >
               <div className="relative flex items-center justify-center shrink-0">
@@ -85013,24 +85044,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }}
                   className={`flex items-center justify-center transition-all duration-200 relative cursor-pointer ${
                     isVoiceActive && voiceTarget === 'document'
-                      ? 'w-8 h-8 rounded-xl bg-violet-600 text-white shadow-xs hover:bg-violet-700 active:scale-95'
-                      : 'w-10 h-10 rounded-lg bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700/70 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
+                      ? 'w-8 h-8 rounded-[8px] bg-violet-600 text-white shadow-xs hover:bg-violet-700 active:scale-95'
+                      : 'w-9 h-9 rounded-[8px] bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700/70 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 border border-slate-200/60 dark:border-zinc-700/60'
                   }`}
                   title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice dictation' : 'Start voice dictation'}
                 >
-                  <Mic size={isVoiceActive && voiceTarget === 'document' ? 14 : 18} />
+                  <Mic size={isVoiceActive && voiceTarget === 'document' ? 14 : 16} />
                 </button>
               </div>
 
               {isVoiceActive && voiceTarget === 'document' ? (
-                <div className="flex-1 flex items-center justify-between gap-3 min-w-0 pr-0.5">
+                <div className="flex-1 flex items-center justify-between gap-2.5 min-w-0 pr-0.5">
                   <div className="flex flex-col justify-center min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <div className="flex items-center gap-0.5 h-3 py-0.5">
-                        <span className="w-0.5 h-2 bg-violet-500 rounded-full animate-pulse" />
-                        <span className="w-0.5 h-3.5 bg-violet-600 dark:bg-violet-400 rounded-full animate-pulse [animation-delay:150ms]" />
-                        <span className="w-0.5 h-2 bg-violet-500 rounded-full animate-pulse [animation-delay:300ms]" />
-                        <span className="w-0.5 h-3 bg-violet-600 dark:bg-violet-300 rounded-full animate-pulse [animation-delay:75ms]" />
+                      <div className="flex items-center gap-[2.5px] h-3 py-0.5">
+                        <span className="w-[2px] h-2 bg-violet-500 rounded-full animate-pulse" />
+                        <span className="w-[2px] h-3.5 bg-violet-600 dark:bg-violet-400 rounded-full animate-pulse [animation-delay:150ms]" />
+                        <span className="w-[2px] h-2 bg-violet-500 rounded-full animate-pulse [animation-delay:300ms]" />
+                        <span className="w-[2px] h-3 bg-violet-600 dark:bg-violet-300 rounded-full animate-pulse [animation-delay:75ms]" />
+                        <span className="w-[2px] h-2.5 bg-violet-500/80 rounded-full animate-pulse [animation-delay:220ms]" />
                       </div>
                       <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 tracking-tight">Listening</span>
                     </div>
@@ -85046,11 +85078,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       e.stopPropagation();
                       stopVoiceRecording();
                     }}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-[11px] font-semibold tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer border border-transparent hover:border-slate-700 dark:hover:border-zinc-300"
-                    title="Stop dictation immediately"
+                    className="shrink-0 flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] bg-red-50 hover:bg-red-100 active:bg-red-200 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 text-[11px] font-medium tracking-tight shadow-xs transition-all active:scale-95 cursor-pointer border border-red-200/70 dark:border-red-800/60"
+                    title="Stop dictation (Esc)"
                   >
-                    <Square size={9} className="fill-current" />
+                    <Square size={8} className="fill-current" />
                     <span>Stop</span>
+                    <span className="text-[9px] font-semibold px-1 py-0.2 rounded-[4px] bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300 border border-red-200/60 dark:border-red-800/50">Esc</span>
                   </button>
                 </div>
               ) : (
