@@ -77693,45 +77693,53 @@ if (productMode === 'deck' || productMode === 'sheets') {
             ref={topDocTabsContainerRef}
             className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-1"
           >
-            {/* Dedicated Home Tab */}
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setProductMode('landing');
-              }}
-              className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                productMode === 'landing'
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
-                  : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
-              }`}
-              title="Go to Home Dashboard"
-            >
-              <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
-              <span>Home</span>
-            </button>
+            {/* 1. System Navigation Group (Home & Library) */}
+            <div className="flex items-center gap-1 bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 rounded-[8px] border border-slate-200/60 dark:border-zinc-700/50 shrink-0">
+              {/* Dedicated Home Tab */}
+              <button
+                type="button"
+                onClick={() => {
+                  closeTransientMenus();
+                  setProductMode('landing');
+                }}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                  productMode === 'landing'
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-700/50'
+                }`}
+                title="Go to Home Dashboard"
+              >
+                <RegaarderBrandIcon size={13} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                <span>Home</span>
+              </button>
 
-            {/* Library / Saved Docs Affordance */}
-            <button
-              type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                setLibraryDropdownAnchorRect(rect);
-                setLibraryDropdownOpen(prev => !prev);
-              }}
-              className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer select-none ${
-                libraryDropdownOpen
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
-                  : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
-              }`}
-              title="Open Library & Saved Documents"
-            >
-              <BookOpen size={13} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-              <span>Library</span>
-              <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+              {/* Library / Saved Docs Affordance */}
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setLibraryDropdownAnchorRect(rect);
+                  setLibraryDropdownOpen(prev => !prev);
+                }}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer select-none ${
+                  libraryDropdownOpen
+                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/70 dark:border-zinc-700/60'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-700/50'
+                }`}
+                title="Open Library & Saved Documents"
+              >
+                <BookOpen size={12} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                <span>Library</span>
+                <ChevronDown size={10} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Quiet Vertical Separator Between System Navigation and Document Tabs */}
+            <div className="h-4 w-px bg-slate-200/90 dark:bg-zinc-800 shrink-0 mx-0.5" />
+
+            {/* 2. User Open Document Tabs */}
             {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
               const docIndex = windowedTabDocuments.startIndex + localIndex;
               const rawTitle = doc.title?.trim();
@@ -77761,17 +77769,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     setRenamingDocId(doc.id);
                     setRenameDocValue(doc.title || '');
                   }}
-                  className={`group/tab relative shrink-0 px-2.5 py-0.5 rounded-[6px] text-[11.5px] transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                  className={`group/tab relative shrink-0 px-3 py-1 rounded-[8px] text-[12px] transition-all duration-150 flex items-center gap-1.5 cursor-pointer select-none ${
                     isActive 
-                      ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/60 dark:border-zinc-700/50' 
-                      : 'bg-transparent border border-transparent text-slate-400 dark:text-zinc-500 hover:bg-slate-200/30 dark:hover:bg-zinc-800/40 hover:text-slate-600 dark:hover:text-zinc-300 font-normal'
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/90 dark:border-zinc-700/80 ring-1 ring-black/[0.02]' 
+                      : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-800 dark:hover:text-zinc-200 font-medium'
                   }`}
                 >
                   <AppNativeSvgIcon
                     variant="minimal"
                     size={13}
                     type={docMode}
-                    className={`shrink-0 transition-opacity ${isActive ? 'opacity-80' : 'opacity-40 group-hover/tab:opacity-70'}`}
+                    className={`shrink-0 transition-opacity ${isActive ? 'text-violet-600 dark:text-violet-400 opacity-100' : 'text-slate-400 dark:text-zinc-500 opacity-60 group-hover/tab:opacity-90'}`}
                   />
                   {renamingDocId === doc.id ? (
                     <input
