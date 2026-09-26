@@ -19021,6 +19021,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
   const [sheetsExportMenuOpen, setSheetsExportMenuOpen] = useState(false);
   const [deckExportMenuOpen, setDeckExportMenuOpen] = useState(false);
   const [whiteboardExportMenuOpen, setWhiteboardExportMenuOpen] = useState(false);
+  const [bottomActionExportOpen, setBottomActionExportOpen] = useState(false);
+  const bottomActionCapsuleRef = useRef(null);
   const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
@@ -25421,6 +25423,386 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
 
     return 'Draft';
+  };
+
+  /**
+   * Executive-tier Floating Bottom Action Capsule
+   * Houses Workspace Library, Context-Aware Export, and Share in an Apple-style frosted glass capsule.
+   */
+  const renderBottomActionCapsule = () => {
+    // Hide when modal screens, presentation modes, zen mode, or landing/home page takes over
+    if (isSheetsPresentationMode || isDeckPresentationMode || isSheetZenMode || isWhiteboardImmersive || productMode === 'landing') {
+      return null;
+    }
+    if (roomState === 'active' && roomPanelMode === 'expanded') {
+      return null;
+    }
+
+    // Determine bottom positioning offset based on whether active mode has a dock/footer
+    const hasBottomBar = (productMode === 'compose' && activeRightTab !== 'whiteboard') || (productMode === 'sheets');
+    const bottomClass = hasBottomBar ? 'bottom-12' : 'bottom-5';
+
+    const currentExportOptions = () => {
+      if (productMode === 'sheets') {
+        return [
+          { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)', desc: '.xlsx', action: exportActiveSheetToExcel },
+          { fmt: 'CSV', label: 'CSV Document (.csv)', desc: '.csv', action: exportActiveSheetToCSV },
+          { fmt: 'PDF', label: 'PDF Document (.pdf)', desc: '.pdf', action: exportActiveSheetToPDF },
+          { fmt: 'JSON', label: 'JSON Data (.json)', desc: '.json', action: exportActiveSheetToJSON },
+        ];
+      }
+      if (productMode === 'deck') {
+        return [
+          { fmt: 'PPTX', label: 'PowerPoint (.pptx)', desc: '.pptx', action: async () => {
+            showToast('Exporting as PPTX...');
+            try {
+              await exportDeck('PPTX', deckSlidesData || [], deckTitle || 'Presentation');
+              showToast('Exported presentation as PPTX');
+            } catch (e) {
+              showToast(`Export failed: ${e.message}`);
+            }
+          }},
+          { fmt: 'PDF', label: 'PDF Document (.pdf)', desc: '.pdf', action: async () => {
+            showToast('Exporting as PDF...');
+            try {
+              await exportDeck('PDF', deckSlidesData || [], deckTitle || 'Presentation');
+              showToast('Exported presentation as PDF');
+            } catch (e) {
+              showToast(`Export failed: ${e.message}`);
+            }
+          }},
+          { fmt: 'Images', label: 'Slide Images (.png)', desc: '.png', action: async () => {
+            showToast('Exporting slide images...');
+            try {
+              await exportDeck('Images', deckSlidesData || [], deckTitle || 'Presentation');
+              showToast('Exported slide images');
+            } catch (e) {
+              showToast(`Export failed: ${e.message}`);
+            }
+          }},
+        ];
+      }
+      if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
+        return [
+          { fmt: 'Whiteboard', label: 'Whiteboard File (.whiteboard)', desc: '.whiteboard', action: async () => {
+            setIsExporting(true);
+            try {
+              await exportWhiteboard('Whiteboard', [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+              showToast('Exported whiteboard file');
+            } catch (e) {
+              showToast('Export failed: ' + e.message);
+            } finally {
+              setIsExporting(false);
+            }
+          }},
+          { fmt: 'PNG', label: 'PNG Image (.png)', desc: '.png', action: async () => {
+            setIsExporting(true);
+            try {
+              await exportWhiteboard('PNG', [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+              showToast('Exported as PNG');
+            } catch (e) {
+              showToast('Export failed: ' + e.message);
+            } finally {
+              setIsExporting(false);
+            }
+          }},
+          { fmt: 'SVG', label: 'SVG Vector (.svg)', desc: '.svg', action: async () => {
+            setIsExporting(true);
+            try {
+              await exportWhiteboard('SVG', [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+              showToast('Exported as SVG');
+            } catch (e) {
+              showToast('Export failed: ' + e.message);
+            } finally {
+              setIsExporting(false);
+            }
+          }},
+          { fmt: 'PDF', label: 'PDF Document (.pdf)', desc: '.pdf', action: async () => {
+            setIsExporting(true);
+            try {
+              await exportWhiteboard('PDF', [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+              showToast('Exported as PDF');
+            } catch (e) {
+              showToast('Export failed: ' + e.message);
+            } finally {
+              setIsExporting(false);
+            }
+          }},
+        ];
+      }
+      // Default: Compose Document
+      return [
+        { fmt: 'Compose', label: t('export.composeDoc') || 'Compose Document', desc: '.compose', action: async () => {
+          setIsExporting(true);
+          try {
+            await exportCompose('Compose', blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+            showToast('Exported as Compose');
+          } catch (e) {
+            showToast('Export failed: ' + e.message);
+          } finally {
+            setIsExporting(false);
+          }
+        }},
+        { fmt: 'Word', label: t('export.wordDoc') || 'Microsoft Word', desc: '.docx', action: async () => {
+          setIsExporting(true);
+          try {
+            await exportCompose('Word', blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+            showToast('Exported as Word');
+          } catch (e) {
+            showToast('Export failed: ' + e.message);
+          } finally {
+            setIsExporting(false);
+          }
+        }},
+        { fmt: 'Docs', label: t('export.googleDocs') || 'Google Docs Cloud', desc: 'Cloud Format', action: async () => {
+          setIsExporting(true);
+          try {
+            await exportCompose('Docs', blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+            showToast('Exported as Google Docs');
+          } catch (e) {
+            showToast('Export failed: ' + e.message);
+          } finally {
+            setIsExporting(false);
+          }
+        }},
+        { fmt: 'PDF', label: t('export.pdfDoc') || 'PDF Document', desc: '.pdf', action: async () => {
+          setIsExporting(true);
+          try {
+            await exportCompose('PDF', blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+            showToast('Exported as PDF');
+          } catch (e) {
+            showToast('Export failed: ' + e.message);
+          } finally {
+            setIsExporting(false);
+          }
+        }},
+        { fmt: 'Markdown', label: t('export.markdownDoc') || 'Markdown File', desc: '.md', action: async () => {
+          setIsExporting(true);
+          try {
+            await exportCompose('Markdown', blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+            showToast('Exported as Markdown');
+          } catch (e) {
+            showToast('Export failed: ' + e.message);
+          } finally {
+            setIsExporting(false);
+          }
+        }},
+      ];
+    };
+
+    return (
+      <div 
+        ref={bottomActionCapsuleRef}
+        className={`fixed ${bottomClass} right-5 z-[500] flex items-center gap-1.5 p-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800/90 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] select-none transition-all duration-200 opacity-40 hover:opacity-100 ${
+          bottomActionExportOpen || shareModalOpen ? 'opacity-100' : ''
+        }`}
+      >
+        {/* 1. Library Button */}
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetFilter = isSheetsMode ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
+            setOrbInitialFilter(targetFilter);
+            setOrbInitialQuery('');
+            setIsMemorySearchOpen(true);
+          }}
+          className="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] cursor-pointer text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/90 dark:hover:bg-zinc-800"
+          title={`Browse ${isSheetsMode ? 'Sheets' : productMode === 'deck' ? 'Decks' : 'Documents'} Library`}
+        >
+          <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
+          <span>Library</span>
+        </button>
+
+        <div className="h-3.5 w-px bg-slate-200 dark:bg-zinc-800" />
+
+        {/* 2. Export Button & Upward Menu */}
+        <div className="relative">
+          <button
+            type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setBottomActionExportOpen((prev) => !prev);
+            }}
+            className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] cursor-pointer ${
+              bottomActionExportOpen 
+                ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300' 
+                : 'text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/90 dark:hover:bg-zinc-800'
+            }`}
+            title="Export Options"
+          >
+            <Download size={13} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
+            <span>{t('common.export') || 'Export'}</span>
+            {bottomActionExportOpen ? <ChevronDown size={11} strokeWidth={1.75} /> : <ChevronUp size={11} strokeWidth={1.75} />}
+          </button>
+
+          {bottomActionExportOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-[510] bg-transparent"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setBottomActionExportOpen(false);
+                }}
+              />
+              <div 
+                className="absolute right-0 bottom-full mb-2 z-[520] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl rounded-2xl p-2.5 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 py-1">
+                  {productMode === 'sheets' ? 'Export Spreadsheet' : productMode === 'deck' ? 'Export Deck' : (productMode === 'whiteboard' || activeRightTab === 'whiteboard') ? 'Export Canvas' : (t('export.exportAsFile') || 'Export as File')}
+                </div>
+                {currentExportOptions().map((opt) => (
+                  <button
+                    key={opt.fmt}
+                    type="button"
+                    disabled={isExporting}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setBottomActionExportOpen(false);
+                      opt.action();
+                    }}
+                    className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold cursor-pointer"
+                  >
+                    <span>{opt.label}</span>
+                    {opt.desc && <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal">{opt.desc}</span>}
+                  </button>
+                ))}
+
+                {/* Sheets special action: Save as Template */}
+                {productMode === 'sheets' && (
+                  <>
+                    <div className="h-px bg-slate-200/80 dark:bg-zinc-800 my-0.5" />
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setBottomActionExportOpen(false);
+                        setCreateTemplateSource('current');
+                        setCreateTemplateForm((prev) => ({
+                          ...prev,
+                          name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
+                        }));
+                        setIsCreateTemplateModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 text-xs py-2 px-2.5 rounded-xl text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold transition-colors text-left cursor-pointer"
+                    >
+                      <Plus size={14} /> Save as Template...
+                    </button>
+                  </>
+                )}
+
+                {/* Whiteboard special action: Convert To */}
+                {(productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
+                  <>
+                    <div className="h-px bg-slate-200/60 dark:bg-zinc-800 my-1" />
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 py-0.5">
+                      {t('export.convertTo') || 'Convert to'}
+                    </div>
+                    {[
+                      { target: 'Compose', icon: ComposeIcon, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
+                      { target: 'Deck', icon: DeckIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
+                      { target: 'Sheets', icon: SheetIcon, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/40' }
+                    ].map((cvt) => (
+                      <button
+                        key={cvt.target}
+                        type="button"
+                        disabled={isExporting}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsExporting(true);
+                          setTimeout(() => {
+                            setIsExporting(false);
+                            setBottomActionExportOpen(false);
+                            setProductMode(cvt.target.toLowerCase());
+                            showToast('Converted to ' + cvt.target);
+                          }, 1200);
+                        }}
+                        className="w-full flex items-center gap-2.5 p-1.5 px-2.5 text-xs rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer"
+                      >
+                        <div className={`p-1 rounded-lg ${cvt.color}`}>
+                          <cvt.icon size={13} />
+                        </div>
+                        <span>{cvt.target}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="h-3.5 w-px bg-slate-200 dark:bg-zinc-800" />
+
+        {/* 3. Share Button */}
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!shareModalOpen) {
+              const targetDocId = isSheetsMode ? 'sheet' : (activeDocId || documents[0]?.id);
+              openShareModal(targetDocId);
+            } else {
+              setShareModalOpen(false);
+            }
+          }}
+          className="btn-share text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-all duration-150 active:scale-[0.97] cursor-pointer select-none"
+        >
+          <Users size={13} strokeWidth={1.75} />
+          <span>{t('common.share') || 'Share'}</span>
+        </button>
+
+        {shareModalOpen && (
+          <ShareModal
+            t={t}
+            isOpen={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            shareTargetDocTitle={shareTargetDocTitle}
+            shareDestination={shareDestination}
+            setShareDestination={setShareDestination}
+            shareAccess={shareAccess}
+            setShareAccess={setShareAccess}
+            shareFormat={shareFormat}
+            setShareFormat={setShareFormat}
+            shareLink={shareLink}
+            handleShareModalConfirm={handleShareModalConfirm}
+            zeroKnowledgeRedactions={zeroKnowledgeRedactions}
+            removeProtection={removeProtection}
+            newRedactionKeyword={newRedactionKeyword}
+            setNewRedactionKeyword={setNewRedactionKeyword}
+            protectKeywordInEditor={protectKeywordInEditor}
+            setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
+            sharePasswordProtected={sharePasswordProtected}
+            setSharePasswordProtected={setSharePasswordProtected}
+            sharePassword={sharePassword}
+            setSharePassword={setSharePassword}
+            sharePasswordConfirm={sharePasswordConfirm}
+            setSharePasswordConfirm={setSharePasswordConfirm}
+            showSharePassword={showSharePassword}
+            setShowSharePassword={setShowSharePassword}
+            isPasswordConfirmed={isPasswordConfirmed}
+            setIsPasswordConfirmed={setIsPasswordConfirmed}
+            shareExpiringAccess={shareExpiringAccess}
+            setShareExpiringAccess={setShareExpiringAccess}
+            shareExpirationValue={shareExpirationValue}
+            setShareExpirationValue={setShareExpirationValue}
+            shareExpirationUnit={shareExpirationUnit}
+            setShareExpirationUnit={setShareExpirationUnit}
+            shareExpirationDate={shareExpirationDate}
+            setShareExpirationDate={setShareExpirationDate}
+            showToast={showToast}
+          />
+        )}
+      </div>
+    );
   };
 
   const isGenericGeneratedTitle = (value) => /^(compose draft|compose article|compose proposal|compose checklist|compose timeline|compose risk review|ai composed section|compose article)$/i.test(String(value || '').trim());
@@ -50189,193 +50571,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
               <div className="flex items-center gap-2">
-                {/* Peripheral Actions (Export, Share, ... More Menu) - Fades on work, reveals on hover */}
+                {/* Peripheral Actions (... More Menu) - Fades on work, reveals on hover */}
                 <div className={`flex items-center gap-2 transition-all duration-200 ${
-                  (isTopHeaderHovered || (isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                  (isTopHeaderHovered || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
                     ? 'opacity-100 pointer-events-auto' 
                     : 'opacity-0 pointer-events-none'
                 }`}>
-                  {/* Workspace Library / Files Browser Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const targetFilter = isSheetsMode ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
-                      setOrbInitialFilter(targetFilter);
-                      setOrbInitialQuery('');
-                      setIsMemorySearchOpen(true);
-                    }}
-                    className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
-                    title={`Browse ${isSheetsMode ? 'Sheets' : productMode === 'deck' ? 'Decks' : 'Documents'} Library`}
-                  >
-                    <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
-                    <span>Library</span>
-                  </button>
-
-                  {/* Export Dropdown Button */}
-              <div className="relative export-menu-container">
-                <button
-                  onClick={() => {
-                    closeTransientMenus();
-                    if (isSheetsMode) {
-                      setSheetsExportMenuOpen(!sheetsExportMenuOpen);
-                    } else {
-                      setDeckExportMenuOpen(!deckExportMenuOpen);
-                    }
-                  }}
-                  className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
-                  title="Export"
-                >
-                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
-                  <span>{t('common.export') || 'Export'}</span>
-                  {(isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
-                </button>
-                {isSheetsMode && sheetsExportMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                      onClick={() => setSheetsExportMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-3 flex flex-col gap-1 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2 py-1">
-                        Export Spreadsheet
-                      </span>
-                      {[
-                        { fmt: 'XLSX', label: 'Excel Workbook (.xlsx)', action: exportActiveSheetToExcel },
-                        { fmt: 'CSV', label: 'CSV Document (.csv)', action: exportActiveSheetToCSV },
-                        { fmt: 'PDF', label: 'PDF Document (.pdf)', action: exportActiveSheetToPDF },
-                        { fmt: 'JSON', label: 'JSON Data (.json)', action: exportActiveSheetToJSON },
-                      ].map(item => (
-                        <button
-                          key={item.fmt}
-                          onClick={() => {
-                            item.action();
-                            setSheetsExportMenuOpen(false);
-                          }}
-                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                      <div className="h-px bg-slate-200/80 dark:bg-zinc-800 my-1" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSheetsExportMenuOpen(false);
-                          setCreateTemplateSource('current');
-                          setCreateTemplateForm((prev) => ({
-                            ...prev,
-                            name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
-                          }));
-                          setIsCreateTemplateModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-2 text-xs py-2 px-3 rounded-xl text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/60 font-semibold transition-colors text-left"
-                      >
-                        <Plus size={14} /> Save as Template...
-                      </button>
-                    </div>
-                  </>
-                )}
-                {!isSheetsMode && deckExportMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[360] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
-                      onClick={() => setDeckExportMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-11 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-2 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1 mb-0.5">
-                        Export Deck
-                      </span>
-                      {[
-                        { fmt: 'PPTX', label: 'PowerPoint (.pptx)' },
-                        { fmt: 'PDF', label: 'PDF Document (.pdf)' },
-                        { fmt: 'Images', label: 'Slide Images (.png)' }
-                      ].map(item => (
-                        <button
-                          key={item.fmt}
-                          onClick={async () => {
-                            showToast(`Exporting as ${item.fmt}...`);
-                            try {
-                              await exportDeck(item.fmt, deckSlidesData || [], deckTitle || 'Presentation');
-                              showToast(`Exported presentation as ${item.fmt}`);
-                            } catch (e) {
-                              console.error('Deck export error:', e);
-                              showToast(`Export failed: ${e.message}`);
-                            } finally {
-                              setDeckExportMenuOpen(false);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between text-xs py-2 px-3 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Share Button */}
-              <div className="relative font-sans" ref={shareMenuRef}>
-                <button
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!shareModalOpen) {
-                      openShareModal(isSheetsMode ? 'sheet' : (activeDocId || documents[0]?.id));
-                    } else {
-                      setShareModalOpen(false);
-                    }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  data-share="true"
-                  className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
-                  style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
-                >
-                  <Users size={13} strokeWidth={1.5} /> {t('common.share') || 'Share'}
-                </button>
-                  {shareModalOpen && (
-                    <ShareModal
-                      isOpen={shareModalOpen}
-                      onClose={() => setShareModalOpen(false)}
-                      shareTargetDocTitle={shareTargetDocTitle === 'Untitled Document' ? (t('common.untitledDoc') || 'Untitled Document') : (shareTargetDocTitle || (t('common.untitledDoc') || 'Untitled Document'))}
-                      shareDestination={shareDestination}
-                      setShareDestination={setShareDestination}
-                      shareAccess={shareAccess}
-                      setShareAccess={setShareAccess}
-                      shareFormat={shareFormat}
-                      setShareFormat={setShareFormat}
-                      shareLink={shareLink}
-                      handleShareModalConfirm={handleShareModalConfirm}
-                      zeroKnowledgeRedactions={zeroKnowledgeRedactions}
-                      removeProtection={removeProtection}
-                      newRedactionKeyword={newRedactionKeyword}
-                      setNewRedactionKeyword={setNewRedactionKeyword}
-                      protectKeywordInEditor={protectKeywordInEditor}
-                      setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
-                      sharePasswordProtected={sharePasswordProtected}
-                      setSharePasswordProtected={setSharePasswordProtected}
-                      sharePassword={sharePassword}
-                      setSharePassword={setSharePassword}
-                      sharePasswordConfirm={sharePasswordConfirm}
-                      setSharePasswordConfirm={setSharePasswordConfirm}
-                      showSharePassword={showSharePassword}
-                      setShowSharePassword={setShowSharePassword}
-                      isPasswordConfirmed={isPasswordConfirmed}
-                      setIsPasswordConfirmed={setIsPasswordConfirmed}
-                      shareExpiringAccess={shareExpiringAccess}
-                      setShareExpiringAccess={setShareExpiringAccess}
-                      shareExpirationValue={shareExpirationValue}
-                      setShareExpirationValue={setShareExpirationValue}
-                      shareExpirationUnit={shareExpirationUnit}
-                      setShareExpirationUnit={setShareExpirationUnit}
-                      shareExpirationDate={shareExpirationDate}
-                      setShareExpirationDate={setShareExpirationDate}
-                      showToast={showToast}
-                    />
-                  )}
-                </div>
-
                   <div className="relative" ref={headerMoreMenuRef}>
                     <button
                       type="button"
@@ -50558,7 +50759,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {/* Subtle Vertical Divider */}
                 <div className={`h-4 w-px bg-slate-200/80 dark:bg-zinc-800 transition-opacity duration-200 ${
-                  (isTopHeaderHovered || (isSheetsMode ? sheetsExportMenuOpen : deckExportMenuOpen) || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+                  (isTopHeaderHovered || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
                     ? 'opacity-100'
                     : 'opacity-0'
                 }`} />
@@ -74239,6 +74440,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
         document.fullscreenElement ?? document.body
       )}
 
+      {/* Floating Executive Bottom-Right Action Capsule */}
+      {renderBottomActionCapsule()}
+
       </div>
     );
   }
@@ -76190,220 +76394,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
           <div className="flex items-center gap-2">
-            {/* Peripheral Actions (Export, Share, ... More Menu) - Fades on work, reveals on hover */}
+            {/* Peripheral Actions (Avatars, ... More Menu) - Fades on work, reveals on hover */}
             <div className={`flex items-center gap-2 transition-all duration-200 ${
-              (isTopHeaderHovered || composeExportMenuOpen || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+              (isTopHeaderHovered || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
                 ? 'opacity-100 pointer-events-auto' 
                 : 'opacity-0 pointer-events-none'
             }`}>
-              {/* Workspace Library / Files Browser Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setOrbInitialFilter('compose');
-                  setOrbInitialQuery('');
-                  setIsMemorySearchOpen(true);
-                }}
-                className="text-xs font-semibold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] border cursor-pointer select-none text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-zinc-800 border-slate-200/80 dark:border-zinc-700/80 bg-white/70 dark:bg-zinc-900/60 shadow-2xs"
-                title="Browse Documents Library"
-              >
-                <FolderOpen size={13} strokeWidth={1.75} className="text-violet-600 dark:text-violet-400" />
-                <span>Library</span>
-              </button>
-
-              {/* Export Dropdown Button in Top Header */}
-            {(productMode === 'compose' || productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
-              <div className="relative export-menu-container">
-                <button
-                  onClick={() => {
-                    closeTransientMenus();
-                    if (productMode === 'whiteboard' || activeRightTab === 'whiteboard') {
-                      setWhiteboardExportMenuOpen(!whiteboardExportMenuOpen);
-                    } else {
-                      setComposeExportMenuOpen(!composeExportMenuOpen);
-                    }
-                  }}
-                  className={`text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] border cursor-pointer select-none ${(composeExportMenuOpen || whiteboardExportMenuOpen) ? 'border-violet-600 dark:border-violet-500 bg-violet-600 text-white shadow-xs' : 'text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-violet-700 border-slate-200/80 dark:border-violet-500/80 bg-white dark:bg-violet-600 shadow-2xs'}`}
-                  title="Export Options"
-                >
-                  <Download size={13} strokeWidth={1.5} className="text-slate-500 dark:text-white" />
-                  <span>{t('common.export') || 'Export'}</span>
-                  {(composeExportMenuOpen || whiteboardExportMenuOpen) ? <ChevronUp size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" /> : <ChevronDown size={12} strokeWidth={1.5} className="text-slate-400 dark:text-white" />}
-                </button>
-                {composeExportMenuOpen && productMode === 'compose' && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
-                      onClick={() => setComposeExportMenuOpen(false)}
-                    />
-                    <div className="absolute top-11 right-0 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">{t('export.exportAsFile') || 'Export as File'}</span>
-                        {[
-                          { format: 'Compose', label: t('export.composeDoc') || 'Compose Document', desc: '.compose' },
-                          { format: 'Word', label: t('export.wordDoc') || 'Microsoft Word', desc: '.docx' },
-                          { format: 'Docs', label: t('export.googleDocs') || 'Google Docs Cloud', desc: 'Cloud Format' },
-                          { format: 'PDF', label: t('export.pdfDoc') || 'PDF Document', desc: '.pdf' },
-                          { format: 'Markdown', label: t('export.markdownDoc') || 'Markdown File', desc: '.md' }
-                        ].map(f => (
-                          <button 
-                            key={f.format}
-                            disabled={isExporting}
-                            onClick={async () => {
-                              setIsExporting(true);
-                              try {
-                                await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
-                                showToast('Exported as ' + f.format);
-                              } catch (e) {
-                                showToast('Export failed: ' + e.message);
-                              } finally {
-                                setIsExporting(false);
-                                setComposeExportMenuOpen(false);
-                              }
-                            }}
-                            className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                          >
-                            <span>{f.label}</span>
-                            <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-                {whiteboardExportMenuOpen && (productMode === 'whiteboard' || activeRightTab === 'whiteboard') && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[360] bg-slate-900/10 dark:bg-black/40 backdrop-blur-[3px] transition-opacity duration-150 animate-in fade-in"
-                      onClick={() => setWhiteboardExportMenuOpen(false)}
-                    />
-                    <div className="absolute top-11 right-0 z-[370] w-64 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/75 dark:bg-[#1c1c1e]/75 backdrop-blur-3xl shadow-2xl rounded-2xl p-4 flex flex-col gap-3.5 font-sans animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">Export as File</span>
-                        {[
-                          { format: 'Whiteboard', label: 'Whiteboard', desc: '.whiteboard' },
-                          { format: 'PNG', label: 'PNG Image', desc: '.png' },
-                          { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
-                          { format: 'PDF', label: 'PDF Document', desc: '.pdf' }
-                        ].map(f => (
-                          <button 
-                            key={f.format}
-                            disabled={isExporting}
-                            onClick={async () => {
-                              setIsExporting(true);
-                              try {
-                                await exportWhiteboard(f.format, [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
-                                showToast('Exported as ' + f.format);
-                              } catch (e) {
-                                showToast('Export failed: ' + e.message);
-                              } finally {
-                                setIsExporting(false);
-                                setWhiteboardExportMenuOpen(false);
-                              }
-                            }}
-                            className="w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
-                          >
-                            <span>{f.label}</span>
-                            <span className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">{f.desc}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="h-px bg-slate-200/60 dark:bg-zinc-800 w-full"></div>
-                      <div className="flex flex-col gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-1">{t('export.convertTo') || 'Convert to'}</span>
-                        {[
-                          { target: 'Compose', icon: ComposeIcon, color: 'text-blue-500 bg-blue-50/80 dark:bg-blue-950/40' },
-                          { target: 'Deck', icon: DeckIcon, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
-                          { target: 'Sheets', icon: SheetIcon, color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/40' }
-                        ].map(t => (
-                          <button 
-                            key={t.target}
-                            disabled={isExporting}
-                            onClick={() => {
-                              setIsExporting(true);
-                              setTimeout(() => { 
-                                setIsExporting(false); 
-                                setWhiteboardExportMenuOpen(false); 
-                                setProductMode(t.target.toLowerCase());
-                                showToast('Converted to ' + t.target); 
-                              }, 1200);
-                            }}
-                            className="w-full flex items-center gap-3 p-1.5 px-2.5 text-xs rounded-xl hover:bg-slate-100/70 dark:hover:bg-zinc-800/60 transition-colors font-semibold text-slate-700 dark:text-zinc-200"
-                          >
-                            <div className={`p-1.5 rounded-lg ${t.color}`}>
-                              <t.icon size={14} />
-                            </div>
-                            {t.target}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="relative font-sans" ref={composeShareMenuRef}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!shareModalOpen) {
-                    openShareModal(activeDocId || documents[0]?.id);
-                  } else {
-                    setShareModalOpen(false);
-                  }
-                }}
-                data-share="true"
-                className="btn-share btn-share-primary bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold px-3.5 py-1 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none"
-                style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
-              >
-                <Users size={13} strokeWidth={1.5} /> {t('common.share') || 'Share'}
-              </button>
-              {shareModalOpen && (
-                <ShareModal
-                  t={t}
-                  isOpen={shareModalOpen}
-                  onClose={() => setShareModalOpen(false)}
-                  shareTargetDocTitle={shareTargetDocTitle}
-                  shareDestination={shareDestination}
-                  setShareDestination={setShareDestination}
-                  shareAccess={shareAccess}
-                  setShareAccess={setShareAccess}
-                  shareFormat={shareFormat}
-                  setShareFormat={setShareFormat}
-                  shareLink={shareLink}
-                  handleShareModalConfirm={handleShareModalConfirm}
-                  zeroKnowledgeRedactions={zeroKnowledgeRedactions}
-                  removeProtection={removeProtection}
-                  newRedactionKeyword={newRedactionKeyword}
-                  setNewRedactionKeyword={setNewRedactionKeyword}
-                  protectKeywordInEditor={protectKeywordInEditor}
-                  setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
-                  sharePasswordProtected={sharePasswordProtected}
-                  setSharePasswordProtected={setSharePasswordProtected}
-                  sharePassword={sharePassword}
-                  setSharePassword={setSharePassword}
-                  sharePasswordConfirm={sharePasswordConfirm}
-                  setSharePasswordConfirm={setSharePasswordConfirm}
-                  showSharePassword={showSharePassword}
-                  setShowSharePassword={setShowSharePassword}
-                  isPasswordConfirmed={isPasswordConfirmed}
-                  setIsPasswordConfirmed={setIsPasswordConfirmed}
-                  shareExpiringAccess={shareExpiringAccess}
-                  setShareExpiringAccess={setShareExpiringAccess}
-                  shareExpirationValue={shareExpirationValue}
-                  setShareExpirationValue={setShareExpirationValue}
-                  shareExpirationUnit={shareExpirationUnit}
-                  setShareExpirationUnit={setShareExpirationUnit}
-                  shareExpirationDate={shareExpirationDate}
-                  setShareExpirationDate={setShareExpirationDate}
-                  showToast={showToast}
-                />
-              )}
-            </div>
-            
-            {/* Avatars */}
-            <div className="flex -space-x-2">
+              {/* Avatars */}
+              <div className="flex -space-x-2">
               {isAwarenessReady && Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
                 if (!userState.user) return null;
                 const isMe = clientID === providerRef.current?.awareness?.clientID;
@@ -76605,7 +76603,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {/* Subtle Vertical Divider */}
             <div className={`h-4 w-px bg-slate-200/80 dark:bg-zinc-800 transition-opacity duration-200 ${
-              (isTopHeaderHovered || composeExportMenuOpen || shareModalOpen || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
+              (isTopHeaderHovered || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
                 ? 'opacity-100'
                 : 'opacity-0'
             }`} />
@@ -91239,6 +91237,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>,
         document.fullscreenElement ?? document.body
       )}
+
+      {/* Floating Executive Bottom-Right Action Capsule */}
+      {renderBottomActionCapsule()}
+
     </div>
   );
 }
