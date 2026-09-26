@@ -82675,14 +82675,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`fixed bottom-14 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
+          className={`fixed bottom-8 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
             transform: `translateY(${promptOffset.y}px)`
           }}
         >
-          <div className="max-w-[1600px] mx-auto px-6 md:px-10 flex justify-center" style={{ transform: `translateX(${promptOffset.x}px)` }}>
+          <div className="max-w-[1600px] mx-auto px-4 md:px-8 flex justify-center" style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
               ref={promptRootRef}
               onSubmit={handleFloatingSend}
@@ -82693,8 +82693,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 event.preventDefault();
                 attachFilesToPrompt(event.dataTransfer?.files);
               }}
-              className={`relative transition-all duration-500 ${(isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open ? 'pointer-events-none' : 'pointer-events-auto'}`}
-              style={{ width: isPromptExpanded ? `min(1360px, calc(100vw - ${blurLeftInset + blurRightInset + 120}px))` : `${Math.max(320, Math.min(promptWidth, 980))}px`, maxWidth: '100%' }}
+              className={`relative transition-all duration-300 ${(isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open ? 'pointer-events-none' : 'pointer-events-auto'}`}
+              style={{ width: isPromptExpanded ? `min(860px, calc(100vw - ${blurLeftInset + blurRightInset + 48}px))` : `min(620px, calc(100vw - ${blurLeftInset + blurRightInset + 32}px))`, maxWidth: '100%' }}
             >
               <input
                 ref={promptAudioInputRef}
@@ -83042,36 +83042,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                   )}
-                  <div className={`relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 ${isPromptSlashMenuOpen ? 'ring-1 ring-violet-500/30 dark:ring-violet-400/40 shadow-[0_16px_40px_rgba(0,0,0,0.18)]' : 'shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]'} rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300`}>
+                  <div className={`relative bg-white/92 dark:bg-zinc-900/92 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/80 hover:border-violet-400/70 dark:hover:border-violet-600/70 focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/15 ${isPromptSlashMenuOpen ? 'ring-2 ring-violet-500/25 shadow-[0_18px_48px_-8px_rgba(0,0,0,0.22)]' : 'shadow-[0_10px_34px_-6px_rgba(15,23,42,0.12),0_2px_6px_rgba(15,23,42,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.45)]'} rounded-[14px] px-2 py-1.5 flex items-center gap-1.5 w-full transition-all duration-200`}>
                     <button
                       type="button"
                       onClick={() => {
                         setIsPromptMinimized(true);
                         setIsPromptExpanded(false);
                       }}
-                      className="p-1.5 rounded-lg bg-violet-50/80 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 hover:bg-violet-100 hover:text-violet-700 shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center border border-violet-200/50 dark:border-violet-800/50 shadow-2xs"
-                      title="Minimize to floating icon"
+                      className="w-7 h-7 rounded-[8px] bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-300 hover:bg-violet-100 hover:text-violet-700 shrink-0 transition-all duration-150 active:scale-95 flex items-center justify-center border border-violet-200/60 dark:border-violet-800/50 shadow-2xs cursor-pointer"
+                      title="Minimize AI bar"
                     >
-                      <RegaarderAiIcon size={17} />
+                      <RegaarderAiIcon size={14} />
                     </button>
-                    <div className="relative">
+                    <div className="relative flex items-center">
                       <button
                         type="button"
                         onClick={() => setAiAttachmentMenuOpen(!aiAttachmentMenuOpen)}
-                        className="p-1.5 rounded-full text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                        className="w-7 h-7 rounded-[8px] text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
                         title="Add attachments"
                       >
-                        <Plus size={18} />
+                        <Plus size={14} strokeWidth={2} />
                       </button>
                       {aiAttachmentMenuOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-200 dark:border-zinc-800 py-1 z-50">
                           <button
                             type="button"
                             onClick={() => {
                               setAiAttachmentMenuOpen(false);
                               triggerAttachmentUpload('image');
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-violet-600 flex items-center gap-2 cursor-pointer"
                           >
                             <ImageIcon size={14} /> Image
                           </button>
@@ -83081,7 +83081,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setAiAttachmentMenuOpen(false);
                               triggerAttachmentUpload('document');
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-violet-600 flex items-center gap-2 cursor-pointer"
                           >
                             <FileText size={14} /> Document
                           </button>
@@ -83091,7 +83091,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setAiAttachmentMenuOpen(false);
                               promptAudioInputRef.current?.click();
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-violet-600 flex items-center gap-2 cursor-pointer"
                           >
                             <Mic size={14} /> Audio
                           </button>
@@ -83101,7 +83101,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setAiAttachmentMenuOpen(false);
                               triggerAttachmentUpload('file');
                             }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-violet-600 flex items-center gap-2 cursor-pointer"
                           >
                             <File size={14} /> File
                           </button>
@@ -83130,16 +83130,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     })()}
                     <button
                       type="button"
-                      onClick={toggleComposeModelPicker}
-                      className="compose-model-picker-trigger h-6 px-2.5 py-0.5 rounded-full bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 shadow-xs transition-all cursor-pointer shrink-0 mt-1"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleComposeModelPicker(e);
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="compose-model-picker-trigger h-7 px-2 rounded-[7px] bg-slate-100/90 dark:bg-zinc-800/90 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[11px] font-medium flex items-center gap-1.5 border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs transition-all cursor-pointer shrink-0 select-none"
                       title="Select Local Ollama, LM Studio, Device GGUF, or Cloud AI Engine"
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
-                      <span className="max-w-[110px] truncate">{composeSelectedModel?.name || "Model"}</span>
-                      <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+                      <span className={`w-1.5 h-1.5 rounded-full pointer-events-none ${composeSelectedModel.isLocal ? 'bg-emerald-500 animate-pulse' : 'bg-violet-500'}`} />
+                      <span className="max-w-[105px] truncate pointer-events-none">{composeSelectedModel?.name || "Model"}</span>
+                      <ChevronDown size={10} className="text-slate-400 dark:text-zinc-400 shrink-0 pointer-events-none" />
                     </button>
                     {activeAgentTag && (
-                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100/90 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 mt-1">
+                      <div className="inline-flex items-center gap-1 px-1.5 h-7 rounded-[7px] bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-medium text-xs tracking-tight group relative transition-all shrink-0 border border-blue-200/60 dark:border-blue-800/60">
                         <span className="font-mono text-[11px] font-semibold leading-tight">
                           {activeAgentTag.startsWith('/') ? activeAgentTag : `/${activeAgentTag}`}
                         </span>
@@ -83165,18 +83173,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       placeholder={Boolean((selectedEditorText || selectedEditorTextRef.current)?.trim()) ? (t('orb.askAboutSelection') || "Ask anything about this selection...") : (t('orb.describeWrite') || "Describe what you'd like to write...")}
                       rows={1}
                       style={{ textAlign: 'left' }}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 dark:text-zinc-100 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal text-left"
+                      className="flex-1 bg-transparent border-none focus:outline-none text-[12.5px] text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 py-1 resize-none overflow-hidden min-h-[26px] max-h-[120px] font-normal tracking-normal text-left leading-normal"
                     />
                     <button
                       type="submit"
                       disabled={isComposing || !floatingPrompt.trim()}
-                      className={`w-7 h-7 rounded-lg p-1.5 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer ${
+                      className={`w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0 transition-all duration-200 ease-out ${
                         floatingPrompt.trim() || isComposing
-                          ? 'opacity-100 bg-violet-50 text-violet-600 border border-violet-200/90 hover:bg-violet-100 hover:text-violet-700 shadow-2xs dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800' 
-                          : 'opacity-35 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600'
+                          ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-2xs active:scale-95 cursor-pointer' 
+                          : 'bg-transparent text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 cursor-not-allowed opacity-60'
                       }`}
                     >
-                      {isComposing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} strokeWidth={1.75} />}
+                      {isComposing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} strokeWidth={1.8} />}
                     </button>
                   </div>
                 </div>
@@ -83272,7 +83280,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         )}
 
-        {(isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        {(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen) && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
