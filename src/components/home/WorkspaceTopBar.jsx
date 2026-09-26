@@ -29,7 +29,7 @@ export default function WorkspaceTopBar({
     : "U";
 
   return (
-    <header className="h-[54px] px-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30">
+    <header style={{ paddingRight: (typeof window !== 'undefined' && window.electronAPI) ? '140px' : undefined }} className="h-[54px] px-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30">
       {/* Left: Brand Identity */}
       <div className="flex items-center gap-2.5 min-w-0">
         <button
