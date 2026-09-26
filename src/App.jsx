@@ -8249,6 +8249,7 @@ function AppCore() {
   };
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
+  const [ghostAiPreviewHtml, setGhostAiPreviewHtml] = useState(null);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(true);
   const [roomMaximized, setRoomMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
@@ -42354,21 +42355,22 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       {/* Floating Exit Button for Right Sidebar (Legacy external button removed in favor of integrated island close button) */}
 
-      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && !rightPanelMaximized && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
-          className="w-1.5 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-400/40 active:bg-violet-500/50 transition-colors opacity-0 hover:opacity-100 z-[401] fixed right-0 top-3 bottom-3 rounded-full"
+          className="w-1.5 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-400/40 active:bg-violet-500/50 transition-colors opacity-0 hover:opacity-100 z-[401] fixed top-12 bottom-0"
+          style={{ right: `${(productMode === 'compose' ? (rightSidebarWidth || 350) : rightSidebarWidth) - 3}px` }}
           aria-label="Resize right sidebar"
         />
       )}
 
       <div 
-        className={`no-fullscreen-toggle flex flex-col bg-white/70 dark:bg-zinc-900/75 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
+        className={`no-fullscreen-toggle flex flex-col bg-white/85 dark:bg-zinc-900/90 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
-            ? 'fixed z-[400] rounded-2xl border border-white/80 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] animate-in fade-in slide-in-from-right-4 ring-1 ring-black/[0.04] dark:ring-white/[0.05]'
+            ? 'fixed z-[400] border-l border-slate-200/80 dark:border-zinc-800/80 shadow-[-8px_0_30px_rgba(0,0,0,0.04)] dark:shadow-[-8px_0_30px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '44px', right: '12px', bottom: '12px', height: 'calc(100vh - 56px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 380}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '44px', right: '12px', bottom: '12px', height: 'calc(100vh - 56px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '48px', right: '0px', bottom: '0px', height: 'calc(100vh - 48px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 350}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '48px', right: '0px', bottom: '0px', height: 'calc(100vh - 48px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
@@ -42379,7 +42381,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="flex items-center w-full p-0.5 bg-slate-200/50 dark:bg-zinc-800/60 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 gap-0.5">
+            <div className="flex items-center w-full p-0.5 bg-slate-100/80 dark:bg-zinc-800/60 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 gap-0.5">
               {[
                 { key: 'assistant', label: t('sidebar.assistant') || 'Assistant' },
                 { key: 'history', label: t('sidebar.history') || 'History' },
@@ -42392,8 +42394,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                     type="button"
                     className={`flex-1 min-w-0 px-2.5 py-1 rounded-[6px] transition-all text-[11.5px] text-center justify-center flex items-center cursor-pointer ${
                       isActive 
-                        ? 'bg-white/90 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-100 font-semibold shadow-2xs border border-white/60 dark:border-zinc-700/60' 
-                        : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/40 border border-transparent'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-slate-300 dark:outline-zinc-650' 
+                        : 'text-slate-500 dark:text-zinc-400 font-medium hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                     }`}
                     onClick={() => {
                       if (tab.key === 'manageen') {
@@ -42409,16 +42411,6 @@ Respond with a JSON array of slide objects matching the schema.`;
               })}
             </div>
           </div>
-          {(activeRightTab === 'assistant' || activeRightTab === 'chat') && (
-            <button
-              type="button"
-              onClick={startNewChatSession}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
-              title="New Chat (Clear thread)"
-            >
-              <Plus size={13} strokeWidth={2} />
-            </button>
-          )}
           <button
             type="button"
             onClick={() => {
@@ -42744,17 +42736,17 @@ Respond with a JSON array of slide objects matching the schema.`;
                     ))
                 ) : (
                   /* Beautiful Executive Apple-Style Empty State */
-                  <div className="h-full flex flex-col items-center justify-center py-20 px-6 text-center">
-                    <div className="relative mb-4">
-                      <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.12)]">
-                        <RegaarderAiIcon size={28} className="text-violet-600 dark:text-violet-400" />
+                  <div className="h-full flex flex-col items-center justify-center py-16 px-6 text-center select-none">
+                    <div className="relative mb-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 flex items-center justify-center text-slate-500 dark:text-zinc-400 shadow-2xs">
+                        <RegaarderAiIcon size={22} className="text-violet-600 dark:text-violet-400" />
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-400 shadow-xs">
-                        <Clock size={12} />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-400 shadow-2xs">
+                        <Clock size={10} />
                       </div>
                     </div>
 
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-100">No Conversations Yet</h4>
+                    <h4 className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">No Conversations Yet</h4>
                     <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
                       Your past AI chats, prompts, and uploaded reference files will automatically appear here.
                     </p>
@@ -42762,9 +42754,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <button
                       type="button"
                       onClick={startNewChatSession}
-                      className="mt-5 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] cursor-pointer"
+                      className="mt-4 flex items-center gap-1.5 px-3.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                     >
-                      <Plus size={14} strokeWidth={2.5} />
+                      <Plus size={13} strokeWidth={2.5} />
                       <span>Start New Conversation</span>
                     </button>
                   </div>
@@ -43021,40 +43013,42 @@ Respond with a JSON array of slide objects matching the schema.`;
             <div className="flex-1 flex flex-col min-h-0 bg-transparent">
               {/* Refined Context & Chat Sessions Header */}
               {chatTabs.length > 1 && (
-                <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-100/60 dark:border-zinc-800/60 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md overflow-x-auto thin-scrollbar shrink-0 select-none">
-                  {chatTabs.map((tab) => {
-                    const isActive = tab.id === activeChatTabId;
-                    return (
-                      <div
-                        key={tab.id}
-                        onClick={() => handleSwitchChatTab(tab.id)}
-                        className={`group relative flex items-center gap-1.5 pl-2 pr-1.5 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
-                          isActive
-                            ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border-slate-200/80 dark:border-zinc-700/80 shadow-2xs font-semibold'
-                            : 'bg-transparent text-slate-500 dark:text-zinc-400 border-transparent hover:bg-white/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-300'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
-                        <span className="truncate max-w-[85px]">{tab.title || 'Chat'}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleCloseChatTab(tab.id, e)}
-                          className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 transition-opacity duration-150 ${
-                            chatTabs.length > 1
-                              ? 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10'
-                              : 'hidden'
+                <div className="flex items-center gap-1 px-3 py-1 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/60 overflow-x-auto thin-scrollbar shrink-0 select-none">
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    {chatTabs.map((tab) => {
+                      const isActive = tab.id === activeChatTabId;
+                      return (
+                        <div
+                          key={tab.id}
+                          onClick={() => handleSwitchChatTab(tab.id)}
+                          className={`group relative flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] text-[11px] font-medium transition-all cursor-pointer shrink-0 border select-none ${
+                            isActive
+                              ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border-slate-200/90 dark:border-zinc-700 shadow-2xs font-semibold'
+                              : 'bg-transparent text-slate-400 dark:text-zinc-500 border-transparent hover:text-slate-700 dark:hover:text-zinc-300 hover:bg-slate-200/40 dark:hover:bg-zinc-800/40'
                           }`}
-                          title="Close chat tab"
                         >
-                          <X size={9} strokeWidth={2} />
-                        </button>
-                      </div>
-                    );
-                  })}
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tab.isComposing ? 'bg-violet-500 animate-spin' : isActive ? 'bg-violet-600 dark:bg-violet-400' : 'bg-slate-300 dark:bg-zinc-600'}`} />
+                          <span className="truncate max-w-[80px]">{tab.title || 'Chat'}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCloseChatTab(tab.id, e)}
+                            className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 transition-opacity duration-150 ${
+                              chatTabs.length > 1
+                                ? 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10'
+                                : 'hidden'
+                            }`}
+                            title="Close chat tab"
+                          >
+                            <X size={9} strokeWidth={2} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                   <button
                     type="button"
                     onClick={handleCreateNewChatTab}
-                    className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer transition-colors"
+                    className="p-1 rounded-[5px] text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 text-xs shrink-0 cursor-pointer transition-colors"
                     title="New Chat Session"
                   >
                     <Plus size={11} strokeWidth={2} />
@@ -43479,10 +43473,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                 {chatMessages.map((msg) => (
                   <div 
                     key={msg.id} 
-                    className={`group flex flex-col max-w-[88%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                    className={`group flex flex-col ${msg.sender === 'user' ? 'max-w-[85%] ml-auto items-end' : 'w-full mr-auto items-start'}`}
                   >
                     {/* Speaker Header with Official AI Icon */}
-                    <div className="flex items-center gap-1.5 mb-1 px-1">
+                    <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
                       {msg.sender !== 'user' && (
                         <div className="w-4 h-4 rounded-md bg-violet-100 dark:bg-violet-950 flex items-center justify-center text-violet-600 dark:text-violet-400">
                           <RegaarderAiIcon size={10} />
@@ -43502,9 +43496,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <div className={`p-3.5 rounded-xl text-[13px] leading-relaxed transition-all ${
                       msg.sender === 'user' 
                         ? 'bg-violet-600 dark:bg-violet-600 text-white rounded-tr-sm shadow-[0_2px_10px_rgba(124,90,207,0.25)] font-normal selection:bg-violet-700' 
-                        : msg.isBrowserResearch
-                          ? 'bg-white/90 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-tl-sm shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] w-full'
-                          : 'bg-white/90 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 rounded-tl-sm shadow-[0_4px_20px_-4px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]'
+                        : 'w-full bg-white dark:bg-zinc-850/90 text-slate-800 dark:text-zinc-200 border border-slate-200/70 dark:border-zinc-750 rounded-xl shadow-xs'
                     }`}>
                       {/* Live Sources Bar if Browser Research */}
                       {msg.isBrowserResearch && Array.isArray(msg.sources) && msg.sources.length > 0 && (
@@ -43729,7 +43721,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                             ) : (
                               <button
                                 type="button"
+                                onMouseEnter={() => {
+                                  if (productMode === 'compose' && msg.text) {
+                                    setGhostAiPreviewHtml(toParagraphHtml(msg.text));
+                                  }
+                                }}
+                                onMouseLeave={() => {
+                                  setGhostAiPreviewHtml(null);
+                                }}
                                 onClick={() => {
+                                  setGhostAiPreviewHtml(null);
                                   const formattedHtml = toParagraphHtml(msg.text || '');
                                   if (window.__composeInsertHTML) {
                                     window.__composeInsertHTML(formattedHtml);
@@ -43749,8 +43750,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   }
                                   showToast('Injected into document');
                                 }}
-                                className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-md shadow-[0_2px_8px_rgba(124,90,207,0.25)] transition-all active:scale-95 cursor-pointer"
-                                title="Inject AI text into the active document"
+                                className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-violet-50/80 hover:bg-violet-600 text-violet-700 hover:text-white dark:bg-violet-950/40 dark:hover:bg-violet-600 dark:text-violet-300 dark:hover:text-white px-2.5 py-1 rounded-md border border-violet-200/80 hover:border-violet-600 dark:border-violet-800/60 dark:hover:border-violet-600 shadow-2xs hover:shadow-[0_2px_10px_rgba(124,90,207,0.25)] transition-all active:scale-95 cursor-pointer"
+                                title="Hover to preview on canvas, click to insert into active document"
                               >
                                 <Plus size={11} strokeWidth={2.2} />
                                 <span>Insert into Document</span>
@@ -44466,7 +44467,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               {/* Filter Tabs & Clean Surface */}
               <div className="space-y-3.5 no-fullscreen-toggle">
                 {/* Segmented Filter Track (Your Tasks, Agent Tasks, Team Tasks, All) */}
-                <div className="flex items-center gap-1 p-0.5 bg-slate-100/70 dark:bg-zinc-800/50 rounded-lg self-start overflow-x-auto no-scrollbar w-full">
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100/80 dark:bg-zinc-800/60 rounded-lg border border-slate-200/60 dark:border-zinc-700/50 self-start overflow-x-auto no-scrollbar w-full">
                   <button
                     type="button"
                     onClick={() => {
@@ -44476,12 +44477,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory('user'); }}
                     onDragLeave={() => setTaskDragOverCategory(null)}
                     onDrop={(e) => handleTaskDropOnCategory(e, 'user')}
-                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 min-w-0 px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all text-center justify-center flex items-center cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'user'
-                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-slate-300 dark:outline-zinc-650'
                         : taskDragOverCategory === 'user'
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                     }`}
                   >
                     {t('tasks.yourTasks') || 'Your Tasks'}
@@ -44495,12 +44496,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory('agent'); }}
                     onDragLeave={() => setTaskDragOverCategory(null)}
                     onDrop={(e) => handleTaskDropOnCategory(e, 'agent')}
-                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 min-w-0 px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all text-center justify-center flex items-center cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'agent'
-                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-slate-300 dark:outline-zinc-650'
                         : taskDragOverCategory === 'agent'
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                     }`}
                   >
                     {t('tasks.agentTasks') || 'Agent Tasks'}
@@ -44514,12 +44515,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory('team'); }}
                     onDragLeave={() => setTaskDragOverCategory(null)}
                     onDrop={(e) => handleTaskDropOnCategory(e, 'team')}
-                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 min-w-0 px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all text-center justify-center flex items-center cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'team'
-                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-slate-300 dark:outline-zinc-650'
                         : taskDragOverCategory === 'team'
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                     }`}
                   >
                     {t('tasks.teamTasks') || 'Team Tasks'}
@@ -44527,10 +44528,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     type="button"
                     onClick={() => setTaskOwnerFilter('all')}
-                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 min-w-0 px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all text-center justify-center flex items-center cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'all'
-                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
-                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-slate-300 dark:outline-zinc-650'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
                     }`}
                   >
                     All
@@ -45033,14 +45034,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                 ))}
                 {visibleTasks.length === 0 && (
-                  <div className="py-16 px-4 flex flex-col items-center justify-center text-center select-none">
-                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-violet-500/10 to-indigo-500/20 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(139,92,246,0.08)] mb-3.5">
-                      <CheckCircle2 size={24} className="text-violet-600 dark:text-violet-400" />
+                  <div className="py-14 px-4 flex flex-col items-center justify-center text-center select-none">
+                    <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 flex items-center justify-center text-slate-400 dark:text-zinc-400 mb-3 shadow-xs">
+                      <CheckCircle2 size={20} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-400" />
                     </div>
-                    <div className="text-[13.5px] font-bold text-slate-800 dark:text-zinc-100 tracking-tight">
+                    <div className="text-[13px] font-semibold text-slate-800 dark:text-zinc-200 tracking-tight">
                       No tasks available yet
                     </div>
-                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[230px] leading-relaxed">
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1 max-w-[220px] leading-relaxed">
                       Add a new task using the input above or convert action items directly from your document.
                     </p>
                   </div>
@@ -82326,7 +82327,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }`}
             style={{
               marginRight: productMode !== 'landing' && rightSidebarOpen && !shareModalOpen && !rightPanelMaximized
-                ? `${rightSidebarWidth || 380}px`
+                ? `${rightSidebarWidth || 350}px`
                 : 0
             }}
           >
@@ -84243,6 +84244,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className={`mb-4 min-h-[70vh] cursor-text outline-none text-sm leading-relaxed transition-colors compose-body-editable ${isDarkMode ? 'text-zinc-100' : 'text-slate-800'}`}
                   style={{ fontFamily: resolveFontFamily(editorFont), textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                 />
+
+                {ghostAiPreviewHtml && (
+                  <div className="mb-6 p-4 rounded-xl border border-dashed border-violet-400/80 bg-violet-50/40 dark:bg-violet-950/20 text-slate-700 dark:text-zinc-200 pointer-events-none transition-all duration-200 shadow-sm animate-in fade-in select-none">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-600 dark:text-violet-400 mb-2 uppercase tracking-wider">
+                      <RegaarderVectorIcon size={12} />
+                      <span>Previewing Insertion</span>
+                    </div>
+                    <div
+                      className="prose prose-sm max-w-none dark:prose-invert opacity-75"
+                      dangerouslySetInnerHTML={{ __html: ghostAiPreviewHtml }}
+                    />
+                  </div>
+                )}
                 {canShowComposeActions && (
                   <div className="mb-8 flex items-center justify-end gap-2 relative z-20 pointer-events-auto">
                     <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={handleComposeAccept} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Accept</button>
