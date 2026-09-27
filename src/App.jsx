@@ -10638,6 +10638,7 @@ const DEFAULT_DECK_SLIDES = [
   const [whiteboardTextColorMenuFor, setWhiteboardTextColorMenuFor] = useState(null);
   const [whiteboardHighlightColorMenuFor, setWhiteboardHighlightColorMenuFor] = useState(null);
   const [whiteboardPenMenuOpen, setWhiteboardPenMenuOpen] = useState(false);
+  const [whiteboardPenColor, setWhiteboardPenColor] = useState(null);
   const [whiteboardPenWidthOverride, setWhiteboardPenWidthOverride] = useState(null);
   const [whiteboardPenCustomWidth, setWhiteboardPenCustomWidth] = useState(2.6);
   const [whiteboardPenCustomSizeOpen, setWhiteboardPenCustomSizeOpen] = useState(false);
@@ -10945,7 +10946,20 @@ const DEFAULT_DECK_SLIDES = [
     'Courier New',
     'Consolas',
   ];
-  const activeWhiteboardPen = whiteboardPenPresets.find((pen) => pen.key === whiteboardPenVariant) || whiteboardPenPresets[0];
+  const baseActiveWhiteboardPen = whiteboardPenPresets.find((pen) => pen.key === whiteboardPenVariant) || whiteboardPenPresets[0];
+  const activeWhiteboardPen = {
+    ...baseActiveWhiteboardPen,
+    stroke: whiteboardPenColor || baseActiveWhiteboardPen.stroke,
+  };
+  const whiteboardPenColorPresets = [
+    { name: 'Onyx', value: '#1c1917' },
+    { name: 'Navy', value: '#1e3a8a' },
+    { name: 'Indigo', value: '#4f46e5' },
+    { name: 'Amber', value: '#d97706' },
+    { name: 'Crimson', value: '#dc2626' },
+    { name: 'Emerald', value: '#059669' },
+    { name: 'Purple', value: '#7c3aed' },
+  ];
   const whiteboardPenSizeOptions = [1.8, 2.6, 4.4, 6.2];
   const whiteboardEraserSizeOptions = [6, 10, 16, 24];
   const whiteboardTextColorPresets = ['#111827', '#1d4ed8', '#7c3aed', '#be123c', '#047857', '#ea580c', '#475569', '#b45309'];
@@ -21739,7 +21753,7 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       if (!event.target.closest('[data-language-menu-root]')) {
         setLanguageMenuOpen(false);
       }
-      if (sheetToolbarMenuRef.current && !sheetToolbarMenuRef.current.contains(event.target)) {
+      if (sheetToolbarMenuRef.current && !sheetToolbarMenuRef.current.contains(event.target) && !event.target.closest('[data-sheet-toolbar-menu-root]')) {
         setSheetToolbarMenuOpen(null);
       }
       if (sheetZoomControlRef.current && !sheetZoomControlRef.current.contains(event.target)) {
@@ -25591,19 +25605,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
       ];
     };
 
-    // Mode-specific visibility behavior:
-    // Option B for sheets: subtle "ghost" resting state (opacity-30) that fades into full opacity on hover.
-    // Option A for all other modes (compose, whiteboard, deck): completely invisible (opacity-0 pointer-events-none) until hovered/active (hover:opacity-100 hover:pointer-events-auto).
-    const isSheets = productMode === 'sheets' || isSheetsMode;
-    const visibilityClass = isSheets
-      ? 'opacity-30 hover:opacity-100 pointer-events-auto'
-      : 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto';
+    // Executive tranquil visibility: revealed when hovering the top navigation bar, hovering the capsule itself, or when its menu/share modal is active
+    const isCapsuleRevealed = isTopHeaderHovered || isWhiteboardTopNavHovered || bottomActionExportOpen || shareModalOpen;
 
     return (
       <div 
         ref={bottomActionCapsuleRef}
-        className={`fixed ${bottomClass} right-5 z-[500] flex items-center gap-1.5 p-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800/90 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] select-none transition-all duration-300 ease-out ${visibilityClass} ${
-          bottomActionExportOpen || shareModalOpen ? '!opacity-100 !pointer-events-auto shadow-2xl' : ''
+        className={`fixed ${bottomClass} right-5 z-[500] flex items-center gap-1.5 p-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-800/90 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.12)] select-none transition-all duration-300 ease-out hover:opacity-100 hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto ${
+          isCapsuleRevealed ? '!opacity-100 !pointer-events-auto shadow-2xl' : 'opacity-0 pointer-events-none'
         }`}
       >
         {/* 1. Export Button & Upward Menu */}
@@ -50301,8 +50310,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
                 </div>
 
-                {!isSheetsMode && !isDeckMode && (
-                  <>
                     <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
                     {/* Dedicated Home Tab (pinned before all document tabs, like WPS/browsers) */}
@@ -50344,12 +50351,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <span>Library</span>
                       <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
-                  </>
-                )}
-              </div>
+                  </div>
+
+              {/* Distinct visual separation between app navigation & document tabs */}
+              <div className="h-4 w-px bg-slate-300/80 dark:bg-zinc-700/80 mx-1 shrink-0" />
 
               {/* Center Section: Document Tab Strip */}
-              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5">
+              <div 
+                onWheel={(e) => {
+                  if (e.deltaY !== 0) {
+                    e.currentTarget.scrollLeft += e.deltaY;
+                  }
+                }}
+                className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 px-1 py-0.5"
+              >
                 {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
                   const docIndex = windowedTabDocuments.startIndex + localIndex;
                 const defaultName = productMode === 'sheets' ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` : productMode === 'deck' ? (t('deck.untitledDeck') || 'Untitled Deck') : (t('common.tabIndex', { index: docIndex + 1 }) || `Tab ${docIndex + 1}`);
@@ -50578,16 +50593,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   )}
                 </div>
               )}
+              </div>
+
+              {/* Pinned New Tab / Document Button (Always visible beside tab strip) */}
               <button
                 type="button"
                 onClick={createItemForCurrentContext}
-                className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-                title="Create new item"
+                className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-[7px] text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-all mx-0.5 active:scale-95 cursor-pointer"
+                title={isSheetsMode ? (t('sheets.newSheetDoc') || "Create new sheet") : (t('common.newItem') || "Create new item")}
                 aria-label="Create new item"
               >
-                <Plus size={14} strokeWidth={1.5} />
+                <Plus size={14} strokeWidth={2} />
               </button>
-              </div>
 
               {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
               <div className="flex items-center gap-2">
@@ -51331,7 +51348,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }`} />
                         </div>
                       {!isSheetsPresentationMode && !isSheetZenMode && (
-                        <div className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-20 shrink-0 transition-all duration-200">
+                        <div 
+                          onMouseEnter={() => setIsTopHeaderHovered(true)} 
+                          onMouseLeave={() => setIsTopHeaderHovered(false)} 
+                          className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-20 shrink-0 transition-all duration-200"
+                        >
                       {/* Top Row: Navigation Tabs & View Controls + Collapse Toggle */}
                       <div className="flex items-center justify-between gap-3 text-[13px] font-medium tracking-wide text-[#374151]">
                         {/* Apple Segmented Control Track */}
@@ -51385,36 +51406,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast={showToast}
                               />
 
-                              {/* Chart Panel Toggle */}
-                              <button
-                                type="button"
-                                onPointerDown={(e) => {
-                                  e.preventDefault();
-                                  const nextState = !showTemplateChart;
-                                  setShowTemplateChart(nextState);
-                                  showToast?.(`Chart panel: ${nextState ? 'On' : 'Off'}`);
-                                }}
-                                className={`group inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all duration-150 shadow-2xs select-none cursor-pointer active:scale-[0.97] ${
-                                  showTemplateChart
-                                    ? 'bg-slate-100/90 dark:bg-[#18181b] border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
-                                    : 'bg-slate-100/90 dark:bg-[#18181b] border-slate-200/60 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 hover:bg-slate-200/60 dark:hover:bg-zinc-800/70'
-                                }`}
-                              >
-                                <span>{t('sheets.chartPanel') || 'Chart panel'}</span>
-                                {/* Compact iOS-Style Switch */}
-                                <span
-                                  data-toggle-active={showTemplateChart ? 'true' : 'false'}
-                                  style={{ backgroundColor: showTemplateChart ? '#7c3aed' : undefined }}
-                                  className={`relative inline-flex h-3.5 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                                    showTemplateChart ? 'bg-violet-600' : 'bg-slate-300 dark:bg-zinc-600'
-                                  }`}
-                                >
-                                  <span className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                                    showTemplateChart ? 'translate-x-2.5' : 'translate-x-0'
-                                  }`} />
-                                </span>
-                              </button>
-
                               {/* More View Options & Secondary View Settings Menu */}
                               <MoreViewOptionsDropdown
                                 sheetsThemePalette={sheetsThemePalette}
@@ -51428,6 +51419,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               />
                             </div>
                           )}
+
+                          {/* Chart Panel Inspector Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => setShowTemplateChart((prev) => !prev)}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-150 active:scale-[0.97] ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer ${
+                              showTemplateChart
+                                ? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-zinc-100 border-black/15 dark:border-white/20 shadow-xs'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] border-black/[0.06] dark:border-white/[0.07] shadow-2xs'
+                            }`}
+                            title={showTemplateChart ? (t('sheets.hideChartPanel') || 'Hide Chart panel') : (t('sheets.showChartPanel') || 'Show Chart panel')}
+                          >
+                            <BarChart2 size={13} className={showTemplateChart ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'} />
+                            <span>{t('sheets.chartPanel') || 'Charts'}</span>
+                          </button>
 
                           {/* Collapse / Expand Toggle Button */}
                           <button
@@ -51709,7 +51715,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   })()}
                                 </div>
                                       {/* + Insert Dropdown Menu */}
-                                      <div className="relative">
+                                      <div className="relative" data-sheet-toolbar-menu-root="true">
                                         <div className="inline-flex items-center p-0.5 bg-slate-100/90 dark:bg-[#18181b] rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-xs select-none shrink-0 whitespace-nowrap">
                                           <button
                                             type="button"
@@ -54987,6 +54993,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           updateSheetSettings={updateSheetSettings}
                           sheetsThemePalette={sheetsThemePalette}
                           onClose={() => setShowTemplateChart(false)}
+                          onOpenTemplates={() => {
+                            setSheetToolbarTab('Templates');
+                            setIsSheetToolbarCollapsed(false);
+                          }}
                           templateChartType={templateChartType}
                           setTemplateChartType={setTemplateChartType}
                           showToast={showToast}
@@ -55441,7 +55451,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       onClick={() => setShowTemplateChart(true)}
                                       className="w-full py-1.5 px-3 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60 rounded-md font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors cursor-pointer"
                                     >
-                                      <BarChart3 size={13} />
+                                      <BarChart2 size={13} />
                                       <span>Create Chart from Table</span>
                                     </button>
                                   </div>
@@ -79672,12 +79682,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                   {Boolean(whiteboardHoverLabel) && (
-                    <div className={`absolute top-1/2 -translate-y-1/2 z-40 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-medium shadow-lg whitespace-nowrap ${whiteboardTool === 'pen' ? 'left-[204px]' : 'left-16'}`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 z-40 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-medium shadow-lg whitespace-nowrap ${whiteboardTool === 'pen' ? 'left-[228px]' : 'left-16'}`}>
                       {whiteboardHoverLabel}
                     </div>
                   )}
                   {whiteboardTool === 'pen' && whiteboardPenMenuOpen && (
-                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2.5 flex flex-col gap-1.5 w-[172px]">
+                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2.5 flex flex-col gap-1.5 w-[196px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">{t('whiteboard.penStyles') || 'Pen styles'}</p>
                       {whiteboardPenPresets.map((penPreset, penIndex) => (
                         <button
@@ -79687,7 +79697,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onMouseLeave={() => setWhiteboardHoverLabel('')}
                           onClick={() => {
                             setWhiteboardPenVariant(penPreset.key);
-                            setWhiteboardPenMenuOpen(false);
+                            setWhiteboardPenColor(null);
                             showToast(t('whiteboard.penSelected', { name: t('whiteboard.pens.' + penPreset.key) || penPreset.label }) || `${penPreset.label} selected`);
                           }}
                           className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-slate-100 text-slate-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -79700,6 +79710,71 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {penIndex < 2 && <span className="ml-auto text-[9px] text-gray-400">{t('whiteboard.popular') || 'Popular'}</span>}
                         </button>
                       ))}
+
+                      {/* Ink Color Section */}
+                      <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-2 py-2">
+                        <div className="flex items-center justify-between mb-1.5 px-0.5">
+                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+                            {t('whiteboard.inkColor') || 'Ink Color'}
+                          </span>
+                          <span className="text-[10px] font-medium text-slate-600 capitalize">
+                            {whiteboardPenColorPresets.find((c) => c.value.toLowerCase() === (activeWhiteboardPen.stroke || '').toLowerCase())?.name
+                              || (whiteboardPenColor ? 'Custom' : (t('whiteboard.pens.' + activeWhiteboardPen.key) || activeWhiteboardPen.label))}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-1 px-0.5">
+                          {whiteboardPenColorPresets.map((col) => {
+                            const isChosen = (activeWhiteboardPen.stroke || '').toLowerCase() === col.value.toLowerCase();
+                            return (
+                              <button
+                                key={col.value}
+                                type="button"
+                                title={col.name}
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  setWhiteboardPenColor(col.value);
+                                }}
+                                className={`w-5 h-5 rounded-full transition-all cursor-pointer relative flex items-center justify-center shrink-0 ${
+                                  isChosen
+                                    ? 'scale-110 ring-2 ring-slate-900 ring-offset-1.5 shadow-xs'
+                                    : 'hover:scale-105 opacity-90 hover:opacity-100'
+                                }`}
+                                style={{ backgroundColor: col.value }}
+                              >
+                                {isChosen && <Check size={10} className="text-white drop-shadow-xs" strokeWidth={3} />}
+                              </button>
+                            );
+                          })}
+
+                          {/* Custom Color Picker Swatch */}
+                          <label
+                            title={t('whiteboard.customColor') || 'Custom color'}
+                            className={`w-5 h-5 rounded-full transition-all cursor-pointer relative flex items-center justify-center shrink-0 border border-dashed border-slate-300 hover:border-slate-500 overflow-hidden ${
+                              whiteboardPenColor && !whiteboardPenColorPresets.some((c) => c.value.toLowerCase() === whiteboardPenColor.toLowerCase())
+                                ? 'ring-2 ring-slate-900 ring-offset-1.5 scale-110 shadow-xs'
+                                : 'hover:scale-105 bg-white'
+                            }`}
+                            style={{
+                              backgroundColor: whiteboardPenColor && !whiteboardPenColorPresets.some((c) => c.value.toLowerCase() === whiteboardPenColor.toLowerCase())
+                                ? whiteboardPenColor
+                                : undefined,
+                            }}
+                          >
+                            <input
+                              type="color"
+                              value={activeWhiteboardPen.stroke || '#4f46e5'}
+                              onChange={(e) => {
+                                setWhiteboardPenColor(e.target.value);
+                              }}
+                              className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                            />
+                            {(!whiteboardPenColor || whiteboardPenColorPresets.some((c) => c.value.toLowerCase() === whiteboardPenColor.toLowerCase())) && (
+                              <Palette size={10} className="text-slate-400" />
+                            )}
+                          </label>
+                        </div>
+                      </div>
+
                       <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-2 py-2">
                         <div className="text-[10px] font-semibold text-gray-500">{t('whiteboard.tipSize') || 'Tip size'}</div>
                         <div className="mt-2 flex items-end justify-between gap-1">

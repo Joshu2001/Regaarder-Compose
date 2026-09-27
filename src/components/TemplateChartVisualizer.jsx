@@ -121,8 +121,11 @@ export const extractTemplateChartData = (grid, selectedColIdxOverride = null) =>
     const hasLabel = labelVal !== undefined && labelVal !== null && String(labelVal).trim() !== '';
     const hasData = primaryDataValRaw !== undefined && primaryDataValRaw !== null && String(primaryDataValRaw).trim() !== '';
 
-    if (hasLabel || hasData) {
-      const cleanLabel = hasLabel ? String(labelVal).trim() : `Row ${r}`;
+    // Only include row if it has numeric data, or if it has a label AND at least one column has data
+    const anyColHasData = (cells[r] || []).some((v, cIdx) => cIdx !== labelColIdx && v !== undefined && v !== null && String(v).trim() !== '');
+
+    if (hasData || (hasLabel && anyColHasData)) {
+      const cleanLabel = hasLabel ? String(labelVal).trim() : `Row ${r + 1}`;
       labels.push(cleanLabel);
 
       const primaryNum = Number(String(primaryDataValRaw || 0).replace(/[\$,%\sxa-zA-Z]/g, '')) || 0;
@@ -162,6 +165,7 @@ export default function TemplateChartVisualizer({
   updateSheetSettings,
   sheetsThemePalette = 'default',
   onClose,
+  onOpenTemplates,
   templateChartType = 'column',
   setTemplateChartType,
   showToast
@@ -325,8 +329,8 @@ export default function TemplateChartVisualizer({
 
   const chartPoints = activeSeriesData.map((val, idx) => {
     const step = dynamicLabels.length > 1 ? 76 / (dynamicLabels.length - 1) : 0;
-    const x = 18 + idx * step;
-    const y = 55 - ((val - seriesMin) / range) * 43;
+    const x = dynamicLabels.length === 1 ? 54 : (18 + idx * step);
+    const y = dynamicLabels.length === 1 ? 20 : (55 - ((val - seriesMin) / range) * 43);
     return { x, y, val: formatValue(val), rawVal: val, label: dynamicLabels[idx] || `Item ${idx+1}`, rowIdx: headerRowIdx + 1 + idx };
   });
 
@@ -581,18 +585,62 @@ export default function TemplateChartVisualizer({
 
   if (!hasData) {
     return (
-      <div className="w-80 xl:w-96 border-l border-slate-200/80 dark:border-[#1f1d2c] bg-slate-50 dark:bg-[#12111a] p-6 flex flex-col items-center justify-center text-center shrink-0 select-none">
-        <div className="w-20 h-20 rounded-2xl bg-purple-100/70 dark:bg-[#1c1a2b] border border-purple-200/60 dark:border-[#2e2a47] flex items-center justify-center mb-5 shadow-2xs text-purple-600 dark:text-purple-400">
-          <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="6" y1="20" x2="6" y2="14" />
-            <line x1="12" y1="20" x2="12" y2="10" />
-            <line x1="18" y1="20" x2="18" y2="6" />
-          </svg>
+      <div className="w-80 xl:w-96 border-l border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-[#121214] flex flex-col h-full shrink-0 select-none">
+        {/* Top Header Bar */}
+        <div className="px-4 py-3 border-b border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex items-center justify-between shadow-2xs shrink-0">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} className="text-violet-600 dark:text-violet-400 shrink-0" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+              {t('sheets.chartPanel') || 'Chart Panel'}
+            </h3>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Close panel"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
-        <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{t('sheets.noDataToDisplay') || 'No Data to Display'}</h4>
-        <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mt-2 max-w-[230px]">
-          {t('sheets.noDataToDisplayDesc') || 'Upload or select a worksheet grid with numerical values to render your live interactive visual charts.'}
-        </p>
+
+        {/* Empty State Content */}
+        <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
+          <div className="w-14 h-14 rounded-xl bg-slate-100/80 dark:bg-zinc-850/80 border border-slate-200/70 dark:border-zinc-750 flex items-center justify-center mb-4 text-slate-500 dark:text-zinc-400 shadow-2xs">
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="6" y1="20" x2="6" y2="14" />
+              <line x1="12" y1="20" x2="12" y2="10" />
+              <line x1="18" y1="20" x2="18" y2="6" />
+            </svg>
+          </div>
+          <h4 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">{t('sheets.noDataToDisplay') || 'No Data to Display'}</h4>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mt-1.5 max-w-[220px]">
+            {t('sheets.noDataToDisplayDesc') || 'Upload or select a worksheet grid with numerical values to render your live interactive visual charts.'}
+          </p>
+
+          <div className="mt-5 flex flex-col gap-2 w-full max-w-[200px]">
+            {onOpenTemplates && (
+              <button
+                type="button"
+                onClick={onOpenTemplates}
+                className="w-full py-1.5 px-3 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 text-xs font-medium shadow-2xs transition-all duration-150 cursor-pointer active:scale-[0.98]"
+              >
+                {t('sheets.browseTemplates') || 'Browse Templates'}
+              </button>
+            )}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-1.5 px-3 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-100/60 dark:hover:bg-zinc-800/60 text-xs font-medium transition-all duration-150 cursor-pointer"
+              >
+                {t('common.close') || 'Close Panel'}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
@@ -746,6 +794,18 @@ export default function TemplateChartVisualizer({
               </div>
             )}
           </div>
+
+          {/* Close Panel Button */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Close panel"
+            >
+              <X size={17} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -814,7 +874,9 @@ export default function TemplateChartVisualizer({
                 {showAxes && (
                   <>
                     <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMax)}</text>
-                    <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue((seriesMax + seriesMin) / 2)}</text>
+                    {chartPoints.length > 1 && (
+                      <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue((seriesMax + seriesMin) / 2)}</text>
+                    )}
                     <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMin)}</text>
                   </>
                 )}
@@ -835,6 +897,28 @@ export default function TemplateChartVisualizer({
                     strokeDasharray={getDashArray()}
                     strokeLinecap="round"
                   />
+                )}
+
+                {chartPoints.length === 1 && (
+                  <>
+                    <line
+                      x1="12"
+                      y1={chartPoints[0].y}
+                      x2="96"
+                      y2={chartPoints[0].y}
+                      stroke={activeColor}
+                      strokeWidth="1.2"
+                      strokeDasharray="3 3"
+                      strokeOpacity="0.45"
+                    />
+                    <circle
+                      cx={chartPoints[0].x}
+                      cy={chartPoints[0].y}
+                      r="6"
+                      fill={activeColor}
+                      fillOpacity="0.12"
+                    />
+                  </>
                 )}
 
                 {chartPoints.map((pt, i) => (
@@ -905,7 +989,9 @@ export default function TemplateChartVisualizer({
                 {showAxes && (
                   <>
                     <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMax)}</text>
-                    <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue((seriesMax + seriesMin) / 2)}</text>
+                    {chartPoints.length > 1 && (
+                      <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue((seriesMax + seriesMin) / 2)}</text>
+                    )}
                     <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(seriesMin)}</text>
                   </>
                 )}
@@ -1728,7 +1814,9 @@ export default function TemplateChartVisualizer({
                   {showAxes && (
                     <>
                       <text x="2" y="12" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.max || seriesMax)}</text>
-                      <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(((expandedCard.max || seriesMax) + (expandedCard.min || seriesMin)) / 2)}</text>
+                      {expandedCard.points && expandedCard.points.length > 1 && (
+                        <text x="2" y="34" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(((expandedCard.max || seriesMax) + (expandedCard.min || seriesMin)) / 2)}</text>
+                      )}
                       <text x="2" y="56" fontSize="3.2" fill="#94a3b8" fontWeight="500">{formatValue(expandedCard.min || seriesMin)}</text>
                     </>
                   )}
@@ -1778,6 +1866,28 @@ export default function TemplateChartVisualizer({
                           strokeDasharray={getDashArray()}
                           strokeLinecap="round"
                         />
+                      )}
+
+                      {expandedCard.points.length === 1 && (
+                        <>
+                          <line
+                            x1="12"
+                            y1={expandedCard.points[0].y}
+                            x2="96"
+                            y2={expandedCard.points[0].y}
+                            stroke={activeColor}
+                            strokeWidth="1.2"
+                            strokeDasharray="3 3"
+                            strokeOpacity="0.45"
+                          />
+                          <circle
+                            cx={expandedCard.points[0].x}
+                            cy={expandedCard.points[0].y}
+                            r="6"
+                            fill={activeColor}
+                            fillOpacity="0.12"
+                          />
+                        </>
                       )}
                     </>
                   )}

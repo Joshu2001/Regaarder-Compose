@@ -122,7 +122,7 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 220, anchorAlign
   return (
     <div
       ref={popRef}
-      className="fixed z-50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-zinc-700/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl overflow-y-auto"
+      className="fixed z-50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-slate-200 dark:border-zinc-700 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-white/98 dark:bg-[#1c1c1f]/98 backdrop-blur-3xl overflow-y-auto"
       style={{ width }}
     >
       {children}
@@ -408,14 +408,22 @@ export function NotesFloatingDock({
             }}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
               activeTool === "pen"
-                ? "bg-white dark:bg-zinc-900 text-amber-700 dark:text-amber-400 shadow-2xs border border-slate-200/60 dark:border-zinc-700/60"
+                ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs border border-slate-200/60 dark:border-zinc-700/60"
                 : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
             }`}
             title="Handwriting pen mode & palette"
           >
-            <Edit3 size={13} strokeWidth={2} />
+            <div className="relative flex items-center justify-center">
+              <Edit3 size={13} strokeWidth={2} className={activeTool === "pen" ? "text-slate-800 dark:text-zinc-100" : ""} />
+              {activeTool === "pen" && penTool !== "eraser" && (
+                <span
+                  className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full ring-1.5 ring-white dark:ring-zinc-900 shadow-xs transition-colors"
+                  style={{ backgroundColor: penColor || "#1c1917" }}
+                />
+              )}
+            </div>
             <span>Pen</span>
-            {activeTool === "pen" && <ChevronDown size={10} className="text-amber-600/70" />}
+            {activeTool === "pen" && <ChevronDown size={10} className="text-slate-400" />}
           </button>
           <button
             type="button"
@@ -468,10 +476,22 @@ export function NotesFloatingDock({
               {/* Color Swatches */}
               {penTool !== "eraser" && (
                 <>
-                  <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
-                    Ink Color
+                  <div className="flex items-center justify-between px-2 py-1">
+                    <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                      Ink Color
+                    </span>
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 capitalize">
+                      {[
+                        { name: "Onyx", value: "#1c1917" },
+                        { name: "Navy", value: "#1e3a8a" },
+                        { name: "Amber", value: "#d97706" },
+                        { name: "Crimson", value: "#dc2626" },
+                        { name: "Emerald", value: "#059669" },
+                        { name: "Purple", value: "#7c3aed" },
+                      ].find((c) => c.value.toLowerCase() === (penColor || "").toLowerCase())?.name || "Custom"}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between px-1 mb-2">
+                  <div className="flex items-center justify-between px-1 mb-2.5 gap-1">
                     {[
                       { name: "Onyx", value: "#1c1917" },
                       { name: "Navy", value: "#1e3a8a" },
@@ -480,7 +500,7 @@ export function NotesFloatingDock({
                       { name: "Emerald", value: "#059669" },
                       { name: "Purple", value: "#7c3aed" },
                     ].map((col) => {
-                      const isChosen = penColor === col.value;
+                      const isChosen = (penColor || "#1c1917").toLowerCase() === col.value.toLowerCase();
                       return (
                         <button
                           key={col.value}
@@ -490,8 +510,10 @@ export function NotesFloatingDock({
                             e.preventDefault();
                             onUpdateDoc?.({ penColor: col.value });
                           }}
-                          className={`w-6 h-6 rounded-full transition-transform cursor-pointer relative flex items-center justify-center ${
-                            isChosen ? "scale-110 ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-zinc-900" : "hover:scale-105"
+                          className={`w-6 h-6 rounded-full transition-all cursor-pointer relative flex items-center justify-center shrink-0 ${
+                            isChosen
+                              ? "scale-110 ring-2 ring-slate-900 dark:ring-white ring-offset-2 dark:ring-offset-zinc-900 shadow-xs"
+                              : "hover:scale-105 opacity-90 hover:opacity-100"
                           }`}
                           style={{ backgroundColor: col.value }}
                         >
@@ -499,6 +521,56 @@ export function NotesFloatingDock({
                         </button>
                       );
                     })}
+
+                    {/* Custom Color Picker Swatch */}
+                    <label
+                      title="Choose custom color"
+                      className={`w-6 h-6 rounded-full transition-all cursor-pointer relative flex items-center justify-center shrink-0 border border-dashed border-slate-300 dark:border-zinc-600 hover:border-slate-500 overflow-hidden ${
+                        ![
+                          "#1c1917",
+                          "#1e3a8a",
+                          "#d97706",
+                          "#dc2626",
+                          "#059669",
+                          "#7c3aed",
+                        ].includes((penColor || "").toLowerCase())
+                          ? "ring-2 ring-slate-900 dark:ring-white ring-offset-2 dark:ring-offset-zinc-900 scale-110"
+                          : "hover:scale-105 bg-slate-50 dark:bg-zinc-800"
+                      }`}
+                      style={{
+                        backgroundColor: ![
+                          "#1c1917",
+                          "#1e3a8a",
+                          "#d97706",
+                          "#dc2626",
+                          "#059669",
+                          "#7c3aed",
+                        ].includes((penColor || "").toLowerCase())
+                          ? penColor
+                          : undefined,
+                      }}
+                    >
+                      <input
+                        type="color"
+                        value={penColor || "#1c1917"}
+                        onChange={(e) => {
+                          onUpdateDoc?.({ penColor: e.target.value });
+                        }}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                      {![
+                        "#1c1917",
+                        "#1e3a8a",
+                        "#d97706",
+                        "#dc2626",
+                        "#059669",
+                        "#7c3aed",
+                      ].includes((penColor || "").toLowerCase()) ? (
+                        <Check size={11} className="text-white drop-shadow-xs pointer-events-none" strokeWidth={3} />
+                      ) : (
+                        <Plus size={11} className="text-slate-500 dark:text-zinc-400 pointer-events-none" strokeWidth={2.5} />
+                      )}
+                    </label>
                   </div>
                 </>
               )}
@@ -1344,16 +1416,28 @@ function HoverRevealNotesSidebar({
   const deleteConfirmTimerRef = useRef(null);
   const notesListRef = useRef(null);
 
-  // Reveal scrollbar only when nearing the end of the scroll content
+  // Reveal scrollbar dynamically when scrolling, hovering, or nearing the end of content
   useEffect(() => {
     const el = notesListRef.current;
     if (!el) return;
+    let scrollTimeout = null;
+
     const handleScroll = () => {
       const ratio = el.scrollTop / (el.scrollHeight - el.clientHeight || 1);
       el.classList.toggle("near-end", ratio > 0.75);
+
+      el.classList.add("scrolling");
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        el.classList.remove("scrolling");
+      }, 1000);
     };
+
     el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
   }, []);
 
   // Check if a note document contains actual user-created content (real data)
