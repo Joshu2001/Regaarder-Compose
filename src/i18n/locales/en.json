@@ -379,7 +379,7 @@
     "runwayburn": "Runway & Burn",
     "businessplan": "Business Plan",
     "gtmplan": "GTM Plan",
-    "createTemplate": "+ Create template",
+    "createTemplate": "Create template",
     "allTemplates": "All Templates",
     "financeGrowth": "Finance & Growth",
     "sales": "Sales",
@@ -616,7 +616,7 @@
       "data": "Data",
       "templates": "Templates",
       "analyze": "Analyze",
-      "visualize": "Visualize",
+      "simulate": "Simulate",
       "view": "View"
     },
     "insert": "Insert",

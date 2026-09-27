@@ -5269,7 +5269,7 @@ const FullPageTemplateGallery = ({
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus size={14} />
-            <span>{t('templates.createTemplate') || '+ Create template'}</span>
+            <span>{t('templates.createTemplate') || 'Create template'}</span>
           </button>
         </div>
 
@@ -50312,45 +50312,47 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800 mx-0.5 shrink-0" />
 
-                    {/* Dedicated Home Tab (pinned before all document tabs, like WPS/browsers) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeTransientMenus();
-                        setProductMode('landing');
-                      }}
-                      className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none ${
-                        productMode === 'landing'
-                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
-                          : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
-                      }`}
-                      title="Go to Home Dashboard"
-                    >
-                      <RegaarderBrandIcon size={14} className="text-violet-600 dark:text-violet-400 shrink-0" />
-                      <span>Home</span>
-                    </button>
+                    <div className="flex items-center gap-0.5 bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 rounded-[7px] border border-slate-200/60 dark:border-zinc-700/50 shrink-0 h-7">
+                      {/* Dedicated Home Tab */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setProductMode('landing');
+                        }}
+                        className={`relative shrink-0 h-6 px-2.5 rounded-[5px] text-[11.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                          productMode === 'landing'
+                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/80 dark:border-zinc-700 font-semibold'
+                            : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                        }`}
+                        title="Go to Home Dashboard"
+                      >
+                        <RegaarderBrandIcon size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                        <span>Home</span>
+                      </button>
 
-                    {/* Library / Saved Docs Affordance */}
-                    <button
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setLibraryDropdownAnchorRect(rect);
-                        setLibraryDropdownOpen(prev => !prev);
-                      }}
-                      className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer select-none ${
-                        libraryDropdownOpen
-                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] border-slate-200/70 dark:border-zinc-700/60'
-                          : 'bg-transparent border-transparent text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
-                      }`}
-                      title="Open Library & Saved Documents"
-                    >
-                      <BookOpen size={13} className="text-slate-500 dark:text-zinc-400 shrink-0" />
-                      <span>Library</span>
-                      <ChevronDown size={11} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
+                      {/* Library / Saved Docs Affordance */}
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setLibraryDropdownAnchorRect(rect);
+                          setLibraryDropdownOpen(prev => !prev);
+                        }}
+                        className={`relative shrink-0 h-6 px-2.5 rounded-[5px] text-[11.5px] font-medium transition-all flex items-center gap-1 cursor-pointer select-none ${
+                          libraryDropdownOpen
+                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/80 dark:border-zinc-700 font-semibold'
+                            : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                        }`}
+                        title="Open Library & Saved Documents"
+                      >
+                        <BookOpen size={11.5} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                        <span>Library</span>
+                        <ChevronDown size={10} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
                   </div>
 
               {/* Distinct visual separation between app navigation & document tabs */}
@@ -51357,7 +51359,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex items-center justify-between gap-3 text-[13px] font-medium tracking-wide text-[#374151]">
                         {/* Apple Segmented Control Track */}
                         <div className="inline-flex items-center p-0.5 gap-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-lg border border-black/[0.06] dark:border-white/[0.07] select-none">
-                          {['Data', 'Templates', 'Analyze', 'Visualize', 'View'].map((tab) => (
+                          {['Data', 'Templates', 'Analyze', 'Simulate', 'View'].map((tab) => (
                             <button
                               key={tab}
                               type="button"
@@ -51369,12 +51371,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   const nextTab = sheetToolbarTab === 'Data' ? null : 'Data';
                                   setSheetToolbarTab(nextTab);
                                   try { localStorage.setItem('rc.sheetsLastTab', nextTab || 'View'); } catch {}
-                                } else if (tab === 'Visualize') {
-                                  const nextTab = sheetToolbarTab === 'Visualize' ? null : 'Visualize';
-                                  setSheetToolbarTab(nextTab);
-                                  try { localStorage.setItem('rc.sheetsLastTab', nextTab || 'View'); } catch {}
-                                  setShowTemplateChart(true);
-                                  showToast('Visualize tools & live charts ready');
+                                } else if (tab === 'Simulate') {
+                                  showToast(t('sheets.simulateComingSoon') || 'Simulate feature coming soon — scenario modeling & forecasting tools are in active development', { type: 'info' });
                                 } else {
                                   const nextTab = sheetToolbarTab === tab ? null : tab;
                                   setSheetToolbarTab(nextTab);
