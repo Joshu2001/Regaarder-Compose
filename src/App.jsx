@@ -3278,6 +3278,8 @@ const CreateTemplateModal = ({
   form = { name: '', description: '', category: 'Finance & Growth' },
   setForm = () => {},
   activeSheetTitle = 'Current Sheet',
+  productMode = 'sheets',
+  activeDocTitle = 'Current Document',
   onSave = () => {},
 }) => {
   const [preserveFormulas, setPreserveFormulas] = React.useState(true);
@@ -3286,15 +3288,44 @@ const CreateTemplateModal = ({
 
   if (!isOpen) return null;
 
+  const currentMode = productMode === 'deck' ? 'deck' : productMode === 'sheets' ? 'sheets' : 'docs';
+
+  const previewTitle = currentMode === 'sheets'
+    ? (activeSheetTitle || 'Current Sheet')
+    : currentMode === 'deck'
+      ? (activeDocTitle || 'Current Slide Deck')
+      : (activeDocTitle || 'Current Document');
+
+  const previewSubtitle = currentMode === 'sheets'
+    ? 'Live grid structure & formula matrix'
+    : currentMode === 'deck'
+      ? 'Live slide cards, layout hierarchy & themes'
+      : 'Live document prose, headings & executive layout';
+
+  const previewIcon = currentMode === 'sheets' ? (
+    <Table size={20} />
+  ) : currentMode === 'deck' ? (
+    <Presentation size={20} />
+  ) : (
+    <FileText size={20} />
+  );
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name || !form.name.trim()) return;
     const newTemplate = {
       id: `custom-tpl-${Date.now()}`,
       name: form.name.trim(),
-      description: form.description ? form.description.trim() : 'Custom reusable template',
-      category: form.category || 'Finance & Growth',
-      tags: ['Custom'],
+      description: form.description ? form.description.trim() : (
+        currentMode === 'deck' 
+          ? 'Custom reusable presentation deck template'
+          : currentMode === 'sheets'
+            ? 'Custom reusable spreadsheet template'
+            : 'Custom reusable document template'
+      ),
+      category: form.category || 'General',
+      appType: currentMode,
+      tags: ['Custom', currentMode === 'deck' ? 'Deck' : currentMode === 'sheets' ? 'Sheets' : 'Docs'],
       preservation: {
         formulas: preserveFormulas,
         formatting: preserveFormatting,
@@ -3321,7 +3352,9 @@ const CreateTemplateModal = ({
               Create template
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-              Turn your current sheet into a reusable template.
+              {currentMode === 'sheets' && 'Turn your current sheet into a reusable spreadsheet template.'}
+              {currentMode === 'deck' && 'Turn your current slide deck into a reusable presentation template.'}
+              {currentMode === 'docs' && 'Turn your current document into a reusable layout template.'}
             </p>
           </div>
           <button
@@ -3333,17 +3366,17 @@ const CreateTemplateModal = ({
           </button>
         </div>
 
-        {/* Live Sheet Thumbnail Preview */}
+        {/* Live Thumbnail Preview */}
         <div className="mx-5 mt-4 p-3 bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800 rounded-xl flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-            <Table size={20} />
+            {previewIcon}
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate">
-              {activeSheetTitle}
+              {previewTitle}
             </span>
             <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-              Live grid structure & data preview
+              {previewSubtitle}
             </span>
           </div>
         </div>
@@ -3358,7 +3391,13 @@ const CreateTemplateModal = ({
             <input
               type="text"
               required
-              placeholder="e.g. Startup Financial Model"
+              placeholder={
+                currentMode === 'deck'
+                  ? 'e.g. Investor Pitch Deck'
+                  : currentMode === 'sheets'
+                    ? 'e.g. Startup Financial Model'
+                    : 'e.g. Executive PRD Brief'
+              }
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:border-slate-900 dark:focus:border-white transition-all"
@@ -3378,6 +3417,8 @@ const CreateTemplateModal = ({
               <option value="Finance & Growth">Finance & Growth</option>
               <option value="Sales">Sales</option>
               <option value="Operations">Operations</option>
+              <option value="Pitch & Strategy">Pitch & Strategy</option>
+              <option value="Product & Tech">Product & Tech</option>
               <option value="General">General</option>
             </select>
           </div>
@@ -3399,18 +3440,20 @@ const CreateTemplateModal = ({
           {/* Explicit Preservations */}
           <div className="pt-1">
             <span className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-2">
-              Create from current sheet:
+              Create from current {currentMode === 'deck' ? 'presentation' : currentMode === 'sheets' ? 'sheet' : 'document'}:
             </span>
             <div className="space-y-2 text-xs">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={preserveFormulas}
-                  onChange={(e) => setPreserveFormulas(e.target.checked)}
-                  className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
-                />
-                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Formulas</span>
-              </label>
+              {currentMode === 'sheets' && (
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={preserveFormulas}
+                    onChange={(e) => setPreserveFormulas(e.target.checked)}
+                    className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
+                  />
+                  <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Formulas & Dropdowns</span>
+                </label>
+              )}
 
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -3419,7 +3462,9 @@ const CreateTemplateModal = ({
                   onChange={(e) => setPreserveFormatting(e.target.checked)}
                   className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
                 />
-                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Formatting</span>
+                <span className="text-slate-700 dark:text-zinc-300 font-medium">
+                  {currentMode === 'deck' ? 'Preserve Card Themes & Layouts' : 'Preserve Typography & Formatting'}
+                </span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -3429,7 +3474,7 @@ const CreateTemplateModal = ({
                   onChange={(e) => setPreserveSampleData(e.target.checked)}
                   className="rounded text-slate-900 dark:text-white focus:ring-0 accent-slate-900 dark:accent-white w-3.5 h-3.5 cursor-pointer"
                 />
-                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Sample Data</span>
+                <span className="text-slate-700 dark:text-zinc-300 font-medium">Preserve Placeholder Content</span>
               </label>
             </div>
           </div>
@@ -4569,26 +4614,1021 @@ const AIWorkflowLauncherModal = ({
   );
 };
 
+const DocumentThumbnailPreview = ({ title, category, id, rawWorkflow, rawTemplate }) => {
+  // Extract real live content if available
+  const sampleHtml = React.useMemo(() => {
+    if (rawTemplate?.docBodyHtml) return rawTemplate.docBodyHtml;
+    if (rawWorkflow?.generateContent) {
+      try {
+        const res = rawWorkflow.generateContent(rawWorkflow.defaultParams || {});
+        return res?.html || '';
+      } catch (e) {
+        return '';
+      }
+    }
+    return '';
+  }, [rawTemplate, rawWorkflow]);
+
+  const isFinance = category === 'Finance' || id?.includes('financial') || id?.includes('budget') || id?.includes('burn') || id?.includes('cash');
+  const isStrategy = category === 'Strategy' || id?.includes('pitch') || id?.includes('fund') || id?.includes('board');
+  const isProduct = category === 'Product' || id?.includes('prd') || id?.includes('launch') || id?.includes('feature');
+
+  return (
+    <div className="w-[140px] h-[198px] rounded-[6px] bg-white dark:bg-[#15161b] border border-slate-200/90 dark:border-zinc-800 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)] p-2.5 flex flex-col justify-between overflow-hidden select-none pointer-events-none group-hover:border-purple-300 dark:group-hover:border-purple-700/60 group-hover:shadow-[0_8px_24px_-4px_rgba(124,58,237,0.18)] transition-all duration-200 mx-auto relative">
+      {/* Top Paper Header */}
+      <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-purple-500/90 shadow-[0_0_4px_rgba(168,85,247,0.5)]" />
+          <span className="text-[8px] font-bold text-slate-800 dark:text-zinc-200 truncate max-w-[85px]">{title}</span>
+        </div>
+        <span className="text-[7px] font-mono text-slate-400 dark:text-zinc-600">A4</span>
+      </div>
+
+      {/* Live Document Body Preview */}
+      <div className="flex-1 w-full overflow-hidden relative text-left">
+        {sampleHtml ? (
+          <div 
+            className="w-[450px] origin-top-left scale-[0.27] text-slate-700 dark:text-zinc-300 pointer-events-none leading-normal font-sans"
+            dangerouslySetInnerHTML={{ __html: sampleHtml }}
+          />
+        ) : (
+          <div className="flex flex-col gap-1.5 pt-0.5">
+            <div className="text-[8.5px] font-bold text-slate-800 dark:text-zinc-200 line-clamp-1">{title}</div>
+            <div className="text-[7.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-tight">
+              {rawWorkflow?.desc || rawTemplate?.description || 'Executive document layout.'}
+            </div>
+            {isFinance ? (
+              <div className="grid grid-cols-3 gap-1 my-1 p-1 rounded bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800">
+                <div className="h-4 rounded bg-emerald-500/15 border border-emerald-500/25 flex flex-col items-center justify-center">
+                  <span className="text-[6.5px] font-bold text-emerald-600 dark:text-emerald-400">+38%</span>
+                </div>
+                <div className="h-4 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700 flex flex-col items-center justify-center">
+                  <span className="text-[6.5px] font-semibold text-slate-600 dark:text-zinc-300">$4.2M</span>
+                </div>
+                <div className="h-4 rounded bg-purple-500/15 border border-purple-500/25 flex flex-col items-center justify-center">
+                  <span className="text-[6.5px] font-bold text-purple-600 dark:text-purple-400">ARR</span>
+                </div>
+              </div>
+            ) : isStrategy ? (
+              <div className="p-1 rounded bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 flex flex-col gap-0.5">
+                <span className="text-[7px] font-bold text-purple-700 dark:text-purple-300">Executive Vision</span>
+                <span className="text-[6.5px] text-slate-500 dark:text-zinc-400">Strategic goals & milestones</span>
+              </div>
+            ) : isProduct ? (
+              <div className="grid grid-cols-2 gap-1 my-0.5">
+                <div className="p-1 rounded bg-cyan-500/10 border border-cyan-500/20">
+                  <span className="text-[6.5px] font-bold text-cyan-600 dark:text-cyan-400">Specs</span>
+                </div>
+                <div className="p-1 rounded bg-indigo-500/10 border border-indigo-500/20">
+                  <span className="text-[6.5px] font-bold text-indigo-600 dark:text-indigo-400">Roadmap</span>
+                </div>
+              </div>
+            ) : null}
+            <div className="h-1 w-full bg-slate-200/70 dark:bg-zinc-800 rounded-full mt-1" />
+            <div className="h-1 w-4/5 bg-slate-200/70 dark:bg-zinc-800 rounded-full" />
+            <div className="h-1 w-3/5 bg-slate-200/70 dark:bg-zinc-800 rounded-full" />
+          </div>
+        )}
+
+        {/* Subtle Bottom Vignette Gradient to smoothly fade text overflow */}
+        <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-white dark:from-[#15161b] to-transparent pointer-events-none" />
+      </div>
+
+      {/* Footer simulation */}
+      <div className="pt-1.5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+        <span className="text-[7.5px] font-mono text-slate-400 dark:text-zinc-600 truncate max-w-[85px]">{title}</span>
+        <span className="text-[7.5px] font-semibold text-purple-600/80 dark:text-purple-400/80">Page 1</span>
+      </div>
+    </div>
+  );
+};
+
+const SlideDeckThumbnailPreview = ({ title, category, slideCount = 10, isCustom = false, templateId, rawTemplate }) => {
+  // Determine template slide configuration
+  const slideConfig = React.useMemo(() => {
+    if (rawTemplate?.deckSlidesData?.[0]) {
+      return rawTemplate.deckSlidesData[0];
+    }
+    if (templateId === 'startup-pitch' && typeof DEFAULT_DECK_SLIDES !== 'undefined' && DEFAULT_DECK_SLIDES[0]) {
+      return DEFAULT_DECK_SLIDES[0];
+    }
+    if (templateId === 'business-plan' && typeof BUSINESS_PLAN_DECK_SLIDES !== 'undefined' && BUSINESS_PLAN_DECK_SLIDES[0]) {
+      return BUSINESS_PLAN_DECK_SLIDES[0];
+    }
+    return null;
+  }, [templateId, rawTemplate]);
+
+  const isPitch = category === 'pitch' || templateId === 'startup-pitch';
+  const isBusiness = category === 'business' || templateId === 'business-plan' || templateId === 'sales-proposal';
+  const isProduct = category === 'product' || templateId === 'product-launch';
+  const isQbr = category === 'qbr' || templateId === 'qbr';
+
+  const bgColor = slideConfig?.backgroundColor || (isProduct ? '#070b14' : isBusiness ? '#0a0d18' : isQbr ? '#071018' : '#05070B');
+  const accentColor = isBusiness ? '#00f0ff' : isPitch ? '#a855f7' : isProduct ? '#38bdf8' : '#34d399';
+  const headline = slideConfig?.headline || (isPitch ? 'NOVARIS AI' : isBusiness ? 'EXECUTIVE PLAN' : isProduct ? 'PRODUCT LAUNCH' : isQbr ? 'Q3 BUSINESS REVIEW' : title);
+  const tagline = slideConfig?.tagline || (isPitch ? 'Series A Pitch Deck' : isBusiness ? 'Market Sizing & 3-Yr Financials' : isProduct ? 'Architecture & Rollout' : 'Performance Review');
+
+  return (
+    <div 
+      className="w-full aspect-video rounded-xl border border-white/10 p-3 flex flex-col justify-between overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none pointer-events-none group-hover:border-violet-500/50 group-hover:shadow-[0_8px_25px_-4px_rgba(124,58,237,0.25)] transition-all duration-200 relative"
+      style={{ backgroundColor: bgColor }}
+    >
+      {/* Dynamic Background Accent Glow */}
+      <div 
+        className="absolute -right-4 -bottom-4 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-30" 
+        style={{ backgroundColor: accentColor }}
+      />
+
+      {/* Slide Topbar */}
+      <div className="flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(167,139,250,0.9)]" style={{ backgroundColor: accentColor }} />
+          <span className="text-[8.5px] font-bold tracking-tight text-zinc-300 truncate max-w-[130px]">{title}</span>
+        </div>
+        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-zinc-300 font-semibold">
+          {slideCount} slides
+        </span>
+      </div>
+
+      {/* Live Slide 1 Layout Rendering */}
+      <div className="relative z-10 my-auto py-1 flex flex-col justify-center">
+        <div className="text-[7px] font-mono uppercase tracking-wider text-cyan-400 font-bold mb-0.5">
+          {tagline}
+        </div>
+        <h2 className="text-[15px] font-[900] tracking-tight text-white uppercase leading-none truncate max-w-full drop-shadow-md">
+          {headline}
+        </h2>
+        
+        {/* Render Live Mini Bento Layout / Cards */}
+        {isBusiness ? (
+          <div className="grid grid-cols-3 gap-1.5 mt-2">
+            <div className="h-7 rounded-lg bg-white/[0.05] border border-cyan-500/30 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-cyan-400 font-bold leading-none">$12.4M</span>
+              <span className="text-[6px] text-zinc-400 leading-none">TAM Target</span>
+            </div>
+            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-zinc-300 font-bold leading-none">85% Gross</span>
+              <span className="text-[6px] text-zinc-400 leading-none">Margins</span>
+            </div>
+            <div className="h-7 rounded-lg bg-white/[0.05] border border-emerald-500/30 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-emerald-400 font-bold leading-none">+140%</span>
+              <span className="text-[6px] text-zinc-400 leading-none">YoY Growth</span>
+            </div>
+          </div>
+        ) : isPitch ? (
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
+            <div className="h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-purple-300 font-bold leading-none">Problem & Gap</span>
+              <div className="h-1 w-4/5 bg-purple-400/40 rounded-full" />
+            </div>
+            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-zinc-300 font-bold leading-none">AI Workflow Solution</span>
+              <div className="h-1 w-3/5 bg-cyan-400/40 rounded-full" />
+            </div>
+          </div>
+        ) : isProduct ? (
+          <div className="grid grid-cols-3 gap-1 mt-2">
+            <div className="h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-cyan-300 font-bold leading-none">Modular API</span>
+              <span className="text-[6px] text-zinc-400 leading-none">Core Engine</span>
+            </div>
+            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between col-span-2">
+              <span className="text-[7px] text-purple-300 font-bold leading-none">Global Distributed Mesh</span>
+              <div className="flex gap-1 items-center">
+                <div className="h-1 flex-1 bg-purple-500/50 rounded-full" />
+                <div className="h-1 flex-1 bg-white/20 rounded-full" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
+            <div className="h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-emerald-300 font-bold leading-none">Key Accomplishments</span>
+              <span className="text-[6px] text-zinc-400 leading-none">All OKRs Exceeded</span>
+            </div>
+            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between">
+              <span className="text-[7px] text-zinc-300 font-bold leading-none">Forward Milestones</span>
+              <span className="text-[6px] text-zinc-400 leading-none">Next Quarter Targets</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Slide Bottom Bar */}
+      <div className="flex items-center justify-between pt-1 border-t border-white/10 relative z-10">
+        <span className="text-[7.5px] text-zinc-400 font-mono">16:9 Widescreen</span>
+        <span className="text-[7.5px] font-semibold" style={{ color: accentColor }}>Slide 1 of {slideCount}</span>
+      </div>
+    </div>
+  );
+};
+
+const FullPageDocTemplateGallery = ({
+  customTemplates = [],
+  onApplyWorkflow,
+  onApplyCustomTemplate,
+  handleBlankDoc,
+  onCreateCustomTemplate,
+  handleDeleteCustomTemplate,
+  setDocToolbarTab
+}) => {
+  const { t } = useTranslation();
+  const [activeCategory, setActiveCategory] = React.useState('all');
+  const [previewTemplate, setPreviewTemplate] = React.useState(null);
+  const [openMenuId, setOpenMenuId] = React.useState(null);
+
+  React.useEffect(() => {
+    const handleOutside = (e) => {
+      if (openMenuId && !e.target.closest('.doc-template-card-menu')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
+  }, [openMenuId]);
+
+  React.useEffect(() => {
+    if (!previewTemplate) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setPreviewTemplate(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewTemplate]);
+
+  const docCustomTemplates = (customTemplates || []).filter(
+    (t) => t.appType === 'docs' || (!t.appType && !t.deckSlidesData && !t.gridValues && t.docBodyHtml)
+  );
+
+  const categories = [
+    { id: 'all', label: t('templates.allTemplates') || 'All Templates' },
+    { id: 'strategy', label: 'Strategy & Execution' },
+    { id: 'finance', label: 'Finance & Growth' },
+    { id: 'product', label: 'Product & Tech' },
+    { id: 'operate', label: 'Operations & HR' },
+    { id: 'custom', label: docCustomTemplates.length > 0 ? `${t('templates.myTemplates') || 'My Templates'} (${docCustomTemplates.length})` : (t('templates.myTemplates') || 'My Templates') }
+  ];
+
+  const blankCard = {
+    id: 'blank',
+    title: t('templates.startBlank') || 'Start blank',
+    category: 'Start from scratch',
+    categoryId: 'all',
+    desc: 'Clean A4 slate to write and draft your executive document.',
+    isCustom: false,
+    applyFn: handleBlankDoc
+  };
+
+  const curatedCards = AI_WORKFLOW_LIBRARY.map((wf) => {
+    let catId = 'strategy';
+    if (wf.category === 'Finance') catId = 'finance';
+    else if (wf.category === 'Product') catId = 'product';
+    else if (wf.category === 'Operate') catId = 'operate';
+    else if (wf.category === 'Growth & Fundraising') catId = 'strategy';
+    return {
+      id: wf.id,
+      title: wf.title,
+      category: wf.category || 'Strategic Workflow',
+      categoryId: catId,
+      desc: wf.desc || 'AI-native curated document workflow layout with executive structure.',
+      isCustom: false,
+      applyFn: () => onApplyWorkflow(wf),
+      rawWorkflow: wf
+    };
+  });
+
+  const customCards = docCustomTemplates.map((t) => ({
+    id: t.id,
+    title: t.name || 'Custom Document Template',
+    category: t.category || 'My Templates',
+    categoryId: 'custom',
+    desc: t.description || 'Custom saved document template with pre-filled typography and structures.',
+    isCustom: true,
+    applyFn: () => onApplyCustomTemplate(t),
+    rawTemplate: t
+  }));
+
+  const allCards = [blankCard, ...customCards, ...curatedCards];
+
+  const filteredCards = allCards.filter((card) => {
+    if (activeCategory === 'all') return true;
+    if (activeCategory === 'custom') return card.isCustom;
+    return card.categoryId === activeCategory;
+  });
+
+  return (
+    <div className="w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-y-auto thin-scrollbar p-6 md:p-8">
+      <div className="w-full flex flex-col gap-5 max-w-7xl mx-auto">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 shadow-2xs">
+              <RegaarderAiIcon size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  {t('templates.title') || 'Templates'}
+                </h1>
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-md border border-purple-500/20">
+                  Docs
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                Choose a portrait document layout or start blank to begin writing.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCreateCustomTemplate}
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          >
+            <Plus size={14} />
+            <span>{t('templates.createTemplate') || 'Create template'}</span>
+          </button>
+        </div>
+
+        {/* Category Pills Bar (Apple Segmented Control) */}
+        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-black/90 rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-inner overflow-x-auto thin-scrollbar my-1">
+          {categories.map((cat) => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`relative px-3.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none cursor-pointer shrink-0 active:scale-[0.97] ${
+                  isActive
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] font-bold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2 pb-10">
+          {filteredCards.map((card) => (
+            <div
+              key={card.id}
+              onClick={() => {
+                card.applyFn();
+                if (setDocToolbarTab) setDocToolbarTab('Write');
+              }}
+              className="w-full h-[300px] rounded-2xl bg-white dark:bg-[#0d0e12] border border-slate-200/80 dark:border-zinc-800/80 shadow-xs group hover:shadow-md hover:border-slate-400/60 dark:hover:border-zinc-600/60 transition-all duration-200 flex flex-col relative cursor-pointer select-none overflow-hidden"
+            >
+              {/* Top 80% Template Preview Area */}
+              <div className="h-[238px] shrink-0 w-full p-3 bg-slate-50/70 dark:bg-zinc-950/60 border-b border-slate-100 dark:border-zinc-800/80 relative overflow-hidden flex flex-col items-center justify-center">
+                {card.id === 'blank' ? (
+                  <div className="w-[140px] h-[198px] rounded-[6px] border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/40 shadow-xs flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-zinc-500 mx-auto">
+                    <Plus size={24} className="stroke-[1.5]" />
+                    <span className="text-xs font-semibold">Blank Document</span>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-center">
+                    <DocumentThumbnailPreview
+                      title={card.title}
+                      category={card.category}
+                      id={card.id}
+                      rawWorkflow={card.rawWorkflow}
+                      rawTemplate={card.rawTemplate}
+                    />
+                  </div>
+                )}
+
+                {/* Upper-Right Secondary Actions Button */}
+                <div className="absolute top-2.5 right-2.5 z-30 doc-template-card-menu">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId((prev) => prev === card.id ? null : card.id);
+                    }}
+                    className="w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md border border-white/50 dark:border-white/10 text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                    title="More options"
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
+
+                  {openMenuId === card.id && (
+                    <div
+                      className="absolute right-0 top-9 w-40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/70 rounded-2xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs font-sans"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setOpenMenuId(null);
+                          card.applyFn();
+                          if (setDocToolbarTab) setDocToolbarTab('Write');
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-xl transition-colors font-semibold flex items-center gap-2 cursor-pointer"
+                      >
+                        <Check size={13} />
+                        <span>{t('templates.useTemplate') || 'Use Template'}</span>
+                      </button>
+                      {card.id !== 'blank' && (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setOpenMenuId(null);
+                            setPreviewTemplate(card);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
+                        >
+                          <Eye size={13} />
+                          <span>{t('templates.preview') || 'Preview'}</span>
+                        </button>
+                      )}
+                      {card.isCustom && handleDeleteCustomTemplate && (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setOpenMenuId(null);
+                            handleDeleteCustomTemplate(card.id);
+                          }}
+                          className="w-full px-3 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl flex items-center gap-2 cursor-pointer font-medium border-t border-slate-100 dark:border-zinc-800/80 mt-1 pt-1.5"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hover Action Overlay */}
+                <div className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2 z-10 pointer-events-none p-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      card.applyFn();
+                      if (setDocToolbarTab) setDocToolbarTab('Write');
+                    }}
+                    className="pointer-events-auto px-4 py-2 bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.03] cursor-pointer flex items-center gap-1.5 select-none"
+                  >
+                    <span>{card.id === 'blank' ? (t('templates.startBlank') || 'Start blank') : (t('templates.useTemplate') || 'Use Template')}</span>
+                  </button>
+                  {card.id !== 'blank' && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate(card);
+                      }}
+                      className="pointer-events-auto w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-100 rounded-full shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.05] cursor-pointer select-none"
+                      title="Preview Template Details"
+                    >
+                      <Eye size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom 20% Information Footer */}
+              <div className="h-[62px] shrink-0 w-full px-4 py-2 flex flex-col justify-center bg-white dark:bg-[#0d0e12]">
+                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                  {card.title}
+                </span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
+                  {card.category}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Preview High-Res Modal */}
+      {previewTemplate && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewTemplate(null);
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-950/60 dark:bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200 ease-out select-none"
+        >
+          <div className="relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full p-5 md:p-6 max-h-[90vh] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.35)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] ring-1 ring-black/5 dark:ring-white/10 flex flex-col gap-4 animate-in zoom-in-95 duration-200 ease-out overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <FileText size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                    {previewTemplate.title}
+                  </h3>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500">{previewTemplate.category}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800 flex flex-col gap-3">
+              <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                {previewTemplate.desc}
+              </p>
+              <div className="w-full flex items-center justify-center p-4">
+                <DocumentThumbnailPreview
+                  title={previewTemplate.title}
+                  category={previewTemplate.category}
+                  id={previewTemplate.id}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80 shrink-0">
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fn = previewTemplate.applyFn;
+                  setPreviewTemplate(null);
+                  fn();
+                  if (setDocToolbarTab) setDocToolbarTab('Write');
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Check size={14} strokeWidth={2.5} />
+                <span>Load Template into Document</span>
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
+const FullPageDeckTemplateGallery = ({
+  customTemplates = [],
+  onSelectDeckTemplate,
+  onApplyCustomDeckTemplate,
+  handleCreateBlankDeck,
+  onCreateCustomDeckTemplate,
+  handleDeleteCustomTemplate,
+  setDeckToolbarTab
+}) => {
+  const { t } = useTranslation();
+  const [activeCategory, setActiveCategory] = React.useState('all');
+  const [previewTemplate, setPreviewTemplate] = React.useState(null);
+  const [openMenuId, setOpenMenuId] = React.useState(null);
+
+  React.useEffect(() => {
+    const handleOutside = (e) => {
+      if (openMenuId && !e.target.closest('.deck-template-card-menu')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
+  }, [openMenuId]);
+
+  React.useEffect(() => {
+    if (!previewTemplate) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setPreviewTemplate(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewTemplate]);
+
+  const deckCustomTemplates = (customTemplates || []).filter(
+    (t) => t.appType === 'deck' || (!t.appType && t.deckSlidesData)
+  );
+
+  const categories = [
+    { id: 'all', label: t('templates.allTemplates') || 'All Templates' },
+    { id: 'pitch', label: 'Pitch Decks' },
+    { id: 'business', label: 'Business & Strategy' },
+    { id: 'product', label: 'Product & Architecture' },
+    { id: 'qbr', label: 'Executive & QBR' },
+    { id: 'custom', label: deckCustomTemplates.length > 0 ? `${t('templates.myTemplates') || 'My Templates'} (${deckCustomTemplates.length})` : (t('templates.myTemplates') || 'My Templates') }
+  ];
+
+  const blankCard = {
+    id: 'blank',
+    title: t('deck.blankCanvas') || 'Blank Canvas',
+    category: 'Start from scratch',
+    categoryId: 'all',
+    desc: 'Clean 16:9 dark canvas with full freedom to build bento grids and charts.',
+    slideCount: 1,
+    isCustom: false,
+    applyFn: handleCreateBlankDeck
+  };
+
+  const curatedCards = [
+    {
+      id: 'startup-pitch',
+      title: 'Startup Pitch Deck (15 Slides)',
+      category: 'pitch',
+      categoryId: 'pitch',
+      desc: '15-slide comprehensive investor pitch deck with Bento grids, TAM/SAM/SOM, and traction metrics.',
+      slideCount: 15,
+      isCustom: false,
+      applyFn: () => onSelectDeckTemplate('startup-pitch')
+    },
+    {
+      id: 'business-plan',
+      title: 'Executive Business Plan (10 Slides)',
+      category: 'business',
+      categoryId: 'business',
+      desc: '10-slide complete business plan: Market Sizing, 3-Yr Financials, Moat & GTM with 32 bento cards.',
+      slideCount: 10,
+      isCustom: false,
+      applyFn: () => onSelectDeckTemplate('business-plan')
+    },
+    {
+      id: 'product-launch',
+      title: 'Product Launch & Architecture (8 Slides)',
+      category: 'product',
+      categoryId: 'product',
+      desc: 'Feature showcase, architectural diagrams, rollout milestones, and KPI projections.',
+      slideCount: 8,
+      isCustom: false,
+      applyFn: () => onSelectDeckTemplate('product-launch')
+    },
+    {
+      id: 'sales-proposal',
+      title: 'Enterprise Sales Proposal (6 Slides)',
+      category: 'business',
+      categoryId: 'business',
+      desc: 'Executive solution proposal with ROI calculations, implementation timeline, and SLA terms.',
+      slideCount: 6,
+      isCustom: false,
+      applyFn: () => onSelectDeckTemplate('sales-proposal')
+    },
+    {
+      id: 'qbr',
+      title: 'Quarterly Business Review (5 Slides)',
+      category: 'qbr',
+      categoryId: 'qbr',
+      desc: 'Executive revenue performance, OKR tracking, strategic wins, and next-quarter targets.',
+      slideCount: 5,
+      isCustom: false,
+      applyFn: () => onSelectDeckTemplate('qbr')
+    }
+  ];
+
+  const customCards = deckCustomTemplates.map((t) => ({
+    id: t.id,
+    title: t.name || 'Custom Deck Template',
+    category: 'custom',
+    categoryId: 'custom',
+    desc: t.description || `${(t.deckSlidesData || []).length} customized presentation slides with preserved components & layouts.`,
+    slideCount: (t.deckSlidesData || []).length,
+    isCustom: true,
+    applyFn: () => onApplyCustomDeckTemplate(t),
+    rawTemplate: t
+  }));
+
+  const allCards = [blankCard, ...customCards, ...curatedCards];
+
+  const filteredCards = allCards.filter((card) => {
+    if (activeCategory === 'all') return true;
+    if (activeCategory === 'custom') return card.isCustom;
+    return card.categoryId === activeCategory;
+  });
+
+  return (
+    <div className="w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-y-auto thin-scrollbar p-6 md:p-8">
+      <div className="w-full flex flex-col gap-5 max-w-7xl mx-auto">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-violet-500/10 dark:bg-violet-500/20 border border-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 shadow-2xs">
+              <RegaarderAiIcon size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  {t('templates.title') || 'Templates'}
+                </h1>
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-md border border-violet-500/20">
+                  16:9 Decks
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                Choose a 16:9 widescreen presentation theme or start from a blank canvas.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCreateCustomDeckTemplate}
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          >
+            <Plus size={14} />
+            <span>{t('templates.createTemplate') || 'Create template'}</span>
+          </button>
+        </div>
+
+        {/* Category Pills Bar (Apple Segmented Control) */}
+        <div className="inline-flex items-center p-1 gap-1 bg-slate-100/90 dark:bg-black/90 rounded-xl border border-slate-200/60 dark:border-zinc-800/80 shadow-inner overflow-x-auto thin-scrollbar my-1">
+          {categories.map((cat) => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`relative px-3.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none cursor-pointer shrink-0 active:scale-[0.97] ${
+                  isActive
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] font-bold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2 pb-10">
+          {filteredCards.map((card) => (
+            <div
+              key={card.id}
+              onClick={() => {
+                card.applyFn();
+                if (setDeckToolbarTab) setDeckToolbarTab('Create');
+              }}
+              className="w-full h-[255px] rounded-2xl bg-white dark:bg-[#0d0e12] border border-slate-200/80 dark:border-zinc-800/80 shadow-xs group hover:shadow-md hover:border-slate-400/60 dark:hover:border-zinc-600/60 transition-all duration-200 flex flex-col relative cursor-pointer select-none overflow-hidden"
+            >
+              {/* Top 80% Template Preview Area */}
+              <div className="h-[188px] shrink-0 w-full p-3.5 bg-slate-50/70 dark:bg-zinc-950/60 border-b border-slate-100 dark:border-zinc-800/80 relative overflow-hidden flex flex-col items-center justify-center">
+                {card.id === 'blank' ? (
+                  <div className="w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/40 shadow-xs flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-zinc-500">
+                    <Plus size={24} className="stroke-[1.5]" />
+                    <span className="text-xs font-semibold">Blank Canvas</span>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-center">
+                    <SlideDeckThumbnailPreview
+                      title={card.title}
+                      category={card.category}
+                      slideCount={card.slideCount || 10}
+                      isCustom={card.isCustom}
+                      templateId={card.id}
+                      rawTemplate={card.rawTemplate}
+                    />
+                  </div>
+                )}
+
+                {/* Upper-Right Secondary Actions Button */}
+                <div className="absolute top-2.5 right-2.5 z-30 deck-template-card-menu">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId((prev) => prev === card.id ? null : card.id);
+                    }}
+                    className="w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md border border-white/50 dark:border-white/10 text-slate-700 dark:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                    title="More options"
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
+
+                  {openMenuId === card.id && (
+                    <div
+                      className="absolute right-0 top-9 w-40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/70 rounded-2xl shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs font-sans"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          setOpenMenuId(null);
+                          card.applyFn();
+                          if (setDeckToolbarTab) setDeckToolbarTab('Create');
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-xl transition-colors font-semibold flex items-center gap-2 cursor-pointer"
+                      >
+                        <Check size={13} />
+                        <span>{t('templates.useTemplate') || 'Use Template'}</span>
+                      </button>
+                      {card.id !== 'blank' && (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setOpenMenuId(null);
+                            setPreviewTemplate(card);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-2 cursor-pointer font-medium"
+                        >
+                          <Eye size={13} />
+                          <span>{t('templates.preview') || 'Preview'}</span>
+                        </button>
+                      )}
+                      {card.isCustom && handleDeleteCustomTemplate && (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setOpenMenuId(null);
+                            handleDeleteCustomTemplate(card.id);
+                          }}
+                          className="w-full px-3 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl flex items-center gap-2 cursor-pointer font-medium border-t border-slate-100 dark:border-zinc-800/80 mt-1 pt-1.5"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hover Action Overlay */}
+                <div className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2 z-10 pointer-events-none p-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      card.applyFn();
+                      if (setDeckToolbarTab) setDeckToolbarTab('Create');
+                    }}
+                    className="pointer-events-auto px-4 py-2 bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.03] cursor-pointer flex items-center gap-1.5 select-none"
+                  >
+                    <span>{card.id === 'blank' ? (t('deck.blankCanvas') || 'Blank Canvas') : (t('templates.useTemplate') || 'Use Template')}</span>
+                  </button>
+                  {card.id !== 'blank' && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewTemplate(card);
+                      }}
+                      className="pointer-events-auto w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-100 rounded-full shadow-xl border border-white/60 dark:border-white/10 transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 active:scale-95 hover:scale-[1.05] cursor-pointer select-none"
+                      title="Preview Template Details"
+                    >
+                      <Eye size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom 20% Information Footer */}
+              <div className="h-[67px] shrink-0 w-full px-4 py-2.5 flex flex-col justify-center bg-white dark:bg-[#0d0e12]">
+                <span className="text-[13px] font-semibold text-slate-900 dark:text-zinc-100 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                  {card.title}
+                </span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
+                  {card.id === 'blank' ? 'Start from scratch' : card.isCustom ? `${card.slideCount} Slides • My Template` : `${card.slideCount} Slides • Curated`}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Preview High-Res Modal */}
+      {previewTemplate && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewTemplate(null);
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-950/60 dark:bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200 ease-out select-none"
+        >
+          <div className="relative bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full p-5 md:p-6 max-h-[90vh] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.35)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] ring-1 ring-black/5 dark:ring-white/10 flex flex-col gap-4 animate-in zoom-in-95 duration-200 ease-out overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                  <Presentation size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                    {previewTemplate.title}
+                  </h3>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500">{previewTemplate.slideCount} Slides • {previewTemplate.category}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800 flex flex-col gap-3">
+              <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                {previewTemplate.desc}
+              </p>
+              <div className="w-full flex items-center justify-center p-4">
+                <SlideDeckThumbnailPreview
+                  title={previewTemplate.title}
+                  category={previewTemplate.category}
+                  slideCount={previewTemplate.slideCount || 10}
+                  isCustom={previewTemplate.isCustom}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80 shrink-0">
+              <button
+                type="button"
+                onClick={() => setPreviewTemplate(null)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fn = previewTemplate.applyFn;
+                  setPreviewTemplate(null);
+                  fn();
+                  if (setDeckToolbarTab) setDeckToolbarTab('Create');
+                }}
+                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Check size={14} strokeWidth={2.5} />
+                <span>Load Template into Presentation</span>
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
 const AIWorkflowLibraryModal = ({
   isOpen,
   onClose,
-  onSelectWorkflow
+  onSelectWorkflow,
+  customTemplates = [],
+  onApplyCustomTemplate
 }) => {
   const [selectedCategory, setSelectedCategory] = React.useState('All');
   const [searchQuery, setSearchQuery] = React.useState('');
 
   if (!isOpen) return null;
 
-  const categories = ['All', 'Operate', 'Finance', 'Strategy', 'Product', 'Growth & Fundraising'];
+  const docCustomTemplates = (customTemplates || []).filter(
+    (t) => t.appType === 'docs' || (!t.appType && !t.deckSlidesData && !t.gridValues && t.docBodyHtml)
+  );
 
-  const filteredWorkflows = AI_WORKFLOW_LIBRARY.filter((wf) => {
-    const matchesCat = selectedCategory === 'All' || wf.category === selectedCategory;
+  const categories = [
+    'All',
+    ...(docCustomTemplates.length > 0 ? [`My Templates (${docCustomTemplates.length})`] : ['My Templates']),
+    'Operate',
+    'Finance',
+    'Strategy',
+    'Product',
+    'Growth & Fundraising'
+  ];
+
+  const customWfs = docCustomTemplates.map((tpl) => ({
+    id: tpl.id,
+    title: tpl.name || 'Custom Document Template',
+    desc: tpl.description || 'Custom user template saved for document and composition workspaces.',
+    category: 'My Templates',
+    appBadges: ['Docs', 'Custom'],
+    iconComponent: WorkflowIconGeneric,
+    isCustomTemplate: true,
+    rawTemplate: tpl
+  }));
+
+  const allWorkflowsPool = [...customWfs, ...AI_WORKFLOW_LIBRARY];
+
+  const filteredWorkflows = allWorkflowsPool.filter((wf) => {
+    const isCustomCat = selectedCategory.startsWith('My Templates');
+    const matchesCat =
+      selectedCategory === 'All'
+        ? true
+        : isCustomCat
+        ? wf.category === 'My Templates'
+        : wf.category === selectedCategory;
     if (!searchQuery.trim()) return matchesCat;
 
     const query = searchQuery.toLowerCase().trim();
     const titleMatch = wf.title.toLowerCase().includes(query);
-    const descMatch = wf.desc.toLowerCase().includes(query);
-    const catMatch = wf.category.toLowerCase().includes(query);
+    const descMatch = (wf.desc || '').toLowerCase().includes(query);
+    const catMatch = (wf.category || '').toLowerCase().includes(query);
 
     // Natural Language / Intent Matching
     let intentMatch = false;
@@ -4674,12 +5714,17 @@ const AIWorkflowLibraryModal = ({
                 key={wf.id}
                 onPointerDown={(e) => {
                   e.preventDefault();
-                  onSelectWorkflow(wf);
+                  if (wf.isCustomTemplate && wf.rawTemplate) {
+                    onApplyCustomTemplate?.(wf.rawTemplate);
+                  } else {
+                    onSelectWorkflow(wf);
+                  }
                   onClose();
                 }}
                 className="group p-4 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-800/40 hover:border-purple-400/80 dark:hover:border-purple-500/80 hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer"
               >
                 <div>
+                  <DocumentThumbnailPreview title={wf.title} category={wf.category} id={wf.id} />
                   <div className="flex items-center gap-2.5 mb-2">
                     <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-zinc-700/80 text-slate-600 dark:text-zinc-300 flex items-center justify-center shrink-0 group-hover:bg-purple-50 dark:group-hover:bg-purple-950 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                       <Icon className="w-3.5 h-3.5 stroke-slate-600 dark:stroke-zinc-300 group-hover:stroke-purple-600 dark:group-hover:stroke-purple-400" />
@@ -16441,6 +17486,36 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   };
 
+  const handleApplyCustomDocTemplate = (tpl) => {
+    if (!tpl) return;
+    const initialHtml = tpl.docBodyHtml || '<p>Start typing here...</p>';
+    const templateTitle = tpl.name || 'Custom Document Template';
+    createNewComposition({
+      initialHtml: initialHtml,
+      initialTitle: templateTitle,
+      silent: false
+    });
+    setProductMode('compose');
+    setDocToolbarTab(null);
+    showToast(`Created new document from template "${tpl.name}"!`);
+  };
+
+  const handleApplyCustomDeckTemplate = (tpl) => {
+    if (!tpl) return;
+    if (Array.isArray(tpl.deckSlidesData) && tpl.deckSlidesData.length > 0) {
+      const clonedSlides = JSON.parse(JSON.stringify(tpl.deckSlidesData));
+      setDeckSlidesData(clonedSlides);
+      setActiveDeckSlideId(clonedSlides[0]?.id || 1);
+      setDeckTitle(tpl.name || 'Custom Presentation Deck');
+      setProductMode('deck');
+      setDeckToolbarTab(null);
+      setIsDeckTemplateLibraryModalOpen(false);
+      showToast(`Loaded presentation template "${tpl.name}" (${clonedSlides.length} slides)`);
+    } else {
+      showToast('Template does not contain valid slide data');
+    }
+  };
+
   const handleDuplicateCustomTemplate = (tpl) => {
     const cloned = {
       ...tpl,
@@ -25671,8 +26746,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                   </button>
                 ))}
 
-                {/* Sheets special action: Save as Template */}
-                {productMode === 'sheets' && (
+                {/* Workspace special action: Save as Template (Sheets, Docs, Deck) */}
+                {(productMode === 'sheets' || productMode === 'deck' || productMode === 'compose' || !productMode) && (
                   <>
                     <div className="h-px bg-slate-200/80 dark:bg-zinc-800 my-0.5" />
                     <button
@@ -25682,9 +26757,14 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
                         e.stopPropagation();
                         setBottomActionExportOpen(false);
                         setCreateTemplateSource('current');
+                        const defaultName = productMode === 'sheets'
+                          ? ((sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Sheet Template')
+                          : productMode === 'deck'
+                            ? (activeDoc?.title || 'My Presentation Deck Template')
+                            : (activeDoc?.title || docTitle || 'My Document Template');
                         setCreateTemplateForm((prev) => ({
                           ...prev,
-                          name: (sheetsData || []).find(s => s.id === activeSheetId)?.title || 'My Template',
+                          name: defaultName,
                         }));
                         setIsCreateTemplateModalOpen(true);
                       }}
@@ -42364,7 +43444,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       {/* Floating Exit Button for Right Sidebar (Legacy external button removed in favor of integrated island close button) */}
 
-      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && !rightPanelMaximized && (
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && !rightPanelMaximized && !(productMode === 'compose' && docToolbarTab === 'Templates') && !(productMode === 'deck' && deckToolbarTab === 'Templates') && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
           className="w-1.5 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-400/40 active:bg-violet-500/50 transition-colors opacity-0 hover:opacity-100 z-[401] fixed top-12 bottom-0"
@@ -42375,11 +43455,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       <div 
         className={`no-fullscreen-toggle flex flex-col bg-white/85 dark:bg-zinc-900/90 backdrop-blur-2xl transition-all duration-200 select-none overflow-hidden ${
-          productMode !== 'landing' && rightSidebarOpen && !shareModalOpen 
+          productMode !== 'landing' && rightSidebarOpen && !shareModalOpen && !(productMode === 'compose' && docToolbarTab === 'Templates') && !(productMode === 'deck' && deckToolbarTab === 'Templates')
             ? 'fixed z-[400] border-l border-slate-200/80 dark:border-zinc-800/80 shadow-[-8px_0_30px_rgba(0,0,0,0.04)] dark:shadow-[-8px_0_30px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-right-4'
             : 'w-0 h-0 hidden overflow-hidden border-0 pointer-events-none opacity-0'
         }`}
-        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '48px', right: '0px', bottom: '0px', height: 'calc(100vh - 48px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 350}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '48px', right: '0px', bottom: '0px', height: 'calc(100vh - 48px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen && !(productMode === 'compose' && docToolbarTab === 'Templates') && !(productMode === 'deck' && deckToolbarTab === 'Templates') ? ( rightPanelMaximized ? { width: 'calc(100vw - 24px)', position: 'fixed', top: '48px', right: '0px', bottom: '0px', height: 'calc(100vh - 48px)', zIndex: 1200 } : { width: productMode === 'compose' ? `${rightSidebarWidth || 350}px` : `${rightSidebarWidth}px`, position: 'fixed', top: '48px', right: '0px', bottom: '0px', height: 'calc(100vh - 48px)', zIndex: 400 } ) : { width: '0px', height: '0px', display: 'none' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
@@ -50949,7 +52029,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            {!isDeckPresentationMode && !isSheetsPresentationMode && (isSheetsMode ? sheetsSidebarOpen : deckSlidesPanelOpen) && (
+            {!isDeckPresentationMode && !isSheetsPresentationMode && (isSheetsMode ? (sheetsSidebarOpen && sheetToolbarTab !== 'Templates') : (deckSlidesPanelOpen && deckToolbarTab !== 'Templates')) && (
                     <aside className="w-[240px] relative z-30 border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
                       {/* Top Sidebar Action with Regaarder Apple-Style Split Layout Trigger */}
                       <div className="h-16 px-3.5 border-b border-gray-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 relative z-40">
@@ -58076,7 +59156,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             )}
 
                             {/* ── TEMPLATES TAB (WITH SCROLL ARROWS & FULL TEMPLATE ACCESS) ── */}
-                            {deckToolbarTab === 'Templates' && (
+                            {false && deckToolbarTab === 'Templates' && (
                               <div className="w-full flex items-center justify-between gap-1.5 py-0.5 relative">
                                 <div className="flex items-center gap-1 min-w-0 flex-1 relative">
                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 select-none">{t('deck.deckTemplates') || 'DECK TEMPLATES:'}</span>
@@ -58106,7 +59186,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:scale-[1.02]"
                                       title="Load Complete 10-Slide Executive Business Plan"
                                     >
-                                      <Sparkles size={12} className="text-emerald-400 shrink-0" />
+                                      <RegaarderAiIcon size={13} className="text-emerald-400 shrink-0" />
                                       <span className="font-bold whitespace-nowrap">{t('deck.tmplBusinessPlan') || 'Business Plan (10 Slides)'}</span>
                                     </button>
 
@@ -58147,6 +59227,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </button>
                                       );
                                     })}
+
+                                    {/* Custom User Saved Deck Templates */}
+                                    {(customTemplates || []).filter(t => t.appType === 'deck' || (!t.appType && t.deckSlidesData)).map((tpl) => (
+                                      <button
+                                        key={tpl.id}
+                                        type="button"
+                                        onClick={() => handleApplyCustomDeckTemplate(tpl)}
+                                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/40 shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:scale-[1.02]"
+                                        title={`Load custom deck template: ${tpl.name}`}
+                                      >
+                                        <Presentation size={12} className="text-violet-400 shrink-0" />
+                                        <span className="whitespace-nowrap">{tpl.name}</span>
+                                      </button>
+                                    ))}
                                   </div>
 
                                   {/* Right Scroll Arrow (Prominent & Actionable) */}
@@ -58172,6 +59266,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <Layout size={12} className="text-cyan-500 shrink-0" />
                                     <span>{t('deck.allLibrary') || 'All (Library)'}</span>
                                   </button>
+
+                                  {/* Save Current Deck as Custom Template */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCreateTemplateForm((prev) => ({
+                                        ...prev,
+                                        name: deckTitle || activeDoc?.title || 'My Presentation Deck Template',
+                                      }));
+                                      setIsCreateTemplateModalOpen(true);
+                                    }}
+                                    className="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-violet-600 dark:text-violet-400 border border-slate-300/80 dark:border-zinc-700 shrink-0 cursor-pointer flex items-center gap-1 transition-all active:scale-95"
+                                    title="Save current slide deck as a custom template"
+                                  >
+                                    <Plus size={12} className="shrink-0" />
+                                    <span>{t('toolbar.saveCustom') || 'Save Custom'}</span>
+                                  </button>
                                 </div>
 
                                 <button
@@ -58180,7 +59291,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shrink-0 cursor-pointer flex items-center gap-1.5 shadow-[0_2px_12px_rgba(124,77,255,0.35)] transition-all active:scale-95"
                                   title="Synthesize Full Presentation with LLM Intelligence"
                                 >
-                                  <AgentsIcon size={14} className="text-purple-200" />
+                                  <RegaarderAiIcon size={14} className="text-purple-200" />
                                   <span>{t('deck.aiGenerator') || 'AI Generator'}</span>
                                 </button>
                               </div>
@@ -58531,6 +59642,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div className="w-60 bg-white/[0.01] p-5 border-r border-white/10 flex flex-col gap-1.5 shrink-0">
                                   {[
                                     { id: 'all', label: 'All Templates' },
+                                    { id: 'custom', label: `My Templates (${(customTemplates || []).filter(t => t.appType === 'deck' || (!t.appType && t.deckSlidesData)).length})` },
                                     { id: 'pitch', label: 'Pitch Decks' },
                                     { id: 'business', label: 'Business Plans' },
                                     { id: 'product', label: 'Product & Tech' },
@@ -58566,6 +59678,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                   <div className="grid grid-cols-2 gap-4">
                                     {[
+                                      ...((customTemplates || [])
+                                        .filter(t => t.appType === 'deck' || (!t.appType && t.deckSlidesData))
+                                        .map(t => ({
+                                          id: t.id,
+                                          title: t.name || 'Custom Deck Template',
+                                          category: 'custom',
+                                          icon: Presentation,
+                                          color: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+                                          desc: t.description || `${(t.deckSlidesData || []).length} customized presentation slides with preserved components & layouts.`,
+                                          isCustom: true,
+                                          slideCount: (t.deckSlidesData || []).length,
+                                          rawTemplate: t
+                                        }))
+                                      ),
                                       { id: 'startup-pitch', title: 'Startup Pitch Deck (15 Slides)', category: 'pitch', icon: Presentation, color: 'bg-violet-500/15 text-violet-400', desc: '15-slide comprehensive investor pitch deck with Bento grids, TAM/SAM/SOM, and traction metrics.' },
                                       { id: 'business-plan', title: 'Executive Business Plan (10 Slides)', category: 'business', icon: TrendingUp, color: 'bg-cyan-500/15 text-cyan-400', desc: '10-slide complete business plan: Market Sizing, 3-Yr Financials, Moat & GTM with 32 bento cards.' },
                                       { id: 'product-launch', title: 'Product Launch & Architecture (8 Slides)', category: 'product', icon: LayoutGrid, color: 'bg-purple-500/15 text-purple-400', desc: 'Feature showcase, architectural diagrams, rollout milestones, and KPI projections.' },
@@ -58580,21 +59706,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     .map(t => (
                                       <div 
                                         key={t.id} 
-                                        onClick={() => handleSelectDeckTemplateFromLibrary(t.id)} 
+                                        onClick={() => {
+                                          if (t.isCustom && t.rawTemplate) {
+                                            handleApplyCustomDeckTemplate(t.rawTemplate);
+                                            setIsDeckTemplateModalOpen(false);
+                                          } else {
+                                            handleSelectDeckTemplateFromLibrary(t.id);
+                                          }
+                                        }} 
                                         className="group relative bg-white/[0.02] border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-violet-500/50 hover:bg-white/[0.04] hover:shadow-xl hover:shadow-violet-950/40 transition-all duration-200 flex flex-col justify-between"
                                       >
                                         <div>
+                                          <SlideDeckThumbnailPreview
+                                            title={t.title}
+                                            category={t.category}
+                                            slideCount={t.slideCount || 10}
+                                            isCustom={t.isCustom}
+                                          />
                                           <div className="flex items-center justify-between mb-3">
                                             <div className={`w-9 h-9 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-xs`}>
                                               <t.icon size={18} strokeWidth={2} />
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-semibold text-zinc-400">Curated Deck</span>
+                                            <span className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold ${
+                                              t.isCustom 
+                                                ? 'bg-violet-500/15 border-violet-500/30 text-violet-300' 
+                                                : 'bg-white/5 border border-white/10 text-zinc-400'
+                                            }`}>
+                                              {t.isCustom ? 'My Template' : 'Curated Deck'}
+                                            </span>
                                           </div>
                                           <h3 className="text-sm font-bold text-white mb-1">{t.title}</h3>
                                           <p className="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">{t.desc}</p>
                                         </div>
                                         <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-violet-400 group-hover:text-violet-300">
-                                          <span>Click to Load</span>
+                                          <span>{t.isCustom ? `${t.slideCount || 0} Slides` : 'Click to Load'}</span>
                                           <span>Load Template →</span>
                                         </div>
                                       </div>
@@ -58750,7 +59895,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   disabled={isDeckAIGenerating}
                                   className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-lg shadow-violet-950 flex items-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                                 >
-                                  <AgentsIcon size={14} className="text-white" />
+                                  <RegaarderAiIcon size={14} className="text-white" />
                                   <span>Generate Presentation</span>
                                 </button>
                               </div>
@@ -58912,7 +60057,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           document.body
                         )}
 
-                      {/* Presentation Editor Main Workspace Canvas */}
+                      {/* Presentation Workspace Canvas or Full Page Templates Gallery */}
+                      {deckToolbarTab === 'Templates' ? (
+                        <div className="flex-1 min-h-0 w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-hidden z-20">
+                          <FullPageDeckTemplateGallery
+                            customTemplates={customTemplates}
+                            onSelectDeckTemplate={handleSelectDeckTemplateFromLibrary}
+                            onApplyCustomDeckTemplate={handleApplyCustomDeckTemplate}
+                            handleCreateBlankDeck={handleCreateBlankDeck}
+                            onCreateCustomDeckTemplate={() => {
+                              setCreateTemplateForm((prev) => ({
+                                ...prev,
+                                name: deckTitle || activeDoc?.title || 'My Presentation Deck Template',
+                              }));
+                              setIsCreateTemplateModalOpen(true);
+                            }}
+                            handleDeleteCustomTemplate={handleDeleteCustomTemplate}
+                            setDeckToolbarTab={setDeckToolbarTab}
+                          />
+                        </div>
+                      ) : (
+                      /* Presentation Editor Main Workspace Canvas */
                       <div 
                         onDoubleClick={(e) => {
                           if (isDeckPresentationMode) {
@@ -71844,6 +73009,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                         )}
                       </div>
+                    )}
                     </div>
                   </div>
             )}
@@ -79011,7 +80177,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           )}
 
-          {docToolbarTab === 'Templates' && (
+          {false && docToolbarTab === 'Templates' && (
             /* Templates Sub-toolbar: AI-Native Business Workflows */
             <div className="w-full flex items-center justify-between gap-2.5">
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
@@ -79040,6 +80206,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </button>
                   );
                 })}
+
+                {/* User-Saved Custom Document Templates */}
+                {(customTemplates || [])
+                  .filter(t => t.appType === 'docs' || (!t.appType && !t.deckSlidesData && !t.gridValues && t.docBodyHtml))
+                  .map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        handleApplyCustomDocTemplate(tpl);
+                      }}
+                      className="group px-2.5 py-1 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60 shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-[1.02]"
+                      title={tpl.description || `Custom template: ${tpl.name}`}
+                    >
+                      <WorkflowIconGeneric className="w-3.5 h-3.5 stroke-violet-600 dark:stroke-violet-400 group-hover:stroke-violet-700 dark:group-hover:stroke-violet-300" />
+                      <span className="whitespace-nowrap">{tpl.name}</span>
+                    </button>
+                  ))}
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
@@ -79061,10 +80246,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     e.preventDefault();
                     setIsCreateTemplateModalOpen(true);
                   }}
-                  className="px-2 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer"
+                  className="px-2 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 border border-slate-200/60 dark:border-zinc-700/60 shrink-0 transition-colors cursor-pointer flex items-center gap-1"
                   title="Save current workspace as a custom template"
                 >
-                  {t('toolbar.saveCustom') || '+ Save Custom'}
+                  <Plus size={12} className="shrink-0" />
+                  <span>{t('toolbar.saveCustom') || 'Save Custom'}</span>
                 </button>
               </div>
             </div>
@@ -82394,6 +83580,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </div>
           )}
+          {docToolbarTab === 'Templates' ? (
+            <div className="flex-1 min-h-0 w-full h-full flex flex-col bg-slate-50/70 dark:bg-[#090a0d] overflow-hidden z-20">
+              <FullPageDocTemplateGallery
+                customTemplates={customTemplates}
+                onApplyWorkflow={(wf) => {
+                  setSelectedAIWorkflow(wf);
+                  setIsAIWorkflowLauncherOpen(true);
+                }}
+                onApplyCustomTemplate={handleApplyCustomDocTemplate}
+                handleBlankDoc={() => {
+                  createNewComposition({
+                    initialHtml: '<p><br></p>',
+                    initialTitle: 'Untitled Document'
+                  });
+                  setDocToolbarTab('Write');
+                }}
+                onCreateCustomTemplate={() => {
+                  setCreateTemplateForm((prev) => ({
+                    ...prev,
+                    name: activeDoc?.title || 'My Document Template',
+                  }));
+                  setIsCreateTemplateModalOpen(true);
+                }}
+                handleDeleteCustomTemplate={handleDeleteCustomTemplate}
+                setDocToolbarTab={setDocToolbarTab}
+              />
+            </div>
+          ) : (
           <div
             className={`flex-1 min-h-0 ${(productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'))) ? 'overflow-hidden p-0' : 'overflow-visible relative px-2 pt-4 pb-6 md:px-4 md:pt-6 md:pb-8'} transition-[margin-right] duration-200 ease-out ${
               (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
@@ -84543,6 +85757,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
           </div>
         </div>
+        )}
 
         {/* Persistent Floating AI Prompt Bar */}
         {/* Subtle dimming backdrop overlay: only active when floating AI prompt is explicitly expanded */}
@@ -85096,7 +86311,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
 
-        {!isComposing && !activeDoc?.isPdfDoc && !isNotesWorkspace && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !activeDoc?.isPdfDoc && !isNotesWorkspace && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && docToolbarTab !== 'Templates' && deckToolbarTab !== 'Templates' && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
             style={{
@@ -85384,7 +86599,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {/* Bottom Status Bar */}
-        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && !isNotesWorkspace && (
+        {productMode !== 'whiteboard' && activeRightTab !== 'whiteboard' && !isNotesWorkspace && docToolbarTab !== 'Templates' && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} {t('common.words') || 'words'} - {documentStats.characters} {t('common.characters') || 'characters'}</span>
@@ -90465,20 +91680,72 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onClose={() => setIsCreateTemplateModalOpen(false)}
         form={createTemplateForm}
         setForm={setCreateTemplateForm}
+        productMode={productMode}
         activeSheetTitle={(sheetsData || []).find(s => s.id === activeSheetId)?.title || 'Current Sheet'}
+        activeDocTitle={productMode === 'deck' ? (deckTitle || activeDoc?.title || 'Current Slide Deck') : (activeDoc?.title || docTitle || 'Current Document')}
         onSave={(newTpl) => {
-          setCustomTemplates((prev) => [...prev, newTpl]);
+          let enrichedTpl = { ...newTpl };
+
+          if (productMode === 'deck') {
+            const slidesClone = JSON.parse(JSON.stringify(deckSlidesData || DEFAULT_DECK_SLIDES || []));
+            enrichedTpl = {
+              ...enrichedTpl,
+              appType: 'deck',
+              deckSlidesData: slidesClone,
+            };
+          } else if (productMode === 'compose' || (!productMode && !activeSheetId)) {
+            enrichedTpl = {
+              ...enrichedTpl,
+              appType: 'docs',
+              docBodyHtml: docBodyHtml || (blankBodyRef?.current?.innerHTML || '<p>Start typing here...</p>'),
+              docTitle: newTpl.name || docTitle || 'Untitled Document',
+            };
+          } else {
+            // Sheets
+            const activeSheetGrid = (sheetGrids && sheetGrids[activeSheetId]) ? sheetGrids[activeSheetId] : {};
+            const srcValues = activeSheetGrid.cells || activeSheetGrid.gridValues || activeSheetGrid.values || [];
+            let templateGridValues = srcValues;
+            if (newTpl.preservation && !newTpl.preservation.sampleData) {
+              templateGridValues = srcValues.map((row, rIdx) => {
+                if (!row) return [];
+                return row.map((cell) => {
+                  if (cell == null || cell === '') return cell;
+                  const strVal = String(cell).trim();
+                  if (strVal.startsWith('=')) return cell;
+                  if (rIdx === 0) return cell;
+                  return '';
+                });
+              });
+            }
+            enrichedTpl = {
+              ...enrichedTpl,
+              appType: 'sheets',
+              gridValues: templateGridValues,
+              gridFormatting: (newTpl.preservation?.formatting !== false) ? (activeSheetGrid.formats || activeSheetGrid.gridFormatting || {}) : {},
+              gridDropdowns: (newTpl.preservation?.formulas !== false) ? (activeSheetGrid.dropdowns || activeSheetGrid.gridDropdowns || {}) : {},
+              overlays: activeSheetGrid.overlays || [],
+              tables: activeSheetGrid.tables || [],
+            };
+          }
+
+          setCustomTemplates((prev) => {
+            const updated = [enrichedTpl, ...prev];
+            try {
+              localStorage.setItem('regaarder_custom_templates', JSON.stringify(updated));
+            } catch (err) {
+              console.error('Failed to persist custom template:', err);
+            }
+            return updated;
+          });
           setIsCreateTemplateModalOpen(false);
-          const newSheetId = ((sheetsData || [])[(sheetsData || []).length - 1]?.id || 0) + 1;
-          const newSheet = {
-            id: newSheetId,
-            title: newTpl.name || 'New Template Sheet',
-            subtitle: 'Custom Template'
-          };
-          setSheetsData((prev) => [...(prev || []), newSheet]);
-          setActiveSheetId(newSheetId);
-          setSheetToolbarTab(null);
-          showToast(`Created and opened new template page "${newTpl.name}" in View!`);
+
+          if (productMode === 'deck') {
+            showToast(`Saved presentation deck as template "${newTpl.name}"!`);
+          } else if (productMode === 'compose' || (!productMode && !activeSheetId)) {
+            showToast(`Saved document layout as template "${newTpl.name}"!`);
+          } else {
+            showToast(`Saved spreadsheet template "${newTpl.name}" to My Templates!`);
+          }
         }}
       />
 
@@ -90494,6 +91761,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <AIWorkflowLibraryModal
         isOpen={isAIWorkflowLibraryOpen}
         onClose={() => setIsAIWorkflowLibraryOpen(false)}
+        customTemplates={customTemplates}
+        onApplyCustomTemplate={handleApplyCustomDocTemplate}
         onSelectWorkflow={(wf) => {
           setSelectedAIWorkflow(wf);
           setIsAIWorkflowLauncherOpen(true);
