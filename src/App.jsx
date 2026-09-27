@@ -91,6 +91,7 @@ import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 import RegaarderNotebookViewer, { NotesWriteToolbarControls } from './components/RegaarderNotebookViewer';
 import { convertPdfToEditableHtml } from './utils/pdfToHtmlConverter';
 import LedgerWorkspace from './components/ledger/LedgerWorkspace';
+import SlideDeckExactCanvas from './components/SlideDeckExactCanvas';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -4703,297 +4704,129 @@ const DocumentThumbnailPreview = ({ title, category, id, rawWorkflow, rawTemplat
   );
 };
 
-// ─── Inline SVG wave renderer for thumbnail scale ─────────────────────────────
-// Renders a faithful miniature of the real canvas cover neon vortex.
-// The wave occupies the full right ~55% of the card, matching the actual slide
-// composition where text lives left and the luminous vortex dominates the right.
-const ThumbnailNeonVortex = ({ c1, c2, uid }) => (
-  <svg
-    className="absolute inset-y-0 right-0 overflow-visible pointer-events-none"
-    style={{ width: '58%', height: '100%' }}
-    viewBox="0 0 440 280"
-    preserveAspectRatio="xMidYMid slice"
-    fill="none"
-  >
-    <defs>
-      <linearGradient id={`tnC1_${uid}`} x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#1e3a8a" stopOpacity="0.0" />
-        <stop offset="35%"  stopColor={c1}      stopOpacity="0.7" />
-        <stop offset="80%"  stopColor={c1}      stopOpacity="0.95" />
-        <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
-      </linearGradient>
-      <linearGradient id={`tnC2_${uid}`} x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#3b0764" stopOpacity="0.0" />
-        <stop offset="45%"  stopColor={c2}      stopOpacity="0.75" />
-        <stop offset="85%"  stopColor={c2}      stopOpacity="0.9" />
-        <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
-      </linearGradient>
-      <filter id={`tnBloom_${uid}`} x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur stdDeviation="9" result="b" />
-        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-      </filter>
-      <filter id={`tnGlow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="4" result="b" />
-        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-      </filter>
-    </defs>
-
-    {/* Cyan multi-strand ascending vortex — 22 strands fanning from bottom-left to top-right */}
-    {Array.from({ length: 22 }).map((_, i) => {
-      const t = i / 22;
-      const ox = t * 110;
-      const oy = t * 30;
-      const op = 0.12 + (1 - t) * 0.72;
-      const sw = 0.5 + t * 2.2;
-      // Path: rises from bottom-left of the SVG viewport, sweeps to top-right corner
-      const d = `M ${-30 + ox * 0.9} ${310 - oy * 0.5} C ${80 + ox * 0.7} ${195 - oy * 0.8}, ${220 + ox * 0.5} ${95 - oy * 0.6}, ${420 + ox * 0.2} ${-15 + oy * 0.3}`;
-      return <path key={`c${i}`} d={d} stroke={`url(#tnC1_${uid})`} strokeWidth={sw} opacity={op} fill="none" />;
-    })}
-
-    {/* Magenta inner bundle — tighter, higher contrast core */}
-    {Array.from({ length: 14 }).map((_, i) => {
-      const t = i / 14;
-      const ox = t * 70;
-      const oy = t * 20;
-      const op = 0.2 + (1 - t) * 0.65;
-      const sw = 0.6 + t * 1.8;
-      const d = `M ${30 + ox * 0.8} ${290 - oy * 0.4} C ${120 + ox * 0.6} ${185 - oy * 0.7}, ${255 + ox * 0.4} ${85 - oy * 0.5}, ${430 + ox * 0.1} ${-10 + oy * 0.2}`;
-      return <path key={`m${i}`} d={d} stroke={`url(#tnC2_${uid})`} strokeWidth={sw} opacity={op} fill="none" />;
-    })}
-
-    {/* Core luminous neon tubes with bloom — the 2-3 brightest strands */}
-    <path d="M 75 295 C 170 180, 285 78, 432 -12" stroke={c1}      strokeWidth="3.2" fill="none" opacity="0.98" filter={`url(#tnBloom_${uid})`} />
-    <path d="M 82 292 C 178 176, 293 74, 435 -16" stroke="#ffffff" strokeWidth="2.0" fill="none" opacity="0.9"  filter={`url(#tnGlow_${uid})`} />
-    <path d="M 90 288 C 186 172, 300 70, 438 -18" stroke={c2}      strokeWidth="1.4" fill="none" opacity="0.8"  />
-
-    {/* Convergence hotspot glow where the strands meet at top-right */}
-    <ellipse cx="410" cy="10" rx="90" ry="55" fill={c1} opacity="0.18" filter={`url(#tnBloom_${uid})`} />
-    <ellipse cx="418" cy="6"  rx="50" ry="28" fill="#ffffff" opacity="0.12" filter={`url(#tnGlow_${uid})`} />
-  </svg>
-);
-
-// ─── Bottom-left ambient neon loop (mirrors the real canvas coverBottomNeon) ───
-const ThumbnailBottomLoop = ({ c1, c2, uid }) => (
-  <svg
-    className="absolute overflow-visible pointer-events-none"
-    style={{ bottom: -2, left: -2, width: '32%', height: '38%' }}
-    viewBox="0 0 200 110"
-    fill="none"
-  >
-    {Array.from({ length: 10 }).map((_, i) => {
-      const t = i / 10;
-      const ox = t * 35;
-      const op = 0.15 + (1 - t) * 0.6;
-      const sw = 0.6 + t * 1.4;
-      const d = `M -15 ${105 + ox * 0.3} C ${30 + ox * 0.5} ${72 - t * 18}, ${95 + ox * 0.6} ${30 - t * 12}, ${145 + ox * 0.4} ${52 + t * 10} C ${178 + ox * 0.2} ${78 + t * 14}, 198 108, 215 120`;
-      return <path key={`bl${i}`} d={d} stroke={i % 2 === 0 ? c1 : c2} strokeWidth={sw} opacity={op} fill="none" />;
-    })}
-    <path d="M -15 108 C 32 72, 98 28, 148 52 C 180 76, 200 108, 216 120" stroke={c1} strokeWidth="1.8" fill="none" opacity="0.88" />
-  </svg>
-);
-
-// ─── Per-slide content renderer for the cycling preview ───────────────────────
-// Produces the text content that changes as the user hovers through slides.
-const ThumbnailSlideContent = ({ slide, accentColor, isPitch, isBusiness, isProduct, isQbr, isFirst }) => {
-  const headline = slide?.headline || '';
-  const tagline  = slide?.tagline  || '';
-  const section  = slide?.section  || '';
-  const presenter = slide?.presenter;
-  const presenterHidden = slide?.presenterHidden;
-  const c1 = slide?.vectorColor1 || accentColor;
-  const c2 = slide?.vectorColor2 || '#a855f7';
-
-  return (
-    <div className="flex flex-col justify-center gap-0.5">
-      {/* Section badge */}
-      {section && !isFirst && (
-        <div className="inline-flex items-center gap-1 mb-0.5">
-          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: accentColor }} />
-          <span className="text-[5.5px] font-bold tracking-[0.15em] uppercase" style={{ color: accentColor }}>
-            {section}
-          </span>
-        </div>
-      )}
-
-      {/* Tagline — italic, subdued */}
-      <div className="text-[6px] italic text-zinc-400 leading-none tracking-wide truncate">
-        {tagline}
-      </div>
-
-      {/* Headline — the dominant text element, white-space pre-line to respect \n */}
-      <div
-        className="text-[12px] font-[900] text-white uppercase tracking-tight leading-[1.0] drop-shadow-md mt-0.5"
-        style={{ whiteSpace: 'pre-line', maxWidth: '58%' }}
-      >
-        {headline}
-      </div>
-
-      {/* Presenter pill — only on cover slide */}
-      {isFirst && presenter && !presenterHidden && isPitch && (
-        <div
-          className="mt-1.5 inline-flex items-center justify-center relative overflow-hidden"
-          style={{
-            width: '148px', height: '15px', borderRadius: '9999px',
-            background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)',
-            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3)'
-          }}
-        >
-          <div
-            className="absolute -inset-[200%] pointer-events-none"
-            style={{ background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${c1} 250deg, ${c2} 310deg, #7c4dff 360deg)`, opacity: 0.45 }}
-          />
-          <div className="relative z-10 w-full h-full flex items-center justify-center px-2 rounded-[9999px]"
-            style={{ background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)' }}>
-            <span className="text-[5px] font-[900] tracking-[0.14em] uppercase text-white leading-none">{presenter}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Non-cover slide: mini layout hint strip */}
-      {!isFirst && (
-        <div className="flex gap-1 mt-1" style={{ maxWidth: '60%' }}>
-          <div className="h-3 flex-1 rounded bg-white/[0.06] border border-white/10" />
-          <div className="h-3 w-6 rounded bg-white/[0.04] border border-white/10" />
-          <div className="h-3 flex-1 rounded bg-white/[0.06] border border-white/10" />
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Exact 1:1 Scaled Canvas Preview for Slide Decks ─────────────────────────
+// Renders an authentic scaled replica of the live presentation canvas (820px × 461.25px).
+// Seamlessly cycles through all template slides on hover with progressive indicator dots.
 const SlideDeckThumbnailPreview = ({ title, category, slideCount = 10, isCustom = false, templateId, rawTemplate }) => {
   const [activeIdx, setActiveIdx] = React.useState(0);
-  const [fading, setFading] = React.useState(false);
+  const [scale, setScale] = React.useState(0.4);
+  const containerRef = React.useRef(null);
   const intervalRef = React.useRef(null);
-
-  // Resolve the full slide array — used for hover cycling
-  const allSlides = React.useMemo(() => {
-    if (rawTemplate?.deckSlidesData?.length) return rawTemplate.deckSlidesData;
-    if (templateId === 'startup-pitch' && typeof DEFAULT_DECK_SLIDES !== 'undefined') return DEFAULT_DECK_SLIDES;
-    if ((templateId === 'business-plan' || templateId === 'sales-proposal') && typeof BUSINESS_PLAN_DECK_SLIDES !== 'undefined') return BUSINESS_PLAN_DECK_SLIDES;
-    return null;
-  }, [templateId, rawTemplate]);
-
-  const slideConfig = allSlides?.[activeIdx] || allSlides?.[0] || null;
-  const totalSlides = allSlides?.length || slideCount;
 
   const isPitch    = category === 'pitch'    || templateId === 'startup-pitch';
   const isBusiness = category === 'business' || templateId === 'business-plan' || templateId === 'sales-proposal';
-  const isProduct  = category === 'product'  || templateId === 'product-launch';
-  const isQbr      = category === 'qbr'      || templateId === 'qbr';
 
-  const bgColor     = slideConfig?.backgroundColor || (isProduct ? '#070b14' : isBusiness ? '#0a0d18' : isQbr ? '#071018' : '#05070B');
-  const c1          = slideConfig?.vectorColor1    || (isBusiness ? '#00f0ff' : '#0055ff');
-  const c2          = slideConfig?.vectorColor2    || (isBusiness ? '#a855f7' : '#ec4899');
-  const accentColor = isBusiness ? '#00f0ff' : isPitch ? '#a855f7' : isProduct ? '#38bdf8' : '#34d399';
-  const hasCoverNeon = isPitch || isBusiness;
+  // Responsive scale tracker to guarantee crisp 1:1 aspect-ratio scaling
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+    const updateScale = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.clientWidth;
+        if (width > 0) {
+          setScale(width / 820);
+        }
+      }
+    };
+    updateScale();
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width > 0) {
+          setScale(width / 820);
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-  // Fallback text for AI-generated templates (no static slide array)
-  const fallbackHeadline = isPitch ? 'STARTUP\nPITCH DECK' : isBusiness ? 'BUSINESS PLAN\n2026 – 2029' : isProduct ? 'PRODUCT\nLAUNCH' : isQbr ? 'Q3 BUSINESS\nREVIEW' : title?.toUpperCase();
-  const fallbackTagline  = isPitch ? 'Novaris Company' : isBusiness ? 'Strategic Execution Plan' : isProduct ? 'Architecture & Rollout' : 'Performance Review';
-  const fallbackSlide    = { headline: fallbackHeadline, tagline: fallbackTagline, vectorColor1: c1, vectorColor2: c2 };
+  // Resolve slides from live templates or custom data
+  const allSlides = React.useMemo(() => {
+    if (rawTemplate?.deckSlidesData?.length) return rawTemplate.deckSlidesData;
+    if (isPitch && typeof DEFAULT_DECK_SLIDES !== 'undefined') return DEFAULT_DECK_SLIDES;
+    if (isBusiness && typeof BUSINESS_PLAN_DECK_SLIDES !== 'undefined') return BUSINESS_PLAN_DECK_SLIDES;
+    return null;
+  }, [rawTemplate, isPitch, isBusiness]);
 
-  const displaySlide = slideConfig || fallbackSlide;
+  const totalSlides = allSlides?.length || slideCount;
+  const currentSlide = allSlides?.[activeIdx] || allSlides?.[0] || {
+    headline: title ? title.toUpperCase() : 'PRESENTATION SLIDE',
+    tagline: 'Novaris Company',
+    section: 'Overview',
+    backgroundColor: '#05070B',
+    vectorWaveStyle: isBusiness ? 'toroid-ring' : 'original-pitch',
+    vectorColor1: isBusiness ? '#00f0ff' : '#0055ff',
+    vectorColor2: isBusiness ? '#a855f7' : '#00f0ff',
+    layoutStyle: isBusiness ? 'Business Plan Cover' : 'Startup Pitch Deck'
+  };
 
-  // Hover cycling: step through slides with a cross-fade on each transition
+  const accentColor = isBusiness ? '#00f0ff' : '#a855f7';
+
+  // Hover cycling across template slides
   const handleMouseEnter = React.useCallback(() => {
     if (!allSlides || allSlides.length <= 1) return;
     intervalRef.current = setInterval(() => {
-      setFading(true);
-      setTimeout(() => {
-        setActiveIdx(prev => (prev + 1) % allSlides.length);
-        setFading(false);
-      }, 120);
-    }, 1200);
+      setActiveIdx(prev => (prev + 1) % allSlides.length);
+    }, 1400);
   }, [allSlides]);
 
   const handleMouseLeave = React.useCallback(() => {
-    clearInterval(intervalRef.current);
-    setFading(true);
-    setTimeout(() => { setActiveIdx(0); setFading(false); }, 120);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setActiveIdx(0);
   }, []);
 
-  React.useEffect(() => () => clearInterval(intervalRef.current), []);
-
-  // Unique ID per card to avoid SVG gradient/filter ID collisions
-  const uid = templateId || (isCustom ? 'custom' : 'generic');
+  React.useEffect(() => () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  }, []);
 
   return (
     <div
-      className="w-full aspect-video rounded-xl border border-white/10 overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none relative flex flex-col justify-between transition-all duration-200 group-hover:border-violet-500/40 group-hover:shadow-[0_8px_28px_-4px_rgba(124,58,237,0.28)]"
-      style={{ backgroundColor: bgColor }}
+      ref={containerRef}
+      className="w-full aspect-video rounded-xl border border-white/10 overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none relative group transition-all duration-300 group-hover:border-violet-500/40 group-hover:shadow-[0_8px_28px_-4px_rgba(124,58,237,0.28)] bg-[#05070B]"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ── Full right-half neon vortex (mirrors real canvas cover composition) ── */}
-      {hasCoverNeon && <ThumbnailNeonVortex c1={c1} c2={c2} uid={uid} />}
-
-      {/* ── Bottom-left ambient loop ── */}
-      {hasCoverNeon && <ThumbnailBottomLoop c1={c1} c2={c2} uid={uid} />}
-
-      {/* ── Non-cover templates: ambient glow only ── */}
-      {!hasCoverNeon && (
-        <>
-          <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-20 pointer-events-none" style={{ backgroundColor: accentColor }} />
-          <div className="absolute right-4 top-4 w-14 h-14 rounded-full blur-xl opacity-10 pointer-events-none" style={{ backgroundColor: c2 }} />
-        </>
-      )}
-
-      {/* ── Topbar: template title + slide count ── */}
-      <div className="flex items-center justify-between px-2.5 pt-2 relative z-10">
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 6px ${accentColor}` }} />
-          <span className="text-[7.5px] font-bold tracking-tight text-zinc-300 truncate max-w-[108px]">{title}</span>
-        </div>
-        <span className="text-[6.5px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-zinc-400 font-semibold">
-          {slideCount} slides
-        </span>
-      </div>
-
-      {/* ── Slide content area: cross-fades on hover cycle ── */}
+      {/* ── Virtual 1:1 Exact Scaled Canvas ── */}
       <div
-        className="flex-1 flex flex-col justify-center px-2.5 pb-1 relative z-10 min-h-0 transition-opacity duration-100"
-        style={{ opacity: fading ? 0 : 1 }}
+        className="absolute top-0 left-0 pointer-events-none select-none transition-transform duration-75"
+        style={{
+          width: 820,
+          height: 461.25,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left'
+        }}
       >
-        <ThumbnailSlideContent
-          slide={displaySlide}
-          accentColor={accentColor}
-          isPitch={isPitch}
-          isBusiness={isBusiness}
-          isProduct={isProduct}
-          isQbr={isQbr}
-          isFirst={activeIdx === 0}
-        />
+        <SlideDeckExactCanvas slide={currentSlide} index={activeIdx} />
       </div>
 
-      {/* ── Footer: slide progress dots on hover, static label at rest ── */}
-      <div className="flex items-center justify-between px-2.5 pb-2 pt-1 border-t border-white/[0.08] relative z-10">
-        {allSlides && allSlides.length > 1 ? (
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: Math.min(allSlides.length, 12) }).map((_, i) => (
+      {/* ── Floating Thumbnail Navigation Pill ── */}
+      <div className="absolute inset-x-2 bottom-2 z-20 pointer-events-none flex items-center justify-between px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center gap-1">
+          {allSlides && allSlides.length > 1 ? (
+            Array.from({ length: Math.min(allSlides.length, 12) }).map((_, i) => (
               <div
                 key={i}
                 className="rounded-full transition-all duration-200"
                 style={{
-                  width:  i === activeIdx ? '10px' : '4px',
+                  width: i === activeIdx ? '10px' : '3.5px',
                   height: '3px',
-                  backgroundColor: i === activeIdx ? accentColor : 'rgba(255,255,255,0.2)',
-                  boxShadow: i === activeIdx ? `0 0 4px ${accentColor}` : 'none'
+                  backgroundColor: i === activeIdx ? accentColor : 'rgba(255,255,255,0.25)',
+                  boxShadow: i === activeIdx ? `0 0 6px ${accentColor}` : 'none'
                 }}
               />
-            ))}
-          </div>
-        ) : (
-          <span className="text-[6px] text-zinc-500 font-mono">16:9 Widescreen</span>
-        )}
-        <span className="text-[6px] font-semibold transition-all duration-100" style={{ color: accentColor }}>
+            ))
+          ) : (
+            <span className="text-[7px] text-zinc-400 font-mono tracking-wide uppercase">16:9 Widescreen</span>
+          )}
+        </div>
+        <span className="text-[7.5px] font-semibold text-white/90 font-mono">
           {activeIdx + 1} / {totalSlides}
         </span>
       </div>
     </div>
   );
 };
+
 
 const FullPageDocTemplateGallery = ({
   customTemplates = [],
@@ -5714,6 +5547,8 @@ const FullPageDeckTemplateGallery = ({
                   category={previewTemplate.category}
                   slideCount={previewTemplate.slideCount || 10}
                   isCustom={previewTemplate.isCustom}
+                  templateId={previewTemplate.id}
+                  rawTemplate={previewTemplate.rawTemplate}
                 />
               </div>
             </div>
@@ -59888,13 +59723,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         }} 
                                         className="group relative bg-white/[0.02] border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-violet-500/50 hover:bg-white/[0.04] hover:shadow-xl hover:shadow-violet-950/40 transition-all duration-200 flex flex-col justify-between"
                                       >
-                                        <div>
-                                          <SlideDeckThumbnailPreview
-                                            title={t.title}
-                                            category={t.category}
-                                            slideCount={t.slideCount || 10}
-                                            isCustom={t.isCustom}
-                                          />
+                                          <div className="mb-3">
+                                            <SlideDeckThumbnailPreview
+                                              title={t.title}
+                                              category={t.category}
+                                              slideCount={t.slideCount || 10}
+                                              isCustom={t.isCustom}
+                                              templateId={t.id}
+                                              rawTemplate={t.rawTemplate}
+                                            />
+                                          </div>
                                           <div className="flex items-center justify-between mb-3">
                                             <div className={`w-9 h-9 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-xs`}>
                                               <t.icon size={18} strokeWidth={2} />
@@ -59909,7 +59747,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           </div>
                                           <h3 className="text-sm font-bold text-white mb-1">{t.title}</h3>
                                           <p className="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">{t.desc}</p>
-                                        </div>
                                         <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-violet-400 group-hover:text-violet-300">
                                           <span>{t.isCustom ? `${t.slideCount || 0} Slides` : 'Click to Load'}</span>
                                           <span>Load Template →</span>
