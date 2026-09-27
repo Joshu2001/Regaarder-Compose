@@ -4704,7 +4704,7 @@ const DocumentThumbnailPreview = ({ title, category, id, rawWorkflow, rawTemplat
 };
 
 const SlideDeckThumbnailPreview = ({ title, category, slideCount = 10, isCustom = false, templateId, rawTemplate }) => {
-  // Determine template slide configuration
+  // Resolve first slide config from the real data arrays — same logic as the main canvas
   const slideConfig = React.useMemo(() => {
     if (rawTemplate?.deckSlidesData?.[0]) {
       return rawTemplate.deckSlidesData[0];
@@ -4718,106 +4718,223 @@ const SlideDeckThumbnailPreview = ({ title, category, slideCount = 10, isCustom 
     return null;
   }, [templateId, rawTemplate]);
 
-  const isPitch = category === 'pitch' || templateId === 'startup-pitch';
+  const isPitch   = category === 'pitch'   || templateId === 'startup-pitch';
   const isBusiness = category === 'business' || templateId === 'business-plan' || templateId === 'sales-proposal';
-  const isProduct = category === 'product' || templateId === 'product-launch';
-  const isQbr = category === 'qbr' || templateId === 'qbr';
+  const isProduct  = category === 'product'  || templateId === 'product-launch';
+  const isQbr     = category === 'qbr'     || templateId === 'qbr';
 
-  const bgColor = slideConfig?.backgroundColor || (isProduct ? '#070b14' : isBusiness ? '#0a0d18' : isQbr ? '#071018' : '#05070B');
+  const bgColor    = slideConfig?.backgroundColor || (isProduct ? '#070b14' : isBusiness ? '#0a0d18' : isQbr ? '#071018' : '#05070B');
+  const c1         = slideConfig?.vectorColor1 || (isBusiness ? '#00f0ff' : '#0055ff');
+  const c2         = slideConfig?.vectorColor2 || (isBusiness ? '#a855f7' : isPitch ? '#a855f7' : '#ec4899');
   const accentColor = isBusiness ? '#00f0ff' : isPitch ? '#a855f7' : isProduct ? '#38bdf8' : '#34d399';
-  const headline = slideConfig?.headline || (isPitch ? 'NOVARIS AI' : isBusiness ? 'EXECUTIVE PLAN' : isProduct ? 'PRODUCT LAUNCH' : isQbr ? 'Q3 BUSINESS REVIEW' : title);
-  const tagline = slideConfig?.tagline || (isPitch ? 'Series A Pitch Deck' : isBusiness ? 'Market Sizing & 3-Yr Financials' : isProduct ? 'Architecture & Rollout' : 'Performance Review');
+
+  // Real text pulled from actual slide data
+  const rawHeadline = slideConfig?.headline || (isPitch ? 'STARTUP\nPITCH DECK' : isBusiness ? 'BUSINESS PLAN\n2026 – 2029' : isProduct ? 'PRODUCT LAUNCH' : isQbr ? 'Q3 BUSINESS REVIEW' : title?.toUpperCase());
+  const tagline     = slideConfig?.tagline   || (isPitch ? 'Novaris Company' : isBusiness ? 'Strategic Execution Plan' : isProduct ? 'Architecture & Rollout' : 'Performance Review');
+  const presenter   = slideConfig?.presenter  || (isPitch ? 'PRESENT BY ALEX CHEN' : null);
+  const showPresenter = !!(presenter && !slideConfig?.presenterHidden && (isPitch));
+
+  // Whether to render the authentic top-right neon vortex SVG (Startup Pitch Deck & Business Plan)
+  const hasCoverNeon = isPitch || isBusiness;
 
   return (
-    <div 
-      className="w-full aspect-video rounded-xl border border-white/10 p-3 flex flex-col justify-between overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none pointer-events-none group-hover:border-violet-500/50 group-hover:shadow-[0_8px_25px_-4px_rgba(124,58,237,0.25)] transition-all duration-200 relative"
+    <div
+      className="w-full aspect-video rounded-xl border border-white/10 overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none pointer-events-none group-hover:border-violet-500/50 group-hover:shadow-[0_8px_25px_-4px_rgba(124,58,237,0.25)] transition-all duration-200 relative flex flex-col justify-between"
       style={{ backgroundColor: bgColor }}
     >
-      {/* Dynamic Background Accent Glow */}
-      <div 
-        className="absolute -right-4 -bottom-4 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-30" 
-        style={{ backgroundColor: accentColor }}
-      />
+      {/* ── Authentic Top-Right Neon Vortex Wave (mirrors real canvas SVG) ── */}
+      {hasCoverNeon && (
+        <svg
+          className="absolute overflow-visible pointer-events-none"
+          style={{ top: -8, right: -8, width: 120, height: 90 }}
+          viewBox="0 0 440 340"
+          fill="none"
+        >
+          <defs>
+            <linearGradient id={`tnCyan_${templateId}`} x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#1e3a8a" stopOpacity="0.15" />
+              <stop offset="40%"  stopColor="#2563eb" stopOpacity="0.8" />
+              <stop offset="75%"  stopColor={c1}      stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
+            </linearGradient>
+            <linearGradient id={`tnMag_${templateId}`} x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#3b0764" stopOpacity="0.15" />
+              <stop offset="50%"  stopColor={c2}      stopOpacity="0.8" />
+              <stop offset="90%"  stopColor="#ec4899" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
+            </linearGradient>
+            <filter id={`tnBloom_${templateId}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="8" result="b1" />
+              <feMerge><feMergeNode in="b1" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          {/* Cyan multi-strand vortex */}
+          {Array.from({ length: 18 }).map((_, i) => {
+            const ratio = i / 18;
+            const offset = ratio * 80;
+            const opacity = 0.18 + (1 - ratio) * 0.65;
+            const sw = 0.7 + ratio * 1.8;
+            const d = `M ${195 + offset * 1.1} -20 C ${205 + offset * 0.8} 105, ${235 + offset * 0.6} 240, ${320 + offset * 0.4} 225 C ${368 + offset * 0.2} 215, ${410 + offset * 0.1} 140, 450 ${100 - offset * 0.3}`;
+            return <path key={`tc-${i}`} d={d} stroke={`url(#tnCyan_${templateId})`} strokeWidth={sw} opacity={opacity} fill="none" />;
+          })}
+          {/* Magenta inner strands */}
+          {Array.from({ length: 12 }).map((_, i) => {
+            const ratio = i / 12;
+            const offset = ratio * 50;
+            const opacity = 0.25 + (1 - ratio) * 0.6;
+            const sw = 0.8 + ratio * 1.5;
+            const d = `M ${235 + offset * 0.8} -15 C ${245 + offset * 0.6} 110, ${265 + offset * 0.4} 230, ${335 + offset * 0.3} 215 C ${385 + offset * 0.2} 205, ${425 + offset * 0.1} 130, 450 ${80 - offset * 0.2}`;
+            return <path key={`tm-${i}`} d={d} stroke={`url(#tnMag_${templateId})`} strokeWidth={sw} opacity={opacity} fill="none" />;
+          })}
+          {/* Core neon tube with bloom */}
+          <path d="M 258 -15 C 268 110, 288 228, 348 212 C 398 198, 438 125, 450 68" stroke={c1} strokeWidth="2.8" fill="none" opacity="0.95" filter={`url(#tnBloom_${templateId})`} />
+          <path d="M 265 -15 C 275 105, 295 222, 352 207 C 402 193, 442 120, 450 62" stroke="#ffffff" strokeWidth="1.8" fill="none" opacity="0.9" filter={`url(#tnBloom_${templateId})`} />
+          <path d="M 272 -15 C 282 100, 302 216, 358 202 C 408 188, 448 115, 450 56" stroke="#e879f9" strokeWidth="1.2" fill="none" opacity="0.75" />
+          {/* Hotspot convergence glow */}
+          <ellipse cx="395" cy="165" rx="80" ry="44" fill={`url(#tnCyan_${templateId})`} opacity="0.22" filter={`url(#tnBloom_${templateId})`} />
+        </svg>
+      )}
 
-      {/* Slide Topbar */}
-      <div className="flex items-center justify-between relative z-10">
+      {/* ── Bottom-Left Ambient Neon Loop (mirrors real canvas) ── */}
+      {hasCoverNeon && (
+        <svg
+          className="absolute overflow-visible pointer-events-none"
+          style={{ bottom: -4, left: -4, width: 64, height: 36 }}
+          viewBox="0 0 240 130"
+          fill="none"
+        >
+          {Array.from({ length: 9 }).map((_, i) => {
+            const ratio = i / 9;
+            const offset = ratio * 40;
+            const opacity = 0.2 + (1 - ratio) * 0.55;
+            const sw = 0.7 + ratio * 1.3;
+            const d = `M -20 ${110 + offset * 0.4} C ${38 + offset * 0.5} ${78 - ratio * 18}, ${108 + offset * 0.6} ${38 - ratio * 12}, ${158 + offset * 0.4} ${58 + ratio * 12} C ${198 + offset * 0.3} ${88 + ratio * 18}, 218 120, 240 135`;
+            return <path key={`bl-${i}`} d={d} stroke={i % 2 === 0 ? c1 : c2} strokeWidth={sw} opacity={opacity} fill="none" />;
+          })}
+          <path d="M -20 115 C 40 75, 115 35, 165 58 C 205 85, 225 120, 240 135" stroke={c1} strokeWidth="1.5" fill="none" opacity="0.85" />
+        </svg>
+      )}
+
+      {/* ── Non-cover templates: generic luminous wave in top-right ── */}
+      {!hasCoverNeon && (
+        <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full blur-2xl opacity-25" style={{ backgroundColor: accentColor }} />
+      )}
+
+      {/* ── Mini Topbar ── */}
+      <div className="flex items-center justify-between px-2.5 pt-2 relative z-10">
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(167,139,250,0.9)]" style={{ backgroundColor: accentColor }} />
-          <span className="text-[8.5px] font-bold tracking-tight text-zinc-300 truncate max-w-[130px]">{title}</span>
+          <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_6px_rgba(167,139,250,0.9)]" style={{ backgroundColor: accentColor }} />
+          <span className="text-[8px] font-bold tracking-tight text-zinc-300 truncate max-w-[110px]">{title}</span>
         </div>
-        <span className="text-[7.5px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-zinc-300 font-semibold">
+        <span className="text-[7px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-zinc-400 font-semibold">
           {slideCount} slides
         </span>
       </div>
 
-      {/* Live Slide 1 Layout Rendering */}
-      <div className="relative z-10 my-auto py-1 flex flex-col justify-center">
-        <div className="text-[7px] font-mono uppercase tracking-wider text-cyan-400 font-bold mb-0.5">
+      {/* ── Authentic Slide 1 Content Area ── */}
+      <div className="flex-1 flex flex-col justify-center px-2.5 pb-1 relative z-10 min-h-0">
+        {/* Tagline */}
+        <div className="text-[6.5px] italic text-zinc-400 font-normal mb-1 truncate leading-none tracking-wide">
           {tagline}
         </div>
-        <h2 className="text-[15px] font-[900] tracking-tight text-white uppercase leading-none truncate max-w-full drop-shadow-md">
-          {headline}
-        </h2>
-        
-        {/* Render Live Mini Bento Layout / Cards */}
-        {isBusiness ? (
-          <div className="grid grid-cols-3 gap-1.5 mt-2">
-            <div className="h-7 rounded-lg bg-white/[0.05] border border-cyan-500/30 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-cyan-400 font-bold leading-none">$12.4M</span>
-              <span className="text-[6px] text-zinc-400 leading-none">TAM Target</span>
-            </div>
-            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-zinc-300 font-bold leading-none">85% Gross</span>
-              <span className="text-[6px] text-zinc-400 leading-none">Margins</span>
-            </div>
-            <div className="h-7 rounded-lg bg-white/[0.05] border border-emerald-500/30 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-emerald-400 font-bold leading-none">+140%</span>
-              <span className="text-[6px] text-zinc-400 leading-none">YoY Growth</span>
-            </div>
-          </div>
-        ) : isPitch ? (
-          <div className="grid grid-cols-2 gap-1.5 mt-2">
-            <div className="h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-purple-300 font-bold leading-none">Problem & Gap</span>
-              <div className="h-1 w-4/5 bg-purple-400/40 rounded-full" />
-            </div>
-            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-zinc-300 font-bold leading-none">AI Workflow Solution</span>
-              <div className="h-1 w-3/5 bg-cyan-400/40 rounded-full" />
-            </div>
-          </div>
-        ) : isProduct ? (
-          <div className="grid grid-cols-3 gap-1 mt-2">
-            <div className="h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-cyan-300 font-bold leading-none">Modular API</span>
-              <span className="text-[6px] text-zinc-400 leading-none">Core Engine</span>
-            </div>
-            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between col-span-2">
-              <span className="text-[7px] text-purple-300 font-bold leading-none">Global Distributed Mesh</span>
-              <div className="flex gap-1 items-center">
-                <div className="h-1 flex-1 bg-purple-500/50 rounded-full" />
-                <div className="h-1 flex-1 bg-white/20 rounded-full" />
-              </div>
+
+        {/* Main Headline — real whitespace-pre-line mimicking the actual canvas h1 */}
+        <div
+          className="text-[13px] font-[900] tracking-tight text-white uppercase leading-[1.02] drop-shadow-md"
+          style={{ whiteSpace: 'pre-line', maxWidth: '62%' }}
+        >
+          {rawHeadline}
+        </div>
+
+        {/* Presenter Glassmorphic Pill — only for Startup Pitch Deck (mirrors actual presenter capsule) */}
+        {showPresenter && (
+          <div className="mt-1.5 inline-flex items-center justify-center relative overflow-hidden"
+            style={{
+              width: '140px',
+              height: '16px',
+              borderRadius: '9999px',
+              background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)',
+              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.35)'
+            }}
+          >
+            {/* Shimmer conic beam */}
+            <div
+              className="absolute -inset-[200%] pointer-events-none"
+              style={{
+                background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${c1} 250deg, ${c2} 310deg, #7c4dff 360deg)`,
+                opacity: 0.5
+              }}
+            />
+            {/* Inner body */}
+            <div className="relative z-10 w-full h-full flex items-center justify-center overflow-hidden px-2 rounded-[9999px]"
+              style={{ background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)' }}
+            >
+              <span className="text-[5.5px] font-[900] tracking-[0.14em] uppercase text-white leading-none">
+                {presenter}
+              </span>
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-1.5 mt-2">
-            <div className="h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-emerald-300 font-bold leading-none">Key Accomplishments</span>
-              <span className="text-[6px] text-zinc-400 leading-none">All OKRs Exceeded</span>
+        )}
+
+        {/* Business Plan — show a compact 2-col metric strip instead of presenter pill */}
+        {isBusiness && !isPitch && (
+          <div className="grid grid-cols-3 gap-1 mt-1.5" style={{ maxWidth: '80%' }}>
+            <div className="h-5 rounded-md bg-white/[0.05] border border-cyan-500/30 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-cyan-400 font-bold leading-none">$12.4M</span>
+              <span className="text-[5px] text-zinc-500 leading-none">TAM</span>
             </div>
-            <div className="h-7 rounded-lg bg-white/[0.05] border border-white/10 p-1 flex flex-col justify-between">
-              <span className="text-[7px] text-zinc-300 font-bold leading-none">Forward Milestones</span>
-              <span className="text-[6px] text-zinc-400 leading-none">Next Quarter Targets</span>
+            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-zinc-300 font-bold leading-none">85% GM</span>
+              <span className="text-[5px] text-zinc-500 leading-none">Margin</span>
+            </div>
+            <div className="h-5 rounded-md bg-white/[0.05] border border-emerald-500/30 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-emerald-400 font-bold leading-none">+140%</span>
+              <span className="text-[5px] text-zinc-500 leading-none">YoY</span>
+            </div>
+          </div>
+        )}
+
+        {/* Product Launch — mini bento strip */}
+        {isProduct && (
+          <div className="grid grid-cols-3 gap-1 mt-1.5" style={{ maxWidth: '80%' }}>
+            <div className="h-5 rounded-md bg-cyan-500/10 border border-cyan-500/20 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-cyan-300 font-bold leading-none">API</span>
+            </div>
+            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center col-span-2">
+              <span className="text-[5.5px] text-purple-300 font-bold leading-none">Global Mesh</span>
+            </div>
+          </div>
+        )}
+
+        {/* QBR — mini metric strip */}
+        {isQbr && (
+          <div className="grid grid-cols-2 gap-1 mt-1.5" style={{ maxWidth: '72%' }}>
+            <div className="h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-emerald-300 font-bold leading-none">OKRs</span>
+            </div>
+            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-zinc-300 font-bold leading-none">Q3 Wins</span>
+            </div>
+          </div>
+        )}
+
+        {/* Custom templates: show 2-col generic bento placeholder */}
+        {isCustom && (
+          <div className="grid grid-cols-2 gap-1 mt-1.5" style={{ maxWidth: '80%' }}>
+            <div className="h-5 rounded-md bg-violet-500/10 border border-violet-500/25 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-violet-300 font-bold leading-none">Custom Layout</span>
+            </div>
+            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center">
+              <span className="text-[5.5px] text-zinc-400 font-semibold leading-none">Your Content</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Slide Bottom Bar */}
-      <div className="flex items-center justify-between pt-1 border-t border-white/10 relative z-10">
-        <span className="text-[7.5px] text-zinc-400 font-mono">16:9 Widescreen</span>
-        <span className="text-[7.5px] font-semibold" style={{ color: accentColor }}>Slide 1 of {slideCount}</span>
+      {/* ── Mini Contact / Footer Bar (mirrors real cover bottom contact row) ── */}
+      <div className="flex items-center justify-between px-2.5 pb-2 border-t border-white/10 pt-1 relative z-10">
+        <span className="text-[6.5px] text-zinc-500 font-mono">16:9 Widescreen</span>
+        <span className="text-[6.5px] font-semibold" style={{ color: accentColor }}>Slide 1 of {slideCount}</span>
       </div>
     </div>
   );
@@ -26520,8 +26637,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
    * Houses Workspace Library, Context-Aware Export, and Share in an Apple-style frosted glass capsule.
    */
   const renderBottomActionCapsule = () => {
-    // Hide when modal screens, presentation modes, zen mode, or landing/home page takes over
-    if (isSheetsPresentationMode || isDeckPresentationMode || isSheetZenMode || isWhiteboardImmersive || productMode === 'landing') {
+    // Hide when modal screens, presentation modes, zen mode, landing page, or Template galleries take over
+    if (isSheetsPresentationMode || isDeckPresentationMode || isSheetZenMode || isWhiteboardImmersive || productMode === 'landing' || docToolbarTab === 'Templates' || deckToolbarTab === 'Templates') {
       return null;
     }
     if (roomState === 'active' && roomPanelMode === 'expanded') {
@@ -86407,7 +86524,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         )}
 
-        {(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && (
+        {(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && docToolbarTab !== 'Templates' && deckToolbarTab !== 'Templates' && (
           <div
             className={`pointer-events-none absolute z-[140] ${
               (productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')))
