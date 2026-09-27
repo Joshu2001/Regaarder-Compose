@@ -4703,238 +4703,293 @@ const DocumentThumbnailPreview = ({ title, category, id, rawWorkflow, rawTemplat
   );
 };
 
+// ─── Inline SVG wave renderer for thumbnail scale ─────────────────────────────
+// Renders a faithful miniature of the real canvas cover neon vortex.
+// The wave occupies the full right ~55% of the card, matching the actual slide
+// composition where text lives left and the luminous vortex dominates the right.
+const ThumbnailNeonVortex = ({ c1, c2, uid }) => (
+  <svg
+    className="absolute inset-y-0 right-0 overflow-visible pointer-events-none"
+    style={{ width: '58%', height: '100%' }}
+    viewBox="0 0 440 280"
+    preserveAspectRatio="xMidYMid slice"
+    fill="none"
+  >
+    <defs>
+      <linearGradient id={`tnC1_${uid}`} x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%"   stopColor="#1e3a8a" stopOpacity="0.0" />
+        <stop offset="35%"  stopColor={c1}      stopOpacity="0.7" />
+        <stop offset="80%"  stopColor={c1}      stopOpacity="0.95" />
+        <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
+      </linearGradient>
+      <linearGradient id={`tnC2_${uid}`} x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%"   stopColor="#3b0764" stopOpacity="0.0" />
+        <stop offset="45%"  stopColor={c2}      stopOpacity="0.75" />
+        <stop offset="85%"  stopColor={c2}      stopOpacity="0.9" />
+        <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
+      </linearGradient>
+      <filter id={`tnBloom_${uid}`} x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="9" result="b" />
+        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+      <filter id={`tnGlow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="4" result="b" />
+        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+    </defs>
+
+    {/* Cyan multi-strand ascending vortex — 22 strands fanning from bottom-left to top-right */}
+    {Array.from({ length: 22 }).map((_, i) => {
+      const t = i / 22;
+      const ox = t * 110;
+      const oy = t * 30;
+      const op = 0.12 + (1 - t) * 0.72;
+      const sw = 0.5 + t * 2.2;
+      // Path: rises from bottom-left of the SVG viewport, sweeps to top-right corner
+      const d = `M ${-30 + ox * 0.9} ${310 - oy * 0.5} C ${80 + ox * 0.7} ${195 - oy * 0.8}, ${220 + ox * 0.5} ${95 - oy * 0.6}, ${420 + ox * 0.2} ${-15 + oy * 0.3}`;
+      return <path key={`c${i}`} d={d} stroke={`url(#tnC1_${uid})`} strokeWidth={sw} opacity={op} fill="none" />;
+    })}
+
+    {/* Magenta inner bundle — tighter, higher contrast core */}
+    {Array.from({ length: 14 }).map((_, i) => {
+      const t = i / 14;
+      const ox = t * 70;
+      const oy = t * 20;
+      const op = 0.2 + (1 - t) * 0.65;
+      const sw = 0.6 + t * 1.8;
+      const d = `M ${30 + ox * 0.8} ${290 - oy * 0.4} C ${120 + ox * 0.6} ${185 - oy * 0.7}, ${255 + ox * 0.4} ${85 - oy * 0.5}, ${430 + ox * 0.1} ${-10 + oy * 0.2}`;
+      return <path key={`m${i}`} d={d} stroke={`url(#tnC2_${uid})`} strokeWidth={sw} opacity={op} fill="none" />;
+    })}
+
+    {/* Core luminous neon tubes with bloom — the 2-3 brightest strands */}
+    <path d="M 75 295 C 170 180, 285 78, 432 -12" stroke={c1}      strokeWidth="3.2" fill="none" opacity="0.98" filter={`url(#tnBloom_${uid})`} />
+    <path d="M 82 292 C 178 176, 293 74, 435 -16" stroke="#ffffff" strokeWidth="2.0" fill="none" opacity="0.9"  filter={`url(#tnGlow_${uid})`} />
+    <path d="M 90 288 C 186 172, 300 70, 438 -18" stroke={c2}      strokeWidth="1.4" fill="none" opacity="0.8"  />
+
+    {/* Convergence hotspot glow where the strands meet at top-right */}
+    <ellipse cx="410" cy="10" rx="90" ry="55" fill={c1} opacity="0.18" filter={`url(#tnBloom_${uid})`} />
+    <ellipse cx="418" cy="6"  rx="50" ry="28" fill="#ffffff" opacity="0.12" filter={`url(#tnGlow_${uid})`} />
+  </svg>
+);
+
+// ─── Bottom-left ambient neon loop (mirrors the real canvas coverBottomNeon) ───
+const ThumbnailBottomLoop = ({ c1, c2, uid }) => (
+  <svg
+    className="absolute overflow-visible pointer-events-none"
+    style={{ bottom: -2, left: -2, width: '32%', height: '38%' }}
+    viewBox="0 0 200 110"
+    fill="none"
+  >
+    {Array.from({ length: 10 }).map((_, i) => {
+      const t = i / 10;
+      const ox = t * 35;
+      const op = 0.15 + (1 - t) * 0.6;
+      const sw = 0.6 + t * 1.4;
+      const d = `M -15 ${105 + ox * 0.3} C ${30 + ox * 0.5} ${72 - t * 18}, ${95 + ox * 0.6} ${30 - t * 12}, ${145 + ox * 0.4} ${52 + t * 10} C ${178 + ox * 0.2} ${78 + t * 14}, 198 108, 215 120`;
+      return <path key={`bl${i}`} d={d} stroke={i % 2 === 0 ? c1 : c2} strokeWidth={sw} opacity={op} fill="none" />;
+    })}
+    <path d="M -15 108 C 32 72, 98 28, 148 52 C 180 76, 200 108, 216 120" stroke={c1} strokeWidth="1.8" fill="none" opacity="0.88" />
+  </svg>
+);
+
+// ─── Per-slide content renderer for the cycling preview ───────────────────────
+// Produces the text content that changes as the user hovers through slides.
+const ThumbnailSlideContent = ({ slide, accentColor, isPitch, isBusiness, isProduct, isQbr, isFirst }) => {
+  const headline = slide?.headline || '';
+  const tagline  = slide?.tagline  || '';
+  const section  = slide?.section  || '';
+  const presenter = slide?.presenter;
+  const presenterHidden = slide?.presenterHidden;
+  const c1 = slide?.vectorColor1 || accentColor;
+  const c2 = slide?.vectorColor2 || '#a855f7';
+
+  return (
+    <div className="flex flex-col justify-center gap-0.5">
+      {/* Section badge */}
+      {section && !isFirst && (
+        <div className="inline-flex items-center gap-1 mb-0.5">
+          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: accentColor }} />
+          <span className="text-[5.5px] font-bold tracking-[0.15em] uppercase" style={{ color: accentColor }}>
+            {section}
+          </span>
+        </div>
+      )}
+
+      {/* Tagline — italic, subdued */}
+      <div className="text-[6px] italic text-zinc-400 leading-none tracking-wide truncate">
+        {tagline}
+      </div>
+
+      {/* Headline — the dominant text element, white-space pre-line to respect \n */}
+      <div
+        className="text-[12px] font-[900] text-white uppercase tracking-tight leading-[1.0] drop-shadow-md mt-0.5"
+        style={{ whiteSpace: 'pre-line', maxWidth: '58%' }}
+      >
+        {headline}
+      </div>
+
+      {/* Presenter pill — only on cover slide */}
+      {isFirst && presenter && !presenterHidden && isPitch && (
+        <div
+          className="mt-1.5 inline-flex items-center justify-center relative overflow-hidden"
+          style={{
+            width: '148px', height: '15px', borderRadius: '9999px',
+            background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)',
+            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3)'
+          }}
+        >
+          <div
+            className="absolute -inset-[200%] pointer-events-none"
+            style={{ background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${c1} 250deg, ${c2} 310deg, #7c4dff 360deg)`, opacity: 0.45 }}
+          />
+          <div className="relative z-10 w-full h-full flex items-center justify-center px-2 rounded-[9999px]"
+            style={{ background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)' }}>
+            <span className="text-[5px] font-[900] tracking-[0.14em] uppercase text-white leading-none">{presenter}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Non-cover slide: mini layout hint strip */}
+      {!isFirst && (
+        <div className="flex gap-1 mt-1" style={{ maxWidth: '60%' }}>
+          <div className="h-3 flex-1 rounded bg-white/[0.06] border border-white/10" />
+          <div className="h-3 w-6 rounded bg-white/[0.04] border border-white/10" />
+          <div className="h-3 flex-1 rounded bg-white/[0.06] border border-white/10" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
 const SlideDeckThumbnailPreview = ({ title, category, slideCount = 10, isCustom = false, templateId, rawTemplate }) => {
-  // Resolve first slide config from the real data arrays — same logic as the main canvas
-  const slideConfig = React.useMemo(() => {
-    if (rawTemplate?.deckSlidesData?.[0]) {
-      return rawTemplate.deckSlidesData[0];
-    }
-    if (templateId === 'startup-pitch' && typeof DEFAULT_DECK_SLIDES !== 'undefined' && DEFAULT_DECK_SLIDES[0]) {
-      return DEFAULT_DECK_SLIDES[0];
-    }
-    if (templateId === 'business-plan' && typeof BUSINESS_PLAN_DECK_SLIDES !== 'undefined' && BUSINESS_PLAN_DECK_SLIDES[0]) {
-      return BUSINESS_PLAN_DECK_SLIDES[0];
-    }
+  const [activeIdx, setActiveIdx] = React.useState(0);
+  const [fading, setFading] = React.useState(false);
+  const intervalRef = React.useRef(null);
+
+  // Resolve the full slide array — used for hover cycling
+  const allSlides = React.useMemo(() => {
+    if (rawTemplate?.deckSlidesData?.length) return rawTemplate.deckSlidesData;
+    if (templateId === 'startup-pitch' && typeof DEFAULT_DECK_SLIDES !== 'undefined') return DEFAULT_DECK_SLIDES;
+    if ((templateId === 'business-plan' || templateId === 'sales-proposal') && typeof BUSINESS_PLAN_DECK_SLIDES !== 'undefined') return BUSINESS_PLAN_DECK_SLIDES;
     return null;
   }, [templateId, rawTemplate]);
 
-  const isPitch   = category === 'pitch'   || templateId === 'startup-pitch';
+  const slideConfig = allSlides?.[activeIdx] || allSlides?.[0] || null;
+  const totalSlides = allSlides?.length || slideCount;
+
+  const isPitch    = category === 'pitch'    || templateId === 'startup-pitch';
   const isBusiness = category === 'business' || templateId === 'business-plan' || templateId === 'sales-proposal';
   const isProduct  = category === 'product'  || templateId === 'product-launch';
-  const isQbr     = category === 'qbr'     || templateId === 'qbr';
+  const isQbr      = category === 'qbr'      || templateId === 'qbr';
 
-  const bgColor    = slideConfig?.backgroundColor || (isProduct ? '#070b14' : isBusiness ? '#0a0d18' : isQbr ? '#071018' : '#05070B');
-  const c1         = slideConfig?.vectorColor1 || (isBusiness ? '#00f0ff' : '#0055ff');
-  const c2         = slideConfig?.vectorColor2 || (isBusiness ? '#a855f7' : isPitch ? '#a855f7' : '#ec4899');
+  const bgColor     = slideConfig?.backgroundColor || (isProduct ? '#070b14' : isBusiness ? '#0a0d18' : isQbr ? '#071018' : '#05070B');
+  const c1          = slideConfig?.vectorColor1    || (isBusiness ? '#00f0ff' : '#0055ff');
+  const c2          = slideConfig?.vectorColor2    || (isBusiness ? '#a855f7' : '#ec4899');
   const accentColor = isBusiness ? '#00f0ff' : isPitch ? '#a855f7' : isProduct ? '#38bdf8' : '#34d399';
-
-  // Real text pulled from actual slide data
-  const rawHeadline = slideConfig?.headline || (isPitch ? 'STARTUP\nPITCH DECK' : isBusiness ? 'BUSINESS PLAN\n2026 – 2029' : isProduct ? 'PRODUCT LAUNCH' : isQbr ? 'Q3 BUSINESS REVIEW' : title?.toUpperCase());
-  const tagline     = slideConfig?.tagline   || (isPitch ? 'Novaris Company' : isBusiness ? 'Strategic Execution Plan' : isProduct ? 'Architecture & Rollout' : 'Performance Review');
-  const presenter   = slideConfig?.presenter  || (isPitch ? 'PRESENT BY ALEX CHEN' : null);
-  const showPresenter = !!(presenter && !slideConfig?.presenterHidden && (isPitch));
-
-  // Whether to render the authentic top-right neon vortex SVG (Startup Pitch Deck & Business Plan)
   const hasCoverNeon = isPitch || isBusiness;
+
+  // Fallback text for AI-generated templates (no static slide array)
+  const fallbackHeadline = isPitch ? 'STARTUP\nPITCH DECK' : isBusiness ? 'BUSINESS PLAN\n2026 – 2029' : isProduct ? 'PRODUCT\nLAUNCH' : isQbr ? 'Q3 BUSINESS\nREVIEW' : title?.toUpperCase();
+  const fallbackTagline  = isPitch ? 'Novaris Company' : isBusiness ? 'Strategic Execution Plan' : isProduct ? 'Architecture & Rollout' : 'Performance Review';
+  const fallbackSlide    = { headline: fallbackHeadline, tagline: fallbackTagline, vectorColor1: c1, vectorColor2: c2 };
+
+  const displaySlide = slideConfig || fallbackSlide;
+
+  // Hover cycling: step through slides with a cross-fade on each transition
+  const handleMouseEnter = React.useCallback(() => {
+    if (!allSlides || allSlides.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setActiveIdx(prev => (prev + 1) % allSlides.length);
+        setFading(false);
+      }, 120);
+    }, 1200);
+  }, [allSlides]);
+
+  const handleMouseLeave = React.useCallback(() => {
+    clearInterval(intervalRef.current);
+    setFading(true);
+    setTimeout(() => { setActiveIdx(0); setFading(false); }, 120);
+  }, []);
+
+  React.useEffect(() => () => clearInterval(intervalRef.current), []);
+
+  // Unique ID per card to avoid SVG gradient/filter ID collisions
+  const uid = templateId || (isCustom ? 'custom' : 'generic');
 
   return (
     <div
-      className="w-full aspect-video rounded-xl border border-white/10 overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none pointer-events-none group-hover:border-violet-500/50 group-hover:shadow-[0_8px_25px_-4px_rgba(124,58,237,0.25)] transition-all duration-200 relative flex flex-col justify-between"
+      className="w-full aspect-video rounded-xl border border-white/10 overflow-hidden shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] select-none relative flex flex-col justify-between transition-all duration-200 group-hover:border-violet-500/40 group-hover:shadow-[0_8px_28px_-4px_rgba(124,58,237,0.28)]"
       style={{ backgroundColor: bgColor }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* ── Authentic Top-Right Neon Vortex Wave (mirrors real canvas SVG) ── */}
-      {hasCoverNeon && (
-        <svg
-          className="absolute overflow-visible pointer-events-none"
-          style={{ top: -8, right: -8, width: 120, height: 90 }}
-          viewBox="0 0 440 340"
-          fill="none"
-        >
-          <defs>
-            <linearGradient id={`tnCyan_${templateId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#1e3a8a" stopOpacity="0.15" />
-              <stop offset="40%"  stopColor="#2563eb" stopOpacity="0.8" />
-              <stop offset="75%"  stopColor={c1}      stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
-            </linearGradient>
-            <linearGradient id={`tnMag_${templateId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#3b0764" stopOpacity="0.15" />
-              <stop offset="50%"  stopColor={c2}      stopOpacity="0.8" />
-              <stop offset="90%"  stopColor="#ec4899" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#ffffff"  stopOpacity="1" />
-            </linearGradient>
-            <filter id={`tnBloom_${templateId}`} x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="8" result="b1" />
-              <feMerge><feMergeNode in="b1" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-          {/* Cyan multi-strand vortex */}
-          {Array.from({ length: 18 }).map((_, i) => {
-            const ratio = i / 18;
-            const offset = ratio * 80;
-            const opacity = 0.18 + (1 - ratio) * 0.65;
-            const sw = 0.7 + ratio * 1.8;
-            const d = `M ${195 + offset * 1.1} -20 C ${205 + offset * 0.8} 105, ${235 + offset * 0.6} 240, ${320 + offset * 0.4} 225 C ${368 + offset * 0.2} 215, ${410 + offset * 0.1} 140, 450 ${100 - offset * 0.3}`;
-            return <path key={`tc-${i}`} d={d} stroke={`url(#tnCyan_${templateId})`} strokeWidth={sw} opacity={opacity} fill="none" />;
-          })}
-          {/* Magenta inner strands */}
-          {Array.from({ length: 12 }).map((_, i) => {
-            const ratio = i / 12;
-            const offset = ratio * 50;
-            const opacity = 0.25 + (1 - ratio) * 0.6;
-            const sw = 0.8 + ratio * 1.5;
-            const d = `M ${235 + offset * 0.8} -15 C ${245 + offset * 0.6} 110, ${265 + offset * 0.4} 230, ${335 + offset * 0.3} 215 C ${385 + offset * 0.2} 205, ${425 + offset * 0.1} 130, 450 ${80 - offset * 0.2}`;
-            return <path key={`tm-${i}`} d={d} stroke={`url(#tnMag_${templateId})`} strokeWidth={sw} opacity={opacity} fill="none" />;
-          })}
-          {/* Core neon tube with bloom */}
-          <path d="M 258 -15 C 268 110, 288 228, 348 212 C 398 198, 438 125, 450 68" stroke={c1} strokeWidth="2.8" fill="none" opacity="0.95" filter={`url(#tnBloom_${templateId})`} />
-          <path d="M 265 -15 C 275 105, 295 222, 352 207 C 402 193, 442 120, 450 62" stroke="#ffffff" strokeWidth="1.8" fill="none" opacity="0.9" filter={`url(#tnBloom_${templateId})`} />
-          <path d="M 272 -15 C 282 100, 302 216, 358 202 C 408 188, 448 115, 450 56" stroke="#e879f9" strokeWidth="1.2" fill="none" opacity="0.75" />
-          {/* Hotspot convergence glow */}
-          <ellipse cx="395" cy="165" rx="80" ry="44" fill={`url(#tnCyan_${templateId})`} opacity="0.22" filter={`url(#tnBloom_${templateId})`} />
-        </svg>
-      )}
+      {/* ── Full right-half neon vortex (mirrors real canvas cover composition) ── */}
+      {hasCoverNeon && <ThumbnailNeonVortex c1={c1} c2={c2} uid={uid} />}
 
-      {/* ── Bottom-Left Ambient Neon Loop (mirrors real canvas) ── */}
-      {hasCoverNeon && (
-        <svg
-          className="absolute overflow-visible pointer-events-none"
-          style={{ bottom: -4, left: -4, width: 64, height: 36 }}
-          viewBox="0 0 240 130"
-          fill="none"
-        >
-          {Array.from({ length: 9 }).map((_, i) => {
-            const ratio = i / 9;
-            const offset = ratio * 40;
-            const opacity = 0.2 + (1 - ratio) * 0.55;
-            const sw = 0.7 + ratio * 1.3;
-            const d = `M -20 ${110 + offset * 0.4} C ${38 + offset * 0.5} ${78 - ratio * 18}, ${108 + offset * 0.6} ${38 - ratio * 12}, ${158 + offset * 0.4} ${58 + ratio * 12} C ${198 + offset * 0.3} ${88 + ratio * 18}, 218 120, 240 135`;
-            return <path key={`bl-${i}`} d={d} stroke={i % 2 === 0 ? c1 : c2} strokeWidth={sw} opacity={opacity} fill="none" />;
-          })}
-          <path d="M -20 115 C 40 75, 115 35, 165 58 C 205 85, 225 120, 240 135" stroke={c1} strokeWidth="1.5" fill="none" opacity="0.85" />
-        </svg>
-      )}
+      {/* ── Bottom-left ambient loop ── */}
+      {hasCoverNeon && <ThumbnailBottomLoop c1={c1} c2={c2} uid={uid} />}
 
-      {/* ── Non-cover templates: generic luminous wave in top-right ── */}
+      {/* ── Non-cover templates: ambient glow only ── */}
       {!hasCoverNeon && (
-        <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full blur-2xl opacity-25" style={{ backgroundColor: accentColor }} />
+        <>
+          <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-20 pointer-events-none" style={{ backgroundColor: accentColor }} />
+          <div className="absolute right-4 top-4 w-14 h-14 rounded-full blur-xl opacity-10 pointer-events-none" style={{ backgroundColor: c2 }} />
+        </>
       )}
 
-      {/* ── Mini Topbar ── */}
+      {/* ── Topbar: template title + slide count ── */}
       <div className="flex items-center justify-between px-2.5 pt-2 relative z-10">
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_6px_rgba(167,139,250,0.9)]" style={{ backgroundColor: accentColor }} />
-          <span className="text-[8px] font-bold tracking-tight text-zinc-300 truncate max-w-[110px]">{title}</span>
+          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 6px ${accentColor}` }} />
+          <span className="text-[7.5px] font-bold tracking-tight text-zinc-300 truncate max-w-[108px]">{title}</span>
         </div>
-        <span className="text-[7px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-zinc-400 font-semibold">
+        <span className="text-[6.5px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 border border-white/10 text-zinc-400 font-semibold">
           {slideCount} slides
         </span>
       </div>
 
-      {/* ── Authentic Slide 1 Content Area ── */}
-      <div className="flex-1 flex flex-col justify-center px-2.5 pb-1 relative z-10 min-h-0">
-        {/* Tagline */}
-        <div className="text-[6.5px] italic text-zinc-400 font-normal mb-1 truncate leading-none tracking-wide">
-          {tagline}
-        </div>
-
-        {/* Main Headline — real whitespace-pre-line mimicking the actual canvas h1 */}
-        <div
-          className="text-[13px] font-[900] tracking-tight text-white uppercase leading-[1.02] drop-shadow-md"
-          style={{ whiteSpace: 'pre-line', maxWidth: '62%' }}
-        >
-          {rawHeadline}
-        </div>
-
-        {/* Presenter Glassmorphic Pill — only for Startup Pitch Deck (mirrors actual presenter capsule) */}
-        {showPresenter && (
-          <div className="mt-1.5 inline-flex items-center justify-center relative overflow-hidden"
-            style={{
-              width: '140px',
-              height: '16px',
-              borderRadius: '9999px',
-              background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)',
-              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.35)'
-            }}
-          >
-            {/* Shimmer conic beam */}
-            <div
-              className="absolute -inset-[200%] pointer-events-none"
-              style={{
-                background: `conic-gradient(from 0deg at 50% 50%, transparent 0deg 180deg, ${c1} 250deg, ${c2} 310deg, #7c4dff 360deg)`,
-                opacity: 0.5
-              }}
-            />
-            {/* Inner body */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center overflow-hidden px-2 rounded-[9999px]"
-              style={{ background: 'linear-gradient(90deg, #4d3663 0%, #373d6b 40%, #1e2c56 100%)' }}
-            >
-              <span className="text-[5.5px] font-[900] tracking-[0.14em] uppercase text-white leading-none">
-                {presenter}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Business Plan — show a compact 2-col metric strip instead of presenter pill */}
-        {isBusiness && !isPitch && (
-          <div className="grid grid-cols-3 gap-1 mt-1.5" style={{ maxWidth: '80%' }}>
-            <div className="h-5 rounded-md bg-white/[0.05] border border-cyan-500/30 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-cyan-400 font-bold leading-none">$12.4M</span>
-              <span className="text-[5px] text-zinc-500 leading-none">TAM</span>
-            </div>
-            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-zinc-300 font-bold leading-none">85% GM</span>
-              <span className="text-[5px] text-zinc-500 leading-none">Margin</span>
-            </div>
-            <div className="h-5 rounded-md bg-white/[0.05] border border-emerald-500/30 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-emerald-400 font-bold leading-none">+140%</span>
-              <span className="text-[5px] text-zinc-500 leading-none">YoY</span>
-            </div>
-          </div>
-        )}
-
-        {/* Product Launch — mini bento strip */}
-        {isProduct && (
-          <div className="grid grid-cols-3 gap-1 mt-1.5" style={{ maxWidth: '80%' }}>
-            <div className="h-5 rounded-md bg-cyan-500/10 border border-cyan-500/20 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-cyan-300 font-bold leading-none">API</span>
-            </div>
-            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center col-span-2">
-              <span className="text-[5.5px] text-purple-300 font-bold leading-none">Global Mesh</span>
-            </div>
-          </div>
-        )}
-
-        {/* QBR — mini metric strip */}
-        {isQbr && (
-          <div className="grid grid-cols-2 gap-1 mt-1.5" style={{ maxWidth: '72%' }}>
-            <div className="h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-emerald-300 font-bold leading-none">OKRs</span>
-            </div>
-            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-zinc-300 font-bold leading-none">Q3 Wins</span>
-            </div>
-          </div>
-        )}
-
-        {/* Custom templates: show 2-col generic bento placeholder */}
-        {isCustom && (
-          <div className="grid grid-cols-2 gap-1 mt-1.5" style={{ maxWidth: '80%' }}>
-            <div className="h-5 rounded-md bg-violet-500/10 border border-violet-500/25 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-violet-300 font-bold leading-none">Custom Layout</span>
-            </div>
-            <div className="h-5 rounded-md bg-white/[0.05] border border-white/10 px-1 flex flex-col justify-center">
-              <span className="text-[5.5px] text-zinc-400 font-semibold leading-none">Your Content</span>
-            </div>
-          </div>
-        )}
+      {/* ── Slide content area: cross-fades on hover cycle ── */}
+      <div
+        className="flex-1 flex flex-col justify-center px-2.5 pb-1 relative z-10 min-h-0 transition-opacity duration-100"
+        style={{ opacity: fading ? 0 : 1 }}
+      >
+        <ThumbnailSlideContent
+          slide={displaySlide}
+          accentColor={accentColor}
+          isPitch={isPitch}
+          isBusiness={isBusiness}
+          isProduct={isProduct}
+          isQbr={isQbr}
+          isFirst={activeIdx === 0}
+        />
       </div>
 
-      {/* ── Mini Contact / Footer Bar (mirrors real cover bottom contact row) ── */}
-      <div className="flex items-center justify-between px-2.5 pb-2 border-t border-white/10 pt-1 relative z-10">
-        <span className="text-[6.5px] text-zinc-500 font-mono">16:9 Widescreen</span>
-        <span className="text-[6.5px] font-semibold" style={{ color: accentColor }}>Slide 1 of {slideCount}</span>
+      {/* ── Footer: slide progress dots on hover, static label at rest ── */}
+      <div className="flex items-center justify-between px-2.5 pb-2 pt-1 border-t border-white/[0.08] relative z-10">
+        {allSlides && allSlides.length > 1 ? (
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: Math.min(allSlides.length, 12) }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-200"
+                style={{
+                  width:  i === activeIdx ? '10px' : '4px',
+                  height: '3px',
+                  backgroundColor: i === activeIdx ? accentColor : 'rgba(255,255,255,0.2)',
+                  boxShadow: i === activeIdx ? `0 0 4px ${accentColor}` : 'none'
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <span className="text-[6px] text-zinc-500 font-mono">16:9 Widescreen</span>
+        )}
+        <span className="text-[6px] font-semibold transition-all duration-100" style={{ color: accentColor }}>
+          {activeIdx + 1} / {totalSlides}
+        </span>
       </div>
     </div>
   );
