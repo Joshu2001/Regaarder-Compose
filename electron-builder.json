@@ -87,6 +87,13 @@
         "role": "Editor"
       },
       {
+        "ext": "rgnot",
+        "name": "Regaarder Note",
+        "description": "Regaarder Note Document File",
+        "icon": "build/note.ico",
+        "role": "Editor"
+      },
+      {
         "ext": "cmp",
         "name": "Regaarder Compose Document",
         "description": "Regaarder Compose Native File",

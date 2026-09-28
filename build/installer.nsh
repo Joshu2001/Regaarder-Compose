@@ -13,6 +13,7 @@
   ; Install file icons into $INSTDIR\resources\icons
   CreateDirectory "$INSTDIR\resources\icons"
   File /oname=$INSTDIR\resources\icons\doc.ico "${BUILD_RESOURCES_DIR}\doc.ico"
+  File /oname=$INSTDIR\resources\icons\note.ico "${BUILD_RESOURCES_DIR}\note.ico"
   File /oname=$INSTDIR\resources\icons\sheet.ico "${BUILD_RESOURCES_DIR}\sheet.ico"
   File /oname=$INSTDIR\resources\icons\deck.ico "${BUILD_RESOURCES_DIR}\deck.ico"
   File /oname=$INSTDIR\resources\icons\whiteboard.ico "${BUILD_RESOURCES_DIR}\whiteboard.ico"
@@ -35,6 +36,19 @@
   WriteRegStr HKCR ".rgdoc\ShellNew" "NullFile" ""
   WriteRegStr HKCR ".rgdoc\ShellNew" "ItemName" "Regaarder Document"
   WriteRegStr HKCR ".rgdoc\ShellNew" "IconPath" "$INSTDIR\resources\icons\doc.ico"
+
+  ; Register ProgID for Regaarder Note
+  WriteRegStr HKCR "Regaarder.Note" "" "Regaarder Note"
+  WriteRegStr HKCR "Regaarder.Note\DefaultIcon" "" "$INSTDIR\resources\icons\note.ico"
+  WriteRegStr HKCR "Regaarder.Note\shell\open\command" "" '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
+
+  ; Register .rgnot and Explorer "New > Regaarder Note"
+  WriteRegStr HKCR ".rgnot" "" "Regaarder.Note"
+  WriteRegStr HKCR ".rgnot" "PerceivedType" "Document"
+  WriteRegStr HKCR ".rgnot" "Content Type" "application/x-regaarder-note"
+  WriteRegStr HKCR ".rgnot\ShellNew" "NullFile" ""
+  WriteRegStr HKCR ".rgnot\ShellNew" "ItemName" "Regaarder Note"
+  WriteRegStr HKCR ".rgnot\ShellNew" "IconPath" "$INSTDIR\resources\icons\note.ico"
 
   ; Register ProgID for Regaarder Spreadsheet
   WriteRegStr HKCR "Regaarder.Sheet" "" "Regaarder Spreadsheet"
@@ -85,6 +99,8 @@
   DeleteRegKey HKCR "*\shell\RegaarderWorkspace"
   DeleteRegKey HKCR "Regaarder.Document"
   DeleteRegKey HKCR ".rgdoc\ShellNew"
+  DeleteRegKey HKCR "Regaarder.Note"
+  DeleteRegKey HKCR ".rgnot\ShellNew"
   DeleteRegKey HKCR "Regaarder.Sheet"
   DeleteRegKey HKCR ".rgsht\ShellNew"
   DeleteRegKey HKCR "Regaarder.Deck"

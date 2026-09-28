@@ -20,6 +20,7 @@ const SYNC_FORMAT_VERSION = 1;
 /** Subdirectory and file-extension mapping per document mode. */
 const MODE_MAP = {
   compose:    { subdir: 'Documents',   ext: '.rgdoc' },
+  notes:      { subdir: 'Notes',       ext: '.rgnot' },
   sheets:     { subdir: 'Sheets',      ext: '.rgsht' },
   deck:       { subdir: 'Decks',       ext: '.rgdck' },
   whiteboard: { subdir: 'Whiteboards', ext: '.rgwbd' },
@@ -476,7 +477,10 @@ export const parseRegaarderFile = (content, sourcePath = '') => {
     if (!trimmed || trimmed === '{}') {
       let mode = 'compose';
       let defaultTitle = 'Untitled Document';
-      if (ext === '.rgsht') {
+      if (ext === '.rgnot') {
+        mode = 'notes';
+        defaultTitle = 'Untitled Note';
+      } else if (ext === '.rgsht') {
         mode = 'sheets';
         defaultTitle = 'Untitled Sheet';
       } else if (ext === '.rgdck') {
@@ -567,7 +571,8 @@ export const parseRegaarderFile = (content, sourcePath = '') => {
     // Detect mode from extension or stored mode
     let mode = parsed.mode;
     if (!mode) {
-      if (ext === '.rgsht' || parsed.sheetsData || parsed.sheetGrids) mode = 'sheets';
+      if (ext === '.rgnot' || parsed.isNotesDoc || parsed.ruling) mode = 'notes';
+      else if (ext === '.rgsht' || parsed.sheetsData || parsed.sheetGrids) mode = 'sheets';
       else if (ext === '.rgdck' || parsed.slides || parsed.deckSlidesData) mode = 'deck';
       else if (ext === '.rgwbd' || parsed.whiteboardWidgets || parsed.whiteboardShapes) mode = 'whiteboard';
       else mode = 'compose';

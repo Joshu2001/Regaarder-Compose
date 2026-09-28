@@ -25,7 +25,7 @@ let activeAppUrl = null;
 let pendingFileToOpen = null;
 
 const REGAARDER_FILE_EXTENSIONS = [
-  '.rgdoc', '.cmp', '.rgsht', '.rgdck', '.rgwbd',
+  '.rgdoc', '.cmp', '.rgsht', '.rgdck', '.rgwbd', '.rgnot',
   '.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.md'
 ];
 
@@ -1284,6 +1284,13 @@ function registerWindowsShellNew() {
         iconName: 'doc.ico',
       },
       {
+        ext: '.rgnot',
+        progId: 'Regaarder.Compose.Note',
+        desc: 'Regaarder Note',
+        mime: 'application/x-regaarder-note',
+        iconName: 'note.ico',
+      },
+      {
         ext: '.rgsht',
         progId: 'Regaarder.Compose.Sheet',
         desc: 'Regaarder Spreadsheet',
@@ -1361,6 +1368,10 @@ function registerWindowsShellNew() {
         console.warn('[ShellNew] Registration note:', err.message);
       } else {
         console.info('[ShellNew] Explorer New menu registered successfully for Regaarder formats.');
+        // Broadcast Shell change notify so Windows Explorer updates New menu immediately without PC restart
+        try {
+          exec('powershell -NoProfile -Command "[System.Runtime.InteropServices.Marshal]::GetLastWin32Error(); Add-Type -TypeDefinition \'using System; using System.Runtime.InteropServices; public class Shell { [DllImport(\\\"shell32.dll\\\")] public static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2); }\'; [Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)"');
+        } catch (_) {}
       }
     });
   } catch (err) {

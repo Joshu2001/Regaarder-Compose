@@ -11,6 +11,7 @@ import { FeedbackIcon, NotesIcon } from "../RegaarderProductIcons";
 
 const WORKSPACE_APPS = [
   { id: "compose", label: "Docs", type: "compose" },
+  { id: "notes", label: "Notes", type: "notes" },
   { id: "sheet", label: "Sheets", type: "sheet" },
   { id: "deck", label: "Deck", type: "deck" },
   { id: "whiteboard", label: "Whiteboard", type: "whiteboard" },

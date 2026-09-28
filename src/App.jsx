@@ -36402,6 +36402,10 @@ Respond with valid JSON formatted like this:
       createWhiteboardExperience();
       return;
     }
+    if (productMode === 'notes') {
+      createNotesExperience();
+      return;
+    }
     if (productMode === 'compose' || productMode === 'sheets' || productMode === 'deck') {
       createNewComposition();
       return;
@@ -47564,10 +47568,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                       </div>
                       <div className="space-y-0.5">
                         {[
-                          { key: 'compose', label: 'Compose', icon: ComposeIcon },
-                          { key: 'deck',    label: 'Deck',    icon: DeckIcon },
-                          { key: 'sheet',   label: 'Sheet',   icon: SheetIcon },
-                          { key: 'room',    label: 'Room',    icon: RoomIcon },
+                          { key: 'compose',    label: 'Compose',    icon: ComposeIcon },
+                          { key: 'notes',      label: 'Notes',      icon: NotesIcon },
+                          { key: 'deck',       label: 'Deck',       icon: DeckIcon },
+                          { key: 'sheet',      label: 'Sheet',      icon: SheetIcon },
+                          { key: 'room',       label: 'Room',       icon: RoomIcon },
                           { key: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon },
                         ].map(({ key, label, icon: Icon }) => (
                           <button
@@ -50558,7 +50563,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {creationPickerOpen && (
           <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
+            <div className="w-[840px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
@@ -50574,7 +50579,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
                 <button
                   type="button"
                   onClick={createComposeExperience}
@@ -50585,6 +50590,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Compose</div>
                   <p className="text-xs text-gray-600">Our document workspace for writing, planning, and AI-assisted editing.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={createNotesExperience}
+                  className="group text-left rounded-xl border border-amber-200 bg-amber-50/40 p-4 hover:bg-amber-50 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center mb-3">
+                    <BookOpen size={18} />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Notes</div>
+                  <p className="text-xs text-gray-600">Our ruled notebook canvas for capturing ideas and freeform thinking.</p>
                 </button>
 
                 <button
@@ -50604,7 +50621,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={createSheetsExperience}
                   className="group text-left rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3">
                     <Database size={18} />
                   </div>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
@@ -75517,7 +75534,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           <div 
-            className="w-[720px] max-w-[95vw] rounded-3xl bg-white/95 dark:bg-zinc-950/95 border border-violet-500/25 text-zinc-900 dark:text-zinc-100 shadow-[0_0_70px_rgba(124,77,255,0.28)] p-7 animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="w-[880px] max-w-[95vw] rounded-3xl bg-white/95 dark:bg-zinc-950/95 border border-violet-500/25 text-zinc-900 dark:text-zinc-100 shadow-[0_0_70px_rgba(124,77,255,0.28)] p-7 animate-in zoom-in-95 duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 mb-6">
@@ -75535,7 +75552,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5">
               {/* Compose */}
               <button
                 type="button"
@@ -75550,6 +75567,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Document workspace for writing, planning, and AI editing.</p>
                 </div>
                 <div className="mt-3 text-[10.5px] font-semibold text-violet-600 dark:text-violet-400">Open Doc →</div>
+              </button>
+
+              {/* Notes */}
+              <button
+                type="button"
+                onClick={createNotesExperience}
+                className="group text-left rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-4.5 hover:border-amber-500/60 hover:shadow-[0_0_24px_rgba(245,158,11,0.25)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center mb-3 shadow-md shadow-amber-950/30 group-hover:scale-105 transition-transform duration-200">
+                    <BookOpen size={19} />
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">Notes</div>
+                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-relaxed">Ruled notebook canvas for ideas, scratchpads, and freeform thinking.</p>
+                </div>
+                <div className="mt-3 text-[10.5px] font-semibold text-amber-600 dark:text-amber-400">Open Notes →</div>
               </button>
 
               {/* Deck */}
