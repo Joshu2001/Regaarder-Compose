@@ -22,6 +22,11 @@ class TelemetryService {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
+    try {
+      const { posthogService } = await import('./posthogService');
+      posthogService.init(currentUser);
+    } catch (_e) {}
+
     const launchData = {
       sessionId: this.sessionId,
       launchedAt: new Date().toISOString(),

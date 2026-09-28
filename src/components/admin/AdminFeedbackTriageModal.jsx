@@ -21,10 +21,16 @@ import {
   Users,
   Monitor,
   Calendar,
-  Zap
+  Zap,
+  Video,
+  Play,
+  Sliders,
+  Shield,
+  CheckCircle2
 } from 'lucide-react';
 import { feedbackSubmissionService } from '../../services/feedbackSubmissionService';
 import { telemetryService } from '../../services/telemetryService';
+import { posthogService } from '../../services/posthogService';
 
 // Secret Founder PIN / Passcode (Change or configure via environment variable VITE_FOUNDER_ADMIN_PIN if desired)
 const DEFAULT_FOUNDER_PIN = '1984';
@@ -54,9 +60,15 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('feedback'); // 'feedback' | 'insights'
+  const [activeTab, setActiveTab] = useState('feedback'); // 'feedback' | 'insights' | 'replays'
   const [insights, setInsights] = useState(null);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+
+  // PostHog Replay & Telemetry States
+  const [posthogSettings, setPosthogSettings] = useState(() => posthogService.loadSettings());
+  const [replaySessions, setReplaySessions] = useState(() => posthogService.getRecentSessions());
+  const [customKeyInput, setCustomKeyInput] = useState(() => posthogService.settings.customApiKey || '');
+  const [isSettingsSavedToast, setIsSettingsSavedToast] = useState(false);
 
   const [feedbackList, setFeedbackList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -268,6 +280,24 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
                 <span>Data Insights & Metrics</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('replays');
+                  setReplaySessions(posthogService.getRecentSessions());
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'replays'
+                    ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Video size={13} />
+                <span>Session Replays</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300">
+                  PostHog
+                </span>
+              </button>
             </div>
           </div>
 
@@ -291,7 +321,8 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
               type="button"
               onClick={() => {
                 if (activeTab === 'feedback') loadFeedback();
-                else loadInsights();
+                else if (activeTab === 'insights') loadInsights();
+                else setReplaySessions(posthogService.getRecentSessions());
               }}
               disabled={isLoading || isLoadingInsights}
               className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
@@ -489,9 +520,23 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
                 {/* Diagnostics & Environment Context */}
                 {selectedItem.workspace_context && (
                   <div>
-                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">
-                      System Diagnostics
-                    </h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                        System Diagnostics
+                      </h4>
+                      {(selectedItem.workspace_context.posthogReplayUrl || selectedItem.workspace_context.posthogSessionId) && (
+                        <a
+                          href={selectedItem.workspace_context.posthogReplayUrl || posthogService.getReplayUrl(selectedItem.workspace_context.posthogSessionId)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200 dark:border-violet-800 transition-colors shadow-2xs"
+                        >
+                          <Play size={12} fill="currentColor" />
+                          <span>Watch PostHog Session Replay</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11.5px]">
                       <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/60 dark:border-white/5">
                         <span className="text-[10px] text-slate-400 block">OS</span>
@@ -552,7 +597,7 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
             )}
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'insights' ? (
           /* Tab 2: Executive Data Insights & Metrics Dashboard */
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-zinc-950/40 thin-scrollbar">
             {/* KPI Cards Row */}
@@ -725,6 +770,221 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-slate-400">
                             Current session active. Launch telemetry recorded.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Tab 3: Session Replays (PostHog) Control & Replay Hub */
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-zinc-950/40 thin-scrollbar">
+            {/* Header & Status Banner */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center border border-violet-100 dark:border-violet-900/50 shrink-0">
+                  <Video size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                      PostHog Session Replay Integration
+                    </h3>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Session Replay Engine Ready
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                    Watch pixel-accurate recordings of user sessions, console events, and interactions to debug user issues and inspect feedback in context.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`${(posthogSettings.apiHost || 'https://us.i.posthog.com').replace('https://us.i.', 'https://us.').replace('https://eu.i.', 'https://eu.')}/replay`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer"
+                >
+                  <ExternalLink size={13} />
+                  <span>Open PostHog Replay Console</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Privacy & Recording Controls Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <Shield size={14} />
+                    <span>Privacy & Masking Controls</span>
+                  </h4>
+                  {isSettingsSavedToast && (
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+                      <CheckCircle2 size={12} /> Saved
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-white/5 cursor-pointer">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">Session Recording</span>
+                      <span className="text-[10.5px] text-slate-400 block">Capture user interactions and mouse movements</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={posthogSettings.enabled}
+                      onChange={(e) => {
+                        const updated = { ...posthogSettings, enabled: e.target.checked };
+                        setPosthogSettings(updated);
+                        posthogService.saveSettings(updated);
+                        setIsSettingsSavedToast(true);
+                        setTimeout(() => setIsSettingsSavedToast(false), 2000);
+                      }}
+                      className="accent-violet-600 w-4 h-4 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-white/5 cursor-pointer">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">Mask All Keystroke Inputs</span>
+                      <span className="text-[10.5px] text-slate-400 block">Conceals form fields, passwords, and sensitive text</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={posthogSettings.maskAllInputs}
+                      onChange={(e) => {
+                        const updated = { ...posthogSettings, maskAllInputs: e.target.checked };
+                        setPosthogSettings(updated);
+                        posthogService.saveSettings(updated);
+                        setIsSettingsSavedToast(true);
+                        setTimeout(() => setIsSettingsSavedToast(false), 2000);
+                      }}
+                      className="accent-violet-600 w-4 h-4 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/60 dark:border-white/5 cursor-pointer">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 block">Record Canvas & Elements</span>
+                      <span className="text-[10.5px] text-slate-400 block">Record HTML5 canvas elements (drawing/sheets)</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={posthogSettings.recordCanvas}
+                      onChange={(e) => {
+                        const updated = { ...posthogSettings, recordCanvas: e.target.checked };
+                        setPosthogSettings(updated);
+                        posthogService.saveSettings(updated);
+                        setIsSettingsSavedToast(true);
+                        setTimeout(() => setIsSettingsSavedToast(false), 2000);
+                      }}
+                      className="accent-violet-600 w-4 h-4 rounded"
+                    />
+                  </label>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 dark:border-white/5 space-y-2">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 block">PostHog Project API Key</span>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      placeholder="phc_..."
+                      value={customKeyInput}
+                      onChange={(e) => setCustomKeyInput(e.target.value)}
+                      className="flex-1 text-xs py-1.5 px-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg outline-none focus:border-violet-500 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...posthogSettings, customApiKey: customKeyInput.trim() };
+                        setPosthogSettings(updated);
+                        posthogService.saveSettings(updated);
+                        posthogService.init();
+                        setIsSettingsSavedToast(true);
+                        setTimeout(() => setIsSettingsSavedToast(false), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-black dark:bg-zinc-700 dark:hover:bg-zinc-600 text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Save Key
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-slate-400 block">
+                    Or specify <code className="font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">VITE_POSTHOG_KEY</code> in <code className="font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">.env</code>.
+                  </span>
+                </div>
+              </div>
+
+              {/* Sessions List */}
+              <div className="lg:col-span-2 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <Sliders size={14} />
+                    <span>Recent Sessions with Replay Traces</span>
+                  </h4>
+                  <span className="text-[10px] text-slate-400">
+                    {replaySessions.length} sessions tracked
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-white/5 text-[10.5px] uppercase font-semibold text-slate-400 dark:text-zinc-500">
+                        <th className="pb-2.5">User</th>
+                        <th className="pb-2.5">Session ID</th>
+                        <th className="pb-2.5">Started At</th>
+                        <th className="pb-2.5">Stream State</th>
+                        <th className="pb-2.5 text-right">Replay Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100/70 dark:divide-white/5">
+                      {replaySessions.length > 0 ? (
+                        replaySessions.map((session, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                            <td className="py-2.5 font-medium text-slate-900 dark:text-zinc-100">
+                              {session.userEmail || 'guest@workspace.local'}
+                            </td>
+                            <td className="py-2.5 text-slate-500 dark:text-zinc-400 font-mono text-[11px] truncate max-w-[120px]">
+                              {session.sessionId}
+                            </td>
+                            <td className="py-2.5 text-slate-500 dark:text-zinc-400">
+                              {session.startedAt ? new Date(session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active now'}
+                            </td>
+                            <td className="py-2.5">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                session.isLive
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                  : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
+                              }`}>
+                                {session.isLive ? 'Active Recording' : 'Staged Session'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 text-right">
+                              <a
+                                href={session.recordingUrl || posthogService.getReplayUrl(session.sessionId)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200 dark:border-violet-800 transition-colors shadow-2xs"
+                              >
+                                <Play size={11} fill="currentColor" />
+                                <span>Watch Replay</span>
+                                <ExternalLink size={10} />
+                              </a>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-400">
+                            No session recordings yet. User sessions will appear here as they interact with the app.
                           </td>
                         </tr>
                       )}

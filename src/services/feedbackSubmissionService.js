@@ -24,6 +24,14 @@ export const feedbackSubmissionService = {
     currentUser = null
   }) {
     const feedbackId = `fb-${Date.now()}`;
+    let posthogSessionId = null;
+    let posthogReplayUrl = null;
+    try {
+      const { posthogService } = await import('./posthogService');
+      posthogSessionId = posthogService.getSessionId();
+      posthogReplayUrl = posthogService.getReplayUrl(posthogSessionId);
+    } catch (_e) {}
+
     const entry = {
       id: feedbackId,
       type,
@@ -34,7 +42,11 @@ export const feedbackSubmissionService = {
         type: a.type || 'image/png',
         url: a.url || a.dataUrl || null
       })),
-      workspace_context: workspaceContext,
+      workspace_context: {
+        ...workspaceContext,
+        posthogSessionId,
+        posthogReplayUrl
+      },
       user_id: currentUser?.id || null,
       user_email: currentUser?.email || 'guest@workspace.local',
       user_name: currentUser?.name || currentUser?.displayName || 'Workspace User',
