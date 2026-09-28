@@ -16,6 +16,7 @@ import { FeedbackIcon } from '../RegaarderProductIcons';
 import FloatingRecorderBar from './FloatingRecorderBar';
 import ScreenSnipperOverlay from './ScreenSnipperOverlay';
 import MediaLightboxModal from './MediaLightboxModal';
+import { feedbackSubmissionService } from '../../services/feedbackSubmissionService';
 
 const FEEDBACK_TYPES = [
   { id: 'bug', label: 'Bug' },
@@ -81,23 +82,33 @@ export default function RegaarderFeedbackModal({
     const isMac = /Macintosh|Mac OS X/i.test(userAgent);
     const isWindows = /Windows/i.test(userAgent);
     const os = isMac ? 'macOS' : isWindows ? 'Windows' : 'Linux / Other';
+    const isElectron = Boolean(window.electronAPI?.isElectron || userAgent.includes('Electron'));
 
-    let browser = 'Browser';
-    if (/Edg/i.test(userAgent)) browser = 'Microsoft Edge';
-    else if (/Chrome/i.test(userAgent)) browser = 'Google Chrome';
-    else if (/Safari/i.test(userAgent)) browser = 'Apple Safari';
-    else if (/Firefox/i.test(userAgent)) browser = 'Mozilla Firefox';
+    let browser = isElectron ? 'Electron Desktop' : 'Browser';
+    if (!isElectron) {
+      if (/Edg/i.test(userAgent)) browser = 'Microsoft Edge';
+      else if (/Chrome/i.test(userAgent)) browser = 'Google Chrome';
+      else if (/Safari/i.test(userAgent)) browser = 'Apple Safari';
+      else if (/Firefox/i.test(userAgent)) browser = 'Mozilla Firefox';
+    }
 
     const viewport = typeof window !== 'undefined' ? `${window.innerWidth} × ${window.innerHeight}` : '1920 × 1080';
+    const screenRes = typeof window !== 'undefined' && window.screen ? `${window.screen.width} × ${window.screen.height}` : '1920 × 1080';
     const pixelRatio = typeof window !== 'undefined' ? `${window.devicePixelRatio || 1}x` : '1x';
+    const sessionSeconds = typeof performance !== 'undefined' ? Math.round(performance.now() / 1000) : 0;
+    const memoryMB = typeof performance !== 'undefined' && performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))} MB` : 'N/A';
 
     return {
       app: activeApp,
       activeDocument: activeFile || 'Workspace Dashboard',
       os,
       browser,
+      clientType: isElectron ? 'desktop_electron' : 'web_browser',
       viewport,
+      screenResolution: screenRes,
       pixelRatio,
+      sessionUptime: `${Math.floor(sessionSeconds / 60)}m ${sessionSeconds % 60}s`,
+      memoryUsage: memoryMB,
       version: 'v2.4.2 (Production)',
       timestamp: new Date().toISOString(),
       recentErrors: recentErrors.length > 0 ? recentErrors : undefined,
@@ -404,40 +415,31 @@ export default function RegaarderFeedbackModal({
   };
 
   // Submit Feedback
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!message.trim() && attachments.length === 0) return;
 
     setIsSubmitting(true);
 
-    const submissionPayload = {
-      id: `fb-${Date.now()}`,
-      type: feedbackType,
-      message: message.trim(),
-      attachmentCount: attachments.length,
-      attachments: attachments.map((a) => ({ name: a.name, size: a.size, type: a.type })),
-      workspaceContext,
-      submittedAt: new Date().toISOString(),
-    };
-
     try {
-      const stored = JSON.parse(localStorage.getItem('regaarder_feedback_history') || '[]');
-      stored.unshift(submissionPayload);
-      localStorage.setItem('regaarder_feedback_history', JSON.stringify(stored.slice(0, 30)));
-    } catch (err) {
-      // Ignore localStorage access restrictions
+      await feedbackSubmissionService.submitFeedback({
+        type: feedbackType,
+        message: message.trim(),
+        attachments: attachments,
+        workspaceContext
+      });
+    } catch (_err) {
+      console.warn('[Feedback] Submission error caught:', _err);
     }
 
+    setIsSubmitting(false);
+    setIsSuccess(true);
     setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      setTimeout(() => {
-        setIsSuccess(false);
-        setMessage('');
-        setAttachments([]);
-        onClose?.();
-      }, 1100);
-    }, 400);
+      setIsSuccess(false);
+      setMessage('');
+      setAttachments([]);
+      onClose?.();
+    }, 1100);
   };
 
   return (

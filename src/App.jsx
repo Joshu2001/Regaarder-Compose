@@ -87,11 +87,20 @@ import { transcribeAudioBlobLocally, cleanAndSanitizeTranscription } from './ser
 import { initLocalSync, teardownLocalSync, parseRegaarderFile, syncAllDocumentsToDisk } from './services/localSyncService';
 import { readWorkspaceDocuments, writeWorkspaceDocuments, normalizeWorkspaceDocuments } from './services/workspaceDocumentStore';
 import OmniPortalModal from './components/OmniPortalModal';
+import AdminFeedbackTriageModal from './components/admin/AdminFeedbackTriageModal';
+import { telemetryService } from './services/telemetryService';
 import NativePdfDocumentViewer from './components/NativePdfDocumentViewer';
 import RegaarderNotebookViewer, { NotesWriteToolbarControls } from './components/RegaarderNotebookViewer';
 import { convertPdfToEditableHtml } from './utils/pdfToHtmlConverter';
 import LedgerWorkspace from './components/ledger/LedgerWorkspace';
 import SlideDeckExactCanvas from './components/SlideDeckExactCanvas';
+import {
+  DEFAULT_DECK_SLIDES,
+  BUSINESS_PLAN_DECK_SLIDES,
+  PRODUCT_LAUNCH_DECK_SLIDES,
+  SALES_PROPOSAL_DECK_SLIDES,
+  QBR_DECK_SLIDES
+} from './constants/deckTemplateData';
 
 const renderDeckBadgeIcon = (iconId, size = 10, isDarkIcon = false, customColor) => {
   const iconObj = DECK_BADGE_ICONS.find(i => i.id === iconId) || DECK_BADGE_ICONS[0];
@@ -4743,10 +4752,14 @@ const SlideDeckThumbnailPreview = ({ title, category, slideCount = 10, isCustom 
   // Resolve slides from live templates or custom data
   const allSlides = React.useMemo(() => {
     if (rawTemplate?.deckSlidesData?.length) return rawTemplate.deckSlidesData;
-    if (isPitch && typeof DEFAULT_DECK_SLIDES !== 'undefined') return DEFAULT_DECK_SLIDES;
-    if (isBusiness && typeof BUSINESS_PLAN_DECK_SLIDES !== 'undefined') return BUSINESS_PLAN_DECK_SLIDES;
+    if (templateId === 'startup-pitch' || isPitch) return DEFAULT_DECK_SLIDES;
+    if (templateId === 'business-plan') return BUSINESS_PLAN_DECK_SLIDES;
+    if (templateId === 'product-launch') return PRODUCT_LAUNCH_DECK_SLIDES;
+    if (templateId === 'sales-proposal') return SALES_PROPOSAL_DECK_SLIDES;
+    if (templateId === 'qbr') return QBR_DECK_SLIDES;
+    if (isBusiness) return BUSINESS_PLAN_DECK_SLIDES;
     return null;
-  }, [rawTemplate, isPitch, isBusiness]);
+  }, [rawTemplate, isPitch, isBusiness, templateId]);
 
   const totalSlides = allSlides?.length || slideCount;
   const currentSlide = allSlides?.[activeIdx] || allSlides?.[0] || {
@@ -7956,7 +7969,15 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 function AppCore() {
   const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
 
-  const [showIntentOnboarding, setShowIntentOnboarding] = useState(true);
+  const [showIntentOnboarding, setShowIntentOnboarding] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const hasSeen = localStorage.getItem('rc.hasSeenIntentOnboarding_v1') || localStorage.getItem('rc.hasSeenIntentOnboarding_v2');
+        return !hasSeen;
+      }
+    } catch (_e) {}
+    return false;
+  });
   const [activeGuidedIntent, setActiveGuidedIntent] = useState(null);
 
   useEffect(() => {
@@ -7996,9 +8017,27 @@ function AppCore() {
       return () => window.removeEventListener('rc:open-onboarding', handler);
     }
   }, []);
-  const [nextActionPrompt, setNextActionPrompt] = useState('');
-
+  const [isAdminFeedbackOpen, setIsAdminFeedbackOpen] = useState(false);
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
+
+  useEffect(() => {
+    // Record launch telemetry & active session
+    telemetryService.trackAppLaunch();
+
+    const handleGlobalAdminShortcut = (e) => {
+      // Secret Founder / Admin shortcut: Ctrl+Shift+F or Cmd+Shift+F
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        setIsAdminFeedbackOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalAdminShortcut);
+    window.openAdminFeedback = () => setIsAdminFeedbackOpen(true);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalAdminShortcut);
+      delete window.openAdminFeedback;
+    };
+  }, []);
   const [orbOpen, setOrbOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [isMemorySearchOpen, setIsMemorySearchOpen] = useState(false);
@@ -10887,216 +10926,6 @@ const DECK_MASTER_THEMES = [
   }
 ];
 
-const BUSINESS_PLAN_DECK_SLIDES = [
-  {
-    id: 'bp-1',
-    section: 'Cover',
-    title: 'Business Plan Cover',
-    tagline: 'Strategic Execution Plan',
-    headline: 'BUSINESS PLAN\n2026 – 2029',
-    presenter: 'PREPARED FOR BOARD & INVESTORS',
-    presenterHidden: true,
-    contactWeb: 'www.regaarder.com/plan',
-    contactEmail: 'exec@regaarder.com',
-    contactAddress: 'One Market Plaza, San Francisco, CA',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'toroid-ring',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    layoutStyle: 'Business Plan Cover',
-    visualType: 'business cover',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-2',
-    section: 'Summary',
-    title: 'Executive Summary',
-    tagline: '01 / Strategic Foundation',
-    headline: 'EXECUTIVE SUMMARY\n& MISSION',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'dna-double-helix',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#10b981',
-    layoutStyle: 'Business Plan Summary',
-    card1Icon: 'target',
-    card1Title: 'Our Mission',
-    card1Desc: 'Empower modern enterprises with an all-in-one AI operating workspace that unifies real-time docs, decks, and data sheets.',
-    card2Icon: 'sparkles',
-    card2Title: 'Core Vision',
-    card2Desc: 'Establish the global benchmark for collaborative intelligence, reducing workflow friction by 70% across 50,000+ teams.',
-    card3Icon: 'award',
-    card3Title: 'Unique Value Moat',
-    card3Desc: 'Proprietary client-side engines and vector graph architecture deliver 10x faster document computation than legacy suites.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-3',
-    section: 'Structure',
-    title: 'Company & Operations',
-    tagline: '02 / Organization',
-    headline: 'COMPANY STRUCTURE\n& GOVERNANCE',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'isometric-grid',
-    vectorColor1: '#a855f7',
-    vectorColor2: '#00f0ff',
-    layoutStyle: 'Business Plan Structure',
-    card1Title: 'Delaware C-Corp',
-    card1Desc: 'Incorporated Q1 2024. Clean cap table with institutional investor governance & founder super-voting shares.',
-    card2Title: 'Global Hubs',
-    card2Desc: 'Dual headquarters in San Francisco and Singapore supporting 24/7 distributed engineering and enterprise sales.',
-    card3Title: 'Executive Leadership',
-    card3Desc: 'Led by ex-Apple, Stripe, and Google architects with 35+ years of combined experience in document and data systems.',
-    card4Title: 'Security & Compliance',
-    card4Desc: 'SOC2 Type II certified, GDPR compliant, and end-to-end encrypted storage protocols across all tiers.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-4',
-    section: 'Market',
-    title: 'Market Analysis',
-    tagline: '03 / Opportunity',
-    headline: 'MARKET SIZE\n& SEGMENTATION',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'market-tam-concentric',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#ec4899',
-    layoutStyle: 'Business Plan Market',
-    tamVal: '$128 Billion',
-    tamDesc: 'Total Addressable Market: Global enterprise productivity, spreadsheet & document SaaS software.',
-    samVal: '$42 Billion',
-    samDesc: 'Serviceable Addressable Market: Mid-market & enterprise collaborative software buyers.',
-    somVal: '$5.4 Billion',
-    somDesc: 'Serviceable Obtainable Market: High-growth tech, finance, and consulting firms targeted in Years 1–3.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-5',
-    section: 'Ecosystem',
-    title: 'Product Ecosystem',
-    tagline: '04 / Solutions',
-    headline: 'PRODUCT ECOSYSTEM\n& CAPABILITIES',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'geodesic-icosahedron',
-    vectorColor1: '#7c4dff',
-    vectorColor2: '#00f0ff',
-    layoutStyle: 'Business Plan Ecosystem',
-    card1Title: 'Compose Studio',
-    card1Desc: 'Real-time multi-agent word processor with markdown, citations, LaTeX mathematics, and smart outline navigation.',
-    card2Title: 'Dynamic Deck Engine',
-    card2Desc: 'Apple-grade presentation generator with dynamic shimmer effects, bento layouts, and live chart visualizers.',
-    card3Title: 'Matrix Data Grid',
-    card3Desc: 'High-speed spreadsheet grid with 400+ formulas, custom sparklines, interactive dropdowns, and matrix heuristics.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-6',
-    section: 'Strategy',
-    title: 'Go-To-Market',
-    tagline: '05 / Execution',
-    headline: 'GO-TO-MARKET\n& SALES FUNNEL',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'growth-venture-hockey',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#10b981',
-    layoutStyle: 'Business Plan Strategy',
-    step1Title: '1. Product-Led Virality',
-    step1Desc: 'Freemium individual tier drives bottom-up adoption among designers, analysts, and project leads.',
-    step2Title: '2. Enterprise Expansion',
-    step2Desc: 'Direct outbound sales targeting CTOs & Operations heads for site-wide license deployments.',
-    step3Title: '3. Strategic Channel Alliances',
-    step3Desc: 'Integrations with cloud providers and system integrators for pre-packaged enterprise rollouts.',
-    step4Title: '4. High-Retention Flywheel',
-    step4Desc: '94% net dollar retention fueled by cross-product workflows and unified team memory assets.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-7',
-    section: 'Moat',
-    title: 'Competitive Moat',
-    tagline: '06 / Differentiation',
-    headline: 'COMPETITIVE MOAT\n& ADVANTAGE',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'magnetic-dipole',
-    vectorColor1: '#a855f7',
-    vectorColor2: '#00f0ff',
-    layoutStyle: 'Business Plan Moat',
-    moat1Title: 'Unified Canvas Stack',
-    moat1Desc: 'Zero context-switching: Docs, Decks, and Sheets run within a single ultra-responsive reactive engine.',
-    moat2Title: 'Air-Gapped Privacy',
-    moat2Desc: 'On-device client processing ensures sensitive customer data never leaves client boundaries.',
-    moat3Title: 'Sub-Millisecond Latency',
-    moat3Desc: 'Custom WASM matrix calculation engine out-renders heavy browser-based legacy alternatives by 8x.',
-    moat4Title: 'Deep Ecosystem Lock-In',
-    moat4Desc: 'Custom themes, templates, and agent automations create unmatched workflow stickiness.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-8',
-    section: 'Roadmap',
-    title: 'Milestones Roadmap',
-    tagline: '07 / Timeline',
-    headline: 'OPERATIONAL\nMILESTONES',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'stepped-neon-vortex',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#f59e0b',
-    layoutStyle: 'Business Plan Roadmap',
-    phase1Title: 'Q1–Q2 2026',
-    phase1Sub: 'Launch & PMF',
-    phase1Desc: 'General Availability rollout, 5,000 active teams, SOC2 compliance, core plugin ecosystem.',
-    phase2Title: 'Q3–Q4 2026',
-    phase2Sub: 'Scale & Revenue',
-    phase2Desc: 'Enterprise security tier, SAML/SSO integration, $3.2M ARR target, 25 direct sales reps.',
-    phase3Title: '2027',
-    phase3Sub: 'Global Expansion',
-    phase3Desc: 'EMEA & APAC data residency, localized compliance, multi-region agent clusters, $12M ARR.',
-    phase4Title: '2028',
-    phase4Sub: 'Market Leadership',
-    phase4Desc: 'Self-serve developer marketplace, enterprise IPO readiness, $35M+ ARR horizon.',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-9',
-    section: 'Financials',
-    title: 'Financial Projections',
-    tagline: '08 / Financials',
-    headline: '3-YEAR FINANCIAL\nPROJECTIONS',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'toroid-ring',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#10b981',
-    layoutStyle: 'Business Plan Financials',
-    y1Rev: '$2.8M',
-    y1Growth: 'Baseline (Launch)',
-    y2Rev: '$9.4M',
-    y2Growth: '+235% YoY',
-    y3Rev: '$28.5M',
-    y3Growth: '+203% YoY',
-    marginPill: '84% Gross Margin',
-    burnPill: '18-Month Runway',
-    footer: 'Regaarder Corporation'
-  },
-  {
-    id: 'bp-10',
-    section: 'Ask',
-    title: 'Funding Ask',
-    tagline: '09 / Capital Allocation',
-    headline: 'FUNDING ASK\n& CAPITAL USE',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'funding-syndicate-node',
-    vectorColor1: '#ec4899',
-    vectorColor2: '#00f0ff',
-    layoutStyle: 'Business Plan Capital',
-    askAmount: '$6,000,000',
-    askDesc: 'Series A Equity Financing to accelerate enterprise sales and scale our WASM computational engine.',
-    split1: '45% R&D & Core Engine',
-    split2: '35% Go-To-Market & Sales',
-    split3: '12% Security & Compliance',
-    split4: '8% Operations & Working Cap',
-    footer: 'Regaarder Corporation'
-  }
-];
-
 const DEFAULT_BLANK_DECK_SLIDES = [
   {
     id: 1,
@@ -11115,536 +10944,6 @@ const DEFAULT_BLANK_DECK_SLIDES = [
   }
 ];
 
-const DEFAULT_DECK_SLIDES = [
-  {
-    id: 1,
-    section: 'Opening',
-    title: 'Startup Pitch Deck',
-    tagline: 'Novaris Company',
-    headline: 'STARTUP\nPITCH DECK',
-    presenter: 'PRESENT BY ALEX CHEN',
-    contactWeb: 'www.reallygreatsite.com',
-    contactEmail: 'hello@reallygreatsite.com',
-    contactAddress: '123 Anywhere Street',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'original-pitch',
-    vectorColor1: '#0055ff',
-    vectorColor2: '#00f0ff',
-    vectorWaveHue: 'neon-cyan-purple',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-indigo-500 to-violet-500',
-    visualType: 'startup cover',
-    layoutStyle: 'Startup Pitch Deck',
-    motionCue: 'Whip Slide (Fast In)',
-    keyMetric: '',
-    speakerNotes: 'Welcome investors to the Novaris Company startup pitch deck presentation.',
-    footer: 'Novaris Company'  },
-  {
-    id: 2,
-    section: 'Agenda',
-    title: "Today's Agenda",
-    tagline: 'Novaris Company',
-    headline: "TODAY'S\nAGENDA",
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'original-pitch',
-    vectorColor1: '#0055ff',
-    vectorColor2: '#00f0ff',
-    vectorWaveHue: 'neon-cyan-purple',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-indigo-500 to-violet-500',
-    visualType: 'startup agenda',
-    layoutStyle: "Startup Today's Agenda",
-    agendaNum1: '01',
-    agendaTitle1: 'Introduction',
-    agendaNum2: '02',
-    agendaTitle2: 'Problem Statement',
-    agendaNum3: '03',
-    agendaTitle3: 'Our Innovative Solutions',
-    agendaNum4: '04',
-    agendaTitle4: 'Discover Our Services',
-    agendaNum5: '05',
-    agendaTitle5: 'Size of Market',
-    agendaNum6: '06',
-    agendaTitle6: 'Key Competitors Advantage',
-    agendaNum7: '07',
-    agendaTitle7: 'Traction',
-    agendaNum8: '08',
-    agendaTitle8: 'Revenue Model',
-    agendaNum9: '09',
-    agendaTitle9: 'Accomplishments to Date',
-    agendaNum10: '10',
-    agendaTitle10: 'Use of Funds',
-    motionCue: 'Soft Fade (Left)',
-    speakerNotes: "Walk investors through the 10 core agenda items for today's pitch session.",
-    footer: 'Novaris Company'
-  },
-  {
-    id: 3,
-    section: 'Introduction',
-    title: 'Introduction',
-    tagline: 'Novaris Company',
-    headline: 'INTRODUCTION',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'top-right-vortex',
-    vectorColor1: '#0055ff',
-    vectorColor2: '#00f0ff',
-    vectorWaveHue: 'neon-cyan-purple',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-indigo-500 to-violet-500',
-    visualType: 'startup intro bento',
-    layoutStyle: 'Startup Introduction',
-    introCard1Text: "We're your dedicated partners in propelling startups toward success. With a blend of expertise and innovation, we offer comprehensive solutions tailored to meet the specific needs of each venture we work with. From strategic guidance to brand development and digital marketing, we're committed to empowering startups to thrive in competitive markets.",
-    introCard2Text: "Our collaborative approach ensures that we're not just service providers but invested advocates for your growth. Let us be the catalyst for your startup's journey, guiding you towards achieving your goals and beyond.",
-    introMainImg: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80',
-    introSubImg: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80',
-    motionCue: 'Zoom & Glow Entrance',
-    speakerNotes: 'Introduce the core mission, team capabilities, and collaborative startup acceleration model.',
-    footer: 'Novaris Company'  },
-  {
-    id: 4,
-    section: 'Problem',
-    title: 'Problem Statement',
-    tagline: 'Novaris Company',
-    headline: 'PROBLEM\nSTATEMENT',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'original-pitch',
-    vectorColor1: '#a855f7',
-    vectorColor2: '#00f0ff',
-    vectorWaveHue: 'neon-cyan-purple',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-indigo-500 to-violet-500',
-    visualType: 'startup problem cards',
-    layoutStyle: 'Startup Problem Statement',
-    card1Num: '01',
-    card1Title: 'LACK OF BRAND DIFFERENTIATION',
-    card1Text: 'Startups often find it hard to make their brand unique in a crowded market. Without a clear way to stand out, they struggle to catch the eye of potential customers and lose out to bigger competitors.',
-    card1Bg: 'linear-gradient(180deg, rgba(167, 139, 250, 0.16) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(30, 27, 75, 0.4) 100%)',
-    card2Num: '02',
-    card2Title: 'INCONSISTENT BRAND MESSAGING',
-    card2Text: 'Inconsistency in brand messaging across various marketing channels confuses potential customers and dilutes brand perception. Startups often face challenges in maintaining a cohesive message that effectively communicates their value proposition and resonates with their target audience.',
-    card2Bg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-    card3Num: '03',
-    card3Title: 'KEEPING UP WITH TRENDS',
-    card3Text: 'The marketing landscape evolves fast, and startups often struggle to keep up. With limited resources and time, staying on top of the latest trends and integrating them into marketing strategies can be a hurdle.',
-    card3Bg: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-    motionCue: 'Stagger Text Reveal',
-    speakerNotes: 'Detail the three critical market pain points: brand differentiation, inconsistent messaging, and dynamic trend adaptation.',
-    footer: 'Novaris Company'
-  },
-  {
-    id: 5,
-    section: 'Solution',
-    title: 'Our Innovative Solutions',
-    tagline: 'Novaris Company',
-    headline: 'OUR INNOVATIVE\nSOLUTIONS',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'solutions-flow',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    vectorWaveHue: 'neon-cyan-purple',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-cyan-500 via-indigo-500 to-purple-600',
-    visualType: 'startup solution cards',
-    layoutStyle: 'Startup Innovative Solutions',
-    card1Icon: 'award',
-    card1Title: 'FIND UNIQUE SELLING POINT',
-    card1Text: 'Help startups figure out what makes them special and build their brand around it. This involves learning about their competitors and target audience, then creating a clear message that sets them apart.',
-    card1Bg: 'linear-gradient(180deg, rgba(56, 44, 77, 0.4) 0%, rgba(32, 34, 63, 0.3) 50%, rgba(15, 22, 46, 0.4) 100%)',
-    card1Glimmer: 'white',
-    card2Icon: 'shield-check',
-    card2Title: 'BRAND MESSAGING GUIDELINES',
-    card2Text: "Make sure all of the startup's marketing materials send the same message. This means having clear guidelines for how they talk about themselves and making sure everyone sticks to them.",
-    card2Bg: 'linear-gradient(180deg, rgba(50, 40, 70, 0.4) 0%, rgba(30, 31, 59, 0.3) 50%, rgba(14, 20, 40, 0.4) 100%)',
-    card2Glimmer: 'white',
-    card3Icon: 'target',
-    card3Title: 'AGILE MARKETING STRATEGY',
-    card3Text: 'Help startups adapt quickly to changes in the market. This means keeping an eye on what works, analyzing data, and being open to new things to keep the marketing strategy fresh and effective.',
-    card3Bg: 'linear-gradient(180deg, rgba(124, 92, 153, 0.35) 0%, rgba(62, 50, 100, 0.25) 50%, rgba(25, 28, 61, 0.35) 100%)',
-    card3Glimmer: 'white',
-    motionCue: 'Stagger Card Entrance',
-    speakerNotes: 'Walk through the 3 innovative solutions: USP discovery, unified brand messaging guidelines, and agile marketing execution.',
-    footer: 'Novaris Company'
-  },
-  {
-    id: 6,
-    section: 'Services',
-    title: 'Discover Our Services',
-    tagline: 'Novaris Company',
-    headline: 'DISCOVER OUR\nSERVICES',
-    backgroundColor: '#05070B',
-    vectorVortexStyle: 'neon-concentric-arc',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-blue-500 via-indigo-500 to-violet-600',
-    visualType: 'startup services grid',
-    layoutStyle: 'Startup Discover Services',
-    presenterImg: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80',
-    presenterZIndex: 20,
-    presenterBg: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 40%, #581c87 100%)',
-    srv1_icon: 'award',
-    srv1_title: 'BRAND BUILDING',
-    srv1_text: 'We create a strong brand identity, including logos and design elements, to help startups stand out and gain trust.',
-    srv2_icon: 'trending-up',
-    srv2_title: 'DIGITAL MARKETING',
-    srv2_text: 'We create a strong digital presence including SEO, social media, and digital campaigns to drive customer acquisition.',
-    srv3_icon: 'activity',
-    srv3_title: 'MARKETING ANALYTICS',
-    srv3_text: 'We provide insights and reports on marketing performance to help startups make informed decisions.',
-    srv4_icon: 'sparkles',
-    srv4_title: 'PR SUPPORT',
-    srv4_text: 'We help startups get media coverage and build relationships with relevant journalists and influencers.',
-    motionCue: 'Stagger Grid Fade',
-    speakerNotes: 'Showcase the 4 primary services offering: Brand Building, Digital Marketing, Marketing Analytics, and PR Support.',
-    footer: 'Novaris Company'
-  },
-  {
-    id: 7,
-    section: 'Market',
-    title: 'Size of Market',
-    tagline: 'Novaris Company',
-    headline: 'SIZE OF MARKET',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'ambient-market-glow',
-    vectorColor1: '#0055ff',
-    vectorColor2: '#00f0ff',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-blue-500 via-indigo-500 to-violet-600',
-    visualType: 'startup market size',
-    layoutStyle: 'Startup Size of Market',
-    marketDesc: "Understanding the market size is important for us. In the US, there are about 32 million small businesses. We're aiming at industries like technology, e-commerce, and professional services, which are about 30% of all small businesses. That means we're looking at around 9.6 million potential customers. Our goal is to get about 5% of them, which would be roughly 480,000 businesses. This helps us know who to target and plan our growth strategy.",
-    tamBadgeText: 'TOTAL ADDRESSABLE MARKET\n(TAM)',
-    tamValue: '32 MILLION',
-    tamBg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)',
-    samBadgeText: 'SERVICEABLE ADDRESSABLE\nMARKET (SAM)',
-    samValue: '9.6 MILLION',
-    samBg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
-    somBadgeText: 'SERVICEABLE OBTAINABLE\nMARKET (SOM):',
-    somValue: '480,000',
-    somBg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
-    chartItem1Label: 'Item 1',
-    chartItem1Val: 8,
-    chartItem1Color: '#bfdbfe',
-    chartItem2Label: 'Item 2',
-    chartItem2Val: 12,
-    chartItem2Color: '#2563eb',
-    chartItem3Label: 'Item 3',
-    chartItem3Val: 16,
-    chartItem3Color: '#c084fc',
-    chartMaxVal: 20,
-    motionCue: 'Slide & Bar Rise',
-    speakerNotes: 'Explain the market opportunity breakdown: TAM (32M US small businesses), SAM (9.6M tech/ecommerce/services), and SOM (480K target customers).',
-    footer: 'Novaris Company'
-  },
-  {
-    id: 8,
-    section: 'Competitors',
-    title: 'Key Competitors Advantage',
-    tagline: 'Novaris Company',
-    headline: 'COMPETITOR ANALYSIS',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'bottom-neon-swirl',
-    vectorColor1: '#a855f7',
-    vectorColor2: '#00f0ff',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-purple-500 via-indigo-500 to-cyan-500',
-    visualType: 'startup competitors comparison',
-    layoutStyle: 'Startup Competitor Analysis',
-    directHeader: 'DIRECT COMPETITOR',
-    directBg: 'linear-gradient(180deg, #322846 0%, #1e1f3b 50%, #0e1428 100%)',
-    directShape: '12px',
-    direct1: 'Offers similar services or products to ours.',
-    direct2: 'Targets the same customer base and market segments.',
-    direct3: 'Competes directly with us in terms of pricing, features, and positioning.',
-    direct4: 'Can be easily identified and recognized as a competitor by customers and industry analysts.',
-    indirectHeader: 'INDIRECT COMPETITOR',
-    indirectBg: 'linear-gradient(180deg, #7c5c99 0%, #3e3264 50%, #191c3d 100%)',
-    indirectShape: '12px',
-    indirect1: 'Provides different services or products that solve similar customer needs or problems.',
-    indirect2: 'Targets overlapping or adjacent market segments that may not directly compete with us.',
-    indirect3: 'Might offer complementary products or services that could substitute or supplement ours.',
-    indirect4: 'Can include companies from different industries or sectors that indirectly impact our market.',
-    motionCue: 'Dual Column Slide In',
-    speakerNotes: 'Contrast direct competitors targeting identical segments with indirect competitors addressing complementary needs.',
-    footer: 'novaris Company'
-  },
-  {
-    id: 9,
-    section: 'Advantages',
-    title: 'Key Competitive Advantages',
-    tagline: 'Novaris Company',
-    headline: 'KEY COMPETITIVE\nADVANTAGES',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'stepped-neon-vortex',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-cyan-400 via-indigo-500 to-purple-600',
-    visualType: 'startup staircase advantages',
-    layoutStyle: 'Startup Key Advantages',
-    adv1Title: 'EXPERT TEAM',
-    adv1Desc: "Our skilled team brings specialized knowledge and experience to provide top-notch solutions tailored to our clients' needs.",
-    adv1Icon: 'users',
-    adv1Bg: 'linear-gradient(180deg, #1e1f3b 0%, #0e1428 100%)',
-    adv1Shape: '16px',
-    adv2Title: 'CUTTING-EDGE TECHNOLOGY',
-    adv2Desc: 'We use the latest tools and technology to stay ahead, ensuring efficient and effective services.',
-    adv2Icon: 'cpu',
-    adv2Bg: 'linear-gradient(180deg, #2a1f48 0%, #151833 100%)',
-    adv2Shape: '16px',
-    adv3Title: 'CUSTOMER FOCUS',
-    adv3Desc: "We prioritize building strong relationships and understanding our clients' needs, leading to long-term partnerships based on trust and satisfaction.",
-    adv3Icon: 'target',
-    adv3Bg: 'linear-gradient(180deg, #6d4b94 0%, #2e2652 100%)',
-    adv3Shape: '16px',
-    adv4Title: 'PROVEN SUCCESS',
-    adv4Desc: "With a track record of successful projects, we've earned a reputation for reliability and excellence, setting us apart from the competition.",
-    adv4Icon: 'award',
-    adv4Bg: 'linear-gradient(180deg, #433261 0%, #1e1b38 100%)',
-    adv4Shape: '16px',
-    motionCue: 'Staircase Rise In',
-    speakerNotes: 'Highlight the 4 core competitive pillars: Expert Team, Cutting-Edge Tech, Customer Focus, and Proven Success.',
-    footer: 'novaris Company'
-  },
-  {
-    id: 10,
-    section: 'Traction',
-    title: 'Traction & Growth',
-    tagline: 'Novaris Company',
-    headline: 'TRACTION',
-    tractionDesc: 'This matrix provides a snapshot of various success metrics for our company, including revenue growth, customer satisfaction, market share, employee retention, innovation, and brand reputation.',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'top-right-neon-vortex',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-blue-500 via-indigo-500 to-cyan-400',
-    visualType: 'startup multi-series traction chart',
-    layoutStyle: 'Startup Traction',
-    chartType: 'line',
-    tractionChartBg: 'linear-gradient(180deg, rgba(38,28,64,0.75) 0%, rgba(18,16,40,0.9) 100%)',
-    series1Label: 'Series 1',
-    series2Label: 'Series 2',
-    series3Label: 'Series 3',
-    series1Color: '#cbd5e1',
-    series2Color: '#3b82f6',
-    series3Color: '#c084fc',
-    series1Data: [2, 12, 38, 30, 32],
-    series2Data: [12, 5, 20, 16, 48],
-    series3Data: [18, 30, 25, 40, 42],
-    metric1Val: '20%',
-    metric1Desc: 'Annual revenue growth',
-    metric1Bg: 'linear-gradient(180deg, #4f46e5 0%, #312e81 100%)',
-    metric1Shape: '12px',
-    metric2Val: '90%',
-    metric2Desc: 'Maintain customer satisfaction ratings',
-    metric2Bg: 'linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%)',
-    metric2Shape: '12px',
-    metric3Val: '15%',
-    metric3Desc: 'Market share in key segments',
-    metric3Bg: 'linear-gradient(180deg, #6366f1 0%, #3730a3 100%)',
-    metric3Shape: '12px',
-    motionCue: 'Chart Draw & Metric Cascade',
-    speakerNotes: 'Walk through historical performance trends across Series 1-3 leading to 20% annual revenue growth and 90% satisfaction.',
-    footer: 'novaris Company'
-  },
-  {
-    id: 11,
-    section: 'Business Model',
-    title: 'Revenue Model & Pricing',
-    tagline: 'Novaris Company',
-    headline: 'REVENUE MODEL',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'top-dual-neon-waves',
-    vectorColor1: '#a855f7',
-    vectorColor2: '#38bdf8',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-purple-500 via-indigo-500 to-blue-500',
-    visualType: 'startup 3-tier pricing model',
-    layoutStyle: 'Startup Revenue Model',
-    plan1Title: 'BASIC PLAN',
-    plan1Features: '• More features\n• Standard support\n• Some customization',
-    plan1Usage: '• Limited usage\n• Limited storage',
-    plan1Services: '• No additional services included',
-    plan1Price: '135$/ MONTH',
-    plan1Bg: 'linear-gradient(180deg, rgba(6,9,20,0.85) 0%, rgba(3,5,12,0.92) 100%)',
-    plan1PillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    plan1Shape: '14px',
-    plan2Title: 'STANDARD PLAN',
-    plan2Features: '• More features\n• Standard support\n• Some customization',
-    plan2Usage: '• Increased usage\n• More storage',
-    plan2Services: '• Optional add-ons available for purchase',
-    plan2Price: '175$/ MONTH',
-    plan2Bg: 'linear-gradient(180deg, rgba(10,14,30,0.92) 0%, rgba(5,8,18,0.96) 100%)',
-    plan2PillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    plan2Shape: '14px',
-    plan3Title: 'PREMIUM PLAN',
-    plan3Features: '• Full features\n• Priority support\n• Full customization',
-    plan3Usage: '• Unlimited usage\n• Unlimited storage',
-    plan3Services: '• Premium support and consulting included',
-    plan3Price: '220$/ MONTH',
-    plan3Bg: 'linear-gradient(180deg, rgba(6,9,20,0.85) 0%, rgba(3,5,12,0.92) 100%)',
-    plan3PillBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    plan3Shape: '14px',
-    motionCue: '3-Card Stagger Rise In',
-    speakerNotes: 'Walk through our 3-tier pricing strategy: Basic ($135/mo), Standard ($175/mo with add-ons), and Premium ($220/mo with dedicated consulting).',
-    footer: 'novaris Company'
-  },
-  {
-    id: 12,
-    section: 'Milestones',
-    title: 'Accomplishments & Roadmap',
-    tagline: 'Novaris Company',
-    headline: 'ACCOMPLISHMENTS',
-    subHeadline: 'DATE',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'bottom-left-neon-wave',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-cyan-400 via-indigo-500 to-purple-600',
-    visualType: 'startup vertical accomplishments timeline',
-    layoutStyle: 'Startup Timeline',
-    timeline1Year: '2021',
-    timeline1Desc: 'In our first year, we successfully launched a new product/service, received positive feedback from early users, and formed partnerships with key industry players.',
-    timeline1Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    timeline1Shape: '14px',
-    timeline2Year: '2023',
-    timeline2Desc: 'We expanded into new markets, improved operational efficiency, and saw an increase in customer satisfaction.',
-    timeline2Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    timeline2Shape: '14px',
-    timeline3Year: '2025',
-    timeline3Desc: 'We secured funding for growth, refined our offerings based on customer feedback, and formed strategic partnerships.',
-    timeline3Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    timeline3Shape: '14px',
-    timeline4Year: 'PRESENT',
-    timeline4Desc: 'We achieved profitability, expanded our product line, and strengthened our brand reputation through positive customer feedback.',
-    timeline4Bg: 'linear-gradient(90deg, rgba(165,130,215,0.95) 0%, rgba(115,85,200,0.95) 35%, rgba(55,80,185,0.95) 75%, rgba(25,35,120,0.98) 100%)',
-    timeline4Shape: '14px',
-    motionCue: 'Vertical Timeline Cascade',
-    speakerNotes: 'Highlight historical milestones from initial 2021 product launch, 2023 expansion, 2025 growth round, leading to present profitability.',
-    footer: 'novaris Company'
-  },
-  {
-    id: 13,
-    section: 'Financials',
-    title: 'Use of Funds & Capital Allocation',
-    tagline: 'Novaris Company',
-    headline: 'USE OF FUNDS',
-    fundsDesc: "Our plan for using funds generated from investors is straightforward. We'll allocate 40% towards developing our products, ensuring they stay competitive and meet customer needs. 30% will go marketing and sales efforts to attract new customers and drive revenue growth. 20% will be invested in infrastructure and operations to support our expanding business and improve efficiency. Finally, 10% will be set aside for strategic initiatives like market expansion and partnerships to fuel long-term growth.",
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'bottom-right-neon-vortex',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-cyan-400 via-blue-500 to-indigo-600',
-    visualType: 'startup pie allocation use of funds',
-    layoutStyle: 'Startup Use of Funds',
-    fundsChartType: 'pie',
-    fundsChartBg: 'linear-gradient(180deg, rgba(38,28,64,0.8) 0%, rgba(18,16,40,0.92) 100%)',
-    fund1Val: '40%',
-    fund1Label: 'PRODUCT DEVELOPMENT',
-    fund1Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    fund1Shape: '12px',
-    fund2Val: '30%',
-    fund2Label: 'MARKETING AND SALES',
-    fund2Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    fund2Shape: '12px',
-    fund3Val: '20%',
-    fund3Label: 'INFRASTRUCTURE AND OPERATIONS',
-    fund3Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    fund3Shape: '12px',
-    fund4Val: '10 %',
-    fund4Label: 'EXPANSION AND GROWTH INITIATIVES',
-    fund4Bg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    fund4Shape: '12px',
-    motionCue: 'Pie Slice Expand & Row Cascade',
-    speakerNotes: 'Detail capital deployment breakdown: 40% Product R&D, 30% Marketing/GTM, 20% Infrastructure/Ops, and 10% Strategic Expansion.',
-    footer: 'novaris Company'
-  },
-  {
-    id: 14,
-    section: 'Team',
-    title: 'Leadership & Team',
-    tagline: 'Novaris Company',
-    headline: 'MEET THE TEAM',
-    teamSub: 'Thank you for your time! Reach out to us for questions.',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'top-right-neon-wave',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-blue-500 via-indigo-500 to-cyan-400',
-    visualType: 'startup 2x2 executive team grid',
-    layoutStyle: 'Startup Team',
-    member1Name: 'DANI MARTINEZ',
-    member1Role: 'Chief Executive Officer',
-    member1Photo: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&h=300&fit=crop&crop=faces',
-    member1Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    member1Shape: '14px',
-    member2Name: 'HARPER RUSSO',
-    member2Role: 'Chief Executive Officer',
-    member2Photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&h=300&fit=crop&crop=faces',
-    member2Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    member2Shape: '14px',
-    member3Name: 'MORGAN MAXWELL',
-    member3Role: 'Chief Executive Officer',
-    member3Photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces',
-    member3Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    member3Shape: '14px',
-    member4Name: 'ALEX CHEN',
-    member4Role: 'Director',
-    member4Photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=faces',
-    member4Bg: 'linear-gradient(90deg, rgba(62,44,78,0.85) 0%, rgba(35,38,72,0.88) 45%, rgba(16,32,85,0.92) 100%)',
-    member4Shape: '14px',
-    contactWeb: 'www.reallygreatsite.com',
-    contactEmail: 'hello@reallygreatsite.com',
-    contactPhone: '+123-456-7890',
-    motionCue: '2x2 Card Float & Contact Fade In',
-    speakerNotes: 'Introduce core founding and executive leadership team driving execution and scale.',
-    footer: 'novaris Company'
-  },
-  {
-    id: 15,
-    section: 'Outro',
-    title: 'Thank You & Contact',
-    tagline: 'Novaris Company',
-    headline: 'THANK YOU',
-    thankSub: 'FOR YOUR TIME AND ATTENTION',
-    presenterText: 'PRESENT BY ALEX CHEN',
-    presenterBg: 'linear-gradient(90deg, #9d78cd 0%, #7e57c2 30%, #3f51b5 70%, #1e3a8a 100%)',
-    presenterShape: '9999px',
-    contactWeb: 'www.reallygreatsite.com',
-    contactEmail: 'hello@reallygreatsite.com',
-    contactAddress: '123 Anywhere St., Any City',
-    backgroundColor: '#05070B',
-    vectorWaveStyle: 'top-sweeping-neon-ribbon',
-    vectorColor1: '#00f0ff',
-    vectorColor2: '#a855f7',
-    designPresetKey: 'midnight-slate',
-    presetKey: 'midnight-slate',
-    accent: 'from-cyan-400 via-blue-500 to-indigo-600',
-    visualType: 'startup conclusion thank you outro',
-    layoutStyle: 'Startup Thank You',
-    motionCue: 'Center Scale In & Wave Sweep',
-    speakerNotes: 'Conclude presentation with gratitude and open floor for Q&A and investor discussion.',
-    footer: 'novaris Company'
-  }
-];
   const [deckSlidesData, setDeckSlidesData] = useState(DEFAULT_BLANK_DECK_SLIDES);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
@@ -92174,13 +91473,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onBatchAbsorbed={handleBatchAbsorbed}
       />
 
+      {/* ── Founder Feedback & Bug Triage In-App Admin Modal ─────────── */}
+      <AdminFeedbackTriageModal
+        isOpen={isAdminFeedbackOpen}
+        onClose={() => setIsAdminFeedbackOpen(false)}
+      />
+
       {/* ── Layer 8: First-Principles Intent Onboarding ──────────────── */}
       {showIntentOnboarding && (
         <RegaarderIntentOnboarding
           onDismiss={() => {
+            try {
+              localStorage.setItem('rc.hasSeenIntentOnboarding_v1', 'true');
+              localStorage.setItem('rc.hasSeenIntentOnboarding_v2', 'true');
+            } catch (_e) {}
             setShowIntentOnboarding(false);
           }}
           onComplete={(payload) => {
+            try {
+              localStorage.setItem('rc.hasSeenIntentOnboarding_v1', 'true');
+              localStorage.setItem('rc.hasSeenIntentOnboarding_v2', 'true');
+            } catch (_e) {}
             setShowIntentOnboarding(false);
             if (!payload) return;
 

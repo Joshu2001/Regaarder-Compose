@@ -28,10 +28,18 @@ export default function WorkspaceTopBar({
     ? currentUser.email.slice(0, 2).toUpperCase()
     : "U";
 
+  const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI?.isElectron || window.navigator?.userAgent?.includes('Electron'));
+
   return (
-    <header className="h-[54px] px-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30">
+    <header
+      style={{
+        WebkitAppRegion: 'drag',
+        paddingRight: isElectron ? '146px' : '24px'
+      }}
+      className="h-[54px] pl-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30"
+    >
       {/* Left: Brand Identity */}
-      <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onOpenWorkspaceSwitcher}
@@ -47,7 +55,7 @@ export default function WorkspaceTopBar({
       </div>
 
       {/* Center: Clean Search bar with premium succinct label */}
-      <div className="flex-1 max-w-[460px] mx-8">
+      <div className="flex-1 max-w-[460px] mx-8" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onSearchClick}
@@ -59,7 +67,7 @@ export default function WorkspaceTopBar({
       </div>
 
       {/* Right: Notifications, Layout Panel Toggle, Avatar */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onNotificationsClick}
