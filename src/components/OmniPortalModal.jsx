@@ -583,87 +583,63 @@ export default function OmniPortalModal({
     >
       <div 
         data-popover-root="true"
-        className="w-full max-w-6xl h-[88vh] max-h-[820px] bg-white/98 dark:bg-zinc-900/98 rounded-[20px] border border-black/[0.08] dark:border-white/[0.1] shadow-[0_25px_70px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+        className={`w-full transition-all duration-300 ease-out bg-white/[0.80] dark:bg-[rgba(30,30,30,0.80)] backdrop-blur-[24px] saturate-[180%] rounded-2xl border border-white/70 dark:border-white/[0.12] ring-1 ring-black/[0.05] dark:ring-white/[0.06] shadow-[0_32px_90px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.65)] flex flex-col overflow-hidden animate-in zoom-in-95 ${
+          filesQueue.length === 0 ? 'max-w-2xl h-[560px]' : 'max-w-6xl h-[88vh] max-h-[840px]'
+        }`}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* Top Executive Header with Progressive Disclosure */}
-        <div className="group/omni-header relative px-6 sm:px-8 py-3.5 sm:py-4 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shrink-0 transition-all duration-300 ease-out">
+        {/* Top Executive Header */}
+        <div className="group/omni-header relative px-6 sm:px-8 py-3.5 border-b border-black/[0.05] dark:border-white/[0.07] bg-white/[0.45] dark:bg-black/[0.22] backdrop-blur-md shrink-0">
           <div className="flex items-center justify-between">
             {/* Left Brand Identity & Title */}
-            <div className="flex items-center gap-3.5">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 text-white flex items-center justify-center shadow-[0_2px_12px_rgba(124,58,237,0.25)] border border-white/20 shrink-0 transition-transform duration-300 group-hover/omni-header:scale-[1.03]">
-                <ImportPortalIcon size={20} strokeWidth={1.8} />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shadow-xs border border-black/10 dark:border-white/20 shrink-0">
+                <ImportPortalIcon size={17} strokeWidth={1.8} />
               </div>
 
               <div>
-                <div className="flex items-center gap-2.5">
-                  <h2 className="text-[15px] sm:text-base font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[14px] sm:text-[15px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight">
                     Omni-Portal
                   </h2>
 
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-violet-500/[0.08] dark:bg-violet-400/[0.12] text-violet-700 dark:text-violet-300 border border-violet-500/20 select-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                    Universal Ingestion
-                  </span>
-
                   {filesQueue.length > 0 && (
-                    <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-zinc-400 border border-black/[0.06] dark:border-white/[0.08]">
+                    <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-zinc-300 border border-black/[0.06] dark:border-white/[0.08]">
                       {filesQueue.length} {filesQueue.length === 1 ? 'file' : 'files'}
                     </span>
                   )}
                 </div>
 
-                {/* Progressive Disclosure Subtitle: Discreet at rest, expands smoothly on hover / approach */}
-                <div className="grid grid-rows-[0fr] group-hover/omni-header:grid-rows-[1fr] transition-all duration-300 ease-out">
-                  <div className="overflow-hidden">
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 pt-1 tracking-normal font-normal">
-                      Bulk transfer Microsoft 365, Google Workspace & WPS repositories into native Regaarder formats
-                    </p>
-                  </div>
-                </div>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 pt-0.5 tracking-normal font-normal">
+                  Bulk transfer Microsoft 365, Google Workspace & WPS repositories into native Regaarder formats
+                </p>
               </div>
             </div>
 
-            {/* Right Controls: Apple-style polished dismiss button */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close Omni-Portal"
-                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-100 bg-black/[0.03] hover:bg-black/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.10] border border-black/[0.04] dark:border-white/[0.06] transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
-              >
-                <X size={15} strokeWidth={2} />
-              </button>
+            {/* Right keyboard hint (sleek single-line keycap, no wrapping) */}
+            <div className="flex items-center shrink-0 pl-3">
+              <kbd className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06] select-none whitespace-nowrap">
+                esc
+              </kbd>
             </div>
           </div>
         </div>
 
-        {/* Main Content Area: Split Ingestion & Dual-View Inspector */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-black/[0.06] dark:divide-white/[0.08] overflow-hidden">
-          
-          {/* Left Column: Dropzone & File Queue */}
-          <div className="w-full md:w-[48%] flex flex-col p-5 overflow-y-auto">
-            {/* ─── Premium Drop Zone ─── */}
-            <div
-              data-onboarding-target="omni-dropzone"
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`relative rounded-[14px] transition-all duration-200 cursor-pointer mb-4 overflow-hidden ${
-                dragActive
-                  ? 'ring-2 ring-violet-500 ring-offset-0'
-                  : ''
-              }`}
-              style={{
-                background: dragActive
-                  ? 'linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(99,102,241,0.05) 100%)'
-                  : 'linear-gradient(135deg, rgba(248,247,255,1) 0%, rgba(243,244,255,1) 100%)',
-                border: dragActive
-                  ? '1.5px solid rgba(139,92,246,0.5)'
-                  : '1.5px dashed rgba(0,0,0,0.10)',
-              }}
-            >
+        {/* Main Content Area: Progressive Disclosure (Seamless Hero Canvas when empty vs. Split Workbench when active) */}
+        {filesQueue.length === 0 ? (
+          /* ── Phase 1: Seamless Apple Canvas (Memora Glass & Restrained Elements) ── */
+          <div
+            data-onboarding-target="omni-dropzone"
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex-1 flex flex-col items-center justify-center p-8 sm:p-12 text-center relative overflow-hidden select-none cursor-pointer transition-all duration-200 ${
+              dragActive
+                ? 'bg-violet-500/[0.08] dark:bg-violet-400/[0.10] ring-2 ring-inset ring-violet-500/50'
+                : 'bg-white/[0.18] dark:bg-white/[0.02] hover:bg-white/[0.30] dark:hover:bg-white/[0.04]'
+            }`}
+          >
               <input
                 ref={fileInputRef}
                 type="file"
@@ -690,33 +666,94 @@ export default function OmniPortalModal({
                 }}
               />
 
-              <div className="flex flex-col items-center text-center px-6 py-6">
-                {/* Layered icon stack — matches Sheets empty state treatment */}
-                <div className="relative mb-4">
-                  <div className="w-[52px] h-[52px] rounded-[14px] bg-white shadow-[0_4px_16px_rgba(124,58,237,0.13),0_1px_3px_rgba(0,0,0,0.07)] flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-[0_2px_8px_rgba(124,58,237,0.35)]">
-                      <Upload size={18} strokeWidth={2} className="text-white" />
-                    </div>
+              {/* Minimalist Apple-Style Well */}
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 flex items-center justify-center border border-black/[0.08] dark:border-white/[0.12] shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] mb-4 transition-transform duration-200 group-hover:scale-105">
+                <Upload size={19} strokeWidth={1.9} className="text-slate-700 dark:text-zinc-200" />
+              </div>
+
+              <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-50 tracking-tight mb-1">
+                Drop files or a folder to import
+              </h3>
+
+              <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xs leading-relaxed mb-6 font-normal">
+                Direct native conversion for Word, Excel, PowerPoint, PDF, and CSV tables.
+              </p>
+
+              {/* Action Buttons: Clean unified controls */}
+              <div className="flex items-center gap-2 mb-8">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="px-4 py-1.5 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold shadow-xs hover:bg-slate-800 dark:hover:bg-white active:scale-95 transition-all cursor-pointer"
+                >
+                  Browse Files
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    folderInputRef.current?.click();
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-white/70 dark:bg-zinc-800/70 text-slate-700 dark:text-zinc-200 text-xs font-semibold border border-black/[0.08] dark:border-white/[0.08] hover:bg-white dark:hover:bg-zinc-800 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FolderPlus size={13} className="text-slate-500 dark:text-zinc-400" />
+                  <span>Folder</span>
+                </button>
+              </div>
+
+              {/* Monochromatic Format Chips */}
+              <div className="flex items-center gap-1.5">
+                {['DOCX', 'XLSX', 'PPTX', 'PDF', 'CSV'].map((ext) => (
+                  <span
+                    key={ext}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium text-slate-500 dark:text-zinc-400 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05]"
+                  >
+                    {ext}
+                  </span>
+                ))}
+              </div>
+            </div>
+        ) : (
+          /* ── Phase 2: Split Workbench (Files in Queue) ── */
+          <div className="flex-1 min-h-0 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-black/[0.06] dark:divide-white/[0.08] overflow-hidden animate-in fade-in duration-200">
+            {/* Left Column: Compact Drop Strip & File Queue */}
+            <div className="w-full md:w-[44%] lg:w-[40%] flex flex-col p-4 sm:p-5 overflow-hidden bg-slate-50/[0.4] dark:bg-zinc-950/[0.2]">
+              {/* Compact Add More Files Strip */}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`py-3 px-4 rounded-xl border border-dashed transition-all duration-200 cursor-pointer mb-4 flex items-center justify-between gap-3 ${
+                  dragActive
+                    ? 'border-violet-500 bg-violet-50/60 dark:bg-violet-950/30'
+                    : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-800/60 hover:border-violet-400/50 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                    <Upload size={14} strokeWidth={2} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                      Add more files or drop here
+                    </p>
                   </div>
                 </div>
 
-                <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100 mb-1 tracking-tight">
-                  Drop files or a folder here
-                </h3>
-                <p className="text-[11.5px] text-slate-400 dark:text-zinc-500 max-w-[220px] leading-relaxed mb-4">
-                  Word, Excel, PowerPoint, CSV & PDF — all formats welcome
-                </p>
-
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="px-3.5 py-1.5 rounded-[8px] bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-xs font-semibold border border-black/[0.09] dark:border-white/[0.1] shadow-[0_1px_3px_rgba(0,0,0,0.07)] hover:bg-slate-50 transition-colors"
+                    className="px-2.5 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.06] text-[11px] font-semibold text-slate-700 dark:text-zinc-200 hover:bg-black/[0.08]"
                   >
-                    Browse Files
+                    Files
                   </button>
                   <button
                     type="button"
@@ -724,39 +761,34 @@ export default function OmniPortalModal({
                       e.stopPropagation();
                       folderInputRef.current?.click();
                     }}
-                    className="px-3.5 py-1.5 rounded-[8px] bg-violet-600 dark:bg-violet-700 text-white text-xs font-semibold shadow-[0_2px_8px_rgba(124,58,237,0.28)] hover:bg-violet-700 transition-colors flex items-center gap-1.5"
+                    className="px-2.5 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.06] text-[11px] font-semibold text-slate-700 dark:text-zinc-200 hover:bg-black/[0.08]"
                   >
-                    <FolderPlus size={13} />
-                    <span>Dump Entire Folder</span>
+                    Folder
                   </button>
                 </div>
               </div>
-            </div>
 
-            {/* Ingestion Queue & Metrics */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/[0.05] dark:border-white/[0.06]">
-                <div className="flex items-center gap-1.5">
+              {/* Ingestion Queue Header & Category Filters */}
+              <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-black/[0.05] dark:border-white/[0.06] shrink-0">
+                <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                     Ingestion Queue
                   </span>
-                  {filesQueue.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">
-                      {filesQueue.length} files
-                    </span>
-                  )}
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200/70 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                    {filesQueue.length}
+                  </span>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.04] p-0.5 rounded-lg text-[11px]">
-                  {['all', 'docs', 'sheets', 'deck'].map(tab => (
+                {/* Filter Outline Tabs */}
+                <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.04] p-0.5 rounded-lg text-[11px]">
+                  {['all', 'docs', 'sheets', 'deck'].map((tab) => (
                     <button
                       key={tab}
                       type="button"
                       onClick={() => setFilterType(tab)}
-                      className={`px-2 py-0.5 rounded-md font-medium capitalize transition-colors ${
-                        filterType === tab 
-                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-2xs' 
+                      className={`px-2 py-0.5 rounded-md font-medium capitalize transition-all cursor-pointer ${
+                        filterType === tab
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-2xs font-semibold'
                           : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200'
                       }`}
                     >
@@ -766,194 +798,185 @@ export default function OmniPortalModal({
                 </div>
               </div>
 
-              {/* Queue List with Image 4 Style Branded SVG Badges */}
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 thin-scrollbar min-h-[140px]">
-                {filteredQueue.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 dark:text-zinc-500">
-                    <ShieldCheck size={28} className="stroke-[1.3] text-slate-300 dark:text-zinc-600 mb-2" />
-                    <p className="text-xs">No files in queue. Drag a folder or files above to begin.</p>
-                  </div>
-                ) : (
-                  filteredQueue.map((item) => {
-                    const isSelected = previewItem?.originalFileName === item.name || previewItem?.title === item.name.replace(/\.[^/.]+$/, "");
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          if (item.regaarderDoc) setPreviewItem(item.regaarderDoc);
-                        }}
-                        className={`p-2.5 rounded-[10px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                          isSelected
-                            ? 'bg-violet-50/80 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800/60 shadow-2xs'
-                            : 'bg-white dark:bg-zinc-800/40 border-black/[0.04] dark:border-white/[0.05] hover:bg-black/[0.02] dark:hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <FileTypeBadge ext={item.ext} type={item.type} />
+              {/* Queue List with Image 4 Style Branded Badges */}
+              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 thin-scrollbar min-h-0">
+                {filteredQueue.map((item) => {
+                  const isSelected =
+                    previewItem?.originalFileName === item.name ||
+                    previewItem?.title === item.name.replace(/\.[^/.]+$/, '');
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        if (item.regaarderDoc) setPreviewItem(item.regaarderDoc);
+                      }}
+                      className={`p-2.5 rounded-[12px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? 'bg-white dark:bg-zinc-800 border-violet-500/50 shadow-sm ring-1 ring-violet-500/20'
+                          : 'bg-white/80 dark:bg-zinc-900/60 border-black/[0.04] dark:border-white/[0.05] hover:bg-white dark:hover:bg-zinc-800/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileTypeBadge ext={item.ext} type={item.type} />
 
-                          <div className="min-w-0">
-                            <div className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
-                              {item.name}
-                            </div>
-                            <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 flex items-center gap-2 mt-0.5">
-                              <span>{item.sizeStr}</span>
-                              <span>•</span>
-                              <span className="uppercase font-semibold tracking-tight">{item.ext}</span>
-                            </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
+                            {item.name}
                           </div>
-                        </div>
-
-                        <div className="shrink-0 flex items-center gap-2">
-                          {item.status === 'converting' && (
-                            <span className="flex items-center gap-1 text-[11px] text-violet-600 dark:text-violet-400 font-medium">
-                              <Loader2 size={12} className="animate-spin" />
-                              <span>Absorbing</span>
-                            </span>
-                          )}
-                          {item.status === 'ready' && (
-                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[11px] font-bold">
-                              ✓
-                            </div>
-                          )}
-                          {item.status === 'error' && (
-                            <span className="text-[11px] text-rose-500 font-medium">Failed</span>
-                          )}
+                          <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 flex items-center gap-2 mt-0.5">
+                            <span>{item.sizeStr}</span>
+                            <span>•</span>
+                            <span className="uppercase font-semibold tracking-tight">{item.ext}</span>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })
-                )}
+
+                      <div className="shrink-0 flex items-center gap-2">
+                        {item.status === 'converting' && (
+                          <span className="flex items-center gap-1 text-[11px] text-violet-600 dark:text-violet-400 font-medium">
+                            <Loader2 size={12} className="animate-spin" />
+                            <span>Extracting</span>
+                          </span>
+                        )}
+                        {item.status === 'ready' && (
+                          <div className="w-5 h-5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[11px] font-bold">
+                            ✓
+                          </div>
+                        )}
+                        {item.status === 'error' && (
+                          <span className="text-[11px] text-rose-500 font-medium">Failed</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
-          {/* Right Column: Ambient Stage (Image 3 Style) & Dual-View Reader */}
-          <div 
-            className="w-full md:w-[52%] flex flex-col p-6 overflow-hidden relative"
-            style={{
-              background: 'radial-gradient(ellipse at 50% 35%, rgba(147, 51, 234, 0.08) 0%, rgba(243, 232, 255, 0.4) 45%, rgba(255, 255, 255, 0.95) 75%)'
-            }}
-          >
-            {previewItem ? (
-              <div className="flex-1 flex flex-col min-h-0 relative z-10">
-                <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-black/[0.06] dark:border-white/[0.08] shrink-0">
-                  <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-violet-600 dark:text-violet-400 tracking-wider">
-                      Fidelity Inspector
-                    </span>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                      {previewItem.title}
-                    </h4>
+            {/* Right Column: Live Fidelity Inspector & Preview Surface */}
+            <div className="w-full md:w-[56%] lg:w-[60%] flex flex-col p-5 overflow-hidden bg-white dark:bg-zinc-900 relative">
+              {previewItem ? (
+                <div className="flex-1 flex flex-col min-h-0 relative z-10">
+                  <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-black/[0.06] dark:border-white/[0.08] shrink-0">
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase font-bold text-violet-600 dark:text-violet-400 tracking-wider">
+                        Fidelity Inspector
+                      </span>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {previewItem.title}
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center p-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-lg border border-black/[0.05] dark:border-white/[0.06]">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMode('regaarder')}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                          previewMode === 'regaarder'
+                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-2xs'
+                            : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        Regaarder Schema
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMode('original')}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                          previewMode === 'original'
+                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-2xs'
+                            : 'text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200'
+                        }`}
+                      >
+                        Original Source
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center p-1 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-black/[0.05] dark:border-white/[0.06] shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode('regaarder')}
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                        previewMode === 'regaarder'
-                          ? 'bg-violet-600 text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
-                      }`}
-                    >
-                      Regaarder Format
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode('original')}
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                        previewMode === 'original'
-                          ? 'bg-violet-600 text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
-                      }`}
-                    >
-                      Original Equivalent
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[12px] border border-black/[0.06] dark:border-white/[0.08] shadow-sm p-5 overflow-y-auto thin-scrollbar min-h-0">
-                  {previewMode === 'regaarder' ? (
-                    <div className="space-y-4">
-                      {previewItem.isPdfDoc ? (
-                        <div className="flex flex-col h-full min-h-[380px] space-y-2.5">
-                          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800 shrink-0">
-                            <div className="flex items-center gap-2">
-                              <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-950/70 text-red-600 dark:text-red-400 font-bold text-[9.5px] uppercase tracking-wider">PDF</span>
-                              <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Native High-Fidelity Viewer</span>
+                  <div className="flex-1 bg-slate-50/50 dark:bg-zinc-950/40 rounded-[14px] border border-black/[0.06] dark:border-white/[0.08] p-5 overflow-y-auto thin-scrollbar min-h-0">
+                    {previewMode === 'regaarder' ? (
+                      <div className="space-y-4">
+                        {previewItem.isPdfDoc ? (
+                          <div className="flex flex-col h-full min-h-[380px] space-y-2.5">
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                              <div className="flex items-center gap-2">
+                                <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-950/70 text-red-600 dark:text-red-400 font-bold text-[9.5px] uppercase tracking-wider">
+                                  PDF
+                                </span>
+                                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">
+                                  Native High-Fidelity Viewer
+                                </span>
+                              </div>
+                              <span className="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                                <CheckCircle2 size={13} />
+                                <span>100% Vector Parity</span>
+                              </span>
                             </div>
-                            <span className="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                              <CheckCircle2 size={13} />
-                              <span>100% Vector Fidelity</span>
+                            <div className="w-full h-[360px] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950">
+                              <iframe
+                                src={`${previewItem.pdfBlobUrl}#toolbar=0&navpanes=0`}
+                                title={previewItem.title}
+                                className="w-full h-full border-0"
+                              />
+                            </div>
+                          </div>
+                        ) : previewItem.mode === 'compose' && !previewItem.bodyHtml ? (
+                          <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
+                            <span className="w-4 h-4 rounded-md bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-[9px] font-black">
+                              !
                             </span>
+                            <span>Preview unavailable — content could not be extracted from this file</span>
                           </div>
-                          <div className="w-full h-[360px] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950">
-                            <iframe
-                              src={`${previewItem.pdfBlobUrl}#toolbar=0&navpanes=0`}
-                              title={previewItem.title}
-                              className="w-full h-full border-0"
-                            />
-                          </div>
-                        </div>
-                      ) : previewItem.mode === 'compose' && !previewItem.bodyHtml ? (
-                        <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
-                          <span className="w-4 h-4 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-[9px] font-black">!</span>
-                          <span>Preview unavailable — content could not be extracted from this file</span>
-                        </div>
-                      ) : previewItem.extractionPartial ? (
-                        <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
-                          <span className="w-4 h-4 rounded-full bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center text-[9px] font-black">~</span>
-                          <span>Partial extraction — some content may be missing or garbled</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
-                          <CheckCircle2 size={15} />
-                          <span>Native Regaarder {previewItem.mode.toUpperCase()} schema extracted</span>
-                        </div>
-                      )}
-
-                      {!previewItem.isPdfDoc && previewItem.mode === 'compose' && (
-                        previewItem.bodyHtml ? (
-                          <div className="prose prose-sm max-w-none text-slate-800 dark:text-zinc-200">
-                            <div 
-                              dangerouslySetInnerHTML={{ __html: previewItem.bodyHtml }} 
-                              className="space-y-2 leading-relaxed text-xs"
-                            />
+                        ) : previewItem.extractionPartial ? (
+                          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
+                            <span className="w-4 h-4 rounded-md bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center text-[9px] font-black">
+                              ~
+                            </span>
+                            <span>Partial extraction — some styling elements normalized</span>
                           </div>
                         ) : (
-                          /* Preview Unavailable state — shown when all extraction paths failed */
-                          <div className="flex flex-col items-center justify-center text-center py-8 px-4 gap-3">
-                            <div className="w-12 h-12 rounded-[12px] bg-slate-100 dark:bg-zinc-800 flex items-center justify-center">
-                              <FileCode size={22} className="text-slate-400 dark:text-zinc-500" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-800 dark:text-zinc-100 mb-1">{previewItem.title}</p>
-                              <p className="text-[11px] text-slate-400 dark:text-zinc-500 max-w-[240px] leading-relaxed">
-                                This file uses image-based content, encryption, or a non-standard encoding that couldn't be read in-browser. It has been absorbed faithfully and will open in Regaarder Compose as-is.
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold border border-emerald-200/50 dark:border-emerald-800/40">
-                              <ShieldCheck size={13} />
-                              <span>Bit-for-Bit Preserved · {previewItem.originalSize}</span>
-                            </div>
+                          <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold pb-2 border-b border-slate-100 dark:border-zinc-800">
+                            <CheckCircle2 size={15} />
+                            <span>Native Regaarder {previewItem.mode.toUpperCase()} schema extracted</span>
                           </div>
-                        )
-                      )}
+                        )}
 
-                      {previewItem.mode === 'sheets' && (
-                        <div className="space-y-3">
-                          <div className="text-xs font-bold text-slate-700 dark:text-zinc-200">
-                            Workbook: {previewItem.sheetsData?.length || 1} Sheets Extracted
-                          </div>
-                          {previewItem.sheetGrids && Object.values(previewItem.sheetGrids)[0] && (
-                            <div className="overflow-x-auto border border-slate-200 dark:border-zinc-800 rounded-xl">
-                              <table className="w-full border-collapse text-[11px] font-mono">
+                        {!previewItem.isPdfDoc && previewItem.mode === 'compose' && (
+                          previewItem.bodyHtml ? (
+                            <div className="prose prose-sm max-w-none text-slate-800 dark:text-zinc-200">
+                              <div
+                                dangerouslySetInnerHTML={{ __html: previewItem.bodyHtml }}
+                                className="space-y-2 leading-relaxed text-xs"
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 italic">No textual content extracted.</p>
+                          )
+                        )}
+
+                        {previewItem.mode === 'sheets' && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                              <span>Sheets: {previewItem.sheets?.length || 1}</span>
+                              <span className="text-emerald-600 font-medium">Matrix Schema Active</span>
+                            </div>
+                            <div className="border border-slate-200 dark:border-zinc-800 rounded-lg overflow-x-auto">
+                              <table className="w-full text-xs text-left">
+                                <thead className="bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">
+                                  <tr>
+                                    {(previewItem.sheets?.[0]?.data?.[0] || ['A', 'B', 'C']).map((cell, idx) => (
+                                      <th key={idx} className="p-2 border-b border-r border-slate-200 dark:border-zinc-700 font-medium">
+                                        {String(cell || '')}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
                                 <tbody>
-                                  {Object.values(previewItem.sheetGrids)[0].cells.slice(0, 10).map((row, rIdx) => (
-                                    <tr key={rIdx} className={rIdx === 0 ? 'bg-slate-100 dark:bg-zinc-800 font-bold' : 'border-t border-slate-100 dark:border-zinc-800'}>
-                                      {row.slice(0, 6).map((cell, cIdx) => (
-                                        <td key={cIdx} className="p-2 border-r border-slate-100 dark:border-zinc-800 truncate max-w-[120px]">
-                                          {cell || '—'}
+                                  {(previewItem.sheets?.[0]?.data?.slice(1, 6) || []).map((row, rIdx) => (
+                                    <tr key={rIdx} className="border-b border-slate-100 dark:border-zinc-800">
+                                      {row.map((cell, cIdx) => (
+                                        <td key={cIdx} className="p-2 border-r border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300">
+                                          {String(cell || '')}
                                         </td>
                                       ))}
                                     </tr>
@@ -961,103 +984,85 @@ export default function OmniPortalModal({
                                 </tbody>
                               </table>
                             </div>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
 
-                      {previewItem.mode === 'deck' && (
-                        <div className="space-y-3">
-                          <div className="text-xs font-bold text-slate-700 dark:text-zinc-200">
-                            Slide Deck Structure ({previewItem.deckSlides?.length || 2} slides)
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            {(previewItem.deckSlides || []).slice(0, 4).map((slide, sIdx) => (
-                              <div key={slide.id || sIdx} className="aspect-video bg-zinc-950 text-white p-3.5 rounded-xl flex flex-col justify-between shadow-md border border-white/10">
-                                <div>
-                                  <span className="text-[9px] font-bold text-violet-400 uppercase">Slide {sIdx + 1}</span>
-                                  <h5 className="text-xs font-bold text-white mt-1 line-clamp-1">{slide.title}</h5>
+                        {previewItem.mode === 'deck' && (
+                          <div className="space-y-2">
+                            <div className="text-xs text-slate-500 mb-2">
+                              Slides detected: {previewItem.slides?.length || 0}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {(previewItem.slides || []).map((slide, sIdx) => (
+                                <div key={sIdx} className="p-3 bg-white dark:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700 shadow-2xs">
+                                  <div className="text-[10px] font-bold text-violet-600 mb-1">Slide {sIdx + 1}</div>
+                                  <h5 className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate mb-1">
+                                    {slide.title || 'Untitled Slide'}
+                                  </h5>
+                                  <ul className="text-[10px] text-zinc-400 space-y-0.5">
+                                    {(slide.bullets || []).slice(0, 2).map((b, bIdx) => (
+                                      <li key={bIdx} className="truncate">• {b}</li>
+                                    ))}
+                                  </ul>
                                 </div>
-                                <ul className="text-[10px] text-zinc-400 space-y-0.5">
-                                  {(slide.bullets || []).slice(0, 2).map((b, bIdx) => (
-                                    <li key={bIdx} className="truncate">• {b}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : previewItem.isPdfDoc && previewItem.pdfBlobUrl ? (
+                      <div className="flex flex-col h-full min-h-[380px] space-y-2.5">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Original PDF Document</span>
+                          </div>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10.5px] font-medium border border-emerald-200/50">
+                            <ShieldCheck size={12} />
+                            <span>Bit-for-Bit Preserved</span>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ) : previewItem.isPdfDoc && previewItem.pdfBlobUrl ? (
-                    <div className="flex flex-col h-full min-h-[380px] space-y-2.5">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800 shrink-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">Original PDF Document</span>
+                        <div className="w-full h-[360px] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950">
+                          <iframe
+                            src={`${previewItem.pdfBlobUrl}#toolbar=1`}
+                            title={previewItem.title}
+                            className="w-full h-full border-0"
+                          />
                         </div>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10.5px] font-medium border border-emerald-200/50">
-                          <ShieldCheck size={12} />
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shadow-2xs">
+                          <FileCode size={24} />
+                        </div>
+                        <div className="max-w-xs">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                            {previewItem.originalFileName}
+                          </h4>
+                          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
+                            Original binary payload ({previewItem.originalSize}) preserved in local zero-knowledge store for export and parity checking.
+                          </p>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/50">
+                          <ShieldCheck size={13} />
                           <span>Bit-for-Bit Preserved</span>
                         </div>
                       </div>
-                      <div className="w-full h-[360px] rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950">
-                        <iframe
-                          src={`${previewItem.pdfBlobUrl}#toolbar=1`}
-                          title={previewItem.title}
-                          className="w-full h-full border-0"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center shadow-xs">
-                        <FileCode size={24} />
-                      </div>
-                      <div className="max-w-xs">
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-100">
-                          {previewItem.originalFileName}
-                        </h4>
-                        <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
-                          Original binary payload ({previewItem.originalSize}) preserved in local zero-knowledge store for export and parity checking.
-                        </p>
-                      </div>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200/50">
-                        <ShieldCheck size={13} />
-                        <span>Bit-for-Bit Preserved</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* Image 3 Style Centered Ambient Card */
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 relative z-10">
-                <div className="max-w-sm w-full bg-white/95 dark:bg-zinc-900/90 backdrop-blur-xl rounded-[16px] border border-purple-100/70 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(147,51,234,0.08)] p-8 flex flex-col items-center text-center">
-                  <div className="w-14 h-14 rounded-[14px] bg-gradient-to-tr from-purple-100 to-indigo-100 dark:from-purple-950/60 dark:to-indigo-950/60 text-purple-600 dark:text-purple-300 flex items-center justify-center mb-4 ring-8 ring-purple-50/60 dark:ring-purple-950/20 shadow-xs">
-                    <Database size={26} strokeWidth={1.8} />
+                    )}
                   </div>
-                  
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight mb-1.5">
-                    Dual-View Inspection Ready
-                  </h3>
-                  
-                  <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mb-4">
-                    Select any document from the queue on the left to inspect its live extracted typography, matrix tables, and original structure.
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">
+                    Select a document from the queue on the left to inspect its live extracted structure.
                   </p>
-
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-[7px] bg-purple-50/80 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[11px] font-semibold border border-purple-200/60 dark:border-purple-800/40">
-                    <div className="w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
-                      <RegaarderBrandIcon size={9} color="white" />
-                    </div>
-                    <span>Instant Native Conversion</span>
-                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom Action Footer with Dynamic Progress Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-black/[0.05] dark:border-white/[0.07] bg-white/[0.45] dark:bg-black/[0.22] backdrop-blur-md shrink-0">
           <div className="flex-1 max-w-sm mr-4">
             <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 dark:text-zinc-300 mb-1.5">
               <div className="flex items-center gap-1.5">
@@ -1094,7 +1099,7 @@ export default function OmniPortalModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -1102,10 +1107,10 @@ export default function OmniPortalModal({
               type="button"
               disabled={processedResults.length === 0 || isProcessing}
               onClick={handleCommitAll}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 processedResults.length > 0 && !isProcessing
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_4px_14px_rgba(124,58,237,0.3)] hover:opacity-95 active:scale-95'
-                  : 'bg-black/[0.05] dark:bg-white/[0.05] text-slate-400 cursor-not-allowed'
+                  ? 'bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 shadow-xs active:scale-95'
+                  : 'bg-black/[0.04] dark:bg-white/[0.05] text-slate-400 dark:text-zinc-600 cursor-not-allowed'
               }`}
             >
               <span>Absorb All into Workspace</span>
