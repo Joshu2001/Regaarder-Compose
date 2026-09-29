@@ -338,8 +338,8 @@ export function NotesFloatingDock({
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto"
-      style={{ willChange: "transform" }}
+      className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto max-w-[96vw] sm:max-w-none"
+      style={{ willChange: "transform", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       {/* Hidden file input for image insertion */}
       <input
@@ -360,9 +360,9 @@ export function NotesFloatingDock({
       />
 
       {/* Floating Island Dock matching Whiteboard styling */}
-      <div className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+      <div className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-x-auto no-scrollbar touch-pan-x max-w-full">
         {/* Undo / Redo */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5 shrink-0">
           <button
             type="button"
             onClick={handleUndoClick}
@@ -2247,20 +2247,20 @@ function RuledNotebookCanvas({
       )}
 
       {/* Top right notebook header: Date + Page indicator + Collab / Lock badges */}
-      <div className="absolute right-8 top-3 z-10 flex items-center gap-3 text-[11.5px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
+      <div className="absolute right-3 sm:right-8 top-3 z-10 flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[11.5px] font-medium text-slate-400 dark:text-zinc-500 select-none pointer-events-none">
         {activeDoc?.isCollab && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold text-[10px]">
             <Users size={11} />
-            <span>Collab</span>
+            <span className="hidden sm:inline">Collab</span>
           </span>
         )}
         {activeDoc?.isLocked && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold text-[10px]">
             <Lock size={11} />
-            <span>Protected</span>
+            <span className="hidden sm:inline">Protected</span>
           </span>
         )}
-        <span>{formattedDate}</span>
+        <span className="hidden xs:inline">{formattedDate}</span>
         <span>1 / 1</span>
       </div>
 
@@ -2270,12 +2270,11 @@ function RuledNotebookCanvas({
         style={rulingBgStyle}
       />
 
-      {/* Vertical red margin guide line: left 56px (Image 1 authentic placement) */}
+      {/* Vertical red margin guide line: responsive left position */}
       {rulingType === "ruled" && (
         <div
-          className="absolute top-0 bottom-0 pointer-events-none"
+          className="absolute top-0 bottom-0 pointer-events-none left-[38px] sm:left-[56px]"
           style={{
-            left: 56,
             width: 1.5,
             backgroundColor: "rgba(248, 113, 113, 0.42)",
           }}

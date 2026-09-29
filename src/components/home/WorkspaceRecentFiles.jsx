@@ -798,10 +798,10 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
         </div>
       ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
-          <div className="col-span-5 pl-7">Name</div>
-          <div className="col-span-3">Location</div>
-          <div className="col-span-3">Last Modified</div>
-          <div className="col-span-1 text-right pr-1">Size</div>
+          <div className="col-span-8 sm:col-span-5 pl-7">Name</div>
+          <div className="hidden sm:block sm:col-span-3">Location</div>
+          <div className="col-span-4 sm:col-span-3 text-right sm:text-left">Last Modified</div>
+          <div className="hidden sm:block sm:col-span-1 text-right pr-1">Size</div>
         </div>
       ) : null}
 
@@ -849,7 +849,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 }`}
               >
                 {/* Name Column with Checkbox slot & App icon */}
-                <div className="col-span-5 flex items-center gap-2.5 pr-2 min-w-0">
+                <div className="col-span-8 sm:col-span-5 flex items-center gap-2.5 pr-2 min-w-0">
                   {/* WPS / Apple style Checkbox slot on the far left */}
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <button
@@ -868,9 +868,9 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     </button>
                   </div>
 
-                  <AppNativeSvgIcon type={item.product} size={26} />
+                  <AppNativeSvgIcon type={item.product} size={24} className="shrink-0" />
 
-                  <div className="truncate flex-1">
+                  <div className="truncate flex-1 min-w-0">
                     {isRenaming ? (
                       <form
                         onSubmit={(e) => {
@@ -906,7 +906,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                             />
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
                           {item.typeLabel}
                         </div>
                       </>
@@ -915,7 +915,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 </div>
 
                 {/* Location */}
-                <div className="col-span-3 text-[12.5px] truncate pr-2 flex items-center">
+                <div className="hidden sm:flex sm:col-span-3 text-[12.5px] truncate pr-2 items-center">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -930,12 +930,12 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 </div>
 
                 {/* Last Modified */}
-                <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400">
+                <div className="col-span-4 sm:col-span-3 text-[11.5px] sm:text-[12.5px] text-slate-500 dark:text-zinc-400 text-right sm:text-left truncate">
                   {formatTimestamp(item.savedAt)}
                 </div>
 
                 {/* Size Column + Hover Contextual Actions (Star, Share, More) */}
-                <div className="col-span-1 flex items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
+                <div className="hidden sm:flex sm:col-span-1 items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
                   {/* Size text (hidden when hovering so actions fit cleanly) */}
                   <span className={`${isMenuOpen ? "opacity-0" : "group-hover:opacity-0"} transition-opacity`}>
                     {item.size}

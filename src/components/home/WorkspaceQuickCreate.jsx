@@ -125,20 +125,20 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
       </div>
 
       {/* Primary Create New Items */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
         {PRIMARY_CREATE_ACTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
             data-onboarding-target={item.id === 'compose' ? 'quick-create-compose' : `quick-create-${item.id}`}
             onClick={() => onLaunch && onLaunch(item.id)}
-            className="flex flex-col items-start p-4 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-xs transition-all text-left cursor-pointer group"
+            className="flex flex-col items-start p-3 sm:p-4 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-xs transition-all text-left cursor-pointer group"
           >
-            <AppNativeSvgIcon type={item.type} size={26} className="mb-3" />
-            <div className="font-semibold text-[13px] text-slate-900 dark:text-zinc-100 leading-tight mb-1">
+            <AppNativeSvgIcon type={item.type} size={24} className="mb-2 sm:mb-3" />
+            <div className="font-semibold text-[12.5px] sm:text-[13px] text-slate-900 dark:text-zinc-100 leading-tight mb-1 truncate w-full">
               {item.title}
             </div>
-            <div className="text-[11px] text-slate-400 dark:text-zinc-400 truncate w-full">
+            <div className="text-[10.5px] sm:text-[11px] text-slate-400 dark:text-zinc-400 truncate w-full">
               {item.subtitle}
             </div>
           </button>
@@ -151,7 +151,7 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
           <div className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2.5 px-0.5">
             More tools
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
             {SECONDARY_WORKSPACE_TOOLS.map((item) => (
               <button
                 key={item.id}

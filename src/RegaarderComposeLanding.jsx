@@ -52,6 +52,7 @@ export default function RegaarderComposeLanding({
   const [activeRailTab, setActiveRailTab] = useState(initialNav?.tab || "home"); // 'home' | 'tasks' | 'schedule' | 'projects' | 'library' | 'feedback'
   // Default: RIGHT SIDEBAR HIDDEN (matches Image 3 for maximum calmness & focus)
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [projects, setProjects] = useState(() => readWorkspaceProjects());
@@ -162,27 +163,78 @@ export default function RegaarderComposeLanding({
         activeWorkspaceName="Regaarder Workspace"
         isRightPanelOpen={isRightPanelOpen}
         onToggleRightPanel={() => setIsRightPanelOpen((prev) => !prev)}
+        onToggleMobileMenu={() => setIsMobileDrawerOpen((prev) => !prev)}
       />
 
       {/* 2. Workspace Body */}
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Rail */}
-        <WorkspaceLeftRail
-          activeTab={activeRailTab}
-          onSelectTab={setActiveRailTab}
-          onNewProject={() => setShowCreateProjectModal(true)}
-          onLaunch={onLaunch}
-          onOpenTasks={() => setActiveRailTab("tasks")}
-          onOpenSchedule={() => setActiveRailTab("schedule")}
-          onOpenSettings={onOpenSettings || onProfileClick}
-          onOpenFeedback={() => {
-            if (onOpenFeedback) {
-              onOpenFeedback();
-            } else {
-              setShowFeedbackModal(true);
-            }
-          }}
-        />
+        {/* Desktop Left Rail */}
+        <div className="hidden md:block h-full shrink-0">
+          <WorkspaceLeftRail
+            activeTab={activeRailTab}
+            onSelectTab={setActiveRailTab}
+            onNewProject={() => setShowCreateProjectModal(true)}
+            onLaunch={onLaunch}
+            onOpenTasks={() => setActiveRailTab("tasks")}
+            onOpenSchedule={() => setActiveRailTab("schedule")}
+            onOpenSettings={onOpenSettings || onProfileClick}
+            onOpenFeedback={() => {
+              if (onOpenFeedback) {
+                onOpenFeedback();
+              } else {
+                setShowFeedbackModal(true);
+              }
+            }}
+          />
+        </div>
+
+        {/* Mobile Drawer Overlay */}
+        {isMobileDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+              onClick={() => setIsMobileDrawerOpen(false)}
+            />
+            {/* Drawer Pane */}
+            <div className="relative z-10 h-full animate-in slide-in-from-left duration-250 ease-out shadow-2xl">
+              <WorkspaceLeftRail
+                activeTab={activeRailTab}
+                onSelectTab={(tab) => {
+                  setActiveRailTab(tab);
+                  setIsMobileDrawerOpen(false);
+                }}
+                onNewProject={() => {
+                  setShowCreateProjectModal(true);
+                  setIsMobileDrawerOpen(false);
+                }}
+                onLaunch={(appId) => {
+                  if (onLaunch) onLaunch(appId);
+                  setIsMobileDrawerOpen(false);
+                }}
+                onOpenTasks={() => {
+                  setActiveRailTab("tasks");
+                  setIsMobileDrawerOpen(false);
+                }}
+                onOpenSchedule={() => {
+                  setActiveRailTab("schedule");
+                  setIsMobileDrawerOpen(false);
+                }}
+                onOpenSettings={() => {
+                  if (onOpenSettings) onOpenSettings();
+                  else if (onProfileClick) onProfileClick();
+                  setIsMobileDrawerOpen(false);
+                }}
+                onOpenFeedback={() => {
+                  if (onOpenFeedback) onOpenFeedback();
+                  else setShowFeedbackModal(true);
+                  setIsMobileDrawerOpen(false);
+                }}
+                onClose={() => setIsMobileDrawerOpen(false)}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Center Stage: Dynamic View based on Active Destination */}
         {activeRailTab === "tasks" ? (
@@ -205,8 +257,8 @@ export default function RegaarderComposeLanding({
           />
         ) : (
           /* Default Home / Recent View */
-          <main className="flex-1 overflow-y-auto px-10 py-8 custom-scrollbar bg-white dark:bg-[#151518] transition-all">
-            <div className="max-w-[940px] mx-auto space-y-7">
+          <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-10 py-5 sm:py-8 custom-scrollbar bg-white dark:bg-[#151518] transition-all min-w-0">
+            <div className="max-w-[940px] mx-auto space-y-5 sm:space-y-7">
               {/* Header Greeting */}
               <div key={`greeting-header-${waveKey}`} className="animate-greeting-entrance">
                 <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 flex items-center gap-2 leading-snug">

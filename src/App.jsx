@@ -51756,12 +51756,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div 
                           onMouseEnter={() => setIsTopHeaderHovered(true)} 
                           onMouseLeave={() => setIsTopHeaderHovered(false)} 
-                          className="mx-4 mt-2 mb-1.5 w-[calc(100%-2rem)] p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-20 shrink-0 transition-all duration-200"
+                          className="mx-2 sm:mx-4 mt-2 mb-1.5 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] p-2 sm:p-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)] flex flex-col gap-2 z-20 shrink-0 transition-all duration-200"
                         >
                       {/* Top Row: Navigation Tabs & View Controls + Collapse Toggle */}
-                      <div className="flex items-center justify-between gap-3 text-[13px] font-medium tracking-wide text-[#374151]">
+                      <div className="flex items-center justify-between gap-2 sm:gap-3 text-[13px] font-medium tracking-wide text-[#374151] overflow-x-auto no-scrollbar touch-pan-x">
                         {/* Apple Segmented Control Track */}
-                        <div className="inline-flex items-center p-0.5 gap-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-lg border border-black/[0.06] dark:border-white/[0.07] select-none">
+                        <div className="inline-flex items-center p-0.5 gap-0.5 sm:gap-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-lg border border-black/[0.06] dark:border-white/[0.07] select-none shrink-0">
                           {['Data', 'Templates', 'Analyze', 'Simulate', 'View'].map((tab) => (
                             <button
                               key={tab}
@@ -51783,7 +51783,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   showToast(`${tab} tools ready`);
                                 }
                               }}
-                              className={`relative px-3 py-1 text-[12px] rounded-md transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.98] cursor-pointer ${
+                              className={`relative px-2.5 sm:px-3 py-1 text-[11.5px] sm:text-[12px] rounded-md transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] select-none active:scale-[0.98] cursor-pointer whitespace-nowrap ${
                                 sheetToolbarTab === tab
                                   ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/[0.08] dark:border-white/[0.12]'
                                   : 'text-slate-600 dark:text-zinc-400 font-medium hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
@@ -51795,7 +51795,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
 
                         {/* Right Section: Inline View Controls (when on View) + Collapse Toggle */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           {sheetToolbarTab === 'View' && (
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-150">
                               {/* Gridlines Dropdown */}
@@ -52208,16 +52208,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   )}
 
                     {!isSheetToolbarCollapsed && sheetToolbarTab === 'Data' ? (
-                      <div className={`flex-1 min-h-0 flex items-center justify-center p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-4 mb-3 w-[calc(100%-2rem)]'}`}>
+                      <div className={`flex-1 min-h-0 flex items-center justify-center p-3 sm:p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10 transition-all ${isSheetZenMode ? 'w-full h-full m-0 rounded-none border-0' : 'mx-2 sm:mx-4 mb-3 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)]'}`}>
                         {(() => {
                           const hasActualUploadedFile = importedFilesList.length > 0 || (importedFileInfo && importedFileInfo.isUploadedFile);
                           return (
-                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
+                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl p-5 sm:p-10 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-indigo-500/5 flex flex-col items-center text-center my-auto">
                               
                               {/* Top Icon Badge */}
-                              <div className="relative mb-5 shrink-0 flex items-center justify-center">
+                              <div className="relative mb-4 sm:mb-5 shrink-0 flex items-center justify-center">
                                 <div className="absolute inset-0 -m-3 rounded-full bg-gradient-to-tr from-violet-400/15 via-indigo-300/10 to-transparent blur-xl pointer-events-none" />
-                                <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
+                                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100/80 dark:from-violet-950/60 dark:via-purple-900/30 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-800/40 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-[0_8px_24px_rgba(124,58,237,0.08)]">
                                   {hasActualUploadedFile ? (
                                     <FileText size={26} strokeWidth={2} />
                                   ) : (
@@ -55865,14 +55865,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                     </div>)}
 
-                    <div data-sheets-toolbar="true" className={`h-10 px-4 border-t backdrop-blur-sm flex items-center justify-between gap-4 shrink-0 transition-all duration-200 ${
+                    <div data-sheets-toolbar="true" className={`h-10 px-2 sm:px-4 border-t backdrop-blur-sm flex items-center justify-between gap-2 sm:gap-4 shrink-0 transition-all duration-200 overflow-x-auto no-scrollbar touch-pan-x ${
                       isDarkMode ? 'border-zinc-800/80 bg-[#09090d]' : 'border-slate-200/80 bg-white/90'
                     } ${
                       isSheetZenMode 
                         ? 'opacity-0 pointer-events-none hover:opacity-100 hover:pointer-events-auto fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t' 
                         : 'relative z-[60]'
                     }`}>
-                      <div className={`inline-flex items-center p-0.5 gap-1 rounded-lg border shadow-xs select-none ${
+                      <div className={`inline-flex items-center p-0.5 gap-1 rounded-lg border shadow-xs select-none shrink-0 ${
                         isDarkMode ? 'bg-[#121218]/90 border-white/[0.08]' : 'bg-slate-100/90 border-black/[0.06]'
                       }`}>
                         {sheetsData.map((sheet) => {

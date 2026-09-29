@@ -4,7 +4,8 @@ import {
   CheckSquare,
   Calendar,
   Settings,
-  Plus
+  Plus,
+  X
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { FeedbackIcon, NotesIcon } from "../RegaarderProductIcons";
@@ -28,11 +29,29 @@ export default function WorkspaceLeftRail({
   onOpenTasks,
   onOpenSchedule,
   onOpenSettings,
-  onOpenFeedback
+  onOpenFeedback,
+  onClose
 }) {
   return (
-    <aside className="w-56 shrink-0 border-r border-slate-200/50 dark:border-white/[0.06] bg-[#F8F9FA] dark:bg-zinc-900/40 px-3.5 py-5 flex flex-col justify-between select-none h-[calc(100vh-54px)]">
-      <div className="space-y-6">
+    <aside className="w-64 md:w-56 shrink-0 border-r border-slate-200/50 dark:border-white/[0.06] bg-[#F8F9FA] dark:bg-zinc-900 px-3.5 py-4 sm:py-5 flex flex-col justify-between select-none h-full overflow-y-auto custom-scrollbar">
+      <div className="space-y-5 sm:space-y-6">
+        {/* Mobile Header with Close button */}
+        {onClose && (
+          <div className="flex md:hidden items-center justify-between pb-2 border-b border-slate-200/50 dark:border-white/[0.06]">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+              Navigation
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+              title="Close menu"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Navigation Group 1: Home & Library */}
         <div className="space-y-1">
           <button

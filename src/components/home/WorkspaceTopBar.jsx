@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Bell, Layout } from "lucide-react";
+import { Search, Bell, Layout, Menu } from "lucide-react";
 import RegaarderBrandIcon from "../RegaarderBrandIcon";
 
 export default function WorkspaceTopBar({
@@ -11,7 +11,8 @@ export default function WorkspaceTopBar({
   onOpenWorkspaceSwitcher,
   activeWorkspaceName = "Regaarder Workspace",
   isRightPanelOpen = true,
-  onToggleRightPanel
+  onToggleRightPanel,
+  onToggleMobileMenu
 }) {
   const unreadCount = Array.isArray(notifications)
     ? notifications.filter((n) => !n.read).length
@@ -34,12 +35,23 @@ export default function WorkspaceTopBar({
     <header
       style={{
         WebkitAppRegion: 'drag',
-        paddingRight: isElectron ? '146px' : '24px'
+        paddingRight: isElectron ? '146px' : undefined
       }}
-      className="h-[54px] pl-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30"
+      className="h-[54px] px-3 sm:px-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30"
     >
-      {/* Left: Brand Identity */}
-      <div className="flex items-center gap-2.5 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
+      {/* Left: Mobile Menu Button + Brand Identity */}
+      <div className="flex items-center gap-2 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
+        {onToggleMobileMenu && (
+          <button
+            type="button"
+            onClick={onToggleMobileMenu}
+            className="md:hidden p-1.5 -ml-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+            title="Open navigation menu"
+            aria-label="Open navigation menu"
+          >
+            <Menu size={18} />
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenWorkspaceSwitcher}
@@ -55,19 +67,22 @@ export default function WorkspaceTopBar({
       </div>
 
       {/* Center: Clean Search bar with premium succinct label */}
-      <div className="flex-1 max-w-[460px] mx-8" style={{ WebkitAppRegion: 'no-drag' }}>
+      <div className="flex-1 max-w-[460px] mx-2 sm:mx-8 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onSearchClick}
-          className="w-full flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-white/[0.08] text-slate-400 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-white/20 transition-all text-xs cursor-pointer shadow-2xs group"
+          className="w-full flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-white/[0.08] text-slate-400 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-white/20 transition-all text-xs cursor-pointer shadow-2xs group"
         >
           <Search size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors shrink-0" />
-          <span className="truncate text-slate-400 text-[12.5px] font-normal">Search your workspace</span>
+          <span className="truncate text-slate-400 text-[12px] sm:text-[12.5px] font-normal">
+            <span className="hidden sm:inline">Search your workspace</span>
+            <span className="sm:hidden">Search...</span>
+          </span>
         </button>
       </div>
 
       {/* Right: Notifications, Layout Panel Toggle, Avatar */}
-      <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' }}>
+      <div className="flex items-center gap-1.5 sm:gap-4 shrink-0" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onNotificationsClick}
@@ -80,11 +95,11 @@ export default function WorkspaceTopBar({
           )}
         </button>
 
-        {/* Layout button: toggles right sidebar */}
+        {/* Layout button: toggles right sidebar (hidden on small mobile screens to prevent clutter) */}
         <button
           type="button"
           onClick={onToggleRightPanel}
-          className={`p-1.5 rounded-lg transition-colors cursor-pointer border-none ${
+          className={`hidden sm:flex p-1.5 rounded-lg transition-colors cursor-pointer border-none ${
             isRightPanelOpen
               ? "text-slate-800 bg-slate-200/60 dark:text-zinc-100 dark:bg-zinc-800"
               : "text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 bg-transparent"
