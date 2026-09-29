@@ -1065,9 +1065,7 @@ input[type="range"] {
 .ai-preview-action-banner {
   display: none;
 }
-.hidden {
-  display: none !important;
-}
+
 .slash-menu-container::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -3059,4 +3057,15 @@ button.bg-violet-600,
   animation: greetingEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
+
+/* Responsive Navigation Safeguard */
+@media (min-width: 768px) {
+  .md\:block {
+    display: block !important;
+  }
+  .md\:hidden {
+    display: none !important;
+  }
+}
+
 
