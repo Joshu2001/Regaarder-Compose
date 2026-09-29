@@ -8017,6 +8017,7 @@ function AppCore() {
       return () => window.removeEventListener('rc:open-onboarding', handler);
     }
   }, []);
+  const [nextActionPrompt, setNextActionPrompt] = useState('');
   const [isAdminFeedbackOpen, setIsAdminFeedbackOpen] = useState(false);
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
 
