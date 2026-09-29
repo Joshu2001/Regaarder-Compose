@@ -191,6 +191,37 @@ class TelemetryService {
 
     return telemetryPayload;
   }
+
+  /**
+   * Returns locally persisted and/or Supabase onboarding submissions with IP, goals, and milestones
+   */
+  async getOnboardingTelemetryHistory() {
+    let localHistory = [];
+    try {
+      const stored = localStorage.getItem('rc.onboarding_telemetry_history');
+      if (stored) localHistory = JSON.parse(stored);
+    } catch (_e) {}
+
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase
+          .from('workspace_onboarding_telemetry')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(50);
+        if (!error && Array.isArray(data) && data.length > 0) {
+          // Merge Supabase data with local entries deduplicating by ID
+          const existingIds = new Set(data.map(d => d.id));
+          const uniqueLocal = localHistory.filter(l => !existingIds.has(l.id));
+          return [...data, ...uniqueLocal];
+        }
+      }
+    } catch (_e) {
+      // Fallback to local history
+    }
+
+    return localHistory;
+  }
 }
 
 export const telemetryService = new TelemetryService();

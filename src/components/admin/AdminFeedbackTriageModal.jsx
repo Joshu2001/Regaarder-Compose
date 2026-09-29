@@ -26,8 +26,11 @@ import {
   Play,
   Sliders,
   Shield,
-  CheckCircle2
+  CheckCircle2,
+  Target,
+  Globe
 } from 'lucide-react';
+import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import { feedbackSubmissionService } from '../../services/feedbackSubmissionService';
 import { telemetryService } from '../../services/telemetryService';
 import { posthogService } from '../../services/posthogService';
@@ -60,9 +63,12 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('feedback'); // 'feedback' | 'insights' | 'replays'
+  const [activeTab, setActiveTab] = useState('feedback'); // 'feedback' | 'insights' | 'onboarding' | 'replays'
   const [insights, setInsights] = useState(null);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+  const [onboardingEvents, setOnboardingEvents] = useState([]);
+  const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(false);
+  const [selectedOnboardingEvent, setSelectedOnboardingEvent] = useState(null);
 
   // PostHog Replay & Telemetry States
   const [posthogSettings, setPosthogSettings] = useState(() => posthogService.loadSettings());
@@ -90,6 +96,7 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
       setPasscodeError(false);
       loadFeedback();
       loadInsights();
+      loadOnboardingTelemetry();
     } else {
       setPasscodeError(true);
     }
@@ -104,6 +111,21 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
       console.error('[Admin] Failed to load telemetry insights:', err);
     } finally {
       setIsLoadingInsights(false);
+    }
+  };
+
+  const loadOnboardingTelemetry = async () => {
+    setIsLoadingOnboarding(true);
+    try {
+      const events = await telemetryService.getOnboardingTelemetryHistory();
+      setOnboardingEvents(events);
+      if (events.length > 0 && !selectedOnboardingEvent) {
+        setSelectedOnboardingEvent(events[0]);
+      }
+    } catch (err) {
+      console.error('[Admin] Failed to load onboarding telemetry:', err);
+    } finally {
+      setIsLoadingOnboarding(false);
     }
   };
 
@@ -127,8 +149,22 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
     if (isOpen && isUnlocked) {
       loadFeedback();
       loadInsights();
+      loadOnboardingTelemetry();
     }
   }, [isOpen, isUnlocked, statusFilter]);
+
+  // Real-time listener for incoming onboarding telemetry events
+  useEffect(() => {
+    const handleRecordedTelemetry = (e) => {
+      if (e?.detail) {
+        setOnboardingEvents((prev) => [e.detail, ...prev.filter(item => item.id !== e.detail.id)]);
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('regaarder-onboarding-telemetry-recorded', handleRecordedTelemetry);
+      return () => window.removeEventListener('regaarder-onboarding-telemetry-recorded', handleRecordedTelemetry);
+    }
+  }, []);
 
   const handleSelect = (item) => {
     setSelectedItem(item);
@@ -283,6 +319,24 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => {
+                  setActiveTab('onboarding');
+                  loadOnboardingTelemetry();
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'onboarding'
+                    ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Target size={13} />
+                <span>Onboarding & Goals</span>
+                <span className="text-[10px] font-normal px-1.5 py-0.2 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300">
+                  {onboardingEvents.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setActiveTab('replays');
                   setReplaySessions(posthogService.getRecentSessions());
                 }}
@@ -322,13 +376,14 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
               onClick={() => {
                 if (activeTab === 'feedback') loadFeedback();
                 else if (activeTab === 'insights') loadInsights();
+                else if (activeTab === 'onboarding') loadOnboardingTelemetry();
                 else setReplaySessions(posthogService.getRecentSessions());
               }}
-              disabled={isLoading || isLoadingInsights}
+              disabled={isLoading || isLoadingInsights || isLoadingOnboarding}
               className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               title="Refresh"
             >
-              <RefreshCw size={15} className={isLoading || isLoadingInsights ? 'animate-spin' : ''} />
+              <RefreshCw size={15} className={isLoading || isLoadingInsights || isLoadingOnboarding ? 'animate-spin' : ''} />
             </button>
             <button
               type="button"
@@ -779,8 +834,196 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
               </div>
             </div>
           </div>
+        ) : activeTab === 'onboarding' ? (
+          /* Tab 3: Workspace Onboarding & AI Goals Telemetry */
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left Column: Submissions List */}
+            <div className="w-80 md:w-96 border-r border-slate-100 dark:border-white/[0.06] flex flex-col bg-[#FAFBFD]/50 dark:bg-zinc-900/30 shrink-0">
+              <div className="p-3.5 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                    Onboarding Traces
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    {onboardingEvents.length} intent submissions tracked
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Sync
+                </div>
+              </div>
+
+              {/* Submissions list */}
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-white/[0.04]">
+                {onboardingEvents.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400 dark:text-zinc-500">
+                    No onboarding events recorded yet. Complete an onboarding flow to see IP and goal metrics.
+                  </div>
+                ) : (
+                  onboardingEvents.map((evt) => {
+                    const isSelected = selectedOnboardingEvent?.id === evt.id;
+                    const goalsCount = evt.goals?.length || 0;
+                    const milestonesCount = evt.milestones?.length || 0;
+
+                    return (
+                      <div
+                        key={evt.id}
+                        onClick={() => setSelectedOnboardingEvent(evt)}
+                        className={`p-3.5 cursor-pointer transition-colors text-left ${
+                          isSelected
+                            ? 'bg-white dark:bg-zinc-800 shadow-xs border-l-2 border-violet-600'
+                            : 'hover:bg-slate-100/60 dark:hover:bg-white/[0.02]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border-violet-200/80 dark:border-violet-900/60 capitalize">
+                            <Target size={10} />
+                            <span>{evt.intent || 'create'}</span>
+                          </span>
+
+                          <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 border border-slate-200/60 dark:border-white/5">
+                            <Globe size={10} className="text-slate-400" />
+                            <span>{evt.ip_address || '127.0.0.1'}</span>
+                          </span>
+                        </div>
+
+                        <p className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                          {evt.goals && evt.goals.length > 0 ? evt.goals[0] : (evt.is_skipped ? 'Onboarding Skipped' : 'Default Intent')}
+                        </p>
+
+                        <div className="mt-2 flex items-center justify-between text-[10.5px] text-slate-400 dark:text-zinc-500">
+                          <span className="truncate max-w-[140px]">
+                            {evt.user_email || 'guest@workspace.local'}
+                          </span>
+                          <span className="font-mono text-[10px]">
+                            {goalsCount}G • {milestonesCount}M
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Selected Detail View */}
+            <div className="flex-1 flex flex-col bg-white dark:bg-[#18181b] overflow-y-auto">
+              {selectedOnboardingEvent ? (
+                <div className="p-6 space-y-6">
+                  {/* Event Top Bar */}
+                  <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-slate-400">
+                          ID: {selectedOnboardingEvent.id}
+                        </span>
+                        <span className="text-slate-300 dark:text-zinc-600">•</span>
+                        <span className="text-xs text-slate-500">
+                          {selectedOnboardingEvent.timestamp ? new Date(selectedOnboardingEvent.timestamp).toLocaleString() : 'Just now'}
+                        </span>
+                      </div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                        <span>User: {selectedOnboardingEvent.user_email || 'guest@workspace.local'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                        selectedOnboardingEvent.is_skipped
+                          ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60'
+                      }`}>
+                        {selectedOnboardingEvent.is_skipped ? 'Skipped by User' : 'Full Onboarding Setup'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Network & Client Telemetry Meta Box */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-white/5">
+                      <span className="text-[10px] text-slate-400 block font-medium">Public Client IP</span>
+                      <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400 truncate block mt-0.5">
+                        {selectedOnboardingEvent.ip_address || '127.0.0.1'}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-white/5">
+                      <span className="text-[10px] text-slate-400 block font-medium">Operating System</span>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate block mt-0.5">
+                        {selectedOnboardingEvent.platform || 'Windows'}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-white/5">
+                      <span className="text-[10px] text-slate-400 block font-medium">Host Architecture</span>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate block mt-0.5">
+                        {selectedOnboardingEvent.client_type === 'desktop_electron' ? 'Desktop Electron' : 'Web Browser'}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-white/5">
+                      <span className="text-[10px] text-slate-400 block font-medium">Intent Focus</span>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 capitalize truncate block mt-0.5">
+                        {selectedOnboardingEvent.intent || 'create'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Chosen Workspace Goals */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                      <Target size={13} />
+                      <span>Configured Goals ({selectedOnboardingEvent.goals?.length || 0})</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {selectedOnboardingEvent.goals && selectedOnboardingEvent.goals.length > 0 ? (
+                        selectedOnboardingEvent.goals.map((g, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200/60 dark:border-white/5 text-xs font-medium text-slate-800 dark:text-zinc-200 flex items-center gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                            <span>{g}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">No custom goals specified.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bespoke Milestones (AI Synthesized Checkpoints) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                      <RegaarderAiIcon size={14} className="text-violet-600 dark:text-violet-400" />
+                      <span>Synthesized Milestones & Checkpoints ({selectedOnboardingEvent.milestones?.length || 0})</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {selectedOnboardingEvent.milestones && selectedOnboardingEvent.milestones.length > 0 ? (
+                        selectedOnboardingEvent.milestones.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-xl bg-violet-50/30 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 text-xs font-medium text-slate-800 dark:text-zinc-200 flex items-start gap-2.5"
+                          >
+                            <span className="mt-0.5 px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-violet-100 dark:bg-violet-900/60 text-violet-700 dark:text-violet-300 shrink-0">
+                              M{idx + 1}
+                            </span>
+                            <span className="leading-relaxed">{m}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">No milestones recorded.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-xs text-slate-400">
+                  Select an onboarding submission from the left to view goals and network telemetry
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
-          /* Tab 3: Session Replays (PostHog) Control & Replay Hub */
+          /* Tab 4: Session Replays (PostHog) Control & Replay Hub */
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-zinc-950/40 thin-scrollbar">
             {/* Header & Status Banner */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
