@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { ArrowRight, Plus, Check, ChevronLeft, X, Target, Pencil, Trash2 } from 'lucide-react';
 import RegaarderBrandIcon from '../../RegaarderBrandIcon';
+import { RegaarderAiIcon } from '../../RegaarderProductIcons';
 import {
   UNIVERSAL_GOAL_DEFINITIONS,
   saveWorkspaceGoals,
   getWorkspaceGoals,
   saveWorkspaceMilestones,
-  getWorkspaceMilestones
+  getWorkspaceMilestones,
+  generateAiMilestonesForGoals
 } from '../../../services/workspaceGoalsService';
+import { telemetryService } from '../../../services/telemetryService';
 
 /**
  * OnboardingGoalsStep
@@ -20,7 +23,7 @@ import {
  * Designed with Apple aesthetic: spacious, calm, restrained single-accent purple,
  * sharp rounded corners (no pills), zero Asana/Jira clutter, fully skippable.
  */
-export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
+export default function OnboardingGoalsStep({ intent = 'create', onBack, onProceed, onSkip }) {
   // Phase 'goals' (What are you trying to accomplish?) | 'milestones' (Want to track milestones?)
   const [phase, setPhase] = useState('goals');
 
@@ -79,6 +82,8 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
 
   // Milestone list maintained in local state so items can be edited or deleted
   const [milestoneList, setMilestoneList] = useState([]);
+  const [isGeneratingAiMilestones, setIsGeneratingAiMilestones] = useState(false);
+  const [hasCustomGoalSynthesis, setHasCustomGoalSynthesis] = useState(false);
 
   // Compute suggested milestones based on selected goals
   const activeSuggestedMilestones = React.useMemo(() => {
@@ -102,22 +107,66 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
     return suggestions;
   }, [selectedGoals]);
 
-  // Sync initial milestoneList when phase changes to milestones or goals change
+  // Sync initial milestoneList and dynamically generate bespoke milestones for custom goals
   React.useEffect(() => {
     if (phase === 'milestones') {
-      const initial = activeSuggestedMilestones.length > 0
-        ? [...activeSuggestedMilestones]
-        : [
-            'Establish initial workspace baseline and context',
-            'Define key operational checkpoints',
-            'Track weekly progress and outcome completion'
-          ];
-      setMilestoneList(initial);
-      if (selectedMilestones.length === 0) {
-        setSelectedMilestones(initial.slice(0, 3));
+      const customGoals = selectedGoals.filter(
+        (g) => !UNIVERSAL_GOAL_DEFINITIONS.some((d) => d.title === g)
+      );
+
+      // If user provided custom goal(s), trigger AI milestone synthesis
+      if (customGoals.length > 0) {
+        setHasCustomGoalSynthesis(true);
+        setIsGeneratingAiMilestones(true);
+        let isMounted = true;
+
+        generateAiMilestonesForGoals(customGoals)
+          .then((aiMilestones) => {
+            if (!isMounted) return;
+            if (Array.isArray(aiMilestones) && aiMilestones.length > 0) {
+              setMilestoneList((prev) => {
+                const combined = [...aiMilestones];
+                prev.forEach((p) => {
+                  if (!combined.includes(p)) combined.push(p);
+                });
+                return combined;
+              });
+              setSelectedMilestones((prev) => {
+                if (prev.length === 0) {
+                  return aiMilestones.slice(0, 3);
+                }
+                const updated = [...prev];
+                aiMilestones.slice(0, 3).forEach((m) => {
+                  if (!updated.includes(m)) updated.push(m);
+                });
+                return updated;
+              });
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (isMounted) setIsGeneratingAiMilestones(false);
+          });
+
+        return () => {
+          isMounted = false;
+        };
+      } else {
+        setHasCustomGoalSynthesis(false);
+        const initial = activeSuggestedMilestones.length > 0
+          ? [...activeSuggestedMilestones]
+          : [
+              'Establish initial workspace baseline and context',
+              'Define key operational checkpoints',
+              'Track weekly progress and outcome completion'
+            ];
+        setMilestoneList(initial);
+        if (selectedMilestones.length === 0) {
+          setSelectedMilestones(initial.slice(0, 3));
+        }
       }
     }
-  }, [phase, activeSuggestedMilestones]);
+  }, [phase, activeSuggestedMilestones, selectedGoals]);
 
   // Toggle milestone selection
   const toggleMilestone = (milestoneText) => {
@@ -210,7 +259,20 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
     }
   };
 
-  // Final confirmation: save goals & milestones and notify parent
+  // Skip action with telemetry tracking
+  const handleSkipWithTelemetry = () => {
+    try {
+      telemetryService.trackOnboardingGoalsSubmission({
+        intent,
+        goals: selectedGoals,
+        milestones: selectedMilestones,
+        isSkipped: true
+      });
+    } catch (_e) {}
+    onSkip();
+  };
+
+  // Final confirmation: save goals & milestones, record telemetry, and notify parent
   const handleFinalFinish = () => {
     if (selectedGoals.length > 0) {
       saveWorkspaceGoals(selectedGoals);
@@ -218,6 +280,16 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
     if (selectedMilestones.length > 0) {
       saveWorkspaceMilestones(selectedMilestones);
     }
+
+    try {
+      telemetryService.trackOnboardingGoalsSubmission({
+        intent,
+        goals: selectedGoals,
+        milestones: selectedMilestones,
+        isSkipped: false
+      });
+    } catch (_e) {}
+
     onProceed({
       goals: selectedGoals,
       milestones: selectedMilestones
@@ -373,9 +445,17 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
       {phase === 'milestones' && (
         <div className="w-full max-w-3xl mx-auto my-auto py-2 animate-in fade-in duration-200">
           <div className="mb-5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-[11.5px] font-medium mb-2.5">
-              <Target size={13} strokeWidth={2} />
-              <span>Progress Checkpoints</span>
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 text-[11.5px] font-medium">
+                <Target size={13} strokeWidth={2} />
+                <span>Progress Checkpoints</span>
+              </div>
+              {hasCustomGoalSynthesis && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 text-[11.5px] font-medium">
+                  <RegaarderAiIcon size={12} strokeWidth={2} />
+                  <span>{isGeneratingAiMilestones ? 'Synthesizing bespoke milestones...' : 'Synthesized for your goals'}</span>
+                </div>
+              )}
             </div>
             <h1 className="text-[23px] sm:text-[26px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-snug">
               Want to track milestones?
@@ -505,7 +585,7 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
       <div className="flex items-center justify-between w-full pt-4 mt-2 border-t border-slate-100 dark:border-zinc-800">
         <button
           type="button"
-          onClick={phase === 'goals' ? onSkip : handleFinalFinish}
+          onClick={phase === 'goals' ? handleSkipWithTelemetry : handleFinalFinish}
           className="text-[13px] font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
         >
           {phase === 'goals' ? 'Skip for now' : 'Skip milestone tracking'}
@@ -526,7 +606,7 @@ export default function OnboardingGoalsStep({ onBack, onProceed, onSkip }) {
 
           <button
             type="button"
-            onClick={phase === 'goals' ? onSkip : handleFinalFinish}
+            onClick={phase === 'goals' ? handleSkipWithTelemetry : handleFinalFinish}
             className="px-4 py-2 rounded-xl text-[13px] font-medium text-slate-700 dark:text-zinc-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-slate-200/60 dark:border-zinc-700 transition-all cursor-pointer"
           >
             Skip

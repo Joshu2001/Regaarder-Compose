@@ -125,6 +125,72 @@ class TelemetryService {
       recentSessions: sessions.slice(0, 15)
     };
   }
+
+  /**
+   * Tracks workspace onboarding goal selection, custom goals, and milestones.
+   * Seamlessly resolves the user's public IP address via standard public IP lookup,
+   * stores into local telemetry, syncs to Supabase `workspace_onboarding_telemetry` table if configured,
+   * and dispatches a founder admin dashboard event.
+   */
+  async trackOnboardingGoalsSubmission({
+    intent = 'create',
+    goals = [],
+    milestones = [],
+    isSkipped = false,
+    currentUser = null
+  }) {
+    let clientIp = '127.0.0.1';
+    try {
+      // Non-blocking public IP resolution with fast timeout
+      const ipRes = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(2500) });
+      if (ipRes.ok) {
+        const ipData = await ipRes.json();
+        if (ipData?.ip) clientIp = ipData.ip;
+      }
+    } catch (_e) {
+      // Offline fallback
+    }
+
+    const telemetryPayload = {
+      id: `onb_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: new Date().toISOString(),
+      user_id: currentUser?.id || 'anonymous_user',
+      user_email: currentUser?.email || 'guest@workspace.local',
+      ip_address: clientIp,
+      platform: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Windows') ? 'Windows' : navigator.userAgent.includes('Mac') ? 'macOS' : 'Linux') : 'Unknown',
+      client_type: typeof window !== 'undefined' && (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron')) ? 'desktop_electron' : 'web_browser',
+      intent,
+      goals,
+      milestones,
+      is_skipped: Boolean(isSkipped),
+      app_version: 'v2.4.2 (Production)'
+    };
+
+    // 1. Local telemetry history
+    try {
+      const stored = JSON.parse(localStorage.getItem('rc.onboarding_telemetry_history') || '[]');
+      stored.unshift(telemetryPayload);
+      localStorage.setItem('rc.onboarding_telemetry_history', JSON.stringify(stored.slice(0, 100)));
+    } catch (_e) {}
+
+    // 2. Dispatch founder dashboard event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('regaarder-onboarding-telemetry-recorded', { detail: telemetryPayload }));
+    }
+
+    // 3. Dual-write to Supabase if configured
+    try {
+      if (isSupabaseConfigured()) {
+        await supabase
+          .from('workspace_onboarding_telemetry')
+          .insert([telemetryPayload]);
+      }
+    } catch (_e) {
+      // Graceful offline degradation
+    }
+
+    return telemetryPayload;
+  }
 }
 
 export const telemetryService = new TelemetryService();
