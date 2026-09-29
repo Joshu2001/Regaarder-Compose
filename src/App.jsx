@@ -163,6 +163,7 @@ import TableDropdownPopover, { createDropdownHTML } from './components/TableDrop
 import AppleGestureOnboardingHotspots from './components/AppleGestureOnboardingHotspots';
 import RegaarderIntentOnboarding from './components/onboarding/RegaarderIntentOnboarding';
 import { ONBOARDING_INTENT_PRESETS } from './components/onboarding/onboardingPresets';
+import { getWorkspaceGoals, saveWorkspaceGoals, addWorkspaceGoal, removeWorkspaceGoal } from './services/workspaceGoalsService';
 import { registerDocumentEditorBinding } from './services/docsCommandApi';
 import { executeTool, undoTransaction, getExecutionLogs, getTransactionHistory } from './services/docsToolExecutor';
 import { CANONICAL_DOCS_TOOLS } from './services/docsToolRegistry';
@@ -6892,15 +6893,8 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 function AppCore() {
   const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
 
-  const [showIntentOnboarding, setShowIntentOnboarding] = useState(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const hasSeen = localStorage.getItem('rc.hasSeenIntentOnboarding_v1');
-        return !hasSeen;
-      }
-    } catch (_e) {}
-    return false;
-  });
+  // TEMPORARY: For testing onboarding appearance directly on screen opening
+  const [showIntentOnboarding, setShowIntentOnboarding] = useState(true);
   const [nextActionPrompt, setNextActionPrompt] = useState('');
 
   const [isDevConsoleOpen, setIsDevConsoleOpen] = useState(false);
@@ -7484,6 +7478,21 @@ function AppCore() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('account');
+  const [workspaceGoals, setWorkspaceGoals] = useState(() => getWorkspaceGoals());
+  const [newSettingsGoalInput, setNewSettingsGoalInput] = useState('');
+
+  useEffect(() => {
+    const handleSync = (e) => {
+      if (Array.isArray(e.detail)) {
+        setWorkspaceGoals(e.detail);
+      } else {
+        setWorkspaceGoals(getWorkspaceGoals());
+      }
+    };
+    window.addEventListener('regaarder-workspace-goals-updated', handleSync);
+    return () => window.removeEventListener('regaarder-workspace-goals-updated', handleSync);
+  }, []);
+
   const [highContrastMode, setHighContrastMode] = useState(() => {
     try {
       return localStorage.getItem('regaarder_high_contrast_accessibility') === 'true';
@@ -72258,6 +72267,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
               <div className="flex flex-col gap-1.5 flex-1">
                 <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.account')}</button>
+                <button onClick={() => setSettingsTab('goals')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'goals' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Strategic Goals</button>
                 <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.personalization')}</button>
                 <button onClick={() => setSettingsTab('ai_models')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'ai_models' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>AI & API Keys</button>
                 <button onClick={() => setSettingsTab('hardware_offload')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'hardware_offload' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>Hardware & Offload</button>
@@ -72742,6 +72752,94 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5 shadow-sm"></div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+              {settingsTab === 'goals' && (
+                <div className="max-w-[560px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 tracking-tight">Strategic Goals</h2>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold">
+                      {workspaceGoals.length} {workspaceGoals.length === 1 ? 'Goal' : 'Goals'}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-slate-500 dark:text-zinc-400 mb-6 leading-relaxed">
+                    Set high-level project and workspace goals. Memora Workspace Intelligence and AI synthesis will use these priorities to steer recommendations, summaries, and action plans.
+                  </p>
+
+                  {/* Add Goal Input */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!newSettingsGoalInput.trim()) return;
+                      const updated = addWorkspaceGoal(newSettingsGoalInput.trim());
+                      setWorkspaceGoals(updated);
+                      setNewSettingsGoalInput('');
+                      showToast('Workspace goal added');
+                    }}
+                    className="mb-6"
+                  >
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        value={newSettingsGoalInput}
+                        onChange={(e) => setNewSettingsGoalInput(e.target.value)}
+                        placeholder="Add a new workspace objective (e.g. 'Deliver Q3 Product Roadmap')..."
+                        className="w-full h-11 pl-4 pr-11 text-[13px] rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-xs"
+                      />
+                      {newSettingsGoalInput.trim() && (
+                        <button
+                          type="submit"
+                          className="absolute right-2 p-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors cursor-pointer"
+                          title="Add goal"
+                        >
+                          <Plus size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Goals List */}
+                  <div className="space-y-2.5">
+                    {workspaceGoals.length === 0 ? (
+                      <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center">
+                        <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto mb-3">
+                          <Target size={20} strokeWidth={1.8} />
+                        </div>
+                        <h4 className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-200 mb-1">No active goals yet</h4>
+                        <p className="text-[12px] text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+                          Add 1-3 objectives above. They will sync automatically into Memora’s cognitive layer.
+                        </p>
+                      </div>
+                    ) : (
+                      workspaceGoals.map((goal, idx) => (
+                        <div
+                          key={idx}
+                          className="group flex items-center justify-between p-3.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950/60 shadow-2xs hover:border-slate-300 dark:hover:border-zinc-700 transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 pr-3">
+                            <span className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-900/40 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 text-[11px] font-mono font-bold">
+                              {idx + 1}
+                            </span>
+                            <span className="text-[13px] text-slate-800 dark:text-zinc-200 font-medium leading-snug">
+                              {goal}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = removeWorkspaceGoal(goal);
+                              setWorkspaceGoals(updated);
+                              showToast('Goal removed');
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0 opacity-0 group-hover:opacity-100"
+                            title="Delete goal"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
