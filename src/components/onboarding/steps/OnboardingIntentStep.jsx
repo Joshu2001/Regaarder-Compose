@@ -53,10 +53,11 @@ export default function OnboardingIntentStep({ onSelectIntent, onSkip }) {
           </span>
         </div>
 
-        {/* Minimal Progress Bar (Stripe-inspired rounded pill) */}
+        {/* Minimal Progress Bar (Step 1 of 2: 50%) */}
         <div className="flex items-center gap-2">
+          <span className="text-[11.5px] text-slate-400 dark:text-zinc-500 font-medium">Step 1 of 2</span>
           <div className="w-20 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div className="h-full w-2/3 bg-violet-600 dark:bg-violet-500 rounded-full transition-all duration-500" />
+            <div className="h-full w-1/2 bg-violet-600 dark:bg-violet-500 rounded-full transition-all duration-500" />
           </div>
         </div>
       </div>

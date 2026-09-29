@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import OnboardingIntentStep from './steps/OnboardingIntentStep';
+import OnboardingGoalsStep from './steps/OnboardingGoalsStep';
 import OnboardingOrganizeStep from './steps/OnboardingOrganizeStep';
 import OnboardingAnalyzeStep from './steps/OnboardingAnalyzeStep';
 import OnboardingPlanStep from './steps/OnboardingPlanStep';
@@ -11,7 +12,7 @@ import OnboardingPreparingWorkspaceStep from './steps/OnboardingPreparingWorkspa
 import { composeCombinedIntents } from '../../services/intentInferenceService';
 
 export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
-  // Navigation steps: 'intent' | 'preparing' | 'organize' | 'research' | 'plan' | 'create' | 'collaborate' | 'blank_workspace'
+  // Navigation steps: 'intent' | 'goals' | 'preparing' | 'organize' | 'research' | 'plan' | 'create' | 'collaborate' | 'blank_workspace'
   const [currentStep, setCurrentStep] = useState('intent');
   const [selectedOutcomeId, setSelectedOutcomeId] = useState('create');
   const [customPrompt, setCustomPrompt] = useState('');
@@ -25,7 +26,7 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
     if (outcomeIdOrIds === 'inferred' && directInferredAction) {
       setSelectedOutcomeId('inferred');
       setPendingPayload(directInferredAction);
-      setCurrentStep('preparing');
+      setCurrentStep('goals');
       return;
     }
 
@@ -38,6 +39,16 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
       guidedIntent: single,
       isSingleGuidedIntent: true
     });
+    setCurrentStep('goals');
+  };
+
+  // Step 2 Proceed: move from Goals -> Preparing
+  const handleGoalsProceed = (_goals) => {
+    setCurrentStep('preparing');
+  };
+
+  // Step 2 Skip: skip directly to Preparing without blocking
+  const handleGoalsSkip = () => {
     setCurrentStep('preparing');
   };
 
@@ -54,7 +65,7 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
     }
   };
 
-  // Skip flow to start with clean workspace
+  // Skip flow from intent step to start with clean workspace
   const handleSkipToBlank = () => {
     setCurrentStep('blank_workspace');
   };
@@ -78,6 +89,16 @@ export default function RegaarderIntentOnboarding({ onComplete, onDismiss }) {
           <OnboardingIntentStep
             onSelectIntent={handleSelectIntent}
             onSkip={handleSkipToBlank}
+          />
+        )}
+
+        {/* Step 2: Skippable Workspace Goal Setting */}
+        {currentStep === 'goals' && (
+          <OnboardingGoalsStep
+            intent={selectedOutcomeId}
+            onBack={() => setCurrentStep('intent')}
+            onProceed={handleGoalsProceed}
+            onSkip={handleGoalsSkip}
           />
         )}
 

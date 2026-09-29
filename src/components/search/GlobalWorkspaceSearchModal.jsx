@@ -7,8 +7,9 @@ import {
   Palette, Type, Plus, Trash2, Sliders, ExternalLink, BookmarkCheck,
   Tag, Lightbulb, HelpCircle, Upload, FileUp, UserCheck, ChevronDown,
   Edit3, RotateCcw, History, MoreHorizontal, Calendar, CheckSquare,
-  Circle, CheckCircle2
+  Circle, CheckCircle2, Target
 } from 'lucide-react';
+import { getWorkspaceGoals, saveWorkspaceGoals, addWorkspaceGoal, removeWorkspaceGoal } from '../../services/workspaceGoalsService';
 import {
   buildWorkspaceIndex,
   queryWorkspace,
@@ -977,6 +978,18 @@ export default function GlobalWorkspaceSearchModal({
     }
     return INITIAL_BRAND_RULES;
   });
+
+  // Centralized Workspace Goals State
+  const [activeGoals, setActiveGoals] = useState(() => getWorkspaceGoals());
+  const [newWorkspaceGoalInput, setNewWorkspaceGoalInput] = useState('');
+
+  useEffect(() => {
+    const handleGoalsUpdate = (e) => {
+      setActiveGoals(e.detail || getWorkspaceGoals());
+    };
+    window.addEventListener('regaarder-workspace-goals-updated', handleGoalsUpdate);
+    return () => window.removeEventListener('regaarder-workspace-goals-updated', handleGoalsUpdate);
+  }, []);
 
   // Markdown Upload & Edit Modal State with on-device raw preservation
   const [isMdModalOpen, setIsMdModalOpen] = useState(false);
@@ -2959,7 +2972,83 @@ export default function GlobalWorkspaceSearchModal({
               </button>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              {/* Card 0: Strategic Goals */}
+              <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-800/60 p-3.5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Target size={13} className="text-violet-600 dark:text-violet-400" />
+                      <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100">Strategic Goals</span>
+                    </div>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-mono">
+                      {activeGoals.length}
+                    </span>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!newWorkspaceGoalInput.trim()) return;
+                      const updated = addWorkspaceGoal(newWorkspaceGoalInput.trim());
+                      setActiveGoals(updated);
+                      setNewWorkspaceGoalInput('');
+                    }}
+                    className="mb-2"
+                  >
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        value={newWorkspaceGoalInput}
+                        onChange={(e) => setNewWorkspaceGoalInput(e.target.value)}
+                        placeholder="Add goal..."
+                        className="w-full h-8 pl-2.5 pr-7 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-violet-500"
+                      />
+                      {newWorkspaceGoalInput.trim() && (
+                        <button
+                          type="submit"
+                          className="absolute right-1 p-1 rounded bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
+                          title="Save Goal"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto thin-scrollbar pr-0.5">
+                    {activeGoals.length === 0 ? (
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500 italic py-2 text-center">
+                        No goals set yet
+                      </div>
+                    ) : (
+                      activeGoals.map((g, gIdx) => (
+                        <div
+                          key={gIdx}
+                          className="group flex items-center justify-between text-[11px] text-slate-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 px-2 py-1 rounded-md border border-slate-100 dark:border-zinc-800"
+                        >
+                          <span className="truncate pr-1">• {g}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = removeWorkspaceGoal(g);
+                              setActiveGoals(updated);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-opacity p-0.5 shrink-0"
+                            title="Remove Goal"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-zinc-700/60 text-[9.5px] text-slate-400 dark:text-zinc-500">
+                  Shared across onboarding and workspaces
+                </div>
+              </div>
+
               <div className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/80 dark:bg-zinc-800/60 p-3.5">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-100">Brand Rules</span>

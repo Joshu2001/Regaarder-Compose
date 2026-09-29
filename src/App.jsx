@@ -7969,14 +7969,14 @@ function GridlinesDropdownToolbarControl({ showGridLines, setShowGridLines, grid
 function AppCore() {
   const { t, uiLanguage, setUiLanguage, aiLanguage, setAiLanguage, supportedLanguages, aiLanguages } = useTranslation();
 
+  // Onboarding intent modal: shown once until user completes or dismisses
   const [showIntentOnboarding, setShowIntentOnboarding] = useState(() => {
+    if (typeof window === 'undefined') return false;
     try {
-      if (typeof window !== 'undefined') {
-        const hasSeen = localStorage.getItem('rc.hasSeenIntentOnboarding_v1') || localStorage.getItem('rc.hasSeenIntentOnboarding_v2');
-        return !hasSeen;
-      }
-    } catch (_e) {}
-    return false;
+      return !localStorage.getItem('rc.hasSeenIntentOnboarding_v1');
+    } catch (_e) {
+      return false;
+    }
   });
   const [activeGuidedIntent, setActiveGuidedIntent] = useState(null);
 
@@ -92011,4 +92011,4 @@ export default function App() {
 
 
 
-// Triggering HMR refresh: 2026-09-16T09:17:30+08:00
+// Triggering HMR refresh: 2026-09-29T12:42:00+08:00
