@@ -1,71 +1,54 @@
 /**
- * Regaarder Catalog Mappings (Sandbox vs. Live)
+ * Regaarder Creem.io Product Catalog Mappings (Live Production)
+ *
+ * Mapped to your approved live products in Creem:
+ * - Starter: prod_6qxSvrvGFuyREofCABrsuI ($115/yr)
+ * - Pro: prod_5qHQeqBCxg3Hdq8z5inqmH ($29/mo)
+ * - Advanced: prod_7LQFed4vGZNLqvBN20sSHu ($79/mo)
+ * - 3-Year Executive: prod_7hQ8dJClk0geCOlIeLaAvo ($199 once)
+ * - Lifetime Founder: prod_5v93SRjTgSlVIvk4tJfdHe ($349 once)
  */
 
-export const PADDLE_CATALOG = {
-  sandbox: {
-    clientToken: 'test_27ec8ae3d57fef6a0e6eacea02a',
-    starter: {
-      productId: 'pro_01m34gy7w3wtwj0t5c0y5zfxbm',
-      month: 'pri_01m34gy8ap05r0b2765mxq41yp',
-      year: 'pri_01m34gy8yj6vbzg08c0ryj58jz',
-    },
-    pro: {
-      productId: 'pro_01m34bez6ce9qy0h09883h68kf',
-      month: 'pri_01m34gx9e3638ssw3ek0nkj2h5',
-      year: 'pri_01m34gx9rb5kcnk0gjfbecr4bm',
-    },
-    team: {
-      productId: 'pro_01m34bjj72dh2bsrnp7hs6hkar',
-      month: 'pri_01m34gxxvn8n66snhrew1dnw8b',
-      year: 'pri_01m34gxmge1ydf84c8yhb82a39',
-    },
-    threeYear: {
-      productId: 'pro_01m34bnf3r364sbhjnrtjyq247',
-      priceId: 'pri_01m34ctqhxmrgnp6azfmhg3z2m',
-    },
-    lifetime: {
-      productId: 'pro_01m34bm3dbfdgdpcasy96ybv0w',
-      priceId: 'pri_01m34c2fh4rm9bxtjt712va1me',
-    },
+export const CREEM_CATALOG = {
+  starter: {
+    productId: 'prod_6qxSvrvGFuyREofCABrsuI',
+    billing: 'year',
+    price: '$115',
+    period: '/year'
   },
-  production: {
-    clientToken: 'live_aec8a6a238563dc3b3285972199',
-    starter: {
-      productId: 'pro_01m34kp449erszdzdvfzfwdewq',
-      month: 'pri_01m34kp4hp79phbxgnzvhk4vea',
-      year: 'pri_01m34kp50wwt5ymgdgtwa9dexg',
-    },
-    pro: {
-      productId: 'pro_01m34kp5eg6bxrdx0ms74m3t5y',
-      month: 'pri_01m34kp5s82mxs68rj1j91te9t',
-      year: 'pri_01m34kp66mj70f88cr98tsbp3f',
-    },
-    team: {
-      productId: 'pro_01m34kp6reyf1zpxevtf3hv0m9',
-      month: 'pri_01m34kp73c6ppy1qc3qg3advep',
-      year: 'pri_01m34kp7ej5njxmczsjk78q7g2',
-    },
-    threeYear: {
-      productId: 'pro_01m34kp7vgb94h2nzdz85pyw0n',
-      priceId: 'pri_01m34kp87das41zqm3ssj1rz9c',
-    },
-    lifetime: {
-      productId: 'pro_01m34kp8pha7451yk65a6fbrsk',
-      priceId: 'pri_01m34kp94bq3g0xzwpmpshxb8t',
-    },
+  pro: {
+    productId: 'prod_5qHQeqBCxg3Hdq8z5inqmH',
+    billing: 'month',
+    price: '$29',
+    period: '/month'
   },
+  advanced: {
+    productId: 'prod_7LQFed4vGZNLqvBN20sSHu',
+    billing: 'month',
+    price: '$79',
+    period: '/month'
+  },
+  threeYear: {
+    productId: 'prod_7hQ8dJClk0geCOlIeLaAvo',
+    billing: 'once',
+    price: '$199',
+    period: 'one-time'
+  },
+  lifetime: {
+    productId: 'prod_5v93SRjTgSlVIvk4tJfdHe',
+    billing: 'once',
+    price: '$349',
+    period: 'one-time'
+  }
 };
-
-const currentEnv = import.meta.env.VITE_PADDLE_ENV === 'production' ? 'production' : 'sandbox';
-const activeCatalog = PADDLE_CATALOG[currentEnv];
 
 /**
  * @typedef {Object} Tier
  * @property {'Starter' | 'Pro' | 'Advanced'} name
  * @property {string} description
  * @property {string[]} features
- * @property {{ month: string, year: string }} priceId
+ * @property {string} creemProductId
+ * @property {{ month: string, year: string }} fallbackPrice
  * @property {boolean} [featured]
  */
 
@@ -81,10 +64,7 @@ export const PricingTiers = [
       'Export to PDF, DOCX, and XLSX',
       'Community and email support',
     ],
-    priceId: {
-      month: import.meta.env.VITE_PADDLE_PRICE_STARTER_MONTH || activeCatalog.starter.month,
-      year: import.meta.env.VITE_PADDLE_PRICE_STARTER_YEAR || activeCatalog.starter.year,
-    },
+    creemProductId: 'prod_6qxSvrvGFuyREofCABrsuI',
     fallbackPrice: {
       month: '$12',
       year: '$115',
@@ -100,13 +80,9 @@ export const PricingTiers = [
       'Real-time document diffing and version sync',
       'Priority inference compute and zero-queue queueing',
       'Purchasing power localized pricing',
-      '7-day free trial on monthly and annual plans',
+      'Full intelligence updates and priority support',
     ],
-    priceId: {
-      month: import.meta.env.VITE_PADDLE_PRICE_PRO_MONTH || activeCatalog.pro.month,
-      year: import.meta.env.VITE_PADDLE_PRICE_PRO_YEAR || activeCatalog.pro.year,
-    },
-    creemProductId: 'prod_7H9bHKDStzC2khXH5VVqR4',
+    creemProductId: 'prod_5qHQeqBCxg3Hdq8z5inqmH',
     fallbackPrice: {
       month: '$29',
       year: '$278',
@@ -123,10 +99,7 @@ export const PricingTiers = [
       'VIP concierge onboarding and 24/7 dedicated support',
       'Early access to experimental intelligence features',
     ],
-    priceId: {
-      month: import.meta.env.VITE_PADDLE_PRICE_ADVANCED_MONTH || activeCatalog.team.month,
-      year: import.meta.env.VITE_PADDLE_PRICE_ADVANCED_YEAR || activeCatalog.team.year,
-    },
+    creemProductId: 'prod_7LQFed4vGZNLqvBN20sSHu',
     fallbackPrice: {
       month: '$79',
       year: '$758',

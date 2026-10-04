@@ -338,7 +338,7 @@ function RefundPolicyContent() {
           Refund & Cancellation Commitment
         </h3>
         <p className="text-xs text-slate-600">
-          We want you to be completely satisfied with Regaarder. All subscriptions and licenses processed via our Merchant of Record, Paddle, are backed by a transparent 14-day refund guarantee.
+          We want you to be completely satisfied with Regaarder. All subscriptions and licenses processed via our Merchant of Record, Creem.io, are backed by a transparent 14-day refund guarantee.
         </p>
       </div>
 
@@ -359,14 +359,14 @@ function RefundPolicyContent() {
       <section className="space-y-2">
         <h4 className="font-semibold text-slate-900 text-sm">3. Cancellation Process</h4>
         <p>
-          You can cancel your subscription at any time directly through your account dashboard under Workspace Settings &gt; Billing, or by using the Paddle customer portal. Upon cancellation, your access remains fully active until the conclusion of your current prepaid billing cycle, after which no further recurring charges will be processed.
+          You can cancel your subscription at any time directly through your account dashboard under Workspace Settings &gt; Billing, or by using the Creem customer portal. Upon cancellation, your access remains fully active until the conclusion of your current prepaid billing cycle, after which no further recurring charges will be processed.
         </p>
       </section>
 
       <section className="space-y-2">
         <h4 className="font-semibold text-slate-900 text-sm">4. How to Request a Refund</h4>
         <p>
-          To request a refund, please contact our support desk at <span className="font-medium text-slate-900">billing@regaarder.com</span> or <span className="font-medium text-slate-900">support@regaarder.com</span> with your account email and Paddle transaction receipt number. Eligible refunds are processed promptly to the original payment method within 3–5 business days.
+          To request a refund, please contact our support desk at <span className="font-medium text-slate-900">billing@regaarder.com</span> or <span className="font-medium text-slate-900">support@regaarder.com</span> with your account email and Creem transaction receipt number. Eligible refunds are processed promptly to the original payment method within 3–5 business days.
         </p>
       </section>
     </div>

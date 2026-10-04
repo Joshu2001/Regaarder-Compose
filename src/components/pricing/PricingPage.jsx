@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { initializePaddle } from '@paddle/paddle-js';
-import { Check, ArrowLeft, ShieldCheck, Zap, Mail, X, Send, CheckCircle2 } from 'lucide-react';
-import { PricingTiers } from '../../constants/pricing-tier';
-import { usePaddlePrices } from '../../hooks/usePaddlePrices';
+import { Check, ArrowLeft, ShieldCheck, Zap, Mail, X, Send, CheckCircle2, Loader2 } from 'lucide-react';
+import { PricingTiers, CREEM_CATALOG } from '../../constants/pricing-tier';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import { onAuthChange } from '../../services/supabaseAuthService';
 import { courierMailService } from '../../services/courierMailService';
@@ -10,11 +8,9 @@ import { creemService, CREEM_CONFIG } from '../../services/creemService';
 
 export default function PricingPage() {
   const [billingFrequency, setBillingFrequency] = useState('month'); // 'month' | 'year'
-  const [paddle, setPaddle] = useState(null);
-  const [paddleInitError, setPaddleInitError] = useState(null);
-  const [country, setCountry] = useState(null);
   const [user, setUser] = useState(null);
   const [subscribingTier, setSubscribingTier] = useState(null);
+  const [checkoutError, setCheckoutError] = useState(null);
 
   // Support inquiry modal state
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
@@ -24,7 +20,7 @@ export default function PricingPage() {
   const [supportSentSuccess, setSupportSentSuccess] = useState(false);
   const [isSendingSupport, setIsSendingSupport] = useState(false);
 
-  // 1. Listen for authenticated user session to pre-fill email
+  // Listen for authenticated user session to pre-fill email
   useEffect(() => {
     const unsubscribe = onAuthChange((currentUser) => {
       setUser(currentUser);
@@ -34,112 +30,68 @@ export default function PricingPage() {
     };
   }, []);
 
-  // 2. Fetch detected country from server headers (/api/geo)
-  useEffect(() => {
-    let isMounted = true;
-    fetch('/api/geo')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isMounted) return;
-        if (data?.country && typeof data.country === 'string' && data.country.trim().length === 2) {
-          setCountry(data.country.trim().toUpperCase());
-        } else {
-          setCountry(null);
-        }
-      })
-      .catch(() => {
-        if (isMounted) setCountry(null);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // Creem Checkout Handler
+  const handleSubscribe = async (tier) => {
+    setSubscribingTier(tier.name);
+    setCheckoutError(null);
 
-  // 3. Initialize Paddle.js with strict environment checking
-  useEffect(() => {
-    const paddleEnv = import.meta.env.VITE_PADDLE_ENV || 'sandbox';
-    const clientToken =
-      import.meta.env.VITE_PADDLE_CLIENT_TOKEN ||
-      (paddleEnv === 'production'
-        ? 'live_aec8a6a238563dc3b3285972199'
-        : 'test_27ec8ae3d57fef6a0e6eacea02a');
-
-    if (!clientToken || clientToken.includes('your_client_token')) {
-      const err = new Error(
-        `[Paddle Config Error] VITE_PADDLE_CLIENT_TOKEN is not configured. Please supply a valid client token in your .env file.`
-      );
-      console.error(err);
-      setPaddleInitError(err.message);
+    const creemProductId = tier.creemProductId;
+    if (!creemProductId) {
+      setCheckoutError(`Product ID for ${tier.name} is not configured.`);
+      setSubscribingTier(null);
       return;
     }
 
-    initializePaddle({
-      token: clientToken,
-      environment: paddleEnv,
-      ...(user?.paddleCustomerId ? { pwCustomer: { id: user.paddleCustomerId } } : {}),
-    })
-      .then((p) => {
-        if (p) {
-          setPaddle(p);
-        }
-      })
-      .catch((err) => {
-        console.error('[Paddle Initialization Failed]', err);
-        setPaddleInitError(err?.message || 'Failed to initialize Paddle SDK');
+    try {
+      const session = await creemService.createCheckoutSession({
+        productId: creemProductId,
+        customerEmail: user?.email || undefined,
+        metadata: { tier: tier.name, billingFrequency }
       });
-  }, [user]);
 
-  // 4. Retrieve localized price strings via Paddle.PricePreview
-  const { prices, loading: pricesLoading } = usePaddlePrices(paddle, country);
-
-  // 5. Unified Checkout Handler (Creem.io primary with Paddle fallback)
-  const handleSubscribe = async (tier) => {
-    setSubscribingTier(tier.name);
-
-    // If Creem product ID exists or Creem is configured
-    const creemProductId = tier.creemProductId?.[billingFrequency] || tier.creemProductId;
-    if (creemProductId) {
-      try {
-        const session = await creemService.createCheckoutSession({
-          productId: creemProductId,
-          customerEmail: user?.email || undefined,
-          metadata: { tier: tier.name, billingFrequency }
-        });
-        if (session?.checkout_url || session?.url) {
-          window.location.href = session.checkout_url || session.url;
-          return;
-        }
-      } catch (err) {
-        console.warn('[Creem Checkout Session Error]', err);
-      }
-    }
-
-    // Secondary: Paddle Overlay Checkout if available
-    const priceId = tier.priceId?.[billingFrequency];
-    if (paddle && priceId) {
-      try {
-        const successUrl = `${window.location.origin}/welcome`;
-        paddle.Checkout.open({
-          settings: {
-            displayMode: 'overlay',
-            variant: 'one-page',
-            theme: 'dark',
-            successUrl,
-          },
-          ...(user?.email ? { customer: { email: user.email } } : {}),
-          items: [{ priceId, quantity: 1 }],
-        });
+      if (session?.checkout_url || session?.url) {
+        window.location.href = session.checkout_url || session.url;
         return;
-      } catch (err) {
-        console.error('[Paddle Checkout Error]', err);
-      } finally {
-        setSubscribingTier(null);
       }
+
+      throw new Error('No checkout URL returned from payment provider.');
+    } catch (err) {
+      console.error('[Creem Checkout Error]', err);
+      setCheckoutError(err.message || 'Unable to open checkout. Please try again.');
+      setSubscribingTier(null);
+    }
+  };
+
+  // One-time pass checkout handler
+  const handlePassCheckout = async (passKey, passName) => {
+    setSubscribingTier(passName);
+    setCheckoutError(null);
+
+    const pass = CREEM_CATALOG[passKey];
+    if (!pass?.productId) {
+      setCheckoutError(`Product for ${passName} is unavailable.`);
+      setSubscribingTier(null);
+      return;
     }
 
-    // Default notice if still configuring products
-    alert(`Connecting to Creem secure checkout for ${tier.name} (${billingFrequency === 'month' ? 'Monthly' : 'Annual'}). API Key: ${CREEM_CONFIG.apiKey.slice(0, 14)}...`);
-    setSubscribingTier(null);
+    try {
+      const session = await creemService.createCheckoutSession({
+        productId: pass.productId,
+        customerEmail: user?.email || undefined,
+        metadata: { pass: passName, type: 'onetime_pass' }
+      });
+
+      if (session?.checkout_url || session?.url) {
+        window.location.href = session.checkout_url || session.url;
+        return;
+      }
+
+      throw new Error('No checkout URL returned from payment provider.');
+    } catch (err) {
+      console.error('[Creem Pass Checkout Error]', err);
+      setCheckoutError(err.message || 'Unable to open checkout. Please try again.');
+      setSubscribingTier(null);
+    }
   };
 
   return (
@@ -159,11 +111,6 @@ export default function PricingPage() {
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300">
           <RegaarderAiIcon size={14} className="text-violet-400" />
           <span className="font-medium">Regaarder Workspace</span>
-          {country && (
-            <span className="text-slate-500 border-l border-slate-700 pl-2">
-              Region: {country}
-            </span>
-          )}
         </div>
       </header>
 
@@ -179,19 +126,15 @@ export default function PricingPage() {
             Predictable pricing for sovereign thinking
           </h1>
           <p className="text-base sm:text-lg text-slate-400 leading-relaxed">
-            Country-localized rates with purchasing power parity. Choose the plan that fits your execution velocity.
+            Direct, transparent pricing backed by Creem Merchant of Record. Choose the plan that fits your execution velocity.
           </p>
 
-          {/* Paddle Init Warning Banner if env is missing */}
-          {paddleInitError && (
-            <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-left max-w-xl mx-auto">
-              <div className="font-semibold flex items-center gap-2 mb-1">
-                <span>Paddle Configuration Notice</span>
-              </div>
-              <p className="leading-relaxed">{paddleInitError}</p>
-              <p className="mt-2 text-slate-400">
-                To test live checkout overlay, make sure <code>VITE_PADDLE_CLIENT_TOKEN</code> is added to your <code>.env</code> file.
-              </p>
+          {checkoutError && (
+            <div className="mt-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs text-left max-w-xl mx-auto flex items-center justify-between">
+              <span>{checkoutError}</span>
+              <button onClick={() => setCheckoutError(null)} className="text-slate-400 hover:text-white">
+                <X size={14} />
+              </button>
             </div>
           )}
 
@@ -224,11 +167,10 @@ export default function PricingPage() {
         </div>
 
         {/* 3-Tier Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto mb-16">
           {PricingTiers.map((tier) => {
-            const activePriceId = tier.priceId[billingFrequency];
-            const formattedPrice = prices[activePriceId];
             const isFeatured = tier.featured;
+            const priceDisplay = tier.fallbackPrice[billingFrequency];
 
             return (
               <div
@@ -256,20 +198,30 @@ export default function PricingPage() {
                     {tier.description}
                   </p>
 
-                  {/* Price display with instant fallback so prices are always visible to reviewers */}
+                  {/* Price display */}
                   <div className="mb-6 pb-6 border-b border-slate-800">
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-4xl font-extrabold text-white tracking-tight">
-                        {formattedPrice || tier.fallbackPrice?.[billingFrequency] || '$29'}
+                        {priceDisplay}
                       </span>
                       <span className="text-xs text-slate-400 font-medium">
                         /{billingFrequency === 'month' ? 'month' : 'year'}
                       </span>
                     </div>
 
+                    {tier.name === 'Starter' && billingFrequency === 'year' && (
+                      <p className="mt-2 text-[11px] text-emerald-400 font-medium">
+                        Billed annually at $115/yr
+                      </p>
+                    )}
                     {tier.name === 'Pro' && (
-                      <p className="mt-2 text-[11px] text-violet-400 font-medium flex items-center gap-1">
-                        <span>Includes 7-day free trial</span>
+                      <p className="mt-2 text-[11px] text-violet-400 font-medium">
+                        Billed at $29/mo with full intelligence updates
+                      </p>
+                    )}
+                    {tier.name === 'Advanced' && (
+                      <p className="mt-2 text-[11px] text-violet-400 font-medium">
+                        Enterprise throughput & dedicated concierge
                       </p>
                     )}
                   </div>
@@ -307,17 +259,84 @@ export default function PricingPage() {
                         : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white active:scale-[0.99]'
                     }`}
                   >
-                    <span>Subscribe to {tier.name}</span>
+                    {subscribingTier === tier.name ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Opening Checkout...</span>
+                      </>
+                    ) : (
+                      <span>Subscribe to {tier.name}</span>
+                    )}
                   </button>
 
                   <div className="mt-3 text-center text-[10px] text-slate-500 flex items-center justify-center gap-1">
                     <ShieldCheck size={12} />
-                    <span>Cancel anytime • Paddle Secure Checkout</span>
+                    <span>Cancel anytime • Secure checkout by Creem</span>
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+
+        {/* Lifetime & Multi-Year Passes Section */}
+        <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-r from-violet-950/40 via-slate-900/60 to-slate-900/40 border border-violet-500/20 p-8 shadow-xl">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold text-white tracking-tight">Executive Long-Term Passes</h3>
+            <p className="text-xs text-slate-400 mt-1">One-time payment passes for sovereign operators and early founders</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* 3-Year Pass */}
+            <div className="p-6 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold text-white">3-Year Executive Pass</h4>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-500/20 text-violet-300">3 Years</span>
+                </div>
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                  3-Year full access pass to Regaarder Pro with all intelligence updates included.
+                </p>
+                <div className="text-2xl font-extrabold text-white mb-4">$199 <span className="text-xs font-normal text-slate-400">one-time</span></div>
+              </div>
+              <button
+                onClick={() => handlePassCheckout('threeYear', '3-Year Executive Pass')}
+                disabled={subscribingTier === '3-Year Executive Pass'}
+                className="w-full py-2.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {subscribingTier === '3-Year Executive Pass' ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : null}
+                <span>Get 3-Year Pass</span>
+              </button>
+            </div>
+
+            {/* Lifetime Founder Pass */}
+            <div className="p-6 rounded-xl bg-slate-950/60 border border-violet-500/40 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Founder Edition
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold text-white">Lifetime Founder Pass</h4>
+                </div>
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                  Lifetime access to Regaarder Advanced suite with permanent Circle AI intelligence.
+                </p>
+                <div className="text-2xl font-extrabold text-white mb-4">$349 <span className="text-xs font-normal text-slate-400">one-time</span></div>
+              </div>
+              <button
+                onClick={() => handlePassCheckout('lifetime', 'Lifetime Founder Pass')}
+                disabled={subscribingTier === 'Lifetime Founder Pass'}
+                className="w-full py-2.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors cursor-pointer shadow-md shadow-violet-600/20 flex items-center justify-center gap-1.5"
+              >
+                {subscribingTier === 'Lifetime Founder Pass' ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : null}
+                <span>Get Lifetime Pass</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Global Security & Compliance Footer */}
@@ -342,7 +361,7 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Public Legal Links (Required by Paddle and Creem Compliance) */}
+          {/* Public Legal Links (Required by Creem Compliance) */}
           <div className="flex items-center justify-center gap-4 text-xs text-slate-400 font-medium">
             <a href="/privacy" className="hover:text-white underline transition-colors">
               Privacy Policy
@@ -358,7 +377,7 @@ export default function PricingPage() {
           </div>
 
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            All payments, taxes, invoices, and localized currency conversions are processed securely via our Merchant of Record.
+            All payments, taxes, invoices, and localized currency conversions are processed securely via our Merchant of Record, Creem.io.
           </p>
         </div>
       </main>
@@ -454,7 +473,7 @@ export default function PricingPage() {
                     type="text"
                     value={supportSubject}
                     onChange={(e) => setSupportSubject(e.target.value)}
-                    placeholder="e.g. Question about Pro Annual plan"
+                    placeholder="e.g. Question about Pro plan"
                     className="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-violet-500 transition-colors"
                   />
                 </div>

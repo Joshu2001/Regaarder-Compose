@@ -240,7 +240,7 @@ export function RefundPage() {
         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900 mb-1">Refund &amp; Cancellation Commitment</h3>
         <p className="text-xs text-slate-600">
           We want you to be completely satisfied with Regaarder. All subscriptions and licenses
-          processed via our Merchant of Record, Paddle, are backed by a transparent 14-day refund
+          processed via our Merchant of Record, Creem.io, are backed by a transparent 14-day refund
           guarantee.
         </p>
       </div>
@@ -266,7 +266,7 @@ export function RefundPage() {
         <h4 className="font-semibold text-slate-900 text-sm">3. Cancellation Process</h4>
         <p>
           You can cancel at any time directly through your account dashboard under Workspace Settings ›
-          Billing, or via the Paddle customer portal. Upon cancellation, your access remains fully
+          Billing, or via the Creem customer portal. Upon cancellation, your access remains fully
           active until the end of your current billing cycle — no further charges will be processed.
         </p>
       </section>
@@ -282,7 +282,7 @@ export function RefundPage() {
           <a href="mailto:support@regaarder.com" className="font-medium text-slate-900 underline">
             support@regaarder.com
           </a>{' '}
-          with your account email and Paddle transaction receipt number. Eligible refunds are
+          with your account email and Creem transaction receipt number. Eligible refunds are
           processed within 3–5 business days to your original payment method.
         </p>
       </section>
