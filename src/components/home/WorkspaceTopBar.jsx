@@ -83,6 +83,14 @@ export default function WorkspaceTopBar({
 
       {/* Right: Notifications, Layout Panel Toggle, Avatar */}
       <div className="flex items-center gap-1.5 sm:gap-4 shrink-0" style={{ WebkitAppRegion: 'no-drag' }}>
+        {/* Visible Public Pricing Link for Compliance */}
+        <a
+          href="/pricing"
+          className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 hover:bg-violet-100 transition-colors border border-violet-200 dark:border-violet-800/60"
+        >
+          Pricing
+        </a>
+
         <button
           type="button"
           onClick={onNotificationsClick}
