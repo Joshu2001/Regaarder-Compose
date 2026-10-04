@@ -90064,6 +90064,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={() => setSettingsTab('storage')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'storage' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.storageData')}</button>
                 <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white dark:bg-zinc-800 shadow-xs text-slate-800 dark:text-zinc-100 font-bold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-zinc-800/50 hover:text-slate-700 dark:hover:text-zinc-200'}`}>{t('settings.general')}</button>
               </div>
+
+              {/* In-App Support Contact for Merchant Compliance */}
+              <div className="pt-4 border-t border-slate-200/60 dark:border-zinc-800 text-[11px] text-slate-400 dark:text-zinc-500 space-y-1">
+                <span className="block font-semibold uppercase tracking-wider text-[10px] text-slate-400">Customer Support</span>
+                <a href="mailto:support@regaarder.com" className="text-violet-600 dark:text-violet-400 hover:underline block truncate">
+                  support@regaarder.com
+                </a>
+              </div>
             </div>
 
             {/* Main Content Area */}

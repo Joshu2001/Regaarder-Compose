@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { initializePaddle } from '@paddle/paddle-js';
-import { Check, ArrowLeft, ShieldCheck, Zap } from 'lucide-react';
+import { Check, ArrowLeft, ShieldCheck, Zap, Mail, X, Send, CheckCircle2 } from 'lucide-react';
 import { PricingTiers } from '../../constants/pricing-tier';
 import { usePaddlePrices } from '../../hooks/usePaddlePrices';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import { onAuthChange } from '../../services/supabaseAuthService';
+import { courierMailService } from '../../services/courierMailService';
 
 export default function PricingPage() {
   const [billingFrequency, setBillingFrequency] = useState('month'); // 'month' | 'year'
@@ -13,6 +14,14 @@ export default function PricingPage() {
   const [country, setCountry] = useState(null);
   const [user, setUser] = useState(null);
   const [subscribingTier, setSubscribingTier] = useState(null);
+
+  // Support inquiry modal state
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [supportEmail, setSupportEmail] = useState('');
+  const [supportSubject, setSupportSubject] = useState('');
+  const [supportMessage, setSupportMessage] = useState('');
+  const [supportSentSuccess, setSupportSentSuccess] = useState(false);
+  const [isSendingSupport, setIsSendingSupport] = useState(false);
 
   // 1. Listen for authenticated user session to pre-fill email
   useEffect(() => {
@@ -302,12 +311,164 @@ export default function PricingPage() {
         </div>
 
         {/* Global Security & Compliance Footer */}
-        <div className="mt-16 pt-8 border-t border-slate-800/80 text-center max-w-xl mx-auto">
-          <p className="text-xs text-slate-500 leading-relaxed">
+        <div className="mt-16 pt-8 border-t border-slate-800/80 text-center max-w-xl mx-auto space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Need assistance or have billing questions? Contact us at{' '}
+              <a href="mailto:support@regaarder.com" className="text-violet-400 hover:text-violet-300 underline font-medium">
+                support@regaarder.com
+              </a>
+            </p>
+            <span className="text-slate-700">•</span>
+            <button
+              onClick={() => {
+                setSupportEmail(user?.email || '');
+                setIsSupportModalOpen(true);
+              }}
+              className="text-xs text-violet-400 hover:text-violet-300 font-medium underline inline-flex items-center gap-1 cursor-pointer"
+            >
+              <Mail size={12} />
+              <span>Contact Support</span>
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-500 leading-relaxed">
             Paddle is our Merchant of Record. All payments, taxes, invoices, and localized currency conversions are processed securely via Paddle.
           </p>
         </div>
       </main>
+
+      {/* Support Inquiry Modal (Direct write to Courier Mailbox) */}
+      {isSupportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-violet-600/20 text-violet-400 flex items-center justify-center border border-violet-500/30">
+                  <Mail size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white tracking-tight">Contact Regaarder Support</h3>
+                  <p className="text-[11px] text-slate-400">Routes to support@regaarder.com</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsSupportModalOpen(false);
+                  setSupportSentSuccess(false);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {supportSentSuccess ? (
+              <div className="py-8 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+                  <CheckCircle2 size={24} />
+                </div>
+                <h4 className="text-sm font-bold text-white">Message Dispatched!</h4>
+                <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                  Your message has been delivered to <span className="text-violet-400 font-mono">support@regaarder.com</span> and logged in our admin support courier.
+                </p>
+                <button
+                  onClick={() => {
+                    setIsSupportModalOpen(false);
+                    setSupportSentSuccess(false);
+                  }}
+                  className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!supportEmail.trim() || !supportMessage.trim()) return;
+                  setIsSendingSupport(true);
+                  try {
+                    await courierMailService.recordInboundMessage({
+                      from: supportEmail.trim(),
+                      to: 'support@regaarder.com',
+                      subject: supportSubject.trim() || 'Pricing & Account Support Inquiry',
+                      body: supportMessage.trim(),
+                      source: 'web_pricing_contact'
+                    });
+                    setSupportSentSuccess(true);
+                    setSupportSubject('');
+                    setSupportMessage('');
+                  } catch (err) {
+                    console.error('Failed to send support inquiry:', err);
+                  } finally {
+                    setIsSendingSupport(false);
+                  }
+                }}
+                className="pt-4 space-y-3"
+              >
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                    Your Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-violet-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    value={supportSubject}
+                    onChange={(e) => setSupportSubject(e.target.value)}
+                    placeholder="e.g. Question about Pro Annual plan"
+                    className="w-full text-xs px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-violet-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                    How can we help?
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    placeholder="Write your questions or issue details..."
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-violet-500 transition-colors resize-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsSupportModalOpen(false)}
+                    className="px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingSupport}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <Send size={12} />
+                    <span>{isSendingSupport ? 'Sending...' : 'Send Message'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

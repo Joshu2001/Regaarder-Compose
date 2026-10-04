@@ -157,7 +157,9 @@ function TermsOfServiceContent() {
           <li>Reverse engineering, decompiling, or attempting to derive source code from any platform component.</li>
           <li>Distributing malware, malicious code, or exploiting security vulnerabilities.</li>
           <li>Using automated systems or bots to access or harvest data without express authorization.</li>
-          <li>Engaging in unlawful, infringing, fraudulent, or harassing conduct.</li>
+          <li>Engaging in unlawful, infringing, fraudulent, defamatory, or harassing conduct.</li>
+          <li>Generating harmful, abusive, sexually explicit, hateful, or non-consensual AI content via our synthesis models.</li>
+          <li>Using our AI models to build competitive foundational models or to circumvent safety guardrails and moderation filters.</li>
         </ul>
       </section>
 

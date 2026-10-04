@@ -33,7 +33,7 @@ export default function WorkspaceLeftRail({
   onClose
 }) {
   return (
-    <aside className="w-64 md:w-56 shrink-0 border-r border-slate-200/50 dark:border-white/[0.06] bg-[#F8F9FA] dark:bg-zinc-900 px-3.5 py-4 sm:py-5 flex flex-col justify-between select-none h-full overflow-y-auto custom-scrollbar">
+    <aside className="w-64 md:w-56 shrink-0 border-r border-slate-200/50 dark:border-white/[0.06] bg-[#F8F9FA] dark:bg-zinc-900 px-3.5 py-4 sm:py-5 flex flex-col justify-between select-none h-full overflow-y-auto no-scrollbar">
       <div className="space-y-5 sm:space-y-6">
         {/* Mobile Header with Close button */}
         {onClose && (

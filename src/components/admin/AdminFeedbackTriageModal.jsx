@@ -28,12 +28,15 @@ import {
   Shield,
   CheckCircle2,
   Target,
-  Globe
+  Globe,
+  Mail,
+  Inbox
 } from 'lucide-react';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import { feedbackSubmissionService } from '../../services/feedbackSubmissionService';
 import { telemetryService } from '../../services/telemetryService';
 import { posthogService } from '../../services/posthogService';
+import { courierMailService } from '../../services/courierMailService';
 
 // Secret Founder PIN / Passcode (Change or configure via environment variable VITE_FOUNDER_ADMIN_PIN if desired)
 const DEFAULT_FOUNDER_PIN = '1984';
@@ -85,6 +88,47 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
   const [adminNotes, setAdminNotes] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
+  // Regaarder Courier (support@regaarder.com) States
+  const [courierMessages, setCourierMessages] = useState([]);
+  const [isLoadingCourier, setIsLoadingCourier] = useState(false);
+  const [selectedCourierMail, setSelectedCourierMail] = useState(null);
+
+  const loadCourierMessages = async () => {
+    setIsLoadingCourier(true);
+    try {
+      // 1. First fetch from local & Supabase courier store
+      const localAndCloud = await courierMailService.getMessages();
+
+      // 2. Also try fetching serverless buffer if running on Vercel/Node
+      let webhookMessages = [];
+      try {
+        const res = await fetch('/api/courier-webhook');
+        if (res.ok) {
+          const data = await res.json();
+          webhookMessages = data.messages || [];
+        }
+      } catch (_e) {}
+
+      // Merge & deduplicate
+      const map = new Map();
+      [...webhookMessages, ...localAndCloud].forEach(m => {
+        if (m?.id && !map.has(m.id)) map.set(m.id, m);
+      });
+      const combined = Array.from(map.values()).sort(
+        (a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+      );
+
+      setCourierMessages(combined);
+      if (combined.length > 0 && !selectedCourierMail) {
+        setSelectedCourierMail(combined[0]);
+      }
+    } catch (err) {
+      console.error('[Admin] Failed to load courier messages:', err);
+    } finally {
+      setIsLoadingCourier(false);
+    }
+  };
+
   const handleUnlock = (e) => {
     e?.preventDefault();
     const targetPin = (import.meta?.env?.VITE_FOUNDER_ADMIN_PIN || DEFAULT_FOUNDER_PIN).trim();
@@ -97,6 +141,7 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
       loadFeedback();
       loadInsights();
       loadOnboardingTelemetry();
+      loadCourierMessages();
     } else {
       setPasscodeError(true);
     }
@@ -350,6 +395,24 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
                 <span>Session Replays</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300">
                   PostHog
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('courier');
+                  loadCourierMessages();
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'courier'
+                    ? 'bg-white dark:bg-zinc-700 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Mail size={13} />
+                <span>Support Courier</span>
+                <span className="text-[10px] font-normal px-1.5 py-0.2 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300">
+                  {courierMessages.length}
                 </span>
               </button>
             </div>
@@ -1022,7 +1085,7 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
               )}
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'replays' ? (
           /* Tab 4: Session Replays (PostHog) Control & Replay Hub */
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-zinc-950/40 thin-scrollbar">
             {/* Header & Status Banner */}
@@ -1235,6 +1298,119 @@ export default function AdminFeedbackTriageModal({ isOpen, onClose }) {
                   </table>
                 </div>
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ─── TAB 5: SUPPORT COURIER (support@regaarder.com) ─── */}
+        {activeTab === 'courier' && (
+          <div className="flex-1 flex overflow-hidden bg-slate-50 dark:bg-zinc-950">
+            {/* Sidebar Message List */}
+            <div className="w-80 border-r border-slate-200/80 dark:border-white/10 overflow-y-auto bg-white/50 dark:bg-zinc-900/50 flex flex-col">
+              <div className="p-3 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                  Inbound Mailbox
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={async () => {
+                      await courierMailService.recordInboundMessage({
+                        from: 'support-audit@paddle.com',
+                        to: 'support@regaarder.com',
+                        subject: 'Paddle Merchant Support Channel Verification',
+                        body: 'Hello Joshua,\n\nThis is an automated verification receipt confirming that support@regaarder.com is operational and monitored in your Regaarder Compose admin console.\n\nTransaction ID: txn_01m34928172\nMerchant: Regaarder Technologies Inc.\nStatus: Verified\n\nBest regards,\nPaddle Risk & Compliance Team',
+                        source: 'verification_probe'
+                      });
+                      await loadCourierMessages();
+                    }}
+                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 hover:bg-violet-100 transition-colors cursor-pointer"
+                    title="Simulate inbound email"
+                  >
+                    + Test Email
+                  </button>
+                  <button
+                    onClick={loadCourierMessages}
+                    disabled={isLoadingCourier}
+                    className="p-1 rounded text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+                    title="Refresh Mail"
+                  >
+                    <RefreshCw size={12} className={isLoadingCourier ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+              </div>
+
+              {courierMessages.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center flex-1">
+                  <Inbox size={28} className="text-slate-300 dark:text-zinc-700 mb-2" />
+                  <p className="text-xs font-medium text-slate-600 dark:text-zinc-400">No emails yet</p>
+                  <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
+                    Incoming emails sent to support@regaarder.com will appear here and route to regaarder@gmail.com
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-white/5 overflow-y-auto flex-1">
+                  {courierMessages.map((msg) => (
+                    <button
+                      key={msg.id}
+                      onClick={() => setSelectedCourierMail(msg)}
+                      className={`w-full text-left p-3.5 transition-colors cursor-pointer ${
+                        selectedCourierMail?.id === msg.id
+                          ? 'bg-violet-50 dark:bg-violet-950/40 border-l-2 border-violet-600'
+                          : 'hover:bg-slate-100/60 dark:hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate max-w-[150px]">
+                          {msg.from}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(msg.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="text-xs font-medium text-slate-700 dark:text-zinc-300 truncate mb-1">
+                        {msg.subject || '(No subject)'}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {msg.body || 'No text content'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Content Inspector */}
+            <div className="flex-1 flex flex-col overflow-y-auto p-6 bg-slate-50/50 dark:bg-zinc-950">
+              {selectedCourierMail ? (
+                <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-xs overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 dark:border-white/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100">
+                        {selectedCourierMail.subject}
+                      </h3>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                        <CheckCircle2 size={11} />
+                        Forwarded to regaarder@gmail.com
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-500 space-y-1">
+                      <p><span className="font-semibold text-slate-700 dark:text-zinc-300">From:</span> {selectedCourierMail.from}</p>
+                      <p><span className="font-semibold text-slate-700 dark:text-zinc-300">To:</span> {selectedCourierMail.to}</p>
+                      <p><span className="font-semibold text-slate-700 dark:text-zinc-300">Received:</span> {new Date(selectedCourierMail.receivedAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 flex-1 text-xs text-slate-700 dark:text-zinc-300 leading-relaxed font-mono whitespace-pre-wrap overflow-y-auto bg-slate-50/30 dark:bg-zinc-950/40">
+                    {selectedCourierMail.body || 'No text preview available.'}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                  <Mail size={36} className="mb-2 opacity-40" />
+                  <p className="text-xs">Select an email to view details</p>
+                </div>
+              )}
             </div>
           </div>
         )}
