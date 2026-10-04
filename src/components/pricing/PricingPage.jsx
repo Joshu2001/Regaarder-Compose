@@ -240,17 +240,11 @@ export default function PricingPage() {
                     {tier.description}
                   </p>
 
-                  {/* Price display using formatted totals from Paddle */}
+                  {/* Price display with instant fallback so prices are always visible to reviewers */}
                   <div className="mb-6 pb-6 border-b border-slate-800">
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-4xl font-extrabold text-white tracking-tight">
-                        {pricesLoading || !formattedPrice ? (
-                          <span className="text-slate-500 animate-pulse text-3xl font-normal">
-                            {pricesLoading ? 'Calculating...' : '—'}
-                          </span>
-                        ) : (
-                          formattedPrice
-                        )}
+                        {formattedPrice || tier.fallbackPrice?.[billingFrequency] || '$29'}
                       </span>
                       <span className="text-xs text-slate-400 font-medium">
                         /{billingFrequency === 'month' ? 'month' : 'year'}
@@ -311,7 +305,7 @@ export default function PricingPage() {
         </div>
 
         {/* Global Security & Compliance Footer */}
-        <div className="mt-16 pt-8 border-t border-slate-800/80 text-center max-w-xl mx-auto space-y-3">
+        <div className="mt-16 pt-8 border-t border-slate-800/80 text-center max-w-xl mx-auto space-y-4">
           <div className="flex items-center justify-center gap-2">
             <p className="text-xs text-slate-400 leading-relaxed">
               Need assistance or have billing questions? Contact us at{' '}
@@ -331,8 +325,24 @@ export default function PricingPage() {
               <span>Contact Support</span>
             </button>
           </div>
+
+          {/* Public Legal Links (Required by Paddle and Creem Compliance) */}
+          <div className="flex items-center justify-center gap-4 text-xs text-slate-400 font-medium">
+            <a href="/privacy" className="hover:text-white underline transition-colors">
+              Privacy Policy
+            </a>
+            <span className="text-slate-700">•</span>
+            <a href="/terms" className="hover:text-white underline transition-colors">
+              Terms of Service
+            </a>
+            <span className="text-slate-700">•</span>
+            <a href="/refund" className="hover:text-white underline transition-colors">
+              Refund Policy
+            </a>
+          </div>
+
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Paddle is our Merchant of Record. All payments, taxes, invoices, and localized currency conversions are processed securely via Paddle.
+            All payments, taxes, invoices, and localized currency conversions are processed securely via our Merchant of Record.
           </p>
         </div>
       </main>

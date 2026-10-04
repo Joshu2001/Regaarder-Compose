@@ -85,6 +85,10 @@ export const PricingTiers = [
       month: import.meta.env.VITE_PADDLE_PRICE_STARTER_MONTH || activeCatalog.starter.month,
       year: import.meta.env.VITE_PADDLE_PRICE_STARTER_YEAR || activeCatalog.starter.year,
     },
+    fallbackPrice: {
+      month: '$12',
+      year: '$115',
+    },
     featured: false,
   },
   {
@@ -102,6 +106,10 @@ export const PricingTiers = [
       month: import.meta.env.VITE_PADDLE_PRICE_PRO_MONTH || activeCatalog.pro.month,
       year: import.meta.env.VITE_PADDLE_PRICE_PRO_YEAR || activeCatalog.pro.year,
     },
+    fallbackPrice: {
+      month: '$29',
+      year: '$278',
+    },
     featured: true,
   },
   {
@@ -117,6 +125,10 @@ export const PricingTiers = [
     priceId: {
       month: import.meta.env.VITE_PADDLE_PRICE_ADVANCED_MONTH || activeCatalog.team.month,
       year: import.meta.env.VITE_PADDLE_PRICE_ADVANCED_YEAR || activeCatalog.team.year,
+    },
+    fallbackPrice: {
+      month: '$79',
+      year: '$758',
     },
     featured: false,
   },

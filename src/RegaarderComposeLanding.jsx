@@ -292,6 +292,25 @@ export default function RegaarderComposeLanding({
 
               {/* Recent work */}
               <WorkspaceRecentFiles onLaunch={onLaunch} />
+
+              {/* Public Compliance & Legal Footer */}
+              <footer className="pt-8 pb-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 gap-3">
+                <div className="flex items-center gap-3">
+                  <a href="/pricing" className="hover:text-slate-800 dark:hover:text-zinc-200 transition-colors">Pricing & Plans</a>
+                  <span>•</span>
+                  <a href="/privacy" className="hover:text-slate-800 dark:hover:text-zinc-200 transition-colors">Privacy Policy</a>
+                  <span>•</span>
+                  <a href="/terms" className="hover:text-slate-800 dark:hover:text-zinc-200 transition-colors">Terms of Service</a>
+                  <span>•</span>
+                  <a href="/refund" className="hover:text-slate-800 dark:hover:text-zinc-200 transition-colors">Refund Policy</a>
+                </div>
+                <div>
+                  Need support?{' '}
+                  <a href="mailto:support@regaarder.com" className="text-violet-600 dark:text-violet-400 font-medium hover:underline">
+                    support@regaarder.com
+                  </a>
+                </div>
+              </footer>
             </div>
           </main>
         )}
