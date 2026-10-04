@@ -6,6 +6,7 @@ import { usePaddlePrices } from '../../hooks/usePaddlePrices';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import { onAuthChange } from '../../services/supabaseAuthService';
 import { courierMailService } from '../../services/courierMailService';
+import { creemService, CREEM_CONFIG } from '../../services/creemService';
 
 export default function PricingPage() {
   const [billingFrequency, setBillingFrequency] = useState('month'); // 'month' | 'year'
@@ -91,39 +92,54 @@ export default function PricingPage() {
   // 4. Retrieve localized price strings via Paddle.PricePreview
   const { prices, loading: pricesLoading } = usePaddlePrices(paddle, country);
 
-  // 5. Open Paddle Checkout Overlay
-  const handleSubscribe = (tier) => {
-    if (!paddle) {
-      alert('Paddle is still initializing or client token is unconfigured. Please check environment variables.');
-      return;
-    }
-
-    const priceId = tier.priceId[billingFrequency];
-    if (!priceId) {
-      alert(`No price configured for ${tier.name} (${billingFrequency})`);
-      return;
-    }
-
+  // 5. Unified Checkout Handler (Creem.io primary with Paddle fallback)
+  const handleSubscribe = async (tier) => {
     setSubscribingTier(tier.name);
 
-    try {
-      const successUrl = `${window.location.origin}/welcome`;
-      paddle.Checkout.open({
-        settings: {
-          displayMode: 'overlay',
-          variant: 'one-page',
-          theme: 'dark',
-          successUrl,
-        },
-        ...(user?.email ? { customer: { email: user.email } } : {}),
-        items: [{ priceId, quantity: 1 }],
-      });
-    } catch (err) {
-      console.error('[Paddle Checkout Open Error]', err);
-      alert(`Could not open checkout: ${err?.message || 'Unknown error'}`);
-    } finally {
-      setSubscribingTier(null);
+    // If Creem product ID exists or Creem is configured
+    const creemProductId = tier.creemProductId?.[billingFrequency] || tier.creemProductId;
+    if (creemProductId) {
+      try {
+        const session = await creemService.createCheckoutSession({
+          productId: creemProductId,
+          customerEmail: user?.email || undefined,
+          metadata: { tier: tier.name, billingFrequency }
+        });
+        if (session?.checkout_url || session?.url) {
+          window.location.href = session.checkout_url || session.url;
+          return;
+        }
+      } catch (err) {
+        console.warn('[Creem Checkout Session Error]', err);
+      }
     }
+
+    // Secondary: Paddle Overlay Checkout if available
+    const priceId = tier.priceId?.[billingFrequency];
+    if (paddle && priceId) {
+      try {
+        const successUrl = `${window.location.origin}/welcome`;
+        paddle.Checkout.open({
+          settings: {
+            displayMode: 'overlay',
+            variant: 'one-page',
+            theme: 'dark',
+            successUrl,
+          },
+          ...(user?.email ? { customer: { email: user.email } } : {}),
+          items: [{ priceId, quantity: 1 }],
+        });
+        return;
+      } catch (err) {
+        console.error('[Paddle Checkout Error]', err);
+      } finally {
+        setSubscribingTier(null);
+      }
+    }
+
+    // Default notice if still configuring products
+    alert(`Connecting to Creem secure checkout for ${tier.name} (${billingFrequency === 'month' ? 'Monthly' : 'Annual'}). API Key: ${CREEM_CONFIG.apiKey.slice(0, 14)}...`);
+    setSubscribingTier(null);
   };
 
   return (
