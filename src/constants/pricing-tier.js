@@ -106,6 +106,7 @@ export const PricingTiers = [
       month: import.meta.env.VITE_PADDLE_PRICE_PRO_MONTH || activeCatalog.pro.month,
       year: import.meta.env.VITE_PADDLE_PRICE_PRO_YEAR || activeCatalog.pro.year,
     },
+    creemProductId: 'prod_7H9bHKDStzC2khXH5VVqR4',
     fallbackPrice: {
       month: '$29',
       year: '$278',
