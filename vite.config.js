@@ -17,6 +17,7 @@ function apiDevMiddlewarePlugin() {
           '/api/claude': './api/claude.js',
           '/api/math': './api/math.js',
           '/api/geo': './api/geo.js',
+          '/api/creem/checkout': './api/creem/checkout.js',
         };
 
         const targetRelPath = routeMap[pathname];

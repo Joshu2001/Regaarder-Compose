@@ -371,13 +371,17 @@ $ws.AppActivate('${targetName}')
   });
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    // Enable Ctrl+R / Cmd+R / F5 for instant reload in dev
+    // Enable Ctrl+R / Cmd+R / F5 for true cache-busting hard reload in dev
     if ((input.control || input.meta) && input.key.toLowerCase() === 'r' && !input.alt) {
-      mainWindow.webContents.reload();
+      mainWindow.webContents.session.clearCache().finally(() => {
+        mainWindow.webContents.reloadIgnoringCache();
+      });
       event.preventDefault();
     }
     if (input.key === 'F5') {
-      mainWindow.webContents.reload();
+      mainWindow.webContents.session.clearCache().finally(() => {
+        mainWindow.webContents.reloadIgnoringCache();
+      });
       event.preventDefault();
     }
     // Enable Ctrl+Shift+I / F12 for DevTools
@@ -736,6 +740,55 @@ ipcMain.handle('localAI:generate', async (event, params) => {
   }
 
   return { success: false, error: lastError };
+});
+
+// Creem Checkout IPC Bridge (Bypasses browser CORS & renderer network sandbox)
+ipcMain.handle('creem:create-checkout', async (event, payload) => {
+  try {
+    const apiKey = process.env.VITE_CREEM_API_KEY || 'creem_3Hq2kAdIwW8b1dbigjxOIq';
+    const mode = process.env.VITE_CREEM_MODE || 'production';
+    const baseUrl = mode === 'production'
+      ? 'https://api.creem.io/v1'
+      : 'https://test-api.creem.io/v1';
+
+    // Normalize success_url so Creem's strict URL validator never rejects file:// origins or raw IP addresses
+    const normalizedPayload = { ...(payload || {}) };
+    let validSuccessUrl = 'https://regaarder.com/welcome';
+    if (normalizedPayload.success_url && typeof normalizedPayload.success_url === 'string') {
+      try {
+        const parsed = new URL(normalizedPayload.success_url);
+        if (parsed.hostname === 'localhost') {
+          validSuccessUrl = normalizedPayload.success_url;
+        } else if (parsed.hostname === '127.0.0.1') {
+          const portPart = parsed.port ? `:${parsed.port}` : '';
+          validSuccessUrl = `${parsed.protocol}//localhost${portPart}${parsed.pathname || '/welcome'}`;
+        } else if (parsed.protocol.startsWith('http') && !/^\d{1,3}(\.\d{1,3}){3}$/.test(parsed.hostname)) {
+          validSuccessUrl = normalizedPayload.success_url;
+        }
+      } catch (_) {}
+    }
+    normalizedPayload.success_url = validSuccessUrl;
+
+    const res = await fetch(`${baseUrl}/checkouts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify(normalizedPayload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const errMsg = Array.isArray(data.message) ? data.message.join(', ') : (data.message || data.error || `HTTP ${res.status}`);
+      return { success: false, error: errMsg };
+    }
+
+    return { success: true, data };
+  } catch (err) {
+    console.error('[Electron Main] Creem checkout error:', err);
+    return { success: false, error: err.message || 'Payment provider communication failed' };
+  }
 });
 
 process.on('uncaughtException', (err) => {

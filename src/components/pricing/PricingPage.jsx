@@ -49,8 +49,14 @@ export default function PricingPage() {
         metadata: { tier: tier.name, billingFrequency }
       });
 
-      if (session?.checkout_url || session?.url) {
-        window.location.href = session.checkout_url || session.url;
+      const checkoutUrl = session?.checkout_url || session?.url;
+      if (checkoutUrl) {
+        if (window.electronAPI?.openExternal) {
+          window.electronAPI.openExternal(checkoutUrl);
+        } else {
+          window.location.href = checkoutUrl;
+        }
+        setSubscribingTier(null);
         return;
       }
 
@@ -81,8 +87,14 @@ export default function PricingPage() {
         metadata: { pass: passName, type: 'onetime_pass' }
       });
 
-      if (session?.checkout_url || session?.url) {
-        window.location.href = session.checkout_url || session.url;
+      const checkoutUrl = session?.checkout_url || session?.url;
+      if (checkoutUrl) {
+        if (window.electronAPI?.openExternal) {
+          window.electronAPI.openExternal(checkoutUrl);
+        } else {
+          window.location.href = checkoutUrl;
+        }
+        setSubscribingTier(null);
         return;
       }
 
