@@ -11,12 +11,19 @@ import {
   Share2,
   Edit2,
   FolderInput,
+  Folder,
   Check,
   Pin,
-  PinOff
+  PinOff,
+  FileText,
+  Plus,
+  X
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { isMeaningfulWork } from "../LandingRecentWorkStrip";
+import { readWorkspaceDocuments, deleteWorkspaceDocument, updateWorkspaceDocument } from "../../services/workspaceDocumentStore";
+import { readWorkspaceProjects } from "../../services/workspaceProjectStore";
+import { revealDocumentInLocalFolder } from "../../services/localSyncService";
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return "Sep 13, 2026 at 4:12 AM";
@@ -132,6 +139,67 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   // Share feedback notification
   const [feedbackToast, setFeedbackToast] = useState(null);
 
+  // Add/Share to Project state
+  const [assignProjectDoc, setAssignProjectDoc] = useState(null);
+  const [workspaceProjects, setWorkspaceProjects] = useState([]);
+
+  const handleOpenAssignProject = (e, item) => {
+    e.stopPropagation();
+    setActiveItemMenuId(null);
+    setWorkspaceProjects(readWorkspaceProjects());
+    setAssignProjectDoc(item);
+  };
+
+  const handleAssignToProject = (project) => {
+    if (!assignProjectDoc) return;
+    const docId = assignProjectDoc.id;
+    const projectName = project ? project.name : null;
+    const projectId = project ? project.id : null;
+    const locationStr = project ? `Projects / ${project.name}` : "Workspace / Documents";
+
+    // 1. Update canonical store
+    try {
+      updateWorkspaceDocument(docId, {
+        projectId,
+        location: locationStr
+      });
+    } catch {}
+
+    // 2. Update legacy key if present
+    if (assignProjectDoc.key) {
+      try {
+        const raw = localStorage.getItem(assignProjectDoc.key);
+        if (raw) {
+          const data = JSON.parse(raw);
+          data.projectId = projectId;
+          data.location = locationStr;
+          localStorage.setItem(assignProjectDoc.key, JSON.stringify(data));
+        }
+      } catch {}
+    }
+
+    // 3. Update local items state
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === docId
+          ? {
+              ...i,
+              location: locationStr,
+              doc: {
+                ...i.doc,
+                projectId,
+                location: locationStr
+              }
+            }
+          : i
+      )
+    );
+
+    setAssignProjectDoc(null);
+    setFeedbackToast(project ? `Added to "${project.name}"` : "Removed from project");
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
   const containerRef = useRef(null);
 
   // Unified click-outside dismissal
@@ -150,12 +218,79 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   const loadRecentDocs = useCallback(() => {
     try {
       const parsed = [];
+      const seenIds = new Set();
+
+      // 1. Read canonical workspace document store (single source of truth for all workspace documents)
+      try {
+        const canonicalDocs = readWorkspaceDocuments();
+        if (Array.isArray(canonicalDocs)) {
+          canonicalDocs.forEach((d) => {
+            if (!d || d.id == null) return;
+            const idStr = String(d.id);
+            seenIds.add(idStr);
+
+            let detectedProduct = (d.mode || "compose").toLowerCase();
+            if (detectedProduct === "sheets") detectedProduct = "sheet";
+            if (!["compose", "sheet", "deck", "whiteboard"].includes(detectedProduct)) {
+              if (d.sheetsTitle || d.sheetGrids) detectedProduct = "sheet";
+              else if (d.deckSlidesData || d.deckTitle) detectedProduct = "deck";
+              else if (d.whiteboardWidgets || d.whiteboardShapes || d.whiteboardStrokes) detectedProduct = "whiteboard";
+              else detectedProduct = "compose";
+            }
+
+            let typeLabel = "Document";
+            let loc = d.location || "Workspace / Documents";
+            if (d.projectId) {
+              try {
+                const projects = readWorkspaceProjects();
+                const matchedProj = projects.find((p) => p.id === d.projectId);
+                if (matchedProj) {
+                  loc = `Projects / ${matchedProj.name}`;
+                }
+              } catch {}
+            } else if (detectedProduct === "sheet") {
+              typeLabel = "Sheet";
+              loc = d.location || "Workspace / Sheets";
+            } else if (detectedProduct === "deck") {
+              typeLabel = "Presentation";
+              loc = d.location || "Workspace / Decks";
+            } else if (detectedProduct === "whiteboard") {
+              typeLabel = "Whiteboard";
+              loc = d.location || "Workspace / Whiteboards";
+            }
+
+            let title = (d.title || d.docTitle || d.sheetsTitle || d.deckTitle || "").trim();
+            if (!title) {
+              title = detectedProduct === "sheet" ? "Untitled Sheet" : detectedProduct === "deck" ? "Untitled Presentation" : detectedProduct === "whiteboard" ? "Untitled Whiteboard" : "Untitled Document";
+            }
+
+            const savedAt = d.updatedAt ? new Date(d.updatedAt).getTime() : (d.createdAt ? new Date(d.createdAt).getTime() : Date.now());
+
+            parsed.push({
+              id: d.id,
+              key: `rc.savedDoc.${d.id}`,
+              title,
+              typeLabel,
+              product: detectedProduct,
+              savedAt: isNaN(savedAt) ? Date.now() : savedAt,
+              location: loc,
+              size: "42 KB",
+              doc: d
+            });
+          });
+        }
+      } catch {}
+
+      // 2. Supplement with rc.savedDoc.* from localStorage for documents saved via older paths
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith("rc.savedDoc.")) {
           try {
             const raw = localStorage.getItem(key);
             if (raw) {
+              const docIdStr = key.replace("rc.savedDoc.", "");
+              if (seenIds.has(docIdStr)) continue;
+
               const data = JSON.parse(raw);
               if (!isMeaningfulWork(data)) continue;
 
@@ -173,21 +308,30 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
               let detectedProduct = "compose";
               let typeLabel = "Document";
-              let loc = "Workspace / Documents";
-
-              const lowerTitle = (title || "").toLowerCase();
-              if (lowerTitle.includes("sheet")) {
-                detectedProduct = "sheet";
-                typeLabel = "Sheet";
-                loc = "Workspace / Sheets";
-              } else if (lowerTitle.includes("deck") || lowerTitle.includes("present") || lowerTitle.includes("slide")) {
-                detectedProduct = "deck";
-                typeLabel = "Presentation";
-                loc = "Workspace / Decks";
-              } else if (lowerTitle.includes("whiteboard") || lowerTitle.includes("canvas")) {
-                detectedProduct = "whiteboard";
-                typeLabel = "Whiteboard";
-                loc = "Workspace / Whiteboards";
+              let loc = data.location || "Workspace / Documents";
+              if (data.projectId) {
+                try {
+                  const projects = readWorkspaceProjects();
+                  const matchedProj = projects.find((p) => p.id === data.projectId);
+                  if (matchedProj) {
+                    loc = `Projects / ${matchedProj.name}`;
+                  }
+                } catch {}
+              } else {
+                const lowerTitle = (title || "").toLowerCase();
+                if (lowerTitle.includes("sheet")) {
+                  detectedProduct = "sheet";
+                  typeLabel = "Sheet";
+                  loc = data.location || "Workspace / Sheets";
+                } else if (lowerTitle.includes("deck") || lowerTitle.includes("present") || lowerTitle.includes("slide")) {
+                  detectedProduct = "deck";
+                  typeLabel = "Presentation";
+                  loc = data.location || "Workspace / Decks";
+                } else if (lowerTitle.includes("whiteboard") || lowerTitle.includes("canvas")) {
+                  detectedProduct = "whiteboard";
+                  typeLabel = "Whiteboard";
+                  loc = data.location || "Workspace / Whiteboards";
+                }
               }
 
               if (!title || title.trim() === "." || title.trim() === "..") {
@@ -203,14 +347,15 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
               }
 
               parsed.push({
-                id: Number(key.replace("rc.savedDoc.", "")) || Math.random(),
+                id: Number(docIdStr) || docIdStr || Math.random(),
                 key,
                 title,
                 typeLabel,
                 product: detectedProduct,
                 savedAt: data.savedAt || Date.now(),
                 location: loc,
-                size: sizeLabel
+                size: sizeLabel,
+                doc: data
               });
             }
           } catch {}
@@ -218,25 +363,28 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
       }
 
       parsed.sort((a, b) => (sortOrder === "desc" ? b.savedAt - a.savedAt : a.savedAt - b.savedAt));
-      if (parsed.length > 0) {
-        setItems(parsed);
-      } else {
-        setItems(DEFAULT_SAMPLE_RECENTS);
-      }
+      setItems(parsed);
     } catch {
-      setItems(DEFAULT_SAMPLE_RECENTS);
+      setItems([]);
     }
   }, [sortOrder]);
 
   useEffect(() => {
     loadRecentDocs();
     const handleStorage = (e) => {
-      if (e.key && e.key.startsWith("rc.savedDoc.")) {
+      if (!e || !e.key || e.key.startsWith("rc.savedDoc.") || e.key === "regaarder_documents_v1") {
         loadRecentDocs();
       }
     };
+    const handleCustomUpdate = () => {
+      loadRecentDocs();
+    };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("workspace-storage-update", handleCustomUpdate);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("workspace-storage-update", handleCustomUpdate);
+    };
   }, [loadRecentDocs]);
 
   const toggleStar = (e, itemId) => {
@@ -338,6 +486,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
     e.stopPropagation();
     try {
       if (item.key) localStorage.removeItem(item.key);
+      if (item.id) deleteWorkspaceDocument(item.id);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -408,8 +557,9 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
   const handleBulkDelete = () => {
     try {
       items.forEach((item) => {
-        if (selectedIds.has(item.id) && item.key) {
-          localStorage.removeItem(item.key);
+        if (selectedIds.has(item.id)) {
+          if (item.key) localStorage.removeItem(item.key);
+          if (item.id) deleteWorkspaceDocument(item.id);
         }
       });
       setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
@@ -443,14 +593,14 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
       {/* Header bar */}
       <div className="flex items-center justify-between min-h-[36px]">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100">
-            Recent
+        <div className="flex items-center gap-2">
+          <h2 className="text-[14.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-none">
+            Recent activity
           </h2>
           <button
             type="button"
             onClick={loadRecentDocs}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-0"
+            className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-transparent border-none p-0"
             title="Refresh recents"
           >
             <RotateCcw size={13} />
@@ -466,7 +616,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 setShowTypeMenu(!showTypeMenu);
                 setShowSortMenu(false);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/10 text-[11.5px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-2xs"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer bg-white dark:bg-zinc-850 shadow-2xs"
             >
               <span>{filterLabels[filterType] || "All Types"}</span>
               <ChevronDown size={12} className="text-slate-400" />
@@ -509,7 +659,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 setShowSortMenu(!showSortMenu);
                 setShowTypeMenu(false);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/10 text-[11.5px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-2xs"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer bg-white dark:bg-zinc-850 shadow-2xs"
             >
               <span>Last Modified</span>
               <ChevronDown size={12} className="text-slate-400" />
@@ -550,26 +700,28 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
           </div>
 
           {/* List & Grid View Toggles */}
-          <div className="flex items-center rounded-lg border border-slate-200/80 dark:border-white/10 p-0.5 text-slate-500 bg-white dark:bg-zinc-900 shadow-2xs">
+          <div className="flex items-center rounded-lg border border-slate-200/70 dark:border-white/10 p-0.5 text-slate-500 bg-white dark:bg-zinc-850 shadow-2xs">
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`p-1 rounded transition-colors cursor-pointer border-none ${
+              className={`p-1 rounded-md transition-all cursor-pointer border-none ${
                 viewMode === "list"
-                  ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
-                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent"
+                  ? "bg-slate-100 dark:bg-zinc-750 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent text-slate-400"
               }`}
+              title="List view"
             >
               <List size={13} />
             </button>
             <button
               type="button"
               onClick={() => setViewMode("grid")}
-              className={`p-1 rounded transition-colors cursor-pointer border-none ${
+              className={`p-1 rounded-md transition-all cursor-pointer border-none ${
                 viewMode === "grid"
-                  ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
-                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent"
+                  ? "bg-slate-100 dark:bg-zinc-750 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent text-slate-400"
               }`}
+              title="Grid view"
             >
               <LayoutGrid size={13} />
             </button>
@@ -646,17 +798,34 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
             </button>
           </div>
         </div>
-      ) : (
+      ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
-          <div className="col-span-5 pl-7">Name</div>
-          <div className="col-span-3">Location</div>
-          <div className="col-span-3">Last Modified</div>
-          <div className="col-span-1 text-right pr-1">Size</div>
+          <div className="col-span-8 sm:col-span-5 pl-7">Name</div>
+          <div className="hidden sm:block sm:col-span-3">Location</div>
+          <div className="col-span-4 sm:col-span-3 text-right sm:text-left">Last Modified</div>
+          <div className="hidden sm:block sm:col-span-1 text-right pr-1">Size</div>
         </div>
-      )}
+      ) : null}
+
+      {/* EMPTY STATE */}
+      {filteredItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 dark:border-white/[0.08] bg-slate-50/40 dark:bg-zinc-850/20">
+          <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/60 flex items-center justify-center text-slate-500 dark:text-zinc-400 mb-3 shadow-2xs">
+            <FileText size={20} strokeWidth={1.75} />
+          </div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+            {filterType !== "all" ? `No ${filterLabels[filterType] || "matching"} files yet` : "No recent documents yet"}
+          </h3>
+          <p className="text-xs text-slate-400 dark:text-zinc-400 max-w-sm mt-1 leading-relaxed">
+            {filterType !== "all"
+              ? "Try switching to 'All Types' or create a new file to get started."
+              : "Files you create, edit, or import across Docs, Sheets, Decks, and Whiteboards will appear here."}
+          </p>
+        </div>
+      ) : null}
 
       {/* LIST VIEW */}
-      {viewMode === "list" && (
+      {filteredItems.length > 0 && viewMode === "list" && (
         <div className="divide-y divide-slate-100/70 dark:divide-white/[0.02]">
           {filteredItems.map((item) => {
             const isSelected = selectedIds.has(item.id);
@@ -675,14 +844,14 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     onLaunch(item.product, item.id);
                   }
                 }}
-                className={`grid grid-cols-12 px-2 py-2.5 items-center rounded-xl transition-all cursor-pointer group relative ${
+                className={`grid grid-cols-12 px-2.5 py-2.5 items-center rounded-xl transition-all duration-150 cursor-pointer group relative border border-transparent ${
                   isSelected
-                    ? "bg-violet-50/40 dark:bg-violet-950/20"
-                    : "hover:bg-slate-100/50 dark:hover:bg-zinc-800/30"
+                    ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/50 dark:border-violet-900/30"
+                    : "hover:bg-slate-50/90 dark:hover:bg-white/[0.03] hover:border-slate-200/50 dark:hover:border-white/[0.04]"
                 }`}
               >
                 {/* Name Column with Checkbox slot & App icon */}
-                <div className="col-span-5 flex items-center gap-2.5 pr-2 min-w-0">
+                <div className="col-span-8 sm:col-span-5 flex items-center gap-2.5 pr-2 min-w-0">
                   {/* WPS / Apple style Checkbox slot on the far left */}
                   <div className="w-5 h-5 flex items-center justify-center shrink-0">
                     <button
@@ -701,9 +870,9 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     </button>
                   </div>
 
-                  <AppNativeSvgIcon type={item.product} size={26} />
+                  <AppNativeSvgIcon type={item.product} size={24} className="shrink-0" />
 
-                  <div className="truncate flex-1">
+                  <div className="truncate flex-1 min-w-0">
                     {isRenaming ? (
                       <form
                         onSubmit={(e) => {
@@ -739,7 +908,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                             />
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
                           {item.typeLabel}
                         </div>
                       </>
@@ -748,17 +917,27 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 </div>
 
                 {/* Location */}
-                <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400 truncate pr-2">
-                  {item.location}
+                <div className="hidden sm:flex sm:col-span-3 text-[12.5px] truncate pr-2 items-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      revealDocumentInLocalFolder(item.doc || item);
+                    }}
+                    className="text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:underline transition-colors cursor-pointer bg-transparent border-none p-0 text-left truncate max-w-full font-normal"
+                    title="Open file location"
+                  >
+                    {item.location}
+                  </button>
                 </div>
 
                 {/* Last Modified */}
-                <div className="col-span-3 text-[12.5px] text-slate-500 dark:text-zinc-400">
+                <div className="col-span-4 sm:col-span-3 text-[11.5px] sm:text-[12.5px] text-slate-500 dark:text-zinc-400 text-right sm:text-left truncate">
                   {formatTimestamp(item.savedAt)}
                 </div>
 
                 {/* Size Column + Hover Contextual Actions (Star, Share, More) */}
-                <div className="col-span-1 flex items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
+                <div className="hidden sm:flex sm:col-span-1 items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
                   {/* Size text (hidden when hovering so actions fit cleanly) */}
                   <span className={`${isMenuOpen ? "opacity-0" : "group-hover:opacity-0"} transition-opacity`}>
                     {item.size}
@@ -890,6 +1069,15 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
                           <button
                             type="button"
+                            onClick={(e) => handleOpenAssignProject(e, item)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Folder size={14} className="text-slate-400" />
+                            <span>Add to project...</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={(e) => handleRemoveFromRecents(e, item)}
                             className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
                           >
@@ -919,7 +1107,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
       )}
 
       {/* GRID VIEW */}
-      {viewMode === "grid" && (
+      {filteredItems.length > 0 && viewMode === "grid" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
           {filteredItems.map((item) => {
             const isSelected = selectedIds.has(item.id);
@@ -935,10 +1123,10 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     onLaunch(item.product, item.id);
                   }
                 }}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between h-36 ${
+                className={`p-3.5 rounded-xl border transition-all duration-150 ease-out cursor-pointer relative group flex flex-col justify-between h-36 ${
                   isSelected
-                    ? "bg-violet-50/40 dark:bg-violet-950/20 border-violet-200/80 dark:border-violet-900/40 shadow-xs"
-                    : "bg-white dark:bg-zinc-850 border-slate-200/70 dark:border-white/[0.06] hover:shadow-md hover:border-slate-300 dark:hover:border-zinc-700"
+                    ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/80 dark:border-violet-900/40 shadow-2xs"
+                    : "bg-white dark:bg-zinc-800/90 border-slate-200/70 dark:border-white/[0.07] hover:border-slate-300/90 dark:hover:border-white/18 shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 active:translate-y-0"
                 }`}
               >
                 {/* Top row: Checkbox slot & Star button */}
@@ -971,6 +1159,14 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     </button>
                     <button
                       type="button"
+                      onClick={(e) => handleOpenAssignProject(e, item)}
+                      title="Add to project"
+                      className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
+                    >
+                      <Folder size={12} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={(e) => handleShare(e, item)}
                       className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 transition-colors cursor-pointer border-none bg-transparent"
                     >
@@ -1000,6 +1196,115 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ASSIGN TO PROJECT MODAL */}
+      {assignProjectDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setAssignProjectDoc(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/80 dark:border-white/10 p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 flex items-center justify-center">
+                  <Folder size={16} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100">
+                    Add to Project
+                  </h3>
+                  <p className="text-[12px] text-slate-500 dark:text-zinc-400 truncate max-w-[260px]">
+                    {assignProjectDoc.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignProjectDoc(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {workspaceProjects.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 dark:text-zinc-500 text-[13px]">
+                  No projects found. Create a project in the Projects hub first.
+                </div>
+              ) : (
+                workspaceProjects.map((project) => {
+                  const isCurrent =
+                    assignProjectDoc.doc?.projectId === project.id ||
+                    assignProjectDoc.location?.includes(project.name);
+
+                  return (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => handleAssignToProject(project)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left cursor-pointer ${
+                        isCurrent
+                          ? "bg-violet-50/70 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700/60"
+                          : "bg-slate-50/70 dark:bg-zinc-800/60 border-slate-200/60 dark:border-zinc-700/50 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-3.5 h-3.5 rounded-md shrink-0 shadow-2xs"
+                          style={{ backgroundColor: project.color || "#8B5CF6" }}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-medium text-slate-900 dark:text-zinc-100 truncate">
+                            {project.name}
+                          </div>
+                          {project.description && (
+                            <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
+                              {project.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {isCurrent ? (
+                        <span className="text-[11px] font-medium text-violet-600 dark:text-violet-400 shrink-0 ml-2">
+                          Current
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 ml-2 group-hover:text-violet-600">
+                          Select
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {assignProjectDoc.doc?.projectId && (
+              <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => handleAssignToProject(null)}
+                  className="text-[12px] text-red-600 dark:text-red-400 hover:underline cursor-pointer bg-transparent border-none p-0 font-medium"
+                >
+                  Remove from project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssignProjectDoc(null)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer bg-transparent border-none"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>
