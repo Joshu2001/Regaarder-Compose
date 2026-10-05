@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Bell, Layout, Menu } from "lucide-react";
+import { Search, Bell, Layout, Menu, User } from "lucide-react";
 import RegaarderBrandIcon from "../RegaarderBrandIcon";
 
 export default function WorkspaceTopBar({
@@ -37,15 +37,15 @@ export default function WorkspaceTopBar({
         WebkitAppRegion: 'drag',
         paddingRight: isElectron ? '146px' : undefined
       }}
-      className="h-[54px] px-3 sm:px-6 border-b border-slate-100 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 flex items-center justify-between shrink-0 select-none z-30"
+      className="h-[52px] px-3 sm:px-6 border-b border-slate-200/70 dark:border-white/[0.06] bg-white/80 dark:bg-zinc-900/90 backdrop-blur-md flex items-center justify-between shrink-0 select-none z-30 transition-colors"
     >
-      {/* Left: Mobile Menu Button + Brand Identity */}
-      <div className="flex items-center gap-2 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
+      {/* Left Column: Brand Identity & Workspace Switcher */}
+      <div className="flex items-center gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
         {onToggleMobileMenu && (
           <button
             type="button"
             onClick={onToggleMobileMenu}
-            className="md:hidden p-1.5 -ml-1 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+            className="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
             title="Open navigation menu"
             aria-label="Open navigation menu"
           >
@@ -55,67 +55,76 @@ export default function WorkspaceTopBar({
         <button
           type="button"
           onClick={onOpenWorkspaceSwitcher}
-          className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 outline-none hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-1 -m-1 rounded-md hover:bg-slate-100/70 dark:hover:bg-zinc-800/70 transition-colors outline-none group text-left"
         >
-          <div className="w-5 h-5 flex items-center justify-center">
-            <RegaarderBrandIcon className="w-5 h-5 text-slate-900 dark:text-white" />
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+            <RegaarderBrandIcon className="w-4.5 h-4.5 text-slate-900 dark:text-white group-hover:scale-105 transition-transform" />
           </div>
-          <span className="font-semibold text-[13.5px] tracking-tight text-slate-900 dark:text-zinc-100">
+          <span className="font-semibold text-[13px] tracking-tight text-slate-800 dark:text-zinc-100">
             {activeWorkspaceName}
           </span>
         </button>
       </div>
 
-      {/* Center: Clean Search bar with premium succinct label */}
-      <div className="flex-1 max-w-[460px] mx-2 sm:mx-8 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
+      {/* Center Column: Perfectly Centered Spotlight-Grade Search */}
+      <div className="flex-1 max-w-[520px] mx-auto px-4 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onSearchClick}
-          className="w-full flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-white/[0.08] text-slate-400 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-white/20 transition-all text-xs cursor-pointer shadow-2xs group"
+          className="w-full h-8 flex items-center justify-between pl-3 pr-2 rounded-lg bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 text-slate-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)] group"
         >
-          <Search size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors shrink-0" />
-          <span className="truncate text-slate-400 text-[12px] sm:text-[12.5px] font-normal">
-            <span className="hidden sm:inline">Search your workspace</span>
-            <span className="sm:hidden">Search...</span>
-          </span>
+          <div className="flex items-center gap-2.5 min-w-0 truncate">
+            <Search size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors shrink-0" />
+            <span className="truncate text-slate-500 dark:text-zinc-400 text-[12px] font-normal">
+              <span className="hidden sm:inline">Search files, tools and workspace...</span>
+              <span className="sm:hidden">Search...</span>
+            </span>
+          </div>
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-slate-500 dark:text-zinc-400 bg-white dark:bg-zinc-700/80 rounded border border-slate-200/90 dark:border-zinc-600/60 shadow-2xs select-none">
+            <span className="text-[10px] opacity-70">⌘</span>K
+          </kbd>
         </button>
       </div>
 
-      {/* Right: Notifications, Layout Panel Toggle, Avatar */}
-      <div className="flex items-center gap-1.5 sm:gap-4 shrink-0" style={{ WebkitAppRegion: 'no-drag' }}>
-        {/* Visible Public Pricing Link for Compliance */}
+      {/* Right Column: Harmonized Executive-Tier Tool Cluster */}
+      <div className="flex items-center justify-end gap-1.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
+        {/* Subtle, restrained Pricing entry */}
         <a
           href="/pricing"
-          className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 hover:bg-violet-100 transition-colors border border-violet-200 dark:border-violet-800/60"
+          className="hidden sm:inline-flex items-center h-7 px-2.5 rounded-md text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/70 dark:border-zinc-800 transition-colors"
         >
           Pricing
         </a>
 
+        {/* Notifications Button */}
         <button
           type="button"
           onClick={onNotificationsClick}
-          className="relative p-1 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-100 transition-colors cursor-pointer bg-transparent border-none"
+          className="relative w-7 h-7 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-transparent border-none"
           title="Notifications"
         >
-          <Bell size={16} />
+          <Bell size={15} />
           {unreadCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-violet-600" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-600" />
           )}
         </button>
 
-        {/* Layout button: toggles right sidebar (hidden on small mobile screens to prevent clutter) */}
+        {/* Layout Side Panel Toggle */}
         <button
           type="button"
           onClick={onToggleRightPanel}
-          className={`hidden sm:flex p-1.5 rounded-lg transition-colors cursor-pointer border-none ${
+          className={`hidden sm:flex w-7 h-7 items-center justify-center rounded-md transition-colors cursor-pointer border-none ${
             isRightPanelOpen
-              ? "text-slate-800 bg-slate-200/60 dark:text-zinc-100 dark:bg-zinc-800"
-              : "text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 bg-transparent"
+              ? "text-slate-800 bg-slate-200/80 dark:text-zinc-100 dark:bg-zinc-800"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 bg-transparent"
           }`}
           title={isRightPanelOpen ? "Hide side panel" : "Show side panel"}
         >
-          <Layout size={16} />
+          <Layout size={15} />
         </button>
+
+        {/* Separator Line */}
+        <div className="h-4 w-[1px] bg-slate-200 dark:bg-zinc-800 mx-1 hidden sm:block" />
 
         {/* User / Sign-in Control */}
         <div className="relative">
@@ -123,7 +132,7 @@ export default function WorkspaceTopBar({
             <button
               type="button"
               onClick={onProfileClick}
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8B5CF6] text-white font-medium text-[11px] shadow-2xs cursor-pointer border border-black/[0.08] dark:border-white/[0.12] hover:opacity-90 transition-all overflow-hidden"
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium text-[11px] shadow-2xs cursor-pointer border border-black/[0.08] dark:border-white/[0.12] hover:opacity-90 transition-all overflow-hidden"
               title={`Profile: ${currentUser.name || currentUser.displayName || currentUser.email || 'User'}`}
             >
               {currentUser?.photoURL || currentUser?.avatar ? (
@@ -140,10 +149,11 @@ export default function WorkspaceTopBar({
             <button
               type="button"
               onClick={onProfileClick}
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-semibold text-[11px] border border-slate-300/80 dark:border-zinc-700 hover:bg-violet-600 hover:text-white hover:border-violet-600 dark:hover:bg-violet-600 dark:hover:border-violet-600 transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-medium text-[11.5px] border border-slate-200/90 dark:border-zinc-700/80 transition-all cursor-pointer shadow-2xs"
               title="Sign in to your workspace"
             >
-              U
+              <User size={13} className="text-slate-500 dark:text-zinc-400" />
+              <span className="hidden sm:inline">Sign In</span>
             </button>
           )}
         </div>

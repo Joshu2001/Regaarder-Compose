@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import WorkspaceTopBar from "./components/home/WorkspaceTopBar";
 import WorkspaceLeftRail from "./components/home/WorkspaceLeftRail";
 import WorkspaceQuickCreate from "./components/home/WorkspaceQuickCreate";
@@ -315,17 +314,7 @@ export default function RegaarderComposeLanding({
           </main>
         )}
 
-        {/* Subtle Right Edge Trigger (when sidebar is hidden) */}
-        {!isRightPanelOpen && (
-          <button
-            type="button"
-            onClick={() => setIsRightPanelOpen(true)}
-            className="hidden lg:flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 w-4 h-12 bg-slate-100/90 dark:bg-zinc-800/90 hover:w-5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded-l-md border-y border-l border-slate-200/60 dark:border-white/10 transition-all cursor-pointer shadow-2xs z-20 group"
-            title="Reveal Schedule & Workspace Panel"
-          >
-            <ChevronLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
-          </button>
-        )}
+
 
         {/* Right Panel: Clean slide-in on reveal without permanently consuming space */}
         {isRightPanelOpen && (

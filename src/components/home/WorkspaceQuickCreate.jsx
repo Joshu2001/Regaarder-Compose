@@ -106,7 +106,7 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
             type="button"
             onClick={handleToggle}
             onMouseEnter={markDiscovered}
-            className={`flex items-center gap-1 text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-1 rounded-md group`}
+            className="flex items-center gap-1 text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-1 rounded-md group"
             title={isExpanded ? "Show fewer tools" : "Show more tools"}
           >
             <span className="hidden sm:inline text-[11px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors">
@@ -130,7 +130,7 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
           <button
             key={item.id}
             type="button"
-            data-onboarding-target={item.id === 'compose' ? 'quick-create-compose' : `quick-create-${item.id}`}
+            data-onboarding-target={item.id === "compose" ? "quick-create-compose" : `quick-create-${item.id}`}
             onClick={() => onLaunch && onLaunch(item.id)}
             className="flex flex-col items-start p-3 sm:p-4 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-xs transition-all text-left cursor-pointer group"
           >

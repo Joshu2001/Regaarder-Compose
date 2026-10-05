@@ -593,14 +593,14 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
 
       {/* Header bar */}
       <div className="flex items-center justify-between min-h-[36px]">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-[16px] font-semibold text-slate-900 dark:text-zinc-100">
-            Recent
+        <div className="flex items-center gap-2">
+          <h2 className="text-[14.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-none">
+            Recent activity
           </h2>
           <button
             type="button"
             onClick={loadRecentDocs}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-0"
+            className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-transparent border-none p-0"
             title="Refresh recents"
           >
             <RotateCcw size={13} />
@@ -616,7 +616,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 setShowTypeMenu(!showTypeMenu);
                 setShowSortMenu(false);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/10 text-[11.5px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-2xs"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer bg-white dark:bg-zinc-850 shadow-2xs"
             >
               <span>{filterLabels[filterType] || "All Types"}</span>
               <ChevronDown size={12} className="text-slate-400" />
@@ -659,7 +659,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                 setShowSortMenu(!showSortMenu);
                 setShowTypeMenu(false);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/10 text-[11.5px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-2xs"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer bg-white dark:bg-zinc-850 shadow-2xs"
             >
               <span>Last Modified</span>
               <ChevronDown size={12} className="text-slate-400" />
@@ -700,26 +700,28 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
           </div>
 
           {/* List & Grid View Toggles */}
-          <div className="flex items-center rounded-lg border border-slate-200/80 dark:border-white/10 p-0.5 text-slate-500 bg-white dark:bg-zinc-900 shadow-2xs">
+          <div className="flex items-center rounded-lg border border-slate-200/70 dark:border-white/10 p-0.5 text-slate-500 bg-white dark:bg-zinc-850 shadow-2xs">
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`p-1 rounded transition-colors cursor-pointer border-none ${
+              className={`p-1 rounded-md transition-all cursor-pointer border-none ${
                 viewMode === "list"
-                  ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
-                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent"
+                  ? "bg-slate-100 dark:bg-zinc-750 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent text-slate-400"
               }`}
+              title="List view"
             >
               <List size={13} />
             </button>
             <button
               type="button"
               onClick={() => setViewMode("grid")}
-              className={`p-1 rounded transition-colors cursor-pointer border-none ${
+              className={`p-1 rounded-md transition-all cursor-pointer border-none ${
                 viewMode === "grid"
-                  ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
-                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent"
+                  ? "bg-slate-100 dark:bg-zinc-750 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent text-slate-400"
               }`}
+              title="Grid view"
             >
               <LayoutGrid size={13} />
             </button>
@@ -842,10 +844,10 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     onLaunch(item.product, item.id);
                   }
                 }}
-                className={`grid grid-cols-12 px-2 py-2.5 items-center rounded-xl transition-all cursor-pointer group relative ${
+                className={`grid grid-cols-12 px-2.5 py-2.5 items-center rounded-xl transition-all duration-150 cursor-pointer group relative border border-transparent ${
                   isSelected
-                    ? "bg-violet-50/40 dark:bg-violet-950/20"
-                    : "hover:bg-slate-100/50 dark:hover:bg-zinc-800/30"
+                    ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/50 dark:border-violet-900/30"
+                    : "hover:bg-slate-50/90 dark:hover:bg-white/[0.03] hover:border-slate-200/50 dark:hover:border-white/[0.04]"
                 }`}
               >
                 {/* Name Column with Checkbox slot & App icon */}
@@ -1121,10 +1123,10 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     onLaunch(item.product, item.id);
                   }
                 }}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between h-36 ${
+                className={`p-3.5 rounded-xl border transition-all duration-150 ease-out cursor-pointer relative group flex flex-col justify-between h-36 ${
                   isSelected
-                    ? "bg-violet-50/40 dark:bg-violet-950/20 border-violet-200/80 dark:border-violet-900/40 shadow-xs"
-                    : "bg-white dark:bg-zinc-850 border-slate-200/70 dark:border-white/[0.06] hover:shadow-md hover:border-slate-300 dark:hover:border-zinc-700"
+                    ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/80 dark:border-violet-900/40 shadow-2xs"
+                    : "bg-white dark:bg-zinc-800/90 border-slate-200/70 dark:border-white/[0.07] hover:border-slate-300/90 dark:hover:border-white/18 shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 active:translate-y-0"
                 }`}
               >
                 {/* Top row: Checkbox slot & Star button */}
