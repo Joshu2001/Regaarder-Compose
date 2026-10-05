@@ -25854,8 +25854,8 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
    * Houses Workspace Library, Context-Aware Export, and Share in an Apple-style frosted glass capsule.
    */
   const renderBottomActionCapsule = () => {
-    // Hide when modal screens, presentation modes, zen mode, landing page, or Template galleries take over
-    if (isSheetsPresentationMode || isDeckPresentationMode || isSheetZenMode || isWhiteboardImmersive || productMode === 'landing' || docToolbarTab === 'Templates' || deckToolbarTab === 'Templates') {
+    // Hide when modal screens, presentation modes, zen mode, landing page, Notes mode, or Template galleries take over
+    if (isSheetsPresentationMode || isDeckPresentationMode || isSheetZenMode || isWhiteboardImmersive || isNotesWorkspace || productMode === 'landing' || docToolbarTab === 'Templates' || deckToolbarTab === 'Templates') {
       return null;
     }
     if (roomState === 'active' && roomPanelMode === 'expanded') {
@@ -76873,7 +76873,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           onMouseLeave={handleWhiteboardTopNavLeave}
           className={`flex flex-col select-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isSpatialWorkspace
-              ? `absolute top-0 left-0 right-0 z-[370] shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] ${
+              ? `absolute top-0 left-0 right-0 z-[370] ${
+                  isNotesWorkspace
+                    ? 'shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
+                    : 'shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)]'
+                } ${
                   isWhiteboardTopNavRevealed 
                     ? 'translate-y-0 opacity-100 pointer-events-auto' 
                     : '-translate-y-full opacity-0 pointer-events-none'
@@ -76882,7 +76886,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }`}
         >
         {/* Top Header */}
-        <div onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className="h-12 flex items-center justify-between px-5 border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85 backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200">
+        <div onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-12 flex items-center justify-between px-5 ${
+          isNotesWorkspace 
+            ? 'border-b border-black/[0.04] dark:border-white/[0.06] bg-white/70 dark:bg-[#18181B]/70' 
+            : 'border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85'
+        } backdrop-blur-2xl shrink-0 select-none group/header relative z-[350] transition-all duration-200`}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -78279,6 +78287,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
         {/* Document Tab Strip - executive Apple-style with progressive overflow scroll */}
+        {!isNotesWorkspace && (
         <div className="h-10 border-b border-slate-200/60 dark:border-zinc-800/80 px-2 flex items-center bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 group/tabstrip">
           <button
             type="button"
@@ -78610,6 +78619,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <ChevronRight size={15} />
           </button>
         </div>
+        )}
         </div>
 
         {/* Full-width Sub-Header Toolbar (Matches Sheets Toolbar system) */}
@@ -80090,20 +80100,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
         
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className={`flex-1 relative w-full h-full overflow-hidden ${
-          (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'bg-white dark:bg-[#18181B]' : 'bg-[#F7F7F9]'
+        <div className={`flex-1 relative w-full h-full min-h-0 overflow-hidden ${
+          (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'bg-[#FCFAF7] dark:bg-[#18181A]' : 'bg-[#F7F7F9]'
         }`}>
           
         <div 
-          className={`flex-1 flex flex-col min-h-0 overflow-hidden z-50 cursor-pointer ${
+          className={`flex-1 flex flex-col min-h-0 h-full w-full overflow-hidden z-50 cursor-pointer ${
             (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')
-              ? 'border-0 rounded-none shadow-none bg-white dark:bg-[#18181B]'
+              ? 'border-0 rounded-none shadow-none bg-[#FCFAF7] dark:bg-[#18181A]'
               : 'bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl'
           }`}
           style={getWorkspaceModuleStyle('compose')}
           onClick={() => handleWorkspaceModuleClick('compose')}
         >
-          <div className="flex-1 flex min-h-0">
+          <div className="flex-1 flex min-h-0 h-full w-full">
           {roomState === 'active' && showDocumentOutlineView && (
             <div className="w-[260px] shrink-0 border-r border-gray-200 bg-[#FAFAFC] hidden lg:flex flex-col shadow-[inset_-10px_0_15px_-15px_rgba(0,0,0,0.05)] z-10">
               {renderDocumentOutlineContent()}
@@ -80117,7 +80127,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             onScroll={handleEditorScroll}
             className={`flex-1 overflow-y-auto editor-auto-dim-scrollbar thin-scrollbar relative transition-opacity duration-300 opacity-100 ${
               (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')
-                ? 'p-0 bg-white dark:bg-[#18181B]'
+                ? 'p-0 bg-[#FCFAF7] dark:bg-[#18181A] flex flex-col h-full min-h-0'
                 : (activeDoc?.isPdfDoc ? 'p-0 pt-0 pb-16 bg-[#F7F7F9]' : 'p-6 md:p-8 pt-14 md:pt-14 bg-[#F7F7F9]')
             }`}
           >
@@ -83007,7 +83017,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           ) : (
           <div
-            className={`flex-1 min-h-0 ${(productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'))) ? 'overflow-hidden p-0' : 'overflow-visible relative px-2 pt-4 pb-6 md:px-4 md:pt-6 md:pb-8'} transition-[margin-right] duration-200 ease-out ${
+            className={`flex-1 min-h-0 ${(productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes'))) ? 'overflow-hidden p-0 flex flex-col h-full' : 'overflow-visible relative px-2 pt-4 pb-6 md:px-4 md:pt-6 md:pb-8'} transition-[margin-right] duration-200 ease-out ${
               (productMode === 'whiteboard') ? 'opacity-0 pointer-events-none select-none hidden' : ''
             }`}
             style={{
@@ -83017,7 +83027,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }}
           >
           <div
-            className={(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? "w-full h-full" : "mx-auto"}
+            className={(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? "w-full h-full min-h-full flex flex-col flex-1" : "mx-auto"}
             style={{
               width: '100%',
               height: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : undefined,
@@ -83140,10 +83150,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               // Auto page-insert on Enter disabled; pages are now created on-demand via the "+ New page" CTA
               return;
             }}
-            className={`compose-editor-surface box-border ${(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'w-full h-full' : 'mx-auto'} relative bg-transparent border-none transition-all ${isDarkMode ? 'app-dark' : ''}`}
+            className={`compose-editor-surface box-border ${(activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? 'w-full h-full min-h-full flex-1 flex flex-col' : 'mx-auto'} relative bg-transparent border-none transition-all ${isDarkMode ? 'app-dark' : ''}`}
             style={{ 
               width: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
               height: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : undefined,
+              minHeight: (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes') ? '100%' : undefined,
               '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
             }}
           >
@@ -84528,6 +84539,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   if (activeDoc?.id === id) createNotesExperience();
                 }}
                 onToggleImmersive={toggleDocumentImmersiveMode}
+                onGoHome={() => {
+                  closeTransientMenus();
+                  setProductMode('landing');
+                }}
                 isDarkMode={isDarkMode}
               />
             ) : (
@@ -85186,7 +85201,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
           </div>
         )}
-        {productMode !== 'whiteboard' && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
+        {productMode !== 'whiteboard' && !isNotesWorkspace && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
           className={`fixed bottom-8 ${isPromptSlashMenuOpen ? 'z-[250000]' : 'z-[1210]'} transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 scale-95 translate-y-4 pointer-events-none' : 'opacity-100 scale-100 translate-y-0 pointer-events-auto'}`}
           style={{
@@ -85805,7 +85820,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         )}
 
-        {(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isScheduleSessionModalOpen && docToolbarTab !== 'Templates' && deckToolbarTab !== 'Templates' && (
+        {(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || rightSidebarOpen) && !activeDoc?.isPdfDoc && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'whiteboard' && !isNotesWorkspace && !isScheduleSessionModalOpen && docToolbarTab !== 'Templates' && deckToolbarTab !== 'Templates' && (
           <div
             className={`pointer-events-none absolute z-[140] ${
               (productMode === 'notes' || (productMode !== 'compose' && (activeDoc?.isNotesDoc || activeDoc?.mode === 'notes')))

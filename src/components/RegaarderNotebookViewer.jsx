@@ -5,7 +5,7 @@ import {
   Highlighter, Paperclip, ImagePlus, FileText, Pin, PinOff,
   Table, Sliders, Undo2, Redo2, Sparkles, ChevronRight, Hash, Eye,
   Lock, Unlock, Shield, Users, Share2, Copy, Download, Eraser,
-  PenTool, Brush, Palette, Trash2, ExternalLink, Play
+  PenTool, Brush, Palette, Trash2, ExternalLink, Play, Home
 } from "lucide-react";
 import { RegaarderAiIcon, NotesIcon } from "./RegaarderProductIcons";
 import { executeAiTurn } from "../services/llmProviderService";
@@ -111,9 +111,14 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 220, anchorAlign
         onClose();
       }
     };
-    document.addEventListener("pointerdown", handleOutside);
+
+    // Defer listener attachment to next tick so current pointerdown/click doesn't immediately dismiss
+    const timer = setTimeout(() => {
+      document.addEventListener("pointerdown", handleOutside);
+    }, 50);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("pointerdown", handleOutside);
     };
@@ -221,6 +226,36 @@ export function NotesFloatingDock({
     if (editor) editor.focus();
     const checkboxHtml = `<div class="note-todo-item" style="display:flex;align-items:flex-start;gap:8px;margin:3px 0;"><input type="checkbox" style="width:15px;height:15px;margin-top:7px;accent-color:#D97706;cursor:pointer;" onchange="this.nextElementSibling.style.textDecoration=this.checked?'line-through':'none';this.nextElementSibling.style.opacity=this.checked?'0.6':'1';" /><span>New action item</span></div><br/>`;
     exec("insertHTML", checkboxHtml);
+    closeAll();
+  };
+
+  const handleInsertTable = () => {
+    const editor = document.getElementById("regaarder-notebook-editor");
+    if (editor) editor.focus();
+    const tableHtml = `
+      <table style="width:100%;max-width:540px;border-collapse:collapse;margin:12px 0;font-size:13px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.12);">
+        <thead>
+          <tr style="background:rgba(0,0,0,0.04);">
+            <th style="border:1px solid rgba(0,0,0,0.1);padding:6px 10px;text-align:left;font-weight:600;">Item</th>
+            <th style="border:1px solid rgba(0,0,0,0.1);padding:6px 10px;text-align:left;font-weight:600;">Status</th>
+            <th style="border:1px solid rgba(0,0,0,0.1);padding:6px 10px;text-align:left;font-weight:600;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid rgba(0,0,0,0.08);padding:6px 10px;">Objective 1</td>
+            <td style="border:1px solid rgba(0,0,0,0.08);padding:6px 10px;">In Progress</td>
+            <td style="border:1px solid rgba(0,0,0,0.08);padding:6px 10px;">Initial draft ready</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid rgba(0,0,0,0.08);padding:6px 10px;">Objective 2</td>
+            <td style="border:1px solid rgba(0,0,0,0.08);padding:6px 10px;">Pending</td>
+            <td style="border:1px solid rgba(0,0,0,0.08);padding:6px 10px;">Awaiting review</td>
+          </tr>
+        </tbody>
+      </table><br/>
+    `;
+    exec("insertHTML", tableHtml);
     closeAll();
   };
 
@@ -399,12 +434,12 @@ export function NotesFloatingDock({
           <button
             ref={refs.pen}
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               if (activeTool !== "pen") {
                 handleTogglePen();
-              } else {
-                toggle("pen");
               }
+              toggle("pen");
             }}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
               activeTool === "pen"
@@ -700,7 +735,10 @@ export function NotesFloatingDock({
           <button
             ref={refs.ruling}
             type="button"
-            onClick={() => toggle("ruling")}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggle("ruling");
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
               openPopover === "ruling"
                 ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
@@ -788,7 +826,10 @@ export function NotesFloatingDock({
           <button
             ref={refs.add}
             type="button"
-            onClick={() => toggle("add")}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggle("add");
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
               openPopover === "add"
                 ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
@@ -864,7 +905,10 @@ export function NotesFloatingDock({
             ref={refs.ai}
             type="button"
             disabled={isAiLoading}
-            onClick={() => toggle("ai")}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggle("ai");
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               openPopover === "ai"
                 ? "bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300"
@@ -920,7 +964,10 @@ export function NotesFloatingDock({
           <button
             ref={refs.more}
             type="button"
-            onClick={() => toggle("more")}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggle("more");
+            }}
             className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
               openPopover === "more"
                 ? "bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
@@ -1988,28 +2035,32 @@ function RuledNotebookCanvas({
 
   const canvasContainerRef = useRef(null);
 
-  // Dynamic scrollbar: completely hidden by default, emerges only when content overflows heavily and scrolled near the end
+  // Dynamic scrollbar: completely hidden by default, emerges ONLY when content overflows heavily and user scrolls
   useEffect(() => {
     const el = canvasContainerRef.current;
     if (!el) return;
 
+    let hideTimer = null;
     const handleScroll = () => {
       const scrollRange = el.scrollHeight - el.clientHeight;
-      if (scrollRange <= 180) {
+      // Do not show scrollbar unless real content causes actual overflow (> 240px excess)
+      if (scrollRange <= 240) {
         el.classList.remove("has-visible-scrollbar");
         return;
       }
-      const scrollRatio = el.scrollTop / scrollRange;
-      // Appears when text is close to the end of the note (> 65% scrolled) or when overflowing heavily and scrolling
-      if (scrollRatio > 0.65) {
-        el.classList.add("has-visible-scrollbar");
-      } else {
+
+      el.classList.add("has-visible-scrollbar");
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
         el.classList.remove("has-visible-scrollbar");
-      }
+      }, 1200);
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
   }, []);
 
   // ─── Drawing Overlay Pointer Event Handlers ─────────────────────────────────
@@ -2233,7 +2284,7 @@ function RuledNotebookCanvas({
       ref={canvasContainerRef}
       onDoubleClick={handleCanvasDoubleClick}
       onPointerDown={handleCanvasPointerDown}
-      className="flex-1 h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text notes-canvas-scrollbar"
+      className="flex-1 w-full h-full min-h-full overflow-y-auto relative bg-[#FCFAF7] dark:bg-[#18181A] transition-colors select-text notes-canvas-scrollbar"
     >
       {/* Floating Contextual Selection Toolbar */}
       {selectionToolbarState && !isHandwriting && (
@@ -2264,16 +2315,16 @@ function RuledNotebookCanvas({
         <span>1 / 1</span>
       </div>
 
-      {/* Ruling lines layer */}
+      {/* Ruling lines layer - spans full viewport and scroll height seamlessly */}
       <div
-        className="absolute inset-0 pointer-events-none transition-all duration-150"
+        className="absolute inset-0 min-h-full pointer-events-none transition-all duration-150"
         style={rulingBgStyle}
       />
 
       {/* Vertical red margin guide line: responsive left position */}
       {rulingType === "ruled" && (
         <div
-          className="absolute top-0 bottom-0 pointer-events-none left-[38px] sm:left-[56px]"
+          className="absolute top-0 bottom-0 min-h-full pointer-events-none left-[38px] sm:left-[56px]"
           style={{
             width: 1.5,
             backgroundColor: "rgba(248, 113, 113, 0.42)",
@@ -2326,7 +2377,7 @@ function RuledNotebookCanvas({
             paddingLeft: rulingType === "ruled" ? 72 : 36,
             paddingRight: 40,
             paddingTop: 36,
-            paddingBottom: 160,
+            paddingBottom: 80,
           }}
         >
           {/* SVG Inking Canvas Overlay (Active when Pen mode is enabled) */}
@@ -2396,7 +2447,7 @@ function RuledNotebookCanvas({
             onInput={handleEditorInput}
             onPaste={handleEditorPaste}
             onBlur={flushUpdates}
-            className="outline-none w-full min-h-[600px] text-slate-800 dark:text-zinc-200 relative z-15 regaarder-notebook-content-body"
+            className="outline-none w-full min-h-[260px] text-slate-800 dark:text-zinc-200 relative z-15 regaarder-notebook-content-body"
             style={{
               fontSize: "15px",
               lineHeight: `${baselinePx}px`,
@@ -2438,6 +2489,7 @@ export default function RegaarderNotebookViewer({
   onNewNote,
   onDeleteNote,
   onToggleImmersive,
+  onGoHome,
   isDarkMode,
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -2497,7 +2549,7 @@ export default function RegaarderNotebookViewer({
   return (
     <div 
       onMouseMove={handleContainerMouseMove}
-      className="relative flex h-full w-full overflow-hidden bg-white dark:bg-[#18181B]"
+      className="relative flex flex-col h-full w-full min-h-full overflow-hidden bg-[#FCFAF7] dark:bg-[#18181A]"
     >
       {/* 1. Left Edge Hover Trigger Zone (Expanded 72px invisible strip along left margin) */}
       <div
@@ -2506,18 +2558,31 @@ export default function RegaarderNotebookViewer({
         title="Hover to reveal Notes list"
       />
 
-      {/* 2. Quiet floating pill button at top left to explicitly open sidebar if preferred */}
+      {/* 2. Top-left floating control cluster: Home return button + Notes sidebar pill */}
       {!isSidebarOpen && !isSidebarPinned && (
-        <button
-          type="button"
-          onClick={() => setIsSidebarOpen(true)}
-          className="absolute left-4 top-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:border-amber-400 transition-all cursor-pointer group select-none animate-in fade-in"
-          title="Open Notes Sidebar"
-        >
-          <NotesIcon size={14} className="text-amber-600 dark:text-amber-500" />
-          <span className="text-xs font-semibold">Notes</span>
-          <ChevronRight size={12} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        <div className="absolute left-4 top-4 z-30 flex items-center gap-1.5 animate-in fade-in select-none">
+          {onGoHome && (
+            <button
+              type="button"
+              onClick={onGoHome}
+              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer group"
+              title="Return to Home Dashboard"
+            >
+              <Home size={14} strokeWidth={2} className="group-hover:scale-105 transition-transform" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:border-amber-400 transition-all cursor-pointer group"
+            title="Open Notes Sidebar"
+          >
+            <NotesIcon size={14} className="text-amber-600 dark:text-amber-500" />
+            <span className="text-xs font-semibold">Notes</span>
+            <ChevronRight size={12} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </div>
       )}
 
       {/* 3. Hover-Reveal Floating Notes Sidebar (Retractable Card Overlay) */}
