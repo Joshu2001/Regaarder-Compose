@@ -103,3 +103,12 @@ Avoid monolithic blocks, band-aid fixes, or summarized placeholders. Treat this 
 ### The Sequence of Craftsmanship
 - **Mandatory Briefing:** Adhere strictly to the philosophy detailed in [BEAUTIFUL_VS_REMARKABLE.md](file:///c:/Users/user/Downloads/Project%20MOAT/.agents/BEAUTIFUL_VS_REMARKABLE.md).
 - **Enforce the Sequence:** Always achieve **Beauty** first (geometry consistency, radius synchrony, diffused layered shadows, restrained single-accent hierarchy, crisp outlines over pills). Only once an interface is undeniably beautiful do you push for **Remarkability** (progressive disclosure, fluid intelligence, paradigm interruption). Never ship ugly-and-remarkable nor remarkable-but-ugly.
+
+
+## 12. Creem.io Checkout & Redirect URL Normalization
+
+### Hostname Validation Mandate
+- **Mandatory Briefing:** Consult [POST_MORTEM_CREEM_CHECKOUT_URL_VALIDATION.md](file:///c:/Users/user/Downloads/Project%20MOAT/.agents/POST_MORTEM_CREEM_CHECKOUT_URL_VALIDATION.md) before modifying checkout services or payment integrations.
+- **Strict Hostname Requirements:** Creem API strictly rejects raw numerical IP addresses (e.g., `127.0.0.1` or `192.168.x.x`) and `file://` protocols in `success_url` / redirect parameters with: `URL must be valid, e.g., http://localhost or http://example.com`.
+- **Enforced Conversion:** Whenever passing a redirect URL to Creem, always convert `127.0.0.1` to `localhost` (preserving ports), and default non-FQDN / local file origins to `https://regaarder.com/welcome`. Enforce this defensively across frontend services, Electron IPC handlers, and backend relays.
+
