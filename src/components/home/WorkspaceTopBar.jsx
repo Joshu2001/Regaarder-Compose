@@ -18,9 +18,11 @@ export default function WorkspaceTopBar({
     ? notifications.filter((n) => !n.read).length
     : 0;
 
-  const initials = currentUser?.displayName
-    ? currentUser.displayName
-        .split(" ")
+  const rawName = currentUser?.displayName || currentUser?.name || currentUser?.full_name || '';
+  const initials = rawName
+    ? rawName
+        .trim()
+        .split(/\s+/)
         .map((n) => n[0])
         .join("")
         .slice(0, 2)

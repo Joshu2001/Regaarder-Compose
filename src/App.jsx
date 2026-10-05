@@ -45,6 +45,7 @@ import {
   loginWithGoogle,
   loginWithGithub,
   logoutFirebase,
+  onAuthChange,
 } from './services/firebaseAuthService';
 import {
   ComposeIcon,
@@ -19084,8 +19085,24 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
     }
   }, [productMode]);
 
-  // Auto-login on load
+  // Auto-login on load and subscribe to auth state changes (Supabase/Firebase)
   useEffect(() => {
+    // 1. Subscribe to real-time auth changes
+    const unsubscribe = onAuthChange((user, token) => {
+      if (user && token) {
+        setCurrentUser(user);
+        try {
+          localStorage.setItem('rc.token', token);
+          localStorage.setItem('rc.user', JSON.stringify(user));
+        } catch (e) {
+          /* ignore */
+        }
+      } else if (!localStorage.getItem('rc.token')) {
+        setCurrentUser(null);
+      }
+    });
+
+    // 2. Legacy backend session fallback
     const token = localStorage.getItem('rc.token');
     if (token) {
       fetch(`${API_BASE_URL}/api/auth/me`, {
@@ -19097,9 +19114,12 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         if (res.status === 200) {
           return res.json();
         } else {
-          localStorage.removeItem('rc.token');
-          localStorage.removeItem('rc.user');
-          setCurrentUser(null);
+          // Only clear if not authenticated via client session
+          if (!currentUser) {
+            localStorage.removeItem('rc.token');
+            localStorage.removeItem('rc.user');
+            setCurrentUser(null);
+          }
           throw new Error('Session expired');
         }
       })
@@ -19110,9 +19130,16 @@ Return ONLY the raw JSON object, without any markdown code fences, explanation, 
         }
       })
       .catch(err => {
-        console.warn('Auto-login failed:', err.message);
+        // Backend /api/auth/me may not be running in local mode; client session takes priority
+        console.warn('Session verification fallback info:', err.message);
       });
     }
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // Update local awareness dynamically
@@ -50690,7 +50717,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }
                 </button>
 
-                {/* App Switcher Button */}
+                {/* App Switcher & Brand Logo Button matching Home Page */}
                 <div className="relative z-[360] flex items-center">
                   <button
                     type="button"
@@ -50705,12 +50732,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     onClick={(e) => {
                       e.stopPropagation();
                     }}
-                    className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
-                      workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200' : ''
+                    className={`flex items-center justify-center w-7 h-7 rounded-lg text-slate-800 dark:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors duration-150 shrink-0 cursor-pointer ${
+                      workspaceSwitcherOpen ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white' : ''
                     }`}
                     title="Switch Workspace App"
                   >
-                    <LayoutGrid size={15} />
+                    <RegaarderBrandIcon size={16} className="text-slate-900 dark:text-white" />
                   </button>
                 </div>
 
@@ -51052,12 +51079,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {/* User Profile / Account Quick Card */}
                           <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
-                              {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                            <div className="w-9 h-9 rounded-full bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center text-xs font-semibold shadow-xs shrink-0 overflow-hidden border border-black/[0.08] dark:border-white/[0.12]">
+                              {currentUser?.photoURL || currentUser?.avatar ? (
+                                <img
+                                  src={currentUser.photoURL || currentUser.avatar}
+                                  alt={currentUser.name || "User"}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                (currentUser?.name || currentUser?.displayName || currentUser?.email || 'U')
+                                  .trim()
+                                  .split(/\s+/)
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .slice(0, 2)
+                                  .toUpperCase()
+                              )}
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
-                                {currentUser ? currentUser.name : (t('auth.guestMode') || 'Guest User')}
+                                {currentUser ? (currentUser.name || currentUser.displayName) : (t('auth.guestMode') || 'Guest User')}
                               </span>
                               <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
                                 {currentUser ? (currentUser.email || 'Signed in') : 'Local workspace session'}
@@ -76989,9 +77030,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {/* User Profile / Account Quick Card */}
                           <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/50">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-xs shrink-0">
-                              {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                            </div>
+                            {currentUser && (currentUser.photoURL || currentUser.avatar) ? (
+                              <img
+                                src={currentUser.photoURL || currentUser.avatar}
+                                alt={currentUser.name || currentUser.displayName || 'User'}
+                                className="w-9 h-9 rounded-full object-cover border border-black/10 dark:border-white/10 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center text-xs font-semibold tracking-wide shrink-0 border border-black/5 dark:border-white/10 shadow-xs">
+                                {(() => {
+                                  const name = (currentUser?.name || currentUser?.displayName || currentUser?.email || 'User').trim();
+                                  const parts = name.split(/\s+/);
+                                  if (parts.length >= 2) {
+                                    return (parts[0][0] + parts[1][0]).toUpperCase();
+                                  }
+                                  return name.slice(0, 2).toUpperCase();
+                                })()}
+                              </div>
+                            )}
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">
                                 {currentUser ? currentUser.name : (t('auth.guestMode') || 'Guest User')}
