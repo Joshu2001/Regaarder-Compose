@@ -430,7 +430,7 @@ export function getWorkspaceCtaLabel(filter = '') {
     case 'rooms':
       return 'Add New Meeting';
     case 'notes':
-      return 'Add Room Note';
+      return 'New Note';
     case 'whiteboard':
     case 'whiteboards':
       return 'New Whiteboard';
@@ -464,7 +464,7 @@ export function getWorkspaceFilterTitle(filter = '') {
     case 'room':
       return 'Meetings';
     case 'notes':
-      return 'Room Notes';
+      return 'Notes';
     case 'whiteboard':
       return 'Whiteboards';
     case 'comments':
