@@ -18,7 +18,6 @@ import {
   Globe
 } from 'lucide-react';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
-import { RegaarderAiIcon } from '../RegaarderProductIcons';
 import workspacePreviewImg from '../../assets/images/workspace-preview.png';
 
 export default function DownloadPage({ previewVideoSrc = null }) {
@@ -155,7 +154,6 @@ export default function DownloadPage({ previewVideoSrc = null }) {
         {/* Hero Section */}
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/60 mb-5">
-            <RegaarderAiIcon size={12} className="text-zinc-800 dark:text-zinc-200" />
             <span>Desktop Experience</span>
           </div>
 
