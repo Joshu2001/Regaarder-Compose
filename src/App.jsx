@@ -11033,7 +11033,8 @@ const DEFAULT_BLANK_DECK_SLIDES = [
     }
     whiteboardTopNavHideTimerRef.current = setTimeout(() => {
       setIsWhiteboardTopNavHovered(false);
-    }, 600);
+      whiteboardTopNavHideTimerRef.current = null;
+    }, 700);
   }, []);
 
   useEffect(() => {
@@ -76802,10 +76803,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           className={`flex flex-col select-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${productMode === "room-landing" ? "hidden" : ""} ${
             isSpatialWorkspace
               ? `absolute top-0 left-0 right-0 z-[370] ${
-                  isNotesWorkspace
-                    ? 'shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
-                    : 'shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)]'
-                } ${
                   isWhiteboardTopNavRevealed 
                     ? 'translate-y-0 opacity-100 pointer-events-auto' 
                     : '-translate-y-full opacity-0 pointer-events-none'
@@ -76898,15 +76895,321 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     })()}
                   </button>
                 )}
-                <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-2 hidden sm:flex">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 ml-1 hidden sm:flex">
                   <HardDrive size={13} className="text-slate-400 dark:text-zinc-500" /> {savedStatusLabel}
                 </div>
               </>
             )}
           </div>
 
-          {/* Right Section: Peripheral Group on left, Undo/Redo permanently on extreme right */}
-          <div className="flex items-center gap-2">
+          {/* Zone 2: Isolated Center Document Tab Track for Whiteboard & Notes Workspaces */}
+          {isSpatialWorkspace && (
+            <div className="flex-1 min-w-0 mx-3 flex items-center overflow-hidden">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 w-full">
+                {/* 1. System Navigation Group (Home & Library) */}
+                <div className="flex items-center gap-0.5 bg-slate-200/50 dark:bg-zinc-800/60 p-0.5 rounded-[7px] border border-slate-200/60 dark:border-zinc-700/50 shrink-0 h-7">
+                  {/* Dedicated Home Tab */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeTransientMenus();
+                      setProductMode('landing');
+                    }}
+                    className={`relative shrink-0 h-6 px-2.5 rounded-[5px] text-[11.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                      productMode === 'landing'
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/80 dark:border-zinc-700 font-semibold'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                    }`}
+                    title="Go to Home Dashboard"
+                  >
+                    <RegaarderBrandIcon size={12} className="text-violet-600 dark:text-violet-400 shrink-0" />
+                    <span>Home</span>
+                  </button>
+
+                  {/* Library / Saved Docs Affordance */}
+                  <button
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setLibraryDropdownAnchorRect(rect);
+                      setLibraryDropdownOpen(prev => !prev);
+                    }}
+                    className={`relative shrink-0 h-6 px-2.5 rounded-[5px] text-[11.5px] font-medium transition-all flex items-center gap-1 cursor-pointer select-none ${
+                      libraryDropdownOpen
+                        ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-slate-200/80 dark:border-zinc-700 font-semibold'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-white/50 dark:hover:bg-zinc-700/40'
+                    }`}
+                    title="Open Library & Saved Documents"
+                  >
+                    <BookOpen size={11.5} className="text-slate-500 dark:text-zinc-400 shrink-0" />
+                    <span>Library</span>
+                    <ChevronDown size={10} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-150 ${libraryDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Quiet Vertical Separator Between System Navigation and Document Tabs */}
+                <div className="h-3.5 w-px bg-slate-200/80 dark:bg-zinc-800 shrink-0 mx-1" />
+
+                {/* 2. User Open Document Tabs */}
+                {windowedTabDocuments.visibleDocs.map((doc, localIndex) => {
+                  const docIndex = windowedTabDocuments.startIndex + localIndex;
+                  const rawTitle = doc.title?.trim();
+                  const isSheetsDoc = getDocMode(doc) === 'sheets' || productMode === 'sheets';
+                  const isNotesDoc = getDocMode(doc) === 'notes' || productMode === 'notes';
+                  const isWbDoc = getDocMode(doc) === 'whiteboard' || productMode === 'whiteboard' || activeRightTab === 'whiteboard';
+                  const label = rawTitle ? (
+                    rawTitle === 'Untitled Document' ? (isNotesDoc ? 'Untitled Note' : (t('common.untitledDoc') || 'Untitled Document')) :
+                    rawTitle === 'Untitled Whiteboard' ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') :
+                    rawTitle === 'Untitled Sheet' ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` :
+                    rawTitle
+                  ) : (
+                    isNotesDoc ? (docIndex === 0 ? 'Untitled Note' : `Note ${docIndex + 1}`) :
+                    isWbDoc ? (docIndex === 0 ? (t('whiteboard.untitledWhiteboard') || 'Untitled Whiteboard') : `${t('common.whiteboard') || 'Whiteboard'} ${docIndex + 1}`) :
+                    isSheetsDoc ? `${t('sheets.untitledSheet') || 'Untitled Sheet'} ${docIndex + 1}` :
+                    `${t('common.tab') || 'Tab'} ${docIndex + 1}`
+                  );
+                  const isActive = activeDocId === doc.id;
+                  const docMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(doc);
+
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => switchDocument(doc.id)}
+                      onDoubleClick={(event) => {
+                        event.stopPropagation();
+                        setRenamingDocId(doc.id);
+                        setRenameDocValue(doc.title || '');
+                      }}
+                      className={`group/tab relative shrink-0 h-7 px-2.5 rounded-[7px] text-[12px] transition-all duration-150 flex items-center gap-1.5 cursor-pointer select-none max-w-[170px] ${
+                        isActive 
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_1px_rgba(0,0,0,0.03)] border border-slate-200/90 dark:border-zinc-700/80 ring-1 ring-black/[0.02]' 
+                          : 'bg-transparent border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-zinc-800/50 hover:text-slate-800 dark:hover:text-zinc-200 font-medium'
+                      }`}
+                    >
+                      <AppNativeSvgIcon
+                        variant="minimal"
+                        size={12.5}
+                        type={docMode}
+                        className={`shrink-0 transition-opacity ${isActive ? 'text-violet-600 dark:text-violet-400 opacity-100' : 'text-slate-400 dark:text-zinc-500 opacity-60 group-hover/tab:opacity-90'}`}
+                      />
+                      {renamingDocId === doc.id ? (
+                        <input
+                          autoFocus
+                          value={renameDocValue}
+                          onChange={(e) => setRenameDocValue(e.target.value)}
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              commitRenameDocument(doc.id);
+                            }
+                            if (event.key === 'Escape') {
+                              setRenamingDocId(null);
+                              setRenameDocValue('');
+                            }
+                          }}
+                          onBlur={() => commitRenameDocument(doc.id)}
+                          className="w-[120px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded px-1 py-0.5 text-xs outline-none"
+                        />
+                      ) : (
+                        <span className="truncate flex-1 min-w-0">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                      )}
+                      <div className="flex items-center shrink-0 ml-0.5">
+                        <button
+                          data-doc-menu-root
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            closeTransientMenus();
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            setDocMenuPos({ top: rect.bottom + 4, left: Math.max(10, Math.min(rect.right - 144, window.innerWidth - 154)) });
+                            setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
+                          }}
+                          className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 shrink-0"
+                          title="Document actions"
+                        >
+                          <MoreHorizontal size={11} />
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            requestCloseDocument(doc.id);
+                          }}
+                          className="opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto transition-opacity p-0.5 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 shrink-0"
+                          title="Close document"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                      {openDocMenuId === doc.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-[99990] bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-in fade-in"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDocMenuId(null);
+                            }}
+                          />
+                          <div
+                            style={{ position: 'fixed', top: `${docMenuPos.top}px`, left: `${docMenuPos.left}px`, zIndex: 99999 }}
+                            className="w-48 border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                            data-doc-menu-root
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDocumentAction('rename', doc.id);
+                                }}
+                                className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              >
+                                <FileEdit size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <span>Rename</span>
+                              </button>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDocumentAction(doc.pinned ? 'unpin' : 'pin', doc.id);
+                                }}
+                                className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              >
+                                <Pin size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <span>{doc.pinned ? 'Unpin' : 'Pin to Left'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDocumentAction('duplicate', doc.id);
+                                }}
+                                className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              >
+                                <Copy size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <span>Duplicate</span>
+                              </button>
+                              <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDocumentAction('closeOthers', doc.id);
+                                }}
+                                className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              >
+                                <Layers size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <span>Close Other Tabs</span>
+                              </button>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDocumentAction('closeAll', doc.id);
+                                }}
+                                className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left font-semibold"
+                              >
+                                <X size={13} className="text-slate-400 dark:text-zinc-500 shrink-0" />
+                                <span>Close All Tabs</span>
+                              </button>
+                              <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDocumentAction('close', doc.id);
+                                }}
+                                className="w-full flex items-center gap-2.5 text-xs py-2 px-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 transition-colors text-left font-semibold"
+                              >
+                                <X size={13} className="text-rose-500 dark:text-rose-400 shrink-0" />
+                                <span>Close</span>
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {windowedTabDocuments.hiddenCount > 0 && (
+                  <div className="relative shrink-0 flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setOverflowTabMenuOpen((prev) => !prev)}
+                      className="flex items-center gap-1 h-7 px-2.5 rounded-[7px] text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/70 dark:border-zinc-700/60 transition-colors cursor-pointer select-none"
+                      title={`${windowedTabDocuments.hiddenCount} more open documents`}
+                    >
+                      <span>+{windowedTabDocuments.hiddenCount} more</span>
+                    </button>
+                    {overflowTabMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-[99990]"
+                          onClick={() => setOverflowTabMenuOpen(false)}
+                        />
+                        <div
+                          style={{ zIndex: 99999 }}
+                          className="absolute top-full left-0 mt-1.5 w-64 max-h-80 overflow-y-auto border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-3xl shadow-2xl rounded-2xl p-2 font-sans animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1 select-none"
+                        >
+                          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                            <span>Open Documents ({orderedDocuments.length})</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOverflowTabMenuOpen(false);
+                                setIsMemorySearchOpen(true);
+                              }}
+                              className="text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                            >
+                              Search all
+                            </button>
+                          </div>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            {windowedTabDocuments.hiddenDocs.map((hDoc) => {
+                              const hDocMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : getDocMode(hDoc);
+                              return (
+                                <button
+                                  key={hDoc.id}
+                                  type="button"
+                                  onClick={() => {
+                                    switchDocument(hDoc.id);
+                                    setOverflowTabMenuOpen(false);
+                                  }}
+                                  className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:text-violet-700 dark:hover:text-violet-300 transition-colors text-left truncate cursor-pointer"
+                                >
+                                  <AppNativeSvgIcon variant="minimal" size={13} type={hDocMode} className="shrink-0" />
+                                  <span className="truncate">{hDoc.title || 'Untitled Document'}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={createItemForCurrentContext}
+                  className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-[7px] text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-all mx-0.5 active:scale-95 cursor-pointer"
+                  title="Create new document"
+                  aria-label="Create new document"
+                >
+                  <Plus size={14} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Zone 3: Right Peripheral Group on left, Undo/Redo permanently on extreme right */}
+          <div className="shrink-0 flex items-center gap-2 ml-auto">
             {/* Peripheral Actions (Avatars, ... More Menu) - Fades on work, reveals on hover */}
             <div className={`flex items-center gap-2 transition-all duration-200 ${
               (isTopHeaderHovered || isHeaderMoreMenuOpen || notificationsOpen || replayPanelOpen || isMemorySearchOpen)
@@ -78215,7 +78518,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
         {/* Document Tab Strip - executive Apple-style with progressive overflow scroll */}
-        {!isNotesWorkspace && (
+        {!isNotesWorkspace && !isWhiteboardWorkspace && (
         <div className="h-10 border-b border-slate-200/60 dark:border-zinc-800/80 px-2 flex items-center bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 group/tabstrip">
           <button
             type="button"
@@ -80069,7 +80372,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={(e) => {
                     if (e.clientY < 44) {
                       handleWhiteboardTopNavEnter();
-                    } else if (e.clientY > 100 && isWhiteboardTopNavHovered) {
+                    } else if (e.clientY > 56 && isWhiteboardTopNavHovered) {
                       handleWhiteboardTopNavLeave();
                     }
                   }}
