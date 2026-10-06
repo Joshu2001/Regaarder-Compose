@@ -99,10 +99,7 @@ export default function WorkspaceLeftRail({
             className="w-full h-8 px-2.5 rounded-lg bg-zinc-100/70 hover:bg-zinc-200/60 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/50 flex items-center justify-between text-left cursor-pointer transition-all group"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div
-                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-white text-[10px]"
-                style={{ backgroundColor: currentWorkspace?.color || "#7C3AED" }}
-              >
+              <div className="w-5 h-5 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 flex items-center justify-center shrink-0">
                 <Users size={12} strokeWidth={2.2} />
               </div>
               <span className="text-[12.5px] font-medium text-zinc-800 dark:text-zinc-200 truncate">

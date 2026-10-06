@@ -11,7 +11,7 @@ export const DEFAULT_WORKSPACES = [
   {
     id: 'ws_default_team',
     name: 'Team Space',
-    color: '#7C3AED',
+    color: '#71717A',
     icon: 'building',
     isDefault: true,
     createdAt: new Date().toISOString()
