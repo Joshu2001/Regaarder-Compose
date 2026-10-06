@@ -39,8 +39,52 @@
   }
 }
 
+@keyframes synthesis-shimmer {
+  0% { transform: translateX(-160%); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.9; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+
 .animate-room-entrance {
   animation: roomEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes discoveryNudge {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(3.5px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(2.5px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-discovery-nudge {
+  animation: discoveryNudge 0.9s cubic-bezier(0.25, 1, 0.5, 1) 1.2s 1 forwards;
+}
+
+@keyframes waveHand {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(18deg); }
+  20% { transform: rotate(-14deg); }
+  30% { transform: rotate(18deg); }
+  40% { transform: rotate(-10deg); }
+  50% { transform: rotate(14deg); }
+  60% { transform: rotate(-6deg); }
+  70% { transform: rotate(10deg); }
+  80% { transform: rotate(-2deg); }
+  90% { transform: rotate(4deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wave-hand {
+  display: inline-block;
+  transform-origin: 70% 75%;
+  will-change: transform;
+  animation: waveHand 1.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.2s 1 both;
+}
+
+.animate-wave-hand:hover {
+  animation: waveHand 1.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1 both;
 }
 
 @media print {
@@ -134,10 +178,23 @@ html.popover-root, body.popover-root, #popover-root {
   height: 6px !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-button,
-.thin-scrollbar::-webkit-scrollbar-button {
+.thin-scrollbar::-webkit-scrollbar-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:single-button,
+.thin-scrollbar::-webkit-scrollbar-button:single-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:double-button,
+.thin-scrollbar::-webkit-scrollbar-button:double-button,
+.regaarder-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.thin-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.regaarder-scrollbar::-webkit-scrollbar-button:vertical:increment,
+.thin-scrollbar::-webkit-scrollbar-button:vertical:increment,
+.regaarder-scrollbar::-webkit-scrollbar-button:horizontal:decrement,
+.thin-scrollbar::-webkit-scrollbar-button:horizontal:decrement,
+.regaarder-scrollbar::-webkit-scrollbar-button:horizontal:increment,
+.thin-scrollbar::-webkit-scrollbar-button:horizontal:increment {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+  background: transparent !important;
 }
 .regaarder-scrollbar::-webkit-scrollbar-track,
 .thin-scrollbar::-webkit-scrollbar-track {
@@ -331,3 +388,45 @@ button.bg-violet-600,
 .halo-card-hover:active {
   transform: scale(0.96);
 }
+
+/* ── Regaarder Notes Placeholder Styles ── */
+#regaarder-notebook-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #cbd5e1;
+  pointer-events: none;
+  display: block;
+}
+
+.dark #regaarder-notebook-editor:empty::before {
+  color: #52525b;
+}
+
+/* Ensure paragraph, div, and list elements in Notes editor inherit exact baseline height without distorting ruling rhythm */
+#regaarder-notebook-editor p,
+#regaarder-notebook-editor div:not(.note-todo-item):not(.regaarder-media-embed):not(.regaarder-link-preview) {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+}
+
+/* ── Mouse Sparkle Animation ── */
+@keyframes mouseSparkleAnim {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.1) rotate(15deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.25) rotate(50deg);
+    opacity: 0;
+  }
+}
+
+.animate-mouse-sparkle {
+  animation: mouseSparkleAnim 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+

@@ -1,0 +1,1312 @@
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import {
+  RotateCcw,
+  ChevronDown,
+  List,
+  LayoutGrid,
+  MoreHorizontal,
+  Trash2,
+  ExternalLink,
+  Star,
+  Share2,
+  Edit2,
+  FolderInput,
+  Folder,
+  Check,
+  Pin,
+  PinOff,
+  FileText,
+  Plus,
+  X
+} from "lucide-react";
+import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
+import { isMeaningfulWork } from "../LandingRecentWorkStrip";
+import { readWorkspaceDocuments, deleteWorkspaceDocument, updateWorkspaceDocument } from "../../services/workspaceDocumentStore";
+import { readWorkspaceProjects } from "../../services/workspaceProjectStore";
+import { revealDocumentInLocalFolder } from "../../services/localSyncService";
+
+function formatTimestamp(timestamp) {
+  if (!timestamp) return "Sep 13, 2026 at 4:12 AM";
+  const date = new Date(Number(timestamp));
+  if (isNaN(date.getTime())) return "Sep 13, 2026 at 4:12 AM";
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = monthNames[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+
+  return `${month} ${day}, ${year} at ${hours}:${minutes} ${ampm}`;
+}
+
+const DEFAULT_SAMPLE_RECENTS = [
+  {
+    id: 101,
+    title: "Untitled Document",
+    typeLabel: "Document",
+    product: "compose",
+    location: "Workspace / Documents",
+    savedAt: Date.now() - 1000 * 60 * 15,
+    size: "42 KB"
+  },
+  {
+    id: 102,
+    title: "Budget Analysis Q3",
+    typeLabel: "Sheet",
+    product: "sheet",
+    location: "Workspace / Sheets",
+    savedAt: Date.now() - 1000 * 60 * 60 * 20,
+    size: "1.4 MB"
+  },
+  {
+    id: 103,
+    title: "Project Roadmap",
+    typeLabel: "Presentation",
+    product: "deck",
+    location: "Workspace / Decks",
+    savedAt: Date.now() - 1000 * 60 * 60 * 40,
+    size: "2.8 MB"
+  },
+  {
+    id: 104,
+    title: "Team Brainstorm",
+    typeLabel: "Whiteboard",
+    product: "whiteboard",
+    location: "Workspace / Whiteboards",
+    savedAt: Date.now() - 1000 * 60 * 60 * 65,
+    size: "6.2 MB"
+  },
+  {
+    id: 105,
+    title: "Marketing Strategy Draft",
+    typeLabel: "Document",
+    product: "compose",
+    location: "Workspace / Documents",
+    savedAt: Date.now() - 1000 * 60 * 60 * 90,
+    size: "512 KB"
+  },
+  {
+    id: 106,
+    title: "Sales Report",
+    typeLabel: "Sheet",
+    product: "sheet",
+    location: "Workspace / Sheets",
+    savedAt: Date.now() - 1000 * 60 * 60 * 120,
+    size: "1.1 MB"
+  }
+];
+
+export default function WorkspaceRecentFiles({ onLaunch }) {
+  const [items, setItems] = useState([]);
+  const [filterType, setFilterType] = useState("all");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [viewMode, setViewMode] = useState("list");
+  const [showTypeMenu, setShowTypeMenu] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [activeItemMenuId, setActiveItemMenuId] = useState(null);
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  // Starred state persisted in localStorage
+  const [starredIds, setStarredIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem("rc.starredDocs");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Pinned state persisted in localStorage
+  const [pinnedIds, setPinnedIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem("rc.pinnedDocs");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Rename inline state
+  const [renamingDocId, setRenamingDocId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  // Share feedback notification
+  const [feedbackToast, setFeedbackToast] = useState(null);
+
+  // Add/Share to Project state
+  const [assignProjectDoc, setAssignProjectDoc] = useState(null);
+  const [workspaceProjects, setWorkspaceProjects] = useState([]);
+
+  const handleOpenAssignProject = (e, item) => {
+    e.stopPropagation();
+    setActiveItemMenuId(null);
+    setWorkspaceProjects(readWorkspaceProjects());
+    setAssignProjectDoc(item);
+  };
+
+  const handleAssignToProject = (project) => {
+    if (!assignProjectDoc) return;
+    const docId = assignProjectDoc.id;
+    const projectName = project ? project.name : null;
+    const projectId = project ? project.id : null;
+    const locationStr = project ? `Projects / ${project.name}` : "Workspace / Documents";
+
+    // 1. Update canonical store
+    try {
+      updateWorkspaceDocument(docId, {
+        projectId,
+        location: locationStr
+      });
+    } catch {}
+
+    // 2. Update legacy key if present
+    if (assignProjectDoc.key) {
+      try {
+        const raw = localStorage.getItem(assignProjectDoc.key);
+        if (raw) {
+          const data = JSON.parse(raw);
+          data.projectId = projectId;
+          data.location = locationStr;
+          localStorage.setItem(assignProjectDoc.key, JSON.stringify(data));
+        }
+      } catch {}
+    }
+
+    // 3. Update local items state
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === docId
+          ? {
+              ...i,
+              location: locationStr,
+              doc: {
+                ...i.doc,
+                projectId,
+                location: locationStr
+              }
+            }
+          : i
+      )
+    );
+
+    setAssignProjectDoc(null);
+    setFeedbackToast(project ? `Added to "${project.name}"` : "Removed from project");
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
+  const containerRef = useRef(null);
+
+  // Unified click-outside dismissal
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setActiveItemMenuId(null);
+        setShowTypeMenu(false);
+        setShowSortMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const loadRecentDocs = useCallback(() => {
+    try {
+      const parsed = [];
+      const seenIds = new Set();
+
+      // 1. Read canonical workspace document store (single source of truth for all workspace documents)
+      try {
+        const canonicalDocs = readWorkspaceDocuments();
+        if (Array.isArray(canonicalDocs)) {
+          canonicalDocs.forEach((d) => {
+            if (!d || d.id == null) return;
+            const idStr = String(d.id);
+            seenIds.add(idStr);
+
+            let detectedProduct = (d.mode || "compose").toLowerCase();
+            if (detectedProduct === "sheets") detectedProduct = "sheet";
+            if (!["compose", "sheet", "deck", "whiteboard"].includes(detectedProduct)) {
+              if (d.sheetsTitle || d.sheetGrids) detectedProduct = "sheet";
+              else if (d.deckSlidesData || d.deckTitle) detectedProduct = "deck";
+              else if (d.whiteboardWidgets || d.whiteboardShapes || d.whiteboardStrokes) detectedProduct = "whiteboard";
+              else detectedProduct = "compose";
+            }
+
+            let typeLabel = "Document";
+            let loc = d.location || "Workspace / Documents";
+            if (d.projectId) {
+              try {
+                const projects = readWorkspaceProjects();
+                const matchedProj = projects.find((p) => p.id === d.projectId);
+                if (matchedProj) {
+                  loc = `Projects / ${matchedProj.name}`;
+                }
+              } catch {}
+            } else if (detectedProduct === "sheet") {
+              typeLabel = "Sheet";
+              loc = d.location || "Workspace / Sheets";
+            } else if (detectedProduct === "deck") {
+              typeLabel = "Presentation";
+              loc = d.location || "Workspace / Decks";
+            } else if (detectedProduct === "whiteboard") {
+              typeLabel = "Whiteboard";
+              loc = d.location || "Workspace / Whiteboards";
+            }
+
+            let title = (d.title || d.docTitle || d.sheetsTitle || d.deckTitle || "").trim();
+            if (!title) {
+              title = detectedProduct === "sheet" ? "Untitled Sheet" : detectedProduct === "deck" ? "Untitled Presentation" : detectedProduct === "whiteboard" ? "Untitled Whiteboard" : "Untitled Document";
+            }
+
+            const savedAt = d.updatedAt ? new Date(d.updatedAt).getTime() : (d.createdAt ? new Date(d.createdAt).getTime() : Date.now());
+
+            parsed.push({
+              id: d.id,
+              key: `rc.savedDoc.${d.id}`,
+              title,
+              typeLabel,
+              product: detectedProduct,
+              savedAt: isNaN(savedAt) ? Date.now() : savedAt,
+              location: loc,
+              size: "42 KB",
+              doc: d
+            });
+          });
+        }
+      } catch {}
+
+      // 2. Supplement with rc.savedDoc.* from localStorage for documents saved via older paths
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("rc.savedDoc.")) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const docIdStr = key.replace("rc.savedDoc.", "");
+              if (seenIds.has(docIdStr)) continue;
+
+              const data = JSON.parse(raw);
+              if (!isMeaningfulWork(data)) continue;
+
+              let title = data.docTitle || data.title;
+              if (!title || !title.trim() || title.trim() === "." || title.trim() === ".." || title.toLowerCase() === "untitled document") {
+                if (data.bodyHtml) {
+                  const plain = data.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+                  if (plain.length > 3 && !plain.startsWith(".")) {
+                    title = plain.slice(0, 30) + (plain.length > 30 ? "..." : "");
+                  }
+                } else if (data.initiatives && data.initiatives[0] && data.initiatives[0].title) {
+                  title = data.initiatives[0].title;
+                }
+              }
+
+              let detectedProduct = "compose";
+              let typeLabel = "Document";
+              let loc = data.location || "Workspace / Documents";
+              if (data.projectId) {
+                try {
+                  const projects = readWorkspaceProjects();
+                  const matchedProj = projects.find((p) => p.id === data.projectId);
+                  if (matchedProj) {
+                    loc = `Projects / ${matchedProj.name}`;
+                  }
+                } catch {}
+              } else {
+                const lowerTitle = (title || "").toLowerCase();
+                if (lowerTitle.includes("sheet")) {
+                  detectedProduct = "sheet";
+                  typeLabel = "Sheet";
+                  loc = data.location || "Workspace / Sheets";
+                } else if (lowerTitle.includes("deck") || lowerTitle.includes("present") || lowerTitle.includes("slide")) {
+                  detectedProduct = "deck";
+                  typeLabel = "Presentation";
+                  loc = data.location || "Workspace / Decks";
+                } else if (lowerTitle.includes("whiteboard") || lowerTitle.includes("canvas")) {
+                  detectedProduct = "whiteboard";
+                  typeLabel = "Whiteboard";
+                  loc = data.location || "Workspace / Whiteboards";
+                }
+              }
+
+              if (!title || title.trim() === "." || title.trim() === "..") {
+                title = detectedProduct === "sheet" ? "Untitled Sheet" : detectedProduct === "deck" ? "Untitled Presentation" : detectedProduct === "whiteboard" ? "Untitled Whiteboard" : "Untitled Document";
+              }
+
+              const approxBytes = raw.length;
+              let sizeLabel = "42 KB";
+              if (approxBytes > 1024 * 1024) {
+                sizeLabel = `${(approxBytes / (1024 * 1024)).toFixed(1)} MB`;
+              } else if (approxBytes > 1024) {
+                sizeLabel = `${Math.round(approxBytes / 1024)} KB`;
+              }
+
+              parsed.push({
+                id: Number(docIdStr) || docIdStr || Math.random(),
+                key,
+                title,
+                typeLabel,
+                product: detectedProduct,
+                savedAt: data.savedAt || Date.now(),
+                location: loc,
+                size: sizeLabel,
+                doc: data
+              });
+            }
+          } catch {}
+        }
+      }
+
+      parsed.sort((a, b) => (sortOrder === "desc" ? b.savedAt - a.savedAt : a.savedAt - b.savedAt));
+      setItems(parsed);
+    } catch {
+      setItems([]);
+    }
+  }, [sortOrder]);
+
+  useEffect(() => {
+    loadRecentDocs();
+    const handleStorage = (e) => {
+      if (!e || !e.key || e.key.startsWith("rc.savedDoc.") || e.key === "regaarder_documents_v1") {
+        loadRecentDocs();
+      }
+    };
+    const handleCustomUpdate = () => {
+      loadRecentDocs();
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("workspace-storage-update", handleCustomUpdate);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("workspace-storage-update", handleCustomUpdate);
+    };
+  }, [loadRecentDocs]);
+
+  const toggleStar = (e, itemId) => {
+    e.stopPropagation();
+    setStarredIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      try {
+        localStorage.setItem("rc.starredDocs", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
+  const togglePin = (e, itemId) => {
+    e?.stopPropagation?.();
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      const willPin = !next.has(itemId);
+      if (willPin) {
+        next.add(itemId);
+      } else {
+        next.delete(itemId);
+      }
+      try {
+        localStorage.setItem("rc.pinnedDocs", JSON.stringify(Array.from(next)));
+      } catch {}
+      setFeedbackToast(willPin ? "Pinned to top" : "Unpinned from top");
+      setTimeout(() => setFeedbackToast(null), 2000);
+      return next;
+    });
+  };
+
+  const handleBulkPin = () => {
+    const allSelectedPinned = Array.from(selectedIds).every((id) => pinnedIds.has(id));
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelectedPinned) {
+        selectedIds.forEach((id) => next.delete(id));
+      } else {
+        selectedIds.forEach((id) => next.add(id));
+      }
+      try {
+        localStorage.setItem("rc.pinnedDocs", JSON.stringify(Array.from(next)));
+      } catch {}
+      setFeedbackToast(allSelectedPinned ? "Unpinned selected items" : "Pinned selected items");
+      setTimeout(() => setFeedbackToast(null), 2000);
+      return next;
+    });
+  };
+
+  const handleShare = (e, item) => {
+    e.stopPropagation();
+    const link = `${window.location.origin}/#/${item.product}/${item.id}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(link).then(() => {
+        setFeedbackToast(`Link copied: ${item.title}`);
+        setTimeout(() => setFeedbackToast(null), 2500);
+      });
+    } else {
+      setFeedbackToast(`Share: ${item.title}`);
+      setTimeout(() => setFeedbackToast(null), 2500);
+    }
+  };
+
+  const startRename = (e, item) => {
+    e.stopPropagation();
+    setActiveItemMenuId(null);
+    setRenamingDocId(item.id);
+    setRenameValue(item.title);
+  };
+
+  const submitRename = (item) => {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== item.title) {
+      if (item.key) {
+        try {
+          const raw = localStorage.getItem(item.key);
+          if (raw) {
+            const data = JSON.parse(raw);
+            data.docTitle = trimmed;
+            data.title = trimmed;
+            localStorage.setItem(item.key, JSON.stringify(data));
+          }
+        } catch {}
+      }
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, title: trimmed } : i))
+      );
+    }
+    setRenamingDocId(null);
+  };
+
+  const handleDeleteItem = (e, item) => {
+    e.stopPropagation();
+    try {
+      if (item.key) localStorage.removeItem(item.key);
+      if (item.id) deleteWorkspaceDocument(item.id);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      setActiveItemMenuId(null);
+    } catch {}
+  };
+
+  const handleRemoveFromRecents = (e, item) => {
+    e.stopPropagation();
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(item.id);
+      return next;
+    });
+    setActiveItemMenuId(null);
+  };
+
+  const filteredItems = useMemo(() => {
+    let list = items;
+    if (filterType !== "all") {
+      list = list.filter((i) => i.product === filterType);
+    }
+    // Sort pinned items to the top while preserving primary sort order
+    return [...list].sort((a, b) => {
+      const aPinned = pinnedIds.has(a.id);
+      const bPinned = pinnedIds.has(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [items, filterType, pinnedIds]);
+
+  const isMultiSelectActive = selectedIds.size > 0;
+  const allFilteredSelected =
+    filteredItems.length > 0 &&
+    filteredItems.every((item) => selectedIds.has(item.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredItems.map((i) => i.id)));
+    }
+  };
+
+  const toggleItemSelection = (e, itemId) => {
+    e?.stopPropagation?.();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkRemoveRecords = () => {
+    setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    try {
+      items.forEach((item) => {
+        if (selectedIds.has(item.id)) {
+          if (item.key) localStorage.removeItem(item.key);
+          if (item.id) deleteWorkspaceDocument(item.id);
+        }
+      });
+      setItems((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+      setSelectedIds(new Set());
+    } catch {}
+  };
+
+  const handleBulkShare = () => {
+    const selectedCount = selectedIds.size;
+    setFeedbackToast(`Shared link for ${selectedCount} file${selectedCount > 1 ? "s" : ""}`);
+    setTimeout(() => setFeedbackToast(null), 2500);
+  };
+
+  const filterLabels = {
+    all: "All Types",
+    compose: "Docs",
+    sheet: "Sheets",
+    deck: "Decks",
+    whiteboard: "Whiteboards"
+  };
+
+  return (
+    <section ref={containerRef} className="space-y-3.5 select-none pt-2 relative">
+      {/* Toast alert */}
+      {feedbackToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 text-xs px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <Check size={13} className="text-emerald-400 dark:text-emerald-600" />
+          <span>{feedbackToast}</span>
+        </div>
+      )}
+
+      {/* Header bar */}
+      <div className="flex items-center justify-between min-h-[36px]">
+        <div className="flex items-center gap-2">
+          <h2 className="text-[14.5px] font-semibold text-slate-900 dark:text-zinc-100 tracking-tight leading-none">
+            Recent activity
+          </h2>
+          <button
+            type="button"
+            onClick={loadRecentDocs}
+            className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-transparent border-none p-0"
+            title="Refresh recents"
+          >
+            <RotateCcw size={13} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* All Types Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowTypeMenu(!showTypeMenu);
+                setShowSortMenu(false);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer bg-white dark:bg-zinc-850 shadow-2xs"
+            >
+              <span>{filterLabels[filterType] || "All Types"}</span>
+              <ChevronDown size={12} className="text-slate-400" />
+            </button>
+
+            {showTypeMenu && (
+              <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-lg py-1 z-50 animate-in fade-in zoom-in-95">
+                {[
+                  { id: "all", label: "All Types" },
+                  { id: "compose", label: "Docs" },
+                  { id: "sheet", label: "Sheets" },
+                  { id: "deck", label: "Decks" },
+                  { id: "whiteboard", label: "Whiteboards" }
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setFilterType(t.id);
+                      setShowTypeMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors cursor-pointer border-none ${
+                      filterType === t.id
+                        ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold"
+                        : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Last Modified Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowSortMenu(!showSortMenu);
+                setShowTypeMenu(false);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-white/10 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer bg-white dark:bg-zinc-850 shadow-2xs"
+            >
+              <span>Last Modified</span>
+              <ChevronDown size={12} className="text-slate-400" />
+            </button>
+
+            {showSortMenu && (
+              <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-lg py-1 z-50 animate-in fade-in zoom-in-95">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortOrder("desc");
+                    setShowSortMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors cursor-pointer border-none ${
+                    sortOrder === "desc"
+                      ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold"
+                      : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+                  }`}
+                >
+                  Newest First
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortOrder("asc");
+                    setShowSortMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors cursor-pointer border-none ${
+                    sortOrder === "asc"
+                      ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold"
+                      : "text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+                  }`}
+                >
+                  Oldest First
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* List & Grid View Toggles */}
+          <div className="flex items-center rounded-lg border border-slate-200/70 dark:border-white/10 p-0.5 text-slate-500 bg-white dark:bg-zinc-850 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`p-1 rounded-md transition-all cursor-pointer border-none ${
+                viewMode === "list"
+                  ? "bg-slate-100 dark:bg-zinc-750 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent text-slate-400"
+              }`}
+              title="List view"
+            >
+              <List size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`p-1 rounded-md transition-all cursor-pointer border-none ${
+                viewMode === "grid"
+                  ? "bg-slate-100 dark:bg-zinc-750 text-slate-900 dark:text-zinc-100 shadow-2xs"
+                  : "hover:text-slate-800 dark:hover:text-zinc-200 bg-transparent text-slate-400"
+              }`}
+              title="Grid view"
+            >
+              <LayoutGrid size={13} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Table Header vs Bulk Action Bar */}
+      {isMultiSelectActive ? (
+        <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-zinc-800/40 border border-slate-200/50 dark:border-white/[0.04] text-xs text-slate-700 dark:text-zinc-200 animate-in fade-in duration-150">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${
+                allFilteredSelected
+                  ? "bg-violet-600 border-violet-600 text-white"
+                  : "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500"
+              }`}
+              title={allFilteredSelected ? "Deselect all" : "Select all"}
+            >
+              {allFilteredSelected && <Check size={11} strokeWidth={3} />}
+            </button>
+            <span className="font-semibold text-slate-800 dark:text-zinc-200">
+              {selectedIds.size} item{selectedIds.size > 1 ? "s" : ""} selected
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 font-medium cursor-pointer bg-transparent border-none p-0 text-xs ml-0.5"
+            >
+              Deselect
+            </button>
+          </div>
+
+          {/* Integrated Contextual Action Toolbar */}
+          <div className="flex items-center gap-1 rounded-lg bg-slate-200/40 dark:bg-zinc-800/60 px-2 py-0.5 border border-slate-200/40 dark:border-white/[0.04]">
+            <button
+              type="button"
+              onClick={handleBulkShare}
+              className="px-2 py-0.5 text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              title="Share link for selected files"
+            >
+              <Share2 size={12.5} className="text-slate-400 dark:text-zinc-400" />
+              <span>Share</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkPin}
+              className="px-2 py-0.5 text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              title="Pin or unpin selected files"
+            >
+              <Pin size={12.5} className="text-slate-400 dark:text-zinc-400" />
+              <span>Pin</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkRemoveRecords}
+              className="px-2 py-0.5 text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              title="Move or reorganize"
+            >
+              <FolderInput size={12.5} className="text-slate-400 dark:text-zinc-400" />
+              <span>Move</span>
+            </button>
+            <div className="w-[1px] h-3 bg-slate-300/60 dark:bg-white/10 mx-0.5" />
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              className="px-2 py-0.5 text-[12px] font-medium text-red-600/80 dark:text-red-400/80 hover:text-red-600 dark:hover:text-red-300 transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5"
+              title="Delete selected files"
+            >
+              <Trash2 size={12.5} className="text-red-500/80 dark:text-red-400/80" />
+              <span>Delete</span>
+            </button>
+          </div>
+        </div>
+      ) : filteredItems.length > 0 ? (
+        <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
+          <div className="col-span-8 sm:col-span-5 pl-7">Name</div>
+          <div className="hidden sm:block sm:col-span-3">Location</div>
+          <div className="col-span-4 sm:col-span-3 text-right sm:text-left">Last Modified</div>
+          <div className="hidden sm:block sm:col-span-1 text-right pr-1">Size</div>
+        </div>
+      ) : null}
+
+      {/* EMPTY STATE */}
+      {filteredItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-slate-200/80 dark:border-white/[0.08] bg-slate-50/40 dark:bg-zinc-850/20">
+          <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/60 flex items-center justify-center text-slate-500 dark:text-zinc-400 mb-3 shadow-2xs">
+            <FileText size={20} strokeWidth={1.75} />
+          </div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+            {filterType !== "all" ? `No ${filterLabels[filterType] || "matching"} files yet` : "No recent documents yet"}
+          </h3>
+          <p className="text-xs text-slate-400 dark:text-zinc-400 max-w-sm mt-1 leading-relaxed">
+            {filterType !== "all"
+              ? "Try switching to 'All Types' or create a new file to get started."
+              : "Files you create, edit, or import across Docs, Sheets, Decks, and Whiteboards will appear here."}
+          </p>
+        </div>
+      ) : null}
+
+      {/* LIST VIEW */}
+      {filteredItems.length > 0 && viewMode === "list" && (
+        <div className="divide-y divide-slate-100/70 dark:divide-white/[0.02]">
+          {filteredItems.map((item) => {
+            const isSelected = selectedIds.has(item.id);
+            const isStarred = starredIds.has(item.id);
+            const isPinned = pinnedIds.has(item.id);
+            const isRenaming = renamingDocId === item.id;
+            const isMenuOpen = activeItemMenuId === item.id;
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => {
+                  if (isMultiSelectActive) {
+                    toggleItemSelection(null, item.id);
+                  } else if (onLaunch) {
+                    onLaunch(item.product, item.id);
+                  }
+                }}
+                className={`grid grid-cols-12 px-2.5 py-2.5 items-center rounded-xl transition-all duration-150 cursor-pointer group relative border border-transparent ${
+                  isSelected
+                    ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/50 dark:border-violet-900/30"
+                    : "hover:bg-slate-50/90 dark:hover:bg-white/[0.03] hover:border-slate-200/50 dark:hover:border-white/[0.04]"
+                }`}
+              >
+                {/* Name Column with Checkbox slot & App icon */}
+                <div className="col-span-8 sm:col-span-5 flex items-center gap-2.5 pr-2 min-w-0">
+                  {/* WPS / Apple style Checkbox slot on the far left */}
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => toggleItemSelection(e, item.id)}
+                      className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-violet-600 border-violet-600 text-white opacity-100"
+                          : isMultiSelectActive
+                          ? "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-100"
+                          : "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-0 group-hover:opacity-100"
+                      }`}
+                      title={isSelected ? "Deselect file" : "Select file"}
+                    >
+                      {isSelected && <Check size={11} strokeWidth={3} />}
+                    </button>
+                  </div>
+
+                  <AppNativeSvgIcon type={item.product} size={24} className="shrink-0" />
+
+                  <div className="truncate flex-1 min-w-0">
+                    {isRenaming ? (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          submitRename(item);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1"
+                      >
+                        <input
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => submitRename(item)}
+                          autoFocus
+                          className="text-[13px] font-medium text-slate-800 dark:text-zinc-100 bg-white dark:bg-zinc-900 border border-violet-400 dark:border-violet-500 rounded px-1.5 py-0.5 outline-none w-full"
+                        />
+                      </form>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="text-[13px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors"
+                            title={item.title}
+                          >
+                            {item.title}
+                          </span>
+                          {isPinned && (
+                            <Pin
+                              size={11}
+                              className="text-violet-500/80 dark:text-violet-400/80 shrink-0 fill-violet-500/20"
+                              title="Pinned"
+                            />
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
+                          {item.typeLabel}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="hidden sm:flex sm:col-span-3 text-[12.5px] truncate pr-2 items-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      revealDocumentInLocalFolder(item.doc || item);
+                    }}
+                    className="text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:underline transition-colors cursor-pointer bg-transparent border-none p-0 text-left truncate max-w-full font-normal"
+                    title="Open file location"
+                  >
+                    {item.location}
+                  </button>
+                </div>
+
+                {/* Last Modified */}
+                <div className="col-span-4 sm:col-span-3 text-[11.5px] sm:text-[12.5px] text-slate-500 dark:text-zinc-400 text-right sm:text-left truncate">
+                  {formatTimestamp(item.savedAt)}
+                </div>
+
+                {/* Size Column + Hover Contextual Actions (Star, Share, More) */}
+                <div className="hidden sm:flex sm:col-span-1 items-center justify-end text-[12px] text-slate-400 dark:text-zinc-500 pr-1 relative">
+                  {/* Size text (hidden when hovering so actions fit cleanly) */}
+                  <span className={`${isMenuOpen ? "opacity-0" : "group-hover:opacity-0"} transition-opacity`}>
+                    {item.size}
+                  </span>
+
+                  {/* Contextual Action Group: Revealed on row hover only when NOT in multi-select mode */}
+                  {!isMultiSelectActive && (
+                    <>
+                      <div
+                        className={`absolute right-0 flex items-center gap-1 transition-opacity ${
+                          isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Star Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => toggleStar(e, item.id)}
+                          className={`p-1 rounded-md transition-colors cursor-pointer border-none bg-transparent ${
+                            isStarred
+                              ? "text-amber-400 hover:text-amber-500"
+                              : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
+                          }`}
+                          title={isStarred ? "Starred" : "Star file"}
+                        >
+                          <Star
+                            size={13}
+                            className={isStarred ? "fill-amber-400 text-amber-400" : ""}
+                          />
+                        </button>
+
+                        {/* Share Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleShare(e, item)}
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
+                          title="Share link"
+                        >
+                          <Share2 size={13} />
+                        </button>
+
+                        {/* More Horizontal Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveItemMenuId(isMenuOpen ? null : item.id);
+                          }}
+                          className={`p-1 rounded-md transition-colors cursor-pointer border-none ${
+                            isMenuOpen
+                              ? "bg-slate-200 dark:bg-zinc-700 text-slate-900 dark:text-zinc-100"
+                              : "text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 bg-transparent"
+                          }`}
+                          title="More actions"
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </div>
+
+                      {/* Contextual Dropdown Menu */}
+                      {isMenuOpen && (
+                        <div
+                          className="absolute right-0 top-7 bg-white dark:bg-zinc-850 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 w-48"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveItemMenuId(null);
+                              if (onLaunch) onLaunch(item.product, item.id);
+                            }}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <ExternalLink size={14} className="text-slate-400" />
+                            <span>Open</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => startRename(e, item)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Edit2 size={14} className="text-slate-400" />
+                            <span>Rename</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              togglePin(e, item.id);
+                              setActiveItemMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            {isPinned ? (
+                              <PinOff size={14} className="text-slate-400" />
+                            ) : (
+                              <Pin size={14} className="text-slate-400" />
+                            )}
+                            <span>{isPinned ? "Unpin" : "Pin"}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              toggleStar(e, item.id);
+                              setActiveItemMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Star
+                              size={14}
+                              className={isStarred ? "fill-amber-400 text-amber-400" : "text-slate-400"}
+                            />
+                            <span>{isStarred ? "Unstar" : "Star"}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              handleShare(e, item);
+                              setActiveItemMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Share2 size={14} className="text-slate-400" />
+                            <span>Share</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenAssignProject(e, item)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Folder size={14} className="text-slate-400" />
+                            <span>Add to project...</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveFromRecents(e, item)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-750 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <FolderInput size={14} className="text-slate-400" />
+                            <span>Move</span>
+                          </button>
+
+                          <div className="my-1 border-t border-slate-100 dark:border-white/[0.06]" />
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteItem(e, item)}
+                            className="w-full flex items-center gap-3 px-3.5 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer border-none bg-transparent transition-colors"
+                          >
+                            <Trash2 size={14} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* GRID VIEW */}
+      {filteredItems.length > 0 && viewMode === "grid" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
+          {filteredItems.map((item) => {
+            const isSelected = selectedIds.has(item.id);
+            const isStarred = starredIds.has(item.id);
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => {
+                  if (isMultiSelectActive) {
+                    toggleItemSelection(null, item.id);
+                  } else if (onLaunch) {
+                    onLaunch(item.product, item.id);
+                  }
+                }}
+                className={`p-3.5 rounded-xl border transition-all duration-150 ease-out cursor-pointer relative group flex flex-col justify-between h-36 ${
+                  isSelected
+                    ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/80 dark:border-violet-900/40 shadow-2xs"
+                    : "bg-white dark:bg-zinc-800/90 border-slate-200/70 dark:border-white/[0.07] hover:border-slate-300/90 dark:hover:border-white/18 shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 active:translate-y-0"
+                }`}
+              >
+                {/* Top row: Checkbox slot & Star button */}
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={(e) => toggleItemSelection(e, item.id)}
+                    className={`w-4 h-4 rounded flex items-center justify-center border transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-violet-600 border-violet-600 text-white opacity-100"
+                        : isMultiSelectActive
+                        ? "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-100"
+                        : "bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-600 hover:border-violet-500 opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    {isSelected && <Check size={11} strokeWidth={3} />}
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => toggleStar(e, item.id)}
+                      className={`p-1 rounded-md transition-colors cursor-pointer border-none bg-transparent ${
+                        isStarred
+                          ? "text-amber-400 opacity-100"
+                          : "text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700"
+                      }`}
+                    >
+                      <Star size={12} className={isStarred ? "fill-amber-400" : ""} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenAssignProject(e, item)}
+                      title="Add to project"
+                      className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer border-none bg-transparent"
+                    >
+                      <Folder size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleShare(e, item)}
+                      className="p-1 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-700 transition-colors cursor-pointer border-none bg-transparent"
+                    >
+                      <Share2 size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Center product icon */}
+                <div className="my-auto flex items-center justify-center">
+                  <AppNativeSvgIcon type={item.product} size={32} />
+                </div>
+
+                {/* Bottom title & metadata */}
+                <div>
+                  <div
+                    className="text-[12.5px] font-medium text-slate-800 dark:text-zinc-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400"
+                    title={item.title}
+                  >
+                    {item.title}
+                  </div>
+                  <div className="flex items-center justify-between text-[10.5px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                    <span>{item.typeLabel}</span>
+                    <span>{item.size}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ASSIGN TO PROJECT MODAL */}
+      {assignProjectDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setAssignProjectDoc(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/80 dark:border-white/10 p-5 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 flex items-center justify-center">
+                  <Folder size={16} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100">
+                    Add to Project
+                  </h3>
+                  <p className="text-[12px] text-slate-500 dark:text-zinc-400 truncate max-w-[260px]">
+                    {assignProjectDoc.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignProjectDoc(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {workspaceProjects.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 dark:text-zinc-500 text-[13px]">
+                  No projects found. Create a project in the Projects hub first.
+                </div>
+              ) : (
+                workspaceProjects.map((project) => {
+                  const isCurrent =
+                    assignProjectDoc.doc?.projectId === project.id ||
+                    assignProjectDoc.location?.includes(project.name);
+
+                  return (
+                    <button
+                      key={project.id}
+                      type="button"
+                      onClick={() => handleAssignToProject(project)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left cursor-pointer ${
+                        isCurrent
+                          ? "bg-violet-50/70 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700/60"
+                          : "bg-slate-50/70 dark:bg-zinc-800/60 border-slate-200/60 dark:border-zinc-700/50 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-3.5 h-3.5 rounded-md shrink-0 shadow-2xs"
+                          style={{ backgroundColor: project.color || "#8B5CF6" }}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-medium text-slate-900 dark:text-zinc-100 truncate">
+                            {project.name}
+                          </div>
+                          {project.description && (
+                            <div className="text-[11px] text-slate-400 dark:text-zinc-500 truncate">
+                              {project.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {isCurrent ? (
+                        <span className="text-[11px] font-medium text-violet-600 dark:text-violet-400 shrink-0 ml-2">
+                          Current
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 ml-2 group-hover:text-violet-600">
+                          Select
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {assignProjectDoc.doc?.projectId && (
+              <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => handleAssignToProject(null)}
+                  className="text-[12px] text-red-600 dark:text-red-400 hover:underline cursor-pointer bg-transparent border-none p-0 font-medium"
+                >
+                  Remove from project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssignProjectDoc(null)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer bg-transparent border-none"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

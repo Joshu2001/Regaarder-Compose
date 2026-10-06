@@ -127,7 +127,7 @@ export const AGENT_REGISTRY = [
   {
     id: AGENT_IDS.DNA,
     label: 'DNA',
-    icon: 'Sparkles',
+    icon: 'RegaarderAi',
     description: 'Your unique writing identity and evolution',
     accentClass: 'text-indigo-600',
     bgClass: 'bg-indigo-50',

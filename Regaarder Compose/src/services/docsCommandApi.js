@@ -8,6 +8,9 @@
  * Direct DOM manipulations or editor instances are isolated here.
  */
 
+import { notifyDocumentMutated } from './universalContextGraph.js';
+import { htmlToBlockTree, blockTreeToHtml, patchBlock, insertBlock, deleteBlock, getActiveBlockTree } from './blockCanvasEngine.js';
+
 // Global registry of active editor instance bindings
 let activeEditorBinding = null;
 
@@ -123,6 +126,18 @@ export const insertContent = ({ text = '', html = '', position = 'cursor' }) => 
     }
   }
 
+  // Notify Universal Context Graph of mutation
+  try {
+    const newSnap = getDocumentSnapshot();
+    notifyDocumentMutated({
+      docId: activeEditorBinding?.docId || 'doc_active',
+      title: activeEditorBinding?.title || 'Active Document',
+      text: newSnap.text,
+      characterCount: newSnap.characterCount,
+      wordCount: newSnap.wordCount
+    });
+  } catch (_e) {}
+
   return { success: true, mode: 'execCommand' };
 };
 
@@ -134,6 +149,7 @@ export const replaceRange = ({ targetText = '', replacementText = '', replaceAll
   if (!ed) return { success: false, reason: 'No active editor found' };
 
   const snapshot = getDocumentSnapshot();
+  let mutationSucceeded = false;
   
   // If targetText specified, replace targetText in innerHTML/innerText
   if (targetText && snapshot.text.includes(targetText)) {
@@ -143,13 +159,27 @@ export const replaceRange = ({ targetText = '', replacementText = '', replaceAll
     } else {
       ed.innerHTML = ed.innerHTML.replace(targetText, replacementText);
     }
-    return { success: true, replacedCount: replaceAll ? 'all' : 1 };
+    mutationSucceeded = true;
+  } else if (snapshot.hasSelection) {
+    // If selection exists, replace active selection
+    document.execCommand('insertText', false, replacementText);
+    mutationSucceeded = true;
   }
 
-  // If selection exists, replace active selection
-  if (snapshot.hasSelection) {
-    document.execCommand('insertText', false, replacementText);
-    return { success: true, replacedCount: 1, mode: 'selection' };
+  if (mutationSucceeded) {
+    // Notify Universal Context Graph of mutation
+    try {
+      const newSnap = getDocumentSnapshot();
+      notifyDocumentMutated({
+        docId: activeEditorBinding?.docId || 'doc_active',
+        title: activeEditorBinding?.title || 'Active Document',
+        text: newSnap.text,
+        characterCount: newSnap.characterCount,
+        wordCount: newSnap.wordCount
+      });
+    } catch (_e) {}
+
+    return { success: true, replacedCount: replaceAll ? 'all' : 1 };
   }
 
   return { success: false, reason: 'Target text not found and no selection active' };
@@ -285,3 +315,85 @@ export const deleteRange = ({ targetText = '', deleteEntireDocument = false }) =
   document.execCommand('delete', false, null);
   return { success: true, deleted: 'selection' };
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. BLOCK CANVAS AST COMMANDS (Pillar 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Get current document state as a structured Block Tree AST.
+ */
+export const getBlockTreeSnapshot = () => {
+  const snapshot = getDocumentSnapshot();
+  if (snapshot.html || snapshot.text) {
+    return htmlToBlockTree(snapshot.html || snapshot.text, {
+      documentId: activeEditorBinding?.docId || 'doc_active',
+      title: activeEditorBinding?.title || 'Active Document'
+    });
+  }
+  return getActiveBlockTree() || htmlToBlockTree('', {
+    documentId: activeEditorBinding?.docId || 'doc_active',
+    title: activeEditorBinding?.title || 'Active Document'
+  });
+};
+
+/**
+ * Surgically patch a specific block by its blockId in the live DOM and AST.
+ */
+export const patchBlockById = ({ blockId, content, properties, type, agentId = 'relay_agent' }) => {
+  const ed = getActiveEditable();
+  const tree = getBlockTreeSnapshot();
+  
+  const patchResult = patchBlock(tree, { blockId, content, properties, type, agentId });
+  
+  if (ed && patchResult.success) {
+    const updatedHtml = blockTreeToHtml(tree);
+    ed.innerHTML = updatedHtml;
+    if (activeEditorBinding?.setHTML) {
+      activeEditorBinding.setHTML(updatedHtml);
+    }
+  }
+
+  return patchResult;
+};
+
+/**
+ * Insert a new block adjacent to targetBlockId in the live DOM and AST.
+ */
+export const insertBlockAdjacent = ({ targetBlockId, position = 'after', block = {}, agentId = 'relay_agent' }) => {
+  const ed = getActiveEditable();
+  const tree = getBlockTreeSnapshot();
+  
+  const insertResult = insertBlock(tree, { targetBlockId, position, block, agentId });
+  
+  if (ed && insertResult.success) {
+    const updatedHtml = blockTreeToHtml(tree);
+    ed.innerHTML = updatedHtml;
+    if (activeEditorBinding?.setHTML) {
+      activeEditorBinding.setHTML(updatedHtml);
+    }
+  }
+
+  return insertResult;
+};
+
+/**
+ * Delete a specific block by blockId in the live DOM and AST.
+ */
+export const deleteBlockById = ({ blockId, agentId = 'relay_agent' }) => {
+  const ed = getActiveEditable();
+  const tree = getBlockTreeSnapshot();
+  
+  const deleteResult = deleteBlock(tree, { blockId, agentId });
+  
+  if (ed && deleteResult.success) {
+    const updatedHtml = blockTreeToHtml(tree);
+    ed.innerHTML = updatedHtml;
+    if (activeEditorBinding?.setHTML) {
+      activeEditorBinding.setHTML(updatedHtml);
+    }
+  }
+
+  return deleteResult;
+};
+

@@ -1,0 +1,446 @@
+/**
+ * intentInferenceService.js
+ * 
+ * Regaarder Intent Inference Engine
+ * Implements: Intent -> Regaarder infers capability -> Prepares workspace -> First outcome delivered.
+ * 
+ * Interprets natural language user queries and outcome selections, mapping them directly
+ * to concrete project templates, task matrices, research queries, or canvas creation.
+ */
+
+import { createProject } from './workspaceProjectStore';
+import { updateWorkspaceDocument, readWorkspaceDocuments } from './workspaceDocumentStore';
+
+/**
+ * Outcome category definitions for the redesigned first onboarding screen
+ */
+export const OUTCOME_PATHS = [
+  {
+    id: 'create',
+    title: 'Create something',
+    description: 'Write, calculate, design, present, or sketch.',
+    badge: 'Draft & Build',
+    iconName: 'ComposeIcon',
+    color: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border-violet-200/60 dark:border-violet-800/40'
+  },
+  {
+    id: 'organize',
+    title: 'Bring my work together',
+    description: 'Connect files, notes, knowledge, and existing work.',
+    badge: 'Connect Knowledge',
+    iconName: 'FolderGit2',
+    color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/60 dark:border-emerald-800/40'
+  },
+  {
+    id: 'plan',
+    title: 'Plan and execute a project',
+    description: 'Organize deliverables, milestones, tasks, and deadlines.',
+    badge: 'Milestones & Tasks',
+    iconName: 'CheckSquare',
+    color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200/60 dark:border-indigo-800/40'
+  },
+  {
+    id: 'memora',
+    title: 'Recall with Memora',
+    description: 'Search across past work, synthesized context, and connected files.',
+    badge: 'Memory & Context',
+    iconName: 'MemoryIcon',
+    color: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 border-sky-200/60 dark:border-sky-800/40'
+  },
+  {
+    id: 'collaborate',
+    title: 'Work with others',
+    description: 'Meet, collaborate, share, and coordinate with your team.',
+    badge: 'Live Collaboration',
+    iconName: 'RoomIcon',
+    color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-200/60 dark:border-rose-800/40'
+  }
+];
+
+/**
+ * Infer intent and destination payload from free-form natural language query
+ * @param {string} text - User's stated goal in their own words
+ * @returns {object} Action payload for AppCore to prepare and launch
+ */
+export function inferWorkflowFromText(text = '') {
+  const query = text.trim().toLowerCase();
+  const rawTitle = text.trim();
+  const capitalizedTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+
+  // 1. Research competitors and prepare a presentation / Deck + Research (e.g. "I need to research competitors and prepare a presentation.")
+  if (
+    (query.includes('research') || query.includes('competitor') || query.includes('market') || query.includes('analysis')) &&
+    (query.includes('presentation') || query.includes('deck') || query.includes('slides') || query.includes('pitch') || query.includes('prepare a presentation'))
+  ) {
+    return {
+      type: 'create_canvas',
+      mode: 'deck',
+      title: capitalizedTitle || 'Competitor Research & Executive Presentation',
+      toast: 'Prepared presentation canvas with research synthesis context'
+    };
+  }
+
+  // 2. 30 documents / Bring work together + Research / Ingestion (e.g. "I have 30 documents and need to understand them.")
+  if (
+    (query.includes('document') || query.includes('documents') || query.includes('files') || query.includes('notes') || query.includes('import')) &&
+    (query.includes('understand') || query.includes('make sense') || query.includes('summarize') || query.includes('analyze') || query.includes('bring together') || query.includes('connect'))
+  ) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Document Understanding activated'
+    };
+  }
+
+  // 3. Presentation / Slides / Pitch Deck alone
+  if (
+    query.includes('presentation') ||
+    query.includes('pitch deck') ||
+    query.includes('slides') ||
+    query.includes('keynote') ||
+    query.includes('deck')
+  ) {
+    return {
+      type: 'create_canvas',
+      mode: 'deck',
+      title: capitalizedTitle || 'Executive Presentation',
+      toast: `Prepared presentation canvas for: "${rawTitle}"`
+    };
+  }
+
+  // 4. Spreadsheet / Data Analysis / Financial Model / Metrics
+  if (
+    query.includes('dataset') ||
+    query.includes('spreadsheet') ||
+    query.includes('sheets') ||
+    query.includes('excel') ||
+    query.includes('financial model') ||
+    query.includes('metrics') ||
+    query.includes('csv') ||
+    query.includes('analyze data') ||
+    query.includes('calculation')
+  ) {
+    return {
+      type: 'create_canvas',
+      mode: 'sheets',
+      title: capitalizedTitle || 'Financial & Metric Analysis',
+      toast: `Prepared data spreadsheet for: "${rawTitle}"`
+    };
+  }
+
+  // 5. Document / Writing / Proposal / Memo / Draft
+  if (
+    query.includes('write') ||
+    query.includes('proposal') ||
+    query.includes('draft') ||
+    query.includes('article') ||
+    query.includes('essay') ||
+    query.includes('memo') ||
+    query.includes('doc') ||
+    query.includes('strategy brief')
+  ) {
+    return {
+      type: 'create_canvas',
+      mode: 'compose',
+      title: capitalizedTitle || 'Strategy Proposal Draft',
+      bodyHtml: `<h1>${capitalizedTitle || 'Strategy Proposal'}</h1><p>Initialized by Regaarder based on: <em>"${rawTitle}"</em>.</p><h2>1. Executive Summary</h2><p>Provide the strategic context and primary objectives here. Press <code>/</code> for intelligent editing tools.</p>`,
+      toast: `Prepared composition draft for: "${rawTitle}"`
+    };
+  }
+
+  // 6. Whiteboard / Diagram / Brainstorm / Canvas
+  if (
+    query.includes('whiteboard') ||
+    query.includes('brainstorm') ||
+    query.includes('diagram') ||
+    query.includes('canvas') ||
+    query.includes('map')
+  ) {
+    return {
+      type: 'create_canvas',
+      mode: 'whiteboard',
+      title: capitalizedTitle || 'Ideation Whiteboard',
+      toast: `Prepared infinite whiteboard for: "${rawTitle}"`
+    };
+  }
+
+  // 7. Research / Competitors / Market / Audit / Investigate
+  if (
+    query.includes('research') ||
+    query.includes('competitor') ||
+    query.includes('investigate') ||
+    query.includes('find out') ||
+    query.includes('audit') ||
+    query.includes('market analysis') ||
+    query.includes('benchmark')
+  ) {
+    return {
+      type: 'action',
+      destination: 'browser',
+      query: rawTitle,
+      toast: `Launched deep research for: "${rawTitle}"`
+    };
+  }
+
+  // 8. Meeting / Team Call / Video / Standup
+  if (
+    query.includes('meet') ||
+    query.includes('call') ||
+    query.includes('video') ||
+    query.includes('standup') ||
+    query.includes('sync with team') ||
+    query.includes('room')
+  ) {
+    return {
+      type: 'action',
+      destination: 'room',
+      meetingTopic: capitalizedTitle || 'Team Strategy Sync',
+      enableAiTranscription: true,
+      toast: `Prepared collaborative room for: "${rawTitle}"`
+    };
+  }
+
+  // 9. Organize Files / Ingest / 30 documents / Connect notes
+  if (
+    query.includes('document') ||
+    query.includes('file') ||
+    query.includes('notes') ||
+    query.includes('organize') ||
+    query.includes('bring together') ||
+    query.includes('understand them') ||
+    query.includes('import') ||
+    query.includes('pdf')
+  ) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: `Universal Memory activated for: "${rawTitle}"`
+    };
+  }
+
+  // 10. Complex Project / Startup Launch / Sprint / Milestones (e.g. "I need to launch my startup")
+  // Automatically prepare a cohesive project workspace with real milestones, tasks, and brief
+  const projectPhases = [
+    {
+      id: `phase-${Date.now()}-1`,
+      label: 'Strategy & Scoping',
+      status: 'completed',
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      description: `Initial planning and milestone alignment for ${capitalizedTitle}.`,
+      milestones: [
+        { id: `m-${Date.now()}-1`, title: `Scope delivery requirements for ${capitalizedTitle}`, completed: true, dueDate: 'Phase 1' },
+        { id: `m-${Date.now()}-2`, title: 'Align cross-functional resources & timeline', completed: true, dueDate: 'Phase 1' }
+      ]
+    },
+    {
+      id: `phase-${Date.now()}-2`,
+      label: 'Core Execution',
+      status: 'in-progress',
+      startDate: new Date(Date.now() + 8 * 86400000).toISOString().split('T')[0],
+      endDate: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
+      description: `Active production phase for ${capitalizedTitle}.`,
+      milestones: [
+        { id: `m-${Date.now()}-3`, title: `Build & validate ${capitalizedTitle} deliverables`, completed: false, dueDate: 'Phase 2' },
+        { id: `m-${Date.now()}-4`, title: 'Review quality standards and verification', completed: false, dueDate: 'Phase 2' }
+      ]
+    }
+  ];
+
+  const projectGoals = [
+    { id: `g-${Date.now()}-1`, text: `Execute ${capitalizedTitle} on schedule`, completed: false },
+    { id: `g-${Date.now()}-2`, text: 'Maintain executive quality and documentation integrity', completed: false }
+  ];
+
+  const createdProject = createProject({
+    name: capitalizedTitle || 'New Venture Project',
+    description: `AI-prepared workspace to accomplish: "${rawTitle}".`,
+    color: '#7C3AED',
+    phases: projectPhases,
+    goals: projectGoals
+  });
+
+  const projectTasks = [
+    {
+      id: `task-${Date.now()}-1`,
+      title: `Finalize initial roadmap for ${capitalizedTitle}`,
+      projectId: createdProject.id,
+      priority: 'high',
+      dueDate: 'Today',
+      completed: false
+    },
+    {
+      id: `task-${Date.now()}-2`,
+      title: `Assemble documentation & assets for ${capitalizedTitle}`,
+      projectId: createdProject.id,
+      priority: 'medium',
+      dueDate: 'This Week',
+      completed: false
+    }
+  ];
+
+  return {
+    type: 'project_prepared',
+    projectId: createdProject.id,
+    project: createdProject,
+    createdTasks: projectTasks,
+    title: capitalizedTitle,
+    toast: `Workspace prepared for: "${capitalizedTitle}"`
+  };
+}
+
+/**
+ * Compose a unified workspace payload based on multiple simultaneous intent selections.
+ * 
+ * Rules:
+ * - Research + Create → Browser + relevant creation canvas (e.g. Deck or Compose)
+ * - Bring work together + Project → Memora/import + Projects/Tasks/Schedule
+ * - Project + Work with others → Projects + Tasks + Collaborative Room
+ * - Research + Create + Work with others → Research + creation + collaboration
+ * - Single intent → routes to that intent's standard workspace configuration
+ *
+ * @param {string[]} intentIds - Selected intent IDs ('create', 'organize', 'plan', 'research', 'collaborate')
+ * @param {string} customPrompt - Optional free-text prompt
+ * @returns {object} Action payload for AppCore
+ */
+export function composeCombinedIntents(intentIds = [], customPrompt = '') {
+  const set = new Set(intentIds);
+  const prompt = customPrompt.trim();
+  const rawTitle = prompt ? (prompt.charAt(0).toUpperCase() + prompt.slice(1)) : 'Initiative Workspace';
+
+  // 1. Memora / Research + Create
+  if ((set.has('memora') || set.has('research')) && set.has('create')) {
+    if (set.has('collaborate')) {
+      return {
+        type: 'action',
+        destination: 'omni-portal',
+        query: prompt || 'Synthesized knowledge context',
+        toast: 'Memora intelligence, creation studio, and team sync prepared'
+      };
+    }
+    return {
+      type: 'create_canvas',
+      mode: 'compose',
+      title: rawTitle !== 'Initiative Workspace' ? rawTitle : 'Knowledge Synthesis Draft',
+      bodyHtml: `<h1>${rawTitle !== 'Initiative Workspace' ? rawTitle : 'Knowledge Synthesis'}</h1><p>Initialized with Memora contextual knowledge.</p><h2>1. Key Findings & Insights</h2><p>Synthesize core points here. Press <code>/</code> for intelligent editing tools.</p>`,
+      toast: 'Composition canvas with Memora context prepared'
+    };
+  }
+
+  // 2. Bring work together + Memora (Universal Memory + Document Understanding / Search)
+  if (set.has('organize') && (set.has('memora') || set.has('research'))) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Memora Hub activated'
+    };
+  }
+
+  // 3. Bring work together + Project (Memora / Import + Projects / Tasks)
+  if (set.has('organize') && set.has('plan')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory & Project tracking connected'
+    };
+  }
+
+  // 4. Project + Work with others (Projects + Tasks + Room)
+  if (set.has('plan') && set.has('collaborate')) {
+    return {
+      type: 'action',
+      destination: 'room',
+      meetingTopic: prompt || 'Project Kickoff & Milestone Alignment',
+      enableAiTranscription: true,
+      toast: 'Team room with project milestones configured'
+    };
+  }
+
+  // 5. Plan (Project) + Create (Drafting deliverables & Project tasks)
+  if (set.has('plan') && set.has('create')) {
+    return {
+      type: 'create_canvas',
+      mode: 'compose',
+      title: rawTitle !== 'Initiative Workspace' ? rawTitle : 'Project Roadmap & Execution Plan',
+      bodyHtml: `<h1>${rawTitle !== 'Initiative Workspace' ? rawTitle : 'Project Roadmap'}</h1><p>Integrated planning and creation document.</p><h2>1. Deliverables & Milestones</h2><p>Track core outputs and collaborate across workstreams.</p>`,
+      toast: 'Project planning and deliverables document prepared'
+    };
+  }
+
+  // 6. Bring work together + Create (Synthesizing knowledge into drafts)
+  if (set.has('organize') && set.has('create')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      toast: 'Universal Memory connected to document creation'
+    };
+  }
+
+  // 7. Memora / Research + Work with others
+  if ((set.has('memora') || set.has('research')) && set.has('collaborate')) {
+    return {
+      type: 'action',
+      destination: 'room',
+      meetingTopic: prompt || 'Context Review & Team Alignment',
+      enableAiTranscription: true,
+      toast: 'Shared Memora intelligence and collaborative room activated'
+    };
+  }
+
+  // 5. Single selections mapped directly to real workspaces
+  if (set.has('create')) {
+    return {
+      type: 'navigate_workspace',
+      destination: 'landing',
+      guidedIntent: 'create',
+      toast: 'Welcome to your workspace. Start by creating a document.'
+    };
+  }
+
+  if (set.has('plan')) {
+    return {
+      type: 'navigate_workspace',
+      destination: 'projects',
+      guidedIntent: 'plan',
+      toast: 'Projects workspace activated'
+    };
+  }
+
+  if (set.has('organize')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      guidedIntent: 'organize',
+      toast: 'Universal Memory & Knowledge Hub activated'
+    };
+  }
+
+  if (set.has('memora') || set.has('research')) {
+    return {
+      type: 'action',
+      destination: 'omni-portal',
+      guidedIntent: 'memora',
+      query: prompt || '',
+      toast: 'Memora Knowledge Context activated'
+    };
+  }
+
+  if (set.has('collaborate')) {
+    return {
+      type: 'action',
+      destination: 'room',
+      guidedIntent: 'collaborate',
+      meetingTopic: prompt || 'Team Strategy Room',
+      toast: 'Collaborative Room ready'
+    };
+  }
+
+  // Default: Create canvas
+  return {
+    type: 'navigate_workspace',
+    destination: 'landing',
+    guidedIntent: 'create',
+    toast: 'Workspace configured and ready'
+  };
+}
+

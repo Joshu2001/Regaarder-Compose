@@ -9,6 +9,8 @@
 
 import { getToolByName } from './docsToolRegistry.js';
 import * as docsCommandApi from './docsCommandApi.js';
+import { stageMutation, evaluateSecurityGate, isDestructiveTool } from './workspaceStagingEngine.js';
+import { evaluateActionAutonomy, AUTONOMY_DECISION } from './actionPolicyEngine.js';
 
 // In-memory transaction stack for document state undo/redo tracking
 const transactionHistory = [];
@@ -133,6 +135,120 @@ export const executeTool = async (toolName, params = {}, context = {}, options =
     };
     executionLogs.push({ ...dryRunResult, durationMs: Date.now() - startTime });
     return dryRunResult;
+  }
+
+  // 3b. Handle Isolated Staging Mode & Per-Action Autonomy Policy Gates (Pillar 4B & Pillar 3 Sandbox Execution)
+  const policyCheck = evaluateActionAutonomy(toolName, params, context);
+  const gateEvaluation = evaluateSecurityGate(toolName, params, context);
+  const isDestructive = gateEvaluation.isDestructive || Boolean(toolDef.destructive) || isDestructiveTool(toolName);
+  const isExplicitlyConfirmed = Boolean(options.confirmed || context?.confirmed);
+
+  // If policy denies action completely, abort immediately
+  if (policyCheck.decision === AUTONOMY_DECISION.DENY) {
+    const deniedResult = {
+      success: false,
+      toolName,
+      requestId,
+      transactionId: null,
+      message: `[POLICY DENIED] ${policyCheck.reason}`,
+      data: { policyCheck },
+      error: { code: 'AUTONOMY_POLICY_DENIAL', details: policyCheck.reason },
+      warnings: [],
+      timestamp: new Date().toISOString()
+    };
+    executionLogs.push({ ...deniedResult, durationMs: Date.now() - startTime });
+    return deniedResult;
+  }
+
+  // High-risk/destructive tools or actions violating numerical autonomy thresholds
+  // must NEVER silently alter production state; they automatically divert to staging PR.
+  const isPolicyDiverted = policyCheck.decision === AUTONOMY_DECISION.REQUIRE_STAGING_PR;
+  const isSecurityDiverted = isDestructive && !isExplicitlyConfirmed && !options.stage && !context?.stage;
+  const isStagedMode = Boolean(options.stage || context?.stage || isPolicyDiverted || isSecurityDiverted);
+
+  if (isStagedMode && (toolDef.mutatesDocument || isDestructive)) {
+    let beforeText = currentSnapshot.text || '';
+    let proposedText = params.text || params.contentHtml || params.replacementText || (params.title ? `# ${params.title}\n\n${beforeText}` : beforeText);
+    
+    // Surgical block-level diff extraction for Pillar 4
+    if (toolName === 'patch_block' && params.blockId) {
+      try {
+        const tree = docsCommandApi.getBlockTreeSnapshot();
+        const blk = tree?.blocks?.find(b => b.id === params.blockId);
+        if (blk) {
+          beforeText = blk.content || '';
+          proposedText = params.content !== undefined ? params.content : beforeText;
+        }
+      } catch (_e) {}
+    } else if (toolName === 'insert_block') {
+      beforeText = '';
+      proposedText = params.block?.content || '';
+    } else if (toolName === 'delete_block' && params.blockId) {
+      try {
+        const tree = docsCommandApi.getBlockTreeSnapshot();
+        const blk = tree?.blocks?.find(b => b.id === params.blockId);
+        if (blk) {
+          beforeText = blk.content || '';
+          proposedText = '';
+        }
+      } catch (_e) {}
+    } else if (toolDef.category === 'schedule_tools') {
+      beforeText = JSON.stringify(params.conflict || params.existingEvent || {}, null, 2);
+      proposedText = JSON.stringify(params.event || params.resolution || params, null, 2);
+    } else if (toolDef.category === 'portal_tools') {
+      beforeText = '';
+      proposedText = params.content || JSON.stringify(params, null, 2);
+    } else if (toolDef.category === 'tasks_tools') {
+      beforeText = JSON.stringify({ status: 'PENDING', directiveId: params.directiveId }, null, 2);
+      proposedText = JSON.stringify(params.result || params, null, 2);
+    } else if (toolDef.category === 'whiteboard_tools') {
+      beforeText = JSON.stringify(params.nodeId ? { nodeId: params.nodeId } : { nodes: 0 }, null, 2);
+      proposedText = JSON.stringify(params.patch || params.steps || params, null, 2);
+    } else if (toolDef.category === 'room_tools') {
+      beforeText = JSON.stringify({ status: 'spoken_audio', speaker: params.speaker || 'Participant' }, null, 2);
+      proposedText = JSON.stringify(params.text ? { intent: params.text, speaker: params.speaker } : params, null, 2);
+    }
+
+    const stagedResult = stageMutation({
+      branchId: options.branchId || context.branchId,
+      targetApp: context.targetApp || (toolDef.category === 'room_tools' ? 'room' : (toolDef.category === 'whiteboard_tools' ? 'whiteboard' : (toolDef.category === 'portal_tools' ? 'portal' : (toolDef.category === 'schedule_tools' ? 'schedule' : (toolDef.category === 'tasks_tools' ? 'tasks' : 'compose'))))),
+      entityId: context.entityId || (params.meetingId || params.nodeId || params.directiveId || params.packageId || params.event?.id || 'ent_room_active'),
+      targetTitle: context.targetTitle || (toolDef.category === 'room_tools' ? `Room: ${params.speaker ? params.speaker + ' Intent' : (params.title || 'In-Meeting Mutation')}` : (toolDef.category === 'whiteboard_tools' ? `Whiteboard: ${params.title || params.nodeId || 'Spatial Topology'}` : (toolDef.category === 'portal_tools' ? `Portal: ${params.fileName || params.title || 'Ingestion Package'}` : (toolDef.category === 'schedule_tools' ? `Schedule: ${params.event?.title || params.strategy || 'Event Mutation'}` : (toolDef.category === 'tasks_tools' ? `Directive: ${params.title || params.directiveId || 'Task Execution'}` : (params.blockId ? `Block [${params.blockId}]` : (currentSnapshot.title || 'Active Document'))))))),
+      toolName,
+      params,
+      beforeText,
+      afterText: proposedText,
+      metadata: { 
+        requestId, 
+        toolLabel: toolDef.label, 
+        destructive: isDestructive, 
+        blockId: params.blockId,
+        securityGate: gateEvaluation,
+        forcedStaging: isSecurityDiverted
+      }
+    });
+
+    const stagedOutput = {
+      success: true,
+      isStaged: true,
+      requiresConfirmation: gateEvaluation.requiresConfirmation,
+      securityClearance: gateEvaluation.clearanceLevel,
+      forcedStaging: isSecurityDiverted,
+      toolName,
+      requestId,
+      branchId: stagedResult.branchId,
+      mutationId: stagedResult.mutationId,
+      prNumber: stagedResult.prNumber,
+      message: isSecurityDiverted
+        ? `[SECURITY GATE ACTIVATED] Destructive tool "${toolDef.label}" safely diverted into staging PR #${stagedResult.prNumber} pending human director approval.`
+        : `[STAGED FOR APPROVAL] Propose changes for "${toolDef.label}" into PR #${stagedResult.prNumber}.`,
+      data: stagedResult,
+      error: null,
+      warnings,
+      timestamp: new Date().toISOString()
+    };
+    executionLogs.push({ ...stagedOutput, durationMs: Date.now() - startTime });
+    return stagedOutput;
   }
 
   // 4. Capture Before Snapshot for Mutating Operations

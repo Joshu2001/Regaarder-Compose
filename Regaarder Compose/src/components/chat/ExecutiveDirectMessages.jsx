@@ -12,13 +12,16 @@ import {
   UserPlus, MessageSquarePlus, Cpu, RefreshCw, ChevronRight, Waves, RadioTower,
   SlidersHorizontal, MoreHorizontal, MessageCircle, FileSpreadsheet, UploadCloud,
   AtSign, Globe, Smartphone, User, Terminal, HardDriveDownload,
-  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest, Network
+  History, RotateCcw, Square, Bold, Languages, Loader2, Zap, GitPullRequest, Network, Folder
 } from 'lucide-react';
 import { RegaarderAiIcon, RegaarderProductIcon, MemoryIcon, OrbIcon, RelayIcon, ComposeIcon, SheetIcon, DeckIcon } from '../RegaarderProductIcons';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { detectLocalLLMServers, callAiProvider, getSavedAiConfig } from '../../services/orbAiService';
 import { processRelayAgentMessage, extractClarificationFromText } from '../../services/relayAgentService';
+import { searchUsers, getRegistryUsers, upsertUserInRegistry } from '../../services/relayAccountService';
+import RelayAuthGate from '../relay/RelayAuthGate';
 import InteractiveClarificationCard from '../common/InteractiveClarificationCard';
+import { getProjectIconComponent } from '../projects/CreateProjectModal';
 
 // Quick Translation Languages for Selection Writing Tools
 const TRANSLATE_LANGUAGES = [
@@ -149,7 +152,7 @@ const highlightTextChunks = (str, query, prefix) => {
     chunks.push(
       <mark
         key={`${prefix}-hl-${chunkIdx++}`}
-        className="bg-amber-200 dark:bg-amber-800/80 text-slate-900 dark:text-zinc-50 font-semibold px-0.5 rounded shadow-2xs"
+        className="bg-violet-500/[0.16] dark:bg-violet-400/[0.22] text-slate-900 dark:text-zinc-100 font-semibold px-0.5 rounded-[3px]"
       >
         {matchText}
       </mark>
@@ -285,6 +288,8 @@ const renderFormattedMessageText = (text, highlightQuery = '') => {
 
 export default function ExecutiveDirectMessages({
   isDarkMode = false,
+  currentUser = null,
+  onRequireAuth,
   threads = [],
   activeThreadId,
   onSelectThread,
@@ -347,7 +352,7 @@ export default function ExecutiveDirectMessages({
   // ── Real Live Probed Model Registry (Matching Room Standard) ──
   const [detectedLocalModels, setDetectedLocalModels] = useState([]);
   const [isScanningModels, setIsScanningModels] = useState(false);
-  const [selectedAiModel, setSelectedAiModel] = useState('gemini-2.0-flash');
+  const [selectedAiModel, setSelectedAiModel] = useState('gemma3:1b');
   const [isAiModelSelectorOpen, setIsAiModelSelectorOpen] = useState(false);
 
   // Listen for external navigation events (e.g. from Global Spotlight or Omni-Search)
@@ -365,9 +370,9 @@ export default function ExecutiveDirectMessages({
   useEffect(() => {
     if (detectedModelsFromApp && detectedModelsFromApp.length > 0) {
       setDetectedLocalModels(detectedModelsFromApp);
-      if (selectedAiModel === 'gemini-2.0-flash') {
-        setSelectedAiModel(detectedModelsFromApp[0].id);
-      }
+      const preferred = detectedModelsFromApp.find(m => m.id?.includes('gemma')) || detectedModelsFromApp[0];
+      setSelectedAiModel(preferred.id);
+      setConversations(prev => prev.map(c => c.id === 'chat-assistant' ? { ...c, modelId: preferred.id, modelName: preferred.name } : c));
     }
   }, [detectedModelsFromApp]);
 
@@ -375,7 +380,7 @@ export default function ExecutiveDirectMessages({
   const scanRealLocalModels = async () => {
     setIsScanningModels(true);
     try {
-      const servers = await detectLocalLLMServers({ timeoutMs: 1200 });
+      const servers = await detectLocalLLMServers({ timeoutMs: 3500 });
       const locals = [];
       (servers || []).forEach(s => {
         if (s.isOnline && Array.isArray(s.models)) {
@@ -392,8 +397,10 @@ export default function ExecutiveDirectMessages({
         }
       });
       setDetectedLocalModels(locals);
-      if (locals.length > 0 && selectedAiModel === 'gemini-2.0-flash') {
-        setSelectedAiModel(locals[0].id);
+      if (locals.length > 0) {
+        const preferred = locals.find(m => m.id?.includes('gemma')) || locals[0];
+        setSelectedAiModel(preferred.id);
+        setConversations(prev => prev.map(c => c.id === 'chat-assistant' ? { ...c, modelId: preferred.id, modelName: preferred.name } : c));
       }
     } catch (e) {
       console.warn('Local LLM detection error:', e);
@@ -482,12 +489,14 @@ export default function ExecutiveDirectMessages({
 
   // ── Create Modal State (Instagram-Style Create Profile, Team Group, or AI Persona) ──
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [isAuthGateOpen, setIsAuthGateOpen] = useState(false);
   const [modalMode, setModalMode] = useState('profile'); // 'profile' | 'group' | 'persona'
   
   // Clean Profile Form Fields (Instagram Standard: Name, Username ID, Bio)
   const [profileName, setProfileName] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
   const [profileBio, setProfileBio] = useState('');
+  const [directorySearchQuery, setDirectorySearchQuery] = useState('');
 
   // Group Form Fields
   const [groupName, setGroupName] = useState('');
@@ -508,8 +517,10 @@ export default function ExecutiveDirectMessages({
       avatar: 'AI',
       isGroup: false,
       isAi: true,
-      modelId: 'gemini-2.0-flash',
-      modelName: 'Gemini 2.0 Flash',
+      modelId: 'gemma3:1b',
+      modelName: 'gemma3:1b',
+      provider: 'Ollama',
+      endpoint: 'http://127.0.0.1:11434',
       lastMsg: 'Ready for strategy briefings, real-time voice, or file synthesis.',
       time: 'Just now',
       unread: 0,
@@ -548,6 +559,17 @@ export default function ExecutiveDirectMessages({
       console.warn('[Relay] Failed to persist conversations to localStorage:', e);
     }
   }, [conversations]);
+
+  const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
+
+  // Find current active model info from detected locals or cloud models
+  const activeModelDisplay = useMemo(() => {
+    const fromLocal = detectedLocalModels.find(m => m.id === selectedAiModel);
+    if (fromLocal) return { name: fromLocal.name, provider: fromLocal.provider, isLocal: true };
+    const fromCloud = DEFAULT_CLOUD_MODELS.find(m => m.id === selectedAiModel);
+    if (fromCloud) return { name: fromCloud.name, provider: fromCloud.provider, isLocal: false };
+    return { name: selectedAiModel, provider: 'AI Engine', isLocal: false };
+  }, [selectedAiModel, detectedLocalModels]);
 
   // Isolated Message Threads Store with localStorage Persistence
   const RELAY_MESSAGES_STORAGE_KEY = 'regaarder_relay_messages_v1';
@@ -625,6 +647,64 @@ export default function ExecutiveDirectMessages({
 
   const [isAiHistoryOpen, setIsAiHistoryOpen] = useState(false);
 
+  // ── Share Project into Relay Listener ──
+  useEffect(() => {
+    const handleProjectShare = (e) => {
+      const detail = e.detail;
+      if (!detail?.project) return;
+      const { project, recipientIds = [], note = '' } = detail;
+      const targetIds = recipientIds.length > 0 ? recipientIds : [activeContactId || 'chat-assistant'];
+
+      setThreadMessages(prev => {
+        const updated = { ...prev };
+        targetIds.forEach(recId => {
+          const existing = updated[recId] || [];
+          const projectShareMsg = {
+            id: `proj-share-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            author: 'You',
+            role: 'you',
+            text: note ? note : '',
+            createdAt: Date.now(),
+            status: 'sent',
+            actionCard: {
+              type: 'project',
+              id: project.id,
+              title: project.name,
+              icon: project.icon || 'folder',
+              color: project.color || '#7C3AED',
+              description: project.description || project.customInstructions || '',
+              project
+            }
+          };
+          updated[recId] = [...existing, projectShareMsg];
+        });
+        return updated;
+      });
+
+      // Update conversations preview
+      setConversations(prev => prev.map(c => {
+        if (targetIds.includes(c.id)) {
+          return {
+            ...c,
+            lastMsg: `Shared project: ${project.name}`,
+            time: 'Just now'
+          };
+        }
+        return c;
+      }));
+
+      // Switch active contact to the recipient if single recipient
+      if (targetIds.length > 0) {
+        setActiveContactId(targetIds[0]);
+      }
+    };
+
+    window.addEventListener('regaarder:relay-share-project', handleProjectShare);
+    return () => {
+      window.removeEventListener('regaarder:relay-share-project', handleProjectShare);
+    };
+  }, [activeContactId]);
+
   // Unified contact list for forward modal (conversations + threads)
   const forwardRecipientsList = useMemo(() => {
     const map = new Map();
@@ -701,14 +781,17 @@ export default function ExecutiveDirectMessages({
     setForwardSearchQuery('');
   };
 
-  const getCleanAiWelcomeMessage = (modelName = 'Gemini 2.0 Flash') => ({
-    id: `m-welcome-${Date.now()}`,
-    author: 'Assistant',
-    role: 'assistant',
-    text: `Welcome to a new chat session with ${modelName}. All communications are end-to-end encrypted with zero-knowledge keys.\n\nReady for strategy briefings, document synthesis, or workspace questions.`,
-    createdAt: Date.now(),
-    status: 'read'
-  });
+  const getCleanAiWelcomeMessage = (modelName) => {
+    const resolvedName = modelName || activeModelDisplay.name || (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'gemma3:1b';
+    return {
+      id: `m-welcome-${Date.now()}`,
+      author: 'Assistant',
+      role: 'assistant',
+      text: `Welcome to a new chat session with ${resolvedName}. All communications are end-to-end encrypted with zero-knowledge keys.\n\nReady for strategy briefings, document synthesis, or workspace questions.`,
+      createdAt: Date.now(),
+      status: 'read'
+    };
+  };
 
   // ── Session Lifecycle: Auto-Archive Previous AI Chats on Fresh App Launch ──
   useEffect(() => {
@@ -730,7 +813,7 @@ export default function ExecutiveDirectMessages({
               const firstUserMsg = userMsgs[0].text || 'Previous Chat';
               const sessionTitle = firstUserMsg.length > 40 ? `${firstUserMsg.slice(0, 40)}...` : firstUserMsg;
               const contactObj = conversations.find(c => c.id === contactId);
-              const mName = contactObj?.modelName || contactObj?.name || 'AI Assistant';
+              const mName = contactObj?.modelName || activeModelDisplay.name || contactObj?.name || 'AI Assistant';
 
               sessionsToArchive.push({
                 id: `session-auto-${Date.now()}-${contactId}`,
@@ -764,9 +847,43 @@ export default function ExecutiveDirectMessages({
     }
   }, []);
 
+  const updateAiWelcomeGreeting = (oldText, newModelName) => {
+    if (!oldText || typeof oldText !== 'string') return oldText;
+    const cleanModel = (newModelName || 'gemma3:1b')
+      .replace(/\.0\s*Flash/gi, '')
+      .trim() || 'gemma3:1b';
+
+    if (oldText.includes('All communications are end-to-end encrypted') || oldText.includes('Welcome to a new chat session with') || oldText.includes('.0 Flash')) {
+      return `Welcome to a new chat session with ${cleanModel}. All communications are end-to-end encrypted with zero-knowledge keys.\n\nReady for strategy briefings, document synthesis, or workspace questions.`;
+    }
+    return oldText;
+  };
+
+  // Dynamically synchronize the welcome greeting in the chat to the active model name
+  useEffect(() => {
+    if (!activeModelDisplay?.name) return;
+    setThreadMessages(prev => {
+      const thread = prev[activeContactId] || [];
+      if (thread.length > 0 && (thread[0].text?.includes('Welcome to a new chat session with') || thread[0].text?.includes('.0 Flash') || thread[0].text?.includes('Gemini 2.0 Flash'))) {
+        const updatedFirst = updateAiWelcomeGreeting(thread[0].text, activeModelDisplay.name);
+        if (updatedFirst !== thread[0].text) {
+          return {
+            ...prev,
+            [activeContactId]: [{
+              ...thread[0],
+              text: updatedFirst
+            }, ...thread.slice(1)]
+          };
+        }
+      }
+      return prev;
+    });
+  }, [activeModelDisplay?.name, activeContactId]);
+
   const handleStartNewAiChat = () => {
     const currentMessages = threadMessages[activeContactId] || [];
     const userMessages = currentMessages.filter(m => m.role === 'you');
+    const activeMName = activeModelDisplay.name || (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'gemma3:1b';
     
     if (userMessages.length > 0) {
       const firstUserMsg = userMessages[0].text || 'Untitled Chat';
@@ -776,13 +893,12 @@ export default function ExecutiveDirectMessages({
         contactId: activeContactId,
         title: sessionTitle,
         date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        modelName: (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'Gemini 2.0 Flash',
+        modelName: activeMName,
         messages: [...currentMessages]
       };
       setAiChatSessions(prev => [newSession, ...prev.filter(s => s.id !== newSession.id)]);
     }
 
-    const activeMName = (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName;
     setThreadMessages(prev => ({
       ...prev,
       [activeContactId]: [getCleanAiWelcomeMessage(activeMName)]
@@ -791,7 +907,7 @@ export default function ExecutiveDirectMessages({
   };
 
   const handleClearCurrentChat = () => {
-    const activeMName = (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName;
+    const activeMName = activeModelDisplay.name || (conversations.find(c => c.id === activeContactId) || conversations[0])?.modelName || 'gemma3:1b';
     setThreadMessages(prev => ({
       ...prev,
       [activeContactId]: [getCleanAiWelcomeMessage(activeMName)]
@@ -1190,17 +1306,6 @@ export default function ExecutiveDirectMessages({
       return true;
     });
   }, [conversations, activeTab, searchQuery, threadMessages]);
-
-  const currentChat = conversations.find(c => c.id === activeContactId) || conversations[0];
-  
-  // Find current active model info from detected locals or cloud models
-  const activeModelDisplay = useMemo(() => {
-    const fromLocal = detectedLocalModels.find(m => m.id === selectedAiModel);
-    if (fromLocal) return { name: fromLocal.name, provider: fromLocal.provider, isLocal: true };
-    const fromCloud = DEFAULT_CLOUD_MODELS.find(m => m.id === selectedAiModel);
-    if (fromCloud) return { name: fromCloud.name, provider: fromCloud.provider, isLocal: false };
-    return { name: selectedAiModel, provider: 'AI Engine', isLocal: false };
-  }, [selectedAiModel, detectedLocalModels]);
 
   // Identify if current active model is a compact / lightweight model (≤3B parameters)
   const isSmallModel = useMemo(() => {
@@ -2073,7 +2178,7 @@ Provide a concise natural language synthesis answering the user's question from 
         setAiStatusPhase('typing');
       }, 1200);
 
-      const activeEngineId = currentChat?.modelId || selectedAiModel;
+      const activeEngineId = selectedAiModel || currentChat?.modelId || 'gemma3:1b';
       const targetLocal = detectedLocalModels.find(m => m.id === activeEngineId || m.name === activeEngineId);
       const aiAuthor = currentChat?.name || 'Assistant';
 
@@ -2115,9 +2220,12 @@ Provide a concise natural language synthesis answering the user's question from 
           referenceSources = agentOutcome.referenceSources || [];
         }
 
-        // 2. Direct Electron Native IPC / Loopback fallback if onCallAi did not return text
-        if (!aiResponseText && targetLocal) {
-          const modelTag = targetLocal.id || targetLocal.name;
+        // 2. Direct Electron Native IPC / Loopback fallback if onCallAi did not return substantive text
+        const isCannedFallback = !aiResponseText || aiResponseText.startsWith(`I am ${currentChat?.name || 'Assistant'}. How can I assist`);
+        const isLocalModelActive = Boolean(targetLocal || activeEngineId?.includes('gemma') || activeEngineId?.includes('1b') || activeEngineId?.includes(':') || activeEngineId?.includes('lfm'));
+
+        if ((!aiResponseText || isCannedFallback) && isLocalModelActive) {
+          const modelTag = targetLocal?.id || targetLocal?.name || activeEngineId || 'gemma3:1b';
           const personaIdentity = currentChat?.name || 'Assistant';
           const roleAnchoredPrompt = currentChat?.name
             ? `[STRICT IDENTITY & ROLE ANCHORING]
@@ -2131,7 +2239,7 @@ ${systemPrompt}`
           if (typeof window !== 'undefined' && window.electronAPI?.generateLocalAI) {
             try {
               const ipcRes = await window.electronAPI.generateLocalAI({
-                endpoint: targetLocal.endpoint || 'http://127.0.0.1:11434',
+                endpoint: targetLocal?.endpoint || 'http://127.0.0.1:11434',
                 model: modelTag,
                 prompt: trimmed,
                 systemPrompt: roleAnchoredPrompt
@@ -2144,17 +2252,39 @@ ${systemPrompt}`
             }
           }
 
-          if (!aiResponseText) {
-            const rawEndpoint = (targetLocal.endpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+          if (!aiResponseText || isCannedFallback) {
+            const rawEndpoint = (targetLocal?.endpoint || 'http://127.0.0.1:11434').replace(/\/+$/, '');
             const candidateBases = [
               rawEndpoint,
-              rawEndpoint.includes('127.0.0.1') ? rawEndpoint.replace('127.0.0.1', 'localhost') : rawEndpoint.replace('localhost', '127.0.0.1'),
               'http://127.0.0.1:11434',
+              '/api/ollama',
               'http://localhost:11434'
             ];
 
             for (const base of candidateBases) {
               try {
+                // Try /api/chat first
+                const chatRes = await fetch(`${base}/api/chat`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model: modelTag,
+                    messages: [
+                      { role: 'system', content: roleAnchoredPrompt },
+                      { role: 'user', content: trimmed }
+                    ],
+                    stream: false
+                  })
+                });
+                if (chatRes.ok) {
+                  const chatData = await chatRes.json();
+                  if (chatData?.message?.content) {
+                    aiResponseText = chatData.message.content.trim();
+                    break;
+                  }
+                }
+
+                // Fallback to /api/generate
                 const genRes = await fetch(`${base}/api/generate`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -2166,7 +2296,7 @@ ${systemPrompt}`
                 });
                 if (genRes.ok) {
                   const genData = await genRes.json();
-                  if (genData.response) {
+                  if (genData?.response) {
                     aiResponseText = genData.response.trim();
                     break;
                   }
@@ -2406,6 +2536,21 @@ ${systemPrompt}`
         actions: []
       };
 
+      // Register newly created profile in the searchable directory so others can find them
+      try {
+        upsertUserInRegistry({
+          id: newId,
+          displayName: displayName,
+          handle: `@${cleanHandle || cleanName.toLowerCase().replace(/\s+/g, '')}`,
+          email: '',
+          bio: profileBio.trim(),
+          avatarColor: '#7C6FCD',
+          createdAt: Date.now()
+        });
+      } catch (err) {
+        console.warn('[Relay] Failed to upsert user in registry:', err);
+      }
+
       setConversations(prev => [newContact, ...prev]);
       setThreadMessages(prev => ({
         ...prev,
@@ -2480,6 +2625,54 @@ ${systemPrompt}`
       setPersonaName('');
       setPersonaInstructions('');
     }
+  };
+
+  // Connect / Start DM with a user found in the searchable directory
+  const handleConnectDirectoryUser = (user) => {
+    if (!user) return;
+    const existing = conversations.find(c => c.id === user.id || (user.handle && c.username === user.handle));
+    if (existing) {
+      setActiveContactId(existing.id);
+      setIsNewChatModalOpen(false);
+      setDirectorySearchQuery('');
+      return;
+    }
+
+    const initials = (user.displayName || user.name || 'User')
+      .split(' ')
+      .filter(Boolean)
+      .map(part => part[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || 'U';
+
+    const connectedContact = {
+      id: user.id || `user-${Date.now()}`,
+      name: user.displayName || user.name || 'User',
+      username: user.handle || `@${(user.displayName || user.name || 'user').toLowerCase().replace(/\s+/g, '')}`,
+      bio: user.bio || '',
+      avatar: initials,
+      avatarColor: user.avatarColor || '#7C6FCD',
+      isGroup: false,
+      isAi: false,
+      lastMsg: 'Direct message initiated.',
+      time: 'Just now',
+      unread: 0,
+      category: 'all',
+      online: true,
+      fingerprint: `0x${Math.random().toString(16).slice(2, 6).toUpperCase()} • CONTACT • VERIFIED`,
+      topics: [user.displayName || user.name || 'User'],
+      actions: []
+    };
+
+    setConversations(prev => [connectedContact, ...prev]);
+    setThreadMessages(prev => ({
+      ...prev,
+      [connectedContact.id]: []
+    }));
+    setActiveContactId(connectedContact.id);
+    setIsNewChatModalOpen(false);
+    setDirectorySearchQuery('');
   };
 
   const handleImportPersonaMd = (e) => {
@@ -2640,11 +2833,15 @@ ${systemPrompt}`
               <button
                 type="button"
                 onClick={() => {
-                  setModalMode('profile');
-                  setIsNewChatModalOpen(true);
+                  if (!currentUser) {
+                    setIsAuthGateOpen(true);
+                  } else {
+                    setModalMode('profile');
+                    setIsNewChatModalOpen(true);
+                  }
                 }}
                 className="w-7 h-7 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
-                title="Create Profile, Group or Deploy Persona"
+                title={currentUser ? "Create Profile, Group or Deploy Persona" : "Sign in to add contacts or chat"}
               >
                 <Plus size={16} strokeWidth={2.2} />
               </button>
@@ -2981,6 +3178,22 @@ ${systemPrompt}`
                                     onClick={() => {
                                       setSelectedAiModel(localM.id);
                                       setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, modelId: localM.id, modelName: localM.name } : c));
+                                      setThreadMessages(prev => {
+                                        const thread = prev[activeContactId] || [];
+                                        if (thread.length > 0) {
+                                          const updatedFirst = updateAiWelcomeGreeting(thread[0].text, localM.name);
+                                          if (updatedFirst !== thread[0].text) {
+                                            return {
+                                              ...prev,
+                                              [activeContactId]: [{
+                                                ...thread[0],
+                                                text: updatedFirst
+                                              }, ...thread.slice(1)]
+                                            };
+                                          }
+                                        }
+                                        return prev;
+                                      });
                                       setIsAiModelSelectorOpen(false);
                                     }}
                                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
@@ -3040,6 +3253,22 @@ ${systemPrompt}`
                                 onClick={() => {
                                   setSelectedAiModel(m.id);
                                   setConversations(prev => prev.map(c => c.id === activeContactId ? { ...c, modelId: m.id, modelName: m.name } : c));
+                                  setThreadMessages(prev => {
+                                    const thread = prev[activeContactId] || [];
+                                    if (thread.length > 0) {
+                                      const updatedFirst = updateAiWelcomeGreeting(thread[0].text, m.name);
+                                      if (updatedFirst !== thread[0].text) {
+                                        return {
+                                          ...prev,
+                                          [activeContactId]: [{
+                                            ...thread[0],
+                                            text: updatedFirst
+                                          }, ...thread.slice(1)]
+                                        };
+                                      }
+                                    }
+                                    return prev;
+                                  });
                                   setIsAiModelSelectorOpen(false);
                                 }}
                                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
@@ -3930,227 +4159,276 @@ ${systemPrompt}`
                         </div>
                       )}
 
-                      {/* ── Autonomous Action Card (Document created, Task scheduled, Sheet modified) ── */}
+                      {/* ── Autonomous Action Card (Document created, Task scheduled, Sheet modified, Shared Project) ── */}
                       {msg.actionCard && (
-                        <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700/80 shadow-xs space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {/* Real Colorful Semantic SVG File Badge */}
-                              {msg.actionCard.type === 'document' ? (
-                                <DocsSemanticFileBadge type="compose" title={msg.actionCard.title} size="md" />
-                              ) : msg.actionCard.type === 'sheet' ? (
-                                <DocsSemanticFileBadge type="sheets" title={msg.actionCard.title} size="md" />
-                              ) : msg.actionCard.type === 'staging_pr' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <GitPullRequest size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'schedule' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <Calendar size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'portal' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <UploadCloud size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'directive' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <ListTodo size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'topology' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <Network size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : msg.actionCard.type === 'room_harvester' ? (
-                                <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <Radio size={12} strokeWidth={2.2} />
-                                </div>
-                              ) : (
-                                <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                  <CheckSquare size={12} strokeWidth={2.2} />
-                                </div>
-                              )}
-                              <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                                {msg.actionCard.title}
-                              </span>
-                            </div>
-                            {msg.actionCard.type === 'staging_pr' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
-                                ⏳ Pending Review
-                              </span>
-                            ) : msg.actionCard.type === 'schedule' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
-                                ⚡ Negotiated
-                              </span>
-                            ) : msg.actionCard.type === 'portal' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
-                                ⚡ Ready to Ingest
-                              </span>
-                            ) : msg.actionCard.type === 'directive' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 shrink-0">
-                                ⚡ Directive Queued
-                              </span>
-                            ) : msg.actionCard.type === 'topology' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 shrink-0">
-                                ⚡ Topology Compiled
-                              </span>
-                            ) : msg.actionCard.type === 'room_harvester' ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
-                                ⚡ In-Meeting Live
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
-                                ✓ Executed
-                              </span>
-                            )}
-                          </div>
-
-                          <p className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-snug">
-                            {msg.actionCard.description}
-                          </p>
-
-                          {msg.actionCard.previewSnippet && (
-                            <div className="text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/60 p-2 rounded-lg border border-black/[0.04] dark:border-white/[0.05] italic truncate">
-                              "{msg.actionCard.previewSnippet}"
-                            </div>
-                          )}
-
-                          {msg.actionCard.type === 'document' && msg.actionCard.docId && (
-                            <button
-                              type="button"
-                              onClick={() => onNavigateWorkspace && onNavigateWorkspace({ type: 'compose', docId: msg.actionCard.docId })}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/50"
-                            >
-                              <span>Open in Compose Docs</span>
-                              <ArrowRight size={12} />
-                            </button>
-                          )}
-
-                          {msg.actionCard.type === 'schedule' && (
-                            <div className="space-y-2 mt-1">
-                              {msg.actionCard.agreedSlot && (
-                                <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sky-800 dark:text-sky-300">
-                                      {msg.actionCard.agreedSlot.formattedTime || msg.actionCard.agreedSlot.start}
-                                    </span>
+                        msg.actionCard.type === 'project' ? (
+                          <div
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              if (onNavigateWorkspace) {
+                                onNavigateWorkspace({
+                                  type: 'landing',
+                                  targetTab: 'projects',
+                                  projectId: msg.actionCard.id,
+                                  projectTab: 'files'
+                                });
+                              }
+                            }}
+                            className="group mb-2.5 flex items-center justify-between gap-3 p-3 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.08] transition-all cursor-pointer select-none"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              {(() => {
+                                const IconComp = getProjectIconComponent(msg.actionCard.icon || msg.actionCard.project?.icon);
+                                return (
+                                  <div
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs"
+                                    style={{
+                                      backgroundColor: `${msg.actionCard.color || '#7C3AED'}18`
+                                    }}
+                                  >
+                                    <IconComp
+                                      size={18}
+                                      strokeWidth={1.8}
+                                      style={{
+                                        color: msg.actionCard.color || '#7C3AED'
+                                      }}
+                                    />
                                   </div>
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300">
-                                    {msg.actionCard.confidence || 90}% Match
-                                  </span>
-                                </div>
-                              )}
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (typeof window !== 'undefined' && window.__REGAARDER_COMMIT_EVENT__) {
-                                      window.__REGAARDER_COMMIT_EVENT__(msg.actionCard.event || {
-                                        title: msg.actionCard.title.replace('Scheduled: ', ''),
-                                        startTime: msg.actionCard.agreedSlot?.start || new Date().toISOString(),
-                                        endTime: msg.actionCard.agreedSlot?.end || new Date().toISOString(),
-                                        participants: msg.actionCard.participants || ['user-joshua']
-                                      });
-                                    }
-                                  }}
-                                  className="flex-1 py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                                >
-                                  <Check size={12} />
-                                  <span>Confirm Meeting</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__) {
-                                      window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__();
-                                    }
-                                  }}
-                                  className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11.5px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                                >
-                                  <span>Inspect</span>
-                                  <ArrowRight size={11} />
-                                </button>
+                                );
+                              })()}
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                                  {msg.actionCard.title}
+                                </span>
+                                {msg.actionCard.description && (
+                                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5">
+                                    {msg.actionCard.description}
+                                  </p>
+                                )}
                               </div>
                             </div>
-                          )}
+                            <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-800 dark:text-zinc-500 dark:group-hover:text-zinc-200 transition-colors">
+                              <span className="text-[11px] font-medium hidden sm:inline">Open</span>
+                              <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-700/80 shadow-xs space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {/* Real Colorful Semantic SVG File Badge */}
+                                {msg.actionCard.type === 'document' ? (
+                                  <DocsSemanticFileBadge type="compose" title={msg.actionCard.title} size="md" />
+                                ) : msg.actionCard.type === 'sheet' ? (
+                                  <DocsSemanticFileBadge type="sheets" title={msg.actionCard.title} size="md" />
+                                ) : msg.actionCard.type === 'staging_pr' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <GitPullRequest size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'schedule' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Calendar size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'portal' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <UploadCloud size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'directive' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <ListTodo size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'topology' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Network size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : msg.actionCard.type === 'room_harvester' ? (
+                                  <div className="w-5 h-5 rounded-[5px] bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <Radio size={12} strokeWidth={2.2} />
+                                  </div>
+                                ) : (
+                                  <div className="w-5 h-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                    <CheckSquare size={12} strokeWidth={2.2} />
+                                  </div>
+                                )}
+                                <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                  {msg.actionCard.title}
+                                </span>
+                              </div>
+                              {msg.actionCard.type === 'staging_pr' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/50 shrink-0">
+                                  ⏳ Pending Review
+                                </span>
+                              ) : msg.actionCard.type === 'schedule' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
+                                  ⚡ Negotiated
+                                </span>
+                              ) : msg.actionCard.type === 'portal' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 shrink-0">
+                                  ⚡ Ready to Ingest
+                                </span>
+                              ) : msg.actionCard.type === 'directive' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 shrink-0">
+                                  ⚡ Directive Queued
+                                </span>
+                              ) : msg.actionCard.type === 'topology' ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 shrink-0">
+                                  ⚡ Topology Compiled
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
+                                  ✓ Executed
+                                </span>
+                              )}
+                            </div>
 
-                          {msg.actionCard.type === 'staging_pr' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_STAGING_MODAL__) {
-                                  window.__REGAARDER_OPEN_STAGING_MODAL__(msg.actionCard.branchId);
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm hover:shadow"
-                            >
-                              <GitPullRequest size={12} />
-                              <span>Review Redline Diff & Merge</span>
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'portal' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_PORTAL_INSPECTOR__) {
-                                  window.__REGAARDER_OPEN_PORTAL_INSPECTOR__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <UploadCloud size={12} />
-                              <span>Open Omni-Portal Inspector</span>
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'directive' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__) {
-                                  window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <ListTodo size={12} />
-                              <span>Open Directive Queue Inspector</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'topology' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__) {
-                                  window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <Network size={12} />
-                              <span>Open Spatial Topology Inspector</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                          {msg.actionCard.type === 'room_harvester' && (
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
-                                  window.__REGAARDER_OPEN_ROOM_HARVESTER__();
-                                }
-                              }}
-                              className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                            >
-                              <Radio size={12} />
-                              <span>Open Room Observer Inspector</span>
-                              <ArrowRight size={11} />
-                            </button>
-                          )}
-                        </div>
+                            <p className="text-[11.5px] text-slate-600 dark:text-zinc-300 leading-snug">
+                              {msg.actionCard.description}
+                            </p>
+
+                            {msg.actionCard.previewSnippet && (
+                              <div className="text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/60 p-2 rounded-lg border border-black/[0.04] dark:border-white/[0.05] italic truncate">
+                                "{msg.actionCard.previewSnippet}"
+                              </div>
+                            )}
+
+                            {msg.actionCard.type === 'document' && msg.actionCard.docId && (
+                              <button
+                                type="button"
+                                onClick={() => onNavigateWorkspace && onNavigateWorkspace({ type: 'compose', docId: msg.actionCard.docId })}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/50"
+                              >
+                                <span>Open in Compose Docs</span>
+                                <ArrowRight size={12} />
+                              </button>
+                            )}
+
+                            {msg.actionCard.type === 'schedule' && (
+                              <div className="space-y-2 mt-1">
+                                {msg.actionCard.agreedSlot && (
+                                  <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-sky-800 dark:text-sky-300">
+                                        {msg.actionCard.agreedSlot.formattedTime || msg.actionCard.agreedSlot.start}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300">
+                                      {msg.actionCard.confidence || 90}% Match
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (typeof window !== 'undefined' && window.__REGAARDER_COMMIT_EVENT__) {
+                                        window.__REGAARDER_COMMIT_EVENT__(msg.actionCard.event || {
+                                          title: msg.actionCard.title.replace('Scheduled: ', ''),
+                                          startTime: msg.actionCard.agreedSlot?.start || new Date().toISOString(),
+                                          endTime: msg.actionCard.agreedSlot?.end || new Date().toISOString(),
+                                          participants: msg.actionCard.participants || ['user-joshua']
+                                        });
+                                      }
+                                    }}
+                                    className="flex-1 py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                                  >
+                                    <Check size={12} />
+                                    <span>Confirm Meeting</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__) {
+                                        window.__REGAARDER_OPEN_SCHEDULER_INSPECTOR__();
+                                      }
+                                    }}
+                                    className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[11.5px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <span>Inspect</span>
+                                    <ArrowRight size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {msg.actionCard.type === 'staging_pr' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_STAGING_MODAL__) {
+                                    window.__REGAARDER_OPEN_STAGING_MODAL__(msg.actionCard.branchId);
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm hover:shadow"
+                              >
+                                <GitPullRequest size={12} />
+                                <span>Review Redline Diff & Merge</span>
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'portal' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_PORTAL_INSPECTOR__) {
+                                    window.__REGAARDER_OPEN_PORTAL_INSPECTOR__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <UploadCloud size={12} />
+                                <span>Open Omni-Portal Inspector</span>
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'directive' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__) {
+                                    window.__REGAARDER_OPEN_DIRECTIVE_INSPECTOR__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <ListTodo size={12} />
+                                <span>Open Directive Queue Inspector</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'topology' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__) {
+                                    window.__REGAARDER_OPEN_TOPOLOGY_INSPECTOR__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <Network size={12} />
+                                <span>Open Spatial Topology Inspector</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            )}
+                            {msg.actionCard.type === 'room_harvester' && (
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.preventDefault();
+                                  if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
+                                    window.__REGAARDER_OPEN_ROOM_HARVESTER__();
+                                  }
+                                }}
+                                className="mt-1 w-full py-1.5 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                              >
+                                <Radio size={12} />
+                                <span>Open Room Observer Inspector</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            )}
+                          </div>
+                        )
                       )}
 
                       {/* ── Autonomous Reference Sources & Citations (Deep Link to Line) ── */}
@@ -4278,7 +4556,15 @@ ${systemPrompt}`
                           )}
                         </div>
                       ) : (
-                        renderFormattedMessageText(msg.text, isChatSearchOpen ? chatSearchQuery : '')
+                        (() => {
+                          const isRedundantProjectText =
+                            msg.actionCard?.type === 'project' &&
+                            (!msg.text ||
+                              msg.text === `Shared project: ${msg.actionCard.title}` ||
+                              msg.text.trim() === '');
+                          if (isRedundantProjectText) return null;
+                          return renderFormattedMessageText(msg.text, isChatSearchOpen ? chatSearchQuery : '');
+                        })()
                       )}
 
                       <div className="mt-1 flex items-center justify-end text-[10px] gap-1 font-mono text-slate-400 dark:text-zinc-500">
@@ -5038,6 +5324,30 @@ ${systemPrompt}`
         </div>
       )}
 
+      {/* ── CONTEXTUAL AUTH GATE MODAL (WHEN ADDING PERSON/GROUP WHILE LOGGED OUT) ── */}
+      {isAuthGateOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setIsAuthGateOpen(false);
+          }}
+        >
+          <div className="w-full max-w-sm">
+            <RelayAuthGate
+              onAuthenticated={(user) => {
+                setIsAuthGateOpen(false);
+                if (onRequireAuth) {
+                  onRequireAuth(user);
+                }
+                setModalMode('profile');
+                setIsNewChatModalOpen(true);
+              }}
+              onDismiss={() => setIsAuthGateOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── UNIFIED CREATE MODAL (INSTAGRAM-STYLE CREATE PROFILE, TEAM GROUP, OR AI PERSONA) ── */}
       {isNewChatModalOpen && (
         <div 
@@ -5084,43 +5394,112 @@ ${systemPrompt}`
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-3.5 text-xs">
-              {/* ── 1. INSTAGRAM-STYLE USER PROFILE (Name, @Username, Bio) ── */}
+              {/* ── 1. INSTAGRAM-STYLE USER DIRECTORY SEARCH & PROFILE ── */}
               {modalMode === 'profile' && (
-                <div className="space-y-2.5">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600">Full Name</label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="e.g. Joshua David"
-                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                      <AtSign size={12} /> Unique Username ID
+                <div className="space-y-3">
+                  {/* Search Existing Users in Directory */}
+                  <div className="space-y-1.5 pb-2 border-b border-black/[0.06] dark:border-white/[0.06]">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300 flex items-center justify-between">
+                      <span>Find Someone in Directory</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Search by name, @handle, or email</span>
                     </label>
-                    <input
-                      type="text"
-                      value={profileUsername}
-                      onChange={(e) => setProfileUsername(e.target.value)}
-                      placeholder="@joshua or @arch_lead"
-                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none font-mono"
-                    />
+                    <div className="relative">
+                      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={directorySearchQuery}
+                        onChange={(e) => setDirectorySearchQuery(e.target.value)}
+                        placeholder="Search co-founders, team, or contacts..."
+                        className="w-full pl-8 pr-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Directory Search Results Dropdown / List */}
+                    {directorySearchQuery.trim().length > 0 && (
+                      <div className="max-h-36 overflow-y-auto rounded-xl bg-slate-50 dark:bg-zinc-800 border border-black/[0.06] dark:border-white/[0.08] p-1 space-y-1">
+                        {(() => {
+                          const results = searchUsers(directorySearchQuery);
+                          if (results.length === 0) {
+                            return (
+                              <div className="p-2 text-center text-[11px] text-slate-400">
+                                No registered users found for "{directorySearchQuery}"
+                              </div>
+                            );
+                          }
+                          return results.map(u => (
+                            <div
+                              key={u.id}
+                              onClick={() => handleConnectDirectoryUser(u)}
+                              className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-zinc-700/60 cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+                                  style={{ backgroundColor: u.avatarColor || '#7C6FCD' }}
+                                >
+                                  {(u.displayName || 'U').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-slate-800 dark:text-zinc-100 truncate">{u.displayName}</p>
+                                  <p className="text-[10.5px] text-slate-400 font-mono truncate">{u.handle || u.email}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConnectDirectoryUser(u);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-[10.5px] text-white font-semibold cursor-pointer shrink-0 ml-2"
+                              >
+                                Message
+                              </button>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-600">Role / Status Bio</label>
-                    <input
-                      type="text"
-                      value={profileBio}
-                      onChange={(e) => setProfileBio(e.target.value)}
-                      placeholder="e.g. Lead System Architect • Core Workspace"
-                      className="w-full px-3 py-2 rounded-xl bg-black/[0.03] border border-black/[0.08] text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                    />
+                  {/* Or Create / Add Contact Manually */}
+                  <div className="space-y-2.5">
+                    <p className="text-[10.5px] font-semibold text-slate-400 dark:text-zinc-400 uppercase tracking-wider">
+                      Or create local contact
+                    </p>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300">Full Name</label>
+                      <input
+                        type="text"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                        placeholder="e.g. Joshua David"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300 flex items-center gap-1">
+                        <AtSign size={12} /> Unique Username ID
+                      </label>
+                      <input
+                        type="text"
+                        value={profileUsername}
+                        onChange={(e) => setProfileUsername(e.target.value)}
+                        placeholder="@joshua or @arch_lead"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-zinc-300">Role / Status Bio</label>
+                      <input
+                        type="text"
+                        value={profileBio}
+                        onChange={(e) => setProfileBio(e.target.value)}
+                        placeholder="e.g. Lead System Architect • Core Workspace"
+                        className="w-full px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.1] text-xs text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               )}

@@ -303,19 +303,19 @@ export default function OrbMapCanvas({
   const activeLensMeta = ORB_LENSES.find(l => l.id === activeLens) || ORB_LENSES[0];
 
   return (
-    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-[#0D0F14] relative">
+    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-[#16181f] dark:bg-[#0e1015] relative">
       {/* ── Top Lens Switcher Toolbar: Floating Glass Bar ── */}
       <div 
         data-no-pan="true"
-        className={`flex items-center justify-between px-7 py-3 border-b z-20 shrink-0 ${
+        className={`flex items-center justify-between px-7 py-2.5 border-b z-20 shrink-0 ${
           highContrast
             ? 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-950'
-            : 'border-black/[0.04] dark:border-white/[0.06] bg-white/35 dark:bg-zinc-950/35 backdrop-blur-md'
+            : 'border-white/[0.08] bg-black/[0.25] backdrop-blur-md'
         }`}
       >
         <div className="flex items-center gap-1.5 overflow-x-auto thin-scrollbar py-0.5">
           <span className={`text-[11px] uppercase tracking-widest mr-2 select-none ${
-            highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-700 dark:text-zinc-200'
+            highContrast ? 'font-black text-black dark:text-white' : 'font-bold text-slate-400 dark:text-zinc-400'
           }`}>
             {t('orb.lenses') || 'Lenses:'}
           </span>
@@ -326,14 +326,14 @@ export default function OrbMapCanvas({
                 key={lens.id}
                 type="button"
                 onClick={() => onSelectLens(lens.id)}
-                className={`px-3 py-1.5 text-xs rounded-xl transition-all duration-150 whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1.5 text-xs rounded-lg transition-all duration-150 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? highContrast
                       ? 'border-2 border-slate-900 dark:border-white bg-white dark:bg-zinc-800 text-black dark:text-white font-extrabold shadow-sm'
-                      : 'border border-slate-300/90 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-xs'
+                      : 'border border-slate-200/90 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold shadow-2xs outline outline-1 outline-violet-500/40'
                     : highContrast
                     ? 'border-2 border-transparent bg-slate-100 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:border-slate-400 font-bold'
-                    : 'border border-transparent text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] font-medium'
+                    : 'border border-transparent text-slate-400 dark:text-zinc-400 hover:text-white dark:hover:text-white hover:bg-white/[0.06] font-medium'
                 }`}
                 title={lens.desc}
               >
@@ -377,11 +377,11 @@ export default function OrbMapCanvas({
 
       {/* ── Active Lens Contextual Description Pill (Compact & Shortened) ── */}
       <div className="absolute top-16 left-7 z-10 pointer-events-none">
-        <div className="px-3.5 py-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-black/[0.04] dark:border-white/[0.06] shadow-2xs text-xs flex items-center gap-2 w-fit">
+        <div className="px-3 py-1.5 rounded-lg bg-black/60 dark:bg-zinc-900/80 backdrop-blur-md border border-white/10 shadow-xs text-xs flex items-center gap-2 w-fit">
           <span className="w-1.5 h-1.5 rounded-full bg-[#7C5ACF]" />
-          <span className="font-semibold text-slate-900 dark:text-zinc-100">{t('orb.lens.' + activeLensMeta.id) || activeLensMeta.label}</span>
-          <span className="text-slate-400 dark:text-zinc-500">·</span>
-          <span className="text-slate-600 dark:text-zinc-300 font-normal">{t('orb.lensDesc.' + activeLensMeta.id) || activeLensMeta.desc}</span>
+          <span className="font-semibold text-white">{t('orb.lens.' + activeLensMeta.id) || activeLensMeta.label}</span>
+          <span className="text-slate-500">·</span>
+          <span className="text-slate-300 font-normal">{t('orb.lensDesc.' + activeLensMeta.id) || activeLensMeta.desc}</span>
         </div>
       </div>
 

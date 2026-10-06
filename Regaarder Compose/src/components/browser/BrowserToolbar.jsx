@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SlidersHorizontal, LayoutGrid } from 'lucide-react';
+import { SlidersHorizontal, LayoutGrid, Zap } from 'lucide-react';
 import {
   BrowserBackIcon,
   BrowserForwardIcon,
@@ -35,6 +35,8 @@ export const BrowserToolbar = ({
   isSecure = true,
   isBookmarked = false,
   isSidePanelOpen = false,
+  isCommandDeckOpen = false,
+  onToggleCommandDeck = () => {},
   isFlowRecording = false,
   isFlowsPopoverOpen = false,
   isFontPopoverOpen = false,
@@ -338,6 +340,25 @@ export const BrowserToolbar = ({
           title="Switch Workspace App"
         >
           <LayoutGrid size={16} />
+        </button>
+
+        {/* Meneur Command Deck Button */}
+        <button
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleCommandDeck?.();
+          }}
+          className={`flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+            isCommandDeckOpen
+              ? 'bg-violet-600/15 text-violet-700 dark:text-violet-300 border-violet-500/50 shadow-xs ring-1 ring-violet-500/30 outline outline-1 outline-violet-400/40'
+              : 'bg-white/60 dark:bg-white/[0.05] text-slate-700 dark:text-zinc-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 border-slate-200 dark:border-white/10 hover:border-violet-500/40'
+          }`}
+          title={isCommandDeckOpen ? "Close Meneur Command Deck" : "Open Meneur Command Deck (Schedule, Shield, Capture, Tabs)"}
+        >
+          <Zap size={14} className={isCommandDeckOpen ? "text-violet-600 dark:text-violet-400" : "text-amber-500"} />
+          <span className="hidden sm:inline font-semibold">Deck</span>
         </button>
 
         {/* Apple-Tier Regaarder AI Assistant Button (Top-Right Nav) */}

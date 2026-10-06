@@ -14,10 +14,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity, Pen, CheckCircle2, Layout, Bot, BookOpen,
-  Star, Users, Link, Shield, Lightbulb, Sparkles,
+  Star, Users, Link, Shield, Lightbulb,
   ChevronDown, Search, Plus, Check,
 } from 'lucide-react';
-import { AgentsIcon } from '../components/RegaarderProductIcons';
+import { AgentsIcon, RegaarderAiIcon } from '../components/RegaarderProductIcons';
 
 import {
   AGENT_IDS, AGENT_REGISTRY, AGENT_HIGHLIGHT_CATEGORY,
@@ -36,10 +36,12 @@ import { ReviewerPanel } from './ReviewerPanel';
 import { AudiencePanel } from './AudiencePanel';
 import { WritingDNAPanel } from './WritingDNAPanel';
 
-// Maps icon name string (from agentConfig) → imported Lucide component
+// Maps icon name string (from agentConfig) → imported icon component
 const ICON_MAP = {
   Activity, Pen, CheckCircle2, Layout, Bot, BookOpen,
-  Star, Users, Link, Shield, Lightbulb, Sparkles,
+  Star, Users, Link, Shield, Lightbulb,
+  RegaarderAi: RegaarderAiIcon,
+  Sparkles: RegaarderAiIcon, // Safe fallback
 };
 
 export default function ComposeAIStudio({
@@ -577,7 +579,7 @@ ${text}
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Select Icon</label>
               <div className="flex gap-2">
-                {['Bot', 'Shield', 'Sparkles', 'Pen', 'Star', 'CheckCircle2', 'Activity', 'BookOpen'].map(iconName => {
+                {['Bot', 'Shield', 'RegaarderAi', 'Pen', 'Star', 'CheckCircle2', 'Activity', 'BookOpen'].map(iconName => {
                   const IconComp = ICON_MAP[iconName] || Bot;
                   return (
                     <button

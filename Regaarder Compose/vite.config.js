@@ -16,6 +16,8 @@ function apiDevMiddlewarePlugin() {
           '/api/gemini': './api/gemini.js',
           '/api/claude': './api/claude.js',
           '/api/math': './api/math.js',
+          '/api/geo': './api/geo.js',
+          '/api/creem/checkout': './api/creem/checkout.js',
         };
 
         const targetRelPath = routeMap[pathname];
@@ -80,6 +82,7 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, env);
 
   return {
+    base: './',
     plugins: [apiDevMiddlewarePlugin()],
     resolve: {
       alias: {
@@ -90,7 +93,20 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      watch: {
+        usePolling: true,
+        interval: 300,
+      },
+      fs: {
+        allow: ['..'],
+      },
+      host: true,
       proxy: {
+        '/api/ollama': {
+          target: 'http://127.0.0.1:11434',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/ollama/, ''),
+        },
         '/api/auth': 'http://localhost:3001',
         '/api/events': 'http://localhost:3001',
         '/api/mcp': 'http://localhost:3001',
@@ -101,7 +117,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      include: ['canvg'],
+      include: ['canvg', 'pdfjs-dist'],
     },
     build: {
       minify: true,

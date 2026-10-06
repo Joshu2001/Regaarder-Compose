@@ -78,19 +78,13 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
   return createPortal((
     <div className="pointer-events-none fixed inset-0 z-[999999] overflow-hidden select-none animate-in fade-in duration-300">
-      {/* Target Halo 1: Prompt Bar Breathing Halo */}
-      {currentStep.id === 'ai-prompt' && (
-        <div className="pointer-events-none fixed bottom-12 left-1/2 -translate-x-1/2 w-[min(980px,calc(100vw-120px))] h-14 rounded-2xl ring-2 ring-violet-500/40 dark:ring-violet-400/40 shadow-[0_0_30px_rgba(139,92,246,0.25)] animate-pulse" />
-      )}
-
-      {/* Target Halo 2: Left Outline Edge Halo */}
+      {/* Mode-aware callouts stay clear of the top chrome and avoid the stray under-toolbar rectangle. */}
       {currentStep.id === 'outline' && (
-        <div className="pointer-events-none fixed left-0 top-16 bottom-16 w-3 bg-gradient-to-r from-violet-500/40 to-transparent animate-pulse" />
+        <div className="pointer-events-none fixed left-3 top-[88px] bottom-6 w-2 rounded-r-full bg-gradient-to-r from-violet-500/25 via-violet-500/10 to-transparent animate-pulse" />
       )}
 
-      {/* Target Halo 3: Top Left Workspace Switcher Halo */}
       {currentStep.id === 'workspace-switcher' && (
-        <div className="pointer-events-none fixed top-2 left-10 w-9 h-9 rounded-xl ring-2 ring-violet-500/50 dark:ring-violet-400/50 shadow-[0_0_24px_rgba(139,92,246,0.35)] animate-pulse" />
+        <div className="pointer-events-none fixed top-[72px] left-10 w-10 h-10 rounded-xl ring-2 ring-violet-500/45 dark:ring-violet-400/45 shadow-[0_0_24px_rgba(139,92,246,0.35)] animate-pulse" />
       )}
 
       {/* Step 1: Prompt Bar */}
@@ -152,7 +146,7 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
       {/* Step 2: Outline */}
       {currentStep.id === 'outline' && (
-        <div className="pointer-events-auto relative z-[260010] absolute left-6 top-1/3 -translate-y-1/2 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="pointer-events-auto relative z-[260010] absolute left-6 top-[calc(88px+18vh)] -translate-y-1/2 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
               <div className="w-5 h-5 rounded-md bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center">
@@ -266,7 +260,7 @@ export default function AppleGestureOnboardingHotspots({ onDismiss }) {
 
       {/* Step 4: Assistant & Tasks */}
       {currentStep.id === 'assistant' && (
-        <div className="pointer-events-auto absolute top-18 right-6 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="pointer-events-auto absolute top-[calc(88px+18vh)] right-6 w-[340px] max-w-[90vw] p-4 rounded-2xl bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.7)] animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
               <div className="w-5 h-5 rounded-md bg-violet-50 dark:bg-violet-950/60 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center">

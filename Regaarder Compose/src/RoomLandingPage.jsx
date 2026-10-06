@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "./i18n";
 import { CLOUD_AI_MODELS } from "./services/orbAiService";
-import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon, PresentationIcon } from "./components/RegaarderProductIcons";
+import { RoomIcon, SpatialApertureLensSymbol, SpatialApertureCameraSymbol, RoomSpatialPresenceSymbol, RegaarderAiIcon, ComposeIcon, DeckIcon, SheetIcon, WhiteboardIcon, BrowserIcon, ChatIcon, RelayIcon, PresentationIcon } from "./components/RegaarderProductIcons";
 import { deriveRoomKey, generateSafetyFingerprint, encryptE2EEText, decryptE2EEText, attachE2EESenderTransform, attachE2EEReceiverTransform } from "./utils/e2eeService";
 import RoomLiveDocStage from "./components/room/RoomLiveDocStage";
 import ScreenShareSourceModal from "./components/room/ScreenShareSourceModal";
@@ -745,6 +745,7 @@ export default function RoomLandingPage({
                         { id: 'deck', label: 'Decks', icon: DeckIcon, color: 'text-amber-600' },
                         { id: 'whiteboard', label: 'Whiteboard', icon: WhiteboardIcon, color: 'text-sky-600' },
                         { id: 'room-landing', label: 'Room', icon: RoomIcon, color: 'text-violet-600', active: true },
+                        { id: 'dm', label: 'Relay', icon: RelayIcon, color: 'text-indigo-600' },
                         { id: 'browser', label: 'Browser', icon: BrowserIcon, color: 'text-blue-600' },
                       ].map((item) => (
                         <button
@@ -760,6 +761,8 @@ export default function RoomLandingPage({
                               onSwitchProductMode ? onSwitchProductMode('sheet') : (window.location.hash = '#sheet');
                             } else if (item.id === 'deck') {
                               onSwitchProductMode ? onSwitchProductMode('deck') : (window.location.hash = '#deck');
+                            } else if (item.id === 'dm') {
+                              onSwitchProductMode ? onSwitchProductMode('dm') : (window.location.hash = '#dm');
                             } else if (item.id === 'browser') {
                               onSwitchProductMode ? onSwitchProductMode('browser') : (window.location.hash = '#browser');
                             } else {
@@ -858,6 +861,24 @@ export default function RoomLandingPage({
                 >
                   <Shield size={13} className="text-emerald-600 dark:text-emerald-400" />
                   <span className="text-[11px] font-bold tracking-tight">E2EE AES-256</span>
+                </button>
+
+                {/* AI In-Meeting Observer Pill (Pillar 10) */}
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    if (typeof window !== 'undefined' && window.__REGAARDER_OPEN_ROOM_HARVESTER__) {
+                      window.__REGAARDER_OPEN_ROOM_HARVESTER__();
+                    } else {
+                      showToast?.("Opening Room Observer Inspector in Memory Dashboard...");
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-200/70 dark:border-violet-800/70 text-violet-700 dark:text-violet-300 text-xs font-semibold hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors cursor-pointer"
+                  title="Open Real-Time Room Observer & Intent Harvester"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                  <span className="text-[11px] font-bold tracking-tight">AI Observer Active</span>
                 </button>
 
                 {/* Recording Status Pill */}
@@ -1655,6 +1676,7 @@ export default function RoomLandingPage({
                     {/* Primary Action: Start now */}
                     <button
                       type="button"
+                      data-onboarding-target="room-start-now"
                       onClick={() => setIsGreenRoomOpen(true)}
                       className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer"
                     >
@@ -1666,7 +1688,7 @@ export default function RoomLandingPage({
                     <button
                       type="button"
                       onClick={() => setIsSchedulingModalOpen(true)}
-                      className="px-4.5 py-2.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 dark:bg-zinc-850 dark:hover:bg-zinc-800 active:scale-[0.98] text-slate-700 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-750 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-[22px] py-2.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 dark:bg-zinc-850 dark:hover:bg-zinc-800 active:scale-[0.98] text-slate-700 dark:text-zinc-200 border border-slate-200/50 dark:border-zinc-750 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
                     >
                       <Calendar size={14} strokeWidth={1.8} className="text-slate-400 dark:text-zinc-400" />
                       <span>Schedule</span>

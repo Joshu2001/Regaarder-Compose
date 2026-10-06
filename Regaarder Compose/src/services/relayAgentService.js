@@ -23,6 +23,7 @@ import { mcpClient } from './universalMcpBridge.js';
 import * as intentScheduler from './intentSchedulerEngine.js';
 import * as spatialTopology from './spatialTopologyEngine.js';
 import * as roomObserver from './roomObserverEngine.js';
+import * as agentHandoffBus from './agentHandoffBus.js';
 import { runAgentExecutionLoop } from './llmProviderService.js';
 
 /**
@@ -182,15 +183,20 @@ export function classifyRelayIntent(prompt) {
     /(?:harvest|observe|transcribe|listen|monitor|join)\s+(?:an?|the)?\s*(?:room|meeting|audio|call|speech|discussion|in-meeting)/i.test(text) ||
     /(?:meeting observer|room observer|room context|in-meeting observer|meeting transcript|harvest meeting)/i.test(text)
   );
-  const isDocCreation = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
-  const isTaskSchedule = !isTranslation && !isMemoryInstruction && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
+  const isAgentHandoff = !isTranslation && !isMemoryInstruction && (
+    /(?:handoff|hand-off|delegate to|dispatch to|subagent|multi-agent|peer agent|specialist agent)/i.test(text) ||
+    /(?:browser researcher|calendar negotiator|finance modeler|doc synthesizer)\b/i.test(text)
+  );
+  const isDocCreation = !isTranslation && !isMemoryInstruction && !isAgentHandoff && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && /(create|make|start|draft|write|generate)\s+(a\s+)?(new\s+)?(document|doc|proposal|brief|memo|notes|report)/i.test(text);
+  const isTaskSchedule = !isTranslation && !isMemoryInstruction && !isAgentHandoff && !isScheduleMeeting && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester && (/(add|create|schedule|set|assign)\s+(a\s+)?(new\s+)?(task|todo|initiative|action item|deadline|reminder)/i.test(text) || /\bdue\s+(today|tomorrow|next|on|by)\b/i.test(text));
   const isSheetUpdate = !isTranslation && !isMemoryInstruction && (/(update|set|change|write|fill)\s+(the\s+)?(sheet|cell|row|column|cells)\s+([a-z]\d+|\d+)/i.test(text) || /(update|modify)\s+(spreadsheet|sheets)/i.test(text));
   const isCitationQuery = !isTranslation && !isMemoryInstruction && (/(where is|where does it mention|find in docs|search docs for|cite where|what doc discusses|reference for|show me where)/i.test(text) || /\b(citation|citations|source reference)\b/i.test(text));
   const isIngestDocument = !isSheetUpdate && !isCitationQuery && !isDocCreation && !isDirectiveQueue && !isWhiteboardTopology && !isRoomHarvester &&
     /(ingest|import|upload|parse|absorb)\s+(a\s+)?(file|document|pdf|csv|spreadsheet|docx|pptx)/i.test(text);
 
   return {
-    isAction: isDocCreation || isTaskSchedule || isScheduleMeeting || isSheetUpdate || isCitationQuery || isMemoryInstruction || isIngestDocument || isDirectiveQueue || isWhiteboardTopology || isRoomHarvester,
+    isAction: isDocCreation || isTaskSchedule || isScheduleMeeting || isSheetUpdate || isCitationQuery || isMemoryInstruction || isIngestDocument || isDirectiveQueue || isWhiteboardTopology || isRoomHarvester || isAgentHandoff,
+    isAgentHandoff,
     isDocCreation,
     isTaskSchedule,
     isDirectiveQueue,
@@ -434,6 +440,51 @@ export async function processRelayAgentMessage(args = {}) {
     };
   }
 
+  // Handle Multi-Agent Handoff & Specialist Delegation Substrate
+  if (intent.isAgentHandoff) {
+    const isBrowser = /browser|web|scrape|research|url|http/i.test(trimmed);
+    const isScheduler = /schedule|calendar|slot|meeting|negotiat/i.test(trimmed);
+    const isFinance = /finance|sheet|financial|matrix|reconcil|model/i.test(trimmed);
+    const targetCapability = isBrowser
+      ? 'browser_research'
+      : (isScheduler ? 'scheduler_negotiation' : (isFinance ? 'finance_modeling' : 'doc_synthesis'));
+
+    const envelope = await agentHandoffBus.dispatchAgentHandoff({
+      sourceAgentId: 'agent_relay_orchestrator',
+      targetCapability,
+      intent: trimmed,
+      contextPayload: {
+        rawDirective: trimmed,
+        targetUrl: isBrowser ? 'https://ec.europa.eu/energy/data-analysis' : undefined
+      },
+      parameters: {
+        searchTopic: trimmed,
+        maxRounds: 4
+      }
+    });
+
+    actionCard = {
+      type: 'agent_handoff',
+      subType: 'dispatched',
+      title: `A2A Handoff: ${envelope.handoffId}`,
+      handoffId: envelope.handoffId,
+      sourceAgentId: envelope.sourceAgentId,
+      targetAgentId: envelope.targetAgentId,
+      targetCapability: envelope.targetCapability,
+      lifecycle: envelope.lifecycle,
+      description: `Delegated directive to ${envelope.targetAgentId} (${envelope.targetCapability}) with standardized envelope and alternating offer loop.`,
+      previewSnippet: trimmed
+    };
+
+    replyText = `I have dispatched an **Agent-to-Agent (A2A) Handoff** (\`${envelope.handoffId}\`).\n\n- **Source:** \`${envelope.sourceAgentId}\` (Relay Director)\n- **Specialist:** \`${envelope.targetAgentId}\` (\`${envelope.targetCapability}\`)\n- **State:** \`${envelope.lifecycle}\`\n- **Directive:** "${trimmed}"\n\nYou can track alternating counter-offers, utility convergence, and staged PR diffs in the **Agent Handoffs** tab in Memory Dashboard.`;
+
+    return {
+      replyText,
+      actionCard,
+      referenceSources: []
+    };
+  }
+
   // Build active system prompt prioritizing custom persona instructions with explicit role anchoring
   const rolePrefix = personaName
     ? `[STRICT IDENTITY & ROLE ANCHORING]
@@ -449,13 +500,18 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
     ? `${rolePrefix}${customSystemPrompt}`
     : `${rolePrefix}You are an executive intelligent assistant in Regaarder Relay. Answer user queries directly, concisely, and naturally. Never create a document or output outlines unless explicitly asked.`;
 
+  const isLightweight = customProvider === 'Ollama' || /(1b|2b|3b|0\.5b|gemma|llama|lfm|nano|mini)/i.test(customModel || '');
+
   if (intent.isTranslation) {
     activeSystemPrompt = `${activeSystemPrompt}\n\n[TASK]: Provide an accurate, direct translation of the requested sentence or text into the target language. Do not invent outlines or add commentary.`;
   } else if (intent.isDocCreation) {
-    const memoryContext = getAgentContext({ maxEntities: 6, maxRules: 4, maxDecisions: 2 });
+    const memoryContext = getAgentContext({ maxEntities: isLightweight ? 2 : 6, maxRules: isLightweight ? 1 : 4, maxDecisions: isLightweight ? 1 : 2 });
     activeSystemPrompt = `${activeSystemPrompt}\n\n${RELAY_AGENT_SYSTEM_PROMPT}\n\n${memoryContext}`;
-  } else {
-    const memoryContext = getAgentContext({ maxEntities: 4, maxRules: 3, maxDecisions: 2 });
+  } else if (intent.isAction || intent.isCitationQuery) {
+    const memoryContext = getAgentContext({ maxEntities: isLightweight ? 2 : 4, maxRules: isLightweight ? 1 : 3, maxDecisions: 1 });
+    activeSystemPrompt = `${activeSystemPrompt}\n\n${memoryContext}`;
+  } else if (!isLightweight) {
+    const memoryContext = getAgentContext({ maxEntities: 3, maxRules: 2, maxDecisions: 1 });
     activeSystemPrompt = `${activeSystemPrompt}\n\n${memoryContext}`;
   }
 
@@ -519,6 +575,51 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
       }
     } catch (loopErr) {
       console.warn('[RelayAgent] runAgentExecutionLoop fallback error:', loopErr);
+    }
+  }
+
+  // Attempt direct local Ollama loopback at 127.0.0.1:11434 / /api/ollama if still empty
+  if (!replyText && !modelJson && (customProvider === 'Ollama' || (customModel && (customModel.includes(':') || customModel.includes('gemma') || customModel.includes('llama'))))) {
+    const localModelTag = customModel || 'gemma3:1b';
+    const candidateEps = ['http://127.0.0.1:11434', '/api/ollama', 'http://localhost:11434'];
+    for (const ep of candidateEps) {
+      try {
+        const resp = await fetch(`${ep}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: localModelTag,
+            messages: [
+              { role: 'system', content: activeSystemPrompt },
+              { role: 'user', content: trimmed }
+            ],
+            stream: false
+          })
+        });
+        if (resp.ok) {
+          const respData = await resp.json();
+          if (respData?.message?.content) {
+            replyText = respData.message.content.trim();
+            break;
+          }
+        }
+        const genResp = await fetch(`${ep}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: localModelTag,
+            prompt: `${activeSystemPrompt}\n\nUser: ${trimmed}\n${personaName || 'Assistant'}:`,
+            stream: false
+          })
+        });
+        if (genResp.ok) {
+          const genData = await genResp.json();
+          if (genData?.response) {
+            replyText = genData.response.trim();
+            break;
+          }
+        }
+      } catch (_) {}
     }
   }
 
@@ -773,9 +874,123 @@ If asked "Who are you?", identify yourself strictly as ${personaName} and descri
     }
   }
 
+  // Extract interactive clarification multi-choice card if present
+  const { cleanText, clarification } = extractClarificationFromText(replyText);
+
   return {
-    replyText,
+    replyText: cleanText || replyText,
     actionCard,
-    referenceSources
+    referenceSources,
+    clarification
   };
 }
+
+/**
+ * Extracts interactive clarification question and options from agent responses.
+ * Detects explicit clarification JSON/markdown blocks as well as heuristic
+ * numbered/bulleted options presented after a clarifying question.
+ */
+export function extractClarificationFromText(text) {
+  if (!text || typeof text !== 'string') return { cleanText: text || '', clarification: null };
+
+  // Helper to normalize and strip raw markdown artifacts from option labels & hints
+  const normalizeExtractedOption = (raw) => {
+    if (!raw || typeof raw !== 'string') return raw;
+    const trimmed = raw.trim();
+
+    // Check for **Title:** Description or **Title**: Description or *Title:* Description
+    const boldSplitMatch = trimmed.match(/^(?:\*\*|\*)(.+?)(?:\*\*|\*)\s*:?\s*[-—]?\s*(.+)$/s);
+    if (boldSplitMatch) {
+      const cleanLabel = boldSplitMatch[1].replace(/[:*]+$/, '').replace(/\*\*/g, '').trim();
+      const cleanHint = boldSplitMatch[2].replace(/^[-—:\s]+/, '').replace(/\*\*/g, '').trim();
+      return {
+        label: cleanLabel,
+        hint: cleanHint,
+        value: cleanLabel
+      };
+    }
+
+    // Check for Title: Description
+    const colonSplitMatch = trimmed.match(/^([^:\n]{2,45}):\s+(.+)$/s);
+    if (colonSplitMatch && !colonSplitMatch[1].startsWith('http')) {
+      const cleanLabel = colonSplitMatch[1].replace(/[*_#`]/g, '').trim();
+      const cleanHint = colonSplitMatch[2].replace(/\*\*/g, '').trim();
+      return {
+        label: cleanLabel,
+        hint: cleanHint,
+        value: cleanLabel
+      };
+    }
+
+    return trimmed.replace(/\*\*/g, '').replace(/^\*|\*$/g, '').trim();
+  };
+
+  // 1. Explicit fenced clarification block: ```clarification ... ```
+  const blockMatch = text.match(/```(?:clarification|json:clarification)\s*([\s\S]*?)```/i);
+  if (blockMatch) {
+    try {
+      const parsed = JSON.parse(blockMatch[1].trim());
+      const cleanText = text.replace(blockMatch[0], '').trim();
+      if (parsed.question && Array.isArray(parsed.options) && parsed.options.length >= 2) {
+        return {
+          cleanText,
+          clarification: {
+            question: String(parsed.question).replace(/\*\*/g, '').trim(),
+            options: parsed.options.map(opt => (typeof opt === 'string' ? normalizeExtractedOption(opt) : opt)),
+            allowCustom: parsed.allowCustom !== false,
+            allowSkip: parsed.allowSkip !== false
+          }
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 2. Embedded JSON { "clarification": { ... } }
+  const jsonMatch = text.match(/\{[\s\n\r]*"clarification"[\s\n\r]*:\s*\{[\s\S]*?\}[\s\n\r]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const cleanText = text.replace(jsonMatch[0], '').trim();
+      if (parsed.clarification?.question && Array.isArray(parsed.clarification?.options)) {
+        return {
+          cleanText,
+          clarification: {
+            question: String(parsed.clarification.question).replace(/\*\*/g, '').trim(),
+            options: parsed.clarification.options.map(opt => (typeof opt === 'string' ? normalizeExtractedOption(opt) : opt)),
+            allowCustom: parsed.clarification.allowCustom !== false,
+            allowSkip: parsed.clarification.allowSkip !== false
+          }
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 3. Heuristic clarification detection:
+  // Check if text ends with or contains a clarifying question followed by 2 to 6 numbered or bulleted options
+  const optionRegex = /(?:^|\n)\s*(?:(\d+)[.)]|[-*•])\s+([^\n]+)/g;
+  const matches = [...text.matchAll(optionRegex)];
+  if (matches.length >= 2 && matches.length <= 6) {
+    const firstMatchIdx = matches[0].index;
+    const preText = text.slice(0, firstMatchIdx).trim();
+    const hasPromptSignal = preText.includes('?') || preText.endsWith(':') || /(options|which|choose|select|prefer|target|assist you by)/i.test(preText);
+
+    if (hasPromptSignal) {
+      const sentences = preText.split(/(?<=[.?!:])\s+/);
+      const questionTitle = sentences[sentences.length - 1] || 'Please select an option:';
+      const extractedOptions = matches.map(m => normalizeExtractedOption(m[2]));
+
+      return {
+        cleanText: preText,
+        clarification: {
+          question: questionTitle.replace(/^[-*•#\s]+/, '').replace(/\*\*/g, '').trim(),
+          options: extractedOptions,
+          allowCustom: true,
+          allowSkip: true
+        }
+      };
+    }
+  }
+
+  return { cleanText: text, clarification: null };
+}
+

@@ -106,7 +106,7 @@ export const BrowserFlowsPopover = ({
       className={`${
         isStandalone
           ? 'relative z-[100000] w-full max-w-sm border border-slate-200/90 dark:border-zinc-800/90 shadow-2xl'
-          : 'fixed z-[100000] w-72 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] animate-in zoom-in-95 fade-in duration-150'
+          : 'fixed z-[100000] w-72 border border-slate-200/90 dark:border-zinc-800/90 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.22),0_4px_16px_-4px_rgba(0,0,0,0.08)] animate-in zoom-in-[0.98] fade-in duration-100 ease-out'
       } bg-white dark:bg-[#1c1c1e] rounded-2xl font-sans select-none text-slate-800 dark:text-zinc-100 overflow-hidden`}
     >
       {/* Header */}

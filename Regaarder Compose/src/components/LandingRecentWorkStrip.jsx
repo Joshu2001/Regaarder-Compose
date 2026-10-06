@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Clock, ArrowUpRight, X } from "lucide-react";
 import {
   ComposeIcon,
@@ -6,6 +6,7 @@ import {
   DeckIcon,
   WhiteboardIcon
 } from "./RegaarderProductIcons";
+import { readWorkspaceDocuments } from '../services/workspaceDocumentStore';
 
 /**
  * Format relative time in a clean, Apple-style format (e.g. "Just now", "5m ago", "2h ago", "Yesterday").
@@ -46,11 +47,17 @@ const PRODUCT_INFO = {
 export function isMeaningfulWork(data) {
   if (!data || typeof data !== "object") return false;
 
+  // 0. Explicit saved flag or user timestamp check
+  if (data.savedAt || data.isSaved || data.lastSavedAt) {
+    // If explicitly saved or has user actions, always qualify
+    if (data.isSaved) return true;
+  }
+
   // 1. Title verification (strictly match all default system titles)
   const rawTitle = (data.docTitle || data.title || data.sheetsTitle || data.deckTitle || "").trim();
-  const isDefaultTitle = !rawTitle || /^(untitled(\s+(document|sheet|sheets|spreadsheet|deck|presentation|whiteboard|canvas))?|document\s*#\d+|composition|sheet\s*\d+)$/i.test(rawTitle);
+  const isDefaultTitle = !rawTitle || /^(untitled(\s+(document|sheet|sheets|spreadsheet|deck|presentation|whiteboard|canvas))?|document\s*#\d+|composition|sheet\s*\d+|untitled\s*sheet)$/i.test(rawTitle);
 
-  // If the user gave it a genuine custom title (e.g. "Q3 Budget", "Sprint Retrospective")
+  // If title is customized by the user, qualify immediately
   if (rawTitle && !isDefaultTitle) {
     return true;
   }
@@ -76,25 +83,53 @@ export function isMeaningfulWork(data) {
     }
   }
 
-  // 4. Sheet grid cell content verification (MUST have at least one cell with non-empty user value)
+  // 4. Sheet grid cell content verification (MUST have custom user cells beyond default template/demo data)
+  const defaultSheetWords = new Set([
+    "item", "description", "qty", "quantity", "price", "unit price", "total", "amount", 
+    "category", "status", "priority", "date", "name", "revenue", "cost", "profit",
+    "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+    "q1", "q2", "q3", "q4", "sample", "template", "untitled"
+  ]);
+
   const hasSheetCellData = (grid) => {
     if (!grid) return false;
+    let customCellCount = 0;
+    const checkVal = (cell) => {
+      if (cell === null || cell === undefined) return false;
+      const val = typeof cell === "object" ? (cell.value ?? cell.raw ?? "") : cell;
+      const str = String(val).trim().toLowerCase();
+      if (!str) return false;
+      if (!defaultSheetWords.has(str)) {
+        customCellCount++;
+      }
+      return customCellCount >= 2;
+    };
+
     if (Array.isArray(grid)) {
-      return grid.some(row =>
-        Array.isArray(row) && row.some(cell => {
-          if (cell === null || cell === undefined) return false;
-          const val = typeof cell === "object" ? (cell.value ?? cell.raw ?? "") : cell;
-          return String(val).trim() !== "";
-        })
-      );
-    }
-    if (grid.cells && typeof grid.cells === "object") {
-      return Object.values(grid.cells).some(c => {
-        const val = typeof c === "object" ? (c?.value ?? c?.raw ?? "") : c;
-        return String(val).trim() !== "";
-      });
-    }
-    if (Array.isArray(grid.data)) {
+      // grid itself is a raw 2D row/col matrix
+      for (const row of grid) {
+        if (Array.isArray(row)) {
+          for (const cell of row) {
+            if (checkVal(cell)) return true;
+          }
+        }
+      }
+    } else if (Array.isArray(grid.cells)) {
+      // Primary sheetGrids format: { cells: Array<Array>, rows, cols, formats, … }
+      // MUST be checked before the object branch — Array.isArray wins over typeof object.
+      for (const row of grid.cells) {
+        if (Array.isArray(row)) {
+          for (const cell of row) {
+            if (checkVal(cell)) return true;
+          }
+        }
+      }
+    } else if (grid.cells && typeof grid.cells === "object") {
+      // Sparse coordinate-keyed format: { "R1C1": value, … }
+      for (const c of Object.values(grid.cells)) {
+        if (checkVal(c)) return true;
+      }
+    } else if (Array.isArray(grid.data)) {
       return hasSheetCellData(grid.data);
     }
     return false;
@@ -151,6 +186,28 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
 
   const loadRecentDocs = useCallback(() => {
     try {
+      const canonicalDocuments = readWorkspaceDocuments();
+      if (canonicalDocuments.length === 0) {
+        setRecentItems([]);
+        onRecentCountChangeRef.current?.(0);
+        return;
+      }
+      setRecentItems(canonicalDocuments.map((data) => {
+        const detectedProduct = data.mode === 'sheets' ? 'sheet' : data.mode === 'deck' ? 'deck' : 'compose';
+        const info = PRODUCT_INFO[detectedProduct] || PRODUCT_INFO.compose;
+        return {
+          id: data.id,
+          title: data.title,
+          savedAt: data.updatedAt,
+          product: detectedProduct,
+          productName: info.name,
+          icon: info.icon,
+          data,
+        };
+      }));
+      onRecentCountChangeRef.current?.(canonicalDocuments.length);
+      return;
+
       const parsed = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -160,19 +217,17 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
             if (raw) {
               const data = JSON.parse(raw);
 
-              // Minimum criteria validation: untouched empty drafts do NOT qualify as recent work
-              if (!isMeaningfulWork(data)) {
-                // Prune ghost empty draft from localStorage so it never pollutes the workspace
-                try {
-                  localStorage.removeItem(key);
-                } catch {}
+              // Untouched empty drafts without content or save record do not qualify.
+              // SAFETY: Do NOT delete from localStorage here — passive skip only.
+              if (!data.isSaved && !isMeaningfulWork(data)) {
                 continue;
               }
 
-              let title = data.docTitle || data.title;
+              // Resolve title — prefer mode-specific title fields over the generic one
+              let title = (data.docTitle || data.title || data.sheetsTitle || data.deckTitle || "").trim();
 
-              // Smart excerpt extraction if title is generic/empty
-              if (!title || title.trim() === "" || title.toLowerCase() === "untitled document") {
+              // Smart excerpt extraction if title is still empty or a bare default
+              if (!title || /^untitled/i.test(title)) {
                 if (data.bodyHtml) {
                   const plain = data.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
                   if (plain.length > 3) {
@@ -187,10 +242,28 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
                 title = `Document #${key.replace("rc.savedDoc.", "").slice(-4)}`;
               }
 
-              let detectedProduct = "compose";
-              if (/sheet/i.test(title)) detectedProduct = "sheet";
-              else if (/deck|presentation/i.test(title)) detectedProduct = "deck";
-              else if (/whiteboard|canvas/i.test(title)) detectedProduct = "whiteboard";
+              // Product detection: check stored mode first, then structural signals,
+              // then title-regex as last resort. Avoids misclassifying renamed Sheets/Decks.
+              let detectedProduct = (data.mode || "").toLowerCase();
+              if (!detectedProduct || !PRODUCT_INFO[detectedProduct]) {
+                if (data.sheetsTitle || data.sheetGrids) {
+                  detectedProduct = "sheet";
+                } else if (data.deckSlidesData || data.deckTitle) {
+                  detectedProduct = "deck";
+                } else if (data.whiteboardWidgets || data.whiteboardShapes || data.whiteboardStrokes) {
+                  detectedProduct = "whiteboard";
+                } else if (/sheet/i.test(title)) {
+                  detectedProduct = "sheet";
+                } else if (/deck|presentation/i.test(title)) {
+                  detectedProduct = "deck";
+                } else if (/whiteboard|canvas/i.test(title)) {
+                  detectedProduct = "whiteboard";
+                } else {
+                  detectedProduct = "compose";
+                }
+              }
+              // Normalise "sheets" → "sheet" to match PRODUCT_INFO keys
+              if (detectedProduct === "sheets") detectedProduct = "sheet";
 
               const info = PRODUCT_INFO[detectedProduct] || PRODUCT_INFO.compose;
 
@@ -209,6 +282,55 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
           }
         }
       }
+
+      // Supplement with open documents from regaarder_documents_v1 to capture active background tabs
+      try {
+        const rawDocs = localStorage.getItem("regaarder_documents_v1");
+        if (rawDocs) {
+          const docsList = JSON.parse(rawDocs);
+          if (Array.isArray(docsList)) {
+            docsList.forEach((d, idx) => {
+              if (!d || d.id == null) return;
+              if (parsed.some(p => String(p.id) === String(d.id))) return;
+
+              let title = (d.docTitle || d.title || d.sheetsTitle || d.deckTitle || "").trim();
+              if (!title || /^untitled/i.test(title)) {
+                if (d.bodyHtml) {
+                  const plain = d.bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+                  if (plain.length > 3) {
+                    title = plain.slice(0, 26) + (plain.length > 26 ? "..." : "");
+                  }
+                }
+              }
+              if (!title) {
+                const shortId = String(d.id).slice(-4);
+                title = `Document #${shortId}`;
+              }
+
+              let detectedProduct = (d.mode || "").toLowerCase();
+              if (!detectedProduct || !PRODUCT_INFO[detectedProduct]) {
+                if (d.sheetsTitle || d.sheetGrids) detectedProduct = "sheet";
+                else if (d.deckSlidesData || d.deckTitle) detectedProduct = "deck";
+                else if (d.whiteboardWidgets) detectedProduct = "whiteboard";
+                else detectedProduct = "compose";
+              }
+              if (detectedProduct === "sheets") detectedProduct = "sheet";
+
+              const info = PRODUCT_INFO[detectedProduct] || PRODUCT_INFO.compose;
+
+              parsed.push({
+                id: d.id,
+                title,
+                savedAt: Date.now() - (idx * 1000),
+                product: detectedProduct,
+                productName: info.name,
+                icon: info.icon,
+                data: d
+              });
+            });
+          }
+        }
+      } catch (_) {}
 
       parsed.sort((a, b) => b.savedAt - a.savedAt);
 
@@ -230,7 +352,11 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
 
     const handleStorage = () => loadRecentDocs();
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("workspace-storage-update", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("workspace-storage-update", handleStorage);
+    };
   }, [loadRecentDocs]);
 
   // Progressive disclosure: No recent work → completely remove the section from DOM
@@ -250,7 +376,7 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
   };
 
   return (
-    <div className="w-full mt-6 animate-in fade-in slide-in-from-bottom-1 duration-300">
+    <div className="w-full mt-3 sm:mt-3.5 animate-in fade-in slide-in-from-bottom-1 duration-300">
       {/* Visually Quiet Section Header */}
       <div className="flex items-center justify-between px-1 mb-1.5 select-none">
         <div className="flex items-center gap-1.5 text-[9.5px] font-semibold tracking-[0.08em] uppercase text-slate-400 dark:text-zinc-500">
@@ -276,14 +402,15 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
 
       {/*
         Compact Horizontal Shelf (Up to 3 items):
-        - 1 item: single compact card
-        - 2 items: 2-column compact shelf
-        - 3 items: 3-column compact shelf
-        Items are visually quiet and subordinate to product launcher cards.
+        - Matches reference image exactly:
+          - Rounded rectangular cards (rounded-xl / rounded-2xl) with subtle border & quiet shadow
+          - Left document/product icon
+          - Title and badge/metadata
+          - Vertical three-dots affordance on the right
       */}
       <div
         className={[
-          "grid gap-2 w-full",
+          "grid gap-3 w-full",
           isFewItems
             ? visibleItems.length === 1
               ? "grid-cols-1 max-w-sm"
@@ -300,44 +427,46 @@ export default function LandingRecentWorkStrip({ onLaunch, onOpenRecentModal, on
               onClick={() => handleOpenDoc(item)}
               className={[
                 "group relative flex items-center justify-between",
-                // Compact padding and quiet height
-                "px-3 py-1.5 rounded-lg",
-                // Ultra-quiet background and hairline border
-                "bg-black/[0.012] dark:bg-white/[0.018]",
-                "border border-slate-200/40 dark:border-white/[0.035]",
-                "shadow-none",
+                // Refined padding and height matching reference card
+                "px-3.5 py-2.5 rounded-xl",
+                // Ultra-quiet translucent white background & soft border
+                "bg-white/80 dark:bg-white/[0.04]",
+                "border border-slate-200/60 dark:border-white/[0.06]",
+                "shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:shadow-none",
                 // Soft hover reveal
-                "hover:bg-white/80 dark:hover:bg-[#1a1a1d]",
-                "hover:border-slate-300/50 dark:hover:border-white/[0.07]",
-                "hover:shadow-[0_2px_6px_rgba(15,23,42,0.03)] dark:hover:shadow-[0_2px_6px_rgba(0,0,0,0.3)]",
-                "active:scale-[0.99]",
+                "hover:bg-white dark:hover:bg-[#1a1a1d]",
+                "hover:border-slate-300/80 dark:hover:border-white/[0.12]",
+                "hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
+                "hover:-translate-y-0.5",
+                "active:scale-[0.99] active:translate-y-0",
                 "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
                 "transition-all duration-150 ease-out cursor-pointer text-left",
               ].join(" ")}
             >
               {/* Product Icon & Compact Metadata */}
-              <div className="flex items-center gap-2 min-w-0 pr-1.5">
-                <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                  <IconComp size={13} strokeWidth={1.5} />
+              <div className="flex items-center gap-2.5 min-w-0 pr-1">
+                <div className="w-4 h-4 flex items-center justify-center shrink-0 text-slate-400 dark:text-zinc-500 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                  <IconComp size={14} strokeWidth={1.5} />
                 </div>
 
-                <div className="min-w-0 flex items-center gap-1.5 text-[11.5px] leading-normal truncate">
-                  <span className="font-medium text-slate-600 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-zinc-100 truncate transition-colors">
+                <div className="min-w-0 flex items-center gap-2 text-[12px] leading-normal truncate">
+                  <span className="font-semibold text-slate-700 dark:text-zinc-200 group-hover:text-slate-950 dark:group-hover:text-white truncate transition-colors">
                     {item.title}
                   </span>
-                  <span className="text-slate-300/80 dark:text-zinc-600/80 shrink-0 select-none">·</span>
-                  <span className="text-[9.5px] text-slate-400/80 dark:text-zinc-500/80 font-normal shrink-0">
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal shrink-0">
                     {item.productName} · {item.editedLabel}
                   </span>
                 </div>
               </div>
 
-              {/* Subtle Navigation Affordance */}
-              <ArrowUpRight
-                size={11}
-                strokeWidth={1.8}
-                className="shrink-0 text-slate-300 dark:text-zinc-600 group-hover:text-slate-500 dark:group-hover:text-zinc-400 transition-colors ml-1"
-              />
+              {/* Three-dots icon matching reference */}
+              <div className="shrink-0 text-slate-300 dark:text-zinc-600 group-hover:text-slate-500 dark:group-hover:text-zinc-400 transition-colors p-0.5">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="3" r="1.5" />
+                  <circle cx="8" cy="8" r="1.5" />
+                  <circle cx="8" cy="13" r="1.5" />
+                </svg>
+              </div>
             </button>
           );
         })}

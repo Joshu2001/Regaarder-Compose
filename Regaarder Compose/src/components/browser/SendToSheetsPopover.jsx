@@ -194,7 +194,7 @@ export const SendToSheetsPopover = ({
       className={`${
         isStandalone
           ? 'relative z-[100000] w-full max-w-md border border-white/10 shadow-2xl'
-          : 'fixed z-[100000] w-[420px] max-h-[85vh] flex flex-col border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-150'
+          : 'fixed z-[100000] w-[420px] max-h-[85vh] flex flex-col border border-white/10 shadow-2xl animate-in fade-in zoom-in-[0.98] duration-100 ease-out'
       } bg-[#161822]/95 backdrop-blur-2xl rounded-2xl overflow-hidden font-sans text-slate-100 select-none`}
     >
       {/* Header */}

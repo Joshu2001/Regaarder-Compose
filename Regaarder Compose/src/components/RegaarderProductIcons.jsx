@@ -31,6 +31,35 @@ export const ComposeIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
+/**
+ * NotesIcon — Regaarder Notes product identity.
+ * Notebook with vertical margin spine and three ruled lines.
+ * Follows 24×24 / 1.6-stroke grammar.
+ */
+export const NotesIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Notebook outer frame */}
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    {/* Vertical margin rule (left spine guide) */}
+    <line x1="8" y1="3" x2="8" y2="21" opacity="0.5" />
+    {/* Three horizontal ruled lines */}
+    <line x1="11" y1="9" x2="17" y2="9" />
+    <line x1="11" y1="13" x2="17" y2="13" />
+    <line x1="11" y1="17" x2="17" y2="17" />
+  </svg>
+);
+
 export const DeckIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
@@ -374,15 +403,14 @@ export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...pro
     className={className}
     {...props}
   >
-    {/* Top transfer track: left endpoint to right forward arrow */}
-    <circle cx="5.5" cy="8.5" r="2" />
-    <path d="M7.5 8.5h11" />
-    <polyline points="15.5 5.5 18.5 8.5 15.5 11.5" />
-
-    {/* Bottom reciprocal track: right endpoint to left reverse arrow */}
-    <circle cx="18.5" cy="15.5" r="2" />
-    <path d="M16.5 15.5h-11" />
-    <polyline points="8.5 12.5 5.5 15.5 8.5 18.5" />
+    {/* Intertwined communication presence & relay nexus layer */}
+    {/* Base conversation & context card */}
+    <rect x="3" y="4" width="13" height="11" rx="3.5" />
+    {/* Dynamic relay transmission orbit connecting to focal receiver */}
+    <path d="M16 8.5h2.5a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5H10a2.5 2.5 0 0 1-2.5-2.5V15" />
+    {/* Central Relay transmission pulse node */}
+    <circle cx="9.5" cy="9.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -661,6 +689,35 @@ export const LaserPointerIcon = ({ size = 16, className = "", strokeWidth = 1.5,
   </svg>
 );
 
+/**
+ * Customer Support & Feedback Headset Icon
+ * Direct 1:1 vector recreation of the distinctive support headset icon from WPS (Image 2):
+ * Curved overhead headband, left and right rounded earcups, and microphone boom curving downward toward mouth.
+ */
+export const FeedbackIcon = ({ size = 16, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Headset Headband */}
+    <path d="M4 14v-3a8 8 0 0 1 16 0v3" />
+    {/* Left Earcup */}
+    <rect x="2" y="12.5" width="4" height="6.5" rx="2" />
+    {/* Right Earcup */}
+    <rect x="18" y="12.5" width="4" height="6.5" rx="2" />
+    {/* Microphone Boom wrapping downward */}
+    <path d="M20 17.5v1.5a3 3 0 0 1-3 3h-2" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   History: RegaarderHistoryIcon,
   SaveCloud: RegaarderSaveCloudIcon,
@@ -682,6 +739,7 @@ export const RegaarderProductIconMap = {
   Orb: OrbIcon,
   AI: RegaarderAiIcon,
   orb: OrbIcon,
+  tasks: TasksIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,
@@ -703,6 +761,7 @@ export const RegaarderProductIconMap = {
   relay: RelayIcon,
   Relay: RelayIcon,
   browser: BrowserIcon,
+  'browser-history': BrowserIcon,
   slide: DeckIcon,
   Slide: DeckIcon,
   slides: DeckIcon,
@@ -725,6 +784,10 @@ export const RegaarderProductIconMap = {
   users: PeopleIcon,
   laser: LaserPointerIcon,
   'laser-pointer': LaserPointerIcon,
+  feedback: FeedbackIcon,
+  Feedback: FeedbackIcon,
+  support: FeedbackIcon,
+  Support: FeedbackIcon,
 };
 
 /**
@@ -776,5 +839,6 @@ export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWi
   return <IconComponent size={size} className={className} strokeWidth={strokeWidth} {...props} />;
 };
 
+export { FileTypeIcon, getFileTypeDetails, isFileTypeEntity } from './FileTypeIcon';
 export default RegaarderProductIcon;
 

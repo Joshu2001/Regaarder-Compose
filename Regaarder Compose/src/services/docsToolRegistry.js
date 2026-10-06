@@ -16,19 +16,218 @@
 
 import * as docsCommandApi from './docsCommandApi.js';
 import { dispatchDeckToolCall, DECK_LLM_TOOL_DEFINITIONS } from '../utils/deckEngineHarness.js';
+import { getActiveBlockTree, getBlock, patchBlock, insertBlock, deleteBlock, moveBlock, batchPatchBlocks } from './blockCanvasEngine.js';
+import * as matrixEngine from './matrixSchemaEngine.js';
+import * as intentScheduler from './intentSchedulerEngine.js';
+import * as omniPortal from './omniPortalEngine.js';
+import * as directiveEngine from './directiveQueueEngine.js';
+import * as spatialTopology from './spatialTopologyEngine.js';
+import * as roomObserver from './roomObserverEngine.js';
+import * as webExecutionGateway from './webExecutionGateway.js';
+import * as meneurCommandDeck from './meneurCommandDeckService.js';
 
 export const DOCS_TOOL_CATEGORIES = {
   DOCUMENT_TOOLS: 'document_tools',
+  BLOCK_CANVAS_TOOLS: 'block_canvas_tools',
   ANALYSIS_TOOLS: 'analysis_tools',
   APPLICATION_COMMANDS: 'application_commands',
   DECK_TOOLS: 'deck_tools',
   SHEET_TOOLS: 'sheet_tools',
   TASKS_TOOLS: 'tasks_tools',
   ROOMS_TOOLS: 'rooms_tools',
+  ROOM_TOOLS: 'room_tools',
   BROWSER_TOOLS: 'browser_tools',
+  SCHEDULE_TOOLS: 'schedule_tools',
+  PORTAL_TOOLS: 'portal_tools',
+  WHITEBOARD_TOOLS: 'whiteboard_tools',
 };
 
 export const CANONICAL_DOCS_TOOLS = [
+  // ── BLOCK CANVAS AST TOOLS (Pillar 4) ─────────────────────────────
+  {
+    name: 'get_block_tree',
+    label: 'Get Canvas Block Tree',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Retrieves the complete structured Block Tree AST of the active document with unique block IDs, types, content, properties, and version.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: []
+    },
+    execute: async () => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      return { success: true, data: tree };
+    }
+  },
+  {
+    name: 'get_block',
+    label: 'Get Canvas Block by ID',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Retrieves a single discrete block from the document AST by its unique block ID.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Unique ID of the block to retrieve (e.g. blk_...)' }
+      },
+      required: ['blockId']
+    },
+    execute: async (params) => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      const block = getBlock(tree, params.blockId);
+      if (!block) return { success: false, error: `Block ID '${params.blockId}' not found.` };
+      return { success: true, data: block };
+    }
+  },
+  {
+    name: 'patch_block',
+    label: 'Surgically Patch Canvas Block',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Surgically updates an individual block in-place (content, properties, or type) without re-streaming or mutating any other block in the document.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Target block ID to patch (e.g. blk_...)' },
+        content: { type: 'string', description: 'New text/HTML content for the block' },
+        properties: { type: 'object', description: 'Optional properties (theme, language, headers, rows)' },
+        type: { type: 'string', description: 'Optional new block type (h1, h2, h3, paragraph, callout, quote, code, table, divider)' }
+      },
+      required: ['blockId']
+    },
+    execute: async (params) => {
+      return docsCommandApi.patchBlockById(params);
+    }
+  },
+  {
+    name: 'insert_block',
+    label: 'Insert Block Adjacent',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Inserts a new typed block adjacent to an existing target block ("before" or "after") in the document AST.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        targetBlockId: { type: 'string', description: 'Existing block ID to anchor the insertion' },
+        position: { type: 'string', enum: ['before', 'after'], description: 'Position relative to target block' },
+        block: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', description: 'Block type (h1, h2, h3, paragraph, callout, quote, code, table, divider)' },
+            content: { type: 'string', description: 'Text content of the new block' },
+            properties: { type: 'object', description: 'Optional block properties' }
+          },
+          required: ['type', 'content']
+        }
+      },
+      required: ['block']
+    },
+    execute: async (params) => {
+      return docsCommandApi.insertBlockAdjacent(params);
+    }
+  },
+  {
+    name: 'delete_block',
+    label: 'Delete Canvas Block',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Removes a specific block from the document AST by its block ID.',
+    mutatesDocument: true,
+    destructive: true,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Target block ID to remove' }
+      },
+      required: ['blockId']
+    },
+    execute: async (params) => {
+      return docsCommandApi.deleteBlockById(params);
+    }
+  },
+  {
+    name: 'move_block',
+    label: 'Move Canvas Block',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Reorders a block to a new position before or after a target block.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        blockId: { type: 'string', description: 'Block ID to move' },
+        targetBlockId: { type: 'string', description: 'Anchor block ID' },
+        position: { type: 'string', enum: ['before', 'after'], description: 'Position relative to anchor' }
+      },
+      required: ['blockId', 'targetBlockId']
+    },
+    execute: async (params) => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      return moveBlock(tree, params);
+    }
+  },
+  {
+    name: 'batch_patch_blocks',
+    label: 'Batch Patch Canvas Blocks',
+    category: DOCS_TOOL_CATEGORIES.BLOCK_CANVAS_TOOLS,
+    description: 'Atomically executes multiple block patches, insertions, and deletions in a single transaction pass.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        patches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              op: { type: 'string', enum: ['patch', 'insert', 'delete'] },
+              blockId: { type: 'string' },
+              targetBlockId: { type: 'string' },
+              position: { type: 'string' },
+              content: { type: 'string' },
+              type: { type: 'string' },
+              properties: { type: 'object' },
+              block: { type: 'object' }
+            },
+            required: ['op']
+          },
+          description: 'Array of block patch operations to apply atomically'
+        }
+      },
+      required: ['patches']
+    },
+    execute: async (params) => {
+      const tree = docsCommandApi.getBlockTreeSnapshot();
+      return batchPatchBlocks(tree, params.patches || []);
+    }
+  },
+
   // ── DOCUMENT TOOLS ────────────────────────────────────────────────
   {
     name: 'get_document_structure',
@@ -68,6 +267,32 @@ export const CANONICAL_DOCS_TOOLS = [
     execute: async () => {
       const stats = docsCommandApi.getDocumentStats();
       return { success: true, data: stats };
+    }
+  },
+  {
+    name: 'create_document',
+    label: 'Create New Document',
+    category: DOCS_TOOL_CATEGORIES.DOCUMENT_TOOLS,
+    description: 'Creates a new document in the workspace with specified title and optional initial HTML or markdown body.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Title of the new document.' },
+        contentHtml: { type: 'string', description: 'Initial HTML or rich text body content.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional classification tags.' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      if (typeof window !== 'undefined' && window.__REGAARDER_CREATE_DOC__) {
+        return window.__REGAARDER_CREATE_DOC__(params);
+      }
+      return { success: true, message: `Document "${params.title}" created.`, data: { id: `doc_${Date.now()}`, ...params } };
     }
   },
   {
@@ -396,6 +621,57 @@ export const CANONICAL_DOCS_TOOLS = [
       };
     }
   },
+  {
+    name: 'search_workspace_citations',
+    label: 'Search Workspace Citations',
+    category: DOCS_TOOL_CATEGORIES.ANALYSIS_TOOLS,
+    description: 'Searches all workspace documents for keywords, returning exact document titles, line indices, and matching text excerpts for deep-link citations.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Keyword or phrase to locate across workspace documents.' }
+      },
+      required: ['query']
+    },
+    execute: async (params) => {
+      const allDocs = (typeof window !== 'undefined' && window.__REGAARDER_WORKSPACE_DOCS__) || [];
+      const query = (params.query || '').toLowerCase().trim();
+      const results = [];
+
+      allDocs.forEach(doc => {
+        if (!doc.bodyHtml && !doc.title) return;
+        let blocks = [];
+        if (typeof document !== 'undefined' && doc.bodyHtml) {
+          const tempEl = document.createElement('div');
+          tempEl.innerHTML = doc.bodyHtml;
+          blocks = Array.from(tempEl.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, tr, div'))
+            .map(el => el.textContent.trim())
+            .filter(Boolean);
+        }
+        if (blocks.length === 0 && doc.bodyHtml) {
+          blocks = doc.bodyHtml.replace(/<[^>]+>/g, '\n').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        }
+
+        blocks.forEach((b, idx) => {
+          if (b.toLowerCase().includes(query)) {
+            results.push({
+              docId: doc.id,
+              docTitle: doc.title || 'Untitled Document',
+              line: idx + 1,
+              snippet: b.slice(0, 160)
+            });
+          }
+        });
+      });
+
+      return { success: true, data: { total: results.length, citations: results.slice(0, 10) } };
+    }
+  },
 
   // ── DECK & SLIDE TOOLS ───────────────────────────────────────────
   ...DECK_LLM_TOOL_DEFINITIONS.map(tool => ({
@@ -656,6 +932,182 @@ export const CANONICAL_DOCS_TOOLS = [
         return { success: true, message: `Formatted range (${params.startRow},${params.startCol}) to (${params.endRow},${params.endCol}) as ${params.formatType}.`, data: params };
       }
       return { success: true, message: 'Range formatted', data: params };
+    }
+  },
+  {
+    name: 'validate_matrix_schema',
+    label: 'Validate Matrix Schema',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Validates active spreadsheet grid data against column schemas (dropdown options, % formatting, numbers, dates) and returns diagnostics and auto-fix suggestions.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID (defaults to active).' },
+      }
+    },
+    execute: async (params = {}) => {
+      const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+      const targetId = params.sheetId || (sheetData?.activeSheetId || 'default');
+      const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+      const detected = matrixEngine.inferMatrixSchema(grid.cells || []);
+      const validation = matrixEngine.validateMatrixData(grid.cells || [], detected.columns);
+      return {
+        success: true,
+        data: {
+          sheetId: targetId,
+          valid: validation.valid,
+          violationCount: validation.violationCount,
+          violations: validation.violations,
+          summary: validation.summary,
+          columns: detected.columns,
+        }
+      };
+    }
+  },
+  {
+    name: 'patch_matrix_cells',
+    label: 'Surgically Patch Matrix Cells',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Surgically updates specific cell coordinates with schema validation and optional Pillar 3 sandbox staging.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID.' },
+        patches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              row: { type: 'number', description: '0-based row index.' },
+              col: { type: 'number', description: '0-based col index.' },
+              value: { description: 'Cell value or formula.' }
+            },
+            required: ['row', 'col', 'value']
+          },
+          description: 'Array of cell update patches.'
+        },
+        stage: { type: 'boolean', description: 'If true, routes mutation into isolated PR branch for review.' },
+        branchId: { type: 'string', description: 'Optional target PR branch ID.' }
+      },
+      required: ['patches']
+    },
+    execute: async (params) => {
+      return matrixEngine.patchMatrixCells(params);
+    }
+  },
+  {
+    name: 'query_matrix_sql',
+    label: 'Query Matrix via SQL',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Executes relational SQL query over active spreadsheet data (SELECT, WHERE, GROUP BY, ORDER BY, LIMIT).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'SQL query expression (e.g. SELECT Category, SUM(Actual) GROUP BY Category).' },
+        sheetId: { type: 'string', description: 'Target sheet ID (defaults to active).' }
+      },
+      required: ['query']
+    },
+    execute: async (params) => {
+      const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+      const targetId = params.sheetId || (sheetData?.activeSheetId || 'default');
+      const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+      return matrixEngine.queryMatrixSql(grid.cells || [], params.query);
+    }
+  },
+  {
+    name: 'add_column_with_schema',
+    label: 'Add Column With Schema',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Adds a typed column (dropdown with options, percentage, currency, number, date) with strict validation rules.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID.' },
+        column: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', description: 'Display header label.' },
+            key: { type: 'string', description: 'Identifier.' },
+            type: { type: 'string', enum: ['text', 'number', 'currency', 'percentage', 'dropdown', 'date', 'boolean'] },
+            options: { type: 'array', items: { type: 'string' }, description: 'Dropdown options if type is dropdown.' },
+            width: { type: 'number', description: 'Pixel width hint.' }
+          },
+          required: ['label']
+        },
+        defaultValue: { description: 'Default value for existing rows.' },
+        stage: { type: 'boolean', description: 'Stage mutation into PR branch.' }
+      },
+      required: ['column']
+    },
+    execute: async (params) => {
+      return matrixEngine.addColumnWithSchema(params);
+    }
+  },
+  {
+    name: 'evaluate_matrix_formulas',
+    label: 'Evaluate Matrix Formulas',
+    category: DOCS_TOOL_CATEGORIES.SHEET_TOOLS,
+    description: 'Recomputes all dynamic formula dependencies across the active sheet with cycle detection.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheetId: { type: 'string', description: 'Target sheet ID.' }
+      }
+    },
+    execute: async (params = {}) => {
+      const sheetData = typeof window !== 'undefined' ? window.__REGAARDER_SHEET_DATA__ : null;
+      const targetId = params.sheetId || (sheetData?.activeSheetId || 'default');
+      const grid = sheetData?.sheetGrids?.[targetId] || { cells: [] };
+      const evalResult = matrixEngine.evaluateMatrixFormulas(grid.cells || []);
+      if (typeof window !== 'undefined' && window.__REGAARDER_UPDATE_SHEET_CELLS__ && evalResult.formulaCount > 0) {
+        const patches = [];
+        for (let r = 0; r < evalResult.evaluatedCells.length; r++) {
+          const row = evalResult.evaluatedCells[r];
+          if (!Array.isArray(row)) continue;
+          for (let c = 0; c < row.length; c++) {
+            if (String(grid.cells?.[r]?.[c] || '').startsWith('=')) {
+              patches.push({ sheetId: targetId, row: r, col: c, value: row[c] });
+            }
+          }
+        }
+        if (patches.length > 0) {
+          window.__REGAARDER_UPDATE_SHEET_CELLS__(patches);
+        }
+      }
+      return {
+        success: true,
+        data: {
+          formulaCount: evalResult.formulaCount,
+          cyclesFound: evalResult.cyclesFound,
+          message: `Evaluated ${evalResult.formulaCount} formula cell(s).`,
+        }
+      };
     }
   },
 
@@ -969,6 +1421,1066 @@ export const CANONICAL_DOCS_TOOLS = [
         return window.__REGAARDER_DELETE_RESEARCH_NOTE__(params.noteId);
       }
       return { success: true, message: 'Research note deleted', data: params };
+    }
+  },
+
+  // ── CONSTRAINT-BASED INTENT SCHEDULER TOOLS (Pillar 6) ─────────────
+  {
+    name: 'solve_schedule_constraints',
+    label: 'Solve Schedule Constraints',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Executes mathematical Constraint Satisfaction Problem (CSP) forward checking over hard constraints and evaluates composite utility functions U(slot) for ranked feasible time slots.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        intent: { type: 'string', description: 'Colloquial or structured meeting intent (e.g., "Tennis practice", "Board prep sync")' },
+        domain: { type: 'string', description: 'Optional domain override (e.g. "executive_board", "health_athletics")' },
+        participants: { type: 'array', items: { type: 'string' }, description: 'Participant IDs (e.g. ["alex", "elena"])' },
+        durationMinutes: { type: 'number', description: 'Desired duration in minutes' },
+        timeWindow: {
+          type: 'object',
+          properties: {
+            start: { type: 'string', description: 'ISO 8601 start timestamp' },
+            end: { type: 'string', description: 'ISO 8601 end timestamp' }
+          }
+        },
+        weights: { type: 'object', description: 'Optional custom utility weight overrides' }
+      },
+      required: ['intent']
+    },
+    execute: async (params) => {
+      try {
+        const spec = intentScheduler.parseIntentToScheduleSpec(params.intent, {
+          domain: params.domain,
+          durationMinutes: params.durationMinutes,
+          participants: params.participants,
+          timeWindow: params.timeWindow,
+          weights: params.weights
+        });
+        const solution = intentScheduler.solveScheduleConstraints(spec);
+        return {
+          success: solution.feasible,
+          message: solution.feasible
+            ? `Found ${solution.feasibleSlots.length} feasible slots with CSP utility ranking.`
+            : `Constraint satisfaction failed: ${solution.explanation || 'No valid intervals'}`,
+          data: solution
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'negotiate_multi_agent_schedule',
+    label: 'Multi-Agent Schedule Negotiation',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Initiates a multi-agent parameter negotiation protocol between agent profiles with alternating offers, monotonic concessions, and Pareto convergence.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        initiatorAgentId: { type: 'string', description: 'Agent ID proposing the meeting (default: "alex")' },
+        counterpartyAgentId: { type: 'string', description: 'Agent ID responding to proposal (default: "elena")' },
+        intent: { type: 'string', description: 'Meeting intent or topic description' },
+        timeWindow: {
+          type: 'object',
+          properties: {
+            start: { type: 'string', description: 'ISO 8601 search window start' },
+            end: { type: 'string', description: 'ISO 8601 search window end' }
+          }
+        },
+        maxRounds: { type: 'number', description: 'Maximum negotiation turns (default: 6)' },
+        compromiseRate: { type: 'number', description: 'Concession rate per turn between 0.05 and 0.25' }
+      },
+      required: ['intent']
+    },
+    execute: async (params) => {
+      try {
+        const result = await intentScheduler.negotiateScheduleBetweenAgents({
+          initiatorAgentId: params.initiatorAgentId || 'alex',
+          counterpartyAgentId: params.counterpartyAgentId || 'elena',
+          intent: params.intent,
+          timeWindow: params.timeWindow,
+          maxRounds: params.maxRounds,
+          compromiseRate: params.compromiseRate
+        });
+        return {
+          success: result.status === 'agreed',
+          message: result.status === 'agreed'
+            ? `Negotiation converged in ${result.rounds.length} rounds. Agreed slot: ${result.agreedSlot?.start}`
+            : `Negotiation ended with status: ${result.status}`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'detect_schedule_conflicts',
+    label: 'Detect Schedule Conflicts',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Analyzes a candidate event against the active calendar store, participant profiles, and energy/buffer boundaries to detect hard overlaps and soft buffer collisions.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        proposedEvent: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            start: { type: 'string', description: 'ISO 8601 start' },
+            end: { type: 'string', description: 'ISO 8601 end' },
+            participants: { type: 'array', items: { type: 'string' } },
+            priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] }
+          },
+          required: ['title', 'start', 'end']
+        }
+      },
+      required: ['proposedEvent']
+    },
+    execute: async (params) => {
+      try {
+        const calendar = intentScheduler.getActiveCalendarEvents();
+        const conflicts = intentScheduler.detectScheduleConflicts(params.proposedEvent, calendar);
+        return {
+          success: true,
+          conflictCount: conflicts.length,
+          hasConflicts: conflicts.length > 0,
+          data: conflicts
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'resolve_schedule_conflict',
+    label: 'Resolve Schedule Conflict',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Applies automated conflict resolution strategies (priority bump, duration compression, cooldown compression, or alternative relocation) with optional Pillar 3 staging.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        conflictId: { type: 'string', description: 'Conflict ID or candidate proposed event reference' },
+        strategy: {
+          type: 'string',
+          enum: ['priority_bump', 'duration_compression', 'cooldown_compression', 'relocate_alternative'],
+          description: 'Automated resolution strategy'
+        },
+        stage: { type: 'boolean', description: 'If true, stage resolution to isolated Pillar 3 PR branch' }
+      },
+      required: ['strategy']
+    },
+    execute: async (params) => {
+      try {
+        const resolution = intentScheduler.resolveScheduleConflict({
+          conflictId: params.conflictId,
+          strategy: params.strategy,
+          stage: params.stage === true
+        });
+        return {
+          success: resolution.success,
+          message: resolution.message,
+          data: resolution
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'commit_scheduled_event',
+    label: 'Commit Scheduled Event',
+    category: DOCS_TOOL_CATEGORIES.SCHEDULE_TOOLS,
+    description: 'Commits a scheduled meeting or focus block into the universal calendar store or stages it into an isolated Pillar 3 sandbox branch for executive review.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        event: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            start: { type: 'string' },
+            end: { type: 'string' },
+            domain: { type: 'string' },
+            participants: { type: 'array', items: { type: 'string' } },
+            priority: { type: 'string' }
+          },
+          required: ['title', 'start', 'end']
+        },
+        stage: { type: 'boolean', description: 'If true, stage mutation to Pillar 3 branch instead of committing directly' }
+      },
+      required: ['event']
+    },
+    execute: async (params) => {
+      try {
+        if (params.stage) {
+          const staged = intentScheduler.stageScheduleEvent(params.event);
+          return {
+            success: true,
+            message: `Event staged in PR branch: ${staged.branchId}`,
+            data: staged
+          };
+        }
+        const committed = intentScheduler.commitCalendarEvent(params.event);
+        return {
+          success: true,
+          message: `Event committed to universal schedule: ${committed.title} (${committed.id})`,
+          data: committed
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── OMNI-PORTAL UNIVERSAL INGESTION TOOLS (Pillar 7) ──────────────
+  {
+    name: 'ingest_file_stream',
+    label: 'Ingest File Stream',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Ingests raw text or file stream into an Ingestion Package with dual-view original fidelity and clean semantic AST state.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw text, HTML, or serialized content of the file' },
+        fileName: { type: 'string', description: 'Original file name with extension (e.g. Q3_Report.docx)' },
+        title: { type: 'string', description: 'Optional clean document title' },
+        stage: { type: 'boolean', description: 'If true, stages cross-app mutations into a Pillar 3 PR sandbox' }
+      },
+      required: ['content', 'fileName']
+    },
+    execute: async (params) => {
+      try {
+        const pkg = omniPortal.createIngestionPackage(params.content, {
+          fileName: params.fileName,
+          title: params.title
+        });
+        if (params.stage) {
+          const staged = omniPortal.stageIngestionPackage(pkg);
+          return {
+            success: true,
+            message: `File ingested and staged in PR branch: ${staged.branchId}`,
+            data: { package: pkg, staging: staged }
+          };
+        }
+        return {
+          success: true,
+          message: `File ingested successfully: ${pkg.title} (${pkg.id})`,
+          data: pkg
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'translate_schema_to_ast',
+    label: 'Translate Schema to AST',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Losslessly translates unstructured raw content (tables, CSV, HTML, Markdown) into typed Canvas Block Trees or Rule 7/9 schema-validated Matrix ASTs.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw string, HTML table, or CSV to translate' },
+        targetType: { type: 'string', enum: ['matrix', 'canvas'], description: 'Destination AST type' },
+        title: { type: 'string', description: 'Optional title' }
+      },
+      required: ['content', 'targetType']
+    },
+    execute: async (params) => {
+      try {
+        if (params.targetType === 'matrix') {
+          const translated = omniPortal.translateTableToMatrixAst(params.content, { title: params.title });
+          return {
+            success: true,
+            message: `Translated table to Matrix AST with ${translated.schema.columns.length} columns and ${translated.grid.length} rows`,
+            data: translated
+          };
+        }
+        const blockTree = omniPortal.htmlToBlockTree(params.content, { documentId: `doc_${Date.now()}` });
+        return {
+          success: true,
+          message: `Translated content to Canvas Block Tree with ${blockTree.blocks.length} blocks`,
+          data: blockTree
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'decompose_document_cross_app',
+    label: 'Decompose Document Cross-App',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Decomposes a multi-modal enterprise document into Canvas blocks, Matrix tables, Directive Queue tasks, and Context Graph nodes with token savings metrics.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw text or HTML of the document' },
+        fileName: { type: 'string', description: 'Document filename' },
+        title: { type: 'string', description: 'Optional title' }
+      },
+      required: ['content']
+    },
+    execute: async (params) => {
+      try {
+        const decomposition = omniPortal.decomposeDocumentCrossApp(params.content, {
+          fileName: params.fileName,
+          title: params.title
+        });
+        return {
+          success: true,
+          message: `Decomposed into ${decomposition.canvas.blockCount} blocks, ${decomposition.matrix.totalTables} tables, and ${decomposition.directives.totalTasks} tasks (${decomposition.tokenStats.savingsPercent}% token savings)`,
+          data: decomposition
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'route_entities_cross_app',
+    label: 'Route Entities Cross-App',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Dispatches decomposed entities to active workspaces (Sheets, Docs, Tasks) or routes them into a Pillar 3 staging PR branch.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        packageId: { type: 'string', description: 'ID of the ingestion package to route' },
+        stage: { type: 'boolean', description: 'If true (default), routes to isolated staging sandbox' }
+      },
+      required: ['packageId']
+    },
+    execute: async (params) => {
+      try {
+        const res = await omniPortal.routeEntitiesCrossApp(params.packageId, {
+          stage: params.stage !== false
+        });
+        return {
+          success: true,
+          message: res.mode === 'staged_sandbox'
+            ? `Routed entities into Staging PR: ${res.branchId}`
+            : `Directly committed entities to active workspaces`,
+          data: res
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'stage_ingestion_package',
+    label: 'Stage Ingestion Package',
+    category: DOCS_TOOL_CATEGORIES.PORTAL_TOOLS,
+    description: 'Stages all extracted entities from an ingestion package into an isolated Pillar 3 PR sandbox branch for executive visual redline review.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        packageId: { type: 'string', description: 'ID of the ingestion package' },
+        branchTitle: { type: 'string', description: 'Custom staging PR title' }
+      },
+      required: ['packageId']
+    },
+    execute: async (params) => {
+      try {
+        const pkg = omniPortal.getIngestionPackageById(params.packageId);
+        if (!pkg) {
+          return { success: false, error: `Package not found: ${params.packageId}` };
+        }
+        const staged = omniPortal.stageIngestionPackage(pkg, { branchTitle: params.branchTitle });
+        return {
+          success: true,
+          message: `Staged ingestion package in PR branch: ${staged.branchId}`,
+          data: staged
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── DIRECTIVE QUEUE & AUTONOMOUS AGENT TOOLS (Pillar 8) ───────────
+  {
+    name: 'queue_agent_directive',
+    label: 'Queue Agent Directive',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Queues a new task or autonomous execution directive into the directive engine with a three-tier taxonomy (user, agent, team) and optional block pointer anchoring.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Directive title or task description' },
+        description: { type: 'string', description: 'Detailed execution instructions' },
+        tier: { type: 'string', enum: ['user', 'agent', 'team'], description: 'Three-tier ownership taxonomy' },
+        priority: { type: 'string', enum: ['P0', 'P1', 'P2', 'P3'], description: 'Directive execution priority' },
+        actionPayload: { type: 'object', description: 'Optional machine-executable action specifications' },
+        blockPointer: { type: 'object', description: 'Optional anchored Canvas block AST ID or Matrix cell' },
+        autoExecute: { type: 'boolean', description: 'Whether to immediately trigger autonomous execution' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      try {
+        const item = directiveEngine.queueDirective({
+          title: params.title,
+          description: params.description || '',
+          tier: params.tier || 'agent',
+          priority: params.priority || 'P1',
+          actionPayload: params.actionPayload || null,
+          blockPointer: params.blockPointer || null
+        });
+        if (params.autoExecute && item.tier === 'agent') {
+          const execRes = await directiveEngine.executeAgentDirective(item.id, { stage: true });
+          return {
+            success: true,
+            message: `Queued and executed directive ${item.id} (Status: ${execRes.directive.status})`,
+            data: { directive: execRes.directive, stagedPr: execRes.stagedPr }
+          };
+        }
+        return {
+          success: true,
+          message: `Queued directive "${item.title}" [${item.tier.toUpperCase()} - ${item.priority}] with ID: ${item.id}`,
+          data: item
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'link_directive_to_block',
+    label: 'Link Directive to Block',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Anchors an active directive to a specific Canvas block AST ID (blk_...) or Matrix cell for surgical zero-drift execution.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        directiveId: { type: 'string', description: 'Target directive ID' },
+        blockId: { type: 'string', description: 'Canvas block AST ID (blk_...) or cell identifier' },
+        blockType: { type: 'string', description: 'Block type (e.g. h1, paragraph, matrix, table)' },
+        docId: { type: 'string', description: 'Host document ID' },
+        cellKey: { type: 'string', description: 'Optional Matrix cell coordinate (e.g. status:row-1)' }
+      },
+      required: ['directiveId', 'blockId']
+    },
+    execute: async (params) => {
+      try {
+        const updated = directiveEngine.linkDirectiveToBlock(params.directiveId, {
+          blockId: params.blockId,
+          blockType: params.blockType || 'block',
+          docId: params.docId || 'active_doc',
+          cellKey: params.cellKey || null
+        });
+        return {
+          success: true,
+          message: `Linked directive ${params.directiveId} to block pointer [${params.blockId}]`,
+          data: updated
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'checkout_agent_directive',
+    label: 'Checkout Agent Directive',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Atomically locks and checks out the next pending directive for an autonomous background agent runner.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        agentId: { type: 'string', description: 'Agent worker identifier (default: agent_runner_1)' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      try {
+        const checkedOut = directiveEngine.checkoutNextAgentDirective(params?.agentId || 'agent_runner_1');
+        if (!checkedOut) {
+          return {
+            success: true,
+            message: 'No pending agent directives available in queue.',
+            data: null
+          };
+        }
+        return {
+          success: true,
+          message: `Checked out directive ${checkedOut.id}: "${checkedOut.title}"`,
+          data: checkedOut
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'complete_agent_directive',
+    label: 'Complete Agent Directive',
+    category: DOCS_TOOL_CATEGORIES.TASKS_TOOLS,
+    description: 'Marks an active directive as COMPLETED or STAGED with execution results and optional Pillar 3 staging PR sandbox.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        directiveId: { type: 'string', description: 'ID of directive to complete' },
+        result: { type: 'object', description: 'Output execution details, summary, and artifacts' },
+        stage: { type: 'boolean', description: 'If true (default), mutative actions generate a Pillar 3 staging PR' }
+      },
+      required: ['directiveId']
+    },
+    execute: async (params) => {
+      try {
+        const execRes = await directiveEngine.executeAgentDirective(params.directiveId, {
+          stage: params.stage !== false,
+          result: params.result
+        });
+        return {
+          success: true,
+          message: `Directive ${params.directiveId} executed (Status: ${execRes.directive.status})`,
+          data: execRes
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── SPATIAL TOPOLOGY & VISUAL CONTEXT GRAPH TOOLS (Pillar 9) ─────────
+  {
+    name: 'get_whiteboard_topology',
+    label: 'Get Whiteboard Topology Graph',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Retrieves the complete spatial topology AST graph (nodes, directional edges, metadata, and graph analytics) of the whiteboard canvas.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        includeAnalysis: { type: 'boolean', description: 'If true (default), computes graph analytics (in/out degrees, root/sink nodes, cycles)' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      try {
+        const graph = spatialTopology.getTopologyGraph();
+        const analysis = params?.includeAnalysis !== false ? spatialTopology.analyzeTopology() : null;
+        return {
+          success: true,
+          message: `Retrieved spatial whiteboard topology with ${graph.nodes.length} nodes and ${graph.edges.length} edges.`,
+          data: {
+            ...graph,
+            analysis
+          }
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'compile_diagram_to_schema',
+    label: 'Compile Diagram to Code Schema',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Bi-directionally compiles the visual whiteboard diagram AST into ANSI SQL DDL, OpenAPI 3.0 specs, executable State Machine JSON, or Markdown architecture summaries.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        target: { 
+          type: 'string', 
+          enum: ['sql', 'openapi', 'state_machine', 'summary'],
+          description: 'Target schema output format (sql, openapi, state_machine, or summary)'
+        }
+      },
+      required: ['target']
+    },
+    execute: async (params) => {
+      try {
+        const target = params?.target || 'sql';
+        let compiledOutput = '';
+        if (target === 'sql') {
+          compiledOutput = spatialTopology.compileTopologyToSqlSchema();
+        } else if (target === 'openapi') {
+          compiledOutput = spatialTopology.compileTopologyToOpenApi();
+        } else if (target === 'state_machine') {
+          compiledOutput = spatialTopology.compileTopologyToStateMachine();
+        } else if (target === 'summary') {
+          compiledOutput = spatialTopology.compileTopologyToArchitectureSummary();
+        } else {
+          return { success: false, error: `Unsupported compilation target: ${target}. Must be sql, openapi, state_machine, or summary.` };
+        }
+        return {
+          success: true,
+          target,
+          message: `Compiled spatial diagram to ${target.toUpperCase()} successfully.`,
+          data: compiledOutput
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'render_agent_plan_to_canvas',
+    label: 'Render Agent Plan to Canvas',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Synthesizes an agent execution plan, architecture, or workflow into visual whiteboard canvas topology with computed spatial 2D coordinates and directed edges.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Title of the architecture or workflow plan' },
+        steps: { 
+          type: 'array', 
+          items: { type: 'object' },
+          description: 'List of plan steps or architecture stages with title, description, nodeType, status, and dependsOn dependencies'
+        },
+        clearExisting: { type: 'boolean', description: 'If true, clears existing whiteboard canvas nodes before rendering' }
+      },
+      required: ['steps']
+    },
+    execute: async (params) => {
+      try {
+        const plan = {
+          title: params?.title || 'Agent Synthesized Plan',
+          steps: params?.steps || []
+        };
+        const result = spatialTopology.renderAgentPlanToTopology(plan, {
+          clearExisting: params?.clearExisting === true
+        });
+        return {
+          success: true,
+          message: `Rendered agent plan "${plan.title}" onto whiteboard canvas with ${result.nodes.length} nodes and ${result.edges.length} directed edges.`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'patch_whiteboard_node',
+    label: 'Patch Whiteboard Node',
+    category: DOCS_TOOL_CATEGORIES.WHITEBOARD_TOOLS,
+    description: 'Updates properties, metadata, status, or spatial coordinates of a specific node in the whiteboard topology graph.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'ID of the node to update' },
+        patch: { type: 'object', description: 'Properties to update (label, status, metadata, x, y, width, height)' }
+      },
+      required: ['nodeId', 'patch']
+    },
+    execute: async (params) => {
+      try {
+        const updated = spatialTopology.updateTopologyNode(params.nodeId, params.patch);
+        if (!updated) {
+          return { success: false, error: `Node with id "${params.nodeId}" not found in spatial topology.` };
+        }
+        return {
+          success: true,
+          message: `Successfully patched whiteboard node "${params.nodeId}" (${updated.label}).`,
+          data: updated
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── ROOM REAL-TIME CONTEXT HARVESTER & MULTI-AGENT OBSERVER (Pillar 10) ────
+  {
+    name: 'harvest_meeting_intent',
+    label: 'Harvest In-Meeting Intent',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Ingests spoken audio transcript turns from an active Room meeting session and extracts categorized epistemic intent (decisions, directives, architecture proposals, financial updates, minutes).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        speaker: { type: 'string', description: 'Name and role of the speaker (e.g., "Elena Rostova (VP Finance)")' },
+        text: { type: 'string', description: 'Verbatim spoken audio transcription turn' },
+        confidence: { type: 'number', description: 'Speech-to-text confidence score between 0 and 1' }
+      },
+      required: ['speaker', 'text']
+    },
+    execute: async (params) => {
+      try {
+        const turn = roomObserver.ingestSpeechTurn({
+          speaker: params.speaker,
+          text: params.text,
+          confidence: params.confidence || 0.95,
+          autoMutate: false
+        });
+        return {
+          success: true,
+          message: `Harvested intent from ${params.speaker}: [${turn.intent.type.toUpperCase()}]`,
+          data: turn
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'mutate_workspace_from_audio',
+    label: 'Mutate Workspace From Audio',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Concurrently mutates live workspace state across Canvas Docs, Whiteboard Topology, Directive Queue, or Matrix Sheets from spoken in-meeting intent with optional Pillar 3 staging sandbox safety.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        speaker: { type: 'string', description: 'Speaker who articulated the intent' },
+        text: { type: 'string', description: 'Spoken transcript proposal' },
+        stage: { type: 'boolean', description: 'If true (default), stages mutation into isolated meeting PR branch' }
+      },
+      required: ['speaker', 'text']
+    },
+    execute: async (params) => {
+      try {
+        const shouldStage = params?.stage !== false;
+        const turn = roomObserver.ingestSpeechTurn({
+          speaker: params.speaker,
+          text: params.text,
+          autoMutate: true,
+          stage: shouldStage
+        });
+        return {
+          success: true,
+          message: `Successfully applied in-meeting mutation (${turn.intent.type.toUpperCase()}) with stage=${shouldStage}.`,
+          data: {
+            turn,
+            activePrBranchId: roomObserver.getLiveSession().activePrBranchId
+          }
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'dispatch_in_room_directive',
+    label: 'Dispatch In-Room Directive',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Extracts an actionable commitment from in-room spoken conversation and directly queues a P0..P3 machine directive for autonomous agent or human execution.',
+    mutatesDocument: true,
+    destructive: false,
+    undoable: true,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Directive action summary' },
+        assignee: { type: 'string', description: 'Target agent or human assignee' },
+        priority: { type: 'string', enum: ['P0', 'P1', 'P2', 'P3'], description: 'Priority classification' },
+        tier: { type: 'string', enum: ['agent', 'user', 'team'], description: 'Ownership tier' }
+      },
+      required: ['title']
+    },
+    execute: async (params) => {
+      try {
+        const mutation = roomObserver.mutateWorkspaceFromIntent({
+          type: 'action_directive',
+          extractedData: {
+            title: params.title,
+            assignee: params.assignee || 'Marcus Agent',
+            priority: params.priority || 'P1',
+            tier: params.tier || 'agent'
+          }
+        }, { stage: false });
+        return {
+          success: true,
+          message: `Dispatched in-room directive: "${params.title}" to ${params.assignee || 'Marcus Agent'}.`,
+          data: mutation
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'get_room_live_context',
+    label: 'Get Room Live Context',
+    category: DOCS_TOOL_CATEGORIES.ROOM_TOOLS,
+    description: 'Queries active Room session context, speaker transcript turns, epistemic consensus log, and pending meeting PR mutations.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        format: { type: 'string', enum: ['markdown', 'json'], description: 'Format of the returned context (markdown or json)' }
+      },
+      required: []
+    },
+    execute: async (params) => {
+      try {
+        const format = params?.format || 'markdown';
+        const session = roomObserver.getLiveSession();
+        const content = format === 'json'
+          ? roomObserver.serializeRoomContextToJson(session)
+          : roomObserver.serializeRoomContextToMarkdown(session);
+        return {
+          success: true,
+          format,
+          message: `Retrieved active Room context for "${session.title}" (${session.summary.totalTurns} turns, ${session.summary.decisionsCount} decisions).`,
+          data: content,
+          session
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  // ── AI-NATIVE BROWSER EXECUTION GATEWAY & COMMAND DECK (Pillar 11) ──
+  {
+    name: 'translate_web_semantic_dom',
+    label: 'Translate Web DOM to Semantic Tree',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Compresses noisy raw web HTML/DOM into an ultra-dense, token-optimized Accessibility Tree with @e1..@eN references (>90% token reduction).',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        html: { type: 'string', description: 'Raw HTML string or DOM content from the active webpage' },
+        url: { type: 'string', description: 'URL of the page being translated' }
+      },
+      required: ['html']
+    },
+    execute: async (params) => {
+      try {
+        const result = webExecutionGateway.translateDomToSemanticTree(params.html, params.url || 'about:blank');
+        return {
+          success: true,
+          message: `Translated DOM into ${result.elementsCount} semantic nodes (${result.tokenReductionPercent}% token reduction).`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'execute_declarative_web_intent',
+    label: 'Execute Declarative Web Intent',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Executes high-level user intent against an active web page, synthesising actions and extracting structured data.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        intent: { type: 'string', description: 'High-level declarative action instruction (e.g., "extract pricing table")' },
+        url: { type: 'string', description: 'Target website URL' },
+        targetFormat: { type: 'string', enum: ['matrix', 'canvas_blocks', 'json'], description: 'Desired output format' }
+      },
+      required: ['intent']
+    },
+    execute: async (params) => {
+      try {
+        const result = await webExecutionGateway.executeDeclarativeWebIntent(params.intent, params.url, params);
+        return {
+          success: true,
+          message: `Executed web intent "${params.intent}" (${result.actionPlan.length} steps).`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'capture_web_directive',
+    label: 'Capture Web Directive',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Instantly captures a web highlight, note, or research snippet directly into the universal directive queue and calendar block.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Highlighted or selected text content from web' },
+        title: { type: 'string', description: 'Brief title for the directive' },
+        sourceUrl: { type: 'string', description: 'Web source URL' },
+        blockId: { type: 'string', description: 'Optional calendar time-block ID to anchor to' }
+      },
+      required: ['text']
+    },
+    execute: async (params) => {
+      try {
+        const directive = meneurCommandDeck.captureWebDirective(params);
+        return {
+          success: true,
+          message: `Captured web directive "${directive.title}" into task queue.`,
+          data: directive
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'archive_tab_session',
+    label: 'Archive Browser Tab Session',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Bundles active browser tabs into an intentional archived session linked to a calendar time-block.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Session archive label' },
+        tabs: { type: 'array', description: 'Array of tab objects ({ title, url, favicon })' },
+        timeBlockId: { type: 'string', description: 'Optional time block ID' }
+      },
+      required: ['tabs']
+    },
+    execute: async (params) => {
+      try {
+        const session = meneurCommandDeck.archiveTabSession(params.title, params.tabs, params.timeBlockId);
+        return {
+          success: true,
+          message: `Archived ${session.tabs.length} tabs under session "${session.title}".`,
+          data: session
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+  },
+  {
+    name: 'evaluate_site_focus_block',
+    label: 'Evaluate Site Focus Shield',
+    category: DOCS_TOOL_CATEGORIES.BROWSER_TOOLS,
+    description: 'Evaluates whether a target URL is suppressed under the active deep-work focus block mode.',
+    mutatesDocument: false,
+    destructive: false,
+    undoable: false,
+    requiresSelection: false,
+    requiresConfirmation: false,
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to evaluate against focus shield rules' }
+      },
+      required: ['url']
+    },
+    execute: async (params) => {
+      try {
+        const result = meneurCommandDeck.evaluateSiteFocusBlock(params.url);
+        return {
+          success: true,
+          message: result.isBlocked ? `Site ${result.domain} is BLOCKED under active deep-work focus shield.` : `Site is allowed.`,
+          data: result
+        };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
     }
   }
 ];

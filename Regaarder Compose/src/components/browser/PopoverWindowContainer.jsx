@@ -332,7 +332,7 @@ export const PopoverWindowContainer = () => {
         )}
 
         {popoverType === 'workspaceSwitcher' && (
-          <div className="w-[220px] rounded-[22px] border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/85 dark:bg-[#1c1c1e]/85 backdrop-blur-3xl shadow-2xl p-2 font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-[220px] rounded-xl border border-white/60 dark:border-white/10 ring-1 ring-slate-900/5 dark:ring-black/40 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl shadow-2xl p-1.5 font-sans overflow-hidden animate-in fade-in zoom-in-[0.98] duration-100 ease-out">
             <div className="flex flex-col gap-1">
               {[
                 { mode: 'compose', label: 'Docs', desc: 'AI Document Editor', icon: ComposeIcon },
@@ -351,7 +351,7 @@ export const PopoverWindowContainer = () => {
                       window.electronAPI?.sendPopoverAction?.('switchProductMode', { mode: item.mode });
                       handleClose();
                     }}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left select-none transition-all duration-150 w-full cursor-pointer ${
+                    className={`group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left select-none transition-all duration-150 w-full cursor-pointer ${
                       isCurrent
                         ? 'bg-[#7C5ACF]/[0.08] dark:bg-[#7C5ACF]/[0.16] shadow-xs'
                         : 'bg-transparent text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-900 dark:hover:text-zinc-100 font-medium'
