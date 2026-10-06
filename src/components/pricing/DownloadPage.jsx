@@ -19,8 +19,9 @@ import {
 } from 'lucide-react';
 import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import { RegaarderAiIcon } from '../RegaarderProductIcons';
+import workspacePreviewImg from '../../assets/images/workspace-preview.png';
 
-export default function DownloadPage() {
+export default function DownloadPage({ previewVideoSrc = null }) {
   const [detectedOs, setDetectedOs] = useState({
     name: 'Windows',
     tag: 'Windows 10 / 11 (64-bit)',
@@ -210,37 +211,29 @@ export default function DownloadPage() {
             </div>
           </div>
 
-          {/* Inner Mockup Body */}
-          <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-6 bg-gradient-to-b from-white to-zinc-50/50 dark:from-[#18181b] dark:to-[#121214]">
-            <div className="p-5 rounded-lg border border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900/80">
-              <div className="w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3 text-zinc-900 dark:text-zinc-100">
-                <RegaarderAiIcon size={16} />
-              </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white mb-1">Compose & Synthesis</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Structured Markdown, real-time formula math, and high-fidelity artifact generation.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-lg border border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900/80">
-              <div className="w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3 text-zinc-900 dark:text-zinc-100">
-                <Cpu size={16} />
-              </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white mb-1">Sheets & Data Matrix</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                High-performance 2D matrix engine with native dropdown controls and automated analysis.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-lg border border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900/80">
-              <div className="w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3 text-zinc-900 dark:text-zinc-100">
-                <Zap size={16} />
-              </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white mb-1">Deck & Presentation</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Dynamic slide orchestration with executive layouts and fluid transitions.
-              </p>
-            </div>
+          {/* Inner Mockup Body - Hybrid Interactive Frame */}
+          <div className="relative w-full aspect-16/10 sm:aspect-16/9 bg-zinc-950 overflow-hidden flex items-center justify-center group">
+            {previewVideoSrc ? (
+              <video
+                src={previewVideoSrc}
+                poster={workspacePreviewImg}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover object-top"
+              />
+            ) : (
+              <img
+                src={workspacePreviewImg}
+                alt="Regaarder Workspace Interface"
+                className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+                loading="eager"
+              />
+            )}
+            
+            {/* Subtle gloss overlay reflection */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60" />
           </div>
         </div>
 
