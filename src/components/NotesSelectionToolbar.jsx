@@ -150,7 +150,7 @@ export default function NotesSelectionToolbar({
         e.stopPropagation();
       }}
     >
-      <div className="flex items-center flex-nowrap whitespace-nowrap gap-0.5 p-1 rounded-2xl bg-white/95 dark:bg-[#1f1f23]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/80 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_44px_rgba(0,0,0,0.65)] text-slate-700 dark:text-zinc-200">
+      <div className="flex items-center flex-nowrap whitespace-nowrap gap-0.5 px-1.5 py-1 rounded-xl bg-white/95 dark:bg-[#1f1f23]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-zinc-700/80 shadow-[0_8px_28px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_44px_rgba(0,0,0,0.65)] text-slate-700 dark:text-zinc-200">
         
         {/* Regaarder AI Capsule Trigger */}
         <button
@@ -159,7 +159,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             setIsAiMenuOpen((prev) => !prev);
           }}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             isAiMenuOpen
               ? "bg-amber-500 text-white shadow-2xs"
               : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/80"
@@ -175,7 +175,7 @@ export default function NotesSelectionToolbar({
           <ChevronDown size={11} strokeWidth={2} className={`opacity-70 transition-transform ${isAiMenuOpen ? "rotate-180" : ""}`} />
         </button>
 
-        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
 
         {/* Text Styling: Bold, Italic, Strikethrough, Highlight */}
         <button
@@ -184,7 +184,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("bold");
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
           title="Bold (Ctrl+B)"
         >
           <Bold size={14} strokeWidth={2.4} />
@@ -196,7 +196,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("italic");
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
           title="Italic (Ctrl+I)"
         >
           <Italic size={14} strokeWidth={2.2} />
@@ -208,7 +208,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("strikeThrough");
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
           title="Strikethrough"
         >
           <Strikethrough size={14} strokeWidth={2} />
@@ -220,13 +220,13 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("hiliteColor", "#FEF08A");
           }}
-          className="p-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/40 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/40 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
           title="Highlight (Yellow Marker)"
         >
           <Highlighter size={14} strokeWidth={2.2} />
         </button>
 
-        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
 
         {/* Lists & Tasks: Bullet, Numbered, Checklist */}
         <button
@@ -235,7 +235,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("insertUnorderedList");
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
           title="Bulleted List"
         >
           <List size={14} strokeWidth={2} />
@@ -247,7 +247,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("insertOrderedList");
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
           title="Numbered List"
         >
           <ListOrdered size={14} strokeWidth={2} />
@@ -259,13 +259,13 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleFormat("checklist");
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors cursor-pointer"
           title="Convert to Checklist"
         >
           <CheckSquare size={14} strokeWidth={2} />
         </button>
 
-        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
+        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
 
         {/* Quick Copy */}
         <button
@@ -274,7 +274,7 @@ export default function NotesSelectionToolbar({
             e.preventDefault();
             handleCopySelection();
           }}
-          className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
           title="Copy selected text"
         >
           {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}

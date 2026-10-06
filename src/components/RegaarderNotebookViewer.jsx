@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Plus, Search, MoreHorizontal, ChevronDown, Check,
   X, ArrowUpDown, AlignLeft, AlignJustify, CheckSquare, Edit3, Type,
   Highlighter, Paperclip, ImagePlus, FileText, Pin, PinOff,
   Table, Sliders, Undo2, Redo2, Sparkles, ChevronRight, Hash, Eye,
   Lock, Unlock, Shield, Users, Share2, Copy, Download, Eraser,
-  PenTool, Brush, Palette, Trash2, ExternalLink, Play, Home
+  PenTool, Brush, Palette, Trash2, ExternalLink, Play, Home,
+  ListChecks, Wand2, ArrowRight
 } from "lucide-react";
 import { RegaarderAiIcon, NotesIcon } from "./RegaarderProductIcons";
 import { executeAiTurn } from "../services/llmProviderService";
@@ -54,7 +56,16 @@ export const RULING_PRESETS = {
 
 // ─── Floating Toolbar Popover Shell ─────────────────────────────────────────────
 
-function ToolbarPopover({ anchorRef, onClose, children, width = 220, anchorAlign = "center" }) {
+function ToolbarPopover({
+  anchorRef,
+  onClose,
+  children,
+  width = 220,
+  anchorAlign = "center",
+  rulingType = "ruled",
+  rulingThickness = "normal",
+  isDarkMode = false,
+}) {
   const popRef = useRef(null);
 
   useEffect(() => {
@@ -82,56 +93,117 @@ function ToolbarPopover({ anchorRef, onClose, children, width = 220, anchorAlign
         pop.style.maxHeight = `${Math.max(160, window.innerHeight - rect.bottom - 24)}px`;
       }
 
-      // Horizontal positioning
+      // Horizontal positioning: cleanly anchor or center with respect to the trigger button
       let targetLeft;
       if (anchorAlign === "right") {
-        // Align right edge of popover with right edge of anchor button
         targetLeft = rect.right - actualWidth;
       } else if (anchorAlign === "left") {
-        // Align left edge of popover with left edge of anchor button
         targetLeft = rect.left;
       } else {
-        // Center on anchor
-        targetLeft = rect.left + rect.width / 2 - actualWidth / 2;
+        // Centered directly over the anchor button
+        targetLeft = rect.left + (rect.width - actualWidth) / 2;
       }
 
-      // Strictly clamp within viewport
-      const clampedLeft = Math.max(16, Math.min(window.innerWidth - actualWidth - 16, targetLeft));
+      // Strictly clamp within viewport padding (minimum 16px from left, 16px from right)
+      const maxLeft = Math.max(16, window.innerWidth - actualWidth - 16);
+      const clampedLeft = Math.max(16, Math.min(maxLeft, targetLeft));
       pop.style.left = `${clampedLeft}px`;
     };
 
     updatePosition();
     const handleResize = () => updatePosition();
-    window.addEventListener("resize", handleResize);
-
     const handleOutside = (e) => {
       const anchor = anchorRef?.current;
       const pop = popRef?.current;
-      if (pop && anchor && !pop.contains(e.target) && !anchor.contains(e.target)) {
-        onClose();
+      if (pop && !pop.contains(e.target)) {
+        if (!anchor || !anchor.contains(e.target)) {
+          onClose?.();
+        }
       }
     };
 
-    // Defer listener attachment to next tick so current pointerdown/click doesn't immediately dismiss
-    const timer = setTimeout(() => {
-      document.addEventListener("pointerdown", handleOutside);
-    }, 50);
+    // Attach immediately on pointerdown and mousedown for universal desktop and touch coverage
+    window.addEventListener("pointerdown", handleOutside, true);
+    window.addEventListener("mousedown", handleOutside, true);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("resize", handleResize);
-      document.removeEventListener("pointerdown", handleOutside);
+      window.removeEventListener("pointerdown", handleOutside, true);
+      window.removeEventListener("mousedown", handleOutside, true);
     };
   }, [anchorRef, onClose, width, anchorAlign]);
 
-  return (
-    <div
-      ref={popRef}
-      className="fixed z-50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.22)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-slate-200 dark:border-zinc-700 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-white/98 dark:bg-[#1c1c1f]/98 backdrop-blur-3xl overflow-y-auto"
-      style={{ width }}
-    >
-      {children}
-    </div>
+  // Compute matching ruling background for the popover
+  const preset = RULING_PRESETS[rulingType] || RULING_PRESETS.ruled;
+  const baselinePx = preset[rulingThickness]?.baseline || preset.baseline || 32;
+
+  const rulingBgStyle = useMemo(() => {
+    if (rulingType === "plain") {
+      return {};
+    }
+    if (rulingType === "grid") {
+      const lineCol = isDarkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(148, 163, 184, 0.28)";
+      return {
+        backgroundImage: `linear-gradient(to right, ${lineCol} 1px, transparent 1px), linear-gradient(to bottom, ${lineCol} 1px, transparent 1px)`,
+        backgroundSize: `${baselinePx}px ${baselinePx}px`,
+        backgroundPosition: `0 0`,
+      };
+    }
+    if (rulingType === "dot") {
+      const dotCol = isDarkMode ? "rgba(255, 255, 255, 0.22)" : "rgba(100, 116, 139, 0.35)";
+      return {
+        backgroundImage: `radial-gradient(${dotCol} 1.2px, transparent 1.2px)`,
+        backgroundSize: `${baselinePx}px ${baselinePx}px`,
+        backgroundPosition: `0 0`,
+      };
+    }
+    const ruleCol = isDarkMode ? "rgba(255, 255, 255, 0.12)" : "rgba(147, 197, 253, 0.32)";
+    return {
+      backgroundImage: `linear-gradient(${ruleCol} 1px, transparent 1px)`,
+      backgroundSize: `100% ${baselinePx}px`,
+      backgroundPosition: `0 0`,
+    };
+  }, [rulingType, baselinePx, isDarkMode]);
+
+  if (typeof document === "undefined") return null;
+
+  // Detect active native/app fullscreen container so portal is never obscured behind fullscreen elements
+  const portalContainer =
+    document.fullscreenElement ||
+    document.getElementById("regaarder-notebook-root") ||
+    document.body;
+
+  return createPortal(
+    <>
+      {/* Tap/click outside transparent dismiss veil */}
+      <div
+        className="fixed inset-0 z-[9999] bg-transparent cursor-default pointer-events-auto"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose?.();
+        }}
+      />
+      <div
+        ref={popRef}
+        className="fixed z-[10000] rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-slate-300/80 dark:border-zinc-700/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 select-none text-slate-800 dark:text-zinc-100 bg-[#FCFAF7]/85 dark:bg-[#18181A]/85 backdrop-blur-xl overflow-hidden pointer-events-auto"
+        style={{ width }}
+      >
+        {/* Paper ruling underlay rendered directly on the popover */}
+        {rulingType !== "plain" && (
+          <div
+            className="absolute inset-0 pointer-events-none transition-all duration-150"
+            style={rulingBgStyle}
+          />
+        )}
+
+        {/* Popover interactive content */}
+        <div className="relative z-10 overflow-y-auto max-h-[inherit]">
+          {children}
+        </div>
+      </div>
+    </>,
+    portalContainer
   );
 }
 
@@ -147,6 +219,8 @@ export function NotesFloatingDock({
   onRedo,
   stats,
   isDarkMode,
+  rulingType: propRulingType,
+  rulingThickness: propRulingThickness,
 }) {
   const [activeTool, setActiveTool] = useState(activeDoc?.activeTool || (activeDoc?.isHandwriting ? "pen" : "text"));
   const [openPopover, setOpenPopover] = useState(null); // 'pen' | 'ruling' | 'add' | 'ai' | 'more'
@@ -167,12 +241,18 @@ export function NotesFloatingDock({
     }
   }, [activeDoc?.activeTool, activeDoc?.isHandwriting]);
 
+  const penRef = useRef(null);
+  const rulingRef = useRef(null);
+  const addRef = useRef(null);
+  const aiRef = useRef(null);
+  const moreRef = useRef(null);
+
   const refs = {
-    pen: useRef(null),
-    ruling: useRef(null),
-    add: useRef(null),
-    ai: useRef(null),
-    more: useRef(null),
+    pen: penRef,
+    ruling: rulingRef,
+    add: addRef,
+    ai: aiRef,
+    more: moreRef,
   };
 
   const closeAll = () => setOpenPopover(null);
@@ -181,8 +261,8 @@ export function NotesFloatingDock({
   const savedRuling = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_ruling") : null;
   const savedThickness = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_thickness") : null;
 
-  const rulingType = activeDoc?.rulingType || savedRuling || "ruled";
-  const rulingThickness = activeDoc?.rulingThickness || savedThickness || "normal";
+  const rulingType = propRulingType || activeDoc?.rulingType || savedRuling || "ruled";
+  const rulingThickness = propRulingThickness || activeDoc?.rulingThickness || savedThickness || "normal";
 
   const handleSetRuling = (newType) => {
     try {
@@ -476,7 +556,14 @@ export function NotesFloatingDock({
 
           {/* Pen Tool Popover */}
           {openPopover === "pen" && (
-            <ToolbarPopover anchorRef={refs.pen} onClose={closeAll} width={230}>
+            <ToolbarPopover
+              anchorRef={refs.pen}
+              onClose={closeAll}
+              width={230}
+              rulingType={rulingType}
+              rulingThickness={rulingThickness}
+              isDarkMode={isDarkMode}
+            >
               <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
                 Pen Tools & Inking
               </div>
@@ -752,7 +839,14 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "ruling" && (
-            <ToolbarPopover anchorRef={refs.ruling} onClose={closeAll} width={230}>
+            <ToolbarPopover
+              anchorRef={refs.ruling}
+              onClose={closeAll}
+              width={230}
+              rulingType={rulingType}
+              rulingThickness={rulingThickness}
+              isDarkMode={isDarkMode}
+            >
               <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
                 Paper Ruling Pattern
               </div>
@@ -842,7 +936,14 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "add" && (
-            <ToolbarPopover anchorRef={refs.add} onClose={closeAll} width={190}>
+            <ToolbarPopover
+              anchorRef={refs.add}
+              onClose={closeAll}
+              width={190}
+              rulingType={rulingType}
+              rulingThickness={rulingThickness}
+              isDarkMode={isDarkMode}
+            >
               <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
                 Insert Content
               </div>
@@ -922,17 +1023,25 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "ai" && (
-            <ToolbarPopover anchorRef={refs.ai} onClose={closeAll} width={230} anchorAlign="right">
+            <ToolbarPopover
+              anchorRef={refs.ai}
+              onClose={closeAll}
+              width={230}
+              anchorAlign="right"
+              rulingType={rulingType}
+              rulingThickness={rulingThickness}
+              isDarkMode={isDarkMode}
+            >
               <div className="px-2 py-1 text-[10px] font-semibold tracking-wider uppercase text-violet-600 dark:text-violet-400">
                 Regaarder AI Note Assistant
               </div>
               <div className="flex flex-col gap-0.5">
                 {[
-                  { id: "summarize", label: "Summarize thoughts", sub: "Generate executive bullet points" },
-                  { id: "checklist", label: "Extract action items", sub: "Convert ideas into interactive checklist" },
-                  { id: "continue", label: "Continue writing", sub: "Brainstorm strategic next steps" },
-                  { id: "refine", label: "Refine phrasing", sub: "Elevate tone while preserving handwritten voice" },
-                ].map(({ id, label, sub }) => (
+                  { id: "summarize", label: "Summarize thoughts", sub: "Generate executive bullet points", icon: FileText },
+                  { id: "checklist", label: "Extract action items", sub: "Convert ideas into interactive checklist", icon: ListChecks },
+                  { id: "continue", label: "Continue writing", sub: "Brainstorm strategic next steps", icon: ArrowRight },
+                  { id: "refine", label: "Refine phrasing", sub: "Elevate tone while preserving handwritten voice", icon: Wand2 },
+                ].map(({ id, label, sub, icon: ActionIcon }) => (
                   <button
                     key={id}
                     type="button"
@@ -942,13 +1051,13 @@ export function NotesFloatingDock({
                     }}
                     className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer group"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <RegaarderAiIcon size={13} className="text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform" />
+                    <div className="flex items-center gap-2">
+                      <ActionIcon size={13} className="text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform shrink-0" />
                       <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-violet-700 dark:hover:text-violet-300">
                         {label}
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 pl-4 mt-0.5">{sub}</div>
+                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 pl-5 mt-0.5">{sub}</div>
                   </button>
                 ))}
               </div>
@@ -979,7 +1088,15 @@ export function NotesFloatingDock({
           </button>
 
           {openPopover === "more" && (
-            <ToolbarPopover anchorRef={refs.more} onClose={closeAll} width={230} anchorAlign="right">
+            <ToolbarPopover
+              anchorRef={refs.more}
+              onClose={closeAll}
+              width={230}
+              anchorAlign="right"
+              rulingType={rulingType}
+              rulingThickness={rulingThickness}
+              isDarkMode={isDarkMode}
+            >
               <div className="px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
                 Note Actions
               </div>
@@ -2496,18 +2613,32 @@ export default function RegaarderNotebookViewer({
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
   const [sortAscending, setSortAscending] = useState(false);
   const sidebarLeaveTimerRef = useRef(null);
+  const sidebarEnterTimerRef = useRef(null);
 
-  const rulingType = activeDoc?.rulingType || "ruled";
-  const rulingThickness = activeDoc?.rulingThickness || "normal";
+  const savedRuling = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_ruling") : null;
+  const savedThickness = typeof window !== "undefined" ? localStorage.getItem("regaarder_notes_default_thickness") : null;
+
+  const rulingType = activeDoc?.rulingType || savedRuling || "ruled";
+  const rulingThickness = activeDoc?.rulingThickness || savedThickness || "normal";
   const isHandwriting = activeDoc?.isHandwriting || activeDoc?.activeTool === "pen";
 
-  // Hover detection handlers for left edge (Instantaneous reveal)
-  const handleLeftEdgeEnter = () => {
+  // Hover detection handlers for left edge with deliberate intent debounce
+  const handleLeftEdgeEnter = (immediate = false) => {
     if (sidebarLeaveTimerRef.current) {
       clearTimeout(sidebarLeaveTimerRef.current);
       sidebarLeaveTimerRef.current = null;
     }
-    setIsSidebarOpen(true);
+    if (immediate) {
+      if (sidebarEnterTimerRef.current) clearTimeout(sidebarEnterTimerRef.current);
+      setIsSidebarOpen(true);
+      return;
+    }
+    if (!sidebarEnterTimerRef.current) {
+      sidebarEnterTimerRef.current = setTimeout(() => {
+        setIsSidebarOpen(true);
+        sidebarEnterTimerRef.current = null;
+      }, 160);
+    }
   };
 
   const handleSidebarMouseEnter = () => {
@@ -2515,17 +2646,25 @@ export default function RegaarderNotebookViewer({
       clearTimeout(sidebarLeaveTimerRef.current);
       sidebarLeaveTimerRef.current = null;
     }
+    if (sidebarEnterTimerRef.current) {
+      clearTimeout(sidebarEnterTimerRef.current);
+      sidebarEnterTimerRef.current = null;
+    }
     setIsSidebarOpen(true);
   };
 
   const handleSidebarMouseLeave = () => {
+    if (sidebarEnterTimerRef.current) {
+      clearTimeout(sidebarEnterTimerRef.current);
+      sidebarEnterTimerRef.current = null;
+    }
     if (isSidebarPinned) return;
     if (sidebarLeaveTimerRef.current) {
       clearTimeout(sidebarLeaveTimerRef.current);
     }
     sidebarLeaveTimerRef.current = setTimeout(() => {
       setIsSidebarOpen(false);
-    }, 200);
+    }, 220);
   };
 
   // Real-time word and character counts
@@ -2536,36 +2675,54 @@ export default function RegaarderNotebookViewer({
     return { words, chars: text.length };
   }, [activeDoc?.bodyHtml]);
 
-  // Track mouse coordinates to seamlessly open the Notes modal when hovering near the left edge
+  // Track mouse coordinates to seamlessly open the Notes modal when hovering near the left edge,
+  // while strictly protecting the top-left Home / header control cluster from inadvertent triggers
   const handleContainerMouseMove = (e) => {
-    // If mouse is within 72px from left edge, instantly reveal notes sidebar
     const rect = e.currentTarget.getBoundingClientRect();
     const relX = e.clientX - rect.left;
-    if (relX >= 0 && relX <= 72) {
-      handleLeftEdgeEnter();
+    const relY = e.clientY - rect.top;
+
+    // Completely ignore hover reveal in the top 72px header area where Home and Notes buttons reside
+    if (relY <= 72) {
+      if (sidebarEnterTimerRef.current) {
+        clearTimeout(sidebarEnterTimerRef.current);
+        sidebarEnterTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Below the header: if mouse is within 48px from left edge, trigger intentional reveal
+    if (relX >= 0 && relX <= 48) {
+      handleLeftEdgeEnter(false);
+    } else {
+      if (sidebarEnterTimerRef.current) {
+        clearTimeout(sidebarEnterTimerRef.current);
+        sidebarEnterTimerRef.current = null;
+      }
     }
   };
 
   return (
     <div 
+      id="regaarder-notebook-root"
       onMouseMove={handleContainerMouseMove}
       className="relative flex flex-col h-full w-full min-h-full overflow-hidden bg-[#FCFAF7] dark:bg-[#18181A]"
     >
-      {/* 1. Left Edge Hover Trigger Zone (Expanded 72px invisible strip along left margin) */}
+      {/* 1. Left Edge Hover Trigger Zone (Active ONLY below the top header, top-20 to bottom) */}
       <div
-        onMouseEnter={handleLeftEdgeEnter}
-        className="absolute top-0 bottom-0 left-0 w-18 z-40 pointer-events-auto"
+        onMouseEnter={() => handleLeftEdgeEnter(false)}
+        className="absolute top-20 bottom-0 left-0 w-8 z-30 pointer-events-auto"
         title="Hover to reveal Notes list"
       />
 
-      {/* 2. Top-left floating control cluster: Home return button + Notes sidebar pill */}
+      {/* 2. Top-left floating control cluster: Home return button + Notes sidebar pill (z-50) */}
       {!isSidebarOpen && !isSidebarPinned && (
-        <div className="absolute left-4 top-4 z-30 flex items-center gap-1.5 animate-in fade-in select-none">
+        <div className="absolute left-4 top-4 z-50 flex items-center gap-1.5 animate-in fade-in select-none">
           {onGoHome && (
             <button
               type="button"
               onClick={onGoHome}
-              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-zinc-700 transition-all cursor-pointer group"
+              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-slate-600 dark:text-zinc-300 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300/80 dark:hover:border-amber-800/80 hover:bg-amber-50/40 dark:hover:bg-amber-950/30 transition-all cursor-pointer group"
               title="Return to Home Dashboard"
             >
               <Home size={14} strokeWidth={2} className="group-hover:scale-105 transition-transform" />
@@ -2633,6 +2790,8 @@ export default function RegaarderNotebookViewer({
         onRedo={onRedo}
         stats={stats}
         isDarkMode={isDarkMode}
+        rulingType={rulingType}
+        rulingThickness={rulingThickness}
       />
     </div>
   );
