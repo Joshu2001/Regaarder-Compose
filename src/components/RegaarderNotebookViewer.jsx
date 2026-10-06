@@ -2535,8 +2535,13 @@ function RuledNotebookCanvas({
             )}
           </svg>
 
-          {/* Dedicated Note Title Header with Elegant Placeholder */}
-          <div className="relative z-15 w-full mb-1">
+          {/* Dedicated Note Title Header with Elegant Placeholder (offset down 1 ruled line so floating navigation pills never occlude Title) */}
+          <div 
+            className="relative z-15 w-full mb-1"
+            style={{
+              marginTop: `${baselinePx}px`,
+            }}
+          >
             <input
               ref={titleRef}
               type="text"
