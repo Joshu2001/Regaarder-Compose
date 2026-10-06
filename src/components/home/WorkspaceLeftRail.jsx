@@ -34,15 +34,21 @@ const OPERATE_APPS = [
 export default function WorkspaceLeftRail({
   activeTab = "home",
   onSelectTab,
+  onNewWorkspace,
   onNewProject,
   onLaunch,
   onOpenTasks,
   onOpenSchedule,
   onOpenSettings,
   onOpenFeedback,
-  onClose
+  onClose,
+  workspaces = [],
+  currentWorkspace = null,
+  onSelectWorkspace,
+  onOpenWorkspaceSwitcher
 }) {
   const [selectedWorkspaceName] = useState("Team Space");
+  const displayName = currentWorkspace?.name || selectedWorkspaceName;
 
   return (
     <aside className="w-64 md:w-56 shrink-0 border-r border-zinc-200/80 dark:border-zinc-800/80 bg-[#f9fafb] dark:bg-[#151518] px-3 py-4 flex flex-col justify-between select-none h-full overflow-y-auto no-scrollbar transition-colors">
@@ -65,16 +71,16 @@ export default function WorkspaceLeftRail({
         )}
 
         {/* Executive Workspace Row: Uncluttered Header + Full-Width Dropdown Card */}
-        <div>
+        <div className="group/ws">
           <div className="flex items-center justify-between px-1 pb-1.5">
             <span className="text-[10.5px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
               Workspace
             </span>
             <button
               type="button"
-              onClick={onNewProject}
-              title="Create new project or doc"
-              className="w-5 h-5 rounded-md hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer border-none bg-transparent"
+              onClick={onNewWorkspace || onNewProject}
+              title="Create new workspace"
+              className="w-5 h-5 rounded-md hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center opacity-0 group-hover/ws:opacity-100 transition-opacity duration-150 cursor-pointer border-none bg-transparent"
             >
               <Plus size={13} strokeWidth={2.4} />
             </button>
@@ -82,15 +88,25 @@ export default function WorkspaceLeftRail({
 
           <button
             type="button"
-            onClick={onNewProject}
+            onClick={(e) => {
+              if (onOpenWorkspaceSwitcher) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                onOpenWorkspaceSwitcher(rect);
+              } else if (onNewWorkspace) {
+                onNewWorkspace();
+              }
+            }}
             className="w-full h-8 px-2.5 rounded-lg bg-zinc-100/70 hover:bg-zinc-200/60 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/50 flex items-center justify-between text-left cursor-pointer transition-all group"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-5 h-5 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 flex items-center justify-center shrink-0">
+              <div
+                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-white text-[10px]"
+                style={{ backgroundColor: currentWorkspace?.color || "#7C3AED" }}
+              >
                 <Users size={12} strokeWidth={2.2} />
               </div>
               <span className="text-[12.5px] font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                {selectedWorkspaceName}
+                {displayName}
               </span>
             </div>
             <ChevronDown size={13} className="text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 shrink-0 ml-1.5" />
@@ -122,20 +138,35 @@ export default function WorkspaceLeftRail({
           </button>
 
           {/* Projects Item */}
-          <button
-            type="button"
-            onClick={() => onSelectTab && onSelectTab("projects")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
-              activeTab === "projects" || activeTab === "library"
-                ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-            }`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Folder size={15} className={activeTab === "projects" || activeTab === "library" ? "text-zinc-950 dark:text-white" : "text-zinc-500"} />
-              <span className="truncate">Projects</span>
-            </div>
-          </button>
+          <div className="relative group/proj">
+            <button
+              type="button"
+              onClick={() => onSelectTab && onSelectTab("projects")}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
+                activeTab === "projects" || activeTab === "library"
+                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Folder size={15} className={activeTab === "projects" || activeTab === "library" ? "text-zinc-950 dark:text-white" : "text-zinc-500"} />
+                <span className="truncate">Projects</span>
+              </div>
+            </button>
+            {onNewProject && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNewProject();
+                }}
+                title="Create project"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded hover:bg-zinc-300/70 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center opacity-0 group-hover/proj:opacity-100 transition-opacity duration-150 cursor-pointer border-none bg-transparent"
+              >
+                <Plus size={12} strokeWidth={2.4} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* WORKSPACE APPS Section with Native Color Accents */}

@@ -12,6 +12,15 @@ import RegaarderFeedbackModal from "./components/feedback/RegaarderFeedbackModal
 import { FeedbackIcon } from "./components/RegaarderProductIcons";
 import ProjectsWorkspace from "./components/projects/ProjectsWorkspace";
 import CreateProjectModal from "./components/projects/CreateProjectModal";
+import CreateWorkspaceModal from "./components/home/CreateWorkspaceModal";
+import WorkspaceSwitcherPopover from "./components/home/WorkspaceSwitcherPopover";
+import {
+  readWorkspaces,
+  getActiveWorkspace,
+  setActiveWorkspaceId,
+  createWorkspaceLocalAndRemote,
+  syncWorkspacesFromRemote
+} from "./services/workspaceStore";
 import {
   readWorkspaceProjects,
   createProject,
@@ -54,10 +63,36 @@ export default function RegaarderComposeLanding({
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
+  const [workspacesList, setWorkspacesList] = useState(() => readWorkspaces());
+  const [currentWorkspace, setCurrentWorkspace] = useState(() => getActiveWorkspace());
+  const [workspaceSwitcherPopoverAnchor, setWorkspaceSwitcherPopoverAnchor] = useState(null);
+
+  // Sync with remote backend workspaces on mount
+  React.useEffect(() => {
+    syncWorkspacesFromRemote().then((merged) => {
+      if (Array.isArray(merged) && merged.length > 0) {
+        setWorkspacesList(merged);
+      }
+    });
+  }, []);
+
   const [projects, setProjects] = useState(() => readWorkspaceProjects());
   const [documents, setDocuments] = useState(() => readWorkspaceDocuments());
   const [waveKey, setWaveKey] = useState(0);
   const { isPaywallOpen, closePaywall } = useEntitlements();
+
+  const handleCreateWorkspace = async (newWs) => {
+    const created = await createWorkspaceLocalAndRemote(newWs);
+    setWorkspacesList(readWorkspaces());
+    setCurrentWorkspace(created);
+  };
+
+  const handleSelectWorkspace = (ws) => {
+    setActiveWorkspaceId(ws.id);
+    setCurrentWorkspace(ws);
+    setWorkspaceSwitcherPopoverAnchor(null);
+  };
 
   const [activeProjectId, setActiveProjectId] = useState(initialNav?.projectId || null);
   const [activeProjectTab, setActiveProjectTab] = useState(initialNav?.projectTab || "overview");
@@ -172,6 +207,11 @@ export default function RegaarderComposeLanding({
           <WorkspaceLeftRail
             activeTab={activeRailTab}
             onSelectTab={setActiveRailTab}
+            workspaces={workspacesList}
+            currentWorkspace={currentWorkspace}
+            onSelectWorkspace={handleSelectWorkspace}
+            onOpenWorkspaceSwitcher={(rect) => setWorkspaceSwitcherPopoverAnchor(rect)}
+            onNewWorkspace={() => setShowCreateWorkspaceModal(true)}
             onNewProject={() => setShowCreateProjectModal(true)}
             onLaunch={onLaunch}
             onOpenTasks={() => setActiveRailTab("tasks")}
@@ -199,8 +239,19 @@ export default function RegaarderComposeLanding({
             <div className="relative z-10 h-full animate-in slide-in-from-left duration-250 ease-out shadow-2xl">
               <WorkspaceLeftRail
                 activeTab={activeRailTab}
+                workspaces={workspacesList}
+                currentWorkspace={currentWorkspace}
+                onSelectWorkspace={(ws) => {
+                  handleSelectWorkspace(ws);
+                  setIsMobileDrawerOpen(false);
+                }}
+                onOpenWorkspaceSwitcher={(rect) => setWorkspaceSwitcherPopoverAnchor(rect)}
                 onSelectTab={(tab) => {
                   setActiveRailTab(tab);
+                  setIsMobileDrawerOpen(false);
+                }}
+                onNewWorkspace={() => {
+                  setShowCreateWorkspaceModal(true);
                   setIsMobileDrawerOpen(false);
                 }}
                 onNewProject={() => {
@@ -368,6 +419,27 @@ export default function RegaarderComposeLanding({
         onClose={() => setShowFeedbackModal(false)}
         activeApp="Workspace"
         activeFile={null}
+      />
+
+      {/* Create Workspace Modal */}
+      <CreateWorkspaceModal
+        isOpen={showCreateWorkspaceModal}
+        onClose={() => setShowCreateWorkspaceModal(false)}
+        onCreate={handleCreateWorkspace}
+      />
+
+      {/* Workspace Switcher Popover */}
+      <WorkspaceSwitcherPopover
+        isOpen={Boolean(workspaceSwitcherPopoverAnchor)}
+        anchorRect={workspaceSwitcherPopoverAnchor}
+        onClose={() => setWorkspaceSwitcherPopoverAnchor(null)}
+        workspaces={workspacesList}
+        currentWorkspace={currentWorkspace}
+        onSelectWorkspace={handleSelectWorkspace}
+        onNewWorkspace={() => {
+          setWorkspaceSwitcherPopoverAnchor(null);
+          setShowCreateWorkspaceModal(true);
+        }}
       />
 
       {/* Create Project Modal */}
