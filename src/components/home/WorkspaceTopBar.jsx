@@ -39,7 +39,7 @@ export default function WorkspaceTopBar({
         WebkitAppRegion: 'drag',
         paddingRight: isElectron ? '146px' : undefined
       }}
-      className="h-[50px] px-3 sm:px-6 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
+      className="h-[50px] px-3 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
     >
       {/* Left Column: Authoritative Regaarder Brand Identity */}
       <div className="flex items-center gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>

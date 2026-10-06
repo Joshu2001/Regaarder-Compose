@@ -6,7 +6,8 @@ import {
   Settings,
   Plus,
   X,
-  ChevronDown
+  ChevronDown,
+  Users
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
 import { FeedbackIcon } from "../RegaarderProductIcons";
@@ -82,11 +83,11 @@ export default function WorkspaceLeftRail({
           <button
             type="button"
             onClick={onNewProject}
-            className="w-full h-8 px-2.5 rounded-lg bg-white dark:bg-[#1e1e22] border border-zinc-200/90 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 flex items-center justify-between text-left cursor-pointer transition-all shadow-2xs group"
+            className="w-full h-8 px-2.5 rounded-lg bg-zinc-100/70 hover:bg-zinc-200/60 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/50 flex items-center justify-between text-left cursor-pointer transition-all group"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-4 h-4 rounded bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center shrink-0">
-                <RegaarderBrandIcon size={10} />
+              <div className="w-5 h-5 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 flex items-center justify-center shrink-0">
+                <Users size={12} strokeWidth={2.2} />
               </div>
               <span className="text-[12.5px] font-medium text-zinc-800 dark:text-zinc-200 truncate">
                 {selectedWorkspaceName}
@@ -98,19 +99,16 @@ export default function WorkspaceLeftRail({
 
         {/* Core Navigation Hub */}
         <div className="space-y-0.5 pt-1">
-          {/* Home Item with Neutral Anchored Indicator */}
+          {/* Home Item */}
           <button
             type="button"
             onClick={() => onSelectTab && onSelectTab("home")}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
               activeTab === "home"
                 ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
             }`}
           >
-            {activeTab === "home" && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
-            )}
             <svg
               width="16"
               height="16"
@@ -127,15 +125,12 @@ export default function WorkspaceLeftRail({
           <button
             type="button"
             onClick={() => onSelectTab && onSelectTab("projects")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
               activeTab === "projects" || activeTab === "library"
                 ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
             }`}
           >
-            {(activeTab === "projects" || activeTab === "library") && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
-            )}
             <div className="flex items-center gap-2.5 min-w-0">
               <Folder size={15} className={activeTab === "projects" || activeTab === "library" ? "text-zinc-950 dark:text-white" : "text-zinc-500"} />
               <span className="truncate">Projects</span>
@@ -178,15 +173,12 @@ export default function WorkspaceLeftRail({
                 if (onOpenTasks) onOpenTasks();
                 else if (onSelectTab) onSelectTab("tasks");
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
                 activeTab === "tasks"
                   ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
               }`}
             >
-              {activeTab === "tasks" && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
-              )}
               <CheckSquare
                 size={15}
                 className={activeTab === "tasks" ? "text-zinc-950 dark:text-white" : "text-zinc-500"}
@@ -201,15 +193,12 @@ export default function WorkspaceLeftRail({
                 if (onOpenSchedule) onOpenSchedule();
                 else if (onSelectTab) onSelectTab("schedule");
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
                 activeTab === "schedule"
                   ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
               }`}
             >
-              {activeTab === "schedule" && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
-              )}
               <Calendar
                 size={15}
                 className={activeTab === "schedule" ? "text-zinc-950 dark:text-white" : "text-zinc-500"}
@@ -251,15 +240,12 @@ export default function WorkspaceLeftRail({
               onSelectTab("feedback");
             }
           }}
-          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left relative ${
+          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left ${
             activeTab === "feedback"
               ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
               : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
           }`}
         >
-          {activeTab === "feedback" && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
-          )}
           <FeedbackIcon size={15} className={activeTab === "feedback" ? "text-zinc-950 dark:text-white" : "text-zinc-500"} />
           <span className="truncate">Feedback</span>
         </button>
