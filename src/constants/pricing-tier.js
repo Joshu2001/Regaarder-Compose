@@ -76,7 +76,7 @@ export const PricingTiers = [
     description: 'Advanced productivity suite with full AI models, deep indexing, and priority throughput.',
     features: [
       'Unlimited workspaces and timeline indexing',
-      'Circle AI Signature intelligence engine',
+      'Orb Intelligence engine',
       'Real-time document diffing and version sync',
       'Priority inference compute and zero-queue queueing',
       'Purchasing power localized pricing',

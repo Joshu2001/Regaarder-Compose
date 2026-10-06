@@ -90,12 +90,12 @@ export default function WorkspaceTopBar({
 
       {/* Right Column: Harmonized Executive-Tier Tool Cluster */}
       <div className="flex items-center justify-end gap-1.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
-        {/* Subtle, restrained Pricing entry */}
+        {/* Restrained executive Upgrade entry */}
         <a
           href="/pricing"
-          className="hidden sm:inline-flex items-center h-7 px-2.5 rounded-md text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/70 dark:border-zinc-800 transition-colors"
+          className="hidden sm:inline-flex items-center h-7 px-2.5 rounded-md text-[11.5px] font-semibold text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800 transition-colors"
         >
-          Pricing
+          Upgrade
         </a>
 
         {/* Notifications Button */}
