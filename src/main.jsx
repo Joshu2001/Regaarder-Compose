@@ -73,6 +73,7 @@ const hash = typeof window !== 'undefined' ? window.location.hash : '';
 import PricingPage from './components/pricing/PricingPage.jsx';
 import WelcomePage from './components/pricing/WelcomePage.jsx';
 import CheckoutPage from './components/pricing/CheckoutPage.jsx';
+import DownloadPage from './components/pricing/DownloadPage.jsx';
 import { TermsPage, PrivacyPage, RefundPage } from './components/legal/LegalPage.jsx';
 
 if (hash.includes('floating-pip-widget')) {
@@ -107,6 +108,12 @@ if (hash.includes('floating-pip-widget')) {
   root.render(
     <ErrorBoundary>
       <WelcomePage />
+    </ErrorBoundary>
+  );
+} else if (pathname === '/download' || hash === '#/download' || pathname === '/landing' || hash === '#/landing') {
+  root.render(
+    <ErrorBoundary>
+      <DownloadPage />
     </ErrorBoundary>
   );
 } else if (pathname === '/terms' || hash === '#/terms') {
