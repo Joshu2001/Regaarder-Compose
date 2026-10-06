@@ -1,14 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Folder,
   CheckSquare,
   Calendar,
   Settings,
   Plus,
-  X
+  X,
+  ChevronDown
 } from "lucide-react";
 import { AppNativeSvgIcon } from "./AppNativeSvgIcon";
-import { FeedbackIcon, NotesIcon } from "../RegaarderProductIcons";
+import { FeedbackIcon } from "../RegaarderProductIcons";
+import RegaarderBrandIcon from "../RegaarderBrandIcon";
 
 // Workspace Creation Applications (Documents & Canvases)
 const WORKSPACE_APPS = [
@@ -20,7 +22,7 @@ const WORKSPACE_APPS = [
   { id: "room", label: "Room", type: "room" }
 ];
 
-// Operational & Execution Tools (Coordination, Scheduling, Integration)
+// Operational & Execution Tools
 const OPERATE_APPS = [
   { id: "tasks", label: "Tasks", icon: "tasks" },
   { id: "schedule", label: "Schedule", icon: "schedule" },
@@ -39,19 +41,21 @@ export default function WorkspaceLeftRail({
   onOpenFeedback,
   onClose
 }) {
+  const [selectedWorkspaceName] = useState("Team Space");
+
   return (
-    <aside className="w-64 md:w-56 shrink-0 border-r border-slate-200/60 dark:border-white/[0.06] bg-[#F9FAFB] dark:bg-zinc-900 px-3.5 py-4 sm:py-5 flex flex-col justify-between select-none h-full overflow-y-auto no-scrollbar">
-      <div className="space-y-6">
+    <aside className="w-64 md:w-56 shrink-0 border-r border-zinc-200/80 dark:border-zinc-800/80 bg-[#f9fafb] dark:bg-[#151518] px-3 py-4 flex flex-col justify-between select-none h-full overflow-y-auto no-scrollbar transition-colors">
+      <div className="space-y-4">
         {/* Mobile Header with Close button */}
         {onClose && (
-          <div className="flex md:hidden items-center justify-between pb-2 border-b border-slate-200/60 dark:border-white/[0.06]">
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+          <div className="flex md:hidden items-center justify-between pb-2 border-b border-zinc-200/80 dark:border-zinc-800">
+            <span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
               Navigation
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
               title="Close menu"
             >
               <X size={16} />
@@ -59,68 +63,90 @@ export default function WorkspaceLeftRail({
           </div>
         )}
 
-        {/* Core Workspace Hub: Home & Projects */}
-        <div className="space-y-1">
+        {/* Executive Workspace Row: Uncluttered Header + Full-Width Dropdown Card */}
+        <div>
+          <div className="flex items-center justify-between px-1 pb-1.5">
+            <span className="text-[10.5px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+              Workspace
+            </span>
+            <button
+              type="button"
+              onClick={onNewProject}
+              title="Create new project or doc"
+              className="w-5 h-5 rounded-md hover:bg-zinc-200/70 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer border-none bg-transparent"
+            >
+              <Plus size={13} strokeWidth={2.4} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onNewProject}
+            className="w-full h-8 px-2.5 rounded-lg bg-white dark:bg-[#1e1e22] border border-zinc-200/90 dark:border-zinc-700/80 hover:border-zinc-300 dark:hover:border-zinc-600 flex items-center justify-between text-left cursor-pointer transition-all shadow-2xs group"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-4 h-4 rounded bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center shrink-0">
+                <RegaarderBrandIcon size={10} />
+              </div>
+              <span className="text-[12.5px] font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                {selectedWorkspaceName}
+              </span>
+            </div>
+            <ChevronDown size={13} className="text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 shrink-0 ml-1.5" />
+          </button>
+        </div>
+
+        {/* Core Navigation Hub */}
+        <div className="space-y-0.5 pt-1">
+          {/* Home Item with Neutral Anchored Indicator */}
           <button
             type="button"
             onClick={() => onSelectTab && onSelectTab("home")}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer border-none ${
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
               activeTab === "home"
-                ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-white/[0.04]"
+                ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
             }`}
           >
+            {activeTab === "home" && (
+              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
+            )}
             <svg
-              width="17"
-              height="17"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
-              className={activeTab === "home" ? "fill-[#7C3AED] text-[#7C3AED]" : "fill-none stroke-slate-500 stroke-2"}
+              className={activeTab === "home" ? "fill-zinc-900 text-zinc-900 dark:fill-white dark:text-white" : "fill-none stroke-zinc-500 stroke-2"}
             >
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" fill={activeTab === "home" ? "#EDE9FE" : "none"} />
+              <polyline points="9 22 9 12 15 12 15 22" fill={activeTab === "home" ? "currentColor" : "none"} />
             </svg>
-            <span>Home</span>
+            <span className="truncate">Home</span>
           </button>
 
-          <div className="relative group/proj flex items-center">
-            <button
-              type="button"
-              onClick={() => onSelectTab && onSelectTab("projects")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer border-none ${
-                activeTab === "projects" || activeTab === "library"
-                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-white/[0.04]"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Folder size={16} className={activeTab === "projects" || activeTab === "library" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-500"} />
-                <span>Projects</span>
-              </div>
-            </button>
-
-            {/* Quick Create Project Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onNewProject) {
-                  onNewProject();
-                } else if (onSelectTab) {
-                  onSelectTab("projects");
-                }
-              }}
-              title="Create new project"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-lg text-slate-500 hover:text-[#7C3AED] dark:text-zinc-400 dark:hover:text-violet-300 hover:bg-slate-200/70 dark:hover:bg-zinc-700/60 opacity-0 group-hover/proj:opacity-100 transition-all cursor-pointer border-none bg-transparent z-10"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+          {/* Projects Item */}
+          <button
+            type="button"
+            onClick={() => onSelectTab && onSelectTab("projects")}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
+              activeTab === "projects" || activeTab === "library"
+                ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+            }`}
+          >
+            {(activeTab === "projects" || activeTab === "library") && (
+              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
+            )}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Folder size={15} className={activeTab === "projects" || activeTab === "library" ? "text-zinc-950 dark:text-white" : "text-zinc-500"} />
+              <span className="truncate">Projects</span>
+            </div>
+          </button>
         </div>
 
-        {/* WORKSPACE: Creation & Thinking Surface */}
+        {/* WORKSPACE APPS Section with Native Color Accents */}
         <div>
-          <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400/90 dark:text-zinc-500 uppercase tracking-wider">
-            Workspace
+          <div className="px-2 pb-1.5 text-[10.5px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+            Workspace Apps
           </div>
 
           <div className="space-y-0.5">
@@ -129,18 +155,18 @@ export default function WorkspaceLeftRail({
                 key={app.id}
                 type="button"
                 onClick={() => onLaunch && onLaunch(app.id)}
-                className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer border-none group text-left"
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer border-none group text-left"
               >
-                <AppNativeSvgIcon type={app.type} size={18} />
+                <AppNativeSvgIcon type={app.type} size={16} />
                 <span className="truncate">{app.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* OPERATE: Execution, Communication, Scheduling */}
+        {/* OPERATE Section */}
         <div>
-          <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400/90 dark:text-zinc-500 uppercase tracking-wider">
+          <div className="px-2 pb-1.5 text-[10.5px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             Operate
           </div>
 
@@ -152,17 +178,20 @@ export default function WorkspaceLeftRail({
                 if (onOpenTasks) onOpenTasks();
                 else if (onSelectTab) onSelectTab("tasks");
               }}
-              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
                 activeTab === "tasks"
-                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40"
+                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
               }`}
             >
+              {activeTab === "tasks" && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
+              )}
               <CheckSquare
-                size={16}
-                className={activeTab === "tasks" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
+                size={15}
+                className={activeTab === "tasks" ? "text-zinc-950 dark:text-white" : "text-zinc-500"}
               />
-              <span>Tasks</span>
+              <span className="truncate">Tasks</span>
             </button>
 
             {/* Schedule */}
@@ -172,26 +201,29 @@ export default function WorkspaceLeftRail({
                 if (onOpenSchedule) onOpenSchedule();
                 else if (onSelectTab) onSelectTab("schedule");
               }}
-              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none relative text-left ${
                 activeTab === "schedule"
-                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40"
+                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
               }`}
             >
+              {activeTab === "schedule" && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
+              )}
               <Calendar
-                size={16}
-                className={activeTab === "schedule" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
+                size={15}
+                className={activeTab === "schedule" ? "text-zinc-950 dark:text-white" : "text-zinc-500"}
               />
-              <span>Schedule</span>
+              <span className="truncate">Schedule</span>
             </button>
 
             {/* Relay */}
             <button
               type="button"
               onClick={() => onLaunch && onLaunch("relay")}
-              className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer border-none group text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer border-none group text-left"
             >
-              <AppNativeSvgIcon type="relay" size={18} />
+              <AppNativeSvgIcon type="relay" size={16} />
               <span className="truncate">Relay</span>
             </button>
 
@@ -199,9 +231,9 @@ export default function WorkspaceLeftRail({
             <button
               type="button"
               onClick={() => onLaunch && onLaunch("browser")}
-              className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer border-none group text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer border-none group text-left"
             >
-              <AppNativeSvgIcon type="browser" size={18} />
+              <AppNativeSvgIcon type="browser" size={16} />
               <span className="truncate">Browser</span>
             </button>
           </div>
@@ -209,7 +241,7 @@ export default function WorkspaceLeftRail({
       </div>
 
       {/* Bottom Actions: Feedback & Settings */}
-      <div className="pt-4 space-y-1 border-t border-slate-200/60 dark:border-white/[0.04]">
+      <div className="pt-3 space-y-0.5 border-t border-zinc-200/80 dark:border-zinc-800">
         <button
           type="button"
           onClick={() => {
@@ -219,23 +251,26 @@ export default function WorkspaceLeftRail({
               onSelectTab("feedback");
             }
           }}
-          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+          className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none text-left relative ${
             activeTab === "feedback"
-              ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-              : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40"
+              ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold"
+              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
           }`}
         >
-          <FeedbackIcon size={16} className={activeTab === "feedback" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"} />
-          <span>Feedback</span>
+          {activeTab === "feedback" && (
+            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-zinc-900 dark:bg-white" />
+          )}
+          <FeedbackIcon size={15} className={activeTab === "feedback" ? "text-zinc-950 dark:text-white" : "text-zinc-500"} />
+          <span className="truncate">Feedback</span>
         </button>
 
         <button
           type="button"
           onClick={onOpenSettings}
-          className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer border-none"
+          className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer border-none text-left"
         >
-          <Settings size={16} className="text-slate-400" />
-          <span>Settings</span>
+          <Settings size={15} className="text-zinc-500" />
+          <span className="truncate">Settings</span>
         </button>
       </div>
     </aside>

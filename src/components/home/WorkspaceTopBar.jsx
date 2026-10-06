@@ -39,75 +39,72 @@ export default function WorkspaceTopBar({
         WebkitAppRegion: 'drag',
         paddingRight: isElectron ? '146px' : undefined
       }}
-      className="h-[52px] px-3 sm:px-6 border-b border-slate-200/70 dark:border-white/[0.06] bg-white/80 dark:bg-zinc-900/90 backdrop-blur-md flex items-center justify-between shrink-0 select-none z-30 transition-colors"
+      className="h-[50px] px-3 sm:px-6 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
     >
-      {/* Left Column: Brand Identity & Workspace Switcher */}
+      {/* Left Column: Authoritative Regaarder Brand Identity */}
       <div className="flex items-center gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
         {onToggleMobileMenu && (
           <button
             type="button"
             onClick={onToggleMobileMenu}
-            className="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
+            className="md:hidden p-1.5 -ml-1 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer border-none bg-transparent"
             title="Open navigation menu"
             aria-label="Open navigation menu"
           >
             <Menu size={18} />
           </button>
         )}
-        <button
-          type="button"
-          onClick={onOpenWorkspaceSwitcher}
-          className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-1 -m-1 rounded-md hover:bg-slate-100/70 dark:hover:bg-zinc-800/70 transition-colors outline-none group text-left"
-        >
+        <div className="flex items-center gap-2 select-none">
           <div className="w-5 h-5 flex items-center justify-center shrink-0">
-            <RegaarderBrandIcon className="w-4.5 h-4.5 text-slate-900 dark:text-white group-hover:scale-105 transition-transform" />
+            <RegaarderBrandIcon className="w-4.5 h-4.5 text-zinc-900 dark:text-white" />
           </div>
-          <span className="font-semibold text-[13px] tracking-tight text-slate-800 dark:text-zinc-100">
-            {activeWorkspaceName}
+          <span className="font-bold text-[13.5px] tracking-tight text-zinc-900 dark:text-white">
+            Regaarder Workspace
           </span>
-        </button>
+        </div>
       </div>
 
       {/* Center Column: Perfectly Centered Spotlight-Grade Search */}
-      <div className="flex-1 max-w-[520px] mx-auto px-4 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
+      <div className="flex-1 max-w-[480px] mx-auto px-4 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
         <button
           type="button"
           onClick={onSearchClick}
-          className="w-full h-8 flex items-center justify-between pl-3 pr-2 rounded-lg bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 text-slate-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)] group"
+          className="w-full h-8 flex items-center justify-between pl-3 pr-2.5 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/70 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-none group"
         >
-          <div className="flex items-center gap-2.5 min-w-0 truncate">
-            <Search size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors shrink-0" />
-            <span className="truncate text-slate-500 dark:text-zinc-400 text-[12px] font-normal">
-              <span className="hidden sm:inline">Search files, tools and workspace...</span>
-              <span className="sm:hidden">Search...</span>
+          <div className="flex items-center gap-2 min-w-0 truncate">
+            <Search size={14} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 transition-colors shrink-0" />
+            <span className="truncate text-zinc-500 dark:text-zinc-400 text-[12.5px] font-normal">
+              Search workspace...
             </span>
           </div>
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-slate-500 dark:text-zinc-400 bg-white dark:bg-zinc-700/80 rounded border border-slate-200/90 dark:border-zinc-600/60 shadow-2xs select-none">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-700/80 rounded border border-zinc-200 dark:border-zinc-600/60 select-none shadow-2xs">
             <span className="text-[10px] opacity-70">⌘</span>K
           </kbd>
         </button>
       </div>
 
-      {/* Right Column: Harmonized Executive-Tier Tool Cluster */}
-      <div className="flex items-center justify-end gap-1.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
-        {/* Restrained executive Upgrade entry */}
+      {/* Right Column: Harmonized Tool Cluster with Relaxed Breathing Room */}
+      <div className="flex items-center justify-end gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
+        {/* Restrained Executive Upgrade Button */}
         <a
           href="/pricing"
-          className="hidden sm:inline-flex items-center h-7 px-2.5 rounded-md text-[11.5px] font-semibold text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800 transition-colors"
+          className="hidden sm:inline-flex items-center h-7 px-3 rounded-md text-[11.5px] font-semibold text-zinc-900 dark:text-white bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200/90 dark:border-zinc-700/80 transition-all cursor-pointer shadow-2xs active:scale-[0.99]"
         >
           Upgrade
         </a>
 
-        {/* Notifications Button */}
+        {/* Notifications Button with Crisp Micro Badge */}
         <button
           type="button"
           onClick={onNotificationsClick}
-          className="relative w-7 h-7 flex items-center justify-center rounded-md text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-transparent border-none"
+          className="relative w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-transparent border-none"
           title="Notifications"
         >
           <Bell size={15} />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-violet-600" />
+            <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
           )}
         </button>
 
@@ -115,10 +112,10 @@ export default function WorkspaceTopBar({
         <button
           type="button"
           onClick={onToggleRightPanel}
-          className={`hidden sm:flex w-7 h-7 items-center justify-center rounded-md transition-colors cursor-pointer border-none ${
+          className={`hidden sm:flex w-8 h-8 items-center justify-center rounded-md transition-colors cursor-pointer border-none ${
             isRightPanelOpen
-              ? "text-slate-800 bg-slate-200/80 dark:text-zinc-100 dark:bg-zinc-800"
-              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 bg-transparent"
+              ? "text-zinc-900 bg-zinc-200/80 dark:text-zinc-100 dark:bg-zinc-800"
+              : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 bg-transparent"
           }`}
           title={isRightPanelOpen ? "Hide side panel" : "Show side panel"}
         >
@@ -126,22 +123,22 @@ export default function WorkspaceTopBar({
         </button>
 
         {/* Separator Line */}
-        <div className="h-4 w-[1px] bg-slate-200 dark:bg-zinc-800 mx-1 hidden sm:block" />
+        <div className="h-4.5 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-0.5 hidden sm:block" />
 
-        {/* User / Sign-in Control */}
-        <div className="relative">
+        {/* User Profile Avatar with Strict Sizing and Clipping */}
+        <div className="relative shrink-0 flex items-center justify-center">
           {currentUser ? (
             <button
               type="button"
               onClick={onProfileClick}
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium text-[11px] shadow-2xs cursor-pointer border border-black/[0.08] dark:border-white/[0.12] hover:opacity-90 transition-all overflow-hidden"
+              className="w-7 h-7 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium text-[11px] shadow-2xs cursor-pointer border border-black/[0.08] dark:border-white/[0.12] hover:opacity-90 transition-all overflow-hidden flex items-center justify-center shrink-0 p-0"
               title={`Profile: ${currentUser.name || currentUser.displayName || currentUser.email || 'User'}`}
             >
               {currentUser?.photoURL || currentUser?.avatar ? (
                 <img
                   src={currentUser.photoURL || currentUser.avatar}
                   alt={currentUser.name || "User"}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-full"
                 />
               ) : (
                 initials
@@ -151,10 +148,10 @@ export default function WorkspaceTopBar({
             <button
               type="button"
               onClick={onProfileClick}
-              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-medium text-[11.5px] border border-slate-200/90 dark:border-zinc-700/80 transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-medium text-[11.5px] border border-zinc-200/90 dark:border-zinc-700/80 transition-all cursor-pointer shadow-2xs"
               title="Sign in to your workspace"
             >
-              <User size={13} className="text-slate-500 dark:text-zinc-400" />
+              <User size={13} className="text-zinc-500 dark:text-zinc-400" />
               <span className="hidden sm:inline">Sign In</span>
             </button>
           )}
