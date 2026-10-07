@@ -47992,10 +47992,8 @@ Respond with a JSON array of slide objects matching the schema.`;
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Meeting: ${entity.title}`);
           } else if (ws === 'notes') {
-            // Room note: switch to Room, then open Notes floating modal
-            if (productMode !== 'room') setProductMode('room');
             setIsNotesModalOpen(true);
-            showToast(`Opened Room Note: ${entity.title}`);
+            showToast(`Opened Note: ${entity.title || 'Notes'}`);
           } else if (ws === 'browser-history') {
             if (productMode !== 'browser') setProductMode('browser');
             showToast(`Navigated to Browser History: ${entity.title}`);
@@ -48065,6 +48063,9 @@ Respond with a JSON array of slide objects matching the schema.`;
             showToast('Created new presentation');
           } else if (ws === 'room') {
             createRoomExperience();
+          } else if (ws === 'notes') {
+            setIsNotesModalOpen(true);
+            showToast('Opened Notes');
           } else if (ws === 'browser') {
             setProductMode('browser');
             showToast('Opened Web Research');
@@ -91645,9 +91646,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             if (productMode !== 'room') setProductMode('room');
             showToast(`Navigated to Room: ${entity.title}`);
           } else if (ws === 'notes') {
-            if (productMode !== 'room') setProductMode('room');
             setIsNotesModalOpen(true);
-            showToast(`Opened Room Note: ${entity.title}`);
+            showToast(`Opened Note: ${entity.title || 'Notes'}`);
           } else if (ws === 'browser-history') {
             if (productMode !== 'browser') setProductMode('browser');
             showToast(`Navigated to Browser History: ${entity.title}`);
@@ -91685,6 +91685,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             showToast('Created new presentation');
           } else if (ws === 'room') {
             createRoomExperience();
+          } else if (ws === 'notes') {
+            setIsNotesModalOpen(true);
+            showToast('Opened Notes');
           } else if (ws === 'browser') {
             setProductMode('browser');
             showToast('Opened Web Research');
