@@ -799,7 +799,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
           </div>
         </div>
       ) : filteredItems.length > 0 ? (
-        <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-white/[0.04]">
+        <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-b border-slate-200/80 dark:border-white/[0.08]">
           <div className="col-span-8 sm:col-span-5 pl-7">Name</div>
           <div className="hidden sm:block sm:col-span-3">Location</div>
           <div className="col-span-4 sm:col-span-3 text-right sm:text-left">Last Modified</div>

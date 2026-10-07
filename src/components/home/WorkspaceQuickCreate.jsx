@@ -88,7 +88,7 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
   };
 
   return (
-    <section className="p-5 rounded-2xl bg-[#F8FAFC] dark:bg-zinc-850/60 border border-slate-200/60 dark:border-white/[0.06] shadow-2xs select-none transition-all duration-200">
+    <section className="p-5 rounded-xl bg-[#F8FAFC] dark:bg-zinc-850/60 border border-slate-200/80 dark:border-white/[0.08] shadow-2xs select-none transition-all duration-200">
       {/* Header */}
       <div className="flex items-center justify-between mb-3.5">
         <div>
@@ -100,23 +100,23 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
           </p>
         </div>
 
-        {/* Subtle Chevron toggle for progressive disclosure with one-time onboarding cue */}
+        {/* Refined Ghost Action for More tools with progressive disclosure */}
         <div className="relative flex items-center">
           <button
             type="button"
             onClick={handleToggle}
             onMouseEnter={markDiscovered}
-            className="flex items-center gap-1 text-[11.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer bg-transparent border-none p-1 rounded-md group"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-750 border border-slate-200/80 dark:border-white/10 rounded-md shadow-2xs transition-all cursor-pointer group"
             title={isExpanded ? "Show fewer tools" : "Show more tools"}
           >
-            <span className="hidden sm:inline text-[11px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors">
+            <span className="text-[11.5px] font-medium">
               {isExpanded ? "Fewer tools" : "More tools"}
             </span>
             <div className={!hasDiscovered ? "animate-discovery-nudge" : ""}>
               <ChevronRight
-                size={15}
+                size={13}
                 className={`transition-transform duration-200 ${
-                  isExpanded ? "rotate-90 text-slate-600 dark:text-zinc-300" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300"
+                  isExpanded ? "rotate-90 text-slate-700 dark:text-zinc-200" : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200"
                 }`}
               />
             </div>
@@ -132,7 +132,7 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
             type="button"
             data-onboarding-target={item.id === "compose" ? "quick-create-compose" : `quick-create-${item.id}`}
             onClick={() => onLaunch && onLaunch(item.id)}
-            className="flex flex-col items-start p-3 sm:p-4 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-xs transition-all text-left cursor-pointer group"
+            className="flex flex-col items-start p-3 sm:p-4 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 hover:shadow-xs transition-all text-left cursor-pointer group"
           >
             <AppNativeSvgIcon type={item.type} size={24} className="mb-2 sm:mb-3" />
             <div className="font-semibold text-[12.5px] sm:text-[13px] text-slate-900 dark:text-zinc-100 leading-tight mb-1 truncate w-full">
@@ -157,14 +157,14 @@ export default function WorkspaceQuickCreate({ onLaunch }) {
                 key={item.id}
                 type="button"
                 onClick={() => onLaunch && onLaunch(item.id)}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-xs transition-all text-left cursor-pointer group"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 hover:shadow-xs transition-all text-left cursor-pointer group"
               >
                 {item.type === "import" ? (
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                     <ImportPortalIcon size={18} strokeWidth={1.8} />
                   </div>
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-zinc-700/50 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-md bg-slate-50 dark:bg-zinc-700/50 flex items-center justify-center shrink-0">
                     <AppNativeSvgIcon type={item.type} size={20} />
                   </div>
                 )}

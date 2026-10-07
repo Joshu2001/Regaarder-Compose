@@ -71,18 +71,14 @@ export default function WorkspaceTopBar({
         <button
           type="button"
           onClick={onSearchClick}
-          className="w-full h-8 flex items-center justify-between pl-3 pr-2 rounded-lg bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 text-slate-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)] group"
+          className="w-full h-8 flex items-center pl-3 pr-3 rounded-lg bg-slate-100/70 dark:bg-zinc-800/60 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/15 text-slate-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)] group"
         >
           <div className="flex items-center gap-2.5 min-w-0 truncate">
             <Search size={14} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300 transition-colors shrink-0" />
             <span className="truncate text-slate-500 dark:text-zinc-400 text-[12px] font-normal">
-              <span className="hidden sm:inline">Search files, tools and workspace...</span>
-              <span className="sm:hidden">Search...</span>
+              Search your workspace...
             </span>
           </div>
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-slate-500 dark:text-zinc-400 bg-white dark:bg-zinc-700/80 rounded border border-slate-200/90 dark:border-zinc-600/60 shadow-2xs select-none">
-            <span className="text-[10px] opacity-70">⌘</span>K
-          </kbd>
         </button>
       </div>
 

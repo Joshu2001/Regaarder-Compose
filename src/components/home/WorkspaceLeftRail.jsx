@@ -64,20 +64,20 @@ export default function WorkspaceLeftRail({
           <button
             type="button"
             onClick={() => onSelectTab && onSelectTab("home")}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer border-none ${
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 cursor-pointer ${
               activeTab === "home"
-                ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-white/[0.04]"
+                ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold border border-violet-200/80 dark:border-violet-800/50 shadow-2xs"
+                : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-white/[0.04] border border-transparent"
             }`}
           >
             <svg
               width="17"
               height="17"
               viewBox="0 0 24 24"
-              className={activeTab === "home" ? "fill-[#7C3AED] text-[#7C3AED]" : "fill-none stroke-slate-500 stroke-2"}
+              className={activeTab === "home" ? "fill-violet-700 text-violet-700 dark:fill-violet-300 dark:text-violet-300" : "fill-none stroke-slate-500 stroke-2"}
             >
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" fill={activeTab === "home" ? "#EDE9FE" : "none"} />
+              <polyline points="9 22 9 12 15 12 15 22" fill={activeTab === "home" ? "#F5F3FF" : "none"} />
             </svg>
             <span>Home</span>
           </button>
@@ -86,14 +86,14 @@ export default function WorkspaceLeftRail({
             <button
               type="button"
               onClick={() => onSelectTab && onSelectTab("projects")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer border-none ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 cursor-pointer ${
                 activeTab === "projects" || activeTab === "library"
-                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-white/[0.04]"
+                  ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold border border-violet-200/80 dark:border-violet-800/50 shadow-2xs"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/40 dark:hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <div className="flex items-center gap-3">
-                <Folder size={16} className={activeTab === "projects" || activeTab === "library" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-500"} />
+                <Folder size={16} className={activeTab === "projects" || activeTab === "library" ? "text-violet-700 dark:text-violet-300" : "text-slate-500"} />
                 <span>Projects</span>
               </div>
             </button>
@@ -152,15 +152,15 @@ export default function WorkspaceLeftRail({
                 if (onOpenTasks) onOpenTasks();
                 else if (onSelectTab) onSelectTab("tasks");
               }}
-              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                 activeTab === "tasks"
-                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40"
+                  ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold border border-violet-200/80 dark:border-violet-800/50 shadow-2xs"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40 border border-transparent"
               }`}
             >
               <CheckSquare
                 size={16}
-                className={activeTab === "tasks" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
+                className={activeTab === "tasks" ? "text-violet-700 dark:text-violet-300" : "text-slate-400"}
               />
               <span>Tasks</span>
             </button>
@@ -172,15 +172,15 @@ export default function WorkspaceLeftRail({
                 if (onOpenSchedule) onOpenSchedule();
                 else if (onSelectTab) onSelectTab("schedule");
               }}
-              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+              className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
                 activeTab === "schedule"
-                  ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40"
+                  ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold border border-violet-200/80 dark:border-violet-800/50 shadow-2xs"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40 border border-transparent"
               }`}
             >
               <Calendar
                 size={16}
-                className={activeTab === "schedule" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"}
+                className={activeTab === "schedule" ? "text-violet-700 dark:text-violet-300" : "text-slate-400"}
               />
               <span>Schedule</span>
             </button>
@@ -219,13 +219,13 @@ export default function WorkspaceLeftRail({
               onSelectTab("feedback");
             }
           }}
-          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer border-none ${
+          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
             activeTab === "feedback"
-              ? "bg-[#EDE9FE] text-[#7C3AED] dark:bg-violet-950/50 dark:text-violet-300 font-semibold"
-              : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40"
+              ? "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 font-semibold border border-violet-200/80 dark:border-violet-800/50 shadow-2xs"
+              : "text-slate-600 dark:text-zinc-400 hover:bg-slate-200/50 dark:hover:bg-zinc-800/40 border border-transparent"
           }`}
         >
-          <FeedbackIcon size={16} className={activeTab === "feedback" ? "text-[#7C3AED] dark:text-violet-300" : "text-slate-400"} />
+          <FeedbackIcon size={16} className={activeTab === "feedback" ? "text-violet-700 dark:text-violet-300" : "text-slate-400"} />
           <span>Feedback</span>
         </button>
 
