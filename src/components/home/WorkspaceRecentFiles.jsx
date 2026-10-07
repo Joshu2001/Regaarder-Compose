@@ -799,11 +799,11 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
           </div>
         </div>
       ) : filteredItems.length > 0 ? (
-        <div className="grid grid-cols-12 px-2 py-2 text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-b border-slate-200/80 dark:border-white/[0.08]">
-          <div className="col-span-8 sm:col-span-5 pl-7">Name</div>
+        <div className="grid grid-cols-12 px-3 py-2 text-[11px] font-medium text-slate-500 dark:text-zinc-400 border-b border-slate-200/80 dark:border-white/[0.08]">
+          <div className="col-span-8 sm:col-span-5">Name</div>
           <div className="hidden sm:block sm:col-span-3">Location</div>
           <div className="col-span-4 sm:col-span-3 text-right sm:text-left">Last Modified</div>
-          <div className="hidden sm:block sm:col-span-1 text-right pr-1">Size</div>
+          <div className="hidden sm:block sm:col-span-1 text-right">Size</div>
         </div>
       ) : null}
 
@@ -844,7 +844,7 @@ export default function WorkspaceRecentFiles({ onLaunch }) {
                     onLaunch(item.product, item.id);
                   }
                 }}
-                className={`grid grid-cols-12 px-2.5 py-2.5 items-center rounded-xl transition-all duration-150 cursor-pointer group relative border border-transparent ${
+                className={`grid grid-cols-12 px-3 py-2.5 items-center rounded-xl transition-all duration-150 cursor-pointer group relative border border-transparent ${
                   isSelected
                     ? "bg-violet-50/50 dark:bg-violet-950/25 border-violet-200/50 dark:border-violet-900/30"
                     : "hover:bg-slate-50/90 dark:hover:bg-white/[0.03] hover:border-slate-200/50 dark:hover:border-white/[0.04]"
