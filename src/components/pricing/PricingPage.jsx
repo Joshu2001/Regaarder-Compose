@@ -160,19 +160,21 @@ export default function PricingPage() {
               >
                 Monthly
               </button>
-              <button
-                onClick={() => setBillingFrequency('year')}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center gap-1.5 cursor-pointer ${
-                  billingFrequency === 'year'
-                    ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                }`}
-              >
-                <span>Annual</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white shadow-2xs">
-                  Save 20%
+              <div className="relative">
+                <button
+                  onClick={() => setBillingFrequency('year')}
+                  className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all cursor-pointer ${
+                    billingFrequency === 'year'
+                      ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  Annual
+                </button>
+                <span className="absolute -top-2.5 -right-2 px-1.5 py-0.2 rounded text-[9.5px] font-bold tracking-tight bg-emerald-600 text-white shadow-xs pointer-events-none">
+                  -20%
                 </span>
-              </button>
+              </div>
             </div>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
               Save more with annual billing. Cancel anytime.
@@ -196,8 +198,7 @@ export default function PricingPage() {
                 }`}
               >
                 {isFeatured && (
-                  <div className="absolute -top-3 left-6 px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs flex items-center gap-1">
-                    <RegaarderAiIcon size={11} strokeWidth={2} />
+                  <div className="absolute -top-3 left-6 px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs">
                     <span>Most Popular</span>
                   </div>
                 )}

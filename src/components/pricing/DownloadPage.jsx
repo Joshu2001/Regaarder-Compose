@@ -420,7 +420,7 @@ export default function DownloadPage({ previewVideoSrc = null }) {
                       <span className="text-xs font-semibold text-zinc-900 dark:text-white">{opt.os}</span>
                       <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-normal">· {opt.arch}</span>
                       {opt.recommended && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200/90 dark:border-zinc-700/80 shadow-2xs">
                           Recommended
                         </span>
                       )}
