@@ -13,6 +13,8 @@ import {
   Check, 
   ExternalLink,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Layers,
   Flame,
   Globe
@@ -23,6 +25,7 @@ import workspacePreviewImg from '../../assets/images/workspace-preview.png';
 export default function DownloadPage({ previewVideoSrc = null }) {
   const [activeNarrativeIndex, setActiveNarrativeIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const [autoPlayKey, setAutoPlayKey] = useState(0);
 
   const heroNarratives = [
     {
@@ -32,7 +35,7 @@ export default function DownloadPage({ previewVideoSrc = null }) {
     },
     {
       badge: 'Unified Architecture',
-      title: 'Every tool you need, speaking the same language.',
+      title: 'Every tool you need, sharing the same context.',
       subtitle: 'Documents, spreadsheets, presentations, and whiteboards in one calm ecosystem. No tab clutter, no copy-pasting between apps, and no broken context.'
     },
     {
@@ -41,6 +44,29 @@ export default function DownloadPage({ previewVideoSrc = null }) {
       subtitle: 'World-class intelligence running directly on your machine. Your proprietary thoughts never train cloud models, and your workspace is yours to own for life.'
     }
   ];
+
+  const handleNavigateSlide = (direction) => {
+    setIsFading(true);
+    setTimeout(() => {
+      if (direction === 'next') {
+        setActiveNarrativeIndex((prev) => (prev + 1) % heroNarratives.length);
+      } else {
+        setActiveNarrativeIndex((prev) => (prev - 1 + heroNarratives.length) % heroNarratives.length);
+      }
+      setIsFading(false);
+      setAutoPlayKey((k) => k + 1);
+    }, 250);
+  };
+
+  const handleSelectSlide = (idx) => {
+    if (idx === activeNarrativeIndex) return;
+    setIsFading(true);
+    setTimeout(() => {
+      setActiveNarrativeIndex(idx);
+      setIsFading(false);
+      setAutoPlayKey((k) => k + 1);
+    }, 250);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -52,7 +78,7 @@ export default function DownloadPage({ previewVideoSrc = null }) {
     }, 7500);
 
     return () => clearInterval(interval);
-  }, [heroNarratives.length]);
+  }, [heroNarratives.length, autoPlayKey]);
 
   const [detectedOs, setDetectedOs] = useState({
     name: 'Windows',
@@ -185,14 +211,34 @@ export default function DownloadPage({ previewVideoSrc = null }) {
       {/* Main Container */}
       <main className="max-w-6xl mx-auto px-6 py-8 sm:py-14 relative z-10">
         {/* Hero Section */}
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+        <div className="relative text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+          {/* Floating Left/Right Chevrons */}
+          <div className="hidden md:flex items-center justify-between absolute inset-x-0 top-[40%] -translate-y-1/2 pointer-events-none -mx-8 lg:-mx-12">
+            <button
+              type="button"
+              onClick={() => handleNavigateSlide('prev')}
+              aria-label="Previous story"
+              className="pointer-events-auto p-2.5 rounded-full border border-zinc-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 text-zinc-500 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/80 shadow-xs hover:shadow-sm transition-all duration-200 active:scale-95 cursor-pointer"
+            >
+              <ChevronLeft size={18} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigateSlide('next')}
+              aria-label="Next story"
+              className="pointer-events-auto p-2.5 rounded-full border border-zinc-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 text-zinc-500 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/80 shadow-xs hover:shadow-sm transition-all duration-200 active:scale-95 cursor-pointer"
+            >
+              <ChevronRight size={18} strokeWidth={2} />
+            </button>
+          </div>
+
           {/* Animated Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/60 mb-5 transition-all duration-500">
             <span>{heroNarratives[activeNarrativeIndex].badge}</span>
           </div>
 
           {/* Smooth Fade Narrative Container (Fixed Min-Height to eliminate layout shift) */}
-          <div className="min-h-[170px] sm:min-h-[180px] flex flex-col justify-start items-center">
+          <div className="min-h-[170px] sm:min-h-[180px] flex flex-col justify-start items-center max-w-2xl mx-auto">
             <h1
               className={`text-3xl sm:text-4xl lg:text-[44px] font-bold tracking-tight text-zinc-950 dark:text-white mb-4 leading-[1.15] transition-all duration-500 ease-out ${
                 isFading ? 'opacity-0 translate-y-1.5' : 'opacity-100 translate-y-0'
@@ -209,19 +255,21 @@ export default function DownloadPage({ previewVideoSrc = null }) {
             </p>
           </div>
 
-          {/* Subtle Progression Dash Indicators */}
+          {/* Subtle Progression Dash Indicators & Mobile Controls */}
           <div className="flex items-center justify-center gap-2 mb-8 mt-2">
+            <button
+              type="button"
+              onClick={() => handleNavigateSlide('prev')}
+              className="md:hidden p-1 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 mr-1 cursor-pointer"
+              aria-label="Previous"
+            >
+              <ChevronLeft size={15} />
+            </button>
             {heroNarratives.map((_, idx) => (
               <button
                 key={idx}
                 type="button"
-                onClick={() => {
-                  setIsFading(true);
-                  setTimeout(() => {
-                    setActiveNarrativeIndex(idx);
-                    setIsFading(false);
-                  }, 250);
-                }}
+                onClick={() => handleSelectSlide(idx)}
                 className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
                   activeNarrativeIndex === idx
                     ? 'w-7 bg-zinc-900 dark:bg-zinc-100'
@@ -230,6 +278,14 @@ export default function DownloadPage({ previewVideoSrc = null }) {
                 aria-label={`Go to slide ${idx + 1}`}
               />
             ))}
+            <button
+              type="button"
+              onClick={() => handleNavigateSlide('next')}
+              className="md:hidden p-1 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 ml-1 cursor-pointer"
+              aria-label="Next"
+            >
+              <ChevronRight size={15} />
+            </button>
           </div>
 
           {/* Primary Auto-Detected Download CTA */}
@@ -240,7 +296,6 @@ export default function DownloadPage({ previewVideoSrc = null }) {
             >
               <Download size={15} strokeWidth={2.5} />
               <span>Download for {detectedOs.name}</span>
-              <span className="text-[11px] opacity-75 font-normal">({detectedOs.ext})</span>
             </a>
 
             <a
