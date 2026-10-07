@@ -9,14 +9,13 @@
       "CI": ""
     }
   },
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!assets/|favicon.ico|.*\\..*$).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
