@@ -34,7 +34,7 @@
         "@babel/parser": "^8.0.4",
         "@paddle/paddle-js": "^1.6.5",
         "@regaarder/ui": "file:./packages/ui",
-        "@supabase/supabase-js": "^2.116.0",
+        "@supabase/supabase-js": "2.116.0",
         "diff-match-patch": "^1.0.5",
         "docx": "^9.7.1",
         "electron-updater": "^6.8.9",
