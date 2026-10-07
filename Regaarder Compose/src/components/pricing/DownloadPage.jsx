@@ -102,23 +102,23 @@ export default function DownloadPage({ previewVideoSrc = null }) {
 
   const valueProps = [
     {
-      title: 'Global Summon & Hotkeys',
-      description: 'Summon quick capture, ambient note-taking, or AI intelligence from anywhere with custom global shortcuts.',
+      title: 'Contextual Recall',
+      description: 'Search by what you meant or remember, not exact file names. Surfaces the right calculation, note, or decision in one click.',
       icon: Zap
     },
     {
-      title: 'Local Hardware Offload',
-      description: 'Run canvas rendering and responsive intelligence natively with direct GPU acceleration and zero browser throttling.',
-      icon: Cpu
-    },
-    {
-      title: 'Distraction-Free Focus',
-      description: 'Keep your thinking in a dedicated desktop window without losing tabs or getting buried inside 40 browser windows.',
+      title: 'Goal-Driven Execution',
+      description: 'State what you are trying to accomplish. Regaarder connects relevant notes and models across your workspace to help you solve it.',
       icon: Layers
     },
     {
-      title: 'Offline & Low-Latency Sync',
-      description: 'Draft notes, edit spreadsheets, and compose ideas without fear of spotty internet or connection drops.',
+      title: 'Unified Work Canvas',
+      description: 'Docs, sheets, decks, and whiteboards that actively share context instead of trapping your ideas in isolated app silos.',
+      icon: Cpu
+    },
+    {
+      title: 'Private & Local-First',
+      description: 'Your accumulated work and intelligence stay secure on your machine with native hardware speed and offline resilience.',
       icon: ShieldCheck
     }
   ];
@@ -158,10 +158,10 @@ export default function DownloadPage({ previewVideoSrc = null }) {
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-bold tracking-tight text-zinc-950 dark:text-white mb-4 leading-[1.15]">
-            The thinking workspace, native on your machine.
+            Your workspace remembers what you forget.
           </h1>
           <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal mb-8 max-w-xl mx-auto">
-            Experience lightning-fast document intelligence, global hotkey capture, and zero browser friction with Regaarder for desktop.
+            Traditional tools make you remember folders, filenames, and exact keywords. Regaarder understands what you actually meant—connecting your past analyses, notes, and numbers to what you are trying to accomplish today.
           </p>
 
           {/* Primary Auto-Detected Download CTA */}
