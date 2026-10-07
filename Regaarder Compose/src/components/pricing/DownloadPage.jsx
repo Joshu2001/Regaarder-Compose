@@ -161,7 +161,7 @@ export default function DownloadPage({ previewVideoSrc = null }) {
             Your workspace remembers what you forget.
           </h1>
           <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal mb-8 max-w-xl mx-auto">
-            Traditional tools make you remember folders, filenames, and exact keywords. Regaarder understands what you actually meant—connecting your past analyses, notes, and numbers to what you are trying to accomplish today.
+            Traditional tools make you remember folders, filenames, and exact keywords. Regaarder understands what you actually meant, connecting your past analyses, notes, and numbers to what you are trying to accomplish today.
           </p>
 
           {/* Primary Auto-Detected Download CTA */}
@@ -202,7 +202,7 @@ export default function DownloadPage({ previewVideoSrc = null }) {
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
               <RegaarderBrandIcon size={12} />
-              <span>Regaarder — Native Desktop Engine</span>
+              <span>Regaarder - Native Desktop Engine</span>
             </div>
             <div className="w-12 text-right">
               <span className="text-[10px] uppercase font-semibold text-emerald-600 dark:text-emerald-400 tracking-wider">Online</span>
