@@ -35,7 +35,7 @@ export default function WorkspaceTopBar({
   return (
     <header
       data-window-drag
-      className="h-[50px] px-3 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
+      className="h-[50px] pl-3 pr-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
     >
       {/* Left Column: Authoritative Regaarder Brand Identity */}
       <div className="flex items-center gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
@@ -65,17 +65,14 @@ export default function WorkspaceTopBar({
         <button
           type="button"
           onClick={onSearchClick}
-          className="w-full h-8 flex items-center justify-between pl-3 pr-2.5 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/70 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-none group"
+          className="w-full h-8 flex items-center pl-3 pr-3 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/70 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-400 dark:text-zinc-400 transition-all text-xs cursor-pointer shadow-none group"
         >
           <div className="flex items-center gap-2 min-w-0 truncate">
             <Search size={14} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 transition-colors shrink-0" />
             <span className="truncate text-zinc-500 dark:text-zinc-400 text-[12.5px] font-normal">
-              Search workspace...
+              Search your workspace...
             </span>
           </div>
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-700/80 rounded border border-zinc-200 dark:border-zinc-600/60 select-none shadow-2xs">
-            <span className="text-[10px] opacity-70">⌘</span>K
-          </kbd>
         </button>
       </div>
 

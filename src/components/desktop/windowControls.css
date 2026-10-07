@@ -17,27 +17,24 @@
 
 .rg-window-controls {
   display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: 6px;
-  padding-left: 8px;
-  border-left: 1px solid rgba(148, 163, 184, 0.35);
+  align-items: stretch;
+  height: 100%;
+  margin-left: 8px;
   flex-shrink: 0;
 }
 
 .rg-window-control {
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: 0;
+  border: none;
   color: #64748b;
   background: transparent;
   cursor: pointer;
-  transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
-    color 150ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .rg-window-control:hover {
@@ -46,7 +43,7 @@
 }
 
 .rg-window-control:active {
-  transform: scale(0.94);
+  background: rgba(15, 23, 42, 0.1);
 }
 
 .rg-window-control--close:hover {
@@ -54,8 +51,9 @@
   color: #ffffff;
 }
 
-.dark .rg-window-controls {
-  border-left-color: rgba(113, 113, 122, 0.4);
+.rg-window-control--close:active {
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .dark .rg-window-control {
