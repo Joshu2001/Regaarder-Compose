@@ -190,6 +190,7 @@ import { runBrowserAgent } from './services/browserAgentService';
 import { generateTourGuideViaAI, generateVideoActionScriptViaAI } from './services/tourAndVideoAgentService';
 import { executeAutonomousVideoSequence, generateDemoVideoBlob, planAutonomousActions } from './services/videoAgentEngine';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
+import WindowControls from './components/desktop/WindowControls';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -50690,7 +50691,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           {!isSheetsPresentationMode && !isDeckPresentationMode && (
-            <div data-sheets-toolbar="true" onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-11 flex items-center justify-between px-3 border-b shrink-0 select-none group/header relative z-[350] transition-all duration-200 gap-2 ${
+            <div data-sheets-toolbar="true" data-window-drag onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-11 flex items-center justify-between px-3 border-b shrink-0 select-none group/header relative z-[350] transition-all duration-200 gap-2 ${
               (isSheetsMode || productMode === 'deck') 
                 ? 'border-slate-200/80 dark:border-zinc-800/80 bg-[#f8f9fb]/95 dark:bg-[#121214]/95 backdrop-blur-xl' 
                 : 'border-slate-200/70 dark:border-zinc-800/80 bg-white/85 dark:bg-[#111111]/90 backdrop-blur-xl'
@@ -51277,6 +51278,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <Redo2 size={15} strokeWidth={1.5} />
                   </button>
                 </div>
+                <WindowControls />
               </div>
             </div>
           )}
@@ -76812,7 +76814,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }`}
         >
         {/* Top Header */}
-        <div onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-12 flex items-center justify-between px-5 ${
+        <div data-window-drag onMouseEnter={() => setIsTopHeaderHovered(true)} onMouseLeave={() => setIsTopHeaderHovered(false)} className={`h-12 flex items-center justify-between px-5 ${
           isNotesWorkspace 
             ? 'border-b border-black/[0.04] dark:border-white/[0.06] bg-white/70 dark:bg-[#18181B]/70' 
             : 'border-b border-slate-200/60 dark:border-[#333333] bg-white/85 dark:bg-[#111111]/85'
@@ -77467,6 +77469,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Redo2 size={15} strokeWidth={1.5} />
               </button>
             </div>
+            <WindowControls />
           </div>
         </div>
 

@@ -1,0 +1,73 @@
+/* Header surfaces marked with data-window-drag move the frameless window. */
+[data-window-drag] {
+  -webkit-app-region: drag;
+}
+
+/* Interactive descendants must opt out or they would swallow clicks. */
+[data-window-drag] button,
+[data-window-drag] input,
+[data-window-drag] select,
+[data-window-drag] textarea,
+[data-window-drag] a,
+[data-window-drag] [role='button'],
+[data-window-drag] [data-workspace-switcher],
+.rg-window-controls {
+  -webkit-app-region: no-drag;
+}
+
+.rg-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(148, 163, 184, 0.35);
+  flex-shrink: 0;
+}
+
+.rg-window-control {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rg-window-control:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+.rg-window-control:active {
+  transform: scale(0.94);
+}
+
+.rg-window-control--close:hover {
+  background: #e5484d;
+  color: #ffffff;
+}
+
+.dark .rg-window-controls {
+  border-left-color: rgba(113, 113, 122, 0.4);
+}
+
+.dark .rg-window-control {
+  color: #a1a1aa;
+}
+
+.dark .rg-window-control:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fafafa;
+}
+
+.dark .rg-window-control--close:hover {
+  background: #e5484d;
+  color: #ffffff;
+}

@@ -270,12 +270,7 @@ $ws.AppActivate('${targetName}')
     minHeight: 700,
     title: 'Regaarder Workspace',
     backgroundColor: '#F9FAFB',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#F9FAFB',
-      symbolColor: '#475569',
-      height: 54
-    },
+    frame: false,
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
@@ -350,6 +345,14 @@ $ws.AppActivate('${targetName}')
       browserViewManager.syncPopoverPosition();
     }
   });
+
+  const broadcastMaximizeState = (isMaximized) => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('window:maximize-changed', isMaximized);
+    }
+  };
+  mainWindow.on('maximize', () => broadcastMaximizeState(true));
+  mainWindow.on('unmaximize', () => broadcastMaximizeState(false));
 
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
     console.log(`[Renderer Console] [Level ${level}] ${message} (${sourceId}:${line})`);
@@ -981,6 +984,25 @@ ipcMain.handle('window:is-fullscreen', async () => {
 
 ipcMain.handle('window:minimize', async () => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize();
+  return { success: true };
+});
+
+ipcMain.handle('window:toggle-maximize', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { success: false, isMaximized: false };
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+  return { success: true, isMaximized: mainWindow.isMaximized() };
+});
+
+ipcMain.handle('window:is-maximized', async () => {
+  return Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isMaximized());
+});
+
+ipcMain.handle('window:close', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
   return { success: true };
 });
 

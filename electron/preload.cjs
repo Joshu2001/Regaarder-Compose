@@ -86,6 +86,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setFullscreen: (flag) => ipcRenderer.invoke('window:set-fullscreen', flag),
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen'),
   minimizeMainWindow: () => ipcRenderer.invoke('window:minimize'),
+  toggleMaximizeMainWindow: () => ipcRenderer.invoke('window:toggle-maximize'),
+  isMainWindowMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+  closeMainWindow: () => ipcRenderer.invoke('window:close'),
+  onMainWindowMaximizeChanged: (callback) => {
+    const handler = (event, isMaximized) => callback(Boolean(isMaximized));
+    ipcRenderer.on('window:maximize-changed', handler);
+    return () => ipcRenderer.removeListener('window:maximize-changed', handler);
+  },
   restoreMainWindow: () => ipcRenderer.invoke('window:restore'),
   setContentProtection: (enable) => ipcRenderer.invoke('window:set-content-protection', enable),
   returnToRoom: () => ipcRenderer.invoke('pip:return-to-room'),

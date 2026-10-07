@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, Bell, Layout, Menu, User } from "lucide-react";
 import RegaarderBrandIcon from "../RegaarderBrandIcon";
+import WindowControls from "../desktop/WindowControls";
 
 export default function WorkspaceTopBar({
   currentUser,
@@ -31,14 +32,9 @@ export default function WorkspaceTopBar({
     ? currentUser.email.slice(0, 2).toUpperCase()
     : "U";
 
-  const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI?.isElectron || window.navigator?.userAgent?.includes('Electron'));
-
   return (
     <header
-      style={{
-        WebkitAppRegion: 'drag',
-        paddingRight: isElectron ? '146px' : undefined
-      }}
+      data-window-drag
       className="h-[50px] px-3 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
     >
       {/* Left Column: Authoritative Regaarder Brand Identity */}
@@ -157,6 +153,8 @@ export default function WorkspaceTopBar({
           )}
         </div>
       </div>
+
+      <WindowControls />
     </header>
   );
 }
