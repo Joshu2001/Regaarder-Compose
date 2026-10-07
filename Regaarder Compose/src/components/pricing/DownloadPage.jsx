@@ -21,6 +21,39 @@ import RegaarderBrandIcon from '../RegaarderBrandIcon';
 import workspacePreviewImg from '../../assets/images/workspace-preview.png';
 
 export default function DownloadPage({ previewVideoSrc = null }) {
+  const [activeNarrativeIndex, setActiveNarrativeIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+
+  const heroNarratives = [
+    {
+      badge: 'Cognitive Memory',
+      title: 'Your workspace remembers what you forget.',
+      subtitle: 'Traditional tools make you remember folders and exact keywords. Regaarder understands what you actually meant, connecting your past thoughts to what you need today.'
+    },
+    {
+      badge: 'Unified Architecture',
+      title: 'Every tool you need, speaking the same language.',
+      subtitle: 'Documents, spreadsheets, presentations, and whiteboards in one calm ecosystem. No tab clutter, no copy-pasting between apps, and no broken context.'
+    },
+    {
+      badge: 'Sovereignty & Privacy',
+      title: 'Intelligent, completely private, and yours forever.',
+      subtitle: 'World-class intelligence running directly on your machine. Your proprietary thoughts never train cloud models, and your workspace is yours to own for life.'
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setActiveNarrativeIndex((prev) => (prev + 1) % heroNarratives.length);
+        setIsFading(false);
+      }, 400);
+    }, 7500);
+
+    return () => clearInterval(interval);
+  }, [heroNarratives.length]);
+
   const [detectedOs, setDetectedOs] = useState({
     name: 'Windows',
     tag: 'Windows 10 / 11 (64-bit)',
@@ -153,16 +186,51 @@ export default function DownloadPage({ previewVideoSrc = null }) {
       <main className="max-w-6xl mx-auto px-6 py-8 sm:py-14 relative z-10">
         {/* Hero Section */}
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/60 mb-5">
-            <span>Desktop Experience</span>
+          {/* Animated Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/60 mb-5 transition-all duration-500">
+            <span>{heroNarratives[activeNarrativeIndex].badge}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-bold tracking-tight text-zinc-950 dark:text-white mb-4 leading-[1.15]">
-            Your workspace remembers what you forget.
-          </h1>
-          <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal mb-8 max-w-xl mx-auto">
-            Traditional tools make you remember folders, filenames, and exact keywords. Regaarder understands what you actually meant, connecting your past analyses, notes, and numbers to what you are trying to accomplish today.
-          </p>
+          {/* Smooth Fade Narrative Container (Fixed Min-Height to eliminate layout shift) */}
+          <div className="min-h-[170px] sm:min-h-[180px] flex flex-col justify-start items-center">
+            <h1
+              className={`text-3xl sm:text-4xl lg:text-[44px] font-bold tracking-tight text-zinc-950 dark:text-white mb-4 leading-[1.15] transition-all duration-500 ease-out ${
+                isFading ? 'opacity-0 translate-y-1.5' : 'opacity-100 translate-y-0'
+              }`}
+            >
+              {heroNarratives[activeNarrativeIndex].title}
+            </h1>
+            <p
+              className={`text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal max-w-xl mx-auto transition-all duration-500 ease-out ${
+                isFading ? 'opacity-0 translate-y-1.5' : 'opacity-100 translate-y-0'
+              }`}
+            >
+              {heroNarratives[activeNarrativeIndex].subtitle}
+            </p>
+          </div>
+
+          {/* Subtle Progression Dash Indicators */}
+          <div className="flex items-center justify-center gap-2 mb-8 mt-2">
+            {heroNarratives.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  setIsFading(true);
+                  setTimeout(() => {
+                    setActiveNarrativeIndex(idx);
+                    setIsFading(false);
+                  }, 250);
+                }}
+                className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
+                  activeNarrativeIndex === idx
+                    ? 'w-7 bg-zinc-900 dark:bg-zinc-100'
+                    : 'w-2 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
 
           {/* Primary Auto-Detected Download CTA */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
