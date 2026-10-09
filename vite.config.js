@@ -83,6 +83,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: './',
+    css: {
+      postcss: {},
+    },
     plugins: [apiDevMiddlewarePlugin()],
     resolve: {
       alias: {
