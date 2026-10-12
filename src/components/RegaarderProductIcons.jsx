@@ -31,6 +31,35 @@ export const ComposeIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...p
   </svg>
 );
 
+/**
+ * NotesIcon — Regaarder Notes product identity.
+ * Notebook with vertical margin spine and three ruled lines.
+ * Follows 24×24 / 1.6-stroke grammar.
+ */
+export const NotesIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Notebook outer frame */}
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    {/* Vertical margin rule (left spine guide) */}
+    <line x1="8" y1="3" x2="8" y2="21" opacity="0.5" />
+    {/* Three horizontal ruled lines */}
+    <line x1="11" y1="9" x2="17" y2="9" />
+    <line x1="11" y1="13" x2="17" y2="13" />
+    <line x1="11" y1="17" x2="17" y2="17" />
+  </svg>
+);
+
 export const DeckIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
   <svg
     width={size}
@@ -191,13 +220,40 @@ export const WhiteboardIcon = ({ size = 24, className = "", strokeWidth = 1.6, .
     className={className}
     {...props}
   >
-    {/* Canvas board frame */}
-    <rect x="3.5" y="3.5" width="17" height="13.5" rx="2" />
-    {/* Stand / easel feet */}
-    <path d="M7.5 17L6 20.5M16.5 17L18 20.5" />
-    {/* Creative mark: angled stroke to focal node */}
-    <path d="M7.5 12.5L12.5 7.5" />
-    <circle cx="15.5" cy="7.5" r="1.25" fill="currentColor" stroke="none" />
+    {/* Infinite canvas frame */}
+    <rect x="3" y="3" width="18" height="18" rx="2.5" />
+    {/* Diagram nodes */}
+    <rect x="6" y="6.5" width="4.5" height="3.5" rx="1" />
+    <rect x="13.5" y="14" width="4.5" height="3.5" rx="1" />
+    {/* Connecting path with directional branch */}
+    <path d="M10.5 8.25h3a2 2 0 0 1 2 2v3.75" />
+    <circle cx="7" cy="15.5" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const PresentationIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Presentation screen outer frame */}
+    <rect x="3" y="3.5" width="18" height="12.5" rx="2" />
+    {/* Slide layout: leading visual block + 2-3 content lines */}
+    <rect x="5.5" y="6" width="3.5" height="3.5" rx="0.75" fill="currentColor" stroke="none" />
+    <line x1="11.5" y1="6.75" x2="18" y2="6.75" />
+    <line x1="11.5" y1="9.25" x2="18" y2="9.25" />
+    <line x1="5.5" y1="12.5" x2="18" y2="12.5" />
+    {/* Minimal presentation stand / easel feet */}
+    <line x1="12" y1="16" x2="12" y2="18.5" />
+    <path d="M8.5 21l3.5-2.5 3.5 2.5" />
   </svg>
 );
 
@@ -225,6 +281,36 @@ export const ScheduleIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...
     <circle cx="12" cy="15" r="1.25" fill="currentColor" stroke="none" />
     <line x1="7.5" y1="15" x2="8.5" y2="15" />
     <line x1="15.5" y1="15" x2="16.5" y2="15" />
+  </svg>
+);
+
+/**
+ * Proprietary Regaarder Omni-Portal / Import Glyph
+ * Metaphor: Universal entry portal vortex receiving external documents into the workspace core.
+ * Pure Apple SF Symbol-style monoline geometry (1.6px stroke), balanced negative space,
+ * crisp silhouette at 16–26px.
+ */
+export const ImportPortalIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Portal outer dynamic vortex frame */}
+    <path d="M4 14.5V6.5A2.5 2.5 0 0 1 6.5 4H17.5A2.5 2.5 0 0 1 20 6.5V17.5A2.5 2.5 0 0 1 17.5 20H14" />
+    {/* Downward absorption vector into portal core */}
+    <path d="M12 2v9" />
+    <polyline points="9 8 12 11 15 8" />
+    {/* Focal core receiving ring */}
+    <circle cx="8" cy="16" r="3.5" />
+    <circle cx="8" cy="16" r="0.75" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -296,6 +382,36 @@ export const ChatIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...prop
     <path d="M12 4.5A7.5 7.5 0 0 0 4.5 12c0 1.8.6 3.4 1.7 4.6l-.7 2.9 2.9-.7A7.4 7.4 0 0 0 12 19.5a7.5 7.5 0 0 0 7.5-7.5A7.5 7.5 0 0 0 12 4.5Z" />
     {/* Regaarder conversation focal node */}
     <circle cx="12" cy="12" r="0.85" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/**
+ * Proprietary Regaarder Relay Glyph
+ * Metaphor: Bidirectional peer-to-peer transmission & exchange between two connection endpoints.
+ * Design language: Apple SF Symbol-style pure monoline geometry (1.6px stroke), balanced negative space,
+ * zero decorative clutter, crisp silhouette legible at 16–20px.
+ */
+export const RelayIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Intertwined communication presence & relay nexus layer */}
+    {/* Base conversation & context card */}
+    <rect x="3" y="4" width="13" height="11" rx="3.5" />
+    {/* Dynamic relay transmission orbit connecting to focal receiver */}
+    <path d="M16 8.5h2.5a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5H10a2.5 2.5 0 0 1-2.5-2.5V15" />
+    {/* Central Relay transmission pulse node */}
+    <circle cx="9.5" cy="9.5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -440,6 +556,8 @@ export const RegaarderAiIcon = ({ size = 24, className = "", strokeWidth = 1.8, 
       strokeLinecap="round"
       strokeLinejoin="round"
     />
+    {/* Focal intelligence core */}
+    <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -572,6 +690,35 @@ export const LaserPointerIcon = ({ size = 16, className = "", strokeWidth = 1.5,
   </svg>
 );
 
+/**
+ * Customer Support & Feedback Headset Icon
+ * Direct 1:1 vector recreation of the distinctive support headset icon from WPS (Image 2):
+ * Curved overhead headband, left and right rounded earcups, and microphone boom curving downward toward mouth.
+ */
+export const FeedbackIcon = ({ size = 16, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    {/* Headset Headband */}
+    <path d="M4 14v-3a8 8 0 0 1 16 0v3" />
+    {/* Left Earcup */}
+    <rect x="2" y="12.5" width="4" height="6.5" rx="2" />
+    {/* Right Earcup */}
+    <rect x="18" y="12.5" width="4" height="6.5" rx="2" />
+    {/* Microphone Boom wrapping downward */}
+    <path d="M20 17.5v1.5a3 3 0 0 1-3 3h-2" />
+  </svg>
+);
+
 export const RegaarderProductIconMap = {
   History: RegaarderHistoryIcon,
   SaveCloud: RegaarderSaveCloudIcon,
@@ -593,6 +740,7 @@ export const RegaarderProductIconMap = {
   Orb: OrbIcon,
   AI: RegaarderAiIcon,
   orb: OrbIcon,
+  tasks: TasksIcon,
   compose: ComposeIcon,
   deck: DeckIcon,
   sheet: SheetIcon,
@@ -611,13 +759,20 @@ export const RegaarderProductIconMap = {
   fitscreen: RegaarderFitScreenIcon,
   'regaarder-ai': RegaarderAiIcon,
   decide: RegaarderAiIcon,
+  relay: RelayIcon,
+  Relay: RelayIcon,
   browser: BrowserIcon,
+  'browser-history': BrowserIcon,
   slide: DeckIcon,
   Slide: DeckIcon,
   slides: DeckIcon,
   Slides: DeckIcon,
-  presentation: DeckIcon,
-  Presentation: DeckIcon,
+  presentation: PresentationIcon,
+  Presentation: PresentationIcon,
+  present: PresentationIcon,
+  Present: PresentationIcon,
+  screenshare: PresentationIcon,
+  'screen-share': PresentationIcon,
   decks: DeckIcon,
   Decks: DeckIcon,
   docs: ComposeIcon,
@@ -630,7 +785,55 @@ export const RegaarderProductIconMap = {
   users: PeopleIcon,
   laser: LaserPointerIcon,
   'laser-pointer': LaserPointerIcon,
+  feedback: FeedbackIcon,
+  Feedback: FeedbackIcon,
+  support: FeedbackIcon,
+  Support: FeedbackIcon,
 };
+
+/**
+ * Regaarder Quick Action / Speed Kinetic Glyph
+ * Metaphor: Geometric sharp kinetic spark with dual 1.6px optical speed facets
+ */
+export const RegaarderQuickActionIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polygon points="13 2 4 13 11 13 10 22 20 10 13 10 14 2" />
+  </svg>
+);
+
+/**
+ * Regaarder Tactile Haptic / Micro-Interaction Icon
+ * Metaphor: Central haptic core with concentric acoustic feedback ripples
+ */
+export const RegaarderHapticIcon = ({ size = 24, className = "", strokeWidth = 1.6, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+    <path d="M6 8a8 8 0 0 1 12 0" />
+    <path d="M6 16a8 8 0 0 0 12 0" />
+  </svg>
+);
 
 export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWidth = 1.6, ...props }) => {
   const IconComponent = RegaarderProductIconMap[name] || ComposeIcon;
@@ -639,3 +842,4 @@ export const RegaarderProductIcon = ({ name, size = 24, className = "", strokeWi
 
 export { FileTypeIcon, getFileTypeDetails, isFileTypeEntity } from './FileTypeIcon';
 export default RegaarderProductIcon;
+
