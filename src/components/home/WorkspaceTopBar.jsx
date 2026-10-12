@@ -1,7 +1,6 @@
 import React from "react";
 import { Search, Bell, Layout, Menu, User } from "lucide-react";
 import RegaarderBrandIcon from "../RegaarderBrandIcon";
-import WindowControls from "../desktop/WindowControls";
 
 export default function WorkspaceTopBar({
   currentUser,
@@ -34,11 +33,10 @@ export default function WorkspaceTopBar({
 
   return (
     <header
-      data-window-drag
-      className="h-[50px] pl-3 pr-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
+      className="h-[50px] px-3 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#151518] flex items-center justify-between shrink-0 select-none z-30 transition-colors"
     >
       {/* Left Column: Authoritative Regaarder Brand Identity */}
-      <div className="flex items-center gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
+      <div className="flex items-center gap-2.5 min-w-[200px]">
         {onToggleMobileMenu && (
           <button
             type="button"
@@ -61,7 +59,7 @@ export default function WorkspaceTopBar({
       </div>
 
       {/* Center Column: Perfectly Centered Spotlight-Grade Search */}
-      <div className="flex-1 max-w-[480px] mx-auto px-4 min-w-0" style={{ WebkitAppRegion: 'no-drag' }}>
+      <div className="flex-1 max-w-[480px] mx-auto px-4 min-w-0">
         <button
           type="button"
           onClick={onSearchClick}
@@ -77,7 +75,7 @@ export default function WorkspaceTopBar({
       </div>
 
       {/* Right Column: Harmonized Tool Cluster with Relaxed Breathing Room */}
-      <div className="flex items-center justify-end gap-2.5 min-w-[200px]" style={{ WebkitAppRegion: 'no-drag' }}>
+      <div className="flex items-center justify-end gap-2.5 min-w-[200px]">
         {/* Restrained Executive Upgrade Button */}
         <a
           href="/pricing"
@@ -150,8 +148,6 @@ export default function WorkspaceTopBar({
           )}
         </div>
       </div>
-
-      <WindowControls />
     </header>
   );
 }

@@ -270,7 +270,7 @@ $ws.AppActivate('${targetName}')
     minHeight: 700,
     title: 'Regaarder Workspace',
     backgroundColor: '#F9FAFB',
-    frame: false,
+    frame: true,
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {

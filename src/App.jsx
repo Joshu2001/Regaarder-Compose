@@ -190,7 +190,6 @@ import { runBrowserAgent } from './services/browserAgentService';
 import { generateTourGuideViaAI, generateVideoActionScriptViaAI } from './services/tourAndVideoAgentService';
 import { executeAutonomousVideoSequence, generateDemoVideoBlob, planAutonomousActions } from './services/videoAgentEngine';
 import { DocsToolDevConsoleModal } from './components/dev/DocsToolDevConsoleModal';
-import WindowControls from './components/desktop/WindowControls';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -51278,7 +51277,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <Redo2 size={15} strokeWidth={1.5} />
                   </button>
                 </div>
-                <WindowControls />
               </div>
             </div>
           )}
@@ -77469,7 +77467,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Redo2 size={15} strokeWidth={1.5} />
               </button>
             </div>
-            <WindowControls />
           </div>
         </div>
 
