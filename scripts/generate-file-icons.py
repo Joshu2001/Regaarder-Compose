@@ -194,57 +194,57 @@ def render_icon(name, size):
     elif name == "whiteboard":
         # Whiteboard: Matches canonical Regaarder WhiteboardIcon
         # SVG grammar:
-        # - Canvas board frame: rect x="3.5" y="3.5" width="17" height="13.5" rx="2"
-        # - Stand / easel feet: path d="M7.5 17L6 20.5M16.5 17L18 20.5"
-        # - Creative mark: angled stroke to focal node: path d="M7.5 12.5L12.5 7.5", circle cx="15.5" cy="7.5" r="1.25"
+        # - Infinite canvas frame: rect x="3" y="3" width="18" height="18" rx="2.5"
+        # - Diagram nodes: rect (6, 6.5, 4.5, 3.5), rect (13.5, 14, 4.5, 3.5)
+        # - Connecting vector path: M10.5 8.25h3a2 2 0 0 1 2 2v3.75
         if size == 16:
-            # 16x16: Canvas frame at (2, 2) to (13, 11)
-            draw.rectangle([2, 2, 13, 11], fill=(255, 255, 255, 255))
-            # Stand feet (angled out)
-            draw.point([(3, 12)], fill=(255, 255, 255, 255))
-            draw.point([(2, 13)], fill=(255, 255, 255, 255))
-            draw.point([(12, 12)], fill=(255, 255, 255, 255))
-            draw.point([(13, 13)], fill=(255, 255, 255, 255))
-            # Creative angled gesture mark & focal node
-            draw.line([(4, 9), (8, 5)], fill=bg_color, width=1)
-            draw.rectangle([9, 4, 11, 6], fill=bg_color)
+            # 16x16: Canvas frame
+            draw.rectangle([2, 2, 13, 13], fill=(255, 255, 255, 255))
+            # Two diagram nodes
+            draw.rectangle([4, 4, 7, 6], fill=bg_color)
+            draw.rectangle([9, 9, 12, 11], fill=bg_color)
+            # Connecting step line
+            draw.line([(7, 5), (10, 5), (10, 9)], fill=bg_color, width=1)
         elif size <= 32:
             scale = size / 24.0
-            # Canvas frame
-            bx0, by0, bx1, by1 = int(3.5 * scale), int(3.5 * scale), int(20.5 * scale), int(17 * scale)
-            r_frame = max(2, int(2 * scale))
+            bx0, by0, bx1, by1 = int(3 * scale), int(3 * scale), int(21 * scale), int(21 * scale)
+            r_frame = max(2, int(2.5 * scale))
             draw.rounded_rectangle([bx0, by0, bx1, by1], radius=r_frame, fill=(255, 255, 255, 255))
-            # Easel feet
-            lw_feet = max(1, int(1.4 * scale))
-            draw.line([(int(7.5 * scale), int(17 * scale)), (int(6 * scale), int(21 * scale))], fill=(255, 255, 255, 255), width=lw_feet)
-            draw.line([(int(16.5 * scale), int(17 * scale)), (int(18 * scale), int(21 * scale))], fill=(255, 255, 255, 255), width=lw_feet)
-            # Creative angled stroke + focal node circle
-            stroke_w = max(1, int(1.4 * scale))
-            draw.line([(int(7.5 * scale), int(12.5 * scale)), (int(12.5 * scale), int(7.5 * scale))], fill=bg_color, width=stroke_w)
-            nr = max(1, int(1.4 * scale))
-            cx, cy = int(15.5 * scale), int(7.5 * scale)
-            draw.ellipse([cx - nr, cy - nr, cx + nr, cy + nr], fill=bg_color)
+
+            # Diagram nodes
+            n1 = [int(6 * scale), int(6.5 * scale), int(10.5 * scale), int(10 * scale)]
+            n2 = [int(13.5 * scale), int(14 * scale), int(18 * scale), int(17.5 * scale)]
+            draw.rounded_rectangle(n1, radius=max(1, int(scale)), fill=bg_color)
+            draw.rounded_rectangle(n2, radius=max(1, int(scale)), fill=bg_color)
+
+            # Connecting vector
+            lw = max(1, int(1.2 * scale))
+            draw.line([(int(10.5 * scale), int(8.25 * scale)), (int(15.5 * scale), int(8.25 * scale)), (int(15.5 * scale), int(14 * scale))], fill=bg_color, width=lw)
+            # Dot node
+            dr = max(1, int(scale))
+            dcx, dcy = int(7.5 * scale), int(15.5 * scale)
+            draw.ellipse([dcx - dr, dcy - dr, dcx + dr, dcy + dr], fill=bg_color)
         else:
             # 48px - 256px
             scale = size / 24.0
-            # Canvas board frame
-            bx0, by0, bx1, by1 = int(3.5 * scale), int(3.5 * scale), int(20.5 * scale), int(17 * scale)
-            r_frame = max(3, int(2 * scale))
+            bx0, by0, bx1, by1 = int(3 * scale), int(3 * scale), int(21 * scale), int(21 * scale)
+            r_frame = max(3, int(2.5 * scale))
             draw.rounded_rectangle([bx0, by0, bx1, by1], radius=r_frame, fill=(255, 255, 255, 255))
-            
-            # Easel stand feet
-            lw_feet = max(2, int(1.6 * scale))
-            draw.line([(int(7.5 * scale), int(17 * scale)), (int(5.5 * scale), int(21 * scale))], fill=(255, 255, 255, 255), width=lw_feet)
-            draw.line([(int(16.5 * scale), int(17 * scale)), (int(18.5 * scale), int(21 * scale))], fill=(255, 255, 255, 255), width=lw_feet)
-            
-            # Creative gesture line (M7.5 12.5L12.5 7.5)
-            lw_stroke = max(2, int(1.6 * scale))
-            draw.line([(int(7.5 * scale), int(12.5 * scale)), (int(12.5 * scale), int(7.5 * scale))], fill=bg_color, width=lw_stroke)
-            
-            # Focal node circle (circle cx="15.5" cy="7.5" r="1.25")
-            nr = max(2, int(1.5 * scale))
-            cx, cy = int(15.5 * scale), int(7.5 * scale)
-            draw.ellipse([cx - nr, cy - nr, cx + nr, cy + nr], fill=bg_color)
+
+            # Diagram nodes
+            n1 = [int(6 * scale), int(6.5 * scale), int(10.5 * scale), int(10 * scale)]
+            n2 = [int(13.5 * scale), int(14 * scale), int(18 * scale), int(17.5 * scale)]
+            rn = max(2, int(1.2 * scale))
+            draw.rounded_rectangle(n1, radius=rn, fill=bg_color)
+            draw.rounded_rectangle(n2, radius=rn, fill=bg_color)
+
+            # Connecting branch vector
+            lw = max(2, int(1.5 * scale))
+            draw.line([(int(10.5 * scale), int(8.25 * scale)), (int(15.5 * scale), int(8.25 * scale)), (int(15.5 * scale), int(14 * scale))], fill=bg_color, width=lw)
+            # Dot node
+            dr = max(2, int(1.2 * scale))
+            dcx, dcy = int(7.5 * scale), int(15.5 * scale)
+            draw.ellipse([dcx - dr, dcy - dr, dcx + dr, dcy + dr], fill=bg_color)
 
     elif name == "room":
         # Room: Dual overlapping camera / presence frames

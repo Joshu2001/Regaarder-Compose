@@ -220,13 +220,14 @@ export const WhiteboardIcon = ({ size = 24, className = "", strokeWidth = 1.6, .
     className={className}
     {...props}
   >
-    {/* Canvas board frame */}
-    <rect x="3.5" y="3.5" width="17" height="13.5" rx="2" />
-    {/* Stand / easel feet */}
-    <path d="M7.5 17L6 20.5M16.5 17L18 20.5" />
-    {/* Creative mark: angled stroke to focal node */}
-    <path d="M7.5 12.5L12.5 7.5" />
-    <circle cx="15.5" cy="7.5" r="1.25" fill="currentColor" stroke="none" />
+    {/* Infinite canvas frame */}
+    <rect x="3" y="3" width="18" height="18" rx="2.5" />
+    {/* Diagram nodes */}
+    <rect x="6" y="6.5" width="4.5" height="3.5" rx="1" />
+    <rect x="13.5" y="14" width="4.5" height="3.5" rx="1" />
+    {/* Connecting path with directional branch */}
+    <path d="M10.5 8.25h3a2 2 0 0 1 2 2v3.75" />
+    <circle cx="7" cy="15.5" r="1" fill="currentColor" stroke="none" />
   </svg>
 );
 

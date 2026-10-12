@@ -128,8 +128,19 @@ export default function WorkspaceLeftRail({
               viewBox="0 0 24 24"
               className={activeTab === "home" ? "fill-zinc-900 text-zinc-900 dark:fill-white dark:text-white" : "fill-none stroke-zinc-500 stroke-2"}
             >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" fill={activeTab === "home" ? "currentColor" : "none"} />
+              {activeTab === "home" ? (
+                // Crisp executive cutout: outer house silhouette with transparent doorway cutout
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M12 2.1L2.5 9.5a1 1 0 0 0-.5.8v10.1a1.5 1.5 0 0 0 1.5 1.5h5a.5.5 0 0 0 .5-.5V14a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7.4a.5.5 0 0 0 .5.5h5a1.5 1.5 0 0 0 1.5-1.5V10.3a1 1 0 0 0-.5-.8L12 2.1z"
+                />
+              ) : (
+                <>
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round" />
+                </>
+              )}
             </svg>
             <span className="truncate">Home</span>
           </button>
